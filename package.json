@@ -1,0 +1,30 @@
+{
+  "name": "gt-update",
+  "version": "1.0.0",
+  "main": "index.js",
+  "bin": {
+    "i18n": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^22.5.1",
+    "@types/react": "^18.3.4",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.4",
+    "@babel/preset-react": "^7.24.7",
+    "@babel/register": "^7.24.6",
+    "commander": "^12.1.0",
+    "generaltranslation": "^2.0.53",
+    "gt-react": "^3.1.69",
+    "react": "^18.3.1"
+  }
+}
