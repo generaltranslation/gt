@@ -58,83 +58,21 @@ require('@babel/register')({
         ['@babel/preset-react', { runtime: 'automatic' }],
         '@babel/preset-env'
     ],
-    plugins: [
-        ['module-resolver', {
-                root: ["./src"],
-                alias: {} // This will be dynamically populated
-            }]
-    ],
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
     ignore: [/(node_modules)/],
 });
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
 /**
- * Attempt to load aliases from common configuration files.
+ * Process the dictionary file and send updates to General Translation services.
+ * @param {string} dictionaryFilePath - The path to the dictionary file.
+ * @param {object} options - The options for processing the dictionary file.
  */
-function loadAliases() {
-    const possibleConfigFiles = [
-        'jsconfig.json',
-        'tsconfig.json',
-        'webpack.config.js',
-        '.babelrc',
-        'babel.config.js'
-    ];
-    for (const configFile of possibleConfigFiles) {
-        const configPath = path_1.default.resolve(configFile);
-        if (fs_1.default.existsSync(configPath)) {
-            if (configFile.endsWith('.json')) {
-                const config = require(configPath);
-                if (config.compilerOptions && config.compilerOptions.paths) {
-                    return config.compilerOptions.paths;
-                }
-            }
-            else if (configFile.endsWith('webpack.config.js')) {
-                const webpackConfig = require(configPath);
-                if (webpackConfig.resolve && webpackConfig.resolve.alias) {
-                    return webpackConfig.resolve.alias;
-                }
-            }
-            else if (configFile.includes('babel')) {
-                const babelConfig = require(configPath);
-                if (babelConfig.plugins) {
-                    const resolverPlugin = babelConfig.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === 'module-resolver');
-                    if (resolverPlugin) {
-                        return resolverPlugin[1].alias || {};
-                    }
-                }
-            }
-        }
-    }
-    return {};
-}
-/**
- * Resolve a module path based on the loaded aliases.
- */
-function resolveModulePath(importPath, aliases) {
-    for (const alias in aliases) {
-        if (importPath.startsWith(alias)) {
-            const aliasPath = aliases[alias];
-            const relativePath = importPath.replace(alias, aliasPath);
-            return path_1.default.resolve(relativePath);
-        }
-    }
-    return importPath; // Return the original if no alias matches
-}
-const aliases = loadAliases();
 function processDictionaryFile(dictionaryFilePath, options) {
     const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
     let dictionary;
     try {
-        const resolvedFileContent = fs_1.default.readFileSync(absoluteDictionaryFilePath, 'utf-8')
-            .replace(/from ['"](.*?)['"]/g, (match, importPath) => {
-            const resolvedPath = resolveModulePath(importPath, aliases);
-            return `from '${resolvedPath}'`;
-        });
-        const tempFilePath = path_1.default.join(__dirname, 'tempDictionaryFile.js');
-        fs_1.default.writeFileSync(tempFilePath, resolvedFileContent);
-        dictionary = require(tempFilePath).default || require(tempFilePath);
-        fs_1.default.unlinkSync(tempFilePath);
+        dictionary = require(absoluteDictionaryFilePath).default || require(absoluteDictionaryFilePath);
     }
     catch (error) {
         console.error('Failed to load the dictionary file:', error);
@@ -147,8 +85,8 @@ function processDictionaryFile(dictionaryFilePath, options) {
     const defaultLanguage = options.defaultLanguage;
     const languages = (options.languages || [])
         .map(language => (0, generaltranslation_1.isValidLanguageCode)(language) ? language : (0, generaltranslation_1.getLanguageCode)(language))
-        .filter(language => language);
-    const override = options.override || false;
+        .filter(language => language ? true : false);
+    const override = options.override ? true : false;
     if (!(apiKey && projectID)) {
         throw new Error('GT_API_KEY and GT_PROJECT_ID environment variables or provided arguments are required.');
     }
@@ -178,7 +116,8 @@ function processDictionaryFile(dictionaryFilePath, options) {
             else {
                 wrappedEntry = react_1.default.createElement(react_1.default.Fragment, null, entry);
             }
-            const entryAsObjects = (0, gt_react_1.writeChildrenAsObjects)((0, gt_react_1.addGTIdentifier)(wrappedEntry));
+            ;
+            const entryAsObjects = (0, gt_react_1.writeChildrenAsObjects)((0, gt_react_1.addGTIdentifier)(wrappedEntry)); // simulate gt-react's t() function
             templateUpdates.push({
                 type: "react",
                 data: {
@@ -202,7 +141,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
         const sendUpdates = () => __awaiter(this, void 0, void 0, function* () {
             const resultLanguages = yield gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
             if (resultLanguages) {
-                console.log(`Remote dictionary updated: ${resultLanguages.length ? true : false}.`, (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${(0, generaltranslation_1.getLanguageName)(language)}"`).join(', ')}]` + '.' : 'None.'}`), resultLanguages.length ? 'Translations are usually live within a minute.' : '');
+                console.log(`Remote dictionary updated: ${resultLanguages.length ? true : false}.`, `(Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${(0, generaltranslation_1.getLanguageName)(language)}"`).join(', ')}]` + '.' : 'None.'})`, resultLanguages.length ? 'Translations are usually live within a minute.' : '');
             }
             else {
                 throw new Error('500: Internal Server Error.');
@@ -214,6 +153,23 @@ function processDictionaryFile(dictionaryFilePath, options) {
     setTimeout(() => {
         process.exit(0);
     }, 4000);
+}
+/**
+ * Resolve the file path from the given file path or default paths.
+ * @param {string} filePath - The file path to resolve.
+ * @param {string[]} defaultPaths - The default paths to check.
+ * @returns {string} - The resolved file path.
+ */
+function resolveFilePath(filePath, defaultPaths) {
+    if (filePath) {
+        return filePath;
+    }
+    for (const possiblePath of defaultPaths) {
+        if (fs_1.default.existsSync(possiblePath)) {
+            return possiblePath;
+        }
+    }
+    throw new Error('File not found in default locations.');
 }
 commander_1.program
     .name('update')
@@ -240,20 +196,3 @@ commander_1.program
     processDictionaryFile(resolvedDictionaryFilePath, options);
 });
 commander_1.program.parse();
-/**
- * Resolve the file path from the given file path or default paths.
- * @param {string} filePath - The file path to resolve.
- * @param {string[]} defaultPaths - The default paths to check.
- * @returns {string} - The resolved file path.
- */
-function resolveFilePath(filePath, defaultPaths) {
-    if (filePath) {
-        return filePath;
-    }
-    for (const possiblePath of defaultPaths) {
-        if (fs_1.default.existsSync(possiblePath)) {
-            return possiblePath;
-        }
-    }
-    throw new Error('File not found in default locations.');
-}
