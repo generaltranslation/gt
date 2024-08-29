@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { config } from 'dotenv'
 import path from 'path';
 import React from 'react';
 import { program } from 'commander';
@@ -110,7 +109,7 @@ function processDictionaryFile(dictionaryFilePath: string, options: {
             if (resultLanguages) {
                 console.log(
                     `Remote dictionary updated: ${resultLanguages.length ? true : false}.`,
-                    `(Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${getLanguageName(language)}"`).join(', ')}]` + '.' : 'None.'})`,
+                    (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${getLanguageName(language)}"`).join(', ')}]` + '.' : 'None.'}`),
                     resultLanguages.length ? 'Translations are usually live within a minute.' : '',
                 );
             } else {
