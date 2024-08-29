@@ -3,7 +3,8 @@
   "version": "1.0.2",
   "main": "index.js",
   "bin": {
-    "i18n": "dist/cli.js"
+    "i18n": "dist/cli.js",
+    "gt-update": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc"
@@ -22,6 +23,7 @@
     "@babel/preset-env": "^7.25.4",
     "@babel/preset-react": "^7.24.7",
     "@babel/register": "^7.24.6",
+    "babel-plugin-module-resolver": "^5.0.2",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "generaltranslation": "^2.0.53",
