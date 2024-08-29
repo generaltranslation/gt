@@ -47,7 +47,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-require("dotenv/config");
 const path_1 = __importDefault(require("path"));
 const react_1 = __importDefault(require("react"));
 const commander_1 = require("commander");
@@ -62,6 +61,8 @@ require('@babel/register')({
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
     ignore: [/(node_modules)/],
 });
+require('dotenv').config({ path: '.env' });
+require('dotenv').config({ path: '.env.local', override: true });
 /**
  * Process the dictionary file and send updates to General Translation services.
  * @param {string} dictionaryFilePath - The path to the dictionary file.

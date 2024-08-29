@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import 'dotenv/config';
+import { config } from 'dotenv'
 import path from 'path';
 import React from 'react';
 import { program } from 'commander';
@@ -16,6 +16,9 @@ require('@babel/register')({
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
     ignore: [/(node_modules)/],
 });
+
+require('dotenv').config({ path: '.env' });
+require('dotenv').config({ path: '.env.local', override: true });
 
 /**
  * Process the dictionary file and send updates to General Translation services.
