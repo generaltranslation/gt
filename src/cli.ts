@@ -7,17 +7,57 @@ import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } from 'gt-r
 import GT, { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
 import fs from 'fs';
 
-require('@babel/register')({
-    presets: [
-        ['@babel/preset-react', { runtime: 'automatic' }],
-        '@babel/preset-env'
-    ],
-    extensions: ['.js', '.jsx', '.ts', '.tsx'],
-    ignore: [/(node_modules)/],
-});
+function loadConfigFile(configFilePath: string): object {
+    const absoluteConfigFilePath = path.resolve(configFilePath);
+    if (fs.existsSync(absoluteConfigFilePath)) {
+        try {
+            return require(absoluteConfigFilePath);
+        } catch (error) {
+            console.error('Failed to load the config file:', error);
+            process.exit(1);
+        }
+    } else {
+        throw new Error(`Config file not found: ${absoluteConfigFilePath}`);
+    }
+}
 
-require('dotenv').config({ path: '.env' });
-require('dotenv').config({ path: '.env.local', override: true });
+/**
+ * Apply the configuration to Babel based on the loaded config file.
+ * @param {object} config - The loaded configuration object.
+ */
+function applyConfigToBabel(config: any) {
+    const babelConfig: Record<string, any> = {
+        presets: [
+            ['@babel/preset-react', { runtime: 'automatic' }],
+            '@babel/preset-env',
+            '@babel/preset-typescript' // Add TypeScript support
+        ],
+        extensions: ['.js', '.jsx', '.ts', '.tsx'],
+        ignore: [/(node_modules)/],
+    };
+
+    if (config.compilerOptions) {
+        if (config.compilerOptions.paths) {
+            const moduleResolver = require.resolve('babel-plugin-module-resolver');
+            const aliases: any = {};
+
+            for (const [key, value] of Object.entries(config.compilerOptions.paths)) {
+                if (Array.isArray(value) && typeof value[0] === 'string') {
+                    aliases[key.replace('/*', '')] = path.resolve(__dirname, value[0].replace('/*', ''));
+                }
+            }
+
+            babelConfig.plugins = babelConfig.plugins || [];
+            babelConfig.plugins.push([moduleResolver, { alias: aliases }]);
+        }
+
+        if (config.compilerOptions.baseUrl) {
+            babelConfig.baseUrl = path.resolve(__dirname, config.compilerOptions.baseUrl);
+        }
+    }
+
+    require('@babel/register')(babelConfig);
+}
 
 /**
  * Process the dictionary file and send updates to General Translation services.
@@ -156,14 +196,26 @@ program
     .option('--languages <languages...>', 'List of target languages for translation')
     .option('--override', 'Override existing translations')
     .option('--defaultLanguage <defaultLanguage>', 'Specify a default language code or name for metadata purposes')
+    .option('--config <configFilePath>', 'Specify a path to a tsconfig.json or jsconfig.json file')
     .action((dictionaryFilePath: string, options: {
         apiKey?: string,
         projectID?: string,
         dictionaryName?: string,
         defaultLanguage?: string,
         languages?: string[],
-        override?: boolean
+        override?: boolean,
+        config?: string
     }) => {
+        // Resolve the config file path or check default locations
+        const resolvedConfigFilePath = resolveFilePath(options.config || '', [
+            './tsconfig.json',
+            './jsconfig.json',
+        ]);
+
+        // Load and apply the configuration to Babel
+        const config = loadConfigFile(resolvedConfigFilePath);
+        applyConfigToBabel(config);
+
         const resolvedDictionaryFilePath = resolveFilePath(dictionaryFilePath, [
             './dictionary.js',
             './dictionary.jsx',
@@ -175,6 +227,6 @@ program
             './src/dictionary.tsx'
         ]);
         processDictionaryFile(resolvedDictionaryFilePath, options);
-});
+    });
 
 program.parse();
