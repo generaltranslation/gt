@@ -7,6 +7,9 @@ import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } from 'gt-r
 import GT, { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
 import fs from 'fs';
 
+require('dotenv').config({ path: '.env' });
+require('dotenv').config({ path: '.env.local', override: true });
+
 function loadConfigFile(configFilePath: string): object {
     const absoluteConfigFilePath = path.resolve(configFilePath);
     if (fs.existsSync(absoluteConfigFilePath)) {

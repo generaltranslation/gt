@@ -53,6 +53,8 @@ const commander_1 = require("commander");
 const gt_react_1 = require("gt-react");
 const generaltranslation_1 = __importStar(require("generaltranslation"));
 const fs_1 = __importDefault(require("fs"));
+require('dotenv').config({ path: '.env' });
+require('dotenv').config({ path: '.env.local', override: true });
 function loadConfigFile(configFilePath) {
     const absoluteConfigFilePath = path_1.default.resolve(configFilePath);
     if (fs_1.default.existsSync(absoluteConfigFilePath)) {
