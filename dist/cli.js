@@ -131,7 +131,6 @@ function applyConfigToBabel(config) {
                                     return realPath;
                                 }
                                 catch (err) {
-                                    console.error(`Error resolving symlink for path: ${resolvedPath}`, err);
                                     // Check if the path has an extension
                                     const hasExtension = extensions.some(ext => resolvedPath.endsWith(ext));
                                     if (!hasExtension) {
@@ -235,6 +234,8 @@ function processDictionaryFile(dictionaryFilePath, options) {
         }
     }
     if (templateUpdates.length) {
+        console.log('updates:', templateUpdates);
+        console.log('updates.length:', templateUpdates.length);
         const gt = new generaltranslation_1.default({ apiKey, projectID });
         const sendUpdates = () => __awaiter(this, void 0, void 0, function* () {
             const resultLanguages = yield gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);

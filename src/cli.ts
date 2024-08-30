@@ -92,9 +92,7 @@ function applyConfigToBabel(config: any) {
                                     console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
                                     return realPath;
                                 } catch (err) {
-                                    console.error(`Error resolving symlink for path: ${resolvedPath}`, err);
-
-                                    // Check if the path has an extension
+        // Check if the path has an extension
                                     const hasExtension = extensions.some(ext => resolvedPath.endsWith(ext));
                                     if (!hasExtension) {
                                         const resolvedWithExt = resolveWithExtensions(resolvedPath);
@@ -214,6 +212,8 @@ function processDictionaryFile(dictionaryFilePath: string, options: {
     }
 
     if (templateUpdates.length) {
+        console.log('updates:', templateUpdates)
+        console.log('updates.length:', templateUpdates.length)
         const gt = new GT({ apiKey, projectID });
         const sendUpdates = async () => {
             const resultLanguages = await gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
