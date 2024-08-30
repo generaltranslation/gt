@@ -281,8 +281,6 @@ program
         // Load and apply the configuration to Babel
         const config = loadConfigFile(resolvedConfigFilePath);
 
-        console.log('config', config)
-
         applyConfigToBabel(config);
 
         const resolvedDictionaryFilePath = resolveFilePath(dictionaryFilePath, [
