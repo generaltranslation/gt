@@ -120,11 +120,7 @@ function applyConfigToBabel(config: any) {
         console.log('No compilerOptions found in the config.');
     }
 
-    console.log('Final Babel configuration:', babelConfig);
-
     require('@babel/register')(babelConfig);
-
-    console.log('Babel configuration applied successfully.');
 }
 
 
@@ -212,8 +208,7 @@ function processDictionaryFile(dictionaryFilePath: string, options: {
     }
 
     if (templateUpdates.length) {
-        console.log('updates:', templateUpdates)
-        console.log('updates.length:', templateUpdates.length)
+        console.log('Items in dictionary:', templateUpdates.length)
         const gt = new GT({ apiKey, projectID });
         const sendUpdates = async () => {
             const resultLanguages = await gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);

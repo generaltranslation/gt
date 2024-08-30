@@ -156,9 +156,7 @@ function applyConfigToBabel(config) {
     else {
         console.log('No compilerOptions found in the config.');
     }
-    console.log('Final Babel configuration:', babelConfig);
     require('@babel/register')(babelConfig);
-    console.log('Babel configuration applied successfully.');
 }
 /**
  * Process the dictionary file and send updates to General Translation services.
@@ -234,8 +232,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
         }
     }
     if (templateUpdates.length) {
-        console.log('updates:', templateUpdates);
-        console.log('updates.length:', templateUpdates.length);
+        console.log('Items in dictionary:', templateUpdates.length);
         const gt = new generaltranslation_1.default({ apiKey, projectID });
         const sendUpdates = () => __awaiter(this, void 0, void 0, function* () {
             const resultLanguages = yield gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
