@@ -84,23 +84,61 @@ function applyConfigToBabel(config) {
         extensions: ['.js', '.jsx', '.ts', '.tsx'],
         ignore: [/(node_modules)/],
     };
+    console.log('Starting Babel configuration...');
     if (config.compilerOptions) {
+        console.log('Compiler options found in config:', config.compilerOptions);
         if (config.compilerOptions.paths) {
             const moduleResolver = require.resolve('babel-plugin-module-resolver');
             const aliases = {};
+            console.log('Found path aliases:', config.compilerOptions.paths);
             for (const [key, value] of Object.entries(config.compilerOptions.paths)) {
                 if (Array.isArray(value) && typeof value[0] === 'string') {
-                    aliases[key.replace('/*', '')] = path_1.default.resolve(__dirname, value[0].replace('/*', ''));
+                    const resolvedPath = path_1.default.resolve(process.cwd(), value[0].replace('/*', ''));
+                    aliases[key.replace('/*', '')] = resolvedPath;
+                    console.log(`Resolved alias '${key}' to '${resolvedPath}'`);
                 }
             }
+            console.log('Final aliases for Babel module resolver:', aliases);
             babelConfig.plugins = babelConfig.plugins || [];
-            babelConfig.plugins.push([moduleResolver, { alias: aliases }]);
+            babelConfig.plugins.push([
+                moduleResolver,
+                {
+                    alias: aliases,
+                    resolvePath(sourcePath, currentFile, opts) {
+                        console.log(`Resolving path for: ${sourcePath}`);
+                        // Check if the sourcePath matches any of the aliases manually
+                        for (const [aliasKey, aliasPath] of Object.entries(aliases)) {
+                            if (sourcePath.startsWith(`${aliasKey}/`)) {
+                                // Replace the alias with the resolved path
+                                const resolvedPath = path_1.default.resolve(aliasPath, sourcePath.slice(aliasKey.length + 1));
+                                console.log(`Resolved path using alias '${aliasKey}/' to: ${resolvedPath}`);
+                                try {
+                                    const realPath = fs_1.default.realpathSync(resolvedPath); // Resolve symlink if necessary
+                                    console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
+                                    return realPath;
+                                }
+                                catch (err) {
+                                    console.error(`Error resolving symlink for path: ${resolvedPath}`, err);
+                                    return resolvedPath; // Fallback to resolved path
+                                }
+                            }
+                        }
+                        return null; // Default resolution
+                    }
+                }
+            ]);
         }
         if (config.compilerOptions.baseUrl) {
-            babelConfig.baseUrl = path_1.default.resolve(__dirname, config.compilerOptions.baseUrl);
+            babelConfig.baseUrl = path_1.default.resolve(process.cwd(), config.compilerOptions.baseUrl);
+            console.log(`Resolved baseUrl to: ${babelConfig.baseUrl}`);
         }
     }
+    else {
+        console.log('No compilerOptions found in the config.');
+    }
+    console.log('Final Babel configuration:', babelConfig);
     require('@babel/register')(babelConfig);
+    console.log('Babel configuration applied successfully.');
 }
 /**
  * Process the dictionary file and send updates to General Translation services.
