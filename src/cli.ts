@@ -30,7 +30,7 @@ function applyConfigToBabel(config: any) {
         presets: [
             ['@babel/preset-react', { runtime: 'automatic' }],
             '@babel/preset-env',
-            '@babel/preset-typescript' // Add TypeScript support
+            '@babel/preset-typescript'
         ],
         extensions: ['.js', '.jsx', '.ts', '.tsx'],
         ignore: [/(node_modules)/],
