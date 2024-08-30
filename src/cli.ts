@@ -39,8 +39,6 @@ function applyConfigToBabel(config: any) {
         ignore: [/(node_modules)/],
     };
 
-    console.log('Starting Babel configuration...');
-
     if (config.compilerOptions) {
         console.log('Compiler options found in config:', config.compilerOptions);
 
@@ -58,8 +56,6 @@ function applyConfigToBabel(config: any) {
                 }
             }
 
-            console.log('Final aliases for Babel module resolver:', aliases);
-
             babelConfig.plugins = babelConfig.plugins || [];
             babelConfig.plugins.push([
                 moduleResolver,
@@ -75,13 +71,39 @@ function applyConfigToBabel(config: any) {
                                 const resolvedPath = path.resolve(aliasPath as string, sourcePath.slice(aliasKey.length + 1));
                                 console.log(`Resolved path using alias '${aliasKey}/' to: ${resolvedPath}`);
 
+                                const extensions = ['.js', '.jsx', '.ts', '.tsx'];
+
+                                function resolveWithExtensions(basePath: string): string | null {
+                                    for (const ext of extensions) {
+                                        const fullPath = `${basePath}${ext}`;
+                                        try {
+                                            const realPath = fs.realpathSync(fullPath); // Resolve symlink if necessary
+                                            console.log(`Resolved symlink for: ${fullPath} to ${realPath}`);
+                                            return realPath;
+                                        } catch (_) {
+                                            continue;       
+                                        }
+                                    }
+                                    return null;
+                                }
+
                                 try {
-                                    const realPath = fs.realpathSync(resolvedPath); // Resolve symlink if necessary
+                                    const realPath = fs.realpathSync(resolvedPath); // Try without an extension first
                                     console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
                                     return realPath;
                                 } catch (err) {
                                     console.error(`Error resolving symlink for path: ${resolvedPath}`, err);
-                                    return resolvedPath; // Fallback to resolved path
+
+                                    // Check if the path has an extension
+                                    const hasExtension = extensions.some(ext => resolvedPath.endsWith(ext));
+                                    if (!hasExtension) {
+                                        const resolvedWithExt = resolveWithExtensions(resolvedPath);
+                                        if (resolvedWithExt) {
+                                            return resolvedWithExt;
+                                        }
+                                    }
+
+                                    throw new Error(`Unable to resolve path: ${resolvedPath}`);
                                 }
                             }
                         }
