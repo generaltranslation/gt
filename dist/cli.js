@@ -124,6 +124,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
         .map(language => (0, generaltranslation_1.isValidLanguageCode)(language) ? language : (0, generaltranslation_1.getLanguageCode)(language))
         .filter(language => language ? true : false);
     const override = options.override ? true : false;
+    console.log(options);
     if (!(apiKey && projectID)) {
         throw new Error('GT_API_KEY and GT_PROJECT_ID environment variables or provided arguments are required.');
     }
