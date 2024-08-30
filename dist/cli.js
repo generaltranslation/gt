@@ -228,9 +228,9 @@ commander_1.program
         './tsconfig.json',
         './jsconfig.json',
     ]);
-    console.log(resolvedConfigFilePath);
     // Load and apply the configuration to Babel
     const config = loadConfigFile(resolvedConfigFilePath);
+    console.log('config', config);
     applyConfigToBabel(config);
     const resolvedDictionaryFilePath = resolveFilePath(dictionaryFilePath, [
         './dictionary.js',
