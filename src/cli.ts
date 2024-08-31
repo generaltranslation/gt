@@ -66,6 +66,7 @@ function applyConfigToBabel(config: any) {
             }
 
             babelConfig.plugins = babelConfig.plugins || [];
+            babelConfig.plugins.push("@babel/plugin-syntax-dynamic-import")
             babelConfig.plugins.push([
                 moduleResolver,
                 { 
@@ -145,7 +146,7 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
 
     let dictionary;
     try {
-        const module = require(absoluteDictionaryFilePath);
+        const module = await import(absoluteDictionaryFilePath);
         dictionary = module.default || module;
     } catch (error) {
         console.error('Failed to load the dictionary file:', error);

@@ -106,6 +106,7 @@ function applyConfigToBabel(config) {
                 }
             }
             babelConfig.plugins = babelConfig.plugins || [];
+            babelConfig.plugins.push("@babel/plugin-syntax-dynamic-import");
             babelConfig.plugins.push([
                 moduleResolver,
                 {
@@ -172,7 +173,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
         const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
         let dictionary;
         try {
-            const module = require(absoluteDictionaryFilePath);
+            const module = yield import(absoluteDictionaryFilePath);
             dictionary = module.default || module;
         }
         catch (error) {
