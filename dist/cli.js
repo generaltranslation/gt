@@ -27,10 +27,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path_1 = __importDefault(require("path"));
 const react_1 = __importDefault(require("react"));
 const commander_1 = require("commander");
-const gt_react_1 = __importDefault(require("gt-react"));
-const { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } = gt_react_1.default;
+const gt_react_1 = require("gt-react");
 const generaltranslation_1 = __importDefault(require("generaltranslation"));
-const GT = generaltranslation_1.default.default;
 const generaltranslation_2 = require("generaltranslation");
 const fs_1 = __importDefault(require("fs"));
 require('dotenv').config({ path: '.env' });
@@ -157,7 +155,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
             console.error('Failed to load the dictionary file:', error);
             process.exit(1);
         }
-        dictionary = flattenDictionary(dictionary);
+        dictionary = (0, gt_react_1.flattenDictionary)(dictionary);
         const apiKey = options.apiKey || process.env.GT_API_KEY;
         const projectID = options.projectID || process.env.GT_PROJECT_ID;
         const dictionaryName = options.dictionaryName;
@@ -196,7 +194,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
                     wrappedEntry = react_1.default.createElement(react_1.default.Fragment, null, entry);
                 }
                 ;
-                const entryAsObjects = writeChildrenAsObjects(addGTIdentifier(wrappedEntry)); // simulate gt-react's t() function
+                const entryAsObjects = (0, gt_react_1.writeChildrenAsObjects)((0, gt_react_1.addGTIdentifier)(wrappedEntry)); // simulate gt-react's t() function
                 templateUpdates.push({
                     type: "react",
                     data: {
@@ -217,7 +215,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
         }
         if (templateUpdates.length) {
             console.log('Items in dictionary:', templateUpdates.length);
-            const gt = new GT({ apiKey, projectID });
+            const gt = new generaltranslation_1.default({ apiKey, projectID });
             const sendUpdates = () => __awaiter(this, void 0, void 0, function* () {
                 const resultLanguages = yield gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
                 if (resultLanguages) {
