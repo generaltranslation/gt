@@ -248,6 +248,7 @@ program
 
         // Load and apply the configuration to esbuild
         const config = loadConfigFile(resolvedConfigFilePath);
+        console.log(config)
 
         const resolvedDictionaryFilePath = resolveFilePath(dictionaryFilePath, [
             './dictionary.js',
