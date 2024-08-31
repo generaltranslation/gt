@@ -87,6 +87,7 @@ function applyConfigToBabel(config) {
             ['@babel/plugin-transform-modules-commonjs', { allowTopLevelThis: true }], // Converts ESM to CommonJS
             '@babel/plugin-transform-runtime' // Ensures the Babel runtime is used for ES6+ features
         ],
+        sourceType: 'unambiguous',
         extensions: ['.js', '.jsx', '.ts', '.tsx']
     };
     if (config.compilerOptions) {
