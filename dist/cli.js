@@ -179,6 +179,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
             process.exit(1);
         }
         dictionary = (0, gt_react_1.flattenDictionary)(dictionary);
+        console.log(dictionary.length);
         const apiKey = options.apiKey || process.env.GT_API_KEY;
         const projectID = options.projectID || process.env.GT_PROJECT_ID;
         const dictionaryName = options.dictionaryName;
