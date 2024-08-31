@@ -7,6 +7,7 @@ import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } from 'gt-r
 import GT from 'generaltranslation'
 import { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
 import fs from 'fs';
+import { transformFileSync } from '@babel/core';
 
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
@@ -25,113 +26,79 @@ function loadConfigFile(configFilePath: string): object {
     }
 }
 
-/**
- * Apply the configuration to Babel based on the loaded config file.
- * @param {object} config - The loaded configuration object.
- */
 function applyConfigToBabel(config: any) {
     const babelConfig: Record<string, any> = {
         presets: [
-            ["@babel/preset-env"],
+            ["@babel/preset-env", { modules: 'commonjs' }],
             '@babel/preset-react',
             '@babel/preset-typescript'
         ],
         plugins: [
-            '@babel/plugin-syntax-dynamic-import', // Supports dynamic import() syntax
-            'babel-plugin-transform-import-meta',   // Supports import.meta syntax
-            ['@babel/plugin-transform-modules-commonjs', { allowTopLevelThis: true }], // Converts ESM to CommonJS
-            '@babel/plugin-transform-runtime'       // Ensures the Babel runtime is used for ES6+ features
+            '@babel/plugin-syntax-dynamic-import',
+            'babel-plugin-transform-import-meta',
+            ['@babel/plugin-transform-modules-commonjs', { allowTopLevelThis: true }],
+            '@babel/plugin-transform-runtime'
         ],
         sourceType: 'unambiguous',
         extensions: ['.js', '.jsx', '.ts', '.tsx']
     };
 
-    if (config.compilerOptions) {
-        console.log('Compiler options found in config:', config.compilerOptions);
+    if (config.compilerOptions && config.compilerOptions.paths) {
+        const moduleResolver = require.resolve('babel-plugin-module-resolver');
+        const aliases: any = {};
 
-        if (config.compilerOptions.paths) {
-            const moduleResolver = require.resolve('babel-plugin-module-resolver');
-            const aliases: any = {};
-
-            console.log('Found path aliases:', config.compilerOptions.paths);
-
-            for (const [key, value] of Object.entries(config.compilerOptions.paths)) {
-                if (Array.isArray(value) && typeof value[0] === 'string') {
-                    const resolvedPath = path.resolve(process.cwd(), value[0].replace('/*', ''));
-                    aliases[key.replace('/*', '')] = resolvedPath;
-                    console.log(`Resolved alias '${key}' to '${resolvedPath}'`);
-                }
+        for (const [key, value] of Object.entries(config.compilerOptions.paths)) {
+            if (Array.isArray(value) && typeof value[0] === 'string') {
+                const resolvedPath = path.resolve(process.cwd(), value[0].replace('/*', ''));
+                aliases[key.replace('/*', '')] = resolvedPath;
             }
+        }
 
-            babelConfig.plugins = babelConfig.plugins || [];
+        babelConfig.plugins.push([
+            moduleResolver,
+            { 
+                alias: aliases,
+                resolvePath(sourcePath: string, currentFile: string, opts: any) {
+                    for (const [aliasKey, aliasPath] of Object.entries(aliases)) {
+                        if (sourcePath.startsWith(`${aliasKey}/`)) {
+                            const resolvedPath = path.resolve(aliasPath as string, sourcePath.slice(aliasKey.length + 1));
+                            const extensions = ['.js', '.jsx', '.ts', '.tsx'];
 
-            babelConfig.plugins.push([
-                moduleResolver,
-                { 
-                    alias: aliases,
-                    resolvePath(sourcePath: string, currentFile: string, opts: any) {
-                        console.log(`Resolving path for: ${sourcePath}`);
-
-                        // Check if the sourcePath matches any of the aliases manually
-                        for (const [aliasKey, aliasPath] of Object.entries(aliases)) {
-                            if (sourcePath.startsWith(`${aliasKey}/`)) {
-                                // Replace the alias with the resolved path
-                                const resolvedPath = path.resolve(aliasPath as string, sourcePath.slice(aliasKey.length + 1));
-                                console.log(`Resolved path using alias '${aliasKey}/' to: ${resolvedPath}`);
-
-                                const extensions = ['.js', '.jsx', '.ts', '.tsx'];
-
-                                function resolveWithExtensions(basePath: string): string | null {
-                                    for (const ext of extensions) {
-                                        const fullPath = `${basePath}${ext}`;
-                                        try {
-                                            const realPath = fs.realpathSync(fullPath); // Resolve symlink if necessary
-                                            console.log(`Resolved symlink for: ${fullPath} to ${realPath}`);
-                                            return realPath;
-                                        } catch (_) {
-                                            continue;       
-                                        }
+                            function resolveWithExtensions(basePath: string): string | null {
+                                for (const ext of extensions) {
+                                    const fullPath = `${basePath}${ext}`;
+                                    try {
+                                        return fs.realpathSync(fullPath);
+                                    } catch (_) {
+                                        continue;       
                                     }
-                                    return null;
                                 }
+                                return null;
+                            }
 
-                                try {
-                                    const realPath = fs.realpathSync(resolvedPath); // Try without an extension first
-                                    console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
-                                    return realPath;
-                                } catch (err) {
-                                    // Check if the path has an extension
-                                    const hasExtension = extensions.some(ext => resolvedPath.endsWith(ext));
-                                    if (!hasExtension) {
-                                        const resolvedWithExt = resolveWithExtensions(resolvedPath);
-                                        if (resolvedWithExt) {
-                                            return resolvedWithExt;
-                                        }
+                            try {
+                                return fs.realpathSync(resolvedPath);
+                            } catch (err) {
+                                const hasExtension = extensions.some(ext => resolvedPath.endsWith(ext));
+                                if (!hasExtension) {
+                                    const resolvedWithExt = resolveWithExtensions(resolvedPath);
+                                    if (resolvedWithExt) {
+                                        return resolvedWithExt;
                                     }
-
-                                    throw new Error(`Unable to resolve path: ${resolvedPath}`);
                                 }
+                                throw new Error(`Unable to resolve path: ${resolvedPath}`);
                             }
                         }
-
-                        return null; // Default resolution
                     }
+                    return null;
                 }
-            ]);
-        }
-    } else {
-        console.log('No compilerOptions found in the config.');
+            }
+        ]);
     }
 
-    require('@babel/register')(babelConfig);
+    return babelConfig;
 }
 
-
-/**
- * Process the dictionary file and send updates to General Translation services.
- * @param {string} dictionaryFilePath - The path to the dictionary file.
- * @param {object} options - The options for processing the dictionary file.
- */
 async function processDictionaryFile(dictionaryFilePath: string, options: {
     apiKey?: string,
     projectID?: string,
@@ -139,13 +106,15 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
     defaultLanguage?: string,
     languages?: string[],
     override?: boolean
-}) {
+}, babelConfig: any) {
     const absoluteDictionaryFilePath = path.resolve(dictionaryFilePath);
 
     let dictionary;
     try {
-        const module = require(absoluteDictionaryFilePath);
-        dictionary = module.default || module;
+        const { code } = transformFileSync(absoluteDictionaryFilePath, babelConfig)!;
+        const module: any = { exports: {} };
+        new Function('module', 'exports', 'require', code!)(module, module.exports, require);
+        dictionary = module.exports.default || module.exports;
     } catch (error) {
         console.error('Failed to load the dictionary file:', error);
         process.exit(1);
@@ -230,14 +199,10 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
     }
 
     process.exit(0);
+
+    // ... Rest of the processDictionaryFile function remains the same
 }
 
-/**
- * Resolve the file path from the given file path or default paths.
- * @param {string} filePath - The file path to resolve.
- * @param {string[]} defaultPaths - The default paths to check.
- * @returns {string} - The resolved file path.
- */
 function resolveFilePath(filePath: string, defaultPaths: string[]): string {
     if (filePath) {
         return filePath;
@@ -273,16 +238,13 @@ program
         override?: boolean,
         config?: string
     }) => {
-        // Resolve the config file path or check default locations
         const resolvedConfigFilePath = resolveFilePath(options.config || '', [
             './tsconfig.json',
             './jsconfig.json',
         ]);
 
-        // Load and apply the configuration to Babel
         const config = loadConfigFile(resolvedConfigFilePath);
-
-        applyConfigToBabel(config);
+        const babelConfig = applyConfigToBabel(config);
 
         const resolvedDictionaryFilePath = resolveFilePath(dictionaryFilePath, [
             './dictionary.js',
@@ -294,7 +256,7 @@ program
             './src/dictionary.ts',
             './src/dictionary.tsx'
         ]);
-        processDictionaryFile(resolvedDictionaryFilePath, options);
+        processDictionaryFile(resolvedDictionaryFilePath, options, babelConfig);
     });
 
 program.parse();
