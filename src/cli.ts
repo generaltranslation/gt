@@ -42,6 +42,7 @@ function applyConfigToEsbuild(config: any) {
         sourcemap: 'inline',
         external: ['server-only'],
         define: {
+            'React': 'require("react")',
             'process.env.NODE_ENV': '"production"',
         },
         plugins: []
