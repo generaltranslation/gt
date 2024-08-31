@@ -89,8 +89,7 @@ function applyConfigToBabel(config) {
             '@babel/preset-env',
             '@babel/preset-typescript'
         ],
-        extensions: ['.js', '.jsx', '.ts', '.tsx'],
-        ignore: [/(node_modules)/],
+        extensions: ['.js', '.jsx', '.ts', '.tsx']
     };
     if (config.compilerOptions) {
         console.log('Compiler options found in config:', config.compilerOptions);
