@@ -217,7 +217,6 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
             } else {
                 throw new Error('500: Internal Server Error.');
             }
-            process.exit(0);
         };
         await sendUpdates();
     }
