@@ -55,7 +55,11 @@ const generaltranslation_1 = __importStar(require("generaltranslation"));
 const fs_1 = __importDefault(require("fs"));
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
-require('ts-node').register();
+// Register ts-node to handle TypeScript files
+require('ts-node').register({
+    transpileOnly: true, // You can set this to false if you want type checking
+    extensions: ['.ts', '.tsx'],
+});
 function loadConfigFile(configFilePath) {
     const absoluteConfigFilePath = path_1.default.resolve(configFilePath);
     if (fs_1.default.existsSync(absoluteConfigFilePath)) {
