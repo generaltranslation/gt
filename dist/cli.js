@@ -55,6 +55,7 @@ const generaltranslation_1 = __importStar(require("generaltranslation"));
 const fs_1 = __importDefault(require("fs"));
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
+require('ts-node').register();
 function loadConfigFile(configFilePath) {
     const absoluteConfigFilePath = path_1.default.resolve(configFilePath);
     if (fs_1.default.existsSync(absoluteConfigFilePath)) {
@@ -164,7 +165,8 @@ function processDictionaryFile(dictionaryFilePath, options) {
         const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
         let dictionary;
         try {
-            dictionary = yield import(absoluteDictionaryFilePath).then(module => module.default || module);
+            const module = yield import(absoluteDictionaryFilePath);
+            dictionary = module.default || module;
         }
         catch (error) {
             console.error('Failed to load the dictionary file:', error);

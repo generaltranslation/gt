@@ -9,6 +9,7 @@ import fs from 'fs';
 
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
+require('ts-node').register();
 
 function loadConfigFile(configFilePath: string): object {
     const absoluteConfigFilePath = path.resolve(configFilePath);
@@ -136,7 +137,8 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
 
     let dictionary;
     try {
-        dictionary = await import(absoluteDictionaryFilePath).then(module => module.default || module);
+        const module = await import(absoluteDictionaryFilePath);
+        dictionary = module.default || module;
     } catch (error) {
         console.error('Failed to load the dictionary file:', error);
         process.exit(1);
