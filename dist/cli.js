@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -19,20 +20,24 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
-import path from 'path';
-import React from 'react';
-import { program } from 'commander';
-import gt_react from 'gt-react';
-const { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } = gt_react;
-import gt_toolkit from 'generaltranslation';
-const GT = gt_toolkit.default;
-import { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
-import fs from 'fs';
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const path_1 = __importDefault(require("path"));
+const react_1 = __importDefault(require("react"));
+const commander_1 = require("commander");
+const gt_react_1 = __importDefault(require("gt-react"));
+const { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } = gt_react_1.default;
+const generaltranslation_1 = __importDefault(require("generaltranslation"));
+const GT = generaltranslation_1.default.default;
+const generaltranslation_2 = require("generaltranslation");
+const fs_1 = __importDefault(require("fs"));
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
 function loadConfigFile(configFilePath) {
-    const absoluteConfigFilePath = path.resolve(configFilePath);
-    if (fs.existsSync(absoluteConfigFilePath)) {
+    const absoluteConfigFilePath = path_1.default.resolve(configFilePath);
+    if (fs_1.default.existsSync(absoluteConfigFilePath)) {
         try {
             return require(absoluteConfigFilePath);
         }
@@ -73,7 +78,7 @@ function applyConfigToBabel(config) {
             console.log('Found path aliases:', config.compilerOptions.paths);
             for (const [key, value] of Object.entries(config.compilerOptions.paths)) {
                 if (Array.isArray(value) && typeof value[0] === 'string') {
-                    const resolvedPath = path.resolve(process.cwd(), value[0].replace('/*', ''));
+                    const resolvedPath = path_1.default.resolve(process.cwd(), value[0].replace('/*', ''));
                     aliases[key.replace('/*', '')] = resolvedPath;
                     console.log(`Resolved alias '${key}' to '${resolvedPath}'`);
                 }
@@ -89,14 +94,14 @@ function applyConfigToBabel(config) {
                         for (const [aliasKey, aliasPath] of Object.entries(aliases)) {
                             if (sourcePath.startsWith(`${aliasKey}/`)) {
                                 // Replace the alias with the resolved path
-                                const resolvedPath = path.resolve(aliasPath, sourcePath.slice(aliasKey.length + 1));
+                                const resolvedPath = path_1.default.resolve(aliasPath, sourcePath.slice(aliasKey.length + 1));
                                 console.log(`Resolved path using alias '${aliasKey}/' to: ${resolvedPath}`);
                                 const extensions = ['.js', '.jsx', '.ts', '.tsx'];
                                 function resolveWithExtensions(basePath) {
                                     for (const ext of extensions) {
                                         const fullPath = `${basePath}${ext}`;
                                         try {
-                                            const realPath = fs.realpathSync(fullPath); // Resolve symlink if necessary
+                                            const realPath = fs_1.default.realpathSync(fullPath); // Resolve symlink if necessary
                                             console.log(`Resolved symlink for: ${fullPath} to ${realPath}`);
                                             return realPath;
                                         }
@@ -107,7 +112,7 @@ function applyConfigToBabel(config) {
                                     return null;
                                 }
                                 try {
-                                    const realPath = fs.realpathSync(resolvedPath); // Try without an extension first
+                                    const realPath = fs_1.default.realpathSync(resolvedPath); // Try without an extension first
                                     console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
                                     return realPath;
                                 }
@@ -142,7 +147,7 @@ function applyConfigToBabel(config) {
  */
 function processDictionaryFile(dictionaryFilePath, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const absoluteDictionaryFilePath = path.resolve(dictionaryFilePath);
+        const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
         let dictionary;
         try {
             const module = require(absoluteDictionaryFilePath);
@@ -158,7 +163,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
         const dictionaryName = options.dictionaryName;
         const defaultLanguage = options.defaultLanguage;
         const languages = (options.languages || [])
-            .map(language => isValidLanguageCode(language) ? language : getLanguageCode(language))
+            .map(language => (0, generaltranslation_2.isValidLanguageCode)(language) ? language : (0, generaltranslation_2.getLanguageCode)(language))
             .filter(language => language ? true : false);
         const override = options.override ? true : false;
         if (!(apiKey && projectID)) {
@@ -178,17 +183,17 @@ function processDictionaryFile(dictionaryFilePath, options) {
                 }
                 entry = entry[0];
             }
-            if (React.isValidElement(entry)) {
+            if (react_1.default.isValidElement(entry)) {
                 let wrappedEntry;
                 const { singular, plural, dual, zero, one, two, few, many, other, ranges } = props, tMetadata = __rest(props, ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other", "ranges"]);
                 const pluralProps = Object.fromEntries(Object.entries({ singular, plural, dual, zero, one, two, few, many, other, ranges }).filter(([_, value]) => value !== undefined));
                 if (Object.keys(pluralProps).length) {
-                    const Plural = (pluralProps) => React.createElement(React.Fragment, pluralProps, entry);
+                    const Plural = (pluralProps) => react_1.default.createElement(react_1.default.Fragment, pluralProps, entry);
                     Plural.gtTransformation = 'plural';
-                    wrappedEntry = React.createElement(Plural, pluralProps, entry);
+                    wrappedEntry = react_1.default.createElement(Plural, pluralProps, entry);
                 }
                 else {
-                    wrappedEntry = React.createElement(React.Fragment, null, entry);
+                    wrappedEntry = react_1.default.createElement(react_1.default.Fragment, null, entry);
                 }
                 ;
                 const entryAsObjects = writeChildrenAsObjects(addGTIdentifier(wrappedEntry)); // simulate gt-react's t() function
@@ -216,7 +221,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
             const sendUpdates = () => __awaiter(this, void 0, void 0, function* () {
                 const resultLanguages = yield gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
                 if (resultLanguages) {
-                    console.log(`Remote dictionary updated: ${resultLanguages.length ? true : false}.`, (`Languages: ${resultLanguages.length ? `[${resultLanguages.map((language) => `"${getLanguageName(language)}"`).join(', ')}]` + '.' : 'None.'}`), resultLanguages.length ? 'Translations are usually live within a minute.' : '');
+                    console.log(`Remote dictionary updated: ${resultLanguages.length ? true : false}.`, (`Languages: ${resultLanguages.length ? `[${resultLanguages.map((language) => `"${(0, generaltranslation_2.getLanguageName)(language)}"`).join(', ')}]` + '.' : 'None.'}`), resultLanguages.length ? 'Translations are usually live within a minute.' : '');
                 }
                 else {
                     throw new Error('500: Internal Server Error.');
@@ -238,13 +243,13 @@ function resolveFilePath(filePath, defaultPaths) {
         return filePath;
     }
     for (const possiblePath of defaultPaths) {
-        if (fs.existsSync(possiblePath)) {
+        if (fs_1.default.existsSync(possiblePath)) {
             return possiblePath;
         }
     }
     throw new Error('File not found in default locations.');
 }
-program
+commander_1.program
     .name('update')
     .description('Process React dictionary files and send translations to General Translation services')
     .version('1.0.0')
@@ -277,4 +282,4 @@ program
     ]);
     processDictionaryFile(resolvedDictionaryFilePath, options);
 });
-program.parse();
+commander_1.program.parse();

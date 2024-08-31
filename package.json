@@ -2,7 +2,6 @@
   "name": "gt-update",
   "version": "1.0.93",
   "main": "index.js",
-  "type": "module",
   "bin": {
     "i18n": "dist/cli.js",
     "gt-update": "dist/cli.js"
