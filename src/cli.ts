@@ -7,9 +7,12 @@ import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } from 'gt-r
 import GT, { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
 import fs from 'fs';
 import esbuild from 'esbuild';
-import mock from 'mock-require';
+import mockRequire from 'mock-require'
 
-mock('server-only', {});
+mockRequire('server-only', () => { 
+    console.log('Mocking server-only module');
+    return {}; 
+});
 
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
