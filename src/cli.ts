@@ -123,7 +123,7 @@ function applyConfigToBabel(config: any) {
     }
 
     require('@babel/register')(babelConfig);
-}
+}}
 
 
 /**

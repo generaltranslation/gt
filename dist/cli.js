@@ -160,147 +160,147 @@ function applyConfigToBabel(config) {
         }
         require('@babel/register')(babelConfig);
     }
-    /**
-     * Process the dictionary file and send updates to General Translation services.
-     * @param {string} dictionaryFilePath - The path to the dictionary file.
-     * @param {object} options - The options for processing the dictionary file.
-     */
-    function processDictionaryFile(dictionaryFilePath, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
-            let dictionary;
-            try {
-                const module = require(absoluteDictionaryFilePath);
-                dictionary = module.default || module;
+}
+/**
+ * Process the dictionary file and send updates to General Translation services.
+ * @param {string} dictionaryFilePath - The path to the dictionary file.
+ * @param {object} options - The options for processing the dictionary file.
+ */
+function processDictionaryFile(dictionaryFilePath, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
+        let dictionary;
+        try {
+            const module = require(absoluteDictionaryFilePath);
+            dictionary = module.default || module;
+        }
+        catch (error) {
+            console.error('Failed to load the dictionary file:', error);
+            process.exit(1);
+        }
+        dictionary = (0, gt_react_1.flattenDictionary)(dictionary);
+        const apiKey = options.apiKey || process.env.GT_API_KEY;
+        const projectID = options.projectID || process.env.GT_PROJECT_ID;
+        const dictionaryName = options.dictionaryName;
+        const defaultLanguage = options.defaultLanguage;
+        const languages = (options.languages || [])
+            .map(language => (0, generaltranslation_1.isValidLanguageCode)(language) ? language : (0, generaltranslation_1.getLanguageCode)(language))
+            .filter(language => language ? true : false);
+        const override = options.override ? true : false;
+        if (!(apiKey && projectID)) {
+            throw new Error('GT_API_KEY and GT_PROJECT_ID environment variables or provided arguments are required.');
+        }
+        let templateUpdates = [];
+        for (const key in dictionary) {
+            let entry = dictionary[key];
+            let metadata = { id: key, dictionaryName };
+            if (defaultLanguage) {
+                metadata.defaultLanguage = defaultLanguage;
             }
-            catch (error) {
-                console.error('Failed to load the dictionary file:', error);
-                process.exit(1);
+            let props = {};
+            if (Array.isArray(entry)) {
+                if (typeof entry[1] === 'object') {
+                    props = entry[1];
+                }
+                entry = entry[0];
             }
-            dictionary = (0, gt_react_1.flattenDictionary)(dictionary);
-            const apiKey = options.apiKey || process.env.GT_API_KEY;
-            const projectID = options.projectID || process.env.GT_PROJECT_ID;
-            const dictionaryName = options.dictionaryName;
-            const defaultLanguage = options.defaultLanguage;
-            const languages = (options.languages || [])
-                .map(language => (0, generaltranslation_1.isValidLanguageCode)(language) ? language : (0, generaltranslation_1.getLanguageCode)(language))
-                .filter(language => language ? true : false);
-            const override = options.override ? true : false;
-            if (!(apiKey && projectID)) {
-                throw new Error('GT_API_KEY and GT_PROJECT_ID environment variables or provided arguments are required.');
-            }
-            let templateUpdates = [];
-            for (const key in dictionary) {
-                let entry = dictionary[key];
-                let metadata = { id: key, dictionaryName };
-                if (defaultLanguage) {
-                    metadata.defaultLanguage = defaultLanguage;
+            if (react_1.default.isValidElement(entry)) {
+                let wrappedEntry;
+                const { singular, plural, dual, zero, one, two, few, many, other, ranges } = props, tMetadata = __rest(props, ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other", "ranges"]);
+                const pluralProps = Object.fromEntries(Object.entries({ singular, plural, dual, zero, one, two, few, many, other, ranges }).filter(([_, value]) => value !== undefined));
+                if (Object.keys(pluralProps).length) {
+                    const Plural = (pluralProps) => react_1.default.createElement(react_1.default.Fragment, pluralProps, entry);
+                    Plural.gtTransformation = 'plural';
+                    wrappedEntry = react_1.default.createElement(Plural, pluralProps, entry);
                 }
-                let props = {};
-                if (Array.isArray(entry)) {
-                    if (typeof entry[1] === 'object') {
-                        props = entry[1];
-                    }
-                    entry = entry[0];
+                else {
+                    wrappedEntry = react_1.default.createElement(react_1.default.Fragment, null, entry);
                 }
-                if (react_1.default.isValidElement(entry)) {
-                    let wrappedEntry;
-                    const { singular, plural, dual, zero, one, two, few, many, other, ranges } = props, tMetadata = __rest(props, ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other", "ranges"]);
-                    const pluralProps = Object.fromEntries(Object.entries({ singular, plural, dual, zero, one, two, few, many, other, ranges }).filter(([_, value]) => value !== undefined));
-                    if (Object.keys(pluralProps).length) {
-                        const Plural = (pluralProps) => react_1.default.createElement(react_1.default.Fragment, pluralProps, entry);
-                        Plural.gtTransformation = 'plural';
-                        wrappedEntry = react_1.default.createElement(Plural, pluralProps, entry);
-                    }
-                    else {
-                        wrappedEntry = react_1.default.createElement(react_1.default.Fragment, null, entry);
-                    }
-                    ;
-                    const entryAsObjects = (0, gt_react_1.writeChildrenAsObjects)((0, gt_react_1.addGTIdentifier)(wrappedEntry)); // simulate gt-react's t() function
-                    templateUpdates.push({
-                        type: "react",
-                        data: {
-                            children: entryAsObjects,
-                            metadata: Object.assign(Object.assign({}, metadata), tMetadata)
-                        }
-                    });
-                }
-                else if (typeof entry === 'string') {
-                    templateUpdates.push({
-                        type: "intl",
-                        data: {
-                            content: entry,
-                            metadata: Object.assign(Object.assign({}, metadata), props)
-                        }
-                    });
-                }
-            }
-            if (templateUpdates.length) {
-                console.log('Items in dictionary:', templateUpdates.length);
-                const gt = new generaltranslation_1.default({ apiKey, projectID });
-                const sendUpdates = () => __awaiter(this, void 0, void 0, function* () {
-                    const resultLanguages = yield gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
-                    if (resultLanguages) {
-                        console.log(`Remote dictionary updated: ${resultLanguages.length ? true : false}.`, (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${(0, generaltranslation_1.getLanguageName)(language)}"`).join(', ')}]` + '.' : 'None.'}`), resultLanguages.length ? 'Translations are usually live within a minute.' : '');
-                    }
-                    else {
-                        throw new Error('500: Internal Server Error.');
+                ;
+                const entryAsObjects = (0, gt_react_1.writeChildrenAsObjects)((0, gt_react_1.addGTIdentifier)(wrappedEntry)); // simulate gt-react's t() function
+                templateUpdates.push({
+                    type: "react",
+                    data: {
+                        children: entryAsObjects,
+                        metadata: Object.assign(Object.assign({}, metadata), tMetadata)
                     }
                 });
-                yield sendUpdates();
             }
-            process.exit(0);
-        });
-    }
-    /**
-     * Resolve the file path from the given file path or default paths.
-     * @param {string} filePath - The file path to resolve.
-     * @param {string[]} defaultPaths - The default paths to check.
-     * @returns {string} - The resolved file path.
-     */
-    function resolveFilePath(filePath, defaultPaths) {
-        if (filePath) {
-            return filePath;
-        }
-        for (const possiblePath of defaultPaths) {
-            if (fs_1.default.existsSync(possiblePath)) {
-                return possiblePath;
+            else if (typeof entry === 'string') {
+                templateUpdates.push({
+                    type: "intl",
+                    data: {
+                        content: entry,
+                        metadata: Object.assign(Object.assign({}, metadata), props)
+                    }
+                });
             }
         }
-        throw new Error('File not found in default locations.');
-    }
-    commander_1.program
-        .name('update')
-        .description('Process React dictionary files and send translations to General Translation services')
-        .version('1.0.0')
-        .argument('[dictionaryFilePath]', 'Path to the dictionary file')
-        .option('--apiKey <apiKey>', 'Specify your GT API key')
-        .option('--projectID <projectID>', 'Specify your GT project ID')
-        .option('--dictionaryName <name>', 'Optionally specify a dictionary name for metadata purposes')
-        .option('--languages <languages...>', 'List of target languages for translation')
-        .option('--override', 'Override existing translations')
-        .option('--defaultLanguage <defaultLanguage>', 'Specify a default language code or name for metadata purposes')
-        .option('--config <configFilePath>', 'Specify a path to a tsconfig.json or jsconfig.json file')
-        .action((dictionaryFilePath, options) => {
-        // Resolve the config file path or check default locations
-        const resolvedConfigFilePath = resolveFilePath(options.config || '', [
-            './tsconfig.json',
-            './jsconfig.json',
-        ]);
-        // Load and apply the configuration to Babel
-        const config = loadConfigFile(resolvedConfigFilePath);
-        applyConfigToBabel(config);
-        const resolvedDictionaryFilePath = resolveFilePath(dictionaryFilePath, [
-            './dictionary.js',
-            './dictionary.jsx',
-            './dictionary.ts',
-            './dictionary.tsx',
-            './src/dictionary.js',
-            './src/dictionary.jsx',
-            './src/dictionary.ts',
-            './src/dictionary.tsx'
-        ]);
-        processDictionaryFile(resolvedDictionaryFilePath, options);
+        if (templateUpdates.length) {
+            console.log('Items in dictionary:', templateUpdates.length);
+            const gt = new generaltranslation_1.default({ apiKey, projectID });
+            const sendUpdates = () => __awaiter(this, void 0, void 0, function* () {
+                const resultLanguages = yield gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
+                if (resultLanguages) {
+                    console.log(`Remote dictionary updated: ${resultLanguages.length ? true : false}.`, (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${(0, generaltranslation_1.getLanguageName)(language)}"`).join(', ')}]` + '.' : 'None.'}`), resultLanguages.length ? 'Translations are usually live within a minute.' : '');
+                }
+                else {
+                    throw new Error('500: Internal Server Error.');
+                }
+            });
+            yield sendUpdates();
+        }
+        process.exit(0);
     });
-    commander_1.program.parse();
 }
+/**
+ * Resolve the file path from the given file path or default paths.
+ * @param {string} filePath - The file path to resolve.
+ * @param {string[]} defaultPaths - The default paths to check.
+ * @returns {string} - The resolved file path.
+ */
+function resolveFilePath(filePath, defaultPaths) {
+    if (filePath) {
+        return filePath;
+    }
+    for (const possiblePath of defaultPaths) {
+        if (fs_1.default.existsSync(possiblePath)) {
+            return possiblePath;
+        }
+    }
+    throw new Error('File not found in default locations.');
+}
+commander_1.program
+    .name('update')
+    .description('Process React dictionary files and send translations to General Translation services')
+    .version('1.0.0')
+    .argument('[dictionaryFilePath]', 'Path to the dictionary file')
+    .option('--apiKey <apiKey>', 'Specify your GT API key')
+    .option('--projectID <projectID>', 'Specify your GT project ID')
+    .option('--dictionaryName <name>', 'Optionally specify a dictionary name for metadata purposes')
+    .option('--languages <languages...>', 'List of target languages for translation')
+    .option('--override', 'Override existing translations')
+    .option('--defaultLanguage <defaultLanguage>', 'Specify a default language code or name for metadata purposes')
+    .option('--config <configFilePath>', 'Specify a path to a tsconfig.json or jsconfig.json file')
+    .action((dictionaryFilePath, options) => {
+    // Resolve the config file path or check default locations
+    const resolvedConfigFilePath = resolveFilePath(options.config || '', [
+        './tsconfig.json',
+        './jsconfig.json',
+    ]);
+    // Load and apply the configuration to Babel
+    const config = loadConfigFile(resolvedConfigFilePath);
+    applyConfigToBabel(config);
+    const resolvedDictionaryFilePath = resolveFilePath(dictionaryFilePath, [
+        './dictionary.js',
+        './dictionary.jsx',
+        './dictionary.ts',
+        './dictionary.tsx',
+        './src/dictionary.js',
+        './src/dictionary.jsx',
+        './src/dictionary.ts',
+        './src/dictionary.tsx'
+    ]);
+    processDictionaryFile(resolvedDictionaryFilePath, options);
+});
+commander_1.program.parse();
