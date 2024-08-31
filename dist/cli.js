@@ -94,7 +94,7 @@ function applyConfigToEsbuild(config) {
     esbuildOptions.plugins.push({
         name: 'ignore-server-only',
         setup(build) {
-            build.onResolve({ filter: /^server-only$/ }, args => {
+            build.onResolve({ filter: /^server-only$/ }, (args) => {
                 return { path: require.resolve('./empty-module.js') };
             });
         },
