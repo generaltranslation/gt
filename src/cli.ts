@@ -43,7 +43,7 @@ function applyConfigToEsbuild(config: any) {
         sourcemap: 'inline',
         external: ['server-only'],
         define: {
-            'process.env.NODE_ENV': '"production"',
+            'React': 'global.React'
         },
         plugins: []
     };
@@ -168,12 +168,15 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
         write: false,
     });
 
+    
+
     // Evaluate the bundled code to get the dictionary module
     // Write the bundled code to a temporary file
-    let bundledCode = result.outputFiles[0].text;
-    bundledCode = `import React from 'react';\n` + bundledCode;
+    const bundledCode = result.outputFiles[0].text;
     const tempFilePath = path.join(os.tmpdir(), 'bundled-dictionary.js');
     fs.writeFileSync(tempFilePath, bundledCode);
+
+    global.React = React;
 
     // Load the module using require
     let dictionaryModule;
