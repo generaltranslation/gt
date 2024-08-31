@@ -84,9 +84,7 @@ function applyConfigToEsbuild(config) {
             '.tsx': 'tsx',
         },
         sourcemap: 'inline',
-        define: {
-            'require("server-only")': '{}', // Mock the server-only module with an empty object
-        },
+        external: ['server-only']
     };
     if (config.compilerOptions) {
         console.log('Compiler options found in config:', config.compilerOptions);

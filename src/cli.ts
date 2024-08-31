@@ -25,6 +25,8 @@ function loadConfigFile(configFilePath: string): object {
     }
 }
 
+
+
 function applyConfigToEsbuild(config: any) {
     const esbuildOptions: esbuild.BuildOptions = {
         bundle: true,
@@ -38,9 +40,7 @@ function applyConfigToEsbuild(config: any) {
             '.tsx': 'tsx',
         },
         sourcemap: 'inline',
-        define: {
-            'require("server-only")': '{}', // Mock the server-only module with an empty object
-        },
+        external: ['server-only']
     };
 
     if (config.compilerOptions) {
