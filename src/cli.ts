@@ -6,6 +6,7 @@ import { program } from 'commander';
 import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } from 'gt-react';
 import GT, { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
 import fs from 'fs';
+import { transformSync } from '@babel/core';
 
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
@@ -91,7 +92,7 @@ function applyConfigToBabel(config: any) {
                                     console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
                                     return realPath;
                                 } catch (err) {
-        // Check if the path has an extension
+                                    // Check if the path has an extension
                                     const hasExtension = extensions.some(ext => resolvedPath.endsWith(ext));
                                     if (!hasExtension) {
                                         const resolvedWithExt = resolveWithExtensions(resolvedPath);
@@ -118,6 +119,35 @@ function applyConfigToBabel(config: any) {
     require('@babel/register')(babelConfig);
 }
 
+function transpileFile(filePath: string) {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const result = transformSync(content, {
+        presets: [
+            ['@babel/preset-react', { runtime: 'automatic' }],
+            '@babel/preset-env',
+            '@babel/preset-typescript',
+        ],
+        plugins: ["@babel/plugin-transform-modules-commonjs"],
+        filename: filePath,
+    });
+
+    if (result && result.code) {
+        return result.code;
+    } else {
+        throw new Error(`Failed to transpile file: ${filePath}`);
+    }
+}
+
+function loadAndTranspileModule(filePath: string) {
+    const absoluteFilePath = path.resolve(filePath);
+    const transpiledCode = transpileFile(absoluteFilePath);
+
+    // Use Node.js' `Module` API to load the transpiled code into the environment
+    const Module = module.constructor as any;
+    const m = new Module();
+    m._compile(transpiledCode, absoluteFilePath);
+    return m.exports;
+}
 
 /**
  * Process the dictionary file and send updates to General Translation services.
@@ -136,8 +166,7 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
 
     let dictionary;
     try {
-        const module = require(absoluteDictionaryFilePath);
-        dictionary = module.default || module;
+        dictionary = loadAndTranspileModule(absoluteDictionaryFilePath);
     } catch (error) {
         console.error('Failed to load the dictionary file:', error);
         process.exit(1);
@@ -219,12 +248,10 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
             }
             process.exit(0);
         };
-        sendUpdates();
+        await sendUpdates();
     }
 
-    setTimeout(() => {
-        process.exit(0);
-    }, 4000);
+    process.exit(0);
 }
 
 /**

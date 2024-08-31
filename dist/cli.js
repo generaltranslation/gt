@@ -53,6 +53,7 @@ const commander_1 = require("commander");
 const gt_react_1 = require("gt-react");
 const generaltranslation_1 = __importStar(require("generaltranslation"));
 const fs_1 = __importDefault(require("fs"));
+const core_1 = require("@babel/core");
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
 function loadConfigFile(configFilePath) {
@@ -154,6 +155,33 @@ function applyConfigToBabel(config) {
     }
     require('@babel/register')(babelConfig);
 }
+function transpileFile(filePath) {
+    const content = fs_1.default.readFileSync(filePath, 'utf8');
+    const result = (0, core_1.transformSync)(content, {
+        presets: [
+            ['@babel/preset-react', { runtime: 'automatic' }],
+            '@babel/preset-env',
+            '@babel/preset-typescript',
+        ],
+        plugins: ["@babel/plugin-transform-modules-commonjs"],
+        filename: filePath,
+    });
+    if (result && result.code) {
+        return result.code;
+    }
+    else {
+        throw new Error(`Failed to transpile file: ${filePath}`);
+    }
+}
+function loadAndTranspileModule(filePath) {
+    const absoluteFilePath = path_1.default.resolve(filePath);
+    const transpiledCode = transpileFile(absoluteFilePath);
+    // Use Node.js' `Module` API to load the transpiled code into the environment
+    const Module = module.constructor;
+    const m = new Module();
+    m._compile(transpiledCode, absoluteFilePath);
+    return m.exports;
+}
 /**
  * Process the dictionary file and send updates to General Translation services.
  * @param {string} dictionaryFilePath - The path to the dictionary file.
@@ -164,8 +192,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
         const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
         let dictionary;
         try {
-            const module = require(absoluteDictionaryFilePath);
-            dictionary = module.default || module;
+            dictionary = loadAndTranspileModule(absoluteDictionaryFilePath);
         }
         catch (error) {
             console.error('Failed to load the dictionary file:', error);
@@ -242,11 +269,9 @@ function processDictionaryFile(dictionaryFilePath, options) {
                 }
                 process.exit(0);
             });
-            sendUpdates();
+            yield sendUpdates();
         }
-        setTimeout(() => {
-            process.exit(0);
-        }, 4000);
+        process.exit(0);
     });
 }
 /**
