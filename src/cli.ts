@@ -39,8 +39,7 @@ function applyConfigToBabel(config: any) {
             ['@babel/plugin-transform-modules-commonjs', { allowTopLevelThis: true }],
             '@babel/plugin-transform-runtime'
         ],
-        sourceType: 'unambiguous',
-        extensions: ['.js', '.jsx', '.ts', '.tsx']
+        sourceType: 'unambiguous'
     };
 
     if (config.compilerOptions && config.compilerOptions.paths) {
