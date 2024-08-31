@@ -10,10 +10,13 @@ import fs from 'fs';
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
 
-console.log('ts-node register')
-require('ts-node').register({
-    transpileOnly: true, // You can set this to false if you want type checking
-    extensions: ['.ts', '.tsx'],
+import { register } from 'ts-node';
+register({
+  transpileOnly: true,
+  compilerOptions: {
+    module: 'commonjs',
+    jsx: 'react'
+  }
 });
 
 function loadConfigFile(configFilePath: string): object {
