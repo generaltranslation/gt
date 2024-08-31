@@ -92,11 +92,21 @@ function applyConfigToEsbuild(config) {
     };
     // Add the custom plugin to handle 'server-only' imports
     // Add the custom plugin to handle 'server-only' imports
+    // Add the custom plugin to handle 'server-only' imports
     esbuildOptions.plugins.push({
         name: 'ignore-server-only',
         setup(build) {
-            build.onResolve({ filter: /^server-only$/ }, (args) => {
-                return { path: {} };
+            build.onResolve({ filter: /^server-only$/ }, () => {
+                return {
+                    path: 'server-only', // This can be a virtual module name
+                    namespace: 'ignore-server-only',
+                };
+            });
+            build.onLoad({ filter: /^server-only$/, namespace: 'ignore-server-only' }, () => {
+                return {
+                    contents: 'module.exports = {};', // Stubbing out the content
+                    loader: 'js',
+                };
             });
         },
     });
