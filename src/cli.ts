@@ -53,7 +53,7 @@ function applyConfigToEsbuild(config: any) {
     name: 'ignore-server-only',
     setup(build: any) {
         build.onResolve({ filter: /^server-only$/ }, (args: any) => {
-            return {};
+            return { path: {} };
         });
     },
 });
