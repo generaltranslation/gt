@@ -59,7 +59,7 @@ const ts_node_1 = require("ts-node");
 (0, ts_node_1.register)({
     transpileOnly: true,
     compilerOptions: {
-        module: 'commonjs',
+        module: 'es2015',
         jsx: 'react'
     }
 });

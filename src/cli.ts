@@ -14,7 +14,7 @@ import { register } from 'ts-node';
 register({
   transpileOnly: true,
   compilerOptions: {
-    module: 'commonjs',
+    module: 'es2015',
     jsx: 'react'
   }
 });
