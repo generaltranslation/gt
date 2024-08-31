@@ -55,6 +55,7 @@ const generaltranslation_1 = __importStar(require("generaltranslation"));
 const fs_1 = __importDefault(require("fs"));
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
+console.log('ts-node register');
 require('ts-node').register({
     transpileOnly: true, // You can set this to false if you want type checking
     extensions: ['.ts', '.tsx'],
