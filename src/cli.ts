@@ -168,8 +168,6 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
         write: false,
     });
 
-    
-
     // Evaluate the bundled code to get the dictionary module
     // Write the bundled code to a temporary file
     const bundledCode = result.outputFiles[0].text;
