@@ -187,7 +187,8 @@ function processDictionaryFile(dictionaryFilePath, options) {
         const result = yield esbuild_1.default.build(Object.assign(Object.assign({}, esbuildOptions), { entryPoints: [absoluteDictionaryFilePath], write: false }));
         // Evaluate the bundled code to get the dictionary module
         // Write the bundled code to a temporary file
-        const bundledCode = result.outputFiles[0].text;
+        let bundledCode = result.outputFiles[0].text;
+        bundledCode = `import React from 'react';\n` + bundledCode;
         const tempFilePath = path_1.default.join(os_1.default.tmpdir(), 'bundled-dictionary.js');
         fs_1.default.writeFileSync(tempFilePath, bundledCode);
         // Load the module using require

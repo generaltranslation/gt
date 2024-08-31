@@ -170,7 +170,8 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
 
     // Evaluate the bundled code to get the dictionary module
     // Write the bundled code to a temporary file
-    const bundledCode = result.outputFiles[0].text;
+    let bundledCode = result.outputFiles[0].text;
+    bundledCode = `import React from 'react';\n` + bundledCode;
     const tempFilePath = path.join(os.tmpdir(), 'bundled-dictionary.js');
     fs.writeFileSync(tempFilePath, bundledCode);
 
