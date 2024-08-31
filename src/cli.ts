@@ -35,6 +35,12 @@ function applyConfigToBabel(config: any) {
             '@babel/preset-env',
             '@babel/preset-typescript'
         ],
+        plugins: [
+            '@babel/plugin-syntax-dynamic-import', // Supports dynamic import() syntax
+            'babel-plugin-transform-import-meta',   // Supports import.meta syntax
+            ['@babel/plugin-transform-modules-commonjs', { allowTopLevelThis: true }], // Converts ESM to CommonJS
+            '@babel/plugin-transform-runtime'       // Ensures the Babel runtime is used for ES6+ features
+        ],
         extensions: ['.js', '.jsx', '.ts', '.tsx']
     };
 
@@ -56,6 +62,7 @@ function applyConfigToBabel(config: any) {
             }
 
             babelConfig.plugins = babelConfig.plugins || [];
+
             babelConfig.plugins.push([
                 moduleResolver,
                 { 
@@ -110,7 +117,6 @@ function applyConfigToBabel(config: any) {
                 }
             ]);
         }
-        babelConfig.plugins.push(["@babel/plugin-transform-modules-commonjs"])
     } else {
         console.log('No compilerOptions found in the config.');
     }
@@ -202,8 +208,6 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
             });
         }
     }
-
-    console.log(JSON.stringify(templateUpdates));
 
     if (templateUpdates.length) {
         console.log('Items in dictionary:', templateUpdates.length)
