@@ -131,7 +131,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
         // Bundle and transpile the dictionary file using esbuild
-        const esbuildOptions = applyConfigToEsbuild({});
+        const esbuildOptions = applyConfigToEsbuild(options.config || {});
         const result = yield esbuild_1.default.build(Object.assign(Object.assign({}, esbuildOptions), { entryPoints: [absoluteDictionaryFilePath], write: false }));
         // Evaluate the bundled code to get the dictionary module
         const { text } = result.outputFiles[0];
@@ -265,6 +265,6 @@ commander_1.program
         './src/dictionary.ts',
         './src/dictionary.tsx'
     ]);
-    processDictionaryFile(resolvedDictionaryFilePath, options);
+    processDictionaryFile(resolvedDictionaryFilePath, Object.assign(Object.assign({}, options), { config }));
 });
 commander_1.program.parse();

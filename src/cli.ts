@@ -95,12 +95,13 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
     dictionaryName?: string,
     defaultLanguage?: string,
     languages?: string[],
-    override?: boolean
+    override?: boolean,
+    config?: any 
 }) {
     const absoluteDictionaryFilePath = path.resolve(dictionaryFilePath);
 
     // Bundle and transpile the dictionary file using esbuild
-    const esbuildOptions = applyConfigToEsbuild({});
+    const esbuildOptions = applyConfigToEsbuild(options.config || {});
     const result = await esbuild.build({
         ...esbuildOptions,
         entryPoints: [absoluteDictionaryFilePath],
@@ -258,7 +259,7 @@ program
             './src/dictionary.ts',
             './src/dictionary.tsx'
         ]);
-        processDictionaryFile(resolvedDictionaryFilePath, options);
+        processDictionaryFile(resolvedDictionaryFilePath, { ...options, config });
     });
 
 program.parse();
