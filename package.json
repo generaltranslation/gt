@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "push-deploy": "tsc; git add -A; git commit -m \"wip test\"; tsc; npm version patch; npm publish; git push;"
+    "push-deploy": "tsc; git add -A; git commit -m \"wip test\"; npm version patch; git push; npm publish;"
   },
   "keywords": [],
   "author": "",
