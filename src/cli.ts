@@ -136,10 +136,9 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
 
     let dictionary;
     try {
-        const module = await import(absoluteDictionaryFilePath);
-        const requiredDictonary = require(absoluteDictionaryFilePath);
+        
+        const module = require(absoluteDictionaryFilePath);
         console.log(module);
-        console.log(requiredDictonary);
         dictionary = module.default || module;
     } catch (error) {
         console.error('Failed to load the dictionary file:', error);
