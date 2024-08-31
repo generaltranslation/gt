@@ -106,7 +106,6 @@ function applyConfigToBabel(config) {
                 }
             }
             babelConfig.plugins = babelConfig.plugins || [];
-            babelConfig.plugins.push("@babel/plugin-transform-modules-commonjs");
             babelConfig.plugins.push([
                 moduleResolver,
                 {
@@ -157,6 +156,7 @@ function applyConfigToBabel(config) {
                 }
             ]);
         }
+        babelConfig.plugins.push(["@babel/plugin-transform-modules-commonjs"]);
     }
     else {
         console.log('No compilerOptions found in the config.');
