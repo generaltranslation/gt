@@ -148,10 +148,6 @@ function applyConfigToBabel(config) {
                 }
             ]);
         }
-        if (config.compilerOptions.baseUrl) {
-            babelConfig.baseUrl = path_1.default.resolve(process.cwd(), config.compilerOptions.baseUrl);
-            console.log(`Resolved baseUrl to: ${babelConfig.baseUrl}`);
-        }
     }
     else {
         console.log('No compilerOptions found in the config.');
@@ -287,7 +283,6 @@ commander_1.program
     ]);
     // Load and apply the configuration to Babel
     const config = loadConfigFile(resolvedConfigFilePath);
-    console.log('config', config);
     applyConfigToBabel(config);
     const resolvedDictionaryFilePath = resolveFilePath(dictionaryFilePath, [
         './dictionary.js',

@@ -111,11 +111,6 @@ function applyConfigToBabel(config: any) {
                 }
             ]);
         }
-
-        if (config.compilerOptions.baseUrl) {
-            babelConfig.baseUrl = path.resolve(process.cwd(), config.compilerOptions.baseUrl);
-            console.log(`Resolved baseUrl to: ${babelConfig.baseUrl}`);
-        }
     } else {
         console.log('No compilerOptions found in the config.');
     }
