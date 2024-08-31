@@ -160,91 +160,93 @@ function applyConfigToBabel(config) {
  * @param {object} options - The options for processing the dictionary file.
  */
 function processDictionaryFile(dictionaryFilePath, options) {
-    const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
-    let dictionary;
-    try {
-        dictionary = require(absoluteDictionaryFilePath).default || require(absoluteDictionaryFilePath);
-    }
-    catch (error) {
-        console.error('Failed to load the dictionary file:', error);
-        process.exit(1);
-    }
-    dictionary = (0, gt_react_1.flattenDictionary)(dictionary);
-    const apiKey = options.apiKey || process.env.GT_API_KEY;
-    const projectID = options.projectID || process.env.GT_PROJECT_ID;
-    const dictionaryName = options.dictionaryName;
-    const defaultLanguage = options.defaultLanguage;
-    const languages = (options.languages || [])
-        .map(language => (0, generaltranslation_1.isValidLanguageCode)(language) ? language : (0, generaltranslation_1.getLanguageCode)(language))
-        .filter(language => language ? true : false);
-    const override = options.override ? true : false;
-    if (!(apiKey && projectID)) {
-        throw new Error('GT_API_KEY and GT_PROJECT_ID environment variables or provided arguments are required.');
-    }
-    let templateUpdates = [];
-    for (const key in dictionary) {
-        let entry = dictionary[key];
-        let metadata = { id: key, dictionaryName };
-        if (defaultLanguage) {
-            metadata.defaultLanguage = defaultLanguage;
+    return __awaiter(this, void 0, void 0, function* () {
+        const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
+        let dictionary;
+        try {
+            dictionary = yield import(absoluteDictionaryFilePath).then(module => module.default || module);
         }
-        let props = {};
-        if (Array.isArray(entry)) {
-            if (typeof entry[1] === 'object') {
-                props = entry[1];
-            }
-            entry = entry[0];
+        catch (error) {
+            console.error('Failed to load the dictionary file:', error);
+            process.exit(1);
         }
-        if (react_1.default.isValidElement(entry)) {
-            let wrappedEntry;
-            const { singular, plural, dual, zero, one, two, few, many, other, ranges } = props, tMetadata = __rest(props, ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other", "ranges"]);
-            const pluralProps = Object.fromEntries(Object.entries({ singular, plural, dual, zero, one, two, few, many, other, ranges }).filter(([_, value]) => value !== undefined));
-            if (Object.keys(pluralProps).length) {
-                const Plural = (pluralProps) => react_1.default.createElement(react_1.default.Fragment, pluralProps, entry);
-                Plural.gtTransformation = 'plural';
-                wrappedEntry = react_1.default.createElement(Plural, pluralProps, entry);
+        dictionary = (0, gt_react_1.flattenDictionary)(dictionary);
+        const apiKey = options.apiKey || process.env.GT_API_KEY;
+        const projectID = options.projectID || process.env.GT_PROJECT_ID;
+        const dictionaryName = options.dictionaryName;
+        const defaultLanguage = options.defaultLanguage;
+        const languages = (options.languages || [])
+            .map(language => (0, generaltranslation_1.isValidLanguageCode)(language) ? language : (0, generaltranslation_1.getLanguageCode)(language))
+            .filter(language => language ? true : false);
+        const override = options.override ? true : false;
+        if (!(apiKey && projectID)) {
+            throw new Error('GT_API_KEY and GT_PROJECT_ID environment variables or provided arguments are required.');
+        }
+        let templateUpdates = [];
+        for (const key in dictionary) {
+            let entry = dictionary[key];
+            let metadata = { id: key, dictionaryName };
+            if (defaultLanguage) {
+                metadata.defaultLanguage = defaultLanguage;
             }
-            else {
-                wrappedEntry = react_1.default.createElement(react_1.default.Fragment, null, entry);
-            }
-            ;
-            const entryAsObjects = (0, gt_react_1.writeChildrenAsObjects)((0, gt_react_1.addGTIdentifier)(wrappedEntry)); // simulate gt-react's t() function
-            templateUpdates.push({
-                type: "react",
-                data: {
-                    children: entryAsObjects,
-                    metadata: Object.assign(Object.assign({}, metadata), tMetadata)
+            let props = {};
+            if (Array.isArray(entry)) {
+                if (typeof entry[1] === 'object') {
+                    props = entry[1];
                 }
-            });
-        }
-        else if (typeof entry === 'string') {
-            templateUpdates.push({
-                type: "intl",
-                data: {
-                    content: entry,
-                    metadata: Object.assign(Object.assign({}, metadata), props)
+                entry = entry[0];
+            }
+            if (react_1.default.isValidElement(entry)) {
+                let wrappedEntry;
+                const { singular, plural, dual, zero, one, two, few, many, other, ranges } = props, tMetadata = __rest(props, ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other", "ranges"]);
+                const pluralProps = Object.fromEntries(Object.entries({ singular, plural, dual, zero, one, two, few, many, other, ranges }).filter(([_, value]) => value !== undefined));
+                if (Object.keys(pluralProps).length) {
+                    const Plural = (pluralProps) => react_1.default.createElement(react_1.default.Fragment, pluralProps, entry);
+                    Plural.gtTransformation = 'plural';
+                    wrappedEntry = react_1.default.createElement(Plural, pluralProps, entry);
                 }
-            });
+                else {
+                    wrappedEntry = react_1.default.createElement(react_1.default.Fragment, null, entry);
+                }
+                ;
+                const entryAsObjects = (0, gt_react_1.writeChildrenAsObjects)((0, gt_react_1.addGTIdentifier)(wrappedEntry)); // simulate gt-react's t() function
+                templateUpdates.push({
+                    type: "react",
+                    data: {
+                        children: entryAsObjects,
+                        metadata: Object.assign(Object.assign({}, metadata), tMetadata)
+                    }
+                });
+            }
+            else if (typeof entry === 'string') {
+                templateUpdates.push({
+                    type: "intl",
+                    data: {
+                        content: entry,
+                        metadata: Object.assign(Object.assign({}, metadata), props)
+                    }
+                });
+            }
         }
-    }
-    if (templateUpdates.length) {
-        console.log('Items in dictionary:', templateUpdates.length);
-        const gt = new generaltranslation_1.default({ apiKey, projectID });
-        const sendUpdates = () => __awaiter(this, void 0, void 0, function* () {
-            const resultLanguages = yield gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
-            if (resultLanguages) {
-                console.log(`Remote dictionary updated: ${resultLanguages.length ? true : false}.`, (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${(0, generaltranslation_1.getLanguageName)(language)}"`).join(', ')}]` + '.' : 'None.'}`), resultLanguages.length ? 'Translations are usually live within a minute.' : '');
-            }
-            else {
-                throw new Error('500: Internal Server Error.');
-            }
+        if (templateUpdates.length) {
+            console.log('Items in dictionary:', templateUpdates.length);
+            const gt = new generaltranslation_1.default({ apiKey, projectID });
+            const sendUpdates = () => __awaiter(this, void 0, void 0, function* () {
+                const resultLanguages = yield gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
+                if (resultLanguages) {
+                    console.log(`Remote dictionary updated: ${resultLanguages.length ? true : false}.`, (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${(0, generaltranslation_1.getLanguageName)(language)}"`).join(', ')}]` + '.' : 'None.'}`), resultLanguages.length ? 'Translations are usually live within a minute.' : '');
+                }
+                else {
+                    throw new Error('500: Internal Server Error.');
+                }
+                process.exit(0);
+            });
+            sendUpdates();
+        }
+        setTimeout(() => {
             process.exit(0);
-        });
-        sendUpdates();
-    }
-    setTimeout(() => {
-        process.exit(0);
-    }, 4000);
+        }, 4000);
+    });
 }
 /**
  * Resolve the file path from the given file path or default paths.
