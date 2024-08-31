@@ -1,6 +1,6 @@
 {
   "name": "gt-update",
-  "version": "1.0.92",
+  "version": "1.0.93",
   "main": "index.js",
   "type": "module",
   "bin": {
