@@ -136,7 +136,6 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
 
     let dictionary;
     try {
-        
         const module = require(absoluteDictionaryFilePath);
         console.log(module);
         dictionary = module.default || module;
