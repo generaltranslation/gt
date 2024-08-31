@@ -39,8 +39,7 @@ function applyConfigToEsbuild(config: any) {
             '.ts': 'ts',
             '.tsx': 'tsx',
         },
-        sourcemap: 'inline',
-        external: ['server-only']
+        sourcemap: 'inline'
     };
 
     if (config.compilerOptions) {
@@ -61,6 +60,15 @@ function applyConfigToEsbuild(config: any) {
 
             esbuildOptions.plugins = esbuildOptions.plugins || [];
 
+            esbuildOptions.plugins.push({
+                name: 'filter-server-only',
+                setup(build) {
+                    build.onResolve({ filter: /^server-only$/ }, () => {
+                        return { path: 'server-only', external: true };
+                    });
+                },
+            });
+            
             esbuildOptions.plugins.push({
                 name: 'alias',
                 setup(build) {
