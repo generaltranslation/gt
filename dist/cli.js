@@ -91,11 +91,18 @@ function applyConfigToEsbuild(config) {
         plugins: []
     };
     // Add the custom plugin to handle 'server-only' imports
+    // Add the custom plugin to handle 'server-only' imports
     esbuildOptions.plugins.push({
         name: 'ignore-server-only',
         setup(build) {
             build.onResolve({ filter: /^server-only$/ }, (args) => {
-                return { path: require.resolve('./empty-module.js') };
+                return {
+                    contents: `
+                    console.warn("Warning: The 'server-only' module was ignored during the bundling process.");
+                    module.exports = {};
+                `,
+                    loader: 'js',
+                };
             });
         },
     });
