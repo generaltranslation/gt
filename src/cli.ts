@@ -203,7 +203,7 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
         }
     }
 
-    console.log(JSON.stringify(dictionary));
+    console.log(JSON.stringify(templateUpdates));
 
     if (templateUpdates.length) {
         console.log('Items in dictionary:', templateUpdates.length)
