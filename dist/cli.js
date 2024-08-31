@@ -55,14 +55,6 @@ const generaltranslation_1 = __importStar(require("generaltranslation"));
 const fs_1 = __importDefault(require("fs"));
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
-const ts_node_1 = require("ts-node");
-(0, ts_node_1.register)({
-    transpileOnly: true,
-    compilerOptions: {
-        module: 'es2015',
-        jsx: 'react'
-    }
-});
 function loadConfigFile(configFilePath) {
     const absoluteConfigFilePath = path_1.default.resolve(configFilePath);
     if (fs_1.default.existsSync(absoluteConfigFilePath)) {

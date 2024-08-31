@@ -10,15 +10,6 @@ import fs from 'fs';
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
 
-import { register } from 'ts-node';
-register({
-  transpileOnly: true,
-  compilerOptions: {
-    module: 'es2015',
-    jsx: 'react'
-  }
-});
-
 function loadConfigFile(configFilePath: string): object {
     const absoluteConfigFilePath = path.resolve(configFilePath);
     if (fs.existsSync(absoluteConfigFilePath)) {
