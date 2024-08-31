@@ -172,7 +172,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
         const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
         let dictionary;
         try {
-            const module = yield import(absoluteDictionaryFilePath);
+            const module = require(absoluteDictionaryFilePath);
             dictionary = module.default || module;
         }
         catch (error) {
