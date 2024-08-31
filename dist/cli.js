@@ -96,13 +96,7 @@ function applyConfigToEsbuild(config) {
         name: 'ignore-server-only',
         setup(build) {
             build.onResolve({ filter: /^server-only$/ }, (args) => {
-                return {
-                    contents: `
-                    console.warn("Warning: The 'server-only' module was ignored during the bundling process.");
-                    module.exports = {};
-                `,
-                    loader: 'js',
-                };
+                return {};
             });
         },
     });
