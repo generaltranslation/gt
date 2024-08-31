@@ -52,7 +52,7 @@ function applyConfigToEsbuild(config: any) {
 // Add the custom plugin to handle 'server-only' imports
 (esbuildOptions.plugins as any).push({
     name: 'ignore-server-only',
-    setup(build) {
+    setup(build: any) {
         build.onResolve({ filter: /^server-only$/ }, () => {
             return {
                 path: 'server-only', // This can be a virtual module name
