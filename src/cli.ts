@@ -4,7 +4,8 @@ import path from 'path';
 import React from 'react';
 import { program } from 'commander';
 import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } from 'gt-react';
-import GT = require('generaltranslation');
+import toolkit from 'generaltranslation'
+const GT = toolkit.default;
 import { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
 import fs from 'fs';
 

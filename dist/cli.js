@@ -19,13 +19,12 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
-import { createRequire as _createRequire } from "module";
-const __require = _createRequire(import.meta.url);
 import path from 'path';
 import React from 'react';
 import { program } from 'commander';
 import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } from 'gt-react';
-const GT = __require("generaltranslation");
+import toolkit from 'generaltranslation';
+const GT = toolkit.default;
 import { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
 import fs from 'fs';
 require('dotenv').config({ path: '.env' });
