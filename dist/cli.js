@@ -71,10 +71,6 @@ function loadConfigFile(configFilePath) {
         throw new Error(`Config file not found: ${absoluteConfigFilePath}`);
     }
 }
-/**
- * Apply the configuration to esbuild based on the loaded config file.
- * @param {object} config - The loaded configuration object.
- */
 function applyConfigToEsbuild(config) {
     const esbuildOptions = {
         bundle: true,
@@ -109,7 +105,37 @@ function applyConfigToEsbuild(config) {
                         for (const [aliasKey, aliasPath] of Object.entries(aliases)) {
                             if (args.path.startsWith(`${aliasKey}/`)) {
                                 const resolvedPath = path_1.default.resolve(aliasPath, args.path.slice(aliasKey.length + 1));
-                                return { path: resolvedPath };
+                                const extensions = ['.js', '.jsx', '.ts', '.tsx'];
+                                function resolveWithExtensions(basePath) {
+                                    for (const ext of extensions) {
+                                        const fullPath = `${basePath}${ext}`;
+                                        try {
+                                            const realPath = fs_1.default.realpathSync(fullPath); // Resolve symlink if necessary
+                                            console.log(`Resolved symlink for: ${fullPath} to ${realPath}`);
+                                            return realPath;
+                                        }
+                                        catch (_) {
+                                            continue;
+                                        }
+                                    }
+                                    return null;
+                                }
+                                try {
+                                    const realPath = fs_1.default.realpathSync(resolvedPath); // Try without an extension first
+                                    console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
+                                    return { path: realPath };
+                                }
+                                catch (err) {
+                                    // Check if the path has an extension
+                                    const hasExtension = extensions.some(ext => resolvedPath.endsWith(ext));
+                                    if (!hasExtension) {
+                                        const resolvedWithExt = resolveWithExtensions(resolvedPath);
+                                        if (resolvedWithExt) {
+                                            return { path: resolvedWithExt };
+                                        }
+                                    }
+                                    throw new Error(`Unable to resolve path: ${resolvedPath}`);
+                                }
                             }
                         }
                     });
@@ -255,7 +281,6 @@ commander_1.program
     ]);
     // Load and apply the configuration to esbuild
     const config = loadConfigFile(resolvedConfigFilePath);
-    console.log(config);
     const resolvedDictionaryFilePath = resolveFilePath(dictionaryFilePath, [
         './dictionary.js',
         './dictionary.jsx',
