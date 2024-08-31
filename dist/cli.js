@@ -22,9 +22,10 @@ var __rest = (this && this.__rest) || function (s, e) {
 import path from 'path';
 import React from 'react';
 import { program } from 'commander';
-import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } from 'gt-react';
-import toolkit from 'generaltranslation';
-const GT = toolkit.default;
+import gt_react from 'gt-react';
+const { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } = gt_react;
+import gt_toolkit from 'generaltranslation';
+const GT = gt_toolkit.default;
 import { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
 import fs from 'fs';
 require('dotenv').config({ path: '.env' });
