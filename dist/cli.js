@@ -70,52 +70,6 @@ function loadConfigFile(configFilePath) {
         throw new Error(`Config file not found: ${absoluteConfigFilePath}`);
     }
 }
-function resolvePathRecursively(sourcePath, currentFile, aliases) {
-    const extensions = ['.js', '.jsx', '.ts', '.tsx'];
-    function resolveWithExtensions(basePath) {
-        for (const ext of extensions) {
-            const fullPath = `${basePath}${ext}`;
-            try {
-                const realPath = fs_1.default.realpathSync(fullPath); // Resolve symlink if necessary
-                console.log(`Resolved symlink for: ${fullPath} to ${realPath}`);
-                return realPath;
-            }
-            catch (_) {
-                continue;
-            }
-        }
-        return null;
-    }
-    function applyAliasResolution(pathToResolve) {
-        for (const [aliasKey, aliasPath] of Object.entries(aliases)) {
-            if (pathToResolve.startsWith(`${aliasKey}/`)) {
-                // Replace the alias with the resolved path
-                const resolvedPath = path_1.default.resolve(aliasPath, pathToResolve.slice(aliasKey.length + 1));
-                console.log(`Resolved path using alias '${aliasKey}/' to: ${resolvedPath}`);
-                try {
-                    // Recursively resolve the new path if it matches any alias
-                    const nextResolvedPath = applyAliasResolution(resolvedPath) || resolvedPath;
-                    // Check if the path exists with or without extensions
-                    const realPath = fs_1.default.realpathSync(nextResolvedPath); // Try without an extension first
-                    console.log(`Resolved symlink for: ${nextResolvedPath} to ${realPath}`);
-                    return realPath;
-                }
-                catch (err) {
-                    const hasExtension = extensions.some(ext => resolvedPath.endsWith(ext));
-                    if (!hasExtension) {
-                        const resolvedWithExt = resolveWithExtensions(resolvedPath);
-                        if (resolvedWithExt) {
-                            return resolvedWithExt;
-                        }
-                    }
-                    throw new Error(`Unable to resolve path: ${resolvedPath}`);
-                }
-            }
-        }
-        return null; // Default resolution
-    }
-    return applyAliasResolution(sourcePath);
-}
 /**
  * Apply the configuration to Babel based on the loaded config file.
  * @param {object} config - The loaded configuration object.
@@ -149,17 +103,56 @@ function applyConfigToBabel(config) {
                     alias: aliases,
                     resolvePath(sourcePath, currentFile, opts) {
                         console.log(`Resolving path for: ${sourcePath}`);
-                        return resolvePathRecursively(sourcePath, currentFile, aliases);
+                        // Check if the sourcePath matches any of the aliases manually
+                        for (const [aliasKey, aliasPath] of Object.entries(aliases)) {
+                            if (sourcePath.startsWith(`${aliasKey}/`)) {
+                                // Replace the alias with the resolved path
+                                const resolvedPath = path_1.default.resolve(aliasPath, sourcePath.slice(aliasKey.length + 1));
+                                console.log(`Resolved path using alias '${aliasKey}/' to: ${resolvedPath}`);
+                                const extensions = ['.js', '.jsx', '.ts', '.tsx'];
+                                function resolveWithExtensions(basePath) {
+                                    for (const ext of extensions) {
+                                        const fullPath = `${basePath}${ext}`;
+                                        try {
+                                            const realPath = fs_1.default.realpathSync(fullPath); // Resolve symlink if necessary
+                                            console.log(`Resolved symlink for: ${fullPath} to ${realPath}`);
+                                            return realPath;
+                                        }
+                                        catch (_) {
+                                            continue;
+                                        }
+                                    }
+                                    return null;
+                                }
+                                try {
+                                    const realPath = fs_1.default.realpathSync(resolvedPath); // Try without an extension first
+                                    console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
+                                    return realPath;
+                                }
+                                catch (err) {
+                                    // Check if the path has an extension
+                                    const hasExtension = extensions.some(ext => resolvedPath.endsWith(ext));
+                                    if (!hasExtension) {
+                                        const resolvedWithExt = resolveWithExtensions(resolvedPath);
+                                        if (resolvedWithExt) {
+                                            return resolvedWithExt;
+                                        }
+                                    }
+                                    throw new Error(`Unable to resolve path: ${resolvedPath}`);
+                                }
+                            }
+                        }
+                        return null; // Default resolution
                     }
                 }
             ]);
-            babelConfig.plugins.push(["@babel/plugin-transform-modules-commonjs"]);
         }
-        else {
-            console.log('No compilerOptions found in the config.');
-        }
-        require('@babel/register')(babelConfig);
+        babelConfig.plugins.push(["@babel/plugin-transform-modules-commonjs"]);
     }
+    else {
+        console.log('No compilerOptions found in the config.');
+    }
+    require('@babel/register')(babelConfig);
 }
 /**
  * Process the dictionary file and send updates to General Translation services.
@@ -179,7 +172,6 @@ function processDictionaryFile(dictionaryFilePath, options) {
             process.exit(1);
         }
         dictionary = (0, gt_react_1.flattenDictionary)(dictionary);
-        console.log(dictionary.length);
         const apiKey = options.apiKey || process.env.GT_API_KEY;
         const projectID = options.projectID || process.env.GT_PROJECT_ID;
         const dictionaryName = options.dictionaryName;
