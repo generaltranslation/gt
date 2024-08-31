@@ -86,7 +86,6 @@ function applyConfigToEsbuild(config) {
         sourcemap: 'inline',
         external: ['server-only'],
         define: {
-            'React': 'require("react")',
             'process.env.NODE_ENV': '"production"',
         },
         plugins: []
@@ -189,7 +188,8 @@ function processDictionaryFile(dictionaryFilePath, options) {
         const { text } = result.outputFiles[0];
         let dictionaryModule;
         try {
-            dictionaryModule = eval(text);
+            const globalEval = (code) => (new Function('React', code))(react_1.default);
+            dictionaryModule = globalEval(text);
         }
         catch (error) {
             console.error('Failed to evaluate the bundled dictionary code:', error);
