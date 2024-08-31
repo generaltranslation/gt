@@ -10,6 +10,11 @@ import fs from 'fs';
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
 
+require('ts-node').register({
+    transpileOnly: true, // You can set this to false if you want type checking
+    extensions: ['.ts', '.tsx'],
+});
+
 function loadConfigFile(configFilePath: string): object {
     const absoluteConfigFilePath = path.resolve(configFilePath);
     if (fs.existsSync(absoluteConfigFilePath)) {
