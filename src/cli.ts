@@ -7,6 +7,7 @@ import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } from 'gt-r
 import GT, { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
 import fs from 'fs';
 import esbuild from 'esbuild';
+import os from 'os'
 
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
@@ -168,14 +169,21 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
     });
 
     // Evaluate the bundled code to get the dictionary module
-    const { text } = result.outputFiles[0];
+    // Write the bundled code to a temporary file
+    const bundledCode = result.outputFiles[0].text;
+    const tempFilePath = path.join(os.tmpdir(), 'bundled-dictionary.js');
+    fs.writeFileSync(tempFilePath, bundledCode);
+
+    // Load the module using require
     let dictionaryModule;
     try {
-        const globalEval = (code: string) => (new Function('React', code))(React);
-        dictionaryModule = globalEval(text);
+        dictionaryModule = require(tempFilePath);
     } catch (error) {
-        console.error('Failed to evaluate the bundled dictionary code:', error);
+        console.error('Failed to load the bundled dictionary code:', error);
         process.exit(1);
+    } finally {
+        // Clean up the temporary file
+        fs.unlinkSync(tempFilePath);
     }
 
     const dictionary = flattenDictionary(dictionaryModule.default || dictionaryModule);

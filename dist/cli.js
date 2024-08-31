@@ -54,6 +54,7 @@ const gt_react_1 = require("gt-react");
 const generaltranslation_1 = __importStar(require("generaltranslation"));
 const fs_1 = __importDefault(require("fs"));
 const esbuild_1 = __importDefault(require("esbuild"));
+const os_1 = __importDefault(require("os"));
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
 function loadConfigFile(configFilePath) {
@@ -185,15 +186,22 @@ function processDictionaryFile(dictionaryFilePath, options) {
         const esbuildOptions = applyConfigToEsbuild(options.config || {});
         const result = yield esbuild_1.default.build(Object.assign(Object.assign({}, esbuildOptions), { entryPoints: [absoluteDictionaryFilePath], write: false }));
         // Evaluate the bundled code to get the dictionary module
-        const { text } = result.outputFiles[0];
+        // Write the bundled code to a temporary file
+        const bundledCode = result.outputFiles[0].text;
+        const tempFilePath = path_1.default.join(os_1.default.tmpdir(), 'bundled-dictionary.js');
+        fs_1.default.writeFileSync(tempFilePath, bundledCode);
+        // Load the module using require
         let dictionaryModule;
         try {
-            const globalEval = (code) => (new Function('React', code))(react_1.default);
-            dictionaryModule = globalEval(text);
+            dictionaryModule = require(tempFilePath);
         }
         catch (error) {
-            console.error('Failed to evaluate the bundled dictionary code:', error);
+            console.error('Failed to load the bundled dictionary code:', error);
             process.exit(1);
+        }
+        finally {
+            // Clean up the temporary file
+            fs_1.default.unlinkSync(tempFilePath);
         }
         const dictionary = (0, gt_react_1.flattenDictionary)(dictionaryModule.default || dictionaryModule);
         const apiKey = options.apiKey || process.env.GT_API_KEY;
