@@ -4,7 +4,8 @@ import path from 'path';
 import React from 'react';
 import { program } from 'commander';
 import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } from 'gt-react';
-import GT, { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
+import GT = require('generaltranslation');
+import { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
 import fs from 'fs';
 
 require('dotenv').config({ path: '.env' });
@@ -31,9 +32,7 @@ function loadConfigFile(configFilePath: string): object {
 function applyConfigToBabel(config: any) {
     const babelConfig: Record<string, any> = {
         presets: [
-            ["@babel/preset-env", {
-                "modules": false  // This will keep ES module syntax intact
-              }],
+            ["@babel/preset-env"],
             '@babel/preset-react',
             '@babel/preset-typescript'
         ],
@@ -220,7 +219,7 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
             if (resultLanguages) {
                 console.log(
                     `Remote dictionary updated: ${resultLanguages.length ? true : false}.`,
-                    (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${getLanguageName(language)}"`).join(', ')}]` + '.' : 'None.'}`),
+                    (`Languages: ${resultLanguages.length ? `[${resultLanguages.map((language: string) => `"${getLanguageName(language)}"`).join(', ')}]` + '.' : 'None.'}`),
                     resultLanguages.length ? 'Translations are usually live within a minute.' : '',
                 );
             } else {
