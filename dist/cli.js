@@ -83,8 +83,22 @@ function applyConfigToEsbuild(config) {
             '.ts': 'ts',
             '.tsx': 'tsx',
         },
-        sourcemap: 'inline'
+        sourcemap: 'inline',
+        external: ['server-only'],
+        define: {
+            'process.env.NODE_ENV': '"production"',
+        },
+        plugins: []
     };
+    // Add the custom plugin to handle 'server-only' imports
+    esbuildOptions.plugins.push({
+        name: 'ignore-server-only',
+        setup(build) {
+            build.onResolve({ filter: /^server-only$/ }, args => {
+                return { path: require.resolve('./empty-module.js') };
+            });
+        },
+    });
     if (config.compilerOptions) {
         console.log('Compiler options found in config:', config.compilerOptions);
         if (config.compilerOptions.paths) {
@@ -98,14 +112,6 @@ function applyConfigToEsbuild(config) {
                 }
             }
             esbuildOptions.plugins = esbuildOptions.plugins || [];
-            esbuildOptions.plugins.push({
-                name: 'filter-server-only',
-                setup(build) {
-                    build.onResolve({ filter: /^server-only$/ }, () => {
-                        return { path: 'server-only', external: true };
-                    });
-                },
-            });
             esbuildOptions.plugins.push({
                 name: 'alias',
                 setup(build) {
