@@ -31,8 +31,10 @@ function loadConfigFile(configFilePath: string): object {
 function applyConfigToBabel(config: any) {
     const babelConfig: Record<string, any> = {
         presets: [
-            ['@babel/preset-react', { runtime: 'automatic' }],
-            '@babel/preset-env',
+            ["@babel/preset-env", {
+                "modules": false  // This will keep ES module syntax intact
+              }],
+            '@babel/preset-react',
             '@babel/preset-typescript'
         ],
         plugins: [
