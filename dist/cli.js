@@ -229,6 +229,7 @@ function processDictionaryFile(dictionaryFilePath, options) {
                 });
             }
         }
+        console.log(JSON.stringify(dictionary));
         if (templateUpdates.length) {
             console.log('Items in dictionary:', templateUpdates.length);
             const gt = new generaltranslation_1.default({ apiKey, projectID });

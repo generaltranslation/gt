@@ -203,6 +203,8 @@ async function processDictionaryFile(dictionaryFilePath: string, options: {
         }
     }
 
+    console.log(JSON.stringify(dictionary));
+
     if (templateUpdates.length) {
         console.log('Items in dictionary:', templateUpdates.length)
         const gt = new GT({ apiKey, projectID });
