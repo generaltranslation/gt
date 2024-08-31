@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-require = require('esm')(module /*, options */);
-
 import path from 'path';
 import React from 'react';
 import { program } from 'commander';

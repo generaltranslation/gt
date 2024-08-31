@@ -47,7 +47,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-require = require('esm')(module /*, options */);
 const path_1 = __importDefault(require("path"));
 const react_1 = __importDefault(require("react"));
 const commander_1 = require("commander");
