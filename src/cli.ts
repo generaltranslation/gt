@@ -29,7 +29,10 @@ function loadConfigFile(configFilePath: string): object {
 function applyConfigToBabel(config: any) {
     const babelConfig: Record<string, any> = {
         presets: [
-            ["@babel/preset-env", { modules: 'commonjs' }],
+            ["@babel/preset-env", { 
+                modules: 'commonjs',
+                targets: { node: 'current' }
+            }],
             '@babel/preset-react',
             '@babel/preset-typescript'
         ],

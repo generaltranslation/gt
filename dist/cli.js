@@ -52,7 +52,10 @@ function loadConfigFile(configFilePath) {
 function applyConfigToBabel(config) {
     const babelConfig = {
         presets: [
-            ["@babel/preset-env", { modules: 'commonjs' }],
+            ["@babel/preset-env", {
+                    modules: 'commonjs',
+                    targets: { node: 'current' }
+                }],
             '@babel/preset-react',
             '@babel/preset-typescript'
         ],
