@@ -54,6 +54,8 @@ const gt_react_1 = require("gt-react");
 const generaltranslation_1 = __importStar(require("generaltranslation"));
 const fs_1 = __importDefault(require("fs"));
 const esbuild_1 = __importDefault(require("esbuild"));
+const mock_require_1 = __importDefault(require("mock-require"));
+(0, mock_require_1.default)('server-only', {});
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
 function loadConfigFile(configFilePath) {
