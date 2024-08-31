@@ -124,7 +124,7 @@ function applyConfigToBabel(config: any) {
  * @param {string} dictionaryFilePath - The path to the dictionary file.
  * @param {object} options - The options for processing the dictionary file.
  */
-function processDictionaryFile(dictionaryFilePath: string, options: {
+async function processDictionaryFile(dictionaryFilePath: string, options: {
     apiKey?: string,
     projectID?: string,
     dictionaryName?: string,
@@ -136,7 +136,7 @@ function processDictionaryFile(dictionaryFilePath: string, options: {
 
     let dictionary;
     try {
-        dictionary = require(absoluteDictionaryFilePath).default || require(absoluteDictionaryFilePath);
+        dictionary = await import(absoluteDictionaryFilePath).then(module => module.default || module);
     } catch (error) {
         console.error('Failed to load the dictionary file:', error);
         process.exit(1);
