@@ -8,8 +8,8 @@ import path from 'path';
  */
 export function extractI18nConfig(filePath: string): {
     projectID?: string,
-    defaultLocale?: string,
-    approvedLocales?: string[],
+    defaultLanguage?: string,
+    languages?: string[],
     dictionaryName?: string
 } {
     // Resolve the absolute path
@@ -51,10 +51,10 @@ export function extractI18nConfig(filePath: string): {
     // Return the extracted values if they pass type checks or return null
     if (defaultLocale || dictionaryName || projectID || validApprovedLocales) {
         return {
-            ...(defaultLocale && { defaultLocale }),
+            ...(defaultLocale && { defaultLanguage: defaultLocale }),
             ...(dictionaryName && { dictionaryName }),
             ...(projectID && { projectID }),
-            ...(validApprovedLocales && { approvedLocales: validApprovedLocales })
+            ...(validApprovedLocales && { languages: validApprovedLocales })
         };
     } else {
         return {};

@@ -5,7 +5,7 @@
  */
 export declare function extractI18nConfig(filePath: string): {
     projectID?: string;
-    defaultLocale?: string;
-    approvedLocales?: string[];
+    defaultLanguage?: string;
+    languages?: string[];
     dictionaryName?: string;
 };

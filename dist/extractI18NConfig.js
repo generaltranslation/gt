@@ -43,7 +43,7 @@ function extractI18nConfig(filePath) {
     const validApprovedLocales = approvedLocales && approvedLocales.every(locale => typeof locale === 'string') ? approvedLocales : undefined;
     // Return the extracted values if they pass type checks or return null
     if (defaultLocale || dictionaryName || projectID || validApprovedLocales) {
-        return Object.assign(Object.assign(Object.assign(Object.assign({}, (defaultLocale && { defaultLocale })), (dictionaryName && { dictionaryName })), (projectID && { projectID })), (validApprovedLocales && { approvedLocales: validApprovedLocales }));
+        return Object.assign(Object.assign(Object.assign(Object.assign({}, (defaultLocale && { defaultLanguage: defaultLocale })), (dictionaryName && { dictionaryName })), (projectID && { projectID })), (validApprovedLocales && { languages: validApprovedLocales }));
     }
     else {
         return {};
