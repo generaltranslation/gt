@@ -55,6 +55,7 @@ const generaltranslation_1 = __importStar(require("generaltranslation"));
 const fs_1 = __importDefault(require("fs"));
 const esbuild_1 = __importDefault(require("esbuild"));
 const os_1 = __importDefault(require("os"));
+const extractI18NConfig_1 = require("./extractI18NConfig");
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
 function loadConfigFile(configFilePath) {
@@ -179,7 +180,7 @@ function applyConfigToEsbuild(config) {
  * @param {string} dictionaryFilePath - The path to the dictionary file.
  * @param {object} options - The options for processing the dictionary file.
  */
-function processDictionaryFile(dictionaryFilePath, options) {
+function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
         // Bundle and transpile the dictionary file using esbuild
@@ -205,6 +206,10 @@ function processDictionaryFile(dictionaryFilePath, options) {
             fs_1.default.unlinkSync(tempFilePath);
         }
         const dictionary = (0, gt_react_1.flattenDictionary)(dictionaryModule.default || dictionaryModule);
+        // READ i18n.js, and extract the JSON object within the first call to createGT()
+        // e.g. createGT({ defaultLocale: 'en-US' }) would return { "defaultLocale": "en-US" }
+        const i18nConfig = (0, extractI18NConfig_1.extractI18nConfig)(i18nFilePath);
+        options = Object.assign(Object.assign({}, i18nConfig), options);
         const apiKey = options.apiKey || process.env.GT_API_KEY;
         const projectID = options.projectID || process.env.GT_PROJECT_ID;
         const dictionaryName = options.dictionaryName;
@@ -297,7 +302,7 @@ function resolveFilePath(filePath, defaultPaths) {
     throw new Error('File not found in default locations.');
 }
 commander_1.program
-    .name('update')
+    .name('i18n')
     .description('Process React dictionary files and send translations to General Translation services')
     .version('1.0.0')
     .argument('[dictionaryFilePath]', 'Path to the dictionary file')
@@ -308,6 +313,7 @@ commander_1.program
     .option('--override', 'Override existing translations')
     .option('--defaultLanguage <defaultLanguage>', 'Specify a default language code or name for metadata purposes')
     .option('--config <configFilePath>', 'Specify a path to a tsconfig.json or jsconfig.json file')
+    .option('--i18n <i18nFilePath>', 'Specify a path to an i18n.js configuration file. Used to automatically set projectID, defaultLanguage (from defaultLocale), languages (from approvedLocales), and dictionaryName', '')
     .action((dictionaryFilePath, options) => {
     // Resolve the config file path or check default locations
     const resolvedConfigFilePath = resolveFilePath(options.config || '', [
@@ -326,6 +332,16 @@ commander_1.program
         './src/dictionary.ts',
         './src/dictionary.tsx'
     ]);
-    processDictionaryFile(resolvedDictionaryFilePath, Object.assign(Object.assign({}, options), { config }));
+    const resolvedI18NFilePath = resolveFilePath(options.i18n || '', [
+        './i18n.js',
+        './i18n.jsx',
+        './i18n.ts',
+        './i18n.tsx',
+        './src/i18n.js',
+        './src/i18n.jsx',
+        './src/i18n.ts',
+        './src/i18n.tsx'
+    ]);
+    processDictionaryFile(resolvedDictionaryFilePath, resolvedI18NFilePath, Object.assign(Object.assign({}, options), { config }));
 });
 commander_1.program.parse();
