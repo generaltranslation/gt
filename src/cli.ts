@@ -73,12 +73,12 @@ function applyConfigToEsbuild(config: any) {
 
 
     if (config.compilerOptions) {
-        console.log('Compiler options found in config:', config.compilerOptions);
+        // console.log('Compiler options found in config:', config.compilerOptions);
 
         if (config.compilerOptions.paths) {
             const aliases: any = {};
 
-            console.log('Found path aliases:', config.compilerOptions.paths);
+            // console.log('Found path aliases:', config.compilerOptions.paths);
 
             for (const [key, value] of Object.entries(config.compilerOptions.paths)) {
                 if (Array.isArray(value) && typeof value[0] === 'string') {
@@ -105,7 +105,7 @@ function applyConfigToEsbuild(config: any) {
                                         const fullPath = `${basePath}${ext}`;
                                         try {
                                             const realPath = fs.realpathSync(fullPath); // Resolve symlink if necessary
-                                            console.log(`Resolved symlink for: ${fullPath} to ${realPath}`);
+                                            // console.log(`Resolved symlink for: ${fullPath} to ${realPath}`);
                                             return realPath;
                                         } catch (_) {
                                             continue;
@@ -116,7 +116,7 @@ function applyConfigToEsbuild(config: any) {
 
                                 try {
                                     const realPath = fs.realpathSync(resolvedPath); // Try without an extension first
-                                    console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
+                                    // console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
                                     return { path: realPath };
                                 } catch (err) {
                                     // Check if the path has an extension

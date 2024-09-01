@@ -113,10 +113,10 @@ function applyConfigToEsbuild(config) {
         },
     });
     if (config.compilerOptions) {
-        console.log('Compiler options found in config:', config.compilerOptions);
+        // console.log('Compiler options found in config:', config.compilerOptions);
         if (config.compilerOptions.paths) {
             const aliases = {};
-            console.log('Found path aliases:', config.compilerOptions.paths);
+            // console.log('Found path aliases:', config.compilerOptions.paths);
             for (const [key, value] of Object.entries(config.compilerOptions.paths)) {
                 if (Array.isArray(value) && typeof value[0] === 'string') {
                     const resolvedPath = path_1.default.resolve(process.cwd(), value[0].replace('/*', ''));
@@ -138,7 +138,7 @@ function applyConfigToEsbuild(config) {
                                         const fullPath = `${basePath}${ext}`;
                                         try {
                                             const realPath = fs_1.default.realpathSync(fullPath); // Resolve symlink if necessary
-                                            console.log(`Resolved symlink for: ${fullPath} to ${realPath}`);
+                                            // console.log(`Resolved symlink for: ${fullPath} to ${realPath}`);
                                             return realPath;
                                         }
                                         catch (_) {
@@ -149,7 +149,7 @@ function applyConfigToEsbuild(config) {
                                 }
                                 try {
                                     const realPath = fs_1.default.realpathSync(resolvedPath); // Try without an extension first
-                                    console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
+                                    // console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
                                     return { path: realPath };
                                 }
                                 catch (err) {
