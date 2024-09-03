@@ -244,7 +244,7 @@ async function processDictionaryFile(dictionaryFilePath: string, i18nFilePath:st
             };
             const entryAsObjects = writeChildrenAsObjects(addGTIdentifier(wrappedEntry)); // simulate gt-react's t() function
             const hash = await calculateHash(tMetadata.context ? [entryAsObjects, tMetadata.context] : entryAsObjects);
-            console.log(id, '=>', JSON.stringify(entryAsObjects), '=>', hash)
+            console.log(id, '=>', hash)
             tMetadata.hash = hash;
             templateUpdates.push({
                 type: "react",
