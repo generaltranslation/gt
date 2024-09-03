@@ -273,7 +273,7 @@ async function processDictionaryFile(dictionaryFilePath: string, i18nFilePath:st
             const resultLanguages = await gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
             if (resultLanguages) {
                 console.log(
-                    `Remote dictionary updated: ${resultLanguages.length ? true : false}.`,
+                    `Remote dictionary "${dictionaryName}" updated: ${resultLanguages.length ? true : false}.`,
                     (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${getLanguageName(language)}"`).join(', ')}]` + '.' : 'None.'}`),
                     resultLanguages.length ? 'Translations are usually live within a minute. Check status: www.generaltranslation.com/dashboard.' : '',
                 );
