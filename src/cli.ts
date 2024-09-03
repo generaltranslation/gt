@@ -196,9 +196,11 @@ async function processDictionaryFile(dictionaryFilePath: string, i18nFilePath:st
     // READ i18n.js, and extract the JSON object within the first call to createGT()
     // e.g. createGT({ defaultLocale: 'en-US' }) would return { "defaultLocale": "en-US" }
 
-    const i18nConfig = extractI18nConfig(i18nFilePath);
-    options = { ...i18nConfig, ...options };
-
+    if (i18nFilePath) {
+        const i18nConfig = extractI18nConfig(i18nFilePath);
+        options = { ...i18nConfig, ...options };
+    }
+    
     const apiKey = options.apiKey || process.env.GT_API_KEY;
     const projectID = options.projectID || process.env.GT_PROJECT_ID;
     const dictionaryName = options.dictionaryName;
@@ -291,7 +293,7 @@ async function processDictionaryFile(dictionaryFilePath: string, i18nFilePath:st
  * @param {string[]} defaultPaths - The default paths to check.
  * @returns {string} - The resolved file path.
  */
-function resolveFilePath(filePath: string, defaultPaths: string[]): string {
+function resolveFilePath(filePath: string, defaultPaths: string[], throwError: boolean = false): string {
     if (filePath) {
         return filePath;
     }
@@ -302,7 +304,11 @@ function resolveFilePath(filePath: string, defaultPaths: string[]): string {
         }
     }
 
-    throw new Error('File not found in default locations.');
+    if (throwError) {
+        throw new Error('File not found in default locations.');
+    }
+
+    return '';
 }
 
 program
@@ -348,7 +354,7 @@ program
             './src/dictionary.jsx',
             './src/dictionary.ts',
             './src/dictionary.tsx'
-        ]);
+        ], true);
 
         const resolvedI18NFilePath = resolveFilePath(options.i18n || '', [
             './i18n.js',
