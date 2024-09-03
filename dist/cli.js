@@ -253,7 +253,7 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
                 }
                 ;
                 const entryAsObjects = (0, gt_react_1.writeChildrenAsObjects)((0, gt_react_1.addGTIdentifier)(wrappedEntry)); // simulate gt-react's t() function
-                console.log(id, '=>', JSON.stringify(entryAsObjects));
+                console.log(id, '=>', JSON.stringify(entryAsObjects), '=>', yield (0, gt_react_1.calculateHash)(tMetadata.context ? entryAsObjects : [entryAsObjects, tMetadata.context]));
                 templateUpdates.push({
                     type: "react",
                     data: {
