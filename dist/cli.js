@@ -253,7 +253,9 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
                 }
                 ;
                 const entryAsObjects = (0, gt_react_1.writeChildrenAsObjects)((0, gt_react_1.addGTIdentifier)(wrappedEntry)); // simulate gt-react's t() function
-                console.log(id, '=>', JSON.stringify(entryAsObjects), '=>', yield (0, gt_react_1.calculateHash)(tMetadata.context ? entryAsObjects : [entryAsObjects, tMetadata.context]));
+                const hash = yield (0, gt_react_1.calculateHash)(tMetadata.context ? [entryAsObjects, tMetadata.context] : entryAsObjects);
+                console.log(id, '=>', JSON.stringify(entryAsObjects), '=>', hash);
+                tMetadata.hash = hash;
                 templateUpdates.push({
                     type: "react",
                     data: {
@@ -278,7 +280,7 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
             const sendUpdates = () => __awaiter(this, void 0, void 0, function* () {
                 const resultLanguages = yield gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
                 if (resultLanguages) {
-                    console.log(`Remote dictionary updated: ${resultLanguages.length ? true : false}.`, (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${(0, generaltranslation_1.getLanguageName)(language)}"`).join(', ')}]` + '.' : 'None.'}`), resultLanguages.length ? 'Translations are usually live within a minute.' : '');
+                    console.log(`Remote dictionary updated: ${resultLanguages.length ? true : false}.`, (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${(0, generaltranslation_1.getLanguageName)(language)}"`).join(', ')}]` + '.' : 'None.'}`), resultLanguages.length ? 'Translations are usually live within a minute. Check status: www.generaltranslation.com/dashboard.' : '');
                 }
                 else {
                     throw new Error('500: Internal Server Error.');

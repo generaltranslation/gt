@@ -243,7 +243,9 @@ async function processDictionaryFile(dictionaryFilePath: string, i18nFilePath:st
                 wrappedEntry = React.createElement(React.Fragment, null, entry);
             };
             const entryAsObjects = writeChildrenAsObjects(addGTIdentifier(wrappedEntry)); // simulate gt-react's t() function
-            console.log(id, '=>', JSON.stringify(entryAsObjects), '=>', await calculateHash(tMetadata.context ? entryAsObjects : [entryAsObjects, tMetadata.context]))
+            const hash = await calculateHash(tMetadata.context ? [entryAsObjects, tMetadata.context] : entryAsObjects);
+            console.log(id, '=>', JSON.stringify(entryAsObjects), '=>', hash)
+            tMetadata.hash = hash;
             templateUpdates.push({
                 type: "react",
                 data: {
@@ -271,7 +273,7 @@ async function processDictionaryFile(dictionaryFilePath: string, i18nFilePath:st
                 console.log(
                     `Remote dictionary updated: ${resultLanguages.length ? true : false}.`,
                     (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${getLanguageName(language)}"`).join(', ')}]` + '.' : 'None.'}`),
-                    resultLanguages.length ? 'Translations are usually live within a minute.' : '',
+                    resultLanguages.length ? 'Translations are usually live within a minute. Check status: www.generaltranslation.com/dashboard.' : '',
                 );
             } else {
                 throw new Error('500: Internal Server Error.');
