@@ -218,15 +218,19 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
             .map(language => (0, generaltranslation_1.isValidLanguageCode)(language) ? language : (0, generaltranslation_1.getLanguageCode)(language))
             .filter(language => language ? true : false);
         const override = options.override ? true : false;
+        const description = options.description;
         if (!(apiKey && projectID)) {
             throw new Error('GT_API_KEY and GT_PROJECT_ID environment variables or provided arguments are required.');
         }
         let templateUpdates = [];
-        for (const key in dictionary) {
-            let entry = dictionary[key];
-            let metadata = { id: key, dictionaryName };
+        for (const id in dictionary) {
+            let entry = dictionary[id];
+            let metadata = { id, dictionaryName };
             if (defaultLanguage) {
                 metadata.defaultLanguage = defaultLanguage;
+            }
+            if (description) {
+                metadata.description = description;
             }
             let props = {};
             if (Array.isArray(entry)) {
@@ -249,6 +253,7 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
                 }
                 ;
                 const entryAsObjects = (0, gt_react_1.writeChildrenAsObjects)((0, gt_react_1.addGTIdentifier)(wrappedEntry)); // simulate gt-react's t() function
+                console.log(id, '=>', JSON.stringify(entryAsObjects));
                 templateUpdates.push({
                     type: "react",
                     data: {
@@ -314,6 +319,7 @@ commander_1.program
     .option('--defaultLanguage <defaultLanguage>', 'Specify a default language code or name for metadata purposes')
     .option('--config <configFilePath>', 'Specify a path to a tsconfig.json or jsconfig.json file')
     .option('--i18n <i18nFilePath>', 'Specify a path to an i18n.js configuration file. Used to automatically set projectID, defaultLanguage (from defaultLocale), languages (from approvedLocales), and dictionaryName', '')
+    .option('--description <description>', 'Describe your project. Used to assist translation.', '')
     .action((dictionaryFilePath, options) => {
     // Resolve the config file path or check default locations
     const resolvedConfigFilePath = resolveFilePath(options.config || '', [

@@ -3,7 +3,7 @@
 import path from 'path';
 import React from 'react';
 import { program } from 'commander';
-import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier } from 'gt-react';
+import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier, calculateHash } from 'gt-react';
 import GT, { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
 import fs from 'fs';
 import esbuild from 'esbuild';
@@ -158,6 +158,7 @@ async function processDictionaryFile(dictionaryFilePath: string, i18nFilePath:st
     languages?: string[],
     override?: boolean,
     config?: any 
+    description?: string;
 }) {
 
     const absoluteDictionaryFilePath = path.resolve(dictionaryFilePath);
@@ -206,16 +207,20 @@ async function processDictionaryFile(dictionaryFilePath: string, i18nFilePath:st
         .map(language => isValidLanguageCode(language) ? language : getLanguageCode(language))
         .filter(language => language ? true : false);
     const override = options.override ? true : false;
+    const description = options.description;
     if (!(apiKey && projectID)) {
         throw new Error('GT_API_KEY and GT_PROJECT_ID environment variables or provided arguments are required.');
     }
 
     let templateUpdates: any = [];
-    for (const key in dictionary) {
-        let entry = dictionary[key];
-        let metadata: { id: string, dictionaryName?: string, defaultLanguage?: string } = { id: key, dictionaryName };
+    for (const id in dictionary) {
+        let entry = dictionary[id];
+        let metadata: Record<string, any> = { id, dictionaryName };
         if (defaultLanguage) {
             metadata.defaultLanguage = defaultLanguage;
+        }
+        if (description) {
+            metadata.description = description;
         }
         let props: { [key: string]: any } = {};
         if (Array.isArray(entry)) {
@@ -238,6 +243,7 @@ async function processDictionaryFile(dictionaryFilePath: string, i18nFilePath:st
                 wrappedEntry = React.createElement(React.Fragment, null, entry);
             };
             const entryAsObjects = writeChildrenAsObjects(addGTIdentifier(wrappedEntry)); // simulate gt-react's t() function
+            console.log(id, '=>', JSON.stringify(entryAsObjects))
             templateUpdates.push({
                 type: "react",
                 data: {
@@ -310,6 +316,7 @@ program
     .option('--defaultLanguage <defaultLanguage>', 'Specify a default language code or name for metadata purposes')
     .option('--config <configFilePath>', 'Specify a path to a tsconfig.json or jsconfig.json file')
     .option('--i18n <i18nFilePath>', 'Specify a path to an i18n.js configuration file. Used to automatically set projectID, defaultLanguage (from defaultLocale), languages (from approvedLocales), and dictionaryName', '')
+    .option('--description <description>', 'Describe your project. Used to assist translation.', '')
     .action((dictionaryFilePath: string, options: {
         apiKey?: string,
         projectID?: string,
@@ -319,6 +326,7 @@ program
         override?: boolean,
         config?: string
         i18n?: string;
+        description?: string;
     }) => {
         // Resolve the config file path or check default locations
         const resolvedConfigFilePath = resolveFilePath(options.config || '', [
