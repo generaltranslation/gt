@@ -280,7 +280,7 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
             console.log('Items in dictionary:', templateUpdates.length);
             const gt = new generaltranslation_1.default({ apiKey, projectID });
             const sendUpdates = () => __awaiter(this, void 0, void 0, function* () {
-                const resultLanguages = yield gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
+                const resultLanguages = yield gt.updateProjectDictionary(templateUpdates, languages, projectID, override);
                 if (resultLanguages) {
                     console.log(`Remote dictionary "${dictionaryName}" updated: ${resultLanguages.length ? true : false}.`, (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${(0, generaltranslation_1.getLanguageName)(language)}"`).join(', ')}]` + '.' : 'None.'}`), resultLanguages.length ? 'Translations are usually live within a minute. Check status: www.generaltranslation.com/dashboard.' : '');
                 }

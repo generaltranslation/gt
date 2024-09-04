@@ -270,7 +270,7 @@ async function processDictionaryFile(dictionaryFilePath: string, i18nFilePath:st
         console.log('Items in dictionary:', templateUpdates.length)
         const gt = new GT({ apiKey, projectID });
         const sendUpdates = async () => {
-            const resultLanguages = await gt.updateRemoteDictionary(templateUpdates, languages, projectID, override);
+            const resultLanguages = await gt.updateProjectDictionary(templateUpdates, languages, projectID, override);
             if (resultLanguages) {
                 console.log(
                     `Remote dictionary "${dictionaryName}" updated: ${resultLanguages.length ? true : false}.`,
