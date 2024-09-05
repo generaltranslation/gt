@@ -231,6 +231,9 @@ async function processDictionaryFile(dictionaryFilePath: string, i18nFilePath:st
             }
             entry = entry[0];
         }
+        if (typeof entry === 'function') {
+            entry = entry({})
+        }
         if (React.isValidElement(entry)) {
             let wrappedEntry;
             const { singular, plural, dual, zero, one, two, few, many, other, ranges, ...tMetadata } = props;

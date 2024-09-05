@@ -241,6 +241,9 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
                 }
                 entry = entry[0];
             }
+            if (typeof entry === 'function') {
+                entry = entry({});
+            }
             if (react_1.default.isValidElement(entry)) {
                 let wrappedEntry;
                 const { singular, plural, dual, zero, one, two, few, many, other, ranges } = props, tMetadata = __rest(props, ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other", "ranges"]);
