@@ -257,7 +257,7 @@ async function processDictionaryFile(dictionaryFilePath: string, i18nFilePath:st
             });
         } else if (typeof entry === 'string') {
             templateUpdates.push({
-                type: "intl",
+                type: "string",
                 data: {
                     content: entry,
                     metadata: { ...metadata, ...props }

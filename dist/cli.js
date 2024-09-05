@@ -268,7 +268,7 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
             }
             else if (typeof entry === 'string') {
                 templateUpdates.push({
-                    type: "intl",
+                    type: "string",
                     data: {
                         content: entry,
                         metadata: Object.assign(Object.assign({}, metadata), props)
