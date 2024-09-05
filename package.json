@@ -20,7 +20,7 @@
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
     "esm": "^3.2.25",
-    "generaltranslation": "^2.0.53",
+    "generaltranslation": "latest",
     "gt-react": "latest",
     "mock-require": "^3.0.3",
     "react": "^18.3.1",
