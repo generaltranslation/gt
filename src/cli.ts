@@ -27,8 +27,6 @@ function loadConfigFile(configFilePath: string): object {
     }
 }
 
-
-
 function applyConfigToEsbuild(config: any) {
     const esbuildOptions: esbuild.BuildOptions = {
         bundle: true,
