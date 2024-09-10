@@ -56,137 +56,23 @@ const fs_1 = __importDefault(require("fs"));
 const esbuild_1 = __importDefault(require("esbuild"));
 const os_1 = __importDefault(require("os"));
 const extractI18NConfig_1 = require("./extractI18NConfig");
+const resolveFilePath_1 = __importDefault(require("./resolveFilePath"));
+const applyConfigToESBuild_1 = __importDefault(require("./applyConfigToESBuild"));
+const loadConfigFile_1 = __importDefault(require("./loadConfigFile"));
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
-function loadConfigFile(configFilePath) {
-    const absoluteConfigFilePath = path_1.default.resolve(configFilePath);
-    if (fs_1.default.existsSync(absoluteConfigFilePath)) {
-        try {
-            return require(absoluteConfigFilePath);
-        }
-        catch (error) {
-            console.error('Failed to load the config file:', error);
-            process.exit(1);
-        }
-    }
-    else {
-        throw new Error(`Config file not found: ${absoluteConfigFilePath}`);
-    }
-}
-function applyConfigToEsbuild(config) {
-    const esbuildOptions = {
-        bundle: true,
-        format: 'cjs',
-        platform: 'node',
-        target: 'es2021',
-        loader: {
-            '.js': 'jsx',
-            '.jsx': 'jsx',
-            '.ts': 'ts',
-            '.tsx': 'tsx',
-        },
-        sourcemap: 'inline',
-        external: ['server-only'],
-        define: {
-            'React': 'global.React'
-        },
-        plugins: []
-    };
-    // Add the custom plugin to handle 'server-only' imports
-    // Add the custom plugin to handle 'server-only' imports
-    // Add the custom plugin to handle 'server-only' imports
-    esbuildOptions.plugins.push({
-        name: 'ignore-server-only',
-        setup(build) {
-            build.onResolve({ filter: /^server-only$/ }, () => {
-                return {
-                    path: 'server-only', // This can be a virtual module name
-                    namespace: 'ignore-server-only',
-                };
-            });
-            build.onLoad({ filter: /^server-only$/, namespace: 'ignore-server-only' }, () => {
-                return {
-                    contents: 'module.exports = {};', // Stubbing out the content
-                    loader: 'js',
-                };
-            });
-        },
-    });
-    if (config.compilerOptions) {
-        // console.log('Compiler options found in config:', config.compilerOptions);
-        if (config.compilerOptions.paths) {
-            const aliases = {};
-            // console.log('Found path aliases:', config.compilerOptions.paths);
-            for (const [key, value] of Object.entries(config.compilerOptions.paths)) {
-                if (Array.isArray(value) && typeof value[0] === 'string') {
-                    const resolvedPath = path_1.default.resolve(process.cwd(), value[0].replace('/*', ''));
-                    aliases[key.replace('/*', '')] = resolvedPath;
-                    console.log(`Resolved alias '${key}' to '${resolvedPath}'`);
-                }
-            }
-            esbuildOptions.plugins = esbuildOptions.plugins || [];
-            esbuildOptions.plugins.push({
-                name: 'alias',
-                setup(build) {
-                    build.onResolve({ filter: /.*/ }, args => {
-                        for (const [aliasKey, aliasPath] of Object.entries(aliases)) {
-                            if (args.path.startsWith(`${aliasKey}/`)) {
-                                const resolvedPath = path_1.default.resolve(aliasPath, args.path.slice(aliasKey.length + 1));
-                                const extensions = ['.js', '.jsx', '.ts', '.tsx'];
-                                function resolveWithExtensions(basePath) {
-                                    for (const ext of extensions) {
-                                        const fullPath = `${basePath}${ext}`;
-                                        try {
-                                            const realPath = fs_1.default.realpathSync(fullPath); // Resolve symlink if necessary
-                                            // console.log(`Resolved symlink for: ${fullPath} to ${realPath}`);
-                                            return realPath;
-                                        }
-                                        catch (_) {
-                                            continue;
-                                        }
-                                    }
-                                    return null;
-                                }
-                                try {
-                                    const realPath = fs_1.default.realpathSync(resolvedPath); // Try without an extension first
-                                    // console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
-                                    return { path: realPath };
-                                }
-                                catch (err) {
-                                    // Check if the path has an extension
-                                    const hasExtension = extensions.some(ext => resolvedPath.endsWith(ext));
-                                    if (!hasExtension) {
-                                        const resolvedWithExt = resolveWithExtensions(resolvedPath);
-                                        if (resolvedWithExt) {
-                                            return { path: resolvedWithExt };
-                                        }
-                                    }
-                                    throw new Error(`Unable to resolve path: ${resolvedPath}`);
-                                }
-                            }
-                        }
-                    });
-                },
-            });
-        }
-    }
-    else {
-        console.log('No compilerOptions found in the config.');
-    }
-    return esbuildOptions;
-}
 /**
- * Process the dictionary file and send updates to General Translation services.
+ * Process the config options for the dictionary and i18n files.
  * @param {string} dictionaryFilePath - The path to the dictionary file.
+ * @param {string} i18nFilePath - The path to the i18n configuration file.
  * @param {object} options - The options for processing the dictionary file.
  */
-function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
+function processConfigOptions(dictionaryFilePath, i18nFilePath, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const absoluteDictionaryFilePath = path_1.default.resolve(dictionaryFilePath);
         // Bundle and transpile the dictionary file using esbuild
-        const esbuildOptions = applyConfigToEsbuild(options.config || {});
+        const esbuildOptions = (0, applyConfigToESBuild_1.default)(options.config || {});
         const result = yield esbuild_1.default.build(Object.assign(Object.assign({}, esbuildOptions), { entryPoints: [absoluteDictionaryFilePath], write: false }));
-        // Evaluate the bundled code to get the dictionary module
         // Write the bundled code to a temporary file
         const bundledCode = result.outputFiles[0].text;
         const tempFilePath = path_1.default.join(os_1.default.tmpdir(), 'bundled-dictionary.js');
@@ -206,12 +92,20 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
             fs_1.default.unlinkSync(tempFilePath);
         }
         const dictionary = (0, internal_1.flattenDictionary)(dictionaryModule.default || dictionaryModule);
-        // READ i18n.js, and extract the JSON object within the first call to createGT()
-        // e.g. createGT({ defaultLocale: 'en-US' }) would return { "defaultLocale": "en-US" }
         if (i18nFilePath) {
             const i18nConfig = (0, extractI18NConfig_1.extractI18nConfig)(i18nFilePath);
             options = Object.assign(Object.assign({}, i18nConfig), options);
         }
+        return { dictionary, options };
+    });
+}
+/**
+ * Construct template updates and send them to the General Translation service.
+ * @param {object} dictionary - The processed dictionary object.
+ * @param {object} options - The options for processing the dictionary file.
+ */
+function constructAndSendUpdates(dictionary, options) {
+    return __awaiter(this, void 0, void 0, function* () {
         const apiKey = options.apiKey || process.env.GT_API_KEY;
         const projectID = options.projectID || process.env.GT_PROJECT_ID;
         const dictionaryName = options.dictionaryName;
@@ -256,10 +150,8 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
                 else {
                     wrappedEntry = react_1.default.createElement(react_1.default.Fragment, null, entry);
                 }
-                ;
                 const entryAsObjects = (0, internal_1.writeChildrenAsObjects)((0, internal_1.addGTIdentifier)(wrappedEntry)); // simulate gt-react's t() function
                 const hash = yield (0, internal_1.calculateHash)(tMetadata.context ? [entryAsObjects, tMetadata.context] : entryAsObjects);
-                console.log(id, '=>', hash);
                 tMetadata.hash = hash;
                 templateUpdates.push({
                     type: "react",
@@ -270,6 +162,10 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
                 });
             }
             else if (typeof entry === 'string') {
+                let content = (0, generaltranslation_1.splitStringToContent)(entry);
+                if (Array.isArray(content) && content.length > 1) {
+                    entry = content;
+                }
                 templateUpdates.push({
                     type: "string",
                     data: {
@@ -282,39 +178,15 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
         if (templateUpdates.length) {
             console.log('Items in dictionary:', templateUpdates.length);
             const gt = new generaltranslation_1.default({ apiKey, projectID });
-            const sendUpdates = () => __awaiter(this, void 0, void 0, function* () {
-                const resultLanguages = yield gt.updateProjectDictionary(templateUpdates, languages, projectID, override);
-                if (resultLanguages) {
-                    console.log(`Remote dictionary "${dictionaryName}" updated: ${resultLanguages.length ? true : false}.`, (`Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${(0, generaltranslation_1.getLanguageName)(language)}"`).join(', ')}]` + '.' : 'None.'}`), resultLanguages.length ? 'Translations are usually live within a minute. Check status: www.generaltranslation.com/dashboard.' : '');
-                }
-                else {
-                    throw new Error('500: Internal Server Error.');
-                }
-            });
-            yield sendUpdates();
+            const resultLanguages = yield gt.updateProjectDictionary(templateUpdates, languages, projectID, override);
+            if (resultLanguages) {
+                console.log(`Remote dictionary "${dictionaryName}" updated: ${resultLanguages.length ? true : false}.`, `Languages: ${resultLanguages.length ? `[${resultLanguages.map(language => `"${(0, generaltranslation_1.getLanguageName)(language)}"`).join(', ')}]` + '.' : 'None.'}`, resultLanguages.length ? 'Translations are usually live within a minute. Check status: www.generaltranslation.com/dashboard.' : '');
+            }
+            else {
+                throw new Error('500: Internal Server Error.');
+            }
         }
-        process.exit(0);
     });
-}
-/**
- * Resolve the file path from the given file path or default paths.
- * @param {string} filePath - The file path to resolve.
- * @param {string[]} defaultPaths - The default paths to check.
- * @returns {string} - The resolved file path.
- */
-function resolveFilePath(filePath, defaultPaths, throwError = false) {
-    if (filePath) {
-        return filePath;
-    }
-    for (const possiblePath of defaultPaths) {
-        if (fs_1.default.existsSync(possiblePath)) {
-            return possiblePath;
-        }
-    }
-    if (throwError) {
-        throw new Error('File not found in default locations.');
-    }
-    return '';
 }
 commander_1.program
     .name('i18n')
@@ -332,13 +204,13 @@ commander_1.program
     .option('--description <description>', 'Describe your project. Used to assist translation.', '')
     .action((dictionaryFilePath, options) => {
     // Resolve the config file path or check default locations
-    const resolvedConfigFilePath = resolveFilePath(options.config || '', [
+    const resolvedConfigFilePath = (0, resolveFilePath_1.default)(options.config || '', [
         './tsconfig.json',
         './jsconfig.json',
     ]);
     // Load and apply the configuration to esbuild
-    const config = loadConfigFile(resolvedConfigFilePath);
-    const resolvedDictionaryFilePath = resolveFilePath(dictionaryFilePath, [
+    const config = (0, loadConfigFile_1.default)(resolvedConfigFilePath);
+    const resolvedDictionaryFilePath = (0, resolveFilePath_1.default)(dictionaryFilePath, [
         './dictionary.js',
         './dictionary.jsx',
         './dictionary.ts',
@@ -348,7 +220,7 @@ commander_1.program
         './src/dictionary.ts',
         './src/dictionary.tsx'
     ], true);
-    const resolvedI18NFilePath = resolveFilePath(options.i18n || '', [
+    const resolvedI18NFilePath = (0, resolveFilePath_1.default)(options.i18n || '', [
         './i18n.js',
         './i18n.jsx',
         './i18n.ts',
@@ -358,6 +230,11 @@ commander_1.program
         './src/i18n.ts',
         './src/i18n.tsx'
     ]);
-    processDictionaryFile(resolvedDictionaryFilePath, resolvedI18NFilePath, Object.assign(Object.assign({}, options), { config }));
+    const main = () => __awaiter(void 0, void 0, void 0, function* () {
+        let dictionary;
+        ({ dictionary, options } = yield processConfigOptions(resolvedDictionaryFilePath, resolvedI18NFilePath, Object.assign(Object.assign({}, options), { config })));
+        yield constructAndSendUpdates(dictionary, options);
+    });
+    main().then(() => process.exit(0));
 });
 commander_1.program.parse();
