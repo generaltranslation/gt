@@ -3,7 +3,7 @@
 import path from 'path';
 import React from 'react';
 import { program } from 'commander';
-import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier, calculateHash } from 'gt-react';
+import { flattenDictionary, writeChildrenAsObjects, addGTIdentifier, calculateHash } from 'gt-react/internal';
 import GT, { getLanguageName, isValidLanguageCode, getLanguageCode } from 'generaltranslation';
 import fs from 'fs';
 import esbuild from 'esbuild';
