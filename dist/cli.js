@@ -50,7 +50,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path_1 = __importDefault(require("path"));
 const react_1 = __importDefault(require("react"));
 const commander_1 = require("commander");
-const gt_react_1 = require("gt-react");
+const internal_1 = require("gt-react/internal");
 const generaltranslation_1 = __importStar(require("generaltranslation"));
 const fs_1 = __importDefault(require("fs"));
 const esbuild_1 = __importDefault(require("esbuild"));
@@ -205,7 +205,7 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
             // Clean up the temporary file
             fs_1.default.unlinkSync(tempFilePath);
         }
-        const dictionary = (0, gt_react_1.flattenDictionary)(dictionaryModule.default || dictionaryModule);
+        const dictionary = (0, internal_1.flattenDictionary)(dictionaryModule.default || dictionaryModule);
         // READ i18n.js, and extract the JSON object within the first call to createGT()
         // e.g. createGT({ defaultLocale: 'en-US' }) would return { "defaultLocale": "en-US" }
         if (i18nFilePath) {
@@ -257,8 +257,8 @@ function processDictionaryFile(dictionaryFilePath, i18nFilePath, options) {
                     wrappedEntry = react_1.default.createElement(react_1.default.Fragment, null, entry);
                 }
                 ;
-                const entryAsObjects = (0, gt_react_1.writeChildrenAsObjects)((0, gt_react_1.addGTIdentifier)(wrappedEntry)); // simulate gt-react's t() function
-                const hash = yield (0, gt_react_1.calculateHash)(tMetadata.context ? [entryAsObjects, tMetadata.context] : entryAsObjects);
+                const entryAsObjects = (0, internal_1.writeChildrenAsObjects)((0, internal_1.addGTIdentifier)(wrappedEntry)); // simulate gt-react's t() function
+                const hash = yield (0, internal_1.calculateHash)(tMetadata.context ? [entryAsObjects, tMetadata.context] : entryAsObjects);
                 console.log(id, '=>', hash);
                 tMetadata.hash = hash;
                 templateUpdates.push({
