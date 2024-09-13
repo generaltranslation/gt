@@ -9,7 +9,6 @@ import {
   writeChildrenAsObjects,
   addGTIdentifier,
   calculateHash,
-  primitives,
 } from 'gt-react/internal';
 import GT, {
   getLanguageName,
@@ -151,7 +150,7 @@ async function constructAndSendUpdates(
   const apiKey = options.apiKey || process.env.GT_API_KEY;
   const projectID = options.projectID || process.env.GT_PROJECT_ID;
   const dictionaryName =
-    options.dictionaryName || primitives.defaultDictionaryName;
+    options.dictionaryName || "default";
   const defaultLanguage = options.defaultLanguage;
   const languages = (options.languages || [])
     .map((language) =>

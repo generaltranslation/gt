@@ -128,7 +128,7 @@ function constructAndSendUpdates(dictionary, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const apiKey = options.apiKey || process.env.GT_API_KEY;
         const projectID = options.projectID || process.env.GT_PROJECT_ID;
-        const dictionaryName = options.dictionaryName || internal_1.primitives.defaultDictionaryName;
+        const dictionaryName = options.dictionaryName || "default";
         const defaultLanguage = options.defaultLanguage;
         const languages = (options.languages || [])
             .map((language) => (0, generaltranslation_1.isValidLanguageCode)(language) ? language : (0, generaltranslation_1.getLanguageCode)(language))
