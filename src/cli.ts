@@ -241,6 +241,8 @@ async function constructAndSendUpdates(
       throw new Error('500: Internal Server Error.');
     }
   }
+
+  console.log(templateUpdates)
 }
 
 program
