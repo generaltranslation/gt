@@ -194,7 +194,6 @@ function constructAndSendUpdates(dictionary, options) {
                 throw new Error('500: Internal Server Error.');
             }
         }
-        console.log(templateUpdates);
     });
 }
 commander_1.program

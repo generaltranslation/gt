@@ -242,7 +242,6 @@ async function constructAndSendUpdates(
     }
   }
 
-  console.log(templateUpdates)
 }
 
 program
