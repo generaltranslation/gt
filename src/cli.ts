@@ -55,13 +55,8 @@ async function loadGTConfig(options: any) {
     );
     
     if (resolvedNextConfigFilePath) {
-        
-        // Read the Next.js configuration file content
-        const nextConfigContent = fs.readFileSync(resolvedNextConfigFilePath, 'utf-8');
-        
-        // Pass the file content directly to extractI18nConfig
-        config = extractI18nConfig(nextConfigContent);
-
+       // Pass the file content directly to extractI18nConfig
+      config = extractI18nConfig(resolvedNextConfigFilePath);
     } else {
         console.warn('No Next.js configuration file found. Proceeding with default options.');
     }

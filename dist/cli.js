@@ -70,10 +70,8 @@ function loadGTConfig(options) {
             // If gt.config.json isn't found, attempt to load next.config.*
             const resolvedNextConfigFilePath = (0, resolveFilePath_1.default)('', ['./next.config.mjs', './next.config.js', './next.config.ts', './next.config.cjs']);
             if (resolvedNextConfigFilePath) {
-                // Read the Next.js configuration file content
-                const nextConfigContent = fs_1.default.readFileSync(resolvedNextConfigFilePath, 'utf-8');
                 // Pass the file content directly to extractI18nConfig
-                config = (0, extractI18NConfig_1.extractI18nConfig)(nextConfigContent);
+                config = (0, extractI18NConfig_1.extractI18nConfig)(resolvedNextConfigFilePath);
             }
             else {
                 console.warn('No Next.js configuration file found. Proceeding with default options.');
