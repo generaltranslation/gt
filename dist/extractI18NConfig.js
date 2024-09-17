@@ -24,7 +24,7 @@ function extractI18nConfig(filePath) {
     const defaultLocaleRegex = /defaultLocale:\s*['"]([^'"]+)['"]/;
     const dictionaryNameRegex = /dictionaryName:\s*['"]([^'"]+)['"]/;
     const projectIDRegex = /projectID:\s*['"]([^'"]+)['"]/;
-    const approvedLocalesRegex = /approvedLocales:\s*\[([^\]]+)\]/;
+    const approvedLocalesRegex = /locales:\s*\[([^\]]+)\]/;
     const descriptionRegex = /description:\s*['"]([^'"]+)['"]/;
     // Extract the values
     const defaultLocaleMatch = fileContent.match(defaultLocaleRegex);
