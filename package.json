@@ -1,10 +1,10 @@
 {
   "name": "gt-update",
-  "version": "1.0.191",
-  "main": "index.js",
+  "version": "2.0.0",
+  "main": "dist/main.js",
   "bin": {
-    "i18n": "dist/cli.js",
-    "gt-update": "dist/cli.js"
+    "i18n": "dist/main.js",
+    "gt-update": "dist/main.js"
   },
   "scripts": {
     "build": "tsc",
@@ -20,8 +20,8 @@
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
     "esm": "^3.2.25",
-    "generaltranslation": "latest",
-    "gt-react": "^4.0.16",
+    "generaltranslation": "^2.0.70",
+    "gt-react": "^4.1.4",
     "mock-require": "^3.0.3",
     "react": "^18.3.1",
     "ts-node": "^10.9.2",

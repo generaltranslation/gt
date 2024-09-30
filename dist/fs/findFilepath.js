@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = resolveFilePath;
+exports.default = findFilepath;
 const fs_1 = __importDefault(require("fs"));
 /**
  * Resolve the file path from the given file path or default paths.
@@ -11,17 +11,14 @@ const fs_1 = __importDefault(require("fs"));
  * @param {string[]} defaultPaths - The default paths to check.
  * @returns {string} - The resolved file path.
  */
-function resolveFilePath(filePath, defaultPaths, throwError = false) {
-    if (filePath) {
-        return filePath;
-    }
-    for (const possiblePath of defaultPaths) {
+function findFilepath(paths, errorMessage = '') {
+    for (const possiblePath of paths) {
         if (fs_1.default.existsSync(possiblePath)) {
             return possiblePath;
         }
     }
-    if (throwError) {
-        throw new Error('File not found in default locations.');
+    if (errorMessage) {
+        throw new Error(errorMessage);
     }
     return '';
 }

@@ -2,7 +2,7 @@ import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
 
-export default function applyConfigToEsbuild(config: any) {
+export default function createESBuildConfig(config: Record<string, any> = {}) {
     const esbuildOptions: esbuild.BuildOptions = {
         bundle: true,
         format: 'cjs',

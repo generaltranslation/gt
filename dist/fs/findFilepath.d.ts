@@ -4,4 +4,4 @@
  * @param {string[]} defaultPaths - The default paths to check.
  * @returns {string} - The resolved file path.
  */
-export default function resolveFilePath(filePath: string, defaultPaths: string[], throwError?: boolean): string;
+export default function findFilepath(paths: string[], errorMessage?: string): string;

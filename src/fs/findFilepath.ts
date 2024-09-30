@@ -6,20 +6,14 @@ import fs from 'fs';
  * @param {string[]} defaultPaths - The default paths to check.
  * @returns {string} - The resolved file path.
  */
-export default function resolveFilePath(filePath: string, defaultPaths: string[], throwError: boolean = false): string {
-    if (filePath) {
-        return filePath;
-    }
-
-    for (const possiblePath of defaultPaths) {
+export default function findFilepath(paths: string[], errorMessage: string = ''): string {
+    for (const possiblePath of paths) {
         if (fs.existsSync(possiblePath)) {
             return possiblePath;
         }
     }
-
-    if (throwError) {
-        throw new Error('File not found in default locations.');
+    if (errorMessage) {
+        throw new Error(errorMessage);
     }
-
     return '';
 }

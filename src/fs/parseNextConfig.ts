@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { isValidLanguageCode } from 'generaltranslation';
 import path from 'path';
 
 /**
@@ -6,10 +7,10 @@ import path from 'path';
  * @param {string} filePath - The path to the i18n.js file.
  * @returns {object|null} - An object containing the extracted values or null if none found or incorrect types.
  */
-export function extractI18nConfig(filePath: string): {
+export function parseNextConfig(filePath: string): {
     projectID?: string,
-    defaultLanguage?: string,
-    languages?: string[],
+    defaultLocale?: string,
+    locales?: string[],
     dictionaryName?: string,
     description?: string
 } {
@@ -28,21 +29,21 @@ export function extractI18nConfig(filePath: string): {
     const defaultLocaleRegex = /defaultLocale:\s*['"]([^'"]+)['"]/;
     const dictionaryNameRegex = /dictionaryName:\s*['"]([^'"]+)['"]/;
     const projectIDRegex = /projectID:\s*['"]([^'"]+)['"]/;
-    const approvedLocalesRegex = /locales:\s*\[([^\]]+)\]/;
+    const localesRegex = /locales:\s*\[([^\]]+)\]/;
     const descriptionRegex = /description:\s*['"]([^'"]+)['"]/;
 
     // Extract the values
     const defaultLocaleMatch = fileContent.match(defaultLocaleRegex);
     const dictionaryNameMatch = fileContent.match(dictionaryNameRegex);
     const projectIDMatch = fileContent.match(projectIDRegex);
-    const approvedLocalesMatch = fileContent.match(approvedLocalesRegex);
+    const localesMatch = fileContent.match(localesRegex);
     const descriptionMatch = fileContent.match(descriptionRegex);
 
     const defaultLocale = defaultLocaleMatch && typeof defaultLocaleMatch[1] === 'string' ? defaultLocaleMatch[1] : undefined;
     const dictionaryName = dictionaryNameMatch && typeof dictionaryNameMatch[1] === 'string' ? dictionaryNameMatch[1] : undefined;
     const projectID = projectIDMatch && typeof projectIDMatch[1] === 'string' ? projectIDMatch[1] : undefined;
-    const approvedLocales = approvedLocalesMatch
-        ? approvedLocalesMatch[1]
+    const locales = localesMatch
+        ? localesMatch[1]
             .split(',')
             .map(locale => locale.trim().replace(/['"]/g, ''))
             .filter(locale => typeof locale === 'string')
@@ -50,15 +51,15 @@ export function extractI18nConfig(filePath: string): {
     const description = descriptionMatch && typeof descriptionMatch[1] === 'string' ? descriptionMatch[1] : undefined;
 
     // Ensure approvedLocales is an array of strings
-    const validApprovedLocales = approvedLocales && approvedLocales.every(locale => typeof locale === 'string') ? approvedLocales : undefined;
+    const validLocales = locales && locales.every(locale => isValidLanguageCode(locale)) ? locales : undefined;
 
     // Return the extracted values if they pass type checks or return null
-    if (defaultLocale || dictionaryName || projectID || validApprovedLocales || description) {
+    if (defaultLocale || dictionaryName || projectID || validLocales || description) {
         return {
-            ...(defaultLocale && { defaultLanguage: defaultLocale }),
+            ...(defaultLocale && { defaultLocale }),
             ...(dictionaryName && { dictionaryName }),
             ...(projectID && { projectID }),
-            ...(validApprovedLocales && { languages: validApprovedLocales }),
+            ...(validLocales && { locales: validLocales }),
             ...(description && { description })
         };
     } else {
