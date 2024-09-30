@@ -186,7 +186,7 @@ program
             ...(options.projectID && { projectID: options.projectID }),
             ...(options.defaultLocale && { defaultLanguage: options.defaultLocale })
         });
-        console.log(JSON.stringify(updates))
+        
         const resultLanguages = await gt.updateProjectDictionary(
             updates, options.locales, options.replace
         );

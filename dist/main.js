@@ -141,7 +141,6 @@ commander_1.program
     // Send updates to General Translation API
     if (updates.length) {
         const gt = new generaltranslation_1.default(Object.assign(Object.assign({ apiKey: options.apiKey }, (options.projectID && { projectID: options.projectID })), (options.defaultLocale && { defaultLanguage: options.defaultLocale })));
-        console.log(JSON.stringify(updates));
         const resultLanguages = yield gt.updateProjectDictionary(updates, options.locales, options.replace);
         if (resultLanguages) {
             console.log(`Remote dictionary "${options.dictionaryName}" updated: ${resultLanguages.length ? true : false}.`, `Languages: ${resultLanguages.length
