@@ -18,6 +18,7 @@ export type Options = {
     projectID?: string;
     jsconfig?: string;
     dictionary?: string;
+    app?: string;
     dictionaryName?: string;
     defaultLocale?: string;
     locales?: string[];

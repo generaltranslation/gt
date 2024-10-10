@@ -13,6 +13,7 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
             '.jsx': 'jsx',
             '.ts': 'ts',
             '.tsx': 'tsx',
+            '.css': 'css',  // Add CSS loader
         },
         sourcemap: 'inline',
         external: ['server-only'],
@@ -23,33 +24,51 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
     };
 
     // Add the custom plugin to handle 'server-only' imports
-(esbuildOptions.plugins as any).push({
-    name: 'ignore-server-only',
-    setup(build: any) {
-        build.onResolve({ filter: /^server-only$/ }, () => {
-            return {
-                path: 'server-only', // This can be a virtual module name
-                namespace: 'ignore-server-only',
-            };
-        });
+    (esbuildOptions.plugins as any).push({
+        name: 'ignore-server-only',
+        setup(build: any) {
+            build.onResolve({ filter: /^server-only$/ }, () => {
+                return {
+                    path: 'server-only',
+                    namespace: 'ignore-server-only',
+                };
+            });
 
-        build.onLoad({ filter: /^server-only$/, namespace: 'ignore-server-only' }, () => {
-            return {
-                contents: 'module.exports = {};', // Stubbing out the content
-                loader: 'js',
-            };
-        });
-    },
-});
+            build.onLoad({ filter: /^server-only$/, namespace: 'ignore-server-only' }, () => {
+                return {
+                    contents: 'module.exports = {};',
+                    loader: 'js',
+                };
+            });
+        },
+    });
 
+    // Add a plugin to handle CSS imports
+    (esbuildOptions.plugins as any).push({
+        name: 'css-module',
+        setup(build: any) {
+            build.onResolve({ filter: /\.css$/ }, (args: any) => {
+                return {
+                    path: path.resolve(args.resolveDir, args.path),
+                    namespace: 'css-module',
+                };
+            });
+
+            build.onLoad({ filter: /\.css$/, namespace: 'css-module' }, async (args: any) => {
+                const css = await fs.promises.readFile(args.path, 'utf8');
+                const contents = `
+                    const style = document.createElement('style');
+                    style.textContent = ${JSON.stringify(css)};
+                    document.head.appendChild(style);
+                `;
+                return { contents, loader: 'js' };
+            });
+        },
+    });
 
     if (config.compilerOptions) {
-        // console.log('Compiler options found in config:', config.compilerOptions);
-
         if (config.compilerOptions.paths) {
             const aliases: any = {};
-
-            // console.log('Found path aliases:', config.compilerOptions.paths);
 
             for (const [key, value] of Object.entries(config.compilerOptions.paths)) {
                 if (Array.isArray(value) && typeof value[0] === 'string') {
@@ -69,14 +88,13 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
                             if (args.path.startsWith(`${aliasKey}/`)) {
                                 const resolvedPath = path.resolve(aliasPath as string, args.path.slice(aliasKey.length + 1));
 
-                                const extensions = ['.js', '.jsx', '.ts', '.tsx'];
+                                const extensions = ['.js', '.jsx', '.ts', '.tsx', '.css'];  // Add .css to extensions
 
                                 function resolveWithExtensions(basePath: string): string | null {
                                     for (const ext of extensions) {
                                         const fullPath = `${basePath}${ext}`;
                                         try {
-                                            const realPath = fs.realpathSync(fullPath); // Resolve symlink if necessary
-                                            // console.log(`Resolved symlink for: ${fullPath} to ${realPath}`);
+                                            const realPath = fs.realpathSync(fullPath);
                                             return realPath;
                                         } catch (_) {
                                             continue;
@@ -86,11 +104,9 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
                                 }
 
                                 try {
-                                    const realPath = fs.realpathSync(resolvedPath); // Try without an extension first
-                                    // console.log(`Resolved symlink for: ${resolvedPath} to ${realPath}`);
+                                    const realPath = fs.realpathSync(resolvedPath);
                                     return { path: realPath };
                                 } catch (err) {
-                                    // Check if the path has an extension
                                     const hasExtension = extensions.some(ext => resolvedPath.endsWith(ext));
                                     if (!hasExtension) {
                                         const resolvedWithExt = resolveWithExtensions(resolvedPath);

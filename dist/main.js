@@ -61,11 +61,12 @@ commander_1.program
     './dictionary.ts', './src/dictionary.ts',
     './dictionary.tsx', './src/dictionary.tsx'
 ]))
+    .option('--app <path>', "Filepath to the app's source directory, by default ./src || ./app", (0, findFilepath_1.default)(['./src', './app']))
     .option('--dictionaryName <name>', 'Name of dictionary, by default "default"')
     .option('--defaultLanguage, --defaultLocale <locale>', 'Default locale (e.g., en)')
     .option('--languages, --locales <locales>', 'Comma-separated list of locales (e.g., en,fr,es)')
     .option('--description <description>', 'Description for the project or update')
-    .option('--replace', 'Replace existing translations in the remote dictionary', false)
+    .option('--replace', 'Replace existing translations in the remote dictionary', true)
     .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
     .action((options) => __awaiter(void 0, void 0, void 0, function* () {
     // ------ SETUP ----- //
@@ -121,7 +122,7 @@ commander_1.program
     }
     // Scan through project for <T> tags 
     if (options.inline) {
-        updates = [...updates, ...(yield (0, createInlineUpdates_1.default)(options, esbuildConfig))];
+        updates = [...updates, ...(yield (0, createInlineUpdates_1.default)(options))];
     }
     ;
     // Metadata addition and validation

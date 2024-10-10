@@ -34,6 +34,7 @@ export type Options = {
     projectID?: string,
     jsconfig?: string,
     dictionary?: string,
+    app?: string,
     dictionaryName?: string,
     defaultLocale?: string,
     locales?: string[],
@@ -73,6 +74,10 @@ program
         ]
     )
    )
+   .option(
+    '--app <path>', "Filepath to the app's source directory, by default ./src || ./app", 
+    findFilepath(['./src', './app'])
+   )
   .option(
     '--dictionaryName <name>', 'Name of dictionary, by default "default"'
    )
@@ -85,7 +90,7 @@ program
   .option(
     '--description <description>', 'Description for the project or update'
   )
-  .option('--replace', 'Replace existing translations in the remote dictionary', false)
+  .option('--replace', 'Replace existing translations in the remote dictionary', true)
   .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
   .action(async (options: Options) => {
 
@@ -158,7 +163,7 @@ program
 
     // Scan through project for <T> tags 
     if (options.inline) {
-        updates = [...updates, ...(await createInlineUpdates(options, esbuildConfig))]
+        updates = [...updates, ...(await createInlineUpdates(options))]
     };
 
     // Metadata addition and validation
