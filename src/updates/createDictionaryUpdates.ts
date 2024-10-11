@@ -66,10 +66,10 @@ export default async function createDictionaryUpdates(
 
         let { 
             entry, 
-            metadata: props // branches, context, etc.
+            metadata: props // context, etc.
         } = extractEntryMetadata(dictionary[id]);
         
-        const taggedEntry = addGTIdentifier(entry, props);
+        const taggedEntry = addGTIdentifier(entry);
 
         if (typeof entry === 'function') {
             entry = entry({});

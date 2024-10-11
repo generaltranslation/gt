@@ -93,7 +93,7 @@ function createInlineUpdates(options) {
             }
             (0, traverse_1.default)(ast, {
                 JSXElement(path) {
-                    var _a;
+                    var _a, _b;
                     const openingElement = path.node.openingElement;
                     const name = openingElement.name;
                     if (name.type === 'JSXIdentifier' && name.name === 'T') {
@@ -195,9 +195,15 @@ function createInlineUpdates(options) {
                             .map((child) => buildJSXTree(child))
                             .filter((child) => child !== null && child !== '');
                         componentObj.tree = tree.length === 1 ? tree[0] : tree;
-                        const id = (_a = componentObj === null || componentObj === void 0 ? void 0 : componentObj.props) === null || _a === void 0 ? void 0 : _a.id;
+                        const id = componentObj.props.id;
                         if (id) {
-                            if (!/[{}]/.test(id)) {
+                            if (/[{}]/.test(id)) {
+                                console.warn(`Found <T> component in ${file} with potentially variable id: "${id}". <T> components with variable IDs are translated at runtime.`);
+                            }
+                            else if (/[{}]/.test(((_a = componentObj.props) === null || _a === void 0 ? void 0 : _a.context) || '')) {
+                                console.warn(`Found <T> component in ${file} with potentially variable context. { id: "${id}", context: "${(_b = componentObj.props) === null || _b === void 0 ? void 0 : _b.context}" }. <T> components with variable context are translated at runtime.`);
+                            }
+                            else {
                                 const childrenAsObjects = (0, addGTIdentifierToSyntaxTree_1.default)(componentObj.tree);
                                 console.log(`Found <T> component in ${file} with id "${id}".`);
                                 updates.push({
@@ -208,12 +214,9 @@ function createInlineUpdates(options) {
                                     }
                                 });
                             }
-                            else {
-                                console.log(`Found <T> component in ${file} with potentially variable id: ${id}. <T> components with variable IDs are translated at runtime.`);
-                            }
                         }
                         else {
-                            console.log(`Found <T> component in ${file} with no id. <T> components without IDs are translated at runtime.`);
+                            console.warn(`Found <T> component in ${file} with no id. <T> components without IDs are translated at runtime.`);
                         }
                     }
                 },
@@ -224,6 +227,6 @@ function createInlineUpdates(options) {
             const hash = yield (0, internal_1.calculateHash)(context ? [update.data.children, context] : update.data.children);
             update.data.metadata.hash = hash;
         })));
-        return updates;
+        return []; //updates;
     });
 }

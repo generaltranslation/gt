@@ -24,7 +24,7 @@
     "esbuild": "^0.23.1",
     "esm": "^3.2.25",
     "generaltranslation": "^2.0.70",
-    "gt-react": "^4.1.4",
+    "gt-react": "^4.2.8",
     "mock-require": "^3.0.3",
     "react": "^18.3.1",
     "ts-node": "^10.9.2",

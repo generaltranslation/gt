@@ -169,10 +169,14 @@ export default async function createInlineUpdates(
 
           componentObj.tree = tree.length === 1 ? tree[0] : tree;
 
-          const id = componentObj?.props?.id;
+          const id = componentObj.props.id;
           
           if (id) {
-            if (!/[{}]/.test(id)) {
+            if (/[{}]/.test(id)) {
+                console.warn(`Found <T> component in ${file} with potentially variable id: "${id}". <T> components with variable IDs are translated at runtime.`);
+            } else if (/[{}]/.test(componentObj.props?.context || '')) {
+                console.warn(`Found <T> component in ${file} with potentially variable context. { id: "${id}", context: "${componentObj.props?.context}" }. <T> components with variable context are translated at runtime.`);
+            } else {
                 const childrenAsObjects = addGTIdentifierToSyntaxTree(componentObj.tree);
                 console.log(`Found <T> component in ${file} with id "${id}".`);
                 updates.push({
@@ -182,12 +186,11 @@ export default async function createInlineUpdates(
                         metadata: componentObj.props
                     }
                 });
-            } else {
-                console.log(`Found <T> component in ${file} with potentially variable id: ${id}. <T> components with variable IDs are translated at runtime.`);
             }
+            
           }
           else {
-            console.log(`Found <T> component in ${file} with no id. <T> components without IDs are translated at runtime.`);
+            console.warn(`Found <T> component in ${file} with no id. <T> components without IDs are translated at runtime.`);
           }
         }
       },
@@ -202,5 +205,5 @@ export default async function createInlineUpdates(
     update.data.metadata.hash = hash;
   }))
 
-  return updates;
+  return [] //updates;
 }

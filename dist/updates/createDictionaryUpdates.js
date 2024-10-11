@@ -55,9 +55,9 @@ function createDictionaryUpdates(options, esbuildConfig) {
         // ----- CREATE PARTIAL UPDATES ----- //
         let updates = [];
         for (const id of Object.keys(dictionary)) {
-            let { entry, metadata: props // branches, context, etc.
+            let { entry, metadata: props // context, etc.
              } = (0, internal_1.extractEntryMetadata)(dictionary[id]);
-            const taggedEntry = (0, internal_1.addGTIdentifier)(entry, props);
+            const taggedEntry = (0, internal_1.addGTIdentifier)(entry);
             if (typeof entry === 'function') {
                 entry = entry({});
             }
