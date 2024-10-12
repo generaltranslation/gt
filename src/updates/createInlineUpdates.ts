@@ -205,5 +205,5 @@ export default async function createInlineUpdates(
     update.data.metadata.hash = hash;
   }))
 
-  return [] //updates;
+  return updates;
 }

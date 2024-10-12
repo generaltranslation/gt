@@ -227,6 +227,6 @@ function createInlineUpdates(options) {
             const hash = yield (0, internal_1.calculateHash)(context ? [update.data.children, context] : update.data.children);
             update.data.metadata.hash = hash;
         })));
-        return []; //updates;
+        return updates;
     });
 }
