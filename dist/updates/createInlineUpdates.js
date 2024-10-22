@@ -224,7 +224,7 @@ function createInlineUpdates(options) {
         }
         yield Promise.all(updates.map((update) => __awaiter(this, void 0, void 0, function* () {
             const context = update.data.metadata.context;
-            const hash = yield (0, internal_1.calculateHash)(context ? [update.data.children, context] : update.data.children);
+            const hash = (0, internal_1.hashReactChildrenObjects)(context ? [update.data.children, context] : update.data.children);
             update.data.metadata.hash = hash;
         })));
         return updates;

@@ -40,7 +40,8 @@ export type Options = {
     locales?: string[],
     description?: string,
     replace: boolean,
-    inline: boolean
+    inline: boolean,
+    retranslate: boolean
 };
 
 program
@@ -92,6 +93,7 @@ program
   )
   .option('--replace', 'Replace existing translations in the remote dictionary', true)
   .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
+  .option('--retranslate', 'Forces a new translation for all content.', false)
   .action(async (options: Options) => {
 
     // ------ SETUP ----- //
@@ -193,7 +195,10 @@ program
         });
         
         const resultLanguages = await gt.updateProjectDictionary(
-            updates, options.locales, options.replace
+            updates, options.locales, {
+                apiKey: undefined,
+                ...options
+            }
         );
         
         if (resultLanguages) {

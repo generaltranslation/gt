@@ -9,7 +9,7 @@ import traverse from '@babel/traverse';
 import generate from '@babel/generator';
 import * as t from '@babel/types';
 import addGTIdentifierToSyntaxTree from '../data-generaltranslation/addGTIdentifierToSyntaxTree';
-import { calculateHash } from 'gt-react/internal';
+import { hashReactChildrenObjects } from 'gt-react/internal';
 
 export default async function createInlineUpdates(
   options: Options
@@ -199,7 +199,7 @@ export default async function createInlineUpdates(
 
   await Promise.all(updates.map(async update => {
     const context = update.data.metadata.context;
-    const hash = await calculateHash(
+    const hash = hashReactChildrenObjects(
         context ? [(update.data as any).children, context] : (update.data as any).children
     )
     update.data.metadata.hash = hash;

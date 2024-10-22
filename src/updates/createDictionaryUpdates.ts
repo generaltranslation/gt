@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os'
 import { build, BuildOptions } from "esbuild";
 import { Options, Updates } from "../main";
-import { addGTIdentifier, calculateHash, extractEntryMetadata, flattenDictionary, writeChildrenAsObjects } from 'gt-react/internal';
+import { addGTIdentifier, hashReactChildrenObjects, extractEntryMetadata, flattenDictionary, writeChildrenAsObjects } from 'gt-react/internal';
 import { splitStringToContent } from 'generaltranslation';
 import loadJSON from '../fs/loadJSON';
 
@@ -80,7 +80,7 @@ export default async function createDictionaryUpdates(
         const metadata: Record<string, any> = { 
             id,
             ...(context && { context }),
-            hash: await calculateHash(
+            hash: hashReactChildrenObjects(
                 context ? [entryAsObjects, context] : entryAsObjects
             )
         };

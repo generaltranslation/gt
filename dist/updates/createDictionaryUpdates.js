@@ -63,7 +63,7 @@ function createDictionaryUpdates(options, esbuildConfig) {
             }
             const entryAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedEntry);
             const context = props === null || props === void 0 ? void 0 : props.context;
-            const metadata = Object.assign(Object.assign({ id }, (context && { context })), { hash: yield (0, internal_1.calculateHash)(context ? [entryAsObjects, context] : entryAsObjects) });
+            const metadata = Object.assign(Object.assign({ id }, (context && { context })), { hash: (0, internal_1.hashReactChildrenObjects)(context ? [entryAsObjects, context] : entryAsObjects) });
             if (typeof entry === 'string') {
                 updates.push({
                     type: 'string',

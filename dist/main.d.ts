@@ -25,4 +25,5 @@ export type Options = {
     description?: string;
     replace: boolean;
     inline: boolean;
+    retranslate: boolean;
 };

@@ -68,6 +68,7 @@ commander_1.program
     .option('--description <description>', 'Description for the project or update')
     .option('--replace', 'Replace existing translations in the remote dictionary', true)
     .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
+    .option('--retranslate', 'Forces a new translation for all content.', false)
     .action((options) => __awaiter(void 0, void 0, void 0, function* () {
     // ------ SETUP ----- //
     // Consolidate config options
@@ -142,7 +143,7 @@ commander_1.program
     // Send updates to General Translation API
     if (updates.length) {
         const gt = new generaltranslation_1.default(Object.assign(Object.assign({ apiKey: options.apiKey }, (options.projectID && { projectID: options.projectID })), (options.defaultLocale && { defaultLanguage: options.defaultLocale })));
-        const resultLanguages = yield gt.updateProjectDictionary(updates, options.locales, options.replace);
+        const resultLanguages = yield gt.updateProjectDictionary(updates, options.locales, Object.assign({ apiKey: undefined }, options));
         if (resultLanguages) {
             console.log(`Remote dictionary "${options.dictionaryName}" updated: ${resultLanguages.length ? true : false}.`, `Languages: ${resultLanguages.length
                 ? `[${resultLanguages
