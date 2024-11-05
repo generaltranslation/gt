@@ -3,7 +3,7 @@ import { isValidLanguageCode } from 'generaltranslation';
 import path from 'path';
 
 /**
- * Extracts projectID, defaultLocale, approvedLocales, dictionaryName, and description from an i18n.js file.
+ * Extracts projectID, defaultLocale, approvedLocales, and description from an i18n.js file.
  * @param {string} filePath - The path to the i18n.js file.
  * @returns {object|null} - An object containing the extracted values or null if none found or incorrect types.
  */
@@ -11,7 +11,6 @@ export function parseNextConfig(filePath: string): {
     projectID?: string,
     defaultLocale?: string,
     locales?: string[],
-    dictionaryName?: string,
     description?: string
 } {
     // Resolve the absolute path
@@ -27,20 +26,17 @@ export function parseNextConfig(filePath: string): {
 
     // Regular expressions to extract the values
     const defaultLocaleRegex = /defaultLocale:\s*['"]([^'"]+)['"]/;
-    const dictionaryNameRegex = /dictionaryName:\s*['"]([^'"]+)['"]/;
     const projectIDRegex = /projectID:\s*['"]([^'"]+)['"]/;
     const localesRegex = /locales:\s*\[([^\]]+)\]/;
     const descriptionRegex = /description:\s*['"]([^'"]+)['"]/;
 
     // Extract the values
     const defaultLocaleMatch = fileContent.match(defaultLocaleRegex);
-    const dictionaryNameMatch = fileContent.match(dictionaryNameRegex);
     const projectIDMatch = fileContent.match(projectIDRegex);
     const localesMatch = fileContent.match(localesRegex);
     const descriptionMatch = fileContent.match(descriptionRegex);
 
     const defaultLocale = defaultLocaleMatch && typeof defaultLocaleMatch[1] === 'string' ? defaultLocaleMatch[1] : undefined;
-    const dictionaryName = dictionaryNameMatch && typeof dictionaryNameMatch[1] === 'string' ? dictionaryNameMatch[1] : undefined;
     const projectID = projectIDMatch && typeof projectIDMatch[1] === 'string' ? projectIDMatch[1] : undefined;
     const locales = localesMatch
         ? localesMatch[1]
@@ -54,10 +50,9 @@ export function parseNextConfig(filePath: string): {
     const validLocales = locales && locales.every(locale => isValidLanguageCode(locale)) ? locales : undefined;
 
     // Return the extracted values if they pass type checks or return null
-    if (defaultLocale || dictionaryName || projectID || validLocales || description) {
+    if (defaultLocale || projectID || validLocales || description) {
         return {
             ...(defaultLocale && { defaultLocale }),
-            ...(dictionaryName && { dictionaryName }),
             ...(projectID && { projectID }),
             ...(validLocales && { locales: validLocales }),
             ...(description && { description })

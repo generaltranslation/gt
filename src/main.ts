@@ -35,7 +35,6 @@ export type Options = {
     jsconfig?: string,
     dictionary?: string,
     app?: string,
-    dictionaryName?: string,
     defaultLocale?: string,
     locales?: string[],
     description?: string,
@@ -78,9 +77,6 @@ program
    .option(
     '--app <path>', "Filepath to the app's source directory, by default ./src || ./app", 
     findFilepath(['./src', './app'])
-   )
-  .option(
-    '--dictionaryName <name>', 'Name of dictionary, by default "default"'
    )
   .option(
     '--defaultLanguage, --defaultLocale <locale>', 'Default locale (e.g., en)'
@@ -154,8 +150,7 @@ program
     let initialMetadata = {
         ...(options.defaultLocale && { defaultLocale: options.defaultLocale }),
         ...(options.locales && { locales: options.locales }),
-        ...(options.description && { description: options.description }),
-        ...(options.dictionaryName && { dictionaryName: options.dictionaryName || "default" })
+        ...(options.description && { description: options.description })
     }
     
     // Parse dictionary with esbuildConfig
@@ -203,7 +198,7 @@ program
         
         if (resultLanguages) {
             console.log(
-              `Remote dictionary "${options.dictionaryName}" updated: ${
+              `Project "${options.projectID}" updated: ${
                 resultLanguages.length ? true : false
               }.`,
               `Languages: ${
