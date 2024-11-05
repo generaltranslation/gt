@@ -8,7 +8,7 @@ import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
 import generate from '@babel/generator';
 import * as t from '@babel/types';
-import addGTIdentifierToSyntaxTree from '../data-generaltranslation/addGTIdentifierToSyntaxTree';
+import addGTIdentifierToSyntaxTree from '../data-_gt/addGTIdentifierToSyntaxTree';
 import { hashReactChildrenObjects } from 'gt-react/internal';
 
 export default async function createInlineUpdates(

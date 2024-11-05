@@ -61,7 +61,7 @@ function addGTIdentifierToSyntaxTree(tree, startingIndex = 0) {
             }
             return {
                 type: type || `C${generaltranslation.id}`,
-                props: Object.assign({ 'data-generaltranslation': generaltranslation }, (typeof props.children !== 'undefined' && { children: handleChildren(props.children) }))
+                props: Object.assign({ 'data-_gt': generaltranslation }, (typeof props.children !== 'undefined' && { children: handleChildren(props.children) }))
             };
         }
         return child.toString();

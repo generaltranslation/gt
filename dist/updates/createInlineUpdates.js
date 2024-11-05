@@ -42,7 +42,7 @@ const parser_1 = require("@babel/parser");
 const traverse_1 = __importDefault(require("@babel/traverse"));
 const generator_1 = __importDefault(require("@babel/generator"));
 const t = __importStar(require("@babel/types"));
-const addGTIdentifierToSyntaxTree_1 = __importDefault(require("../data-generaltranslation/addGTIdentifierToSyntaxTree"));
+const addGTIdentifierToSyntaxTree_1 = __importDefault(require("../data-_gt/addGTIdentifierToSyntaxTree"));
 const internal_1 = require("gt-react/internal");
 function createInlineUpdates(options) {
     return __awaiter(this, void 0, void 0, function* () {
