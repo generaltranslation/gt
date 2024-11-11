@@ -63,13 +63,14 @@ commander_1.program
 ]))
     .option('--app <path>', "Filepath to the app's source directory, by default ./src || ./app", (0, findFilepath_1.default)(['./src', './app']))
     .option('--defaultLanguage, --defaultLocale <locale>', 'Default locale (e.g., en)')
-    .option('--languages, --locales <locales>', 'Comma-separated list of locales (e.g., en,fr,es)')
+    .option('--languages, --locales <locales...>', 'Space-separated list of locales (e.g., en fr es)', [])
     .option('--description <description>', 'Description for the project or update')
     .option('--replace', 'Replace existing translations in the remote dictionary', true)
     .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
     .option('--retranslate', 'Forces a new translation for all content.', false)
     .action((options) => __awaiter(void 0, void 0, void 0, function* () {
     // ------ SETUP ----- //
+    var _a;
     // Consolidate config options
     // options given in command || --options filepath || ./gt.config.json || parsing next.config.js
     // it's alright for any of the options to be undefined at this point
@@ -89,7 +90,7 @@ commander_1.program
     if (options.locales) {
         for (const locale of options.locales) {
             if (!(0, generaltranslation_1.isValidLanguageCode)(locale)) {
-                throw new Error(`locales: "${options.locales.join()}", ${locale} is not a valid locale!`);
+                throw new Error(`locales: "${(_a = options === null || options === void 0 ? void 0 : options.locales) === null || _a === void 0 ? void 0 : _a.join()}", ${locale} is not a valid locale!`);
             }
         }
     }

@@ -82,7 +82,9 @@ program
     '--defaultLanguage, --defaultLocale <locale>', 'Default locale (e.g., en)'
   )
   .option(
-    '--languages, --locales <locales>', 'Comma-separated list of locales (e.g., en,fr,es)'
+    '--languages, --locales <locales...>',
+    'Space-separated list of locales (e.g., en fr es)',
+    []
     )
   .option(
     '--description <description>', 'Description for the project or update'
@@ -117,7 +119,7 @@ program
     if (options.locales) {
         for (const locale of options.locales) {
             if (!isValidLanguageCode(locale)) {
-                throw new Error(`locales: "${options.locales.join()}", ${locale} is not a valid locale!`)
+                throw new Error(`locales: "${options?.locales?.join()}", ${locale} is not a valid locale!`)
             }
         }
     }
