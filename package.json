@@ -1,6 +1,6 @@
 {
   "name": "gt-update",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "main": "dist/main.js",
   "bin": {
     "i18n": "dist/main.js",
