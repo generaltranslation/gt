@@ -191,7 +191,7 @@ program
             ...(options.defaultLocale && { defaultLanguage: options.defaultLocale })
         });
         
-        const resultLanguages = await gt.updateDictionary(
+        const resultLanguages = await gt.updateProjectDictionary(
             updates, options.locales, {
                 apiKey: undefined,
                 ...options
@@ -206,7 +206,7 @@ program
               `Languages: ${
                 resultLanguages.length
                   ? `[${resultLanguages
-                      .map((language) => `"${getLanguageName(language)}"`)
+                      .map((language: string) => `"${getLanguageName(language)}"`)
                       .join(', ')}].`
                   : 'None.'
               }`,
