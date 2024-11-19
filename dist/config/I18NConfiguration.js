@@ -148,7 +148,7 @@ var I18NConfiguration = /** @class */ (function () {
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
     */
     I18NConfiguration.prototype.translationEnabled = function () {
-        return (this.baseURL && this.projectID && (this.baseURL === defaultInitGTProps_1.default.baseURL && !this.gt.apiKey)) ? true : false;
+        return (this.baseURL && this.projectID && (this.baseURL === defaultInitGTProps_1.default.baseURL ? this.gt.apiKey : true)) ? true : false;
     };
     /**
      * Get the rendering instructions

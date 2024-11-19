@@ -118,8 +118,5 @@
     "internationalization",
     "localization",
     "i18n"
-  ],
-  "dependencies": {
-    "gt-react": "^5.4.0"
-  }
+  ]
 }

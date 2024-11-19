@@ -113,7 +113,7 @@ export default class I18NConfiguration {
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
     */
     translationEnabled(): boolean {
-        return (this.baseURL && this.projectID && (this.baseURL === defaultInitGTProps.baseURL && !this.gt.apiKey)) ? true : false;
+        return (this.baseURL && this.projectID && (this.baseURL === defaultInitGTProps.baseURL ? this.gt.apiKey: true)) ? true : false;
     }
 
     /**
