@@ -149,8 +149,6 @@ function GTProvider(_a) {
                                         if (translation && translation.k === key) {
                                             return [2 /*return*/, translations[entryID] = translation];
                                         }
-                                        if (!I18NConfig.translationEnabled())
-                                            return [2 /*return*/];
                                         if (!(typeof taggedEntry === 'string')) return [3 /*break*/, 4];
                                         translationPromise_1 = I18NConfig.translate({ content: (0, generaltranslation_1.splitStringToContent)(taggedEntry), targetLanguage: locale, options: __assign({ id: entryID, hash: key }, additionalMetadata) });
                                         if (!(renderSettings.method !== "subtle")) return [3 /*break*/, 2];

@@ -133,7 +133,6 @@ function tx(content_1) {
                         return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(translations[options.id].t, [options.language, I18NConfig.getDefaultLocale()], variables, variableOptions)];
                     _g.label = 4;
                 case 4:
-                    if (!I18NConfig.translationEnabled()) return [3 /*break*/, 7];
                     language = options.language, others = __rest(options, ["language"]);
                     _d = (_c = I18NConfig).translate;
                     _f = { content: content, targetLanguage: options.language };
