@@ -1,0 +1,125 @@
+{
+  "name": "gt-next",
+  "version": "1.3.13",
+  "description": "A Next.js library for automatic internationalization.",
+  "main": "dist/index.server.js",
+  "peerDependencies": {
+    "generaltranslation": "^3.3.2",
+    "next": ">=13.0.0",
+    "react": ">=16.8.0 || >=19.0.0-rc",
+    "react-dom": ">=16.8.0 || >=19.0.0-rc"
+  },
+  "scripts": {
+    "patch": "npm version patch",
+    "transpile": "tsc",
+    "build": "npm run transpile",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/general-translation/gt-next.git"
+  },
+  "author": "General Translation, Inc.",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/general-translation/gt-next/issues"
+  },
+  "homepage": "https://github.com/general-translation/gt-next#readme",
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.5.2"
+  },
+  "exports": {
+    ".": {
+      "node": "./dist/index.server.js",
+      "browser": "./dist/index.client.js",
+      "types": "./dist/index.server.d.ts",
+      "default": "./dist/index.server.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "default": "./dist/config.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    },
+    "./middleware": {
+      "types": "./dist/middleware.d.ts",
+      "default": "./dist/middleware.js"
+    },
+    "./_request": {
+      "default": "./dist/_request.js"
+    },
+    "./_dictionary": {
+      "default": "./dist/_dictionary.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "config": [
+        "./dist/config.d.ts"
+      ],
+      "client": [
+        "./dist/client.d.ts"
+      ],
+      "server": [
+        "./dist/server.d.ts"
+      ],
+      "middleware": [
+        "./dist/middleware.d.ts"
+      ],
+      "_request": [
+        "./dist/_request.d.ts"
+      ],
+      "_dictionary": [
+        "./dist/_request.d.ts"
+      ]
+    }
+  },
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "gt-next/config": [
+        "/dist/config",
+        "/dist/config"
+      ],
+      "gt-next/client": [
+        "/dist/client",
+        "/dist/client"
+      ],
+      "gt-next/server": [
+        "/dist/server",
+        "/dist/server"
+      ],
+      "gt-next/middleware": [
+        "/dist/middleware",
+        "/dist/middleware"
+      ],
+      "gt-next/_request": [
+        "/dist/_request",
+        "/dist/_request"
+      ],
+      "gt-next/_dictionary": [
+        "/dist/_dictionary",
+        "/dist/_dictionary"
+      ]
+    }
+  },
+  "keywords": [
+    "react",
+    "translation",
+    "internationalization",
+    "localization",
+    "i18n"
+  ],
+  "dependencies": {
+    "gt-react": "^5.4.0"
+  }
+}
