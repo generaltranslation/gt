@@ -75,7 +75,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = GTProvider;
 var jsx_runtime_1 = require("react/jsx-runtime");
-// 
+//
 var react_1 = __importDefault(require("react"));
 var internal_1 = require("gt-react/internal");
 var getI18NConfig_1 = __importDefault(require("../utils/getI18NConfig"));
@@ -92,7 +92,7 @@ var ClientProvider_1 = __importDefault(require("./ClientProvider"));
  * @param {string} id - ID of a nested dictionary, so that only a subset of a large dictionary needs to be sent to the client.
  *
  * @returns {JSX.Element} The provider component for General Translation context.
-*/
+ */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
         var I18NConfig, getID, locale, additionalMetadata, defaultLocale, renderSettings, dictionary, translations, translationRequired, existingTranslations, _c;
@@ -126,6 +126,7 @@ function GTProvider(_a) {
                     _d.label = 5;
                 case 5:
                     existingTranslations = _c;
+                    // For dictionaries
                     return [4 /*yield*/, Promise.all(Object.entries((0, internal_1.flattenDictionary)(id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)())).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
                             var entryID, _c, entry, metadata, taggedEntry, entryAsObjects, key, translation, translationPromise_1, _d, _e, _f, translationPromise, loadingFallback, errorFallback;
                             var _g;
@@ -147,17 +148,21 @@ function GTProvider(_a) {
                                         key = (0, internal_1.hashReactChildrenObjects)((metadata === null || metadata === void 0 ? void 0 : metadata.context) ? [entryAsObjects, metadata.context] : entryAsObjects);
                                         translation = existingTranslations === null || existingTranslations === void 0 ? void 0 : existingTranslations[entryID];
                                         if (translation && translation.k === key) {
-                                            return [2 /*return*/, translations[entryID] = translation];
+                                            return [2 /*return*/, (translations[entryID] = translation)];
                                         }
                                         if (!(typeof taggedEntry === 'string')) return [3 /*break*/, 4];
-                                        translationPromise_1 = I18NConfig.translate({ content: (0, generaltranslation_1.splitStringToContent)(taggedEntry), targetLanguage: locale, options: __assign({ id: entryID, hash: key }, additionalMetadata) });
-                                        if (!(renderSettings.method !== "subtle")) return [3 /*break*/, 2];
+                                        translationPromise_1 = I18NConfig.translate({
+                                            content: (0, generaltranslation_1.splitStringToContent)(taggedEntry),
+                                            targetLanguage: locale,
+                                            options: __assign({ id: entryID, hash: key }, additionalMetadata),
+                                        });
+                                        if (!(renderSettings.method !== 'subtle')) return [3 /*break*/, 2];
                                         _e = translations;
                                         _f = entryID;
                                         _g = {};
                                         return [4 /*yield*/, translationPromise_1];
                                     case 1:
-                                        _d = _e[_f] = (_g.t = _h.sent(), _g.k = key, _g);
+                                        _d = (_e[_f] = (_g.t = _h.sent(), _g.k = key, _g));
                                         return [3 /*break*/, 3];
                                     case 2:
                                         _d = undefined;
@@ -167,26 +172,27 @@ function GTProvider(_a) {
                                         translationPromise = I18NConfig.translateChildren({
                                             children: entryAsObjects,
                                             targetLanguage: locale,
-                                            metadata: __assign(__assign({ id: entryID, hash: key }, additionalMetadata), (renderSettings.timeout && { timeout: renderSettings.timeout }))
+                                            metadata: __assign(__assign({ id: entryID, hash: key }, additionalMetadata), (renderSettings.timeout && { timeout: renderSettings.timeout })),
                                         });
-                                        if (renderSettings.method === "skeleton") {
+                                        if (renderSettings.method === 'skeleton') {
                                             loadingFallback = (0, jsx_runtime_1.jsx)(react_1.default.Fragment, {}, "skeleton_".concat(entryID));
                                         }
-                                        else if (renderSettings.method === "replace") {
+                                        else if (renderSettings.method === 'replace') {
                                             loadingFallback = (0, renderDefaultChildren_1.default)({
                                                 children: taggedEntry,
-                                                defaultLocale: defaultLocale
+                                                defaultLocale: defaultLocale,
                                             });
                                         }
-                                        return [2 /*return*/, translations[entryID] = {
+                                        return [2 /*return*/, (translations[entryID] = {
                                                 promise: translationPromise,
                                                 loadingFallback: loadingFallback,
-                                                errorFallback: errorFallback
-                                            }];
+                                                errorFallback: errorFallback,
+                                            })];
                                 }
                             });
                         }); }))];
                 case 6:
+                    // For dictionaries
                     _d.sent();
                     return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProvider_1.default, { dictionary: dictionary, translations: __assign(__assign({}, existingTranslations), translations), locale: locale, defaultLocale: defaultLocale, translationRequired: translationRequired, children: children }))];
             }
