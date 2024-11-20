@@ -51,7 +51,7 @@ var getLocaleFunction;
  * @example
  * const locale = await getLocale();
  * console.log(locale); // 'en-US'
-*/
+ */
 function getLocale() {
     return __awaiter(this, void 0, void 0, function () {
         var customRequestConfig, customGetLocale, locale, _a, I18NConfig_1;
@@ -85,9 +85,7 @@ function getLocale() {
                     }); };
                     return [4 /*yield*/, getLocaleFunction()];
                 case 5: return [2 /*return*/, _c.sent()];
-                case 6:
-                    ;
-                    return [2 /*return*/];
+                case 6: return [2 /*return*/];
             }
         });
     });

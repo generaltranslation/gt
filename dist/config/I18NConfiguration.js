@@ -111,15 +111,22 @@ var I18NConfiguration = /** @class */ (function () {
         // Render method
         this.renderSettings = renderSettings;
         // GT
-        this.gt = new generaltranslation_1.default({ projectID: projectID, apiKey: apiKey, defaultLanguage: defaultLocale, baseURL: baseURL });
+        this.gt = new generaltranslation_1.default({
+            projectID: projectID,
+            apiKey: apiKey,
+            defaultLanguage: defaultLocale,
+            baseURL: baseURL,
+        });
         // Other metadata
-        this.metadata = __assign(__assign({ defaultLanguage: this.defaultLocale }, (this.renderSettings.timeout && { timeout: this.renderSettings.timeout - batchInterval })), metadata);
+        this.metadata = __assign(__assign({ defaultLanguage: this.defaultLocale }, (this.renderSettings.timeout && {
+            timeout: this.renderSettings.timeout - batchInterval,
+        })), metadata);
         // Dictionary managers
         if (cacheURL && projectID) {
             this._remoteTranslationsManager = RemoteTranslationsManager_1.default;
             this._remoteTranslationsManager.setConfig({
                 cacheURL: cacheURL,
-                projectID: projectID
+                projectID: projectID,
             });
         }
         // Batching
@@ -133,29 +140,33 @@ var I18NConfiguration = /** @class */ (function () {
     /**
      * Gets the application's default locale
      * @returns {string} A BCP-47 language tag
-    */
+     */
     I18NConfiguration.prototype.getDefaultLocale = function () {
         return this.defaultLocale;
     };
     /**
      * Gets the list of approved locales for this app
      * @returns {string[] | undefined} A list of BCP-47 language tags, or undefined if none were provided
-    */
+     */
     I18NConfiguration.prototype.getLocales = function () {
         return this.locales;
     };
     /**
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
-    */
+     */
     I18NConfiguration.prototype.translationEnabled = function () {
-        return (this.baseURL && this.projectID && (this.baseURL === defaultInitGTProps_1.default.baseURL ? this.gt.apiKey : true)) ? true : false;
+        return this.baseURL &&
+            this.projectID &&
+            (this.baseURL === defaultInitGTProps_1.default.baseURL ? this.gt.apiKey : true)
+            ? true
+            : false;
     };
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.
      * As of 7/31/24: method is "skeleton", "replace", "hang", "subtle".
      * Timeout is a number or null, representing no assigned timeout.
-    */
+     */
     I18NConfiguration.prototype.getRenderSettings = function () {
         return this.renderSettings;
     };
@@ -165,20 +176,22 @@ var I18NConfiguration = /** @class */ (function () {
      * @returns True if translation is required, otherwise false
      */
     I18NConfiguration.prototype.requiresTranslation = function (locale) {
-        return this.translationEnabled() && (0, generaltranslation_1.requiresTranslation)(this.defaultLocale, locale, this.locales);
+        return (this.translationEnabled() &&
+            (0, generaltranslation_1.requiresTranslation)(this.defaultLocale, locale, this.locales));
     };
     /**
      * Get the translation dictionaries for this user's locale, if they exist
+     * Globally shared cache
      * @param locale - The language set by the user
      * @returns A promise that resolves to the translations.
-    */
+     */
     I18NConfiguration.prototype.getTranslations = function (locale) {
         return __awaiter(this, void 0, void 0, function () {
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, ((_a = this._remoteTranslationsManager) === null || _a === void 0 ? void 0 : _a.getTranslations(locale))];
-                    case 1: return [2 /*return*/, (_b.sent()) || {}];
+                    case 1: return [2 /*return*/, ((_b.sent()) || {})];
                 }
             });
         });
@@ -193,6 +206,7 @@ var I18NConfiguration = /** @class */ (function () {
             var cacheKey, content, targetLanguage, options, translationPromise;
             var _this = this;
             return __generator(this, function (_a) {
+                console.log('params', params);
                 cacheKey = constructCacheKey(params.targetLanguage, params.options);
                 if (this._translationCache.has(cacheKey)) {
                     return [2 /*return*/, this._translationCache.get(cacheKey)];
@@ -200,16 +214,18 @@ var I18NConfiguration = /** @class */ (function () {
                 content = params.content, targetLanguage = params.targetLanguage, options = params.options;
                 translationPromise = new Promise(function (resolve, reject) {
                     _this._queue.push({
-                        type: "string",
+                        type: 'string',
                         data: {
                             content: content,
                             targetLanguage: targetLanguage,
                             projectID: _this.projectID,
-                            metadata: __assign(__assign({}, _this.metadata), options)
+                            metadata: __assign(__assign({}, _this.metadata), options),
                         },
-                        revalidate: (_this._remoteTranslationsManager) ? _this._remoteTranslationsManager.getTranslationRequested(targetLanguage) : false,
+                        revalidate: _this._remoteTranslationsManager
+                            ? _this._remoteTranslationsManager.getTranslationRequested(targetLanguage)
+                            : false,
                         resolve: resolve,
-                        reject: reject
+                        reject: reject,
                     });
                 });
                 this._translationCache.set(cacheKey, translationPromise);
@@ -224,28 +240,33 @@ var I18NConfiguration = /** @class */ (function () {
      * Translate the children components
      * @param params - Parameters for translation
      * @returns A promise that resolves when translation is complete
-    */
+     */
     I18NConfiguration.prototype.translateChildren = function (params) {
         return __awaiter(this, void 0, void 0, function () {
             var cacheKey, children, targetLanguage, metadata, translationPromise;
             var _this = this;
             return __generator(this, function (_a) {
                 cacheKey = constructCacheKey(params.targetLanguage, params.metadata);
+                // In memory cache to make sure the same translation isn't requested twice
                 if (this._translationCache.has(cacheKey)) {
+                    // Returns the previous request
                     return [2 /*return*/, this._translationCache.get(cacheKey)];
                 }
                 children = params.children, targetLanguage = params.targetLanguage, metadata = params.metadata;
                 translationPromise = new Promise(function (resolve, reject) {
+                    // In memory queue to batch requests
                     _this._queue.push({
-                        type: "react",
+                        type: 'react',
                         data: {
                             children: children,
                             targetLanguage: targetLanguage,
-                            metadata: __assign(__assign({}, _this.metadata), metadata)
+                            metadata: __assign(__assign({}, _this.metadata), metadata),
                         },
-                        revalidate: (_this._remoteTranslationsManager) ? _this._remoteTranslationsManager.getTranslationRequested(targetLanguage) : false,
+                        revalidate: _this._remoteTranslationsManager
+                            ? _this._remoteTranslationsManager.getTranslationRequested(targetLanguage)
+                            : false,
                         resolve: resolve,
-                        reject: reject
+                        reject: reject,
                     });
                 });
                 this._translationCache.set(cacheKey, translationPromise);
@@ -270,7 +291,7 @@ var I18NConfiguration = /** @class */ (function () {
                         _a.trys.push([1, 3, 4, 5]);
                         batchPromise = this.gt.translateBatch(batch);
                         batch.forEach(function (item) {
-                            if (_this._remoteTranslationsManager && item.revalidate)
+                            if (_this._remoteTranslationsManager && !item.revalidate)
                                 _this._remoteTranslationsManager.setTranslationRequested(item.data.targetLanguage);
                         });
                         return [4 /*yield*/, batchPromise];
@@ -282,7 +303,10 @@ var I18NConfiguration = /** @class */ (function () {
                                 return item.reject('Translation failed.');
                             if (result && typeof result === 'object') {
                                 item.resolve(result.translation);
-                                if (result.translation && result.language && result.reference && _this._remoteTranslationsManager) {
+                                if (result.translation &&
+                                    result.language &&
+                                    result.reference &&
+                                    _this._remoteTranslationsManager) {
                                     _this._remoteTranslationsManager.setTranslations(result.language, result.reference.key, result.reference.id, result.translation);
                                 }
                             }
@@ -303,11 +327,12 @@ var I18NConfiguration = /** @class */ (function () {
     };
     /**
      * Start the batching process with a set interval
-    */
+     */
     I18NConfiguration.prototype._startBatching = function () {
         var _this = this;
         setInterval(function () {
-            if (_this._queue.length > 0 && _this._activeRequests < _this.maxConcurrentRequests) {
+            if (_this._queue.length > 0 &&
+                _this._activeRequests < _this.maxConcurrentRequests) {
                 _this._sendBatchRequest(_this._queue);
                 _this._queue = [];
             }

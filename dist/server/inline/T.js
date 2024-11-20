@@ -124,20 +124,24 @@ function T(_a) {
                         translationsPromise = I18NConfig.getTranslations(locale);
                     }
                     taggedChildren = (0, internal_1.addGTIdentifier)(children);
-                    childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedChildren);
+                    // If no translation is required, render the default children
+                    // The dictionary wraps text in this <T> component
+                    // Thus, we need to also handle variables
                     if (!translationRequired) {
                         return [2 /*return*/, (0, renderDefaultChildren_1.default)({
                                 children: taggedChildren,
                                 variables: variables,
                                 variablesOptions: variablesOptions,
-                                defaultLocale: defaultLocale
+                                defaultLocale: defaultLocale,
                             })];
                     }
+                    childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedChildren);
                     key = (0, internal_1.hashReactChildrenObjects)(context ? [childrenAsObjects, context] : childrenAsObjects);
                     return [4 /*yield*/, translationsPromise];
                 case 2:
                     translations = _g.sent();
-                    translation = translations === null || translations === void 0 ? void 0 : translations[id || key];
+                    translation = id ? translations === null || translations === void 0 ? void 0 : translations[id] : undefined;
+                    // checks if an appropriate translation exists
                     if ((translation === null || translation === void 0 ? void 0 : translation.k) === key) {
                         target = translation.t;
                         return [2 /*return*/, (0, renderTranslatedChildren_1.default)({
@@ -145,7 +149,7 @@ function T(_a) {
                                 target: target,
                                 variables: variables,
                                 variablesOptions: variablesOptions,
-                                locales: [locale, defaultLocale]
+                                locales: [locale, defaultLocale],
                             })];
                     }
                     renderSettings || (renderSettings = I18NConfig.getRenderSettings());
@@ -166,22 +170,22 @@ function T(_a) {
                             target: target,
                             variables: variables,
                             variablesOptions: variablesOptions,
-                            locales: [locale, defaultLocale]
+                            locales: [locale, defaultLocale],
                         });
                     });
                     errorFallback = (0, renderDefaultChildren_1.default)({
                         children: taggedChildren,
                         variables: variables,
                         variablesOptions: variablesOptions,
-                        defaultLocale: defaultLocale
+                        defaultLocale: defaultLocale,
                     });
-                    if (renderSettings.method === "replace") {
+                    if (renderSettings.method === 'replace') {
                         loadingFallback = errorFallback;
                     }
-                    else if (renderSettings.method === "skeleton") {
-                        loadingFallback = (0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, {});
+                    else if (renderSettings.method === 'skeleton') {
+                        loadingFallback = (0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, {}); // blank
                     }
-                    if (!(renderSettings.method === "hang")) return [3 /*break*/, 7];
+                    if (!(renderSettings.method === 'hang')) return [3 /*break*/, 7];
                     _g.label = 4;
                 case 4:
                     _g.trys.push([4, 6, , 7]);
@@ -192,12 +196,14 @@ function T(_a) {
                     console.error(error_1);
                     return [2 /*return*/, errorFallback];
                 case 7:
-                    if (!["skeleton", "replace"].includes(renderSettings.method) && !id) {
-                        // If none of those, i.e. "subtle" 
+                    if (!['skeleton', 'replace'].includes(renderSettings.method) && !id) {
+                        // If none of those, i.e. "subtle"
                         // return the children, with no special rendering
                         // a translation may be available from a cached translation dictionary next time the component is loaded
                         return [2 /*return*/, errorFallback];
                     }
+                    // For skeleton & replace, return a suspense component so that
+                    // something is shown while waiting for the translation
                     return [2 /*return*/, ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: (0, jsx_runtime_1.jsx)(Resolver_1.default, { children: promise, fallback: errorFallback }) }))];
             }
         });

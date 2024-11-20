@@ -1,1 +1,1 @@
-{"version":3,"file":"getNextLocale.d.ts","sourceRoot":"","sources":["../../src/next/getNextLocale.ts"],"names":[],"mappings":"AAKA;;;;;;;;GAQG;AACH,wBAAsB,aAAa,CAAC,aAAa,GAAE,MAAW,EAAE,OAAO,CAAC,EAAE,MAAM,EAAE,GAAG,SAAS,GAAG,OAAO,CAAC,MAAM,CAAC,CAa/G"}
+{"version":3,"file":"getNextLocale.d.ts","sourceRoot":"","sources":["../../src/next/getNextLocale.ts"],"names":[],"mappings":"AAKA;;;;;;;;GAQG;AACH,wBAAsB,aAAa,CACjC,aAAa,GAAE,MAAW,EAC1B,OAAO,CAAC,EAAE,MAAM,EAAE,GAAG,SAAS,GAC7B,OAAO,CAAC,MAAM,CAAC,CAmBjB"}

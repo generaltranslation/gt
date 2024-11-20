@@ -66,8 +66,8 @@ var RemoteTranslationsManager = /** @class */ (function () {
      */
     function RemoteTranslationsManager() {
         this.config = {
-            cacheURL: "https://cache.gtx.dev",
-            projectID: ""
+            cacheURL: 'https://cache.gtx.dev',
+            projectID: '',
         };
         this.translationsMap = new Map();
         this.fetchPromises = new Map();
@@ -159,7 +159,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
             return false;
         var reference = getTranslationReference(locale);
         var currentTranslations = this.translationsMap.get(reference) || {};
-        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[id] = (translation && typeof translation === 'object' && translation.t)
+        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[id] = translation && typeof translation === 'object' && translation.t
             ? __assign(__assign({}, translation), { k: key }) : { k: key, t: translation }, _a)));
         return true;
     };

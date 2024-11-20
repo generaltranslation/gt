@@ -35,44 +35,51 @@ function renderTranslatedElement(_a) {
     var _b;
     var sourceElement = _a.sourceElement, targetElement = _a.targetElement, _c = _a.variables, variables = _c === void 0 ? {} : _c, _d = _a.variablesOptions, variablesOptions = _d === void 0 ? {} : _d, _e = _a.locales, locales = _e === void 0 ? [internal_1.primitives.libraryDefaultLocale] : _e;
     var _f = sourceElement.props, generaltranslation = _f["data-_gt"], props = __rest(_f, ['data-_gt']);
-    var transformation = generaltranslation === null || generaltranslation === void 0 ? void 0 : generaltranslation["transformation"];
-    if (transformation === "plural") {
-        var n = typeof variables.n === 'number' ? variables.n :
-            typeof sourceElement.props.n === 'number' ? sourceElement.props.n :
-                sourceElement.props['data-_gt-n'];
+    var transformation = generaltranslation === null || generaltranslation === void 0 ? void 0 : generaltranslation['transformation'];
+    if (transformation === 'plural') {
+        var n = typeof variables.n === 'number'
+            ? variables.n
+            : typeof sourceElement.props.n === 'number'
+                ? sourceElement.props.n
+                : sourceElement.props['data-_gt-n'];
         var sourceBranches = generaltranslation.branches || {};
-        var sourceBranch = (0, internal_1.getPluralBranch)(n, locales, sourceBranches) || sourceElement.props.children;
-        var targetBranches = targetElement.props["data-_gt"].branches || {};
-        var targetBranch = (0, internal_1.getPluralBranch)(n, locales, targetBranches) || targetElement.props.children;
+        var sourceBranch = (0, internal_1.getPluralBranch)(n, locales, sourceBranches) ||
+            sourceElement.props.children;
+        var targetBranches = targetElement.props['data-_gt'].branches || {};
+        var targetBranch = (0, internal_1.getPluralBranch)(n, locales, targetBranches) ||
+            targetElement.props.children;
         return renderTranslatedChildren({
             source: sourceBranch,
             target: targetBranch,
             variables: variables,
             variablesOptions: variablesOptions,
-            locales: locales
+            locales: locales,
         });
     }
-    if (transformation === "branch") {
+    if (transformation === 'branch') {
         var name_1 = props.name, branch = props.branch, children = props.children;
-        name_1 = name_1 || sourceElement.props['data-_gt-name'] || "branch";
-        branch = variables[name_1] || branch || sourceElement.props['data-_gt-branch-name'];
+        name_1 = name_1 || sourceElement.props['data-_gt-name'] || 'branch';
+        branch =
+            variables[name_1] || branch || sourceElement.props['data-_gt-branch-name'];
         var sourceBranch = (generaltranslation.branches || {})[branch] || children;
-        var targetBranch = (targetElement.props["data-_gt"].branches || {})[branch] || targetElement.props.children;
+        var targetBranch = (targetElement.props['data-_gt'].branches || {})[branch] ||
+            targetElement.props.children;
         return renderTranslatedChildren({
             source: sourceBranch,
             target: targetBranch,
             variables: variables,
             variablesOptions: variablesOptions,
-            locales: locales
+            locales: locales,
         });
     }
+    // If there are children, clone the source element with new children that represent the translation
     if ((props === null || props === void 0 ? void 0 : props.children) && ((_b = targetElement.props) === null || _b === void 0 ? void 0 : _b.children)) {
         return react_1.default.cloneElement(sourceElement, __assign(__assign({}, props), { 'data-_gt': undefined, children: renderTranslatedChildren({
                 source: props.children,
                 target: targetElement.props.children,
                 variables: variables,
                 variablesOptions: variablesOptions,
-                locales: locales
+                locales: locales,
             }) }));
     }
     return sourceElement;
@@ -80,15 +87,18 @@ function renderTranslatedElement(_a) {
 function renderTranslatedChildren(_a) {
     var source = _a.source, target = _a.target, _b = _a.variables, variables = _b === void 0 ? {} : _b, _c = _a.variablesOptions, variablesOptions = _c === void 0 ? {} : _c, _d = _a.locales, locales = _d === void 0 ? [internal_1.primitives.libraryDefaultLocale] : _d;
     // Most straightforward case, return a valid React node
+    // If there is an error in the translation or similar, return the default
     if ((target === null || typeof target === 'undefined') && source)
         return source;
     if (typeof target === 'string')
         return target;
+    // Source & target are both arrays, but may be in different orders
+    // Go through the source array & filters the source elements for actual react elements & variables
     if (Array.isArray(source) && Array.isArray(target)) {
         var sourceElements_1 = source.filter(function (sourceChild) {
             if (react_1.default.isValidElement(sourceChild)) {
                 var generaltranslation = (0, getGTProp_1.default)(sourceChild);
-                if ((generaltranslation === null || generaltranslation === void 0 ? void 0 : generaltranslation.transformation) === "variable") {
+                if ((generaltranslation === null || generaltranslation === void 0 ? void 0 : generaltranslation.transformation) === 'variable') {
                     var _a = (0, internal_1.getVariableProps)(sourceChild.props), variableName = _a.variableName, variableValue = _a.variableValue, variableOptions = _a.variableOptions;
                     if (typeof variables[variableName] === 'undefined') {
                         variables[variableName] = variableValue;
@@ -100,6 +110,7 @@ function renderTranslatedChildren(_a) {
                 }
             }
         });
+        // Take a target element & find the matching source element with the same id
         var findMatchingSourceElement_1 = function (targetElement) {
             return sourceElements_1.find(function (sourceChild) {
                 var _a, _b;
@@ -112,41 +123,45 @@ function renderTranslatedChildren(_a) {
                 return false;
             });
         };
+        // Iterate through the target array & recursively render the translated children
         return target.map(function (targetChild, index) {
             if (typeof targetChild === 'string')
-                return (0, jsx_runtime_1.jsx)(react_1.default.Fragment, { children: targetChild }, "string_".concat(index));
+                return ((0, jsx_runtime_1.jsx)(react_1.default.Fragment, { children: targetChild }, "string_".concat(index)));
             if ((0, internal_1.isVariableObject)(targetChild)) {
                 return ((0, jsx_runtime_1.jsx)(react_1.default.Fragment, { children: (0, renderVariable_1.default)({
-                        variableType: targetChild.variable || "variable",
+                        variableType: targetChild.variable || 'variable',
                         variableName: targetChild.key,
                         variableValue: variables[targetChild.key],
-                        variableOptions: variablesOptions[targetChild.key]
+                        variableOptions: variablesOptions[targetChild.key],
                     }) }, "var_".concat(index)));
             }
             var matchingSourceElement = findMatchingSourceElement_1(targetChild);
             if (matchingSourceElement)
-                return (0, jsx_runtime_1.jsx)(react_1.default.Fragment, { children: renderTranslatedElement({
+                return ((0, jsx_runtime_1.jsx)(react_1.default.Fragment, { children: renderTranslatedElement({
                         sourceElement: matchingSourceElement,
                         targetElement: targetChild,
                         variables: variables,
                         variablesOptions: variablesOptions,
-                        locales: locales
-                    }) }, "element_".concat(index));
+                        locales: locales,
+                    }) }, "element_".concat(index)));
         });
     }
     if (target && typeof target === 'object' && !Array.isArray(target)) {
-        var targetType = (0, internal_1.isVariableObject)(target) ? "variable" : "element";
+        var targetType = (0, internal_1.isVariableObject)(target)
+            ? 'variable'
+            : 'element';
         if (react_1.default.isValidElement(source)) {
-            if (targetType === "element") {
+            if (targetType === 'element') {
                 return renderTranslatedElement({
-                    sourceElement: source, targetElement: target,
+                    sourceElement: source,
+                    targetElement: target,
                     variables: variables,
                     variablesOptions: variablesOptions,
-                    locales: locales
+                    locales: locales,
                 });
             }
             var generaltranslation = (0, getGTProp_1.default)(source);
-            if ((generaltranslation === null || generaltranslation === void 0 ? void 0 : generaltranslation.transformation) === "variable") {
+            if ((generaltranslation === null || generaltranslation === void 0 ? void 0 : generaltranslation.transformation) === 'variable') {
                 var _e = (0, internal_1.getVariableProps)(source.props), variableName = _e.variableName, variableValue = _e.variableValue, variableOptions = _e.variableOptions;
                 if (typeof variables[variableName] === 'undefined') {
                     variables[variableName] = variableValue;
@@ -154,13 +169,13 @@ function renderTranslatedChildren(_a) {
                 variablesOptions[variableName] = __assign(__assign({}, variablesOptions[variableName]), variableOptions);
             }
         }
-        if (targetType === "variable") {
+        if (targetType === 'variable') {
             var targetVariable = target;
             return (0, renderVariable_1.default)({
-                variableType: targetVariable.variable || "variable",
+                variableType: targetVariable.variable || 'variable',
                 variableName: targetVariable.key,
                 variableValue: variables[targetVariable.key],
-                variableOptions: variablesOptions[targetVariable.key]
+                variableOptions: variablesOptions[targetVariable.key],
             });
         }
     }

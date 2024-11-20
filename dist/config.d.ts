@@ -1,5 +1,5 @@
-import InitGTProps from "./primitives/InitGTProps";
-import { NextConfig } from "next";
+import InitGTProps from './primitives/InitGTProps';
+import { NextConfig } from 'next';
 /**
  * Initializes General Translation settings for a Next.js application.
  *
