@@ -76,15 +76,20 @@ function initGT(_a) {
     if (_a === void 0) { _a = defaultInitGTProps_1.default; }
     var i18n = _a.i18n, dictionary = _a.dictionary, _b = _a.apiKey, apiKey = _b === void 0 ? defaultInitGTProps_1.default.apiKey : _b, _c = _a.projectID, projectID = _c === void 0 ? defaultInitGTProps_1.default.projectID : _c, _d = _a.baseURL, baseURL = _d === void 0 ? defaultInitGTProps_1.default.baseURL : _d, _e = _a.cacheURL, cacheURL = _e === void 0 ? defaultInitGTProps_1.default.cacheURL : _e, locales = _a.locales, _f = _a.defaultLocale, defaultLocale = _f === void 0 ? (locales === null || locales === void 0 ? void 0 : locales[0]) || defaultInitGTProps_1.default.defaultLocale : _f, _g = _a.renderSettings, renderSettings = _g === void 0 ? defaultInitGTProps_1.default.renderSettings : _g, _h = _a._maxConcurrentRequests, _maxConcurrentRequests = _h === void 0 ? defaultInitGTProps_1.default._maxConcurrectRequests : _h, _j = _a._batchInterval, _batchInterval = _j === void 0 ? defaultInitGTProps_1.default._batchInterval : _j, metadata = __rest(_a, ["i18n", "dictionary", "apiKey", "projectID", "baseURL", "cacheURL", "locales", "defaultLocale", "renderSettings", "_maxConcurrentRequests", "_batchInterval"]);
     // Error checks
-    if (!projectID && ((cacheURL === defaultInitGTProps_1.default.cacheURL) || (baseURL === defaultInitGTProps_1.default.baseURL)))
+    if (!projectID &&
+        (cacheURL === defaultInitGTProps_1.default.cacheURL ||
+            baseURL === defaultInitGTProps_1.default.baseURL))
         console.error('Project ID missing! Set projectID as GT_PROJECT_ID in the environment or by passing the projectID parameter to initGT(). Find your project ID: www.generaltranslation.com/dashboard.');
-    if ((!apiKey || !projectID) && (baseURL === defaultInitGTProps_1.default.baseURL)) {
-        console.error("API key is required for automatic translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off automatic translation by setting baseURL to an empty string.)");
+    if ((!apiKey || !projectID) && baseURL === defaultInitGTProps_1.default.baseURL) {
+        console.error('API key is required for automatic translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off automatic translation by setting baseURL to an empty string.)');
     }
+    // Store config params in environment variable to allow for global access (in some cases)
     var I18NConfigParams = JSON.stringify(__assign({ apiKey: apiKey, projectID: projectID, baseURL: baseURL, cacheURL: cacheURL, locales: locales, defaultLocale: defaultLocale, renderSettings: renderSettings, maxConcurrentRequests: _maxConcurrentRequests, batchInterval: _batchInterval }, metadata));
     // Use i18n and dictionary values as file paths if they are provided as such
     var resolvedI18NFilePath = typeof i18n === 'string' ? i18n : resolveConfigFilepath('i18n');
-    var resolvedDictionaryFilePath = typeof dictionary === 'string' ? dictionary : resolveConfigFilepath('dictionary');
+    var resolvedDictionaryFilePath = typeof dictionary === 'string'
+        ? dictionary
+        : resolveConfigFilepath('dictionary');
     return function (config) {
         if (config === void 0) { config = {}; }
         return __assign(__assign({}, config), { env: __assign(__assign({}, config.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), webpack: function webpack() {
@@ -136,7 +141,7 @@ function withExtensions(localPath) {
         "".concat(localPath, ".ts"),
         "".concat(localPath, ".tsx"),
         "".concat(localPath, ".js"),
-        "".concat(localPath, ".jsx")
+        "".concat(localPath, ".jsx"),
     ];
 }
 //# sourceMappingURL=config.js.map

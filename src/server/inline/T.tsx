@@ -1,20 +1,24 @@
-import { addGTIdentifier, writeChildrenAsObjects, hashReactChildrenObjects } from "gt-react/internal";
-import getI18NConfig from "../../utils/getI18NConfig";
-import getLocale from "../../request/getLocale";
-import getMetadata from "../../request/getMetadata";
-import { Suspense } from "react";
-import renderTranslatedChildren from "../rendering/renderTranslatedChildren";
-import renderDefaultChildren from "../rendering/renderDefaultChildren";
-import Resolver from "./Resolver";
+import {
+  addGTIdentifier,
+  writeChildrenAsObjects,
+  hashReactChildrenObjects,
+} from 'gt-react/internal';
+import getI18NConfig from '../../utils/getI18NConfig';
+import getLocale from '../../request/getLocale';
+import getMetadata from '../../request/getMetadata';
+import { Suspense } from 'react';
+import renderTranslatedChildren from '../rendering/renderTranslatedChildren';
+import renderDefaultChildren from '../rendering/renderDefaultChildren';
+import Resolver from './Resolver';
 
 type RenderSettings = {
-    method: "skeleton" | "replace" | "hang" | "subtle",
-    timeout: number | null;
-}
+  method: 'skeleton' | 'replace' | 'hang' | 'subtle';
+  timeout: number | null;
+};
 
 /**
  * Translation component that renders its children translated into the user's language.
- * 
+ *
  * @example
  * ```jsx
  * // Basic usage:
@@ -22,7 +26,7 @@ type RenderSettings = {
  *  Hello, <Var name="name" value={firstname}>!
  * </T>
  * ```
- * 
+ *
  * @example
  * ```jsx
  * // Translating a plural
@@ -32,14 +36,14 @@ type RenderSettings = {
  *  </Plural>
  * </T>
  * ```
- * 
+ *
  * When used on the server-side, can create translations on demand.
  * If you need to ensure server-side usage import from `'gt-next/server'`.
- * 
+ *
  * When used on the client-side, will throw an error if no `id` prop is provided.
  *
  * By default, General Translation saves the translation in a remote cache if an `id` option is passed.
- * 
+ *
  * @param {React.ReactNode} children - The content to be translated or displayed.
  * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
  * @param {Object} [renderSettings] - Optional settings controlling how fallback content is rendered during translation.
@@ -52,110 +56,145 @@ type RenderSettings = {
  * @param {any} [context] - Additional context for translation key generation.
  * @param {Object} [props] - Additional props for the component.
  * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
- * 
+ *
  * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
 export default async function T({
-    children, id,
-    context,
-    renderSettings,
-    variables, variablesOptions
+  children,
+  id,
+  context,
+  renderSettings,
+  variables,
+  variablesOptions,
 }: {
-    children: any,
-    id?: string
-    context?: string,
-    renderSettings?: RenderSettings
-    [key: string]: any
+  children: any;
+  id?: string;
+  context?: string;
+  renderSettings?: RenderSettings;
+  [key: string]: any;
 }): Promise<any> {
+  if (!children) {
+    return;
+  }
 
-    if (!children) {
-        return;
-    }
+  const I18NConfig = getI18NConfig();
+  const locale = await getLocale();
+  const defaultLocale = I18NConfig.getDefaultLocale();
+  const translationRequired = I18NConfig.requiresTranslation(locale);
 
-    const I18NConfig = getI18NConfig();
-    const locale = await getLocale();
-    const defaultLocale = I18NConfig.getDefaultLocale();
-    const translationRequired = I18NConfig.requiresTranslation(locale);
+  // Promise for getting translations from cache
+  // Async request is made here to request translations from the remote cache
+  let translationsPromise;
+  if (translationRequired) {
+    translationsPromise = I18NConfig.getTranslations(locale);
+  }
 
-    let translationsPromise;
-    if (translationRequired) {
-        translationsPromise = I18NConfig.getTranslations(locale);
-    }
+  // Gets tagged children (with GT identifiers)
+  const taggedChildren = addGTIdentifier(children);
 
-    const taggedChildren = addGTIdentifier(children);
-    const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-
-    if (!translationRequired) {
-        return renderDefaultChildren({ 
-            children: taggedChildren, variables, variablesOptions, defaultLocale
-        });
-    }
-
-    const key: string = hashReactChildrenObjects(context ? [childrenAsObjects, context] : childrenAsObjects);
-
-    const translations = await translationsPromise;
-
-    const translation = translations?.[id || key];
-
-    if (translation?.k === key) {
-        // a translation exists!
-        let target = translation.t;
-        return renderTranslatedChildren({
-            source: taggedChildren, target,
-            variables, variablesOptions, locales: [locale, defaultLocale]
-        })
-    }
-
-    renderSettings ||= I18NConfig.getRenderSettings();
-
-    const translationPromise = I18NConfig.translateChildren({ 
-        children: childrenAsObjects, 
-        targetLanguage: locale, 
-        metadata: { ...(id && { id }), hash: key, ...(await getMetadata()), ...(renderSettings.timeout && { timeout: renderSettings.timeout }) } 
+  // If no translation is required, render the default children
+  // The dictionary wraps text in this <T> component
+  // Thus, we need to also handle variables
+  if (!translationRequired) {
+    return renderDefaultChildren({
+      children: taggedChildren,
+      variables,
+      variablesOptions,
+      defaultLocale,
     });
-    let promise = translationPromise.then(translation => {
-        let target = translation;
-        return renderTranslatedChildren({
-            source: taggedChildren, target, 
-            variables, variablesOptions,
-            locales: [locale, defaultLocale]
-        });
+  }
+
+  // Turns tagged children into objects
+  const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+
+  // The hash is used to identify the translation
+  const key: string = hashReactChildrenObjects(
+    context ? [childrenAsObjects, context] : childrenAsObjects
+  );
+
+  // Wait for translations from the cache
+  const translations = await translationsPromise;
+
+  // Gets the translation for the given id
+  const translation = id ? translations?.[id] : undefined;
+
+  // checks if an appropriate translation exists
+  if (translation?.k === key) {
+    // a translation exists!
+    let target = translation.t;
+    return renderTranslatedChildren({
+      source: taggedChildren,
+      target,
+      variables,
+      variablesOptions,
+      locales: [locale, defaultLocale],
     });
+  }
 
-    let loadingFallback;
-    let errorFallback;
+  renderSettings ||= I18NConfig.getRenderSettings();
 
-    errorFallback = renderDefaultChildren({
-        children: taggedChildren, variables, variablesOptions, defaultLocale
+  // On-demand translates the children
+  const translationPromise = I18NConfig.translateChildren({
+    children: childrenAsObjects,
+    targetLanguage: locale,
+    metadata: {
+      ...(id && { id }),
+      hash: key,
+      ...(await getMetadata()),
+      ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
+    },
+  });
+
+  // Awaits the translation promise
+  let promise = translationPromise.then((translation) => {
+    let target = translation;
+    return renderTranslatedChildren({
+      source: taggedChildren,
+      target,
+      variables,
+      variablesOptions,
+      locales: [locale, defaultLocale],
     });
+  });
 
-    if (renderSettings.method === "replace") {
-        loadingFallback = errorFallback;
-    }
-    else if (renderSettings.method === "skeleton") {
-        loadingFallback = <></>
-    }
+  let loadingFallback; // Blank screen
+  let errorFallback; // Default locale fallback
 
-    if (renderSettings.method === "hang") {
-        // Wait until the site is translated to return
-        try {
-            return await promise;
-        } catch (error) {
-            console.error(error);
-            return errorFallback;
-        }
-    }
+  errorFallback = renderDefaultChildren({
+    children: taggedChildren,
+    variables,
+    variablesOptions,
+    defaultLocale,
+  });
 
-    if (!["skeleton", "replace"].includes(renderSettings.method) && !id) {
-        // If none of those, i.e. "subtle" 
-        // return the children, with no special rendering
-        // a translation may be available from a cached translation dictionary next time the component is loaded
-        return errorFallback;
-    }
+  if (renderSettings.method === 'replace') {
+    loadingFallback = errorFallback;
+  } else if (renderSettings.method === 'skeleton') {
+    loadingFallback = <></>; // blank
+  }
 
-    return (
-        <Suspense fallback={loadingFallback}>
-            <Resolver children={promise} fallback={errorFallback} />
-        </Suspense>
-    )
+  if (renderSettings.method === 'hang') {
+    // Wait until the site is translated to return
+    try {
+      return await promise;
+    } catch (error) {
+      console.error(error);
+      return errorFallback;
+    }
+  }
+
+  if (!['skeleton', 'replace'].includes(renderSettings.method) && !id) {
+    // If none of those, i.e. "subtle"
+    // return the children, with no special rendering
+    // a translation may be available from a cached translation dictionary next time the component is loaded
+    return errorFallback;
+  }
+
+  // For skeleton & replace, return a suspense component so that
+  // something is shown while waiting for the translation
+  return (
+    <Suspense fallback={loadingFallback}>
+      <Resolver children={promise} fallback={errorFallback} />
+    </Suspense>
+  );
 }

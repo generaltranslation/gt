@@ -1,4 +1,4 @@
-import GT from "generaltranslation";
+import GT from 'generaltranslation';
 type I18NConfigurationParams = {
     apiKey: string;
     projectID: string;
@@ -7,7 +7,7 @@ type I18NConfigurationParams = {
     defaultLocale: string;
     locales?: string[];
     renderSettings: {
-        method: "skeleton" | "replace" | "hang" | "subtle";
+        method: 'skeleton' | 'replace' | 'hang' | 'subtle';
         timeout: number | null;
     };
     translations?: Record<string, () => Promise<Record<string, any>>>;
@@ -21,7 +21,7 @@ export default class I18NConfiguration {
     defaultLocale: string;
     locales: string[] | undefined;
     renderSettings: {
-        method: "skeleton" | "replace" | "hang" | "subtle";
+        method: 'skeleton' | 'replace' | 'hang' | 'subtle';
         timeout: number | null;
     };
     private _remoteTranslationsManager;
@@ -36,25 +36,25 @@ export default class I18NConfiguration {
     /**
      * Gets the application's default locale
      * @returns {string} A BCP-47 language tag
-    */
+     */
     getDefaultLocale(): string;
     /**
      * Gets the list of approved locales for this app
      * @returns {string[] | undefined} A list of BCP-47 language tags, or undefined if none were provided
-    */
+     */
     getLocales(): string[] | undefined;
     /**
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
-    */
+     */
     translationEnabled(): boolean;
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.
      * As of 7/31/24: method is "skeleton", "replace", "hang", "subtle".
      * Timeout is a number or null, representing no assigned timeout.
-    */
+     */
     getRenderSettings(): {
-        method: "skeleton" | "replace" | "hang" | "subtle";
+        method: 'skeleton' | 'replace' | 'hang' | 'subtle';
         timeout: number | null;
     };
     /**
@@ -65,9 +65,10 @@ export default class I18NConfiguration {
     requiresTranslation(locale: string): boolean;
     /**
      * Get the translation dictionaries for this user's locale, if they exist
+     * Globally shared cache
      * @param locale - The language set by the user
      * @returns A promise that resolves to the translations.
-    */
+     */
     getTranslations(locale: string): Promise<Record<string, any>>;
     /**
      * Translate content into language
@@ -86,7 +87,7 @@ export default class I18NConfiguration {
      * Translate the children components
      * @param params - Parameters for translation
      * @returns A promise that resolves when translation is complete
-    */
+     */
     translateChildren(params: {
         children: any;
         targetLanguage: string;
@@ -99,7 +100,7 @@ export default class I18NConfiguration {
     private _sendBatchRequest;
     /**
      * Start the batching process with a set interval
-    */
+     */
     private _startBatching;
 }
 export {};

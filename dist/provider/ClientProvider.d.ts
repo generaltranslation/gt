@@ -1,4 +1,4 @@
-export default function ClientProvider({ children, dictionary, translations, locale, defaultLocale, translationRequired }: {
+export default function ClientProvider({ children, dictionary, translations, locale, defaultLocale, translationRequired, }: {
     children: any;
     dictionary: Record<string, any>;
     translations: Record<string, any>;

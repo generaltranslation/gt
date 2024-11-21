@@ -25,6 +25,7 @@ var ClientResolver_1 = __importDefault(require("./ClientResolver"));
 // meant to be used inside the server-side <GTProvider>
 function ClientProvider(_a) {
     var children = _a.children, dictionary = _a.dictionary, translations = _a.translations, locale = _a.locale, defaultLocale = _a.defaultLocale, translationRequired = _a.translationRequired;
+    // For dictionaries
     var translate = (0, react_1.useCallback)(function (id, options, f) {
         var _a;
         if (options === void 0) { options = {}; }
@@ -33,41 +34,40 @@ function ClientProvider(_a) {
             console.warn("Dictionary entry with id \"".concat(id, "\" is null or undefined"));
             return undefined;
         }
-        ;
         if (metadata && metadata.isFunction) {
             if (typeof f !== 'function') {
-                throw new Error("You're trying to call a function in the server dictionary on the client-side, but functions can't be passed directly from server to client. "
-                    + "Try including the function you want to call as a parameter in t(), like t(\"".concat(id, "\", ").concat(options ? JSON.stringify(options) : 'undefined', ", MyFunction)"));
+                throw new Error("You're trying to call a function in the server dictionary on the client-side, but functions can't be passed directly from server to client. " +
+                    "Try including the function you want to call as a parameter in t(), like t(\"".concat(id, "\", ").concat(options ? JSON.stringify(options) : 'undefined', ", MyFunction)"));
             }
             entry = (0, internal_1.addGTIdentifier)(f(options));
         }
         var variables = options;
         var variablesOptions;
         if (metadata === null || metadata === void 0 ? void 0 : metadata.variablesOptions)
-            variablesOptions = __assign(__assign({}, variablesOptions || {}), metadata.variablesOptions);
+            variablesOptions = __assign(__assign({}, (variablesOptions || {})), metadata.variablesOptions);
         if (options.variablesOptions)
-            variablesOptions = __assign(__assign({}, variablesOptions || {}), options.variablesOptions);
+            variablesOptions = __assign(__assign({}, (variablesOptions || {})), options.variablesOptions);
         if (typeof entry === 'string') {
             var translation_1 = ((_a = translations[id]) === null || _a === void 0 ? void 0 : _a.t) || entry;
             return (0, generaltranslation_1.renderContentToString)(translationRequired ? translation_1 : entry, [locale, defaultLocale], variables, variablesOptions);
         }
-        ;
         if (!translationRequired || !translations[id]) {
             return (0, client_1._renderDefaultChildren)({
                 children: entry,
                 variables: variables,
                 variablesOptions: variablesOptions,
-                defaultLocale: defaultLocale
+                defaultLocale: defaultLocale,
             });
         }
-        var renderTranslation = (function (translationEntry) {
+        var renderTranslation = function (translationEntry) {
             return (0, client_1._renderTranslatedChildren)({
-                source: entry, target: translationEntry,
+                source: entry,
+                target: translationEntry,
                 variables: variables,
                 variablesOptions: variablesOptions,
-                locales: [locale, defaultLocale]
+                locales: [locale, defaultLocale],
             });
-        });
+        };
         var translation = translations[id];
         if (translation.promise) {
             if (!translation.errorFallback) {
@@ -75,7 +75,7 @@ function ClientProvider(_a) {
                     children: entry,
                     variables: variables,
                     variablesOptions: variablesOptions,
-                    defaultLocale: defaultLocale
+                    defaultLocale: defaultLocale,
                 });
             }
             if (!translation.loadingFallback) {
@@ -89,8 +89,7 @@ function ClientProvider(_a) {
             translate: translate,
             locale: locale,
             defaultLocale: defaultLocale,
-            translations: translations
+            translations: translations,
         }, children: children }));
 }
-;
 //# sourceMappingURL=ClientProvider.js.map

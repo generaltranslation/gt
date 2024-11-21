@@ -30,33 +30,40 @@ var react_1 = __importDefault(require("react"));
 var renderVariable_1 = __importDefault(require("./renderVariable"));
 var internal_1 = require("gt-react/internal");
 var internal_2 = require("gt-react/internal");
+// Renders the children in the default locale, as they are supplied
+// with variables substituted (for use by the dictionary)
 function renderDefaultChildren(_a) {
     var children = _a.children, _b = _a.variables, variables = _b === void 0 ? {} : _b, _c = _a.variablesOptions, variablesOptions = _c === void 0 ? {} : _c, _d = _a.defaultLocale, defaultLocale = _d === void 0 ? internal_2.primitives.libraryDefaultLocale : _d;
     var handleSingleChild = function (child) {
         if (react_1.default.isValidElement(child)) {
             var _a = child.props, generaltranslation = _a["data-_gt"], props = __rest(_a, ['data-_gt']);
-            if ((generaltranslation === null || generaltranslation === void 0 ? void 0 : generaltranslation.transformation) === "variable") {
+            if ((generaltranslation === null || generaltranslation === void 0 ? void 0 : generaltranslation.transformation) === 'variable') {
                 var _b = (0, internal_1.getVariableProps)(child.props), variableName = _b.variableName, variableType = _b.variableType, variableValue = _b.variableValue, variableOptions = _b.variableOptions; // needs both regular props and data-_gt
-                variableValue = (typeof variables[variableName] !== 'undefined') ?
-                    variables[variableName] : variableValue;
+                variableValue =
+                    typeof variables[variableName] !== 'undefined'
+                        ? variables[variableName]
+                        : variableValue;
                 return (0, renderVariable_1.default)({
                     variableName: variableName,
                     variableType: variableType,
                     variableValue: variableValue,
-                    variableOptions: __assign(__assign({}, variablesOptions[variableName]), variableOptions)
+                    variableOptions: __assign(__assign({}, variablesOptions[variableName]), variableOptions),
                 });
             }
-            if ((generaltranslation === null || generaltranslation === void 0 ? void 0 : generaltranslation.transformation) === "plural") {
-                var n = typeof variables.n === 'number' ? variables.n :
-                    typeof props.n === 'number' ? props.n :
-                        props['data-_gt-n'];
+            if ((generaltranslation === null || generaltranslation === void 0 ? void 0 : generaltranslation.transformation) === 'plural') {
+                var n = typeof variables.n === 'number'
+                    ? variables.n
+                    : typeof props.n === 'number'
+                        ? props.n
+                        : props['data-_gt-n'];
                 var branches = generaltranslation.branches || {};
                 return handleChildren((0, internal_1.getPluralBranch)(n, [defaultLocale], branches) || child.props.children);
             }
-            if ((generaltranslation === null || generaltranslation === void 0 ? void 0 : generaltranslation.transformation) === "branch") {
+            if ((generaltranslation === null || generaltranslation === void 0 ? void 0 : generaltranslation.transformation) === 'branch') {
                 var children_1 = props.children, name_1 = props.name, branch = props.branch, _gt = props["data-_gt"], branches = __rest(props, ["children", "name", "branch", 'data-_gt']);
-                name_1 = name_1 || props['data-_gt-name'] || "branch";
-                branch = variables[name_1] || branch || child.props['data-_gt-branch-name'];
+                name_1 = name_1 || props['data-_gt-name'] || 'branch';
+                branch =
+                    variables[name_1] || branch || child.props['data-_gt-branch-name'];
                 branches = generaltranslation.branches || {};
                 return handleChildren(branches[branch] !== undefined ? branches[branch] : children_1);
             }
@@ -68,7 +75,9 @@ function renderDefaultChildren(_a) {
         return child;
     };
     var handleChildren = function (children) {
-        return Array.isArray(children) ? react_1.default.Children.map(children, handleSingleChild) : handleSingleChild(children);
+        return Array.isArray(children)
+            ? react_1.default.Children.map(children, handleSingleChild)
+            : handleSingleChild(children);
     };
     return handleChildren(children);
 }

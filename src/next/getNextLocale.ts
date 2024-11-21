@@ -1,7 +1,7 @@
-import { headers } from "next/headers";
-import { cookies } from "next/headers";
-import { primitives } from 'gt-react/internal'
-import { determineLanguage } from "generaltranslation";
+import { headers } from 'next/headers';
+import { cookies } from 'next/headers';
+import { primitives } from 'gt-react/internal';
+import { determineLanguage } from 'generaltranslation';
 
 /**
  * Retrieves the 'accept-language' header from the headers list.
@@ -12,17 +12,26 @@ import { determineLanguage } from "generaltranslation";
  * @returns {Promise<string | null>} A promise that resolves to the primary language from the
  * 'accept-language' header, or null if not available.
  */
-export async function getNextLocale(defaultLocale: string = '', locales?: string[] | undefined): Promise<string> {
-    const cookieStore = await cookies();
-    const localeCookie = cookieStore.get(primitives.localeCookieName);
-    if (localeCookie?.value) return localeCookie.value;
-    const headersList = await headers();
-    const acceptedLocales = headersList.get('accept-language')?.split(',').map(item => item.split(';')?.[0].trim());
-    if (acceptedLocales && acceptedLocales.length) {
-        if (locales) {
-            return determineLanguage(acceptedLocales, locales) || defaultLocale;
-        }
-        return acceptedLocales[0]
+export async function getNextLocale(
+  defaultLocale: string = '',
+  locales?: string[] | undefined
+): Promise<string> {
+  // Read cookies first, then check headers
+  const cookieStore = await cookies();
+  const localeCookie = cookieStore.get(primitives.localeCookieName);
+  if (localeCookie?.value) return localeCookie.value;
+
+  const headersList = await headers();
+  // Browser languages, in preference order
+  const acceptedLocales = headersList
+    .get('accept-language')
+    ?.split(',')
+    .map((item) => item.split(';')?.[0].trim());
+  if (acceptedLocales && acceptedLocales.length) {
+    if (locales) {
+      return determineLanguage(acceptedLocales, locales) || defaultLocale;
     }
-    return defaultLocale;
+    return acceptedLocales[0];
+  }
+  return defaultLocale;
 }

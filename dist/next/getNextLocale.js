@@ -66,7 +66,8 @@ function getNextLocale() {
                     return [4 /*yield*/, (0, headers_1.headers)()];
                 case 2:
                     headersList = _b.sent();
-                    acceptedLocales = (_a = headersList.get('accept-language')) === null || _a === void 0 ? void 0 : _a.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); });
+                    acceptedLocales = (_a = headersList
+                        .get('accept-language')) === null || _a === void 0 ? void 0 : _a.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); });
                     if (acceptedLocales && acceptedLocales.length) {
                         if (locales) {
                             return [2 /*return*/, (0, generaltranslation_1.determineLanguage)(acceptedLocales, locales) || defaultLocale];

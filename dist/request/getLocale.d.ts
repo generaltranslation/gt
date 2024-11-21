@@ -6,6 +6,6 @@
  * @example
  * const locale = await getLocale();
  * console.log(locale); // 'en-US'
-*/
+ */
 export default function getLocale(): Promise<string>;
 //# sourceMappingURL=getLocale.d.ts.map

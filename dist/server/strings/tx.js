@@ -124,8 +124,8 @@ function tx(content_1) {
                     _a.language = _b;
                     if (!I18NConfig.requiresTranslation(options.language))
                         return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(contentAsArray, [options.language, I18NConfig.getDefaultLocale()], variables, variableOptions)];
-                    if (!options.id) return [3 /*break*/, 4];
                     key = (0, internal_1.hashReactChildrenObjects)(options.context ? [content, options.context] : content);
+                    if (!options.id) return [3 /*break*/, 4];
                     return [4 /*yield*/, I18NConfig.getTranslations(options.language)];
                 case 3:
                     translations = _g.sent();
@@ -135,13 +135,17 @@ function tx(content_1) {
                 case 4:
                     language = options.language, others = __rest(options, ["language"]);
                     _d = (_c = I18NConfig).translate;
-                    _f = { content: content, targetLanguage: options.language };
+                    _f = {
+                        content: content,
+                        targetLanguage: options.language
+                    };
                     _e = [__assign({}, others)];
                     return [4 /*yield*/, (0, getMetadata_1.default)()];
                 case 5:
-                    translationPromise = _d.apply(_c, [(_f.options = __assign.apply(void 0, [__assign.apply(void 0, _e.concat([(_g.sent())])), { hash: key }]), _f)]);
+                    translationPromise = _d.apply(_c, [(_f.options = __assign.apply(void 0, [__assign.apply(void 0, _e.concat([(_g.sent())])), { hash: key }]),
+                            _f)]);
                     renderSettings = I18NConfig.getRenderSettings();
-                    if (!(renderSettings.method !== "subtle" ||
+                    if (!(renderSettings.method !== 'subtle' ||
                         !options.id) // because it is only saved if an id is present
                     ) return [3 /*break*/, 7]; // because it is only saved if an id is present
                     return [4 /*yield*/, translationPromise];
