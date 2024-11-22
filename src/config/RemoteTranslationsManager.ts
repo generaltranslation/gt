@@ -1,11 +1,4 @@
-/**
- * Generates a reference string from locale.
- * @param {string} locale - The locale/language code.
- * @returns {string} The encoded reference.
- */
-export function getTranslationReference(locale: string): string {
-  return encodeURIComponent(locale);
-}
+import { standardizeLocale } from "generaltranslation";
 
 /**
  * Configuration type for RemoteTranslationsManager.
@@ -69,11 +62,11 @@ export class RemoteTranslationsManager {
 
   /**
    * Retrieves translations for a given locale.
-   * @param {string} locale - The locale/language code.
+   * @param {string} locale - The locale code.
    * @returns {Promise<Record<string, any> | null>} The translations data or null if not found.
    */
   async getTranslations(locale: string): Promise<Record<string, any> | null> {
-    const reference = getTranslationReference(locale);
+    const reference = standardizeLocale(locale);
     if (this.translationsMap.has(reference)) {
       return this.translationsMap.get(reference) || null;
     }
@@ -95,7 +88,7 @@ export class RemoteTranslationsManager {
 
   /**
    * Sets a new translation entry.
-   * @param {string} locale - The locale/language code.
+   * @param {string} locale - The locale code.
    * @param {string} key - The key for the new entry.
    * @param {string} [id=key] - The id for the new entry, defaults to key if not provided.
    * @param {any} translation - The translation value.
@@ -108,7 +101,7 @@ export class RemoteTranslationsManager {
     translation: any
   ): boolean {
     if (!(locale && key && id && translation)) return false;
-    const reference = getTranslationReference(locale);
+    const reference = standardizeLocale(locale);
     const currentTranslations = this.translationsMap.get(reference) || {};
     this.translationsMap.set(reference, {
       ...currentTranslations,
@@ -124,7 +117,7 @@ export class RemoteTranslationsManager {
    * Marks translations as requested for a given locale
    */
   setTranslationRequested(locale: string) {
-    const reference = getTranslationReference(locale);
+    const reference = standardizeLocale(locale);
     this.requestedTranslations.set(reference, true);
   }
 
@@ -132,7 +125,7 @@ export class RemoteTranslationsManager {
    * Checks if translations have been requested for a given locale
    */
   getTranslationRequested(locale: string): boolean {
-    const reference = getTranslationReference(locale);
+    const reference = standardizeLocale(locale);
     return this.requestedTranslations.get(reference) ? true : false;
   }
 }

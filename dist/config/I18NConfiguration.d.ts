@@ -13,6 +13,7 @@ type I18NConfigurationParams = {
     translations?: Record<string, () => Promise<Record<string, any>>>;
     maxConcurrentRequests: number;
     batchInterval: number;
+    env?: string;
     [key: string]: any;
 };
 export default class I18NConfiguration {
@@ -24,6 +25,7 @@ export default class I18NConfiguration {
         method: 'skeleton' | 'replace' | 'hang' | 'subtle';
         timeout: number | null;
     };
+    env: string;
     private _remoteTranslationsManager;
     gt: GT;
     metadata: Record<string, any>;
@@ -32,15 +34,17 @@ export default class I18NConfiguration {
     private _queue;
     private _activeRequests;
     private _translationCache;
-    constructor({ apiKey, projectID, baseURL, cacheURL, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, batchInterval, ...metadata }: I18NConfigurationParams);
+    private _taggedDictionary;
+    private _template;
+    constructor({ apiKey, projectID, baseURL, cacheURL, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, batchInterval, env, ...metadata }: I18NConfigurationParams);
     /**
      * Gets the application's default locale
-     * @returns {string} A BCP-47 language tag
+     * @returns {string} A BCP-47 locale tag
      */
     getDefaultLocale(): string;
     /**
      * Gets the list of approved locales for this app
-     * @returns {string[] | undefined} A list of BCP-47 language tags, or undefined if none were provided
+     * @returns {string[] | undefined} A list of BCP-47 locale tags, or undefined if none were provided
      */
     getLocales(): string[] | undefined;
     /**
@@ -63,15 +67,20 @@ export default class I18NConfiguration {
      * @returns True if translation is required, otherwise false
      */
     requiresTranslation(locale: string): boolean;
+    addGTIdentifier(children: any, id?: string): any;
+    /**
+     * @returns {[any, string]} A xxhash hash and the children that were created from it
+    */
+    serializeAndHash(children: any, context?: string, id?: string): [any, string];
     /**
      * Get the translation dictionaries for this user's locale, if they exist
      * Globally shared cache
-     * @param locale - The language set by the user
+     * @param locale - The locale set by the user
      * @returns A promise that resolves to the translations.
      */
     getTranslations(locale: string): Promise<Record<string, any>>;
     /**
-     * Translate content into language
+     * Translate content into language associated with a given locale
      * @param params - Parameters for translation
      * @returns Translated string
      */
@@ -80,7 +89,7 @@ export default class I18NConfiguration {
             key: string;
             variable?: string;
         })[];
-        targetLanguage: string;
+        targetLocale: string;
         options: Record<string, any>;
     }): Promise<string>;
     /**
@@ -90,7 +99,7 @@ export default class I18NConfiguration {
      */
     translateChildren(params: {
         children: any;
-        targetLanguage: string;
+        targetLocale: string;
         metadata: Record<string, any>;
     }): Promise<any>;
     /**

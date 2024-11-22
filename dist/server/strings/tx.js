@@ -64,11 +64,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = tx;
 var generaltranslation_1 = require("generaltranslation");
 var getI18NConfig_1 = __importDefault(require("../../utils/getI18NConfig"));
-var internal_1 = require("gt-react/internal");
 var getLocale_1 = __importDefault(require("../../request/getLocale"));
 var getMetadata_1 = __importDefault(require("../../request/getMetadata"));
 /**
- * Translates the provided content string based on the specified language and options.
+ * Translates the provided content string based on the specified locale and options.
  * If no translation is required, it renders the content as is. Otherwise, it fetches the
  * required translations or falls back to on-demand translation if enabled.
  *
@@ -80,10 +79,10 @@ var getMetadata_1 = __importDefault(require("../../request/getMetadata"));
  * @param {string} content - The content string that needs to be translated.
  * @param {Object} [options] - Translation options.
  * @param {string} [options.id] - A unique identifier for the content, used for caching and fetching translations.
- * @param {string} [options.language] - The target language for translation. Defaults to the current locale if not provided.
+ * @param {string} [options.locale] - The target locale for translation. Defaults to the current locale if not provided.
  * @param {string} [options.context] - Additional context for the translation process, which may influence the translation's outcome.
- * @param {Object} [variables] - An optional map of variables to be injected into the translated content.
- * @param {Object} [variableOptions] - Options for formatting numbers and dates using `Intl.NumberFormat` or `Intl.DateTimeFormat`.
+ * @param {Object} [options.variables] - An optional map of variables to be injected into the translated content.
+ * @param {Object} [options.variableOptions] - Options for formatting numbers and dates using `Intl.NumberFormat` or `Intl.DateTimeFormat`.
  *
  * @returns {Promise<string>} - A promise that resolves to the translated content string, or the original content if no translation is needed.
  *
@@ -95,71 +94,72 @@ var getMetadata_1 = __importDefault(require("../../request/getMetadata"));
  *
  * @example
  * // Providing specific translation options
- * const translation = await tx("Hello, world!", { language: 'es', context: 'Translate informally' });
+ * const translation = await tx("Hello, world!", { locale: 'es', context: 'Translate informally' });
  *
  * @example
  * // Using variables in the content string
- * const translation = await tx("The price is {price}", { language: 'es' }, { price: 29.99 });
+ * const translation = await tx("The price is {price}", { locale: 'es-MX', variables: { price: 29.99 } });
  */
 function tx(content_1) {
-    return __awaiter(this, arguments, void 0, function (content, options, variables, variableOptions) {
-        var I18NConfig, contentAsArray, _a, _b, key, translations, language, others, translationPromise, _c, _d, _e, renderSettings, translation;
-        var _f;
+    return __awaiter(this, arguments, void 0, function (content, options) {
+        var I18NConfig, contentAsArray, _a, _b, _c, _, key, translations, locale, others, translationPromise, _d, _e, _f, renderSettings, translation;
+        var _g;
         if (options === void 0) { options = {}; }
-        return __generator(this, function (_g) {
-            switch (_g.label) {
+        return __generator(this, function (_h) {
+            switch (_h.label) {
                 case 0:
                     if (!content)
                         return [2 /*return*/, ''];
                     I18NConfig = (0, getI18NConfig_1.default)();
                     contentAsArray = (0, generaltranslation_1.splitStringToContent)(content);
                     _a = options;
-                    _b = options.language;
+                    _b = options.locale;
                     if (_b) return [3 /*break*/, 2];
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    _b = (_g.sent());
-                    _g.label = 2;
+                    _b = (_h.sent());
+                    _h.label = 2;
                 case 2:
-                    _a.language = _b;
-                    if (!I18NConfig.requiresTranslation(options.language))
-                        return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(contentAsArray, [options.language, I18NConfig.getDefaultLocale()], variables, variableOptions)];
-                    key = (0, internal_1.hashReactChildrenObjects)(options.context ? [content, options.context] : content);
+                    _a.locale = _b;
+                    if (!I18NConfig.requiresTranslation(options.locale))
+                        return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(contentAsArray, [options.locale, I18NConfig.getDefaultLocale()], options.variables, options.variablesOptions)];
+                    _c = I18NConfig.serializeAndHash(content, options.context, undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
+                    ), _ = _c[0], key = _c[1];
                     if (!options.id) return [3 /*break*/, 4];
-                    return [4 /*yield*/, I18NConfig.getTranslations(options.language)];
+                    return [4 /*yield*/, I18NConfig.getTranslations(options.locale)];
                 case 3:
-                    translations = _g.sent();
+                    translations = _h.sent();
                     if ((translations === null || translations === void 0 ? void 0 : translations[options.id]) && translations[options.id].k === key)
-                        return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(translations[options.id].t, [options.language, I18NConfig.getDefaultLocale()], variables, variableOptions)];
-                    _g.label = 4;
+                        return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(translations[options.id].t, [options.locale, I18NConfig.getDefaultLocale()], options.variables, options.variablesOptions)];
+                    _h.label = 4;
                 case 4:
-                    language = options.language, others = __rest(options, ["language"]);
-                    _d = (_c = I18NConfig).translate;
-                    _f = {
+                    locale = options.locale, others = __rest(options, ["locale"]);
+                    _e = (_d = I18NConfig).translate;
+                    _g = {
                         content: content,
-                        targetLanguage: options.language
+                        targetLocale: locale
                     };
-                    _e = [__assign({}, others)];
+                    _f = [__assign({}, others)];
                     return [4 /*yield*/, (0, getMetadata_1.default)()];
                 case 5:
-                    translationPromise = _d.apply(_c, [(_f.options = __assign.apply(void 0, [__assign.apply(void 0, _e.concat([(_g.sent())])), { hash: key }]),
-                            _f)]);
+                    translationPromise = _e.apply(_d, [(_g.options = __assign.apply(void 0, [__assign.apply(void 0, _f.concat([(_h.sent())])), { hash: key }]),
+                            _g)]);
                     renderSettings = I18NConfig.getRenderSettings();
                     if (!(renderSettings.method !== 'subtle' ||
                         !options.id) // because it is only saved if an id is present
                     ) return [3 /*break*/, 7]; // because it is only saved if an id is present
                     return [4 /*yield*/, translationPromise];
                 case 6:
-                    translation = _g.sent();
+                    translation = _h.sent();
                     try {
-                        return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(translation, [options.targetLanguage, I18NConfig.getDefaultLocale()], variables, variableOptions)];
+                        return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(translation, [options.targetLocale, I18NConfig.getDefaultLocale()], options.variables, options.variableOptions)];
                     }
                     catch (error) {
                         console.error("gt-next string translation error. tx(\"".concat(content, "\")").concat(options.id ? " with id \"".concat(options.id, "\"") : '', " failed."), error);
                         return [2 /*return*/, ''];
                     }
-                    _g.label = 7;
-                case 7: return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(contentAsArray, [options.targetLanguage, I18NConfig.getDefaultLocale()], variables, variableOptions)];
+                    _h.label = 7;
+                case 7: return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(contentAsArray, [options.targetLocale, I18NConfig.getDefaultLocale()], options.variables, options.variableOptions)];
             }
         });
     });

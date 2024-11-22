@@ -1,10 +1,4 @@
 /**
- * Generates a reference string from locale.
- * @param {string} locale - The locale/language code.
- * @returns {string} The encoded reference.
- */
-export declare function getTranslationReference(locale: string): string;
-/**
  * Configuration type for RemoteTranslationsManager.
  */
 type RemoteTranslationsConfig = {
@@ -36,13 +30,13 @@ export declare class RemoteTranslationsManager {
     private _fetchTranslations;
     /**
      * Retrieves translations for a given locale.
-     * @param {string} locale - The locale/language code.
+     * @param {string} locale - The locale code.
      * @returns {Promise<Record<string, any> | null>} The translations data or null if not found.
      */
     getTranslations(locale: string): Promise<Record<string, any> | null>;
     /**
      * Sets a new translation entry.
-     * @param {string} locale - The locale/language code.
+     * @param {string} locale - The locale code.
      * @param {string} key - The key for the new entry.
      * @param {string} [id=key] - The id for the new entry, defaults to key if not provided.
      * @param {any} translation - The translation value.

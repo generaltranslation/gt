@@ -39,8 +39,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getNextLocale = getNextLocale;
 var headers_1 = require("next/headers");
 var headers_2 = require("next/headers");
-var internal_1 = require("gt-react/internal");
 var generaltranslation_1 = require("generaltranslation");
+var internal_1 = require("generaltranslation/internal");
 /**
  * Retrieves the 'accept-language' header from the headers list.
  * If the 'next/headers' module is not available, it attempts to load it. If the
@@ -52,29 +52,41 @@ var generaltranslation_1 = require("generaltranslation");
  */
 function getNextLocale() {
     return __awaiter(this, arguments, void 0, function (defaultLocale, locales) {
-        var cookieStore, localeCookie, headersList, acceptedLocales;
-        var _a;
+        var _a, headersList, cookieStore, userLocale;
         if (defaultLocale === void 0) { defaultLocale = ''; }
         return __generator(this, function (_b) {
             switch (_b.label) {
-                case 0: return [4 /*yield*/, (0, headers_2.cookies)()];
+                case 0: return [4 /*yield*/, Promise.all([
+                        (0, headers_1.headers)(), (0, headers_2.cookies)()
+                    ])];
                 case 1:
-                    cookieStore = _b.sent();
-                    localeCookie = cookieStore.get(internal_1.primitives.localeCookieName);
-                    if (localeCookie === null || localeCookie === void 0 ? void 0 : localeCookie.value)
-                        return [2 /*return*/, localeCookie.value];
-                    return [4 /*yield*/, (0, headers_1.headers)()];
-                case 2:
-                    headersList = _b.sent();
-                    acceptedLocales = (_a = headersList
-                        .get('accept-language')) === null || _a === void 0 ? void 0 : _a.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); });
-                    if (acceptedLocales && acceptedLocales.length) {
-                        if (locales) {
-                            return [2 /*return*/, (0, generaltranslation_1.determineLanguage)(acceptedLocales, locales) || defaultLocale];
+                    _a = _b.sent(), headersList = _a[0], cookieStore = _a[1];
+                    userLocale = (function () {
+                        var _a;
+                        var preferredLocales = [];
+                        // Language routed to by middleware
+                        var headerLocale = headersList.get(internal_1.localeHeaderName);
+                        if (headerLocale)
+                            preferredLocales.push(headerLocale);
+                        var cookieLocale = cookieStore.get(internal_1.localeCookieName);
+                        if (cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value) {
+                            preferredLocales.push(cookieLocale.value);
                         }
-                        return [2 /*return*/, acceptedLocales[0]];
-                    }
-                    return [2 /*return*/, defaultLocale];
+                        // Browser languages, in preference order
+                        var acceptedLocales = (_a = headersList
+                            .get('accept-language')) === null || _a === void 0 ? void 0 : _a.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); });
+                        if (acceptedLocales)
+                            preferredLocales.push.apply(preferredLocales, acceptedLocales);
+                        // add defaultLocale just in case there are no matches
+                        preferredLocales.push(defaultLocale);
+                        // if there are specified allowed locales
+                        if (locales) {
+                            return (0, generaltranslation_1.determineLocale)(preferredLocales, locales) || defaultLocale;
+                        }
+                        // if there are no specified allowed locales
+                        return preferredLocales[0];
+                    })();
+                    return [2 /*return*/, userLocale];
             }
         });
     });

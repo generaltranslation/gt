@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import { cookies } from 'next/headers';
-import { primitives } from 'gt-react/internal';
-import { determineLanguage } from 'generaltranslation';
+import { determineLocale, isValidLocale, standardizeLocale } from 'generaltranslation';
+import { localeCookieName, localeHeaderName } from 'generaltranslation/internal';
 
 /**
  * Retrieves the 'accept-language' header from the headers list.
@@ -16,22 +16,44 @@ export async function getNextLocale(
   defaultLocale: string = '',
   locales?: string[] | undefined
 ): Promise<string> {
-  // Read cookies first, then check headers
-  const cookieStore = await cookies();
-  const localeCookie = cookieStore.get(primitives.localeCookieName);
-  if (localeCookie?.value) return localeCookie.value;
 
-  const headersList = await headers();
-  // Browser languages, in preference order
-  const acceptedLocales = headersList
-    .get('accept-language')
-    ?.split(',')
-    .map((item) => item.split(';')?.[0].trim());
-  if (acceptedLocales && acceptedLocales.length) {
-    if (locales) {
-      return determineLanguage(acceptedLocales, locales) || defaultLocale;
+  const [headersList, cookieStore] = await Promise.all([
+    headers(), cookies()
+  ]);
+
+  let userLocale = (() => {
+
+    const preferredLocales: string[] = [];
+
+    // Language routed to by middleware
+    const headerLocale = headersList.get(localeHeaderName);
+    if (headerLocale) preferredLocales.push(headerLocale);
+
+    const cookieLocale = cookieStore.get(localeCookieName);
+    if (cookieLocale?.value) {
+      preferredLocales.push(cookieLocale.value);
     }
-    return acceptedLocales[0];
-  }
-  return defaultLocale;
+    
+    // Browser languages, in preference order
+    const acceptedLocales = headersList
+      .get('accept-language')
+      ?.split(',')
+      .map((item) => item.split(';')?.[0].trim());
+
+    if (acceptedLocales) preferredLocales.push(...acceptedLocales);
+
+    // add defaultLocale just in case there are no matches
+    preferredLocales.push(defaultLocale);
+
+    // if there are specified allowed locales
+    if (locales) {
+      return determineLocale(preferredLocales, locales) || defaultLocale;
+    }
+    // if there are no specified allowed locales
+    return preferredLocales[0];
+
+  })();
+
+  return userLocale;
+  
 }

@@ -48,15 +48,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RemoteTranslationsManager = void 0;
-exports.getTranslationReference = getTranslationReference;
-/**
- * Generates a reference string from locale.
- * @param {string} locale - The locale/language code.
- * @returns {string} The encoded reference.
- */
-function getTranslationReference(locale) {
-    return encodeURIComponent(locale);
-}
+var generaltranslation_1 = require("generaltranslation");
 /**
  * Manages remote translations.
  */
@@ -113,7 +105,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
     };
     /**
      * Retrieves translations for a given locale.
-     * @param {string} locale - The locale/language code.
+     * @param {string} locale - The locale code.
      * @returns {Promise<Record<string, any> | null>} The translations data or null if not found.
      */
     RemoteTranslationsManager.prototype.getTranslations = function (locale) {
@@ -122,7 +114,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        reference = getTranslationReference(locale);
+                        reference = (0, generaltranslation_1.standardizeLocale)(locale);
                         if (this.translationsMap.has(reference)) {
                             return [2 /*return*/, this.translationsMap.get(reference) || null];
                         }
@@ -146,7 +138,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
     };
     /**
      * Sets a new translation entry.
-     * @param {string} locale - The locale/language code.
+     * @param {string} locale - The locale code.
      * @param {string} key - The key for the new entry.
      * @param {string} [id=key] - The id for the new entry, defaults to key if not provided.
      * @param {any} translation - The translation value.
@@ -157,7 +149,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
         if (id === void 0) { id = key; }
         if (!(locale && key && id && translation))
             return false;
-        var reference = getTranslationReference(locale);
+        var reference = (0, generaltranslation_1.standardizeLocale)(locale);
         var currentTranslations = this.translationsMap.get(reference) || {};
         this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[id] = translation && typeof translation === 'object' && translation.t
             ? __assign(__assign({}, translation), { k: key }) : { k: key, t: translation }, _a)));
@@ -167,14 +159,14 @@ var RemoteTranslationsManager = /** @class */ (function () {
      * Marks translations as requested for a given locale
      */
     RemoteTranslationsManager.prototype.setTranslationRequested = function (locale) {
-        var reference = getTranslationReference(locale);
+        var reference = (0, generaltranslation_1.standardizeLocale)(locale);
         this.requestedTranslations.set(reference, true);
     };
     /**
      * Checks if translations have been requested for a given locale
      */
     RemoteTranslationsManager.prototype.getTranslationRequested = function (locale) {
-        var reference = getTranslationReference(locale);
+        var reference = (0, generaltranslation_1.standardizeLocale)(locale);
         return this.requestedTranslations.get(reference) ? true : false;
     };
     return RemoteTranslationsManager;

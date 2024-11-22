@@ -51,8 +51,10 @@ function createServerTFunction(prefixID) {
         }
         if (typeof entry === 'string') {
             return (0, tx_1.default)(entry, {
-                id: id
-            }, variables, variablesOptions);
+                id: id,
+                variables: variables,
+                variablesOptions: variablesOptions
+            });
         }
         return ((0, jsx_runtime_1.jsx)(T_1.default, __assign({ id: id, variables: variables, variablesOptions: variablesOptions }, metadata, { children: entry })));
     };

@@ -44,7 +44,7 @@ async function Currency({
 
     // Format the number as currency according to the locale
     const formattedValue = (typeof renderedValue === 'number') 
-        ? formatCurrency({ value: renderedValue, currency, languages: locales, options })
+        ? formatCurrency({ value: renderedValue, currency, locales, options })
         : renderedValue;
 
     return (

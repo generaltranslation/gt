@@ -1,12 +1,7 @@
-//
 import React from 'react';
 import {
-  addGTIdentifier,
   flattenDictionary,
-  hashReactChildrenObjects,
-  writeChildrenAsObjects,
   extractEntryMetadata,
-  primitives,
 } from 'gt-react/internal';
 import { ReactNode } from 'react';
 import getI18NConfig from '../utils/getI18NConfig';
@@ -14,8 +9,10 @@ import getLocale from '../request/getLocale';
 import getMetadata from '../request/getMetadata';
 import { splitStringToContent } from 'generaltranslation';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
-import renderDefaultChildren from '../server/rendering/renderDefaultChildren';
+import { renderDefaultChildren } from 'gt-react/internal';
 import ClientProvider from './ClientProvider';
+import { ClientDictionary, ClientTranslations } from './types';
+import renderVariable from '../server/rendering/renderVariable';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -32,72 +29,93 @@ export default async function GTProvider({
   children?: ReactNode;
   id?: string;
 }) {
-  const I18NConfig = getI18NConfig();
-
+  
   const getID = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
   };
 
+  const I18NConfig = getI18NConfig();
   const locale = await getLocale();
   const additionalMetadata = await getMetadata();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const renderSettings = I18NConfig.getRenderSettings();
-
-  let dictionary: Record<string, any> = {};
-  let translations: Record<string, any> = {};
-
   const translationRequired = I18NConfig.requiresTranslation(locale);
 
-  let existingTranslations: Record<string, any> = translationRequired
-    ? await I18NConfig.getTranslations(locale)
-    : {};
+  let translationsPromise;
+  if (translationRequired) translationsPromise = I18NConfig.getTranslations(locale);
 
-  // For dictionaries
+  // Flatten dictionaries for processing while waiting for translations
+  const dictionaryEntries = flattenDictionary(id ? getDictionaryEntry(id) : getDictionary());
+
+  let dictionary: ClientDictionary = {};
+  let translations: ClientTranslations = {};
+  let existingTranslations: ClientTranslations = {};
+
+  // i.e. if a translation is required
+  if (translationsPromise) {
+    Object.entries(await translationsPromise).map(([id, { t }]) => 
+      existingTranslations[id] = t
+    );
+  }
+  
+  // Check and standardize flattened dictionary entries before passing them to the client
   await Promise.all(
-    Object.entries(
-      flattenDictionary(id ? getDictionaryEntry(id) : getDictionary())
-    ).map(async ([suffix, dictionaryEntry]) => {
+    Object.entries(dictionaryEntries).map(async ([suffix, dictionaryEntry]) => {
+
+      // ---- POPULATING THE DICTIONARY ---- //
+
+      // Get the entry from the dictionary
       const entryID = getID(suffix);
-
       let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
+      if (typeof entry === 'undefined') return; 
 
+      // If entry is a function, execute it
       if (typeof entry === 'function') {
         entry = entry({});
         metadata = { ...metadata, isFunction: true };
       }
 
-      const taggedEntry = addGTIdentifier(entry, entryID);
+      // Tag the result of entry
+      const taggedEntry = I18NConfig.addGTIdentifier(children, id);
 
+      // Set dictionary entry to be passed to the client
       dictionary[entryID] = [taggedEntry, metadata];
 
-      if (!translationRequired || !entry) return;
+      // If no translation is required, return
+      if (!translationRequired) return;
 
-      const entryAsObjects = writeChildrenAsObjects(taggedEntry);
+      // ---- POPULATING TRANSLATIONS ---- //
 
-      const key: string = hashReactChildrenObjects(
-        metadata?.context ? [entryAsObjects, metadata.context] : entryAsObjects
+      const [entryAsObjects, key] = I18NConfig.serializeAndHash(
+        taggedEntry,
+        metadata?.context,
+        entryID
       );
 
+      // If a translation already exists, add it to the translations
       const translation = existingTranslations?.[entryID];
-
       if (translation && translation.k === key) {
         return (translations[entryID] = translation);
       }
 
+      // Create a translation if it does not exist! 
+
       if (typeof taggedEntry === 'string') {
         const translationPromise = I18NConfig.translate({
           content: splitStringToContent(taggedEntry),
-          targetLanguage: locale,
+          targetLocale: locale,
           options: { id: entryID, hash: key, ...additionalMetadata },
         });
-        return renderSettings.method !== 'subtle'
-          ? (translations[entryID] = { t: await translationPromise, k: key })
-          : undefined;
-      }
+        if (renderSettings.method !== "subtle") 
+          return translations[entryID] = await translationPromise;
+        return undefined;
+      };
+
+      // Translate React children
 
       const translationPromise = I18NConfig.translateChildren({
         children: entryAsObjects,
-        targetLanguage: locale,
+        targetLocale: locale,
         metadata: {
           id: entryID,
           hash: key,
@@ -114,7 +132,7 @@ export default async function GTProvider({
       } else if (renderSettings.method === 'replace') {
         loadingFallback = renderDefaultChildren({
           children: taggedEntry,
-          defaultLocale,
+          defaultLocale, renderVariable
         });
       }
 

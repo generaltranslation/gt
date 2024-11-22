@@ -1,7 +1,7 @@
-import { isValidLanguageCode, determineLanguage, standardizeLanguageCode } from "generaltranslation";
+import { isValidLocale, determineLocale, standardizeLocale, isSameDialect } from "generaltranslation";
 import { NextResponse } from "next/server";
-import { primitives } from 'gt-react/internal'
-import { ResponseCookies, RequestCookies } from "next/dist/compiled/@edge-runtime/cookies";
+// import { ResponseCookies, RequestCookies } from "next/dist/compiled/@edge-runtime/cookies";
+import { libraryDefaultLocale, localeCookieName, localeHeaderName } from 'generaltranslation/internal'
 
 /**
  * Extracts the locale from the given pathname.
@@ -12,34 +12,6 @@ import { ResponseCookies, RequestCookies } from "next/dist/compiled/@edge-runtim
 function extractLocale(pathname: string): string | null {
     const matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
     return matches ? matches[1] : null;
-}
-
-/**
- * Copy cookies from the Set-Cookie header of the response to the Cookie header of the request,
- * so that it will appear to SSR/RSC as if the user already has the new cookies.
- * via 
- */
-function applyNewCookies(req: any, res: any) {
-
-    // 1. Parse Set-Cookie header from the response
-    const setCookies = new ResponseCookies(res.headers);
-  
-    // 2. Construct updated Cookie header for the request
-    const newReqHeaders = new Headers(req.headers);
-    const newReqCookies = new RequestCookies(newReqHeaders);
-    setCookies.getAll().forEach((cookie: any) => newReqCookies.set(cookie));
-  
-    // 3. Set up the “request header overrides” (see https://github.com/vercel/next.js/pull/41380)
-    //    on a dummy response
-    // NextResponse.next will set x-middleware-override-headers / x-middleware-request-* headers
-    const dummyRes = NextResponse.next({ request: { headers: newReqHeaders } });
-  
-    // 4. Copy the “request header overrides” headers from our dummy response to the real response
-    dummyRes.headers.forEach((value: any, key: any) => {
-      if (key === 'x-middleware-override-headers' || key.startsWith('x-middleware-request-')) {
-        res.headers.set(key, value);
-      }
-    });
 }
 
 /**
@@ -57,9 +29,14 @@ function applyNewCookies(req: any, res: any) {
  * @returns {function} - A middleware function that processes the request and response.
  */
 export default function createNextMiddleware({
-    defaultLocale = primitives.libraryDefaultLocale, locales, localeRouting = true
-}: { defaultLocale: string; locales?: string[]; localeRouting?: boolean } 
-= { defaultLocale: primitives.libraryDefaultLocale, localeRouting: true }) {
+    defaultLocale = libraryDefaultLocale, 
+    locales, localeRouting = true, prefixDefaultLocale = false
+}: { 
+    defaultLocale?: string; locales?: string[]; localeRouting?: boolean, prefixDefaultLocale?: boolean
+} 
+= { 
+    defaultLocale: libraryDefaultLocale, localeRouting: true, prefixDefaultLocale: false
+}) {
 
     /**
     * Processes the incoming request to determine the user's locale and sets a locale cookie.
@@ -80,7 +57,7 @@ export default function createNextMiddleware({
 
         const res = NextResponse.next();
 
-        let userLocale = standardizeLanguageCode(defaultLocale);
+        let userLocale = standardizeLocale(defaultLocale);
 
         if (localeRouting) {
             
@@ -91,89 +68,93 @@ export default function createNextMiddleware({
 
             let pathnameHasLocale: boolean = false;
         
-            if (locale && isValidLanguageCode(locale)) {
+            if (locale && isValidLocale(locale)) {
                 if (locales) {
-                    const approvedLocale = determineLanguage(locale, locales);
+                    const approvedLocale = determineLocale(locale, locales);
                     if (approvedLocale) {
-                        userLocale = standardizeLanguageCode(approvedLocale);
+                        userLocale = standardizeLocale(approvedLocale);
                         pathnameHasLocale = true;
                     }
                 } else {
-                    userLocale = standardizeLanguageCode(locale);
+                    userLocale = standardizeLocale(locale);
                     pathnameHasLocale = true;
                 }
             }
 
             if (pathnameHasLocale) {
-                res.cookies.set(primitives.localeCookieName, userLocale)
-                applyNewCookies(req, res);
+                res.headers.set(localeHeaderName, userLocale);
+                res.cookies.set(localeCookieName, userLocale);
                 return res;
             }
 
             // If there's no locale, try to get one from the referer
             const referer = headerList.get('referer')
-
+            
             if (referer && typeof referer === 'string') {
                 const refererLocale = extractLocale((new URL(referer))?.pathname);
                 if (refererLocale) {
                     let refererLocaleIsValid = false;
                     if (locales) {
-                        const approvedLocale = determineLanguage(refererLocale, locales);
+                        const approvedLocale = determineLocale(refererLocale, locales);
                         if (approvedLocale) {
-                            userLocale = standardizeLanguageCode(approvedLocale);
+                            userLocale = standardizeLocale(approvedLocale);
                             refererLocaleIsValid = true;
                         }
                     } else {
-                        if (isValidLanguageCode(refererLocale)) {
-                            userLocale = standardizeLanguageCode(refererLocale);
+                        if (isValidLocale(refererLocale)) {
+                            userLocale = standardizeLocale(refererLocale);
                             refererLocaleIsValid = true;
                         }
                     }
                     if (refererLocaleIsValid) {
                         req.nextUrl.pathname = `/${userLocale}/${pathname}`
-                        applyNewCookies(req, res);
                         return NextResponse.redirect(req.nextUrl)
                     }
                 }
             }
-
         }
         
-        const acceptedLocales = headerList.get('accept-language')?.split(',').map(item => item.split(';')?.[0].trim())?.filter(code => isValidLanguageCode(code));
-        
-        if (acceptedLocales && acceptedLocales.length > 0) {
-            if (locales) {
-                const approvedLocale = determineLanguage(acceptedLocales, locales);
-                if (approvedLocale) {
-                    userLocale = standardizeLanguageCode(approvedLocale);
+        userLocale = (() => {
+            const cookieLocale = req.cookies.get(localeCookieName);
+            if (cookieLocale?.value) {
+                if (isValidLocale(cookieLocale.value))
+                    return standardizeLocale(cookieLocale.value)
+            }
+            const acceptedLocales = headerList.get('accept-language')?.split(',').map(item => item.split(';')?.[0].trim())?.filter(code => isValidLocale(code));
+            if (acceptedLocales && acceptedLocales.length > 0) {
+                if (locales) {
+                    const approvedLocale = determineLocale(acceptedLocales, locales);
+                    if (approvedLocale) {
+                        userLocale = standardizeLocale(approvedLocale);
+                    }
+                }
+                else {
+                    return standardizeLocale(acceptedLocales[0])
                 }
             }
-            else {
-                userLocale = standardizeLanguageCode(acceptedLocales[0])
-            }
-        }
+            return userLocale;
+        })();
 
-        res.cookies.set(primitives.localeCookieName, userLocale)
-
+        res.cookies.set(localeCookieName, userLocale);
+        res.headers.set(localeHeaderName, userLocale);
+        
         if (localeRouting) {
 
-            const { pathname } = req.nextUrl
+            const { pathname } = req.nextUrl;
 
-            if (userLocale === defaultLocale) {
+            if (!prefixDefaultLocale && isSameDialect(userLocale, defaultLocale)) {
                 const rewrittenRes = NextResponse.rewrite(
                     new URL(`/${userLocale}${pathname}`, req.nextUrl), req.nextUrl
                 );
-                rewrittenRes.cookies.set(primitives.localeCookieName, userLocale)
-                applyNewCookies(req, rewrittenRes);
+                rewrittenRes.cookies.set(localeCookieName, userLocale);
+                rewrittenRes.headers.set(localeHeaderName, userLocale)
                 return rewrittenRes;
             } else {
                 req.nextUrl.pathname = `/${userLocale}${pathname}`
-                applyNewCookies(req, res);
                 return NextResponse.redirect(req.nextUrl)
             }
         }
 
-        applyNewCookies(req, res);
         return res;
 
     }

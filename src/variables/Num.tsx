@@ -43,7 +43,7 @@ async function Num({
 
     // Format the number according to the locale
     const formattedValue = (typeof renderedValue === 'number') ? 
-        formatNum({ value: renderedValue, languages: locales, options }) : 
+        formatNum({ value: renderedValue, locales, options }) : 
             renderedValue;
 
     return (

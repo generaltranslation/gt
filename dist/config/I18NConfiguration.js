@@ -87,6 +87,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var generaltranslation_1 = __importStar(require("generaltranslation"));
 var RemoteTranslationsManager_1 = __importDefault(require("./RemoteTranslationsManager"));
 var defaultInitGTProps_1 = __importDefault(require("../primitives/defaultInitGTProps"));
+var internal_1 = require("gt-react/internal");
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         var 
@@ -100,8 +101,10 @@ var I18NConfiguration = /** @class */ (function () {
         dictionary = _a.dictionary, 
         // Batching config
         maxConcurrentRequests = _a.maxConcurrentRequests, batchInterval = _a.batchInterval, 
+        // Environment
+        env = _a.env, 
         // Other metadata
-        metadata = __rest(_a, ["apiKey", "projectID", "baseURL", "cacheURL", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "batchInterval"]);
+        metadata = __rest(_a, ["apiKey", "projectID", "baseURL", "cacheURL", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "batchInterval", "env"]);
         // Cloud integration
         this.projectID = projectID;
         this.baseURL = baseURL;
@@ -114,11 +117,13 @@ var I18NConfiguration = /** @class */ (function () {
         this.gt = new generaltranslation_1.default({
             projectID: projectID,
             apiKey: apiKey,
-            defaultLanguage: defaultLocale,
+            defaultLocale: defaultLocale,
             baseURL: baseURL,
         });
+        // Default env is production
+        this.env = env || "production";
         // Other metadata
-        this.metadata = __assign(__assign({ defaultLanguage: this.defaultLocale }, (this.renderSettings.timeout && {
+        this.metadata = __assign(__assign({ env: this.env, defaultLocale: this.defaultLocale }, (this.renderSettings.timeout && {
             timeout: this.renderSettings.timeout - batchInterval,
         })), metadata);
         // Dictionary managers
@@ -129,6 +134,9 @@ var I18NConfiguration = /** @class */ (function () {
                 projectID: projectID,
             });
         }
+        // Cache of hashes to speed up <GTProvider>
+        this._taggedDictionary = new Map();
+        this._template = new Map();
         // Batching
         this.maxConcurrentRequests = maxConcurrentRequests;
         this.batchInterval = batchInterval;
@@ -139,14 +147,14 @@ var I18NConfiguration = /** @class */ (function () {
     }
     /**
      * Gets the application's default locale
-     * @returns {string} A BCP-47 language tag
+     * @returns {string} A BCP-47 locale tag
      */
     I18NConfiguration.prototype.getDefaultLocale = function () {
         return this.defaultLocale;
     };
     /**
      * Gets the list of approved locales for this app
-     * @returns {string[] | undefined} A list of BCP-47 language tags, or undefined if none were provided
+     * @returns {string[] | undefined} A list of BCP-47 locale tags, or undefined if none were provided
      */
     I18NConfiguration.prototype.getLocales = function () {
         return this.locales;
@@ -179,10 +187,46 @@ var I18NConfiguration = /** @class */ (function () {
         return (this.translationEnabled() &&
             (0, generaltranslation_1.requiresTranslation)(this.defaultLocale, locale, this.locales));
     };
+    I18NConfiguration.prototype.addGTIdentifier = function (children, id) {
+        // In development, recompute every time
+        if (this.env === "development" || !id) {
+            return (0, internal_1.addGTIdentifier)(children, id);
+        }
+        // In production, since dictionary content isn't changing, cache results
+        var taggedDictionaryEntry = this._taggedDictionary.get(id);
+        if (taggedDictionaryEntry) {
+            return taggedDictionaryEntry;
+        }
+        var taggedChildren = (0, internal_1.addGTIdentifier)(children, id);
+        this._taggedDictionary.set(id, taggedChildren);
+        return taggedChildren;
+    };
+    /**
+     * @returns {[any, string]} A xxhash hash and the children that were created from it
+    */
+    I18NConfiguration.prototype.serializeAndHash = function (children, context, id) {
+        // In development, recomputes hashes each time
+        if (this.env === "development" || !id) {
+            var childrenAsObjects_1 = (0, internal_1.writeChildrenAsObjects)(children);
+            return [
+                childrenAsObjects_1,
+                (0, internal_1.hashReactChildrenObjects)(context ? [childrenAsObjects_1, context] : childrenAsObjects_1)
+            ];
+        }
+        // In production, since dictionary content isn't changing, cache results
+        var templateEntry = this._template.get(id);
+        if (templateEntry) {
+            return [templateEntry.t, templateEntry.k];
+        }
+        var childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(children);
+        var hash = (0, internal_1.hashReactChildrenObjects)(context ? [childrenAsObjects, context] : childrenAsObjects);
+        this._template.set(id, { k: hash, t: childrenAsObjects });
+        return [childrenAsObjects, hash];
+    };
     /**
      * Get the translation dictionaries for this user's locale, if they exist
      * Globally shared cache
-     * @param locale - The language set by the user
+     * @param locale - The locale set by the user
      * @returns A promise that resolves to the translations.
      */
     I18NConfiguration.prototype.getTranslations = function (locale) {
@@ -197,32 +241,31 @@ var I18NConfiguration = /** @class */ (function () {
         });
     };
     /**
-     * Translate content into language
+     * Translate content into language associated with a given locale
      * @param params - Parameters for translation
      * @returns Translated string
      */
     I18NConfiguration.prototype.translate = function (params) {
         return __awaiter(this, void 0, void 0, function () {
-            var cacheKey, content, targetLanguage, options, translationPromise;
+            var cacheKey, content, targetLocale, options, translationPromise;
             var _this = this;
             return __generator(this, function (_a) {
-                console.log('params', params);
-                cacheKey = constructCacheKey(params.targetLanguage, params.options);
+                cacheKey = constructCacheKey(params.targetLocale, params.options);
                 if (this._translationCache.has(cacheKey)) {
                     return [2 /*return*/, this._translationCache.get(cacheKey)];
                 }
-                content = params.content, targetLanguage = params.targetLanguage, options = params.options;
+                content = params.content, targetLocale = params.targetLocale, options = params.options;
                 translationPromise = new Promise(function (resolve, reject) {
                     _this._queue.push({
                         type: 'string',
                         data: {
                             content: content,
-                            targetLanguage: targetLanguage,
+                            targetLocale: targetLocale,
                             projectID: _this.projectID,
                             metadata: __assign(__assign({}, _this.metadata), options),
                         },
                         revalidate: _this._remoteTranslationsManager
-                            ? _this._remoteTranslationsManager.getTranslationRequested(targetLanguage)
+                            ? _this._remoteTranslationsManager.getTranslationRequested(targetLocale)
                             : false,
                         resolve: resolve,
                         reject: reject,
@@ -243,27 +286,27 @@ var I18NConfiguration = /** @class */ (function () {
      */
     I18NConfiguration.prototype.translateChildren = function (params) {
         return __awaiter(this, void 0, void 0, function () {
-            var cacheKey, children, targetLanguage, metadata, translationPromise;
+            var cacheKey, children, targetLocale, metadata, translationPromise;
             var _this = this;
             return __generator(this, function (_a) {
-                cacheKey = constructCacheKey(params.targetLanguage, params.metadata);
+                cacheKey = constructCacheKey(params.targetLocale, params.metadata);
                 // In memory cache to make sure the same translation isn't requested twice
                 if (this._translationCache.has(cacheKey)) {
                     // Returns the previous request
                     return [2 /*return*/, this._translationCache.get(cacheKey)];
                 }
-                children = params.children, targetLanguage = params.targetLanguage, metadata = params.metadata;
+                children = params.children, targetLocale = params.targetLocale, metadata = params.metadata;
                 translationPromise = new Promise(function (resolve, reject) {
                     // In memory queue to batch requests
                     _this._queue.push({
                         type: 'react',
                         data: {
                             children: children,
-                            targetLanguage: targetLanguage,
+                            targetLocale: targetLocale,
                             metadata: __assign(__assign({}, _this.metadata), metadata),
                         },
                         revalidate: _this._remoteTranslationsManager
-                            ? _this._remoteTranslationsManager.getTranslationRequested(targetLanguage)
+                            ? _this._remoteTranslationsManager.getTranslationRequested(targetLocale)
                             : false,
                         resolve: resolve,
                         reject: reject,
@@ -292,7 +335,7 @@ var I18NConfiguration = /** @class */ (function () {
                         batchPromise = this.gt.translateBatch(batch);
                         batch.forEach(function (item) {
                             if (_this._remoteTranslationsManager && !item.revalidate)
-                                _this._remoteTranslationsManager.setTranslationRequested(item.data.targetLanguage);
+                                _this._remoteTranslationsManager.setTranslationRequested(item.data.targetLocale);
                         });
                         return [4 /*yield*/, batchPromise];
                     case 2:
@@ -304,10 +347,10 @@ var I18NConfiguration = /** @class */ (function () {
                             if (result && typeof result === 'object') {
                                 item.resolve(result.translation);
                                 if (result.translation &&
-                                    result.language &&
+                                    result.locale &&
                                     result.reference &&
                                     _this._remoteTranslationsManager) {
-                                    _this._remoteTranslationsManager.setTranslations(result.language, result.reference.key, result.reference.id, result.translation);
+                                    _this._remoteTranslationsManager.setTranslations(result.locale, result.reference.key, result.reference.id, result.translation);
                                 }
                             }
                         });
@@ -342,7 +385,7 @@ var I18NConfiguration = /** @class */ (function () {
 }());
 exports.default = I18NConfiguration;
 // Constructs the unique identification key for the map which is the in-memory same-render-cycle cache
-var constructCacheKey = function (targetLanguage, metadata) {
-    return "".concat(targetLanguage, "-").concat(metadata.hash);
+var constructCacheKey = function (targetLocale, metadata) {
+    return "".concat(targetLocale, "-").concat(metadata.hash);
 };
 //# sourceMappingURL=I18NConfiguration.js.map

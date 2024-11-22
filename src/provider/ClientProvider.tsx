@@ -1,21 +1,17 @@
 'use client';
 
-import React, {
+import {
   useCallback,
-  useLayoutEffect,
-  useEffect,
-  useState,
-  useRef,
-  Suspense,
 } from 'react';
 import {
-  _GTContext,
-  _renderDefaultChildren,
-  _renderTranslatedChildren,
+  GTContext,
 } from 'gt-react/client';
+import { renderDefaultChildren, renderTranslatedChildren } from 'gt-react/internal';
 import { addGTIdentifier, extractEntryMetadata } from 'gt-react/internal';
 import { renderContentToString } from 'generaltranslation';
 import ClientResolver from './ClientResolver';
+import { ClientDictionary, ClientTranslations } from './types';
+import renderVariable from '../server/rendering/renderVariable';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -27,24 +23,29 @@ export default function ClientProvider({
   translationRequired,
 }: {
   children: any;
-  dictionary: Record<string, any>;
-  translations: Record<string, any>;
+  dictionary: ClientDictionary;
+  translations: ClientTranslations;
   locale: string;
   defaultLocale: string;
   translationRequired: boolean;
 }) {
+
   // For dictionaries
   const translate = useCallback(
     (id: string, options: Record<string, any> = {}, f?: Function) => {
+      
+      // Get the entry from the dictionary
       let { entry, metadata } = extractEntryMetadata(dictionary[id]);
-
-      if (!entry) {
+      if (typeof entry === 'undefined') {
         console.warn(`Dictionary entry with id "${id}" is null or undefined`);
         return undefined;
       }
 
-      if (metadata && metadata.isFunction) {
-        if (typeof f !== 'function') {
+      // Handle functional entries
+      if (metadata?.isFunction) {
+        if (typeof f === 'function') {
+          entry = addGTIdentifier(f(options));
+        } else {
           throw new Error(
             `You're trying to call a function in the server dictionary on the client-side, but functions can't be passed directly from server to client. ` +
               `Try including the function you want to call as a parameter in t(), like t("${id}", ${
@@ -52,11 +53,11 @@ export default function ClientProvider({
               }, MyFunction)`
           );
         }
-        entry = addGTIdentifier(f(options));
-      }
+      };
 
+      // Initialize and populate variables and variables' metadata
       let variables = options;
-      let variablesOptions: Record<string, any> | undefined;
+      let variablesOptions: Record<string, Intl.NumberFormatOptions | Intl.DateTimeFormatOptions> | undefined;
       if (metadata?.variablesOptions)
         variablesOptions = {
           ...(variablesOptions || {}),
@@ -66,34 +67,37 @@ export default function ClientProvider({
         variablesOptions = {
           ...(variablesOptions || {}),
           ...options.variablesOptions,
-        };
+      };
 
+      // Handle string and content entries, if and !if translation required
       if (typeof entry === 'string') {
-        const translation = translations[id]?.t || entry;
+        const content = translationRequired ? (translations[id] || entry) : entry;
         return renderContentToString(
-          translationRequired ? translation : entry,
+          content,
           [locale, defaultLocale],
           variables,
           variablesOptions
         );
       }
 
+      // Fallback if there is no translation present
       if (!translationRequired || !translations[id]) {
-        return _renderDefaultChildren({
+        return renderDefaultChildren({
           children: entry,
           variables,
           variablesOptions,
-          defaultLocale,
+          defaultLocale, renderVariable
         });
       }
 
       const renderTranslation = (translationEntry: any) => {
-        return _renderTranslatedChildren({
+        return renderTranslatedChildren({
           source: entry,
           target: translationEntry,
           variables,
           variablesOptions,
           locales: [locale, defaultLocale],
+          renderVariable
         });
       };
 
@@ -101,17 +105,17 @@ export default function ClientProvider({
 
       if (translation.promise) {
         if (!translation.errorFallback) {
-          translation.errorFallback = _renderDefaultChildren({
+          translation.errorFallback = renderDefaultChildren({
             children: entry,
             variables,
             variablesOptions,
             defaultLocale,
+            renderVariable
           });
         }
         if (!translation.loadingFallback) {
           translation.loadingFallback = translation.errorFallback;
         }
-
         return (
           <ClientResolver
             promise={translation.promise}
@@ -122,21 +126,22 @@ export default function ClientProvider({
         );
       }
 
-      return renderTranslation(translation.t);
+      return renderTranslation(translation);
     },
     [dictionary, translations]
   );
 
   return (
-    <_GTContext.Provider
+    <GTContext.Provider
       value={{
         translate,
         locale,
         defaultLocale,
         translations,
+        translationRequired
       }}
     >
       {children}
-    </_GTContext.Provider>
+    </GTContext.Provider>
   );
 }

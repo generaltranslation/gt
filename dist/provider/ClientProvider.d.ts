@@ -1,7 +1,8 @@
+import { ClientDictionary, ClientTranslations } from './types';
 export default function ClientProvider({ children, dictionary, translations, locale, defaultLocale, translationRequired, }: {
     children: any;
-    dictionary: Record<string, any>;
-    translations: Record<string, any>;
+    dictionary: ClientDictionary;
+    translations: ClientTranslations;
     locale: string;
     defaultLocale: string;
     translationRequired: boolean;

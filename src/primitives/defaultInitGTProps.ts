@@ -1,13 +1,13 @@
-import { primitives } from "gt-react/internal";
+import { libraryDefaultLocale, defaultCacheURL } from "generaltranslation/internal";
 import getDefaultFromEnv from "../utils/getDefaultFromEnv";
 
 export default {
     apiKey: getDefaultFromEnv('GT_API_KEY'),
     projectID: getDefaultFromEnv('GT_PROJECT_ID'),
     baseURL: 'https://prod.gtx.dev',
-    cacheURL: primitives.defaultCacheURL,
-    defaultLocale: primitives.libraryDefaultLocale,
-    getLocale: async () => primitives.libraryDefaultLocale,
+    cacheURL: defaultCacheURL,
+    defaultLocale: libraryDefaultLocale,
+    getLocale: async () => libraryDefaultLocale,
     renderSettings: {
         method: "skeleton",
         timeout: null

@@ -1,15 +1,10 @@
-import {
-  addGTIdentifier,
-  writeChildrenAsObjects,
-  hashReactChildrenObjects,
-} from 'gt-react/internal';
 import getI18NConfig from '../../utils/getI18NConfig';
 import getLocale from '../../request/getLocale';
 import getMetadata from '../../request/getMetadata';
 import { Suspense } from 'react';
-import renderTranslatedChildren from '../rendering/renderTranslatedChildren';
-import renderDefaultChildren from '../rendering/renderDefaultChildren';
 import Resolver from './Resolver';
+import { renderDefaultChildren, renderTranslatedChildren } from 'gt-react/internal';
+import renderVariable from '../rendering/renderVariable';
 
 type RenderSettings = {
   method: 'skeleton' | 'replace' | 'hang' | 'subtle';
@@ -17,7 +12,7 @@ type RenderSettings = {
 };
 
 /**
- * Translation component that renders its children translated into the user's language.
+ * Translation component that renders its children translated into the user's given locale.
  *
  * @example
  * ```jsx
@@ -31,7 +26,7 @@ type RenderSettings = {
  * ```jsx
  * // Translating a plural
  * <T id="item_count">
- *  <Plural n={3} singular={<>You have <Num value={n}/> item.}>
+ *  <Plural n={3} singular={<>You have <Num value={n}/> item.</>}>
  *      You have <Num value={n}/> items.
  *  </Plural>
  * </T>
@@ -73,6 +68,7 @@ export default async function T({
   renderSettings?: RenderSettings;
   [key: string]: any;
 }): Promise<any> {
+
   if (!children) {
     return;
   }
@@ -89,8 +85,9 @@ export default async function T({
     translationsPromise = I18NConfig.getTranslations(locale);
   }
 
-  // Gets tagged children (with GT identifiers)
-  const taggedChildren = addGTIdentifier(children);
+  // Gets tagged children with GT identifiers
+  // id is here for caching purposes (not enabled when the environment is "development")
+  const taggedChildren = I18NConfig.addGTIdentifier(children, id);
 
   // If no translation is required, render the default children
   // The dictionary wraps text in this <T> component
@@ -100,16 +97,16 @@ export default async function T({
       children: taggedChildren,
       variables,
       variablesOptions,
-      defaultLocale,
+      defaultLocale, renderVariable
     });
   }
 
-  // Turns tagged children into objects
-  const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
 
-  // The hash is used to identify the translation
-  const key: string = hashReactChildrenObjects(
-    context ? [childrenAsObjects, context] : childrenAsObjects
+  // Turns tagged children into objects
+  // The key (a hash) is used to identify the translation
+  const [childrenAsObjects, key] = I18NConfig.serializeAndHash(
+    taggedChildren, context,
+    undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
   );
 
   // Wait for translations from the cache
@@ -128,6 +125,7 @@ export default async function T({
       variables,
       variablesOptions,
       locales: [locale, defaultLocale],
+      renderVariable
     });
   }
 
@@ -136,7 +134,7 @@ export default async function T({
   // On-demand translates the children
   const translationPromise = I18NConfig.translateChildren({
     children: childrenAsObjects,
-    targetLanguage: locale,
+    targetLocale: locale,
     metadata: {
       ...(id && { id }),
       hash: key,
@@ -154,6 +152,7 @@ export default async function T({
       variables,
       variablesOptions,
       locales: [locale, defaultLocale],
+      renderVariable
     });
   });
 
@@ -165,6 +164,7 @@ export default async function T({
     variables,
     variablesOptions,
     defaultLocale,
+    renderVariable
   });
 
   if (renderSettings.method === 'replace') {

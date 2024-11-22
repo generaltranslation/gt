@@ -63,7 +63,7 @@ async function DateTime({ children, name = "date", value, options = {}, ...props
     }
 
     // Format the date according to the locale and options
-    const dateString = dateValue ? formatDateTime({ value: dateValue, languages: locales, options }) : '';
+    const dateString = dateValue ? formatDateTime({ value: dateValue, locales, options }) : '';
     const formattedValue = dateString.replace(/[\u200F\u202B\u202E]/g, '')
 
     // Render the formatted date within a span element

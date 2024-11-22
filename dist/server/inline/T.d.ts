@@ -3,7 +3,7 @@ type RenderSettings = {
     timeout: number | null;
 };
 /**
- * Translation component that renders its children translated into the user's language.
+ * Translation component that renders its children translated into the user's given locale.
  *
  * @example
  * ```jsx
@@ -17,7 +17,7 @@ type RenderSettings = {
  * ```jsx
  * // Translating a plural
  * <T id="item_count">
- *  <Plural n={3} singular={<>You have <Num value={n}/> item.}>
+ *  <Plural n={3} singular={<>You have <Num value={n}/> item.</>}>
  *      You have <Num value={n}/> items.
  *  </Plural>
  * </T>

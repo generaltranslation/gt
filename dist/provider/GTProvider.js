@@ -75,7 +75,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = GTProvider;
 var jsx_runtime_1 = require("react/jsx-runtime");
-//
 var react_1 = __importDefault(require("react"));
 var internal_1 = require("gt-react/internal");
 var getI18NConfig_1 = __importDefault(require("../utils/getI18NConfig"));
@@ -83,8 +82,9 @@ var getLocale_1 = __importDefault(require("../request/getLocale"));
 var getMetadata_1 = __importDefault(require("../request/getMetadata"));
 var generaltranslation_1 = require("generaltranslation");
 var getDictionary_1 = __importStar(require("../dictionary/getDictionary"));
-var renderDefaultChildren_1 = __importDefault(require("../server/rendering/renderDefaultChildren"));
+var internal_2 = require("gt-react/internal");
 var ClientProvider_1 = __importDefault(require("./ClientProvider"));
+var renderVariable_1 = __importDefault(require("../server/rendering/renderVariable"));
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -95,105 +95,108 @@ var ClientProvider_1 = __importDefault(require("./ClientProvider"));
  */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, getID, locale, additionalMetadata, defaultLocale, renderSettings, dictionary, translations, translationRequired, existingTranslations, _c;
+        var getID, I18NConfig, locale, additionalMetadata, defaultLocale, renderSettings, translationRequired, translationsPromise, dictionaryEntries, dictionary, translations, existingTranslations, _c, _d;
         var _this = this;
         var children = _b.children, id = _b.id;
-        return __generator(this, function (_d) {
-            switch (_d.label) {
+        return __generator(this, function (_e) {
+            switch (_e.label) {
                 case 0:
-                    I18NConfig = (0, getI18NConfig_1.default)();
                     getID = function (suffix) {
                         return id ? "".concat(id, ".").concat(suffix) : suffix;
                     };
+                    I18NConfig = (0, getI18NConfig_1.default)();
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    locale = _d.sent();
+                    locale = _e.sent();
                     return [4 /*yield*/, (0, getMetadata_1.default)()];
                 case 2:
-                    additionalMetadata = _d.sent();
+                    additionalMetadata = _e.sent();
                     defaultLocale = I18NConfig.getDefaultLocale();
                     renderSettings = I18NConfig.getRenderSettings();
+                    translationRequired = I18NConfig.requiresTranslation(locale);
+                    if (translationRequired)
+                        translationsPromise = I18NConfig.getTranslations(locale);
+                    dictionaryEntries = (0, internal_1.flattenDictionary)(id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)());
                     dictionary = {};
                     translations = {};
-                    translationRequired = I18NConfig.requiresTranslation(locale);
-                    if (!translationRequired) return [3 /*break*/, 4];
-                    return [4 /*yield*/, I18NConfig.getTranslations(locale)];
+                    existingTranslations = {};
+                    if (!translationsPromise) return [3 /*break*/, 4];
+                    _d = (_c = Object).entries;
+                    return [4 /*yield*/, translationsPromise];
                 case 3:
-                    _c = _d.sent();
-                    return [3 /*break*/, 5];
-                case 4:
-                    _c = {};
-                    _d.label = 5;
+                    _d.apply(_c, [_e.sent()]).map(function (_a) {
+                        var id = _a[0], t = _a[1].t;
+                        return existingTranslations[id] = t;
+                    });
+                    _e.label = 4;
+                case 4: 
+                // Check and standardize flattened dictionary entries before passing them to the client
+                return [4 /*yield*/, Promise.all(Object.entries(dictionaryEntries).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
+                        var entryID, _c, entry, metadata, taggedEntry, _d, entryAsObjects, key, translation, translationPromise_1, _e, _f, translationPromise, loadingFallback, errorFallback;
+                        var suffix = _b[0], dictionaryEntry = _b[1];
+                        return __generator(this, function (_g) {
+                            switch (_g.label) {
+                                case 0:
+                                    entryID = getID(suffix);
+                                    _c = (0, internal_1.extractEntryMetadata)(dictionaryEntry), entry = _c.entry, metadata = _c.metadata;
+                                    if (typeof entry === 'undefined')
+                                        return [2 /*return*/];
+                                    // If entry is a function, execute it
+                                    if (typeof entry === 'function') {
+                                        entry = entry({});
+                                        metadata = __assign(__assign({}, metadata), { isFunction: true });
+                                    }
+                                    taggedEntry = I18NConfig.addGTIdentifier(children, id);
+                                    // Set dictionary entry to be passed to the client
+                                    dictionary[entryID] = [taggedEntry, metadata];
+                                    // If no translation is required, return
+                                    if (!translationRequired)
+                                        return [2 /*return*/];
+                                    _d = I18NConfig.serializeAndHash(taggedEntry, metadata === null || metadata === void 0 ? void 0 : metadata.context, entryID), entryAsObjects = _d[0], key = _d[1];
+                                    translation = existingTranslations === null || existingTranslations === void 0 ? void 0 : existingTranslations[entryID];
+                                    if (translation && translation.k === key) {
+                                        return [2 /*return*/, (translations[entryID] = translation)];
+                                    }
+                                    if (!(typeof taggedEntry === 'string')) return [3 /*break*/, 3];
+                                    translationPromise_1 = I18NConfig.translate({
+                                        content: (0, generaltranslation_1.splitStringToContent)(taggedEntry),
+                                        targetLocale: locale,
+                                        options: __assign({ id: entryID, hash: key }, additionalMetadata),
+                                    });
+                                    if (!(renderSettings.method !== "subtle")) return [3 /*break*/, 2];
+                                    _e = translations;
+                                    _f = entryID;
+                                    return [4 /*yield*/, translationPromise_1];
+                                case 1: return [2 /*return*/, _e[_f] = _g.sent()];
+                                case 2: return [2 /*return*/, undefined];
+                                case 3:
+                                    ;
+                                    translationPromise = I18NConfig.translateChildren({
+                                        children: entryAsObjects,
+                                        targetLocale: locale,
+                                        metadata: __assign(__assign({ id: entryID, hash: key }, additionalMetadata), (renderSettings.timeout && { timeout: renderSettings.timeout })),
+                                    });
+                                    if (renderSettings.method === 'skeleton') {
+                                        loadingFallback = (0, jsx_runtime_1.jsx)(react_1.default.Fragment, {}, "skeleton_".concat(entryID));
+                                    }
+                                    else if (renderSettings.method === 'replace') {
+                                        loadingFallback = (0, internal_2.renderDefaultChildren)({
+                                            children: taggedEntry,
+                                            defaultLocale: defaultLocale,
+                                            renderVariable: renderVariable_1.default
+                                        });
+                                    }
+                                    return [2 /*return*/, (translations[entryID] = {
+                                            promise: translationPromise,
+                                            loadingFallback: loadingFallback,
+                                            errorFallback: errorFallback,
+                                        })];
+                            }
+                        });
+                    }); }))];
                 case 5:
-                    existingTranslations = _c;
-                    // For dictionaries
-                    return [4 /*yield*/, Promise.all(Object.entries((0, internal_1.flattenDictionary)(id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)())).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var entryID, _c, entry, metadata, taggedEntry, entryAsObjects, key, translation, translationPromise_1, _d, _e, _f, translationPromise, loadingFallback, errorFallback;
-                            var _g;
-                            var suffix = _b[0], dictionaryEntry = _b[1];
-                            return __generator(this, function (_h) {
-                                switch (_h.label) {
-                                    case 0:
-                                        entryID = getID(suffix);
-                                        _c = (0, internal_1.extractEntryMetadata)(dictionaryEntry), entry = _c.entry, metadata = _c.metadata;
-                                        if (typeof entry === 'function') {
-                                            entry = entry({});
-                                            metadata = __assign(__assign({}, metadata), { isFunction: true });
-                                        }
-                                        taggedEntry = (0, internal_1.addGTIdentifier)(entry, entryID);
-                                        dictionary[entryID] = [taggedEntry, metadata];
-                                        if (!translationRequired || !entry)
-                                            return [2 /*return*/];
-                                        entryAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedEntry);
-                                        key = (0, internal_1.hashReactChildrenObjects)((metadata === null || metadata === void 0 ? void 0 : metadata.context) ? [entryAsObjects, metadata.context] : entryAsObjects);
-                                        translation = existingTranslations === null || existingTranslations === void 0 ? void 0 : existingTranslations[entryID];
-                                        if (translation && translation.k === key) {
-                                            return [2 /*return*/, (translations[entryID] = translation)];
-                                        }
-                                        if (!(typeof taggedEntry === 'string')) return [3 /*break*/, 4];
-                                        translationPromise_1 = I18NConfig.translate({
-                                            content: (0, generaltranslation_1.splitStringToContent)(taggedEntry),
-                                            targetLanguage: locale,
-                                            options: __assign({ id: entryID, hash: key }, additionalMetadata),
-                                        });
-                                        if (!(renderSettings.method !== 'subtle')) return [3 /*break*/, 2];
-                                        _e = translations;
-                                        _f = entryID;
-                                        _g = {};
-                                        return [4 /*yield*/, translationPromise_1];
-                                    case 1:
-                                        _d = (_e[_f] = (_g.t = _h.sent(), _g.k = key, _g));
-                                        return [3 /*break*/, 3];
-                                    case 2:
-                                        _d = undefined;
-                                        _h.label = 3;
-                                    case 3: return [2 /*return*/, _d];
-                                    case 4:
-                                        translationPromise = I18NConfig.translateChildren({
-                                            children: entryAsObjects,
-                                            targetLanguage: locale,
-                                            metadata: __assign(__assign({ id: entryID, hash: key }, additionalMetadata), (renderSettings.timeout && { timeout: renderSettings.timeout })),
-                                        });
-                                        if (renderSettings.method === 'skeleton') {
-                                            loadingFallback = (0, jsx_runtime_1.jsx)(react_1.default.Fragment, {}, "skeleton_".concat(entryID));
-                                        }
-                                        else if (renderSettings.method === 'replace') {
-                                            loadingFallback = (0, renderDefaultChildren_1.default)({
-                                                children: taggedEntry,
-                                                defaultLocale: defaultLocale,
-                                            });
-                                        }
-                                        return [2 /*return*/, (translations[entryID] = {
-                                                promise: translationPromise,
-                                                loadingFallback: loadingFallback,
-                                                errorFallback: errorFallback,
-                                            })];
-                                }
-                            });
-                        }); }))];
-                case 6:
-                    // For dictionaries
-                    _d.sent();
+                    // Check and standardize flattened dictionary entries before passing them to the client
+                    _e.sent();
                     return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProvider_1.default, { dictionary: dictionary, translations: __assign(__assign({}, existingTranslations), translations), locale: locale, defaultLocale: defaultLocale, translationRequired: translationRequired, children: children }))];
             }
         });
