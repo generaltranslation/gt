@@ -15,13 +15,13 @@ export default function addGTIdentifierToSyntaxTree(tree: any, startingIndex = 0
             let generaltranslation: any = { id: indexObject.index };
             
             if (type === "Var") {
-                return { variable: "variable", key: getVariableName(props, "variable") };
+                return { variable: "variable", key: getVariableName({ ...props, 'data-_gt': generaltranslation }, "variable") };
             } else if (type === "Num") {
-                return { variable: "number", key: getVariableName(props, "number") };
+                return { variable: "number", key: getVariableName({ ...props, 'data-_gt': generaltranslation }, "number") };
             } else if (type === "Currency") {
-                return { variable: "currency", key: getVariableName(props, "currency") };
+                return { variable: "currency", key: getVariableName({ ...props, 'data-_gt': generaltranslation }, "currency") };
             } else if (type === "DateTime") {
-                return { variable: "datetime", key: getVariableName(props, "datetime") };
+                return { variable: "datetime", key: getVariableName({ ...props, 'data-_gt': generaltranslation }, "datetime") };
             }
             
             if (type === "Plural") {

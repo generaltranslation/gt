@@ -24,16 +24,16 @@ function addGTIdentifierToSyntaxTree(tree, startingIndex = 0) {
             indexObject.index += 1;
             let generaltranslation = { id: indexObject.index };
             if (type === "Var") {
-                return { variable: "variable", key: (0, internal_1.getVariableName)(props, "variable") };
+                return { variable: "variable", key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { 'data-_gt': generaltranslation }), "variable") };
             }
             else if (type === "Num") {
-                return { variable: "number", key: (0, internal_1.getVariableName)(props, "number") };
+                return { variable: "number", key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { 'data-_gt': generaltranslation }), "number") };
             }
             else if (type === "Currency") {
-                return { variable: "currency", key: (0, internal_1.getVariableName)(props, "currency") };
+                return { variable: "currency", key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { 'data-_gt': generaltranslation }), "currency") };
             }
             else if (type === "DateTime") {
-                return { variable: "datetime", key: (0, internal_1.getVariableName)(props, "datetime") };
+                return { variable: "datetime", key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { 'data-_gt': generaltranslation }), "datetime") };
             }
             if (type === "Plural") {
                 generaltranslation.transformation = "plural";
