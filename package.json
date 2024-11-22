@@ -10,6 +10,10 @@
     "build": "tsc",
     "build-push-publish": "rm -r -f dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;"
   },
+  "peerDependencies": {
+    "generaltranslation": "^4.0.2",
+    "gt-react": "^6.0.3"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -23,7 +27,6 @@
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
     "esm": "^3.2.25",
-    "generaltranslation": "^4.0.2",
     "mock-require": "^3.0.3",
     "react": "^18.3.1",
     "ts-node": "^10.9.2",
@@ -34,8 +37,5 @@
     "@types/babel__traverse": "^7.20.6",
     "@types/mock-require": "^2.0.3",
     "@types/node": "^22.5.1"
-  },
-  "peerDependencies": {
-    "gt-react": "^6.0.0"
   }
 }
