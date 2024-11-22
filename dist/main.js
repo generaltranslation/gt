@@ -65,7 +65,7 @@ commander_1.program
     .option('--defaultLanguage, --defaultLocale <locale>', 'Default locale (e.g., en)')
     .option('--languages, --locales <locales...>', 'Space-separated list of locales (e.g., en fr es)', [])
     .option('--description <description>', 'Description for the project or update')
-    .option('--replace', 'Replace existing translations in the remote dictionary', true)
+    .option('--replace', 'Replace existing translations in the remote dictionary', false)
     .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
     .option('--retranslate', 'Forces a new translation for all content.', false)
     .action((options) => __awaiter(void 0, void 0, void 0, function* () {
@@ -85,11 +85,11 @@ commander_1.program
         console.warn(`Found apiKey in "${options.options}". Are you sure you want to do this? Make sure your API key is not accidentally exposed, e.g. by putting ${options.options} in .gitignore.`);
     }
     // Check locales
-    if (options.defaultLocale && !(0, generaltranslation_1.isValidLanguageCode)(options.defaultLocale))
+    if (options.defaultLocale && !(0, generaltranslation_1.isValidLocale)(options.defaultLocale))
         throw new Error(`defaultLocale: ${options.defaultLocale} is not a valid locale!`);
     if (options.locales) {
         for (const locale of options.locales) {
-            if (!(0, generaltranslation_1.isValidLanguageCode)(locale)) {
+            if (!(0, generaltranslation_1.isValidLocale)(locale)) {
                 throw new Error(`locales: "${(_a = options === null || options === void 0 ? void 0 : options.locales) === null || _a === void 0 ? void 0 : _a.join()}", ${locale} is not a valid locale!`);
             }
         }
@@ -143,13 +143,15 @@ commander_1.program
     // Send updates to General Translation API
     if (updates.length) {
         const gt = new generaltranslation_1.default(Object.assign(Object.assign({ apiKey: options.apiKey }, (options.projectID && { projectID: options.projectID })), (options.defaultLocale && { defaultLanguage: options.defaultLocale })));
-        const resultLanguages = yield gt.updateProjectDictionary(updates, options.locales, Object.assign({ apiKey: undefined }, options));
-        if (resultLanguages) {
-            console.log(`Project "${options.projectID}" updated: ${resultLanguages.length ? true : false}.`, `Languages: ${resultLanguages.length
-                ? `[${resultLanguages
-                    .map((language) => `"${(0, generaltranslation_1.getLanguageName)(language)}"`)
-                    .join(', ')}].`
-                : 'None.'}`, resultLanguages.length
+        const { locales: resultLocales } = yield gt.updateProjectDictionary(updates, options.locales, Object.assign({ apiKey: undefined }, options));
+        if (resultLocales) {
+            console.log(`Project "${options.projectID}" updated in ${resultLocales.length} languages.`, resultLocales.length &&
+                `${resultLocales
+                    .map((locale) => {
+                    const { nameWithRegionCode, emoji } = (0, generaltranslation_1.getLocaleProperties)(locale);
+                    return `${emoji} ${nameWithRegionCode}`;
+                })
+                    .join('\n')}`, resultLocales.length
                 ? 'Translations are usually live within a minute. Check status: www.generaltranslation.com/dashboard.'
                 : '');
         }

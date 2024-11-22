@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { isValidLanguageCode } from 'generaltranslation';
+import { isValidLocale } from 'generaltranslation';
 import path from 'path';
 
 /**
@@ -47,7 +47,7 @@ export function parseNextConfig(filePath: string): {
     const description = descriptionMatch && typeof descriptionMatch[1] === 'string' ? descriptionMatch[1] : undefined;
 
     // Ensure approvedLocales is an array of strings
-    const validLocales = locales && locales.every(locale => isValidLanguageCode(locale)) ? locales : undefined;
+    const validLocales = locales && locales.every(locale => isValidLocale(locale)) ? locales : undefined;
 
     // Return the extracted values if they pass type checks or return null
     if (defaultLocale || projectID || validLocales || description) {

@@ -41,7 +41,7 @@ function parseNextConfig(filePath) {
         : undefined;
     const description = descriptionMatch && typeof descriptionMatch[1] === 'string' ? descriptionMatch[1] : undefined;
     // Ensure approvedLocales is an array of strings
-    const validLocales = locales && locales.every(locale => (0, generaltranslation_1.isValidLanguageCode)(locale)) ? locales : undefined;
+    const validLocales = locales && locales.every(locale => (0, generaltranslation_1.isValidLocale)(locale)) ? locales : undefined;
     // Return the extracted values if they pass type checks or return null
     if (defaultLocale || projectID || validLocales || description) {
         return Object.assign(Object.assign(Object.assign(Object.assign({}, (defaultLocale && { defaultLocale })), (projectID && { projectID })), (validLocales && { locales: validLocales })), (description && { description }));

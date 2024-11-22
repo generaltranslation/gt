@@ -13,10 +13,7 @@ var __rest = (this && this.__rest) || function (s, e) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = addGTIdentifierToSyntaxTree;
 const internal_1 = require("gt-react/internal");
-const acceptedPluralProps = {
-    "singular": true, "dual": true, "plural": true,
-    "zero": true, "one": true, "two": true, "few": true, "many": true, "other": true
-};
+const internal_2 = require("generaltranslation/internal");
 // recreates addGTIdentifier and writeChildrenAsObjects
 function addGTIdentifierToSyntaxTree(tree, startingIndex = 0) {
     // Object to keep track of the current index for GT IDs
@@ -27,21 +24,21 @@ function addGTIdentifierToSyntaxTree(tree, startingIndex = 0) {
             indexObject.index += 1;
             let generaltranslation = { id: indexObject.index };
             if (type === "Var") {
-                return { variable: "variable", key: props.name || internal_1.primitives.defaultVariableNames["variable"] };
+                return { variable: "variable", key: (0, internal_1.getVariableName)(props, "variable") };
             }
             else if (type === "Num") {
-                return { variable: "number", key: props.name || internal_1.primitives.defaultVariableNames["number"] };
+                return { variable: "number", key: (0, internal_1.getVariableName)(props, "number") };
             }
             else if (type === "Currency") {
-                return { variable: "currency", key: props.name || internal_1.primitives.defaultVariableNames["currency"] };
+                return { variable: "currency", key: (0, internal_1.getVariableName)(props, "currency") };
             }
             else if (type === "DateTime") {
-                return { variable: "datetime", key: props.name || internal_1.primitives.defaultVariableNames["datetime"] };
+                return { variable: "datetime", key: (0, internal_1.getVariableName)(props, "datetime") };
             }
             if (type === "Plural") {
                 generaltranslation.transformation = "plural";
                 const pluralBranches = Object.entries(props).reduce((acc, [branchName, branch]) => {
-                    if (acceptedPluralProps[branchName]) {
+                    if ((0, internal_2.isAcceptedPluralForm)(branchName)) {
                         acc[branchName] = addGTIdentifierToSyntaxTree(branch, indexObject.index);
                     }
                     return acc;

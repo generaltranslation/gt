@@ -1,10 +1,10 @@
 {
-  "name": "gt-update",
-  "version": "2.1.3",
+  "name": "gt-react-cli",
+  "version": "0.0.0",
   "main": "dist/main.js",
   "bin": {
     "i18n": "dist/main.js",
-    "gt-update": "dist/main.js"
+    "gt-react-cli": "dist/main.js"
   },
   "scripts": {
     "build": "tsc",
@@ -23,8 +23,7 @@
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
     "esm": "^3.2.25",
-    "generaltranslation": "^3.3.0",
-    "gt-react": "^5.3.5",
+    "generaltranslation": "^4.0.2",
     "mock-require": "^3.0.3",
     "react": "^18.3.1",
     "ts-node": "^10.9.2",
@@ -35,5 +34,8 @@
     "@types/babel__traverse": "^7.20.6",
     "@types/mock-require": "^2.0.3",
     "@types/node": "^22.5.1"
+  },
+  "peerDependencies": {
+    "gt-react": "^6.0.0"
   }
 }

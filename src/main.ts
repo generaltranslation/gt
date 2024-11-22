@@ -9,7 +9,7 @@ import updateConfigFile from './fs/updateConfigFile';
 import createESBuildConfig from './config/createESBuildConfig';
 import createDictionaryUpdates from './updates/createDictionaryUpdates';
 import createInlineUpdates from './updates/createInlineUpdates';
-import GT, { getLanguageName, isValidLanguageCode } from 'generaltranslation';
+import GT, { getLocaleProperties, isValidLocale } from 'generaltranslation';
 
 dotenv.config({ path: '.env' });
 dotenv.config({ path: '.env.local', override: true });
@@ -89,7 +89,7 @@ program
   .option(
     '--description <description>', 'Description for the project or update'
   )
-  .option('--replace', 'Replace existing translations in the remote dictionary', true)
+  .option('--replace', 'Replace existing translations in the remote dictionary', false)
   .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
   .option('--retranslate', 'Forces a new translation for all content.', false)
   .action(async (options: Options) => {
@@ -114,11 +114,11 @@ program
     }
 
     // Check locales
-    if (options.defaultLocale && !isValidLanguageCode(options.defaultLocale))
+    if (options.defaultLocale && !isValidLocale(options.defaultLocale))
         throw new Error(`defaultLocale: ${options.defaultLocale} is not a valid locale!`) 
     if (options.locales) {
         for (const locale of options.locales) {
-            if (!isValidLanguageCode(locale)) {
+            if (!isValidLocale(locale)) {
                 throw new Error(`locales: "${options?.locales?.join()}", ${locale} is not a valid locale!`)
             }
         }
@@ -191,26 +191,26 @@ program
             ...(options.defaultLocale && { defaultLanguage: options.defaultLocale })
         });
         
-        const resultLanguages = await gt.updateProjectDictionary(
+        const { locales: resultLocales } = await gt.updateProjectDictionary(
             updates, options.locales, {
                 apiKey: undefined,
                 ...options
             }
         );
         
-        if (resultLanguages) {
+        if (resultLocales) {
             console.log(
-              `Project "${options.projectID}" updated: ${
-                resultLanguages.length ? true : false
-              }.`,
-              `Languages: ${
-                resultLanguages.length
-                  ? `[${resultLanguages
-                      .map((language: string) => `"${getLanguageName(language)}"`)
-                      .join(', ')}].`
-                  : 'None.'
-              }`,
-              resultLanguages.length
+              `Project "${options.projectID}" updated in ${
+                resultLocales.length
+              } languages.`,
+                resultLocales.length &&
+               `${resultLocales
+                    .map((locale: string) => {
+                        const { nameWithRegionCode, emoji } = getLocaleProperties(locale)
+                        return `${emoji} ${nameWithRegionCode}`
+                    })
+                .join('\n')}`,
+              resultLocales.length
                 ? 'Translations are usually live within a minute. Check status: www.generaltranslation.com/dashboard.'
                 : ''
             );
