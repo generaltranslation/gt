@@ -123,9 +123,9 @@ var I18NConfiguration = /** @class */ (function () {
         // Default env is production
         this.env = env || "production";
         // Other metadata
-        this.metadata = __assign(__assign({ env: this.env, defaultLocale: this.defaultLocale }, (this.renderSettings.timeout && {
+        this.metadata = __assign(__assign(__assign({ env: this.env, defaultLocale: this.defaultLocale }, (this.renderSettings.timeout && {
             timeout: this.renderSettings.timeout - batchInterval,
-        })), metadata);
+        })), { projectID: this.projectID }), metadata);
         // Dictionary managers
         if (cacheURL && projectID) {
             this._remoteTranslationsManager = RemoteTranslationsManager_1.default;
@@ -261,8 +261,7 @@ var I18NConfiguration = /** @class */ (function () {
                         data: {
                             content: content,
                             targetLocale: targetLocale,
-                            projectID: _this.projectID,
-                            metadata: __assign(__assign({}, _this.metadata), options),
+                            metadata: __assign(__assign(__assign({}, _this.metadata), { projectID: _this.projectID }), options),
                         },
                         revalidate: _this._remoteTranslationsManager
                             ? _this._remoteTranslationsManager.getTranslationRequested(targetLocale)

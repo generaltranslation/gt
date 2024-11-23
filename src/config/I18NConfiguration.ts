@@ -98,6 +98,7 @@ export default class I18NConfiguration {
       ...(this.renderSettings.timeout && {
         timeout: this.renderSettings.timeout - batchInterval,
       }),
+      projectID: this.projectID,
       ...metadata,
     };
     // Dictionary managers
@@ -246,8 +247,7 @@ export default class I18NConfiguration {
         data: {
           content,
           targetLocale,
-          projectID: this.projectID,
-          metadata: { ...this.metadata, ...options },
+          metadata: { ...this.metadata, projectID: this.projectID, ...options },
         },
         revalidate: this._remoteTranslationsManager
           ? this._remoteTranslationsManager.getTranslationRequested(

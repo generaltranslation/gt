@@ -121,6 +121,6 @@
     "i18n"
   ],
   "dependencies": {
-    "gt-react": "^6.0.6"
+    "gt-react": "^6.0.7"
   }
 }
