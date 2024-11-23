@@ -3,7 +3,7 @@ import remoteTranslationsManager, {
   RemoteTranslationsManager,
 } from './RemoteTranslationsManager';
 import defaultInitGTProps from '../primitives/defaultInitGTProps';
-import { addGTIdentifier as _addGTIdentifier, hashReactChildrenObjects, writeChildrenAsObjects } from 'gt-react/internal';
+import { addGTIdentifier, hashReactChildrenObjects, writeChildrenAsObjects } from 'gt-react/internal';
 
 type I18NConfigurationParams = {
   apiKey: string;
@@ -174,16 +174,18 @@ export default class I18NConfiguration {
   }
 
   addGTIdentifier(children: any, id?: string): any {
+
     // In development, recompute every time
     if (this.env === "development" || !id) {
-      return _addGTIdentifier(children, id);
+      return addGTIdentifier(children, id);
     }
     // In production, since dictionary content isn't changing, cache results
     const taggedDictionaryEntry = this._taggedDictionary.get(id);
     if (taggedDictionaryEntry) {
       return taggedDictionaryEntry;
     }
-    const taggedChildren = _addGTIdentifier(children, id);
+    const taggedChildren = addGTIdentifier(children, id);
+    
     this._taggedDictionary.set(id, taggedChildren);
     return taggedChildren;
   }

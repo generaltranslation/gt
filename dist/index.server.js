@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.gt = exports.Plural = exports.Branch = exports.DateTime = exports.Currency = exports.Num = exports.Var = exports.T = exports.GTProvider = exports.getGT = void 0;
+exports.Plural = exports.Branch = exports.DateTime = exports.Currency = exports.Num = exports.Var = exports.useElement = exports.T = exports.GTProvider = void 0;
 var Var_1 = __importDefault(require("./variables/Var"));
 exports.Var = Var_1.default;
 var Num_1 = __importDefault(require("./variables/Num"));
@@ -13,8 +13,7 @@ exports.Currency = Currency_1.default;
 var DateTime_1 = __importDefault(require("./variables/DateTime"));
 exports.DateTime = DateTime_1.default;
 var getGT_1 = require("./server/getGT");
-Object.defineProperty(exports, "getGT", { enumerable: true, get: function () { return getGT_1.getGT; } });
-Object.defineProperty(exports, "gt", { enumerable: true, get: function () { return getGT_1.gt; } });
+Object.defineProperty(exports, "useElement", { enumerable: true, get: function () { return getGT_1.useElement; } });
 var GTProvider_1 = __importDefault(require("./provider/GTProvider"));
 exports.GTProvider = GTProvider_1.default;
 var T_1 = __importDefault(require("./server/inline/T"));

@@ -1,6 +1,5 @@
 import {
-    useGT as getGT,
-    Var, Num, Currency, DateTime, T, Branch, Plural
+    useElement, Var, Num, Currency, DateTime, T, Branch, Plural
 } from "gt-react";
 
 function GTProvider(params: {
@@ -15,7 +14,7 @@ function GTProvider(params: {
 }
 
 export { 
-    GTProvider, T,
-    getGT,
-    Var, Num, Currency, DateTime, Branch, Plural
+    GTProvider, T, useElement,
+    Var, Num, Currency, DateTime, 
+    Branch, Plural
 }

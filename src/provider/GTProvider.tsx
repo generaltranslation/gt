@@ -40,23 +40,19 @@ export default async function GTProvider({
   const defaultLocale = I18NConfig.getDefaultLocale();
   const renderSettings = I18NConfig.getRenderSettings();
   const translationRequired = I18NConfig.requiresTranslation(locale);
-
+  
   let translationsPromise;
-  if (translationRequired) translationsPromise = I18NConfig.getTranslations(locale);
+  if (translationRequired) translationsPromise = I18NConfig.getTranslations(locale)
+  
 
   // Flatten dictionaries for processing while waiting for translations
   const dictionaryEntries = flattenDictionary(id ? getDictionaryEntry(id) : getDictionary());
 
   let dictionary: ClientDictionary = {};
   let translations: ClientTranslations = {};
-  let existingTranslations: ClientTranslations = {};
-
+  
   // i.e. if a translation is required
-  if (translationsPromise) {
-    Object.entries(await translationsPromise).map(([id, { t }]) => 
-      existingTranslations[id] = t
-    );
-  }
+  let existingTranslations = (translationsPromise) ? await translationsPromise : {};
   
   // Check and standardize flattened dictionary entries before passing them to the client
   await Promise.all(
@@ -76,7 +72,7 @@ export default async function GTProvider({
       }
 
       // Tag the result of entry
-      const taggedEntry = I18NConfig.addGTIdentifier(children, id);
+      const taggedEntry = I18NConfig.addGTIdentifier(entry, entryID);
 
       // Set dictionary entry to be passed to the client
       dictionary[entryID] = [taggedEntry, metadata];
@@ -107,7 +103,10 @@ export default async function GTProvider({
           options: { id: entryID, hash: key, ...additionalMetadata },
         });
         if (renderSettings.method !== "subtle") 
-          return translations[entryID] = await translationPromise;
+          return translations[entryID] = {
+              t: await translationPromise,
+              k: key
+          };
         return undefined;
       };
 
@@ -138,6 +137,7 @@ export default async function GTProvider({
 
       return (translations[entryID] = {
         promise: translationPromise,
+        k: key,
         loadingFallback,
         errorFallback,
       });

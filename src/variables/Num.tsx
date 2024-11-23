@@ -1,6 +1,5 @@
 import { formatNum } from 'generaltranslation';
 import getI18NConfig from '../utils/getI18NConfig';
-import getLocale from '../request/getLocale';
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
@@ -22,18 +21,21 @@ import getLocale from '../request/getLocale';
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {Promise<JSX.Element>} The formatted number component.
  */
-async function Num({ 
-    children, name = "n", value, options = {}, ...props 
+function Num({ 
+    children, 
+    name, 
+    value, 
+    options = {},
+    locales = [getI18NConfig().getDefaultLocale()],
+    ...props 
 }: {
     children?: any;
     name?: string;
     value?: any;
-    options?: Intl.NumberFormatOptions
+    options?: Intl.NumberFormatOptions,
+    locales?: string[]
     'data-_gt'?: any
-}): Promise<JSX.Element> {
-
-    const I18NConfig = getI18NConfig();
-    const locales = [await getLocale(), I18NConfig.getDefaultLocale() ]
+}): JSX.Element {
 
     const { "data-_gt": generaltranslation } = props;
 

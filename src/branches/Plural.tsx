@@ -1,5 +1,4 @@
 import { getPluralBranch } from "gt-react/internal";
-import getLocale from '../request/getLocale';
 import getI18NConfig from "../utils/getI18NConfig";
 
 /**
@@ -24,18 +23,19 @@ import getI18NConfig from "../utils/getI18NConfig";
  * @returns {Promise<JSX.Element>} The rendered content corresponding to the plural form of `n`, or the fallback content.
  * @throws {Error} If `n` is not provided or not a valid number.
  */
-async function Plural({
-    children, n, ...props
+function Plural({
+    children, n, 
+    locales = [getI18NConfig().getDefaultLocale()], 
+    ...props
 }: {
     children?: any;
     n?: number;
     'data-_gt'?: any
+    locales?: string[]
     [key: string]: any
 }) {
     const { 'data-_gt': generaltranslation, ...branches } = props;
-    const locale = await getLocale();
-    const defaultLocale = getI18NConfig().getDefaultLocale();
-    const branch = (typeof n === 'number' ? getPluralBranch(n, [locale, defaultLocale], branches) : children) || children;
+    const branch = (typeof n === 'number' ? getPluralBranch(n, locales, branches) : children) || children;
     return (
         <span 
             data-_gt={generaltranslation} 

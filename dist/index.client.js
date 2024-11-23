@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Plural = exports.Branch = exports.DateTime = exports.Currency = exports.Num = exports.Var = exports.getGT = exports.T = void 0;
+exports.Plural = exports.Branch = exports.DateTime = exports.Currency = exports.Num = exports.Var = exports.useElement = exports.T = void 0;
 exports.GTProvider = GTProvider;
 var gt_react_1 = require("gt-react");
-Object.defineProperty(exports, "getGT", { enumerable: true, get: function () { return gt_react_1.useGT; } });
+Object.defineProperty(exports, "useElement", { enumerable: true, get: function () { return gt_react_1.useElement; } });
 Object.defineProperty(exports, "Var", { enumerable: true, get: function () { return gt_react_1.Var; } });
 Object.defineProperty(exports, "Num", { enumerable: true, get: function () { return gt_react_1.Num; } });
 Object.defineProperty(exports, "Currency", { enumerable: true, get: function () { return gt_react_1.Currency; } });

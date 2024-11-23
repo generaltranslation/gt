@@ -18,14 +18,15 @@
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {JSX.Element} The formatted currency component.
  */
-declare function Currency({ children, name, value, currency, options, ...props }: {
+declare function Currency({ children, name, value, currency, options, locales, ...props }: {
     children?: any;
     name?: string;
     value?: any;
     currency?: string;
     options?: Intl.NumberFormatOptions;
+    locales?: string[];
     'data-_gt'?: any;
-}): Promise<JSX.Element>;
+}): JSX.Element;
 declare namespace Currency {
     var gtTransformation: string;
 }

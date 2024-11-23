@@ -71,7 +71,7 @@ export default function ClientProvider({
 
       // Handle string and content entries, if and !if translation required
       if (typeof entry === 'string') {
-        const content = translationRequired ? (translations[id] || entry) : entry;
+        const content = translationRequired ? (translations[id]?.t || entry) : entry;
         return renderContentToString(
           content,
           [locale, defaultLocale],
@@ -103,7 +103,7 @@ export default function ClientProvider({
 
       const translation = translations[id];
 
-      if (translation.promise) {
+      if (translation.promise) { // i.e. no translation.t
         if (!translation.errorFallback) {
           translation.errorFallback = renderDefaultChildren({
             children: entry,
@@ -126,7 +126,7 @@ export default function ClientProvider({
         );
       }
 
-      return renderTranslation(translation);
+      return renderTranslation(translation.t);
     },
     [dictionary, translations]
   );

@@ -16,7 +16,12 @@
  * @param {any} [value] - The default value to be displayed if `children` is not provided.
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
-function Var({ children, name = "value", value, ...props }: {
+function Var({ 
+    children, 
+    name, 
+    value, 
+    ...props 
+}: {
     children?: any;
     name?: string;
     value?: any;

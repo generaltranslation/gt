@@ -1,36 +1,123 @@
-import { extractEntryMetadata } from "gt-react/internal";
+import { extractEntryMetadata, flattenDictionary, renderDefaultChildren, renderTranslatedChildren } from "gt-react/internal";
 import T from "./inline/T";
-import { getDictionaryEntry } from "../dictionary/getDictionary";
-import tx from "./strings/tx";
+import getDictionary, { getDictionaryEntry } from "../dictionary/getDictionary";
+import { getLocale } from "../server";
+import getI18NConfig from "../utils/getI18NConfig";
+import { renderContentToString, splitStringToContent } from "generaltranslation";
+import getMetadata from "../request/getMetadata";
+import renderVariable from "./rendering/renderVariable";
 
 /**
- * Gets the translation function `t`, which is used to translate an item from the dictionary.
+ * Returns the translation function `t()`, which is used to translate an item from the dictionary.
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
  *
  * @example
- * const t = getGT('user');
+ * const t = await getGT('user');
  * console.log(t('name')); // Translates item 'user.name'
  *
- * const t = getGT();
+ * const t = await getGT();
  * console.log(t('hello')); // Translates item 'hello'
  */
-export function getGT(id?: string): (
+export async function getGT(id?: string): Promise<(
     id: string, 
     options?: Record<string, any>, 
     f?: Function
-) => JSX.Element | Promise<string> | undefined {
+) => any> {
 
     const getID = (suffix: string) => {
         return id ? `${id}.${suffix}` : suffix;
+    }
+
+    const I18NConfig = getI18NConfig();
+    const defaultLocale = I18NConfig.getDefaultLocale();
+    const locale = await getLocale();
+    const translationRequired = I18NConfig.requiresTranslation(locale);
+
+    let translations: Record<string, any> = {};
+
+    if (translationRequired) {
+
+        let translationsPromise = I18NConfig.getTranslations(locale);
+        const additionalMetadata = await getMetadata();
+        const renderSettings = I18NConfig.getRenderSettings();
+        
+        // Flatten dictionaries for processing while waiting for translations
+        const dictionaryEntries = flattenDictionary(id ? getDictionaryEntry(id) : getDictionary());
+
+        translations = { ...(await translationsPromise) };
+
+        await Promise.all(
+            Object.entries(dictionaryEntries).map(async ([suffix, dictionaryEntry]) => {
+                
+                // Get the entry from the dictionary
+                const entryID = getID(suffix);
+                let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
+                if (typeof entry === 'undefined') return; 
+    
+                // If entry is a function, execute it
+                if (typeof entry === 'function') {
+                    entry = entry({});
+                    metadata = { ...metadata, isFunction: true };
+                }
+
+                // Tag the result of entry
+                const taggedEntry = I18NConfig.addGTIdentifier(entry, id);
+    
+                // Set dictionary entry to be passed to the client
+                const [entryAsObjects, key] = I18NConfig.serializeAndHash(
+                    taggedEntry,
+                    metadata?.context,
+                    entryID
+                );
+            
+                // If a translation already exists, add it to the translations
+                const translation = translations[entryID];
+                if (translation && translation.k === key) {
+                    return; // NOTHING MORE TO DO
+                }
+                
+                if (typeof taggedEntry === 'string') {
+                    const translationPromise = I18NConfig.translate({
+                      content: splitStringToContent(taggedEntry),
+                      targetLocale: locale,
+                      options: { id: entryID, hash: key, ...additionalMetadata },
+                    });
+                    if (renderSettings.method !== "subtle") 
+                      return translations[entryID] = {
+                          t: await translationPromise,
+                          k: key
+                    };
+                    return; // NOTHING MORE TO DO 
+                };
+    
+                const translationPromise = I18NConfig.translateChildren({
+                    children: entryAsObjects,
+                    targetLocale: locale,
+                    metadata: {
+                      id: entryID,
+                      hash: key,
+                      ...additionalMetadata,
+                      ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
+                    },
+                });
+                if (renderSettings.method !== "subtle") 
+                    return translations[entryID] = {
+                        t: await translationPromise,
+                        k: key
+                    };
+                return; // NOTHING MORE TO DO 
+    
+            })
+        );
     }
 
     return (
         id: string, 
         options?: Record<string, any>,
         f?: Function
-    ): JSX.Element | Promise<string> | undefined => {
+    ): JSX.Element | string | undefined => {
 
         id = getID(id);
 
@@ -38,6 +125,11 @@ export function getGT(id?: string): (
         let { entry, metadata } = extractEntryMetadata(
             getDictionaryEntry(id)
         );
+
+        if (!entry) {
+            console.warn(`No entry found for id: "${id}"`);
+            return undefined;
+        }
 
         // Get variables and variable options
         let variables; let variablesOptions;
@@ -55,46 +147,51 @@ export function getGT(id?: string): (
             entry = entry(options);
         }
 
-        if (!entry) {
-            console.warn(`No entry found for id: "${id}"`);
-            return undefined;
-        }
+        // Tag the result of entry
+        const taggedEntry = I18NConfig.addGTIdentifier(entry, id);
 
-        if (typeof entry === 'string') {
-            return tx(entry, { 
-                id, variables, variablesOptions
-            });
-        }
+        if (typeof taggedEntry === 'string')
+            return renderContentToString(
+                translations[id]?.t || taggedEntry,
+                [locale, defaultLocale],
+                variables, variablesOptions
+            );
 
-        return (
-            <T 
-                id={id}
-                variables={variables}
-                variablesOptions={variablesOptions}
-                {...metadata}
-            >
-                {entry}
-            </T>
-        )
+        if (!translationRequired)
+            return renderDefaultChildren({
+                children: taggedEntry, defaultLocale,
+                variables, variablesOptions, renderVariable
+            }) as string | JSX.Element | undefined;
+
+        if (translations[id]?.t) {
+            return renderTranslatedChildren({
+                source: taggedEntry, target: translations[id].t,
+                variables, variablesOptions, locales: [locale, defaultLocale], 
+                renderVariable
+            }) as string | JSX.Element | undefined;
+        }
+        
 
     }
 }
 
+
 /**
- * Gets the translation function `t`, which is used to translate a JSX element from the dictionary.
- * For translating strings directly, see `getGT()` or `useGT()`.
+ * Returns the translation function `t()`, which is used to translate an item from the dictionary.
+ * 
+ * **`t()` returns only JSX elements.** For returning strings as well, see `await getGT()` or `useGT()`.
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
  *
  * @example
- * const t = gt('user');
- * console.log(t('name')); // Translates item 'user.name'
+ * const t = useElement('user');
+ * console.log(t('name')); // Translates item 'user.name', returns as JSX
  *
- * const t = gt();
- * console.log(t('hello')); // Translates item 'hello'
+ * const t = useElement();
+ * console.log(t('hello')); // Translates item 'hello', returns as JSX
  */
-export function gt(id?: string): (
+export function useElement(id?: string): (
     id: string, 
     options?: Record<string, any>, 
     f?: Function

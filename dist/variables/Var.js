@@ -31,7 +31,7 @@ var jsx_runtime_1 = require("react/jsx-runtime");
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
 function Var(_a) {
-    var children = _a.children, _b = _a.name, name = _b === void 0 ? "value" : _b, value = _a.value, props = __rest(_a, ["children", "name", "value"]);
+    var children = _a.children, name = _a.name, value = _a.value, props = __rest(_a, ["children", "name", "value"]);
     var generaltranslation = props["data-_gt"];
     if (typeof children !== 'undefined' && typeof value === 'undefined')
         value = children;

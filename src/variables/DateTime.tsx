@@ -1,6 +1,5 @@
 import { formatDateTime } from 'generaltranslation';
 import getI18NConfig from '../utils/getI18NConfig';
-import getLocale from '../request/getLocale';
 
 /**
  * The `<DateTime>` component renders a formatted date or time string, allowing customization of the name, default value, and formatting options.
@@ -21,16 +20,21 @@ import getLocale from '../request/getLocale';
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {Promise<JSX.Element>} The formatted date or time component.
  */
-async function DateTime({ children, name = "date", value, options = {}, ...props }: {
+function DateTime({ 
+    children, 
+    name, 
+    value, 
+    options = {}, 
+    locales = [getI18NConfig().getDefaultLocale()],
+    ...props 
+}: {
     children?: any;
     name?: string;
     value?: any; // The default value which can be number, string, or Date
     options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
+    locales?: string[],
     'data-_gt'?: any
-}): Promise<JSX.Element> {
-
-    const I18NConfig = getI18NConfig();
-    const locales = [await getLocale(), I18NConfig.getDefaultLocale() ];
+}): JSX.Element {
 
     // Extract general translation data from props
     const { "data-_gt": generaltranslation } = props;
