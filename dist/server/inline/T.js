@@ -119,7 +119,6 @@ function T(_a) {
                     locale = _h.sent();
                     defaultLocale = I18NConfig.getDefaultLocale();
                     translationRequired = I18NConfig.requiresTranslation(locale);
-                    console.log(translationRequired);
                     if (translationRequired) {
                         translationsPromise = I18NConfig.getTranslations(locale);
                     }

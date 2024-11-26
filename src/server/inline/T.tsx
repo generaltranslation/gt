@@ -78,8 +78,6 @@ export default async function T({
   const defaultLocale = I18NConfig.getDefaultLocale();
   const translationRequired = I18NConfig.requiresTranslation(locale);
 
-  console.log(translationRequired)
-
   // Promise for getting translations from cache
   // Async request is made here to request translations from the remote cache
   let translationsPromise;
