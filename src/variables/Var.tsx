@@ -38,6 +38,7 @@ function Var({
             data-_gt-variable-name={name} 
             data-_gt-variable-type={"variable"}
             style={{ display: 'contents' }}
+            suppressHydrationWarning
         >
             {value}
         </span>

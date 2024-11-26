@@ -102,11 +102,12 @@ function createNextMiddleware(_a) {
         }
         userLocale = (function () {
             var _a, _b;
-            var cookieLocale = req.cookies.get(internal_1.localeCookieName);
-            if (cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value) {
-                if ((0, generaltranslation_1.isValidLocale)(cookieLocale.value))
-                    return (0, generaltranslation_1.standardizeLocale)(cookieLocale.value);
-            }
+            /* Removed until preloading can be accurately detected
+            const cookieLocale = req.cookies.get(localeCookieName);
+            if (cookieLocale?.value) {
+                if (isValidLocale(cookieLocale.value))
+                    return standardizeLocale(cookieLocale.value)
+            }*/
             var acceptedLocales = (_b = (_a = headerList.get('accept-language')) === null || _a === void 0 ? void 0 : _a.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); })) === null || _b === void 0 ? void 0 : _b.filter(function (code) { return (0, generaltranslation_1.isValidLocale)(code); });
             if (acceptedLocales && acceptedLocales.length > 0) {
                 if (locales) {

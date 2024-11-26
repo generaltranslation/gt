@@ -58,7 +58,7 @@ function Currency(_a) {
     var formattedValue = (typeof renderedValue === 'number')
         ? (0, generaltranslation_1.formatCurrency)({ value: renderedValue, currency: currency, locales: locales, options: options })
         : renderedValue;
-    return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-variable-name": name, "data-_gt-variable-type": "currency", "data-_gt-variable-options": JSON.stringify(__assign({ style: 'currency', currency: currency }, options)), "data-_gt-unformatted-value": (typeof renderedValue === 'number' && !isNaN(renderedValue)) ? renderedValue : undefined, style: { display: 'contents' }, children: typeof formattedValue === 'string' ? formattedValue : undefined }));
+    return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-variable-name": name, "data-_gt-variable-type": "currency", "data-_gt-variable-options": JSON.stringify(__assign({ style: 'currency', currency: currency }, options)), "data-_gt-unformatted-value": (typeof renderedValue === 'number' && !isNaN(renderedValue)) ? renderedValue : undefined, style: { display: 'contents' }, suppressHydrationWarning: true, children: typeof formattedValue === 'string' ? formattedValue : undefined }));
 }
 ;
 Currency.gtTransformation = "variable-currency";

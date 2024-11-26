@@ -47,7 +47,7 @@ function Num(_a) {
     var formattedValue = (typeof renderedValue === 'number') ?
         (0, generaltranslation_1.formatNum)({ value: renderedValue, locales: locales, options: options }) :
         renderedValue;
-    return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-variable-name": name, "data-_gt-variable-type": "number", "data-_gt-variable-options": JSON.stringify(options), "data-_gt-unformatted-value": typeof renderedValue === 'number' && !isNaN(renderedValue) ? renderedValue : undefined, style: { display: 'contents' }, children: formattedValue }));
+    return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-variable-name": name, "data-_gt-variable-type": "number", "data-_gt-variable-options": JSON.stringify(options), "data-_gt-unformatted-value": typeof renderedValue === 'number' && !isNaN(renderedValue) ? renderedValue : undefined, style: { display: 'contents' }, suppressHydrationWarning: true, children: formattedValue }));
 }
 ;
 Num.gtTransformation = "variable-number";

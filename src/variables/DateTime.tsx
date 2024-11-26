@@ -79,6 +79,7 @@ function DateTime({
             data-_gt-variable-options={JSON.stringify(options)}
             data-_gt-unformatted-value={isValidDate(dateValue) ? dateValue : undefined}
             style={{ display: 'contents' }}
+            suppressHydrationWarning
         >
             {formattedValue}
         </span>

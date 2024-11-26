@@ -357,7 +357,9 @@ var I18NConfiguration = /** @class */ (function () {
                     case 3:
                         error_1 = _a.sent();
                         console.error(error_1);
-                        batch.forEach(function (item) { return item.reject(error_1); });
+                        batch.forEach(function (item) {
+                            item.resolve(undefined);
+                        });
                         return [3 /*break*/, 5];
                     case 4:
                         this._activeRequests--;

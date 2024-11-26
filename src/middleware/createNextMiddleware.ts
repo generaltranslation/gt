@@ -115,11 +115,12 @@ export default function createNextMiddleware({
         }
         
         userLocale = (() => {
+            /* Removed until preloading can be accurately detected
             const cookieLocale = req.cookies.get(localeCookieName);
             if (cookieLocale?.value) {
                 if (isValidLocale(cookieLocale.value))
                     return standardizeLocale(cookieLocale.value)
-            }
+            }*/
             const acceptedLocales = headerList.get('accept-language')?.split(',').map(item => item.split(';')?.[0].trim())?.filter(code => isValidLocale(code));
             if (acceptedLocales && acceptedLocales.length > 0) {
                 if (locales) {

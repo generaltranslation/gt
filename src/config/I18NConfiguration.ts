@@ -345,7 +345,9 @@ export default class I18NConfiguration {
       });
     } catch (error) {
       console.error(error);
-      batch.forEach((item) => item.reject(error));
+      batch.forEach((item) => {
+        item.resolve(undefined)
+      });
     } finally {
       this._activeRequests--;
     }

@@ -56,6 +56,7 @@ function Num({
             data-_gt-variable-options={JSON.stringify(options)}
             data-_gt-unformatted-value={typeof renderedValue === 'number' && !isNaN(renderedValue) ? renderedValue : undefined}
             style={{ display: 'contents' }}
+            suppressHydrationWarning
         >
             {formattedValue}
         </span>
