@@ -191,7 +191,7 @@ program
             ...(options.defaultLocale && { defaultLanguage: options.defaultLocale })
         });
         
-        const { locales: resultLocales } = await gt.updateProjectDictionary(
+        const { locales: resultLocales } = await gt.updateProjectTranslations(
             updates, options.locales, {
                 apiKey: undefined,
                 ...options
@@ -206,8 +206,8 @@ program
                 resultLocales.length &&
                `${resultLocales
                     .map((locale: string) => {
-                        const { nameWithRegionCode, emoji } = getLocaleProperties(locale)
-                        return `${emoji} ${nameWithRegionCode}`
+                        const { nameWithRegionCode, languageCode } = getLocaleProperties(locale)
+                        return `${languageCode} ${nameWithRegionCode}`
                     })
                 .join('\n')}`,
               resultLocales.length

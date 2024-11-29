@@ -143,13 +143,13 @@ commander_1.program
     // Send updates to General Translation API
     if (updates.length) {
         const gt = new generaltranslation_1.default(Object.assign(Object.assign({ apiKey: options.apiKey }, (options.projectID && { projectID: options.projectID })), (options.defaultLocale && { defaultLanguage: options.defaultLocale })));
-        const { locales: resultLocales } = yield gt.updateProjectDictionary(updates, options.locales, Object.assign({ apiKey: undefined }, options));
+        const { locales: resultLocales } = yield gt.updateProjectTranslations(updates, options.locales, Object.assign({ apiKey: undefined }, options));
         if (resultLocales) {
             console.log(`Project "${options.projectID}" updated in ${resultLocales.length} languages.`, resultLocales.length &&
                 `${resultLocales
                     .map((locale) => {
-                    const { nameWithRegionCode, emoji } = (0, generaltranslation_1.getLocaleProperties)(locale);
-                    return `${emoji} ${nameWithRegionCode}`;
+                    const { nameWithRegionCode, languageCode } = (0, generaltranslation_1.getLocaleProperties)(locale);
+                    return `${languageCode} ${nameWithRegionCode}`;
                 })
                     .join('\n')}`, resultLocales.length
                 ? 'Translations are usually live within a minute. Check status: www.generaltranslation.com/dashboard.'
