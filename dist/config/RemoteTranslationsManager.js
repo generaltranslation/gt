@@ -49,6 +49,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RemoteTranslationsManager = void 0;
 var generaltranslation_1 = require("generaltranslation");
+var createErrors_1 = require("../errors/createErrors");
 /**
  * Manages remote translations.
  */
@@ -96,7 +97,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
                         return [3 /*break*/, 4];
                     case 3:
                         error_1 = _a.sent();
-                        console.error('Remote translations error:', error_1);
+                        console.error(createErrors_1.remoteTranslationsError, error_1);
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/, null];
                 }

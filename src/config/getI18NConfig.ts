@@ -1,6 +1,7 @@
-import I18NConfiguration from "../config/I18NConfiguration";
-import defaultInitGTProps from "../primitives/defaultInitGTProps";
-import getDefaultFromEnv from "./getDefaultFromEnv";
+import I18NConfiguration from "./I18NConfiguration";
+import defaultInitGTProps from "./props/defaultInitGTProps";
+import getDefaultFromEnv from "../utils/getDefaultFromEnv";
+import { APIKeyMissingError, projectIDMissingError, usingDefaultsWarning } from "../errors/createErrors";
 
 export default function getI18NConfig(): I18NConfiguration {
     
@@ -19,15 +20,15 @@ export default function getI18NConfig(): I18NConfiguration {
             ...JSON.parse(I18NConfigParams),
         });
     } else {
-        console.warn('Unable to access gt-next configuration. Using defaults.');
+        console.warn(usingDefaultsWarning);
 
         const projectID = process.env.GT_PROJECT_ID || '';
         if (!projectID)
-            console.error('Project ID missing! Set projectID as GT_PROJECT_ID...');
+            console.error(projectIDMissingError);
         
         const apiKey = process.env.GT_API_KEY || '';
         if (!apiKey)
-            console.error("API key is required for automatic translation!...");
+            console.error(APIKeyMissingError);
 
         globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration({
             ...defaultInitGTProps, 

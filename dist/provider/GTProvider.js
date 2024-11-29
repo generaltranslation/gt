@@ -77,14 +77,12 @@ exports.default = GTProvider;
 var jsx_runtime_1 = require("react/jsx-runtime");
 var react_1 = __importDefault(require("react"));
 var internal_1 = require("gt-react/internal");
-var getI18NConfig_1 = __importDefault(require("../utils/getI18NConfig"));
+var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
 var getLocale_1 = __importDefault(require("../request/getLocale"));
 var getMetadata_1 = __importDefault(require("../request/getMetadata"));
 var generaltranslation_1 = require("generaltranslation");
 var getDictionary_1 = __importStar(require("../dictionary/getDictionary"));
-var internal_2 = require("gt-react/internal");
 var ClientProvider_1 = __importDefault(require("./ClientProvider"));
-var renderVariable_1 = __importDefault(require("../server/rendering/renderVariable"));
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -182,13 +180,6 @@ function GTProvider(_a) {
                                         if (renderSettings.method === 'skeleton') {
                                             loadingFallback = (0, jsx_runtime_1.jsx)(react_1.default.Fragment, {}, "skeleton_".concat(entryID));
                                         }
-                                        else if (renderSettings.method === 'replace') {
-                                            loadingFallback = (0, internal_2.renderDefaultChildren)({
-                                                children: taggedEntry,
-                                                defaultLocale: defaultLocale,
-                                                renderVariable: renderVariable_1.default
-                                            });
-                                        }
                                         return [2 /*return*/, (translations[entryID] = {
                                                 promise: translationPromise,
                                                 k: key,
@@ -201,7 +192,7 @@ function GTProvider(_a) {
                 case 6:
                     // Check and standardize flattened dictionary entries before passing them to the client
                     _d.sent();
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProvider_1.default, { dictionary: dictionary, translations: __assign(__assign({}, existingTranslations), translations), locale: locale, defaultLocale: defaultLocale, translationRequired: translationRequired, children: children }))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProvider_1.default, { dictionary: dictionary, translations: __assign(__assign({}, existingTranslations), translations), locale: locale, defaultLocale: defaultLocale, translationRequired: translationRequired, requiredPrefix: id, children: children }))];
             }
         });
     });

@@ -1,5 +1,5 @@
 import { formatDateTime } from 'generaltranslation';
-import getI18NConfig from '../utils/getI18NConfig';
+import getI18NConfig from '../config/getI18NConfig';
 
 /**
  * The `<DateTime>` component renders a formatted date or time string, allowing customization of the name, default value, and formatting options.

@@ -22,19 +22,22 @@ var client_1 = require("gt-react/client");
 var internal_1 = require("gt-react/internal");
 var internal_2 = require("gt-react/internal");
 var generaltranslation_1 = require("generaltranslation");
-var ClientResolver_1 = __importDefault(require("./ClientResolver"));
 var renderVariable_1 = __importDefault(require("../server/rendering/renderVariable"));
+var ClientResolver_1 = __importDefault(require("./ClientResolver"));
+var createErrors_1 = require("../errors/createErrors");
 // meant to be used inside the server-side <GTProvider>
 function ClientProvider(_a) {
-    var children = _a.children, dictionary = _a.dictionary, translations = _a.translations, locale = _a.locale, defaultLocale = _a.defaultLocale, translationRequired = _a.translationRequired;
+    var children = _a.children, dictionary = _a.dictionary, translations = _a.translations, locale = _a.locale, defaultLocale = _a.defaultLocale, translationRequired = _a.translationRequired, requiredPrefix = _a.requiredPrefix;
     // For dictionaries
     var translate = (0, react_1.useCallback)(function (id, options, f) {
         var _a;
         if (options === void 0) { options = {}; }
+        if (requiredPrefix && !(id === null || id === void 0 ? void 0 : id.startsWith(requiredPrefix)))
+            throw new Error((0, createErrors_1.createRequiredPrefixError)(id, requiredPrefix));
         // Get the entry from the dictionary
         var _b = (0, internal_2.extractEntryMetadata)(dictionary[id]), entry = _b.entry, metadata = _b.metadata;
         if (typeof entry === 'undefined') {
-            console.warn("Dictionary entry with id \"".concat(id, "\" is null or undefined"));
+            console.warn((0, createErrors_1.createNoEntryWarning)(id));
             return undefined;
         }
         // Handle functional entries
@@ -43,8 +46,7 @@ function ClientProvider(_a) {
                 entry = (0, internal_2.addGTIdentifier)(f(options));
             }
             else {
-                throw new Error("You're trying to call a function in the server dictionary on the client-side, but functions can't be passed directly from server to client. " +
-                    "Try including the function you want to call as a parameter in t(), like t(\"".concat(id, "\", ").concat(options ? JSON.stringify(options) : 'undefined', ", MyFunction)"));
+                throw new Error((0, createErrors_1.createAdvancedFunctionsError)(id, options));
             }
         }
         ;

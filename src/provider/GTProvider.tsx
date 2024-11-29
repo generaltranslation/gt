@@ -4,15 +4,13 @@ import {
   extractEntryMetadata,
 } from 'gt-react/internal';
 import { ReactNode } from 'react';
-import getI18NConfig from '../utils/getI18NConfig';
+import getI18NConfig from '../config/getI18NConfig';
 import getLocale from '../request/getLocale';
 import getMetadata from '../request/getMetadata';
 import { splitStringToContent } from 'generaltranslation';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
-import { renderDefaultChildren } from 'gt-react/internal';
 import ClientProvider from './ClientProvider';
 import { ClientDictionary, ClientTranslations } from './types';
-import renderVariable from '../server/rendering/renderVariable';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -128,11 +126,6 @@ export default async function GTProvider({
 
       if (renderSettings.method === 'skeleton') {
         loadingFallback = <React.Fragment key={`skeleton_${entryID}`} />;
-      } else if (renderSettings.method === 'replace') {
-        loadingFallback = renderDefaultChildren({
-          children: taggedEntry,
-          defaultLocale, renderVariable
-        });
       }
 
       return (translations[entryID] = {
@@ -151,6 +144,7 @@ export default async function GTProvider({
       locale={locale}
       defaultLocale={defaultLocale}
       translationRequired={translationRequired}
+      requiredPrefix={id}
     >
       {children}
     </ClientProvider>

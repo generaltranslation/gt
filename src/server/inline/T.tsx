@@ -1,4 +1,4 @@
-import getI18NConfig from '../../utils/getI18NConfig';
+import getI18NConfig from '../../config/getI18NConfig';
 import getLocale from '../../request/getLocale';
 import getMetadata from '../../request/getMetadata';
 import { Suspense } from 'react';
@@ -175,12 +175,7 @@ export default async function T({
 
   if (renderSettings.method === 'hang') {
     // Wait until the site is translated to return
-    try {
-      return await promise;
-    } catch (error) {
-      console.error(error);
-      return errorFallback;
-    }
+    return <Resolver children={promise} fallback={errorFallback} />;
   }
 
   if (!['skeleton', 'replace'].includes(renderSettings.method) && !id) {

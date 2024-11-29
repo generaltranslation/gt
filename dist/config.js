@@ -35,8 +35,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initGT = initGT;
-var defaultInitGTProps_1 = __importDefault(require("./primitives/defaultInitGTProps"));
 var path_1 = __importDefault(require("path"));
+var defaultInitGTProps_1 = __importDefault(require("./config/props/defaultInitGTProps"));
+var createErrors_1 = require("./errors/createErrors");
 /**
  * Initializes General Translation settings for a Next.js application.
  *
@@ -79,9 +80,9 @@ function initGT(_a) {
     if (!projectID &&
         (cacheURL === defaultInitGTProps_1.default.cacheURL ||
             baseURL === defaultInitGTProps_1.default.baseURL))
-        console.error('Project ID missing! Set projectID as GT_PROJECT_ID in the environment or by passing the projectID parameter to initGT(). Find your project ID: www.generaltranslation.com/dashboard.');
+        console.error(createErrors_1.projectIDMissingError);
     if ((!apiKey || !projectID) && baseURL === defaultInitGTProps_1.default.baseURL) {
-        console.error('API key is required for automatic translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off automatic translation by setting baseURL to an empty string.)');
+        console.error(createErrors_1.APIKeyMissingError);
     }
     // Store config params in environment variable to allow for global access (in some cases)
     var I18NConfigParams = JSON.stringify(__assign({ apiKey: apiKey, projectID: projectID, baseURL: baseURL, cacheURL: cacheURL, locales: locales, defaultLocale: defaultLocale, renderSettings: renderSettings, maxConcurrentRequests: _maxConcurrentRequests, batchInterval: _batchInterval }, metadata));

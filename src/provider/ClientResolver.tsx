@@ -1,7 +1,7 @@
 'use client'
 
-import { Num } from "gt-react";
 import { Suspense, useEffect, useState } from "react";
+import { renderingError } from "../errors/createErrors";
 
 export default function ClientResolver({
   promise,
@@ -10,7 +10,7 @@ export default function ClientResolver({
   renderTranslation,
 }: any) {
 
-    const [translationData, setTranslationData] = useState(null);
+    const [translationData, setTranslationData] = useState(undefined);
     const [hasError, setHasError] = useState(false);
 
     useEffect(() => {
@@ -19,7 +19,7 @@ export default function ClientResolver({
                 const resolvedPromise = await promise;
                 setTranslationData(resolvedPromise);
             } catch (error) {
-                console.error(error);
+                console.error(renderingError, error);
                 setHasError(true);
             }
         })();
@@ -29,14 +29,19 @@ export default function ClientResolver({
         return errorFallback;
     }
 
-    if (translationData) {
+    if (typeof translationData !== 'undefined') {
+        return (
+            <Suspense fallback={errorFallback}>
+                {renderTranslation(translationData)}
+            </Suspense>
+        )
         return renderTranslation(translationData);
     }
 
     // the <Suspense> here is to prevent hydration errors
     return (
         <Suspense fallback={loadingFallback}>
-            {loadingFallback}
+            {renderTranslation(translationData)}
         </Suspense>
     );
 }

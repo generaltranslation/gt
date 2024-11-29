@@ -1,0 +1,10 @@
+export declare const projectIDMissingError = "General Translation: Project ID missing! Set projectID as GT_PROJECT_ID in the environment or by passing the projectID parameter to initGT(). Find your project ID: www.generaltranslation.com/dashboard.";
+export declare const APIKeyMissingError = "General Translation: API key is required for automatic translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off automatic translation by setting baseURL to an empty string.)";
+export declare const remoteTranslationsError = "General Translation: Error fetching remote translation.";
+export declare const renderingError = "General Translation: Rendering error.";
+export declare const createStringTranslationError: (content: string, id?: string) => string;
+export declare const createRequiredPrefixError: (id: string, requiredPrefix: string) => string;
+export declare const createAdvancedFunctionsError: (id: string, options?: Record<string, any>) => string;
+export declare const usingDefaultsWarning = "General Translation: Unable to access gt-next configuration. Using defaults.";
+export declare const createNoEntryWarning: (id: string) => string;
+//# sourceMappingURL=createErrors.d.ts.map

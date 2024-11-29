@@ -1,5 +1,5 @@
 import { formatNum } from 'generaltranslation';
-import getI18NConfig from '../utils/getI18NConfig';
+import getI18NConfig from '../config/getI18NConfig';
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.

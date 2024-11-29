@@ -52,7 +52,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = T;
 var jsx_runtime_1 = require("react/jsx-runtime");
-var getI18NConfig_1 = __importDefault(require("../../utils/getI18NConfig"));
+var getI18NConfig_1 = __importDefault(require("../../config/getI18NConfig"));
 var getLocale_1 = __importDefault(require("../../request/getLocale"));
 var getMetadata_1 = __importDefault(require("../../request/getMetadata"));
 var react_1 = require("react");
@@ -104,7 +104,7 @@ var renderVariable_1 = __importDefault(require("../rendering/renderVariable"));
  */
 function T(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, translationRequired, translationsPromise, taggedChildren, _c, childrenAsObjects, key, translations, translation, target, translationPromise, _d, _e, _f, promise, loadingFallback, errorFallback, error_1;
+        var I18NConfig, locale, defaultLocale, translationRequired, translationsPromise, taggedChildren, _c, childrenAsObjects, key, translations, translation, target, translationPromise, _d, _e, _f, promise, loadingFallback, errorFallback;
         var _g;
         var children = _b.children, id = _b.id, context = _b.context, renderSettings = _b.renderSettings, variables = _b.variables, variablesOptions = _b.variablesOptions;
         return __generator(this, function (_h) {
@@ -188,17 +188,10 @@ function T(_a) {
                     else if (renderSettings.method === 'skeleton') {
                         loadingFallback = (0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, {}); // blank
                     }
-                    if (!(renderSettings.method === 'hang')) return [3 /*break*/, 7];
-                    _h.label = 4;
-                case 4:
-                    _h.trys.push([4, 6, , 7]);
-                    return [4 /*yield*/, promise];
-                case 5: return [2 /*return*/, _h.sent()];
-                case 6:
-                    error_1 = _h.sent();
-                    console.error(error_1);
-                    return [2 /*return*/, errorFallback];
-                case 7:
+                    if (renderSettings.method === 'hang') {
+                        // Wait until the site is translated to return
+                        return [2 /*return*/, (0, jsx_runtime_1.jsx)(Resolver_1.default, { children: promise, fallback: errorFallback })];
+                    }
                     if (!['skeleton', 'replace'].includes(renderSettings.method) && !id) {
                         // If none of those, i.e. "subtle"
                         // return the children, with no special rendering

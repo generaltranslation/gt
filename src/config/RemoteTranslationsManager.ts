@@ -1,4 +1,5 @@
 import { standardizeLocale } from "generaltranslation";
+import { remoteTranslationsError } from "../errors/createErrors";
 
 /**
  * Configuration type for RemoteTranslationsManager.
@@ -55,7 +56,7 @@ export class RemoteTranslationsManager {
         return result;
       }
     } catch (error) {
-      console.error('Remote translations error:', error);
+      console.error(remoteTranslationsError, error);
     }
     return null;
   }

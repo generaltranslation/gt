@@ -1,7 +1,8 @@
-import defaultInitGTProps from './primitives/defaultInitGTProps';
-import InitGTProps from './primitives/InitGTProps';
 import path from 'path';
 import { NextConfig } from 'next';
+import defaultInitGTProps from './config/props/defaultInitGTProps';
+import InitGTProps from './config/props/InitGTProps'
+import { APIKeyMissingError, projectIDMissingError } from './errors/createErrors';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -59,12 +60,12 @@ export function initGT({
       baseURL === defaultInitGTProps.baseURL)
   )
     console.error(
-      'Project ID missing! Set projectID as GT_PROJECT_ID in the environment or by passing the projectID parameter to initGT(). Find your project ID: www.generaltranslation.com/dashboard.'
+      projectIDMissingError
     );
 
   if ((!apiKey || !projectID) && baseURL === defaultInitGTProps.baseURL) {
     console.error(
-      'API key is required for automatic translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off automatic translation by setting baseURL to an empty string.)'
+      APIKeyMissingError
     );
   }
 

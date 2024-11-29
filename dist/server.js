@@ -11,7 +11,7 @@ var tx_1 = __importDefault(require("./server/strings/tx"));
 exports.tx = tx_1.default;
 var getLocale_1 = __importDefault(require("./request/getLocale"));
 exports.getLocale = getLocale_1.default;
-var getI18NConfig_1 = __importDefault(require("./utils/getI18NConfig"));
+var getI18NConfig_1 = __importDefault(require("./config/getI18NConfig"));
 var getGT_1 = require("./server/getGT");
 Object.defineProperty(exports, "getGT", { enumerable: true, get: function () { return getGT_1.getGT; } });
 function getDefaultLocale() {

@@ -16,7 +16,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var jsx_runtime_1 = require("react/jsx-runtime");
 var internal_1 = require("gt-react/internal");
-var getI18NConfig_1 = __importDefault(require("../utils/getI18NConfig"));
+var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
 /**
  * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).
  * It determines which content to display by matching the value of `n` to the appropriate pluralization branch,

@@ -80,10 +80,11 @@ var internal_1 = require("gt-react/internal");
 var T_1 = __importDefault(require("./inline/T"));
 var getDictionary_1 = __importStar(require("../dictionary/getDictionary"));
 var server_1 = require("../server");
-var getI18NConfig_1 = __importDefault(require("../utils/getI18NConfig"));
+var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
 var generaltranslation_1 = require("generaltranslation");
 var getMetadata_1 = __importDefault(require("../request/getMetadata"));
 var renderVariable_1 = __importDefault(require("./rendering/renderVariable"));
+var createErrors_1 = require("../errors/createErrors");
 /**
  * Returns the translation function `t()`, which is used to translate an item from the dictionary.
  *
@@ -190,7 +191,7 @@ function getGT(id) {
                         // Get entry
                         var _c = (0, internal_1.extractEntryMetadata)((0, getDictionary_1.getDictionaryEntry)(id)), entry = _c.entry, metadata = _c.metadata;
                         if (!entry) {
-                            console.warn("No entry found for id: \"".concat(id, "\""));
+                            console.warn((0, createErrors_1.createNoEntryWarning)(id));
                             return undefined;
                         }
                         // Get variables and variable options
@@ -285,7 +286,7 @@ function useElement(id) {
             entry = entry(options);
         }
         if (!entry) {
-            console.warn("No entry found for id: \"".concat(id, "\""));
+            console.warn((0, createErrors_1.createNoEntryWarning)(id));
             return (0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, {});
         }
         return ((0, jsx_runtime_1.jsx)(T_1.default, __assign({ id: id, variables: variables, variablesOptions: variablesOptions }, metadata, { children: entry })));

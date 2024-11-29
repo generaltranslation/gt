@@ -2,10 +2,11 @@ import { extractEntryMetadata, flattenDictionary, renderDefaultChildren, renderT
 import T from "./inline/T";
 import getDictionary, { getDictionaryEntry } from "../dictionary/getDictionary";
 import { getLocale } from "../server";
-import getI18NConfig from "../utils/getI18NConfig";
+import getI18NConfig from "../config/getI18NConfig";
 import { renderContentToString, splitStringToContent } from "generaltranslation";
 import getMetadata from "../request/getMetadata";
 import renderVariable from "./rendering/renderVariable";
+import { createNoEntryWarning } from "../errors/createErrors";
 
 /**
  * Returns the translation function `t()`, which is used to translate an item from the dictionary.
@@ -127,7 +128,7 @@ export async function getGT(id?: string): Promise<(
         );
 
         if (!entry) {
-            console.warn(`No entry found for id: "${id}"`);
+            console.warn(createNoEntryWarning(id));
             return undefined;
         }
 
@@ -240,7 +241,7 @@ export function useElement(id?: string): (
         }
 
         if (!entry) {
-            console.warn(`No entry found for id: "${id}"`);
+            console.warn(createNoEntryWarning(id));
             return <></>;
         }
 

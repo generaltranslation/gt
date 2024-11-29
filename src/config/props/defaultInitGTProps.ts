@@ -1,5 +1,5 @@
 import { libraryDefaultLocale, defaultCacheURL } from "generaltranslation/internal";
-import getDefaultFromEnv from "../utils/getDefaultFromEnv";
+import getDefaultFromEnv from "../../utils/getDefaultFromEnv";
 
 export default {
     apiKey: getDefaultFromEnv('GT_API_KEY'),

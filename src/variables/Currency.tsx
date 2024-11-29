@@ -1,5 +1,5 @@
 import { formatCurrency } from 'generaltranslation';
-import getI18NConfig from '../utils/getI18NConfig';
+import getI18NConfig from '../config/getI18NConfig';
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.

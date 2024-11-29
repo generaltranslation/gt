@@ -1,5 +1,5 @@
 import { getPluralBranch } from "gt-react/internal";
-import getI18NConfig from "../utils/getI18NConfig";
+import getI18NConfig from "../config/getI18NConfig";
 
 /**
  * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).

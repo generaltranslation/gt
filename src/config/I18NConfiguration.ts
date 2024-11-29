@@ -2,7 +2,7 @@ import GT, { requiresTranslation } from 'generaltranslation';
 import remoteTranslationsManager, {
   RemoteTranslationsManager,
 } from './RemoteTranslationsManager';
-import defaultInitGTProps from '../primitives/defaultInitGTProps';
+import defaultInitGTProps from './props/defaultInitGTProps';
 import { addGTIdentifier, hashReactChildrenObjects, writeChildrenAsObjects } from 'gt-react/internal';
 
 type I18NConfigurationParams = {
@@ -261,10 +261,7 @@ export default class I18NConfiguration {
       });
     });
     this._translationCache.set(cacheKey, translationPromise);
-    return translationPromise.catch((error) => {
-      this._translationCache.delete(cacheKey);
-      throw new Error(error);
-    });
+    return translationPromise;
   }
 
   /**
@@ -346,7 +343,7 @@ export default class I18NConfiguration {
     } catch (error) {
       console.error(error);
       batch.forEach((item) => {
-        item.resolve(undefined)
+        item.resolve(null)
       });
     } finally {
       this._activeRequests--;

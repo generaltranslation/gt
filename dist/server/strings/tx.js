@@ -63,9 +63,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = tx;
 var generaltranslation_1 = require("generaltranslation");
-var getI18NConfig_1 = __importDefault(require("../../utils/getI18NConfig"));
+var getI18NConfig_1 = __importDefault(require("../../config/getI18NConfig"));
 var getLocale_1 = __importDefault(require("../../request/getLocale"));
 var getMetadata_1 = __importDefault(require("../../request/getMetadata"));
+var createErrors_1 = require("../../errors/createErrors");
 /**
  * Translates the provided content string based on the specified locale and options.
  * If no translation is required, it renders the content as is. Otherwise, it fetches the
@@ -155,7 +156,7 @@ function tx(content_1) {
                         return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(translation, [options.targetLocale, I18NConfig.getDefaultLocale()], options.variables, options.variableOptions)];
                     }
                     catch (error) {
-                        console.error("gt-next string translation error. tx(\"".concat(content, "\")").concat(options.id ? " with id \"".concat(options.id, "\"") : '', " failed."), error);
+                        console.error((0, createErrors_1.createStringTranslationError)(content, options.id), error);
                         return [2 /*return*/, ''];
                     }
                     _h.label = 7;

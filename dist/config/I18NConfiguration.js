@@ -86,7 +86,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var generaltranslation_1 = __importStar(require("generaltranslation"));
 var RemoteTranslationsManager_1 = __importDefault(require("./RemoteTranslationsManager"));
-var defaultInitGTProps_1 = __importDefault(require("../primitives/defaultInitGTProps"));
+var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
 var internal_1 = require("gt-react/internal");
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
@@ -271,10 +271,7 @@ var I18NConfiguration = /** @class */ (function () {
                     });
                 });
                 this._translationCache.set(cacheKey, translationPromise);
-                return [2 /*return*/, translationPromise.catch(function (error) {
-                        _this._translationCache.delete(cacheKey);
-                        throw new Error(error);
-                    })];
+                return [2 /*return*/, translationPromise];
             });
         });
     };
@@ -358,7 +355,7 @@ var I18NConfiguration = /** @class */ (function () {
                         error_1 = _a.sent();
                         console.error(error_1);
                         batch.forEach(function (item) {
-                            item.resolve(undefined);
+                            item.resolve(null);
                         });
                         return [3 /*break*/, 5];
                     case 4:

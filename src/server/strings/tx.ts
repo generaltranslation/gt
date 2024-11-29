@@ -2,9 +2,10 @@ import {
   renderContentToString,
   splitStringToContent,
 } from 'generaltranslation';
-import getI18NConfig from '../../utils/getI18NConfig';
+import getI18NConfig from '../../config/getI18NConfig';
 import getLocale from '../../request/getLocale';
 import getMetadata from '../../request/getMetadata';
+import { createStringTranslationError } from '../../errors/createErrors';
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -107,9 +108,7 @@ export default async function tx(
       );
     } catch (error) {
       console.error(
-        `gt-next string translation error. tx("${content}")${
-          options.id ? ` with id "${options.id}"` : ''
-        } failed.`,
+        createStringTranslationError(content, options.id),
         error
       );
       return '';

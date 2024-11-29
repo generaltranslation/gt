@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Suspense,
   useCallback,
 } from 'react';
 import {
@@ -9,9 +10,10 @@ import {
 import { renderDefaultChildren, renderTranslatedChildren } from 'gt-react/internal';
 import { addGTIdentifier, extractEntryMetadata } from 'gt-react/internal';
 import { renderContentToString } from 'generaltranslation';
-import ClientResolver from './ClientResolver';
 import { ClientDictionary, ClientTranslations } from './types';
 import renderVariable from '../server/rendering/renderVariable';
+import ClientResolver from './ClientResolver';
+import { createAdvancedFunctionsError, createNoEntryWarning, createRequiredPrefixError } from '../errors/createErrors';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -21,6 +23,7 @@ export default function ClientProvider({
   locale,
   defaultLocale,
   translationRequired,
+  requiredPrefix,
 }: {
   children: any;
   dictionary: ClientDictionary;
@@ -28,16 +31,20 @@ export default function ClientProvider({
   locale: string;
   defaultLocale: string;
   translationRequired: boolean;
+  requiredPrefix: string | undefined;
 }) {
 
   // For dictionaries
   const translate = useCallback(
     (id: string, options: Record<string, any> = {}, f?: Function) => {
       
+      if (requiredPrefix && !id?.startsWith(requiredPrefix))
+        throw new Error(createRequiredPrefixError(id, requiredPrefix))
+  
       // Get the entry from the dictionary
       let { entry, metadata } = extractEntryMetadata(dictionary[id]);
       if (typeof entry === 'undefined') {
-        console.warn(`Dictionary entry with id "${id}" is null or undefined`);
+        console.warn(createNoEntryWarning(id));
         return undefined;
       }
 
@@ -47,10 +54,7 @@ export default function ClientProvider({
           entry = addGTIdentifier(f(options));
         } else {
           throw new Error(
-            `You're trying to call a function in the server dictionary on the client-side, but functions can't be passed directly from server to client. ` +
-              `Try including the function you want to call as a parameter in t(), like t("${id}", ${
-                options ? JSON.stringify(options) : 'undefined'
-              }, MyFunction)`
+            createAdvancedFunctionsError(id, options)
           );
         }
       };

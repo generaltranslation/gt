@@ -40,10 +40,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = ClientResolver;
 var jsx_runtime_1 = require("react/jsx-runtime");
 var react_1 = require("react");
+var createErrors_1 = require("../errors/createErrors");
 function ClientResolver(_a) {
     var _this = this;
     var promise = _a.promise, loadingFallback = _a.loadingFallback, errorFallback = _a.errorFallback, renderTranslation = _a.renderTranslation;
-    var _b = (0, react_1.useState)(null), translationData = _b[0], setTranslationData = _b[1];
+    var _b = (0, react_1.useState)(undefined), translationData = _b[0], setTranslationData = _b[1];
     var _c = (0, react_1.useState)(false), hasError = _c[0], setHasError = _c[1];
     (0, react_1.useEffect)(function () {
         (function () { return __awaiter(_this, void 0, void 0, function () {
@@ -59,7 +60,7 @@ function ClientResolver(_a) {
                         return [3 /*break*/, 3];
                     case 2:
                         error_1 = _a.sent();
-                        console.error(error_1);
+                        console.error(createErrors_1.renderingError, error_1);
                         setHasError(true);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
@@ -70,10 +71,11 @@ function ClientResolver(_a) {
     if (hasError) {
         return errorFallback;
     }
-    if (translationData) {
+    if (typeof translationData !== 'undefined') {
+        return ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: errorFallback, children: renderTranslation(translationData) }));
         return renderTranslation(translationData);
     }
     // the <Suspense> here is to prevent hydration errors
-    return ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: loadingFallback }));
+    return ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: renderTranslation(translationData) }));
 }
 //# sourceMappingURL=ClientResolver.js.map
