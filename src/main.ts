@@ -204,12 +204,12 @@ program
                 resultLocales.length
               } languages.`,
                 resultLocales.length &&
-               `${resultLocales
+               `\n${resultLocales
                     .map((locale: string) => {
                         const { nameWithRegionCode, languageCode } = getLocaleProperties(locale)
                         return `${languageCode} ${nameWithRegionCode}`
                     })
-                .join('\n')}`,
+                .join('\n')}\n`,
               resultLocales.length
                 ? 'Translations are usually live within a minute. Check status: www.generaltranslation.com/dashboard.'
                 : ''

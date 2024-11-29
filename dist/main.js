@@ -146,12 +146,12 @@ commander_1.program
         const { locales: resultLocales } = yield gt.updateProjectTranslations(updates, options.locales, Object.assign({ apiKey: undefined }, options));
         if (resultLocales) {
             console.log(`Project "${options.projectID}" updated in ${resultLocales.length} languages.`, resultLocales.length &&
-                `${resultLocales
+                `\n${resultLocales
                     .map((locale) => {
                     const { nameWithRegionCode, languageCode } = (0, generaltranslation_1.getLocaleProperties)(locale);
                     return `${languageCode} ${nameWithRegionCode}`;
                 })
-                    .join('\n')}`, resultLocales.length
+                    .join('\n')}\n`, resultLocales.length
                 ? 'Translations are usually live within a minute. Check status: www.generaltranslation.com/dashboard.'
                 : '');
         }
