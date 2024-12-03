@@ -43,7 +43,7 @@ var internal_1 = require("generaltranslation/internal");
 var getDefaultFromEnv_1 = __importDefault(require("../../utils/getDefaultFromEnv"));
 exports.default = {
     apiKey: (0, getDefaultFromEnv_1.default)('GT_API_KEY'),
-    projectID: (0, getDefaultFromEnv_1.default)('GT_PROJECT_ID'),
+    projectId: (0, getDefaultFromEnv_1.default)('GT_PROJECT_ID'),
     baseURL: 'https://prod.gtx.dev',
     cacheURL: internal_1.defaultCacheURL,
     defaultLocale: internal_1.libraryDefaultLocale,

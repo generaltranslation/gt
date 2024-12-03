@@ -1,6 +1,6 @@
 declare const _default: {
     readonly apiKey: string;
-    readonly projectID: string;
+    readonly projectId: string;
     readonly baseURL: "https://prod.gtx.dev";
     readonly cacheURL: "https://cache.gtx.dev";
     readonly defaultLocale: "en-US";

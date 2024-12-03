@@ -1,7 +1,7 @@
 import I18NConfiguration from "./I18NConfiguration";
 import defaultInitGTProps from "./props/defaultInitGTProps";
 import getDefaultFromEnv from "../utils/getDefaultFromEnv";
-import { APIKeyMissingError, projectIDMissingError, usingDefaultsWarning } from "../errors/createErrors";
+import { APIKeyMissingError, projectIdMissingError, usingDefaultsWarning } from "../errors/createErrors";
 
 export default function getI18NConfig(): I18NConfiguration {
     
@@ -22,9 +22,9 @@ export default function getI18NConfig(): I18NConfiguration {
     } else {
         console.warn(usingDefaultsWarning);
 
-        const projectID = process.env.GT_PROJECT_ID || '';
-        if (!projectID)
-            console.error(projectIDMissingError);
+        const projectId = process.env.GT_PROJECT_ID || '';
+        if (!projectId)
+            console.error(projectIdMissingError);
         
         const apiKey = process.env.GT_API_KEY || '';
         if (!apiKey)
@@ -34,7 +34,7 @@ export default function getI18NConfig(): I18NConfiguration {
             ...defaultInitGTProps, 
             maxConcurrentRequests: defaultInitGTProps._maxConcurrectRequests,
             batchInterval: defaultInitGTProps._batchInterval,
-            apiKey, projectID, env
+            apiKey, projectId, env
         });
     }
     

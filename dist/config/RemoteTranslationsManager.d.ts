@@ -3,7 +3,7 @@
  */
 type RemoteTranslationsConfig = {
     cacheURL: string;
-    projectID: string;
+    projectId: string;
 };
 /**
  * Manages remote translations.

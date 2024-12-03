@@ -6,7 +6,7 @@ import { remoteTranslationsError } from "../errors/createErrors";
  */
 type RemoteTranslationsConfig = {
   cacheURL: string;
-  projectID: string;
+  projectId: string;
 };
 
 /**
@@ -24,7 +24,7 @@ export class RemoteTranslationsManager {
   constructor() {
     this.config = {
       cacheURL: 'https://cache.gtx.dev',
-      projectID: '',
+      projectId: '',
     };
     this.translationsMap = new Map();
     this.fetchPromises = new Map();
@@ -49,7 +49,7 @@ export class RemoteTranslationsManager {
   ): Promise<Record<string, any> | null> {
     try {
       const response = await fetch(
-        `${this.config.cacheURL}/${this.config.projectID}/${reference}`
+        `${this.config.cacheURL}/${this.config.projectId}/${reference}`
       );
       const result = await response.json();
       if (Object.keys(result).length) {

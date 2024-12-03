@@ -3,7 +3,7 @@ import getDefaultFromEnv from "../../utils/getDefaultFromEnv";
 
 export default {
     apiKey: getDefaultFromEnv('GT_API_KEY'),
-    projectID: getDefaultFromEnv('GT_PROJECT_ID'),
+    projectId: getDefaultFromEnv('GT_PROJECT_ID'),
     baseURL: 'https://prod.gtx.dev',
     cacheURL: defaultCacheURL,
     defaultLocale: libraryDefaultLocale,

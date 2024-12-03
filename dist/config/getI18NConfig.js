@@ -31,13 +31,13 @@ function getI18NConfig() {
     }
     else {
         console.warn(createErrors_1.usingDefaultsWarning);
-        var projectID = process.env.GT_PROJECT_ID || '';
-        if (!projectID)
-            console.error(createErrors_1.projectIDMissingError);
+        var projectId = process.env.GT_PROJECT_ID || '';
+        if (!projectId)
+            console.error(createErrors_1.projectIdMissingError);
         var apiKey = process.env.GT_API_KEY || '';
         if (!apiKey)
             console.error(createErrors_1.APIKeyMissingError);
-        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { maxConcurrentRequests: defaultInitGTProps_1.default._maxConcurrectRequests, batchInterval: defaultInitGTProps_1.default._batchInterval, apiKey: apiKey, projectID: projectID, env: env }));
+        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { maxConcurrentRequests: defaultInitGTProps_1.default._maxConcurrectRequests, batchInterval: defaultInitGTProps_1.default._batchInterval, apiKey: apiKey, projectId: projectId, env: env }));
     }
     return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
 }

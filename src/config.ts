@@ -2,7 +2,7 @@ import path from 'path';
 import { NextConfig } from 'next';
 import defaultInitGTProps from './config/props/defaultInitGTProps';
 import InitGTProps from './config/props/InitGTProps'
-import { APIKeyMissingError, projectIDMissingError } from './errors/createErrors';
+import { APIKeyMissingError, projectIdMissingError } from './errors/createErrors';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -14,7 +14,7 @@ import { APIKeyMissingError, projectIDMissingError } from './errors/createErrors
  * import { initGT } from 'gt-next/config';
  *
  * const withGT = initGT({
- *   projectID: 'abc-123',
+ *   projectId: 'abc-123',
  *   locales: ['en', 'es', 'fr'],
  *   defaultLocale: 'en'
  * });
@@ -24,7 +24,7 @@ import { APIKeyMissingError, projectIDMissingError } from './errors/createErrors
  * @param {string|undefined} i18n - Optional i18n configuration file path. If a string is provided, it will be used as a path.
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
- * @param {string} [projectID=defaultInitGTProps.projectID] - Project ID for the GeneralTranslation service. Required for most functionality.
+ * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
  * @param {string} [baseURL=defaultInitGTProps.baseURL] - The base URL for the GT API. Set to an empty string to disable automatic translations.
  * @param {string} [cacheURL=defaultInitGTProps.cacheURL] - The URL for cached translations.
  * @param {string[]} [locales] - List of supported locales for the application. Defaults to the first locale or the default locale if not provided.
@@ -43,7 +43,7 @@ export function initGT({
   i18n,
   dictionary,
   apiKey = defaultInitGTProps.apiKey,
-  projectID = defaultInitGTProps.projectID,
+  projectId = defaultInitGTProps.projectId,
   baseURL = defaultInitGTProps.baseURL,
   cacheURL = defaultInitGTProps.cacheURL,
   locales,
@@ -55,15 +55,15 @@ export function initGT({
 }: InitGTProps = defaultInitGTProps) {
   // Error checks
   if (
-    !projectID &&
+    !projectId &&
     (cacheURL === defaultInitGTProps.cacheURL ||
       baseURL === defaultInitGTProps.baseURL)
   )
     console.error(
-      projectIDMissingError
+      projectIdMissingError
     );
 
-  if ((!apiKey || !projectID) && baseURL === defaultInitGTProps.baseURL) {
+  if ((!apiKey || !projectId) && baseURL === defaultInitGTProps.baseURL) {
     console.error(
       APIKeyMissingError
     );
@@ -72,7 +72,7 @@ export function initGT({
   // Store config params in environment variable to allow for global access (in some cases)
   const I18NConfigParams = JSON.stringify({
     apiKey,
-    projectID,
+    projectId,
     baseURL,
     cacheURL,
     locales,

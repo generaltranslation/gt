@@ -92,7 +92,7 @@ var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         var 
         // Cloud integration
-        apiKey = _a.apiKey, projectID = _a.projectID, baseURL = _a.baseURL, cacheURL = _a.cacheURL, 
+        apiKey = _a.apiKey, projectId = _a.projectId, baseURL = _a.baseURL, cacheURL = _a.cacheURL, 
         // Locale info
         defaultLocale = _a.defaultLocale, locales = _a.locales, 
         // Render method
@@ -104,9 +104,9 @@ var I18NConfiguration = /** @class */ (function () {
         // Environment
         env = _a.env, 
         // Other metadata
-        metadata = __rest(_a, ["apiKey", "projectID", "baseURL", "cacheURL", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "batchInterval", "env"]);
+        metadata = __rest(_a, ["apiKey", "projectId", "baseURL", "cacheURL", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "batchInterval", "env"]);
         // Cloud integration
-        this.projectID = projectID;
+        this.projectId = projectId;
         this.baseURL = baseURL;
         // Locales
         this.defaultLocale = defaultLocale;
@@ -115,7 +115,7 @@ var I18NConfiguration = /** @class */ (function () {
         this.renderSettings = renderSettings;
         // GT
         this.gt = new generaltranslation_1.default({
-            projectID: projectID,
+            projectId: projectId,
             apiKey: apiKey,
             defaultLocale: defaultLocale,
             baseURL: baseURL,
@@ -125,13 +125,13 @@ var I18NConfiguration = /** @class */ (function () {
         // Other metadata
         this.metadata = __assign(__assign(__assign({ env: this.env, defaultLocale: this.defaultLocale }, (this.renderSettings.timeout && {
             timeout: this.renderSettings.timeout - batchInterval,
-        })), { projectID: this.projectID }), metadata);
+        })), { projectId: this.projectId }), metadata);
         // Dictionary managers
-        if (cacheURL && projectID) {
+        if (cacheURL && projectId) {
             this._remoteTranslationsManager = RemoteTranslationsManager_1.default;
             this._remoteTranslationsManager.setConfig({
                 cacheURL: cacheURL,
-                projectID: projectID,
+                projectId: projectId,
             });
         }
         // Cache of hashes to speed up <GTProvider>
@@ -164,7 +164,7 @@ var I18NConfiguration = /** @class */ (function () {
      */
     I18NConfiguration.prototype.translationEnabled = function () {
         return this.baseURL &&
-            this.projectID &&
+            this.projectId &&
             (this.baseURL === defaultInitGTProps_1.default.baseURL ? this.gt.apiKey : true)
             ? true
             : false;
@@ -261,7 +261,7 @@ var I18NConfiguration = /** @class */ (function () {
                         data: {
                             content: content,
                             targetLocale: targetLocale,
-                            metadata: __assign(__assign(__assign({}, _this.metadata), { projectID: _this.projectID }), options),
+                            metadata: __assign(__assign(__assign({}, _this.metadata), { projectId: _this.projectId }), options),
                         },
                         revalidate: _this._remoteTranslationsManager
                             ? _this._remoteTranslationsManager.getTranslationRequested(targetLocale)

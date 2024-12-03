@@ -7,7 +7,7 @@ import { addGTIdentifier, hashReactChildrenObjects, writeChildrenAsObjects } fro
 
 type I18NConfigurationParams = {
   apiKey: string;
-  projectID: string;
+  projectId: string;
   cacheURL: string;
   baseURL: string;
   defaultLocale: string;
@@ -26,7 +26,7 @@ type I18NConfigurationParams = {
 export default class I18NConfiguration {
   // Cloud integration
   baseURL: string;
-  projectID: string;
+  projectId: string;
   // Locale info
   defaultLocale: string;
   locales: string[] | undefined;
@@ -56,7 +56,7 @@ export default class I18NConfiguration {
   constructor({
     // Cloud integration
     apiKey,
-    projectID,
+    projectId,
     baseURL,
     cacheURL,
     // Locale info
@@ -75,7 +75,7 @@ export default class I18NConfiguration {
     ...metadata
   }: I18NConfigurationParams) {
     // Cloud integration
-    this.projectID = projectID;
+    this.projectId = projectId;
     this.baseURL = baseURL;
     // Locales
     this.defaultLocale = defaultLocale;
@@ -84,7 +84,7 @@ export default class I18NConfiguration {
     this.renderSettings = renderSettings;
     // GT
     this.gt = new GT({
-      projectID,
+      projectId,
       apiKey,
       defaultLocale,
       baseURL,
@@ -98,15 +98,15 @@ export default class I18NConfiguration {
       ...(this.renderSettings.timeout && {
         timeout: this.renderSettings.timeout - batchInterval,
       }),
-      projectID: this.projectID,
+      projectId: this.projectId,
       ...metadata,
     };
     // Dictionary managers
-    if (cacheURL && projectID) {
+    if (cacheURL && projectId) {
       this._remoteTranslationsManager = remoteTranslationsManager;
       this._remoteTranslationsManager.setConfig({
         cacheURL,
-        projectID,
+        projectId,
       });
     }
     // Cache of hashes to speed up <GTProvider>
@@ -142,7 +142,7 @@ export default class I18NConfiguration {
    */
   translationEnabled(): boolean {
     return this.baseURL &&
-      this.projectID &&
+      this.projectId &&
       (this.baseURL === defaultInitGTProps.baseURL ? this.gt.apiKey : true)
       ? true
       : false;
@@ -249,7 +249,7 @@ export default class I18NConfiguration {
         data: {
           content,
           targetLocale,
-          metadata: { ...this.metadata, projectID: this.projectID, ...options },
+          metadata: { ...this.metadata, projectId: this.projectId, ...options },
         },
         revalidate: this._remoteTranslationsManager
           ? this._remoteTranslationsManager.getTranslationRequested(

@@ -60,7 +60,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
     function RemoteTranslationsManager() {
         this.config = {
             cacheURL: 'https://cache.gtx.dev',
-            projectID: '',
+            projectId: '',
         };
         this.translationsMap = new Map();
         this.fetchPromises = new Map();
@@ -85,7 +85,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 3, , 4]);
-                        return [4 /*yield*/, fetch("".concat(this.config.cacheURL, "/").concat(this.config.projectID, "/").concat(reference))];
+                        return [4 /*yield*/, fetch("".concat(this.config.cacheURL, "/").concat(this.config.projectId, "/").concat(reference))];
                     case 1:
                         response = _a.sent();
                         return [4 /*yield*/, response.json()];

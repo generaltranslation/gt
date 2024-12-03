@@ -1,8 +1,8 @@
 "use strict";
 // ---- ERRORS ---- //
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createNoEntryWarning = exports.usingDefaultsWarning = exports.createAdvancedFunctionsError = exports.createRequiredPrefixError = exports.createStringTranslationError = exports.renderingError = exports.remoteTranslationsError = exports.APIKeyMissingError = exports.projectIDMissingError = void 0;
-exports.projectIDMissingError = 'General Translation: Project ID missing! Set projectID as GT_PROJECT_ID in the environment or by passing the projectID parameter to initGT(). Find your project ID: www.generaltranslation.com/dashboard.';
+exports.createNoEntryWarning = exports.usingDefaultsWarning = exports.createAdvancedFunctionsError = exports.createRequiredPrefixError = exports.createStringTranslationError = exports.renderingError = exports.remoteTranslationsError = exports.APIKeyMissingError = exports.projectIdMissingError = void 0;
+exports.projectIdMissingError = 'General Translation: Project ID missing! Set projectId as GT_PROJECT_ID in the environment or by passing the projectId parameter to initGT(). Find your project ID: www.generaltranslation.com/dashboard.';
 exports.APIKeyMissingError = 'General Translation: API key is required for automatic translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off automatic translation by setting baseURL to an empty string.)';
 exports.remoteTranslationsError = 'General Translation: Error fetching remote translation.';
 exports.renderingError = 'General Translation: Rendering error.';

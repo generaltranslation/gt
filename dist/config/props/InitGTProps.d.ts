@@ -2,7 +2,7 @@ type InitGTProps = {
     dictionary?: string;
     i18n?: string;
     apiKey?: string;
-    projectID?: string;
+    projectId?: string;
     baseURL?: string;
     cacheURL?: string;
     locales?: string[];

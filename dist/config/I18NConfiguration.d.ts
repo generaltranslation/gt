@@ -1,7 +1,7 @@
 import GT from 'generaltranslation';
 type I18NConfigurationParams = {
     apiKey: string;
-    projectID: string;
+    projectId: string;
     cacheURL: string;
     baseURL: string;
     defaultLocale: string;
@@ -18,7 +18,7 @@ type I18NConfigurationParams = {
 };
 export default class I18NConfiguration {
     baseURL: string;
-    projectID: string;
+    projectId: string;
     defaultLocale: string;
     locales: string[] | undefined;
     renderSettings: {
@@ -36,7 +36,7 @@ export default class I18NConfiguration {
     private _translationCache;
     private _taggedDictionary;
     private _template;
-    constructor({ apiKey, projectID, baseURL, cacheURL, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, batchInterval, env, ...metadata }: I18NConfigurationParams);
+    constructor({ apiKey, projectId, baseURL, cacheURL, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, batchInterval, env, ...metadata }: I18NConfigurationParams);
     /**
      * Gets the application's default locale
      * @returns {string} A BCP-47 locale tag
