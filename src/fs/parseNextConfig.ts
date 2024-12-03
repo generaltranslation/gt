@@ -3,12 +3,12 @@ import { isValidLocale } from 'generaltranslation';
 import path from 'path';
 
 /**
- * Extracts projectID, defaultLocale, approvedLocales, and description from an i18n.js file.
+ * Extracts projectId, defaultLocale, approvedLocales, and description from an i18n.js file.
  * @param {string} filePath - The path to the i18n.js file.
  * @returns {object|null} - An object containing the extracted values or null if none found or incorrect types.
  */
 export function parseNextConfig(filePath: string): {
-    projectID?: string,
+    projectId?: string,
     defaultLocale?: string,
     locales?: string[],
     description?: string
@@ -26,18 +26,18 @@ export function parseNextConfig(filePath: string): {
 
     // Regular expressions to extract the values
     const defaultLocaleRegex = /defaultLocale:\s*['"]([^'"]+)['"]/;
-    const projectIDRegex = /projectID:\s*['"]([^'"]+)['"]/;
+    const projectIdRegex = /projectId:\s*['"]([^'"]+)['"]/;
     const localesRegex = /locales:\s*\[([^\]]+)\]/;
     const descriptionRegex = /description:\s*['"]([^'"]+)['"]/;
 
     // Extract the values
     const defaultLocaleMatch = fileContent.match(defaultLocaleRegex);
-    const projectIDMatch = fileContent.match(projectIDRegex);
+    const projectIdMatch = fileContent.match(projectIdRegex);
     const localesMatch = fileContent.match(localesRegex);
     const descriptionMatch = fileContent.match(descriptionRegex);
 
     const defaultLocale = defaultLocaleMatch && typeof defaultLocaleMatch[1] === 'string' ? defaultLocaleMatch[1] : undefined;
-    const projectID = projectIDMatch && typeof projectIDMatch[1] === 'string' ? projectIDMatch[1] : undefined;
+    const projectId = projectIdMatch && typeof projectIdMatch[1] === 'string' ? projectIdMatch[1] : undefined;
     const locales = localesMatch
         ? localesMatch[1]
             .split(',')
@@ -50,10 +50,10 @@ export function parseNextConfig(filePath: string): {
     const validLocales = locales && locales.every(locale => isValidLocale(locale)) ? locales : undefined;
 
     // Return the extracted values if they pass type checks or return null
-    if (defaultLocale || projectID || validLocales || description) {
+    if (defaultLocale || projectId || validLocales || description) {
         return {
             ...(defaultLocale && { defaultLocale }),
-            ...(projectID && { projectID }),
+            ...(projectId && { projectId }),
             ...(validLocales && { locales: validLocales }),
             ...(description && { description })
         };

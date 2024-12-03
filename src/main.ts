@@ -31,7 +31,7 @@ export type Updates = ({
 export type Options = {
     options: string,
     apiKey?: string,
-    projectID?: string,
+    projectId?: string,
     jsconfig?: string,
     dictionary?: string,
     app?: string,
@@ -55,7 +55,7 @@ program
     process.env.GT_API_KEY
   )
   .option(
-    '--projectID <id>', 'Project ID for the translation service',
+    '--projectId <id>', 'Project ID for the translation service',
     process.env.GT_PROJECT_ID
   )
   .option(
@@ -187,7 +187,7 @@ program
     if (updates.length) {
         const gt = new GT({
             apiKey: options.apiKey,
-            ...(options.projectID && { projectID: options.projectID }),
+            ...(options.projectId && { projectId: options.projectId }),
             ...(options.defaultLocale && { defaultLanguage: options.defaultLocale })
         });
         
@@ -200,7 +200,7 @@ program
         
         if (resultLocales) {
             console.log(
-              `Project "${options.projectID}" updated in ${
+              `Project "${options.projectId}" updated in ${
                 resultLocales.length
               } languages.`,
                 resultLocales.length &&

@@ -15,7 +15,7 @@ export type Updates = ({
 export type Options = {
     options: string;
     apiKey?: string;
-    projectID?: string;
+    projectId?: string;
     jsconfig?: string;
     dictionary?: string;
     app?: string;

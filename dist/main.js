@@ -52,7 +52,7 @@ commander_1.program
     .description('Scans the project for a dictionary and/or <T> tags, and updates the General Translation remote dictionary with the latest content.')
     .option('--options <path>', 'Filepath to options JSON file, by default gt.config.json', "./gt.config.json")
     .option('--apiKey <key>', 'API key for General Translation cloud service', process.env.GT_API_KEY)
-    .option('--projectID <id>', 'Project ID for the translation service', process.env.GT_PROJECT_ID)
+    .option('--projectId <id>', 'Project ID for the translation service', process.env.GT_PROJECT_ID)
     .option('--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file', (0, findFilepath_1.default)(['./tsconfig.json', './jsconfig.json']))
     .option('--dictionary <path>', 'Path to dictionary file', (0, findFilepath_1.default)([
     './dictionary.js', './src/dictionary.js',
@@ -142,10 +142,10 @@ commander_1.program
     });
     // Send updates to General Translation API
     if (updates.length) {
-        const gt = new generaltranslation_1.default(Object.assign(Object.assign({ apiKey: options.apiKey }, (options.projectID && { projectID: options.projectID })), (options.defaultLocale && { defaultLanguage: options.defaultLocale })));
+        const gt = new generaltranslation_1.default(Object.assign(Object.assign({ apiKey: options.apiKey }, (options.projectId && { projectId: options.projectId })), (options.defaultLocale && { defaultLanguage: options.defaultLocale })));
         const { locales: resultLocales } = yield gt.updateProjectTranslations(updates, options.locales, Object.assign({ apiKey: undefined }, options));
         if (resultLocales) {
-            console.log(`Project "${options.projectID}" updated in ${resultLocales.length} languages.`, resultLocales.length &&
+            console.log(`Project "${options.projectId}" updated in ${resultLocales.length} languages.`, resultLocales.length &&
                 `\n${resultLocales
                     .map((locale) => {
                     const { nameWithRegionCode, languageCode } = (0, generaltranslation_1.getLocaleProperties)(locale);
