@@ -7,7 +7,7 @@ declare const _default: {
     readonly getLocale: () => Promise<"en-US">;
     readonly renderSettings: {
         readonly method: "skeleton";
-        readonly timeout: null;
+        readonly timeout: 9500;
     };
     readonly getMetadata: () => Promise<{}>;
     readonly _maxConcurrectRequests: 2;

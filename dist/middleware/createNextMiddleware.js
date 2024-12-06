@@ -126,15 +126,19 @@ function createNextMiddleware(_a) {
         res.headers.set(internal_1.localeHeaderName, userLocale);
         if (localeRouting) {
             var pathname = req.nextUrl.pathname;
+            var originalUrl = req.nextUrl;
+            // Construct new URL with original search parameters
+            var newUrl = new URL("/".concat(userLocale).concat(pathname), originalUrl);
+            newUrl.search = originalUrl.search; // keep the query parameters
             if (!prefixDefaultLocale && (0, generaltranslation_1.isSameDialect)(userLocale, defaultLocale)) {
-                var rewrittenRes = server_1.NextResponse.rewrite(new URL("/".concat(userLocale).concat(pathname), req.nextUrl), req.nextUrl);
+                var rewrittenRes = server_1.NextResponse.rewrite(newUrl, req.nextUrl);
                 rewrittenRes.cookies.set(internal_1.localeCookieName, userLocale);
                 rewrittenRes.headers.set(internal_1.localeHeaderName, userLocale);
                 return rewrittenRes;
             }
             else {
                 req.nextUrl.pathname = "/".concat(userLocale).concat(pathname);
-                return server_1.NextResponse.redirect(req.nextUrl);
+                return server_1.NextResponse.redirect(newUrl);
             }
         }
         return res;

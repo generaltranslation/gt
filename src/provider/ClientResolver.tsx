@@ -35,13 +35,12 @@ export default function ClientResolver({
                 {renderTranslation(translationData)}
             </Suspense>
         )
-        return renderTranslation(translationData);
     }
 
     // the <Suspense> here is to prevent hydration errors
     return (
         <Suspense fallback={loadingFallback}>
-            {renderTranslation(translationData)}
+            {loadingFallback}
         </Suspense>
     );
 }

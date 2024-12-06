@@ -140,24 +140,22 @@ export default function createNextMiddleware({
         res.headers.set(localeHeaderName, userLocale);
         
         if (localeRouting) {
-
             const { pathname } = req.nextUrl;
-
+            const originalUrl = req.nextUrl;
+            // Construct new URL with original search parameters
+            const newUrl = new URL(`/${userLocale}${pathname}`, originalUrl);
+            newUrl.search = originalUrl.search; // keep the query parameters
             if (!prefixDefaultLocale && isSameDialect(userLocale, defaultLocale)) {
-                const rewrittenRes = NextResponse.rewrite(
-                    new URL(`/${userLocale}${pathname}`, req.nextUrl), req.nextUrl
-                );
+                const rewrittenRes = NextResponse.rewrite(newUrl, req.nextUrl);
                 rewrittenRes.cookies.set(localeCookieName, userLocale);
-                rewrittenRes.headers.set(localeHeaderName, userLocale)
+                rewrittenRes.headers.set(localeHeaderName, userLocale);
                 return rewrittenRes;
             } else {
                 req.nextUrl.pathname = `/${userLocale}${pathname}`
-                return NextResponse.redirect(req.nextUrl)
+                return NextResponse.redirect(newUrl);
             }
         }
-
         return res;
-
     }
 
     return nextMiddleware;

@@ -73,9 +73,8 @@ function ClientResolver(_a) {
     }
     if (typeof translationData !== 'undefined') {
         return ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: errorFallback, children: renderTranslation(translationData) }));
-        return renderTranslation(translationData);
     }
     // the <Suspense> here is to prevent hydration errors
-    return ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: renderTranslation(translationData) }));
+    return ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: loadingFallback }));
 }
 //# sourceMappingURL=ClientResolver.js.map

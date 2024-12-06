@@ -33,6 +33,7 @@ export default function ClientProvider({
   translationRequired: boolean;
   requiredPrefix: string | undefined;
 }) {
+  
 
   // For dictionaries
   const translate = useCallback(
@@ -40,9 +41,10 @@ export default function ClientProvider({
       
       if (requiredPrefix && !id?.startsWith(requiredPrefix))
         throw new Error(createRequiredPrefixError(id, requiredPrefix))
-  
+      
       // Get the entry from the dictionary
       let { entry, metadata } = extractEntryMetadata(dictionary[id]);
+
       if (typeof entry === 'undefined') {
         console.warn(createNoEntryWarning(id));
         return undefined;

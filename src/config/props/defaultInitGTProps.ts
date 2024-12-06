@@ -10,7 +10,7 @@ export default {
     getLocale: async () => libraryDefaultLocale,
     renderSettings: {
         method: "skeleton",
-        timeout: null
+        timeout: 9500
     },
     getMetadata: async () => ({}),
     _maxConcurrectRequests: 2,
