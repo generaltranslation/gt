@@ -117,7 +117,7 @@ const supportedLocales = {
         "zh-HK": true, // Hong Kong
         "zh-SG": true, // Singapore
         "zh-TW": true, // Taiwan
-    },
+    }
 } as {
     [language: string]: {
         [locale: string]: true
