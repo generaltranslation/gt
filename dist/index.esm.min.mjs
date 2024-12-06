@@ -1,0 +1,2 @@
+import{isValidLocale as n,standardizeLocale as e,getLocaleProperties as r}from"generaltranslation";var i={en:{"en-US":!0,"en-GB":!0,"en-CA":!0,"en-AU":!0,"en-NZ":!0}};function t(t){if(!n(t))return null;if(t=e(t),i[t])return t;var a=r(t),u=a.languageCode,l=a.minimizedCode;if(i[u]){var o=i[u];return o[t]?t:o[l]?l:u}return null}export{t as getSupportedLocale};
+//# sourceMappingURL=index.esm.min.mjs.map
