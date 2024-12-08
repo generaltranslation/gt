@@ -251,11 +251,11 @@ export default class I18NConfiguration {
           targetLocale,
           metadata: { ...this.metadata, projectId: this.projectId, ...options },
         },
-        revalidate: this._remoteTranslationsManager
+        revalidate: this.env !== "development" && (this._remoteTranslationsManager
           ? this._remoteTranslationsManager.getTranslationRequested(
               targetLocale
             )
-          : false,
+          : false),
         resolve,
         reject,
       });
@@ -292,11 +292,11 @@ export default class I18NConfiguration {
           targetLocale,
           metadata: { ...this.metadata, ...metadata },
         },
-        revalidate: this._remoteTranslationsManager
+        revalidate: this.env !== "development" && (this._remoteTranslationsManager
           ? this._remoteTranslationsManager.getTranslationRequested(
               targetLocale
             )
-          : false,
+          : false),
         resolve,
         reject,
       });

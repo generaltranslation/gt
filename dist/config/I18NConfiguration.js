@@ -263,9 +263,9 @@ var I18NConfiguration = /** @class */ (function () {
                             targetLocale: targetLocale,
                             metadata: __assign(__assign(__assign({}, _this.metadata), { projectId: _this.projectId }), options),
                         },
-                        revalidate: _this._remoteTranslationsManager
+                        revalidate: _this.env !== "development" && (_this._remoteTranslationsManager
                             ? _this._remoteTranslationsManager.getTranslationRequested(targetLocale)
-                            : false,
+                            : false),
                         resolve: resolve,
                         reject: reject,
                     });
@@ -301,9 +301,9 @@ var I18NConfiguration = /** @class */ (function () {
                             targetLocale: targetLocale,
                             metadata: __assign(__assign({}, _this.metadata), metadata),
                         },
-                        revalidate: _this._remoteTranslationsManager
+                        revalidate: _this.env !== "development" && (_this._remoteTranslationsManager
                             ? _this._remoteTranslationsManager.getTranslationRequested(targetLocale)
-                            : false,
+                            : false),
                         resolve: resolve,
                         reject: reject,
                     });

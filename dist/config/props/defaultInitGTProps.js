@@ -52,7 +52,7 @@ exports.default = {
     }); }); },
     renderSettings: {
         method: "skeleton",
-        timeout: 9500
+        timeout: (0, getDefaultFromEnv_1.default)('NODE_ENV') === "development" ? null : 8000
     },
     getMetadata: function () { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
         return [2 /*return*/, ({})];

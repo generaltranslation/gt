@@ -10,7 +10,7 @@ export default {
     getLocale: async () => libraryDefaultLocale,
     renderSettings: {
         method: "skeleton",
-        timeout: 9500
+        timeout: getDefaultFromEnv('NODE_ENV') === "development" ? null : 8000
     },
     getMetadata: async () => ({}),
     _maxConcurrectRequests: 2,
