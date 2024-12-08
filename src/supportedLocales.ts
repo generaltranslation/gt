@@ -1,4 +1,5 @@
 const supportedLocales = {
+    "af": {}, // Afrikaans
     "am": {}, // Amharic
     "ar": { // Arabic
         "ar-AE": true, // United Arab Emirates
@@ -15,6 +16,7 @@ const supportedLocales = {
     "bs": {}, // Bosnian
     "ca": {}, // Catalan
     "cs": {}, // Czech
+    "cy": {}, // Welsh
     "da": {}, // Danish
     "de": { // German
         "de-AT": true, // Austria
