@@ -259,6 +259,10 @@ export default class I18NConfiguration {
         resolve,
         reject,
       });
+    }).catch((error) => {
+      this._translationCache.delete(cacheKey);
+      console.error(error);
+      return '';
     });
     this._translationCache.set(cacheKey, translationPromise);
     return translationPromise;
@@ -300,6 +304,10 @@ export default class I18NConfiguration {
         resolve,
         reject,
       });
+    }).catch((error) => {
+      this._translationCache.delete(cacheKey);
+      console.error(error);
+      return null;
     });
     this._translationCache.set(cacheKey, translationPromise);
     return translationPromise;
@@ -343,7 +351,7 @@ export default class I18NConfiguration {
     } catch (error) {
       console.error(error);
       batch.forEach((item) => {
-        item.resolve(null)
+        item.reject()
       });
     } finally {
       this._activeRequests--;

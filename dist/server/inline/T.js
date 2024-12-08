@@ -50,7 +50,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = T;
 var jsx_runtime_1 = require("react/jsx-runtime");
 var getI18NConfig_1 = __importDefault(require("../../config/getI18NConfig"));
 var getLocale_1 = __importDefault(require("../../request/getLocale"));
@@ -205,4 +204,6 @@ function T(_a) {
         });
     });
 }
+T.gtTransformation = "translate-server";
+exports.default = T;
 //# sourceMappingURL=T.js.map

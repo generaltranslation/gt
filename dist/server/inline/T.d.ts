@@ -45,12 +45,15 @@ type RenderSettings = {
  *
  * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
-export default function T({ children, id, context, renderSettings, variables, variablesOptions, }: {
+declare function T({ children, id, context, renderSettings, variables, variablesOptions, }: {
     children: any;
     id?: string;
     context?: string;
     renderSettings?: RenderSettings;
     [key: string]: any;
 }): Promise<any>;
-export {};
+declare namespace T {
+    var gtTransformation: string;
+}
+export default T;
 //# sourceMappingURL=T.d.ts.map

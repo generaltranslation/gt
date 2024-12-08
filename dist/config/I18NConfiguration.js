@@ -269,6 +269,10 @@ var I18NConfiguration = /** @class */ (function () {
                         resolve: resolve,
                         reject: reject,
                     });
+                }).catch(function (error) {
+                    _this._translationCache.delete(cacheKey);
+                    console.error(error);
+                    return '';
                 });
                 this._translationCache.set(cacheKey, translationPromise);
                 return [2 /*return*/, translationPromise];
@@ -307,6 +311,10 @@ var I18NConfiguration = /** @class */ (function () {
                         resolve: resolve,
                         reject: reject,
                     });
+                }).catch(function (error) {
+                    _this._translationCache.delete(cacheKey);
+                    console.error(error);
+                    return null;
                 });
                 this._translationCache.set(cacheKey, translationPromise);
                 return [2 /*return*/, translationPromise];
@@ -355,7 +363,7 @@ var I18NConfiguration = /** @class */ (function () {
                         error_1 = _a.sent();
                         console.error(error_1);
                         batch.forEach(function (item) {
-                            item.resolve(null);
+                            item.reject();
                         });
                         return [3 /*break*/, 5];
                     case 4:

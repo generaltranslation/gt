@@ -54,7 +54,7 @@ type RenderSettings = {
  *
  * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
-export default async function T({
+async function T({
   children,
   id,
   context,
@@ -193,3 +193,7 @@ export default async function T({
     </Suspense>
   );
 }
+
+T.gtTransformation = "translate-server";
+
+export default T;
