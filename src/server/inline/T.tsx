@@ -58,14 +58,12 @@ async function T({
   children,
   id,
   context,
-  renderSettings,
   variables,
   variablesOptions,
 }: {
   children: any;
-  id?: string;
+  id: string;
   context?: string;
-  renderSettings?: RenderSettings;
   [key: string]: any;
 }): Promise<any> {
 
@@ -129,7 +127,7 @@ async function T({
     });
   }
 
-  renderSettings ||= I18NConfig.getRenderSettings();
+  const renderSettings = I18NConfig.getRenderSettings();
 
   // On-demand translates the children
   const translationPromise = I18NConfig.translateChildren({

@@ -7,4 +7,5 @@ export declare const createRequiredPrefixError: (id: string, requiredPrefix: str
 export declare const createAdvancedFunctionsError: (id: string, options?: Record<string, any>) => string;
 export declare const usingDefaultsWarning = "General Translation: Unable to access gt-next configuration. Using defaults.";
 export declare const createNoEntryWarning: (id: string) => string;
+export declare const createUnsupportedLocalesWarning: (locales: string[]) => string;
 //# sourceMappingURL=createErrors.d.ts.map

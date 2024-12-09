@@ -1,7 +1,8 @@
 "use strict";
 // ---- ERRORS ---- //
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createNoEntryWarning = exports.usingDefaultsWarning = exports.createAdvancedFunctionsError = exports.createRequiredPrefixError = exports.createStringTranslationError = exports.renderingError = exports.remoteTranslationsError = exports.APIKeyMissingError = exports.projectIdMissingError = void 0;
+exports.createUnsupportedLocalesWarning = exports.createNoEntryWarning = exports.usingDefaultsWarning = exports.createAdvancedFunctionsError = exports.createRequiredPrefixError = exports.createStringTranslationError = exports.renderingError = exports.remoteTranslationsError = exports.APIKeyMissingError = exports.projectIdMissingError = void 0;
+var generaltranslation_1 = require("generaltranslation");
 exports.projectIdMissingError = 'General Translation: Project ID missing! Set projectId as GT_PROJECT_ID in the environment or by passing the projectId parameter to initGT(). Find your project ID: www.generaltranslation.com/dashboard.';
 exports.APIKeyMissingError = 'General Translation: API key is required for automatic translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off automatic translation by setting baseURL to an empty string.)';
 exports.remoteTranslationsError = 'General Translation: Error fetching remote translation.';
@@ -21,4 +22,9 @@ exports.createAdvancedFunctionsError = createAdvancedFunctionsError;
 exports.usingDefaultsWarning = 'General Translation: Unable to access gt-next configuration. Using defaults.';
 var createNoEntryWarning = function (id) { return "gt-next: No dictionary entry found for id: \"".concat(id, "\""); };
 exports.createNoEntryWarning = createNoEntryWarning;
+var createUnsupportedLocalesWarning = function (locales) { return "General Translation: The following locales are currently unsupported by our service: ".concat(locales.map(function (locale) {
+    var name = (0, generaltranslation_1.getLocaleProperties)(locale).name;
+    return "".concat(locale, " (").concat(name, ")");
+}).join(', ')); };
+exports.createUnsupportedLocalesWarning = createUnsupportedLocalesWarning;
 //# sourceMappingURL=createErrors.js.map

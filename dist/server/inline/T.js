@@ -103,9 +103,9 @@ var renderVariable_1 = __importDefault(require("../rendering/renderVariable"));
  */
 function T(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, translationRequired, translationsPromise, taggedChildren, _c, childrenAsObjects, key, translations, translation, target, translationPromise, _d, _e, _f, promise, loadingFallback, errorFallback;
+        var I18NConfig, locale, defaultLocale, translationRequired, translationsPromise, taggedChildren, _c, childrenAsObjects, key, translations, translation, target, renderSettings, translationPromise, _d, _e, _f, promise, loadingFallback, errorFallback;
         var _g;
-        var children = _b.children, id = _b.id, context = _b.context, renderSettings = _b.renderSettings, variables = _b.variables, variablesOptions = _b.variablesOptions;
+        var children = _b.children, id = _b.id, context = _b.context, variables = _b.variables, variablesOptions = _b.variablesOptions;
         return __generator(this, function (_h) {
             switch (_h.label) {
                 case 0:
@@ -152,7 +152,7 @@ function T(_a) {
                                 renderVariable: renderVariable_1.default
                             })];
                     }
-                    renderSettings || (renderSettings = I18NConfig.getRenderSettings());
+                    renderSettings = I18NConfig.getRenderSettings();
                     _e = (_d = I18NConfig).translateChildren;
                     _g = {
                         children: childrenAsObjects,

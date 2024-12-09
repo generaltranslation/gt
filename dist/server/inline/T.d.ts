@@ -1,7 +1,3 @@
-type RenderSettings = {
-    method: 'skeleton' | 'replace' | 'hang' | 'subtle';
-    timeout: number | null;
-};
 /**
  * Translation component that renders its children translated into the user's given locale.
  *
@@ -45,11 +41,10 @@ type RenderSettings = {
  *
  * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
-declare function T({ children, id, context, renderSettings, variables, variablesOptions, }: {
+declare function T({ children, id, context, variables, variablesOptions, }: {
     children: any;
-    id?: string;
+    id: string;
     context?: string;
-    renderSettings?: RenderSettings;
     [key: string]: any;
 }): Promise<any>;
 declare namespace T {

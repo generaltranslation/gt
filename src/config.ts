@@ -2,8 +2,9 @@ import path from 'path';
 import { NextConfig } from 'next';
 import defaultInitGTProps from './config/props/defaultInitGTProps';
 import InitGTProps from './config/props/InitGTProps'
-import { APIKeyMissingError, projectIdMissingError } from './errors/createErrors';
-
+import { APIKeyMissingError, createUnsupportedLocalesWarning, projectIdMissingError } from './errors/createErrors';
+import { getSupportedLocale, listSupportedLocales } from '@generaltranslation/supported-locales';
+import { defaultBaseURL } from 'generaltranslation/internal';
 /**
  * Initializes General Translation settings for a Next.js application.
  *
@@ -28,7 +29,7 @@ import { APIKeyMissingError, projectIdMissingError } from './errors/createErrors
  * @param {string} [baseURL=defaultInitGTProps.baseURL] - The base URL for the GT API. Set to an empty string to disable automatic translations.
  * @param {string} [cacheURL=defaultInitGTProps.cacheURL] - The URL for cached translations.
  * @param {string[]} [locales] - List of supported locales for the application. Defaults to the first locale or the default locale if not provided.
- * @param {string} [defaultLocale=locales?.[0] || defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
+ * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
  * @param {number} [_maxConcurrentRequests=defaultInitGTProps._maxConcurrectRequests] - Maximum number of concurrent requests allowed.
  * @param {number} [_batchInterval=defaultInitGTProps._batchInterval] - The interval in milliseconds between batched translation requests.
@@ -47,7 +48,7 @@ export function initGT({
   baseURL = defaultInitGTProps.baseURL,
   cacheURL = defaultInitGTProps.cacheURL,
   locales,
-  defaultLocale = locales?.[0] || defaultInitGTProps.defaultLocale,
+  defaultLocale = defaultInitGTProps.defaultLocale,
   renderSettings = defaultInitGTProps.renderSettings,
   _maxConcurrentRequests = defaultInitGTProps._maxConcurrectRequests,
   _batchInterval = defaultInitGTProps._batchInterval,
@@ -67,6 +68,13 @@ export function initGT({
     console.error(
       APIKeyMissingError
     );
+  }
+
+  if (!locales) {
+    locales = listSupportedLocales();
+  } else if (baseURL === defaultBaseURL) {
+    const warningLocales = locales.filter(locale => !getSupportedLocale(locale));
+    if (warningLocales) console.warn(createUnsupportedLocalesWarning(warningLocales))
   }
 
   // Store config params in environment variable to allow for global access (in some cases)

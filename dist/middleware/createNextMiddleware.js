@@ -5,6 +5,7 @@ var generaltranslation_1 = require("generaltranslation");
 var server_1 = require("next/server");
 // import { ResponseCookies, RequestCookies } from "next/dist/compiled/@edge-runtime/cookies";
 var internal_1 = require("generaltranslation/internal");
+var supported_locales_1 = require("@generaltranslation/supported-locales");
 /**
  * Extracts the locale from the given pathname.
  *
@@ -33,6 +34,9 @@ function createNextMiddleware(_a) {
     var _b = _a === void 0 ? {
         defaultLocale: internal_1.libraryDefaultLocale, localeRouting: true, prefixDefaultLocale: false
     } : _a, _c = _b.defaultLocale, defaultLocale = _c === void 0 ? internal_1.libraryDefaultLocale : _c, locales = _b.locales, _d = _b.localeRouting, localeRouting = _d === void 0 ? true : _d, _e = _b.prefixDefaultLocale, prefixDefaultLocale = _e === void 0 ? false : _e;
+    if (!locales) {
+        locales = (0, supported_locales_1.listSupportedLocales)();
+    }
     /**
     * Processes the incoming request to determine the user's locale and sets a locale cookie.
     * Optionally redirects the user based on the locale if locale-based routing is enabled.

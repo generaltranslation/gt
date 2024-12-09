@@ -2,6 +2,7 @@ import { isValidLocale, determineLocale, standardizeLocale, isSameDialect } from
 import { NextResponse } from "next/server";
 // import { ResponseCookies, RequestCookies } from "next/dist/compiled/@edge-runtime/cookies";
 import { libraryDefaultLocale, localeCookieName, localeHeaderName } from 'generaltranslation/internal'
+import { listSupportedLocales } from "@generaltranslation/supported-locales";
 
 /**
  * Extracts the locale from the given pathname.
@@ -37,6 +38,10 @@ export default function createNextMiddleware({
 = { 
     defaultLocale: libraryDefaultLocale, localeRouting: true, prefixDefaultLocale: false
 }) {
+
+    if (!locales) {
+        locales = listSupportedLocales();
+    }
 
     /**
     * Processes the incoming request to determine the user's locale and sets a locale cookie.
