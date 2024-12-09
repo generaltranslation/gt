@@ -48,6 +48,7 @@ const supportedLocales = {
     "et": {}, // Estonian
     "fa": {}, // Persian
     "fi": {}, // Finnish
+    "fil": {}, // Filipino
     "fr": { // French
         "fr-BE": true, // Belgium
         "fr-CM": true, // Cameroon
