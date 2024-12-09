@@ -4,15 +4,16 @@
   "main": "dist/main.js",
   "bin": {
     "i18n": "dist/main.js",
-    "gt-react-cli": "dist/main.js"
+    "translate": "dist/main.js",
+    "gt-update": "dist/main.js"
   },
   "scripts": {
     "build": "tsc",
     "build-push-publish": "rm -r -f dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;"
   },
   "peerDependencies": {
-    "gt-react": "^6.1.1",
-    "generaltranslation": "^4.1.1"
+    "gt-react": "^6.1.5",
+    "generaltranslation": "^4.1.2"
   },
   "keywords": [],
   "author": "",
