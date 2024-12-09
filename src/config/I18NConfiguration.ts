@@ -320,7 +320,10 @@ export default class I18NConfiguration {
   private async _sendBatchRequest(batch: Array<any>): Promise<void> {
     this._activeRequests++;
     try {
+      console.log(...batch.map(request => request?.data?.metadata?.timeout || 60))
+
       const batchPromise = this.gt.translateBatch(batch);
+      
       batch.forEach((item) => {
         if (this._remoteTranslationsManager && !item.revalidate)
           this._remoteTranslationsManager.setTranslationRequested(
