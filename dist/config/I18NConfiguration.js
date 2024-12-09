@@ -336,7 +336,6 @@ var I18NConfiguration = /** @class */ (function () {
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, 4, 5]);
-                        console.log.apply(console, batch.map(function (request) { var _a, _b; return ((_b = (_a = request === null || request === void 0 ? void 0 : request.data) === null || _a === void 0 ? void 0 : _a.metadata) === null || _b === void 0 ? void 0 : _b.timeout) || 60; }));
                         batchPromise = this.gt.translateBatch(batch);
                         batch.forEach(function (item) {
                             if (_this._remoteTranslationsManager && !item.revalidate)
