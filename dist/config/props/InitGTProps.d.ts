@@ -3,8 +3,9 @@ type InitGTProps = {
     i18n?: string;
     apiKey?: string;
     projectId?: string;
-    baseURL?: string;
-    cacheURL?: string;
+    baseUrl?: string;
+    cacheUrl?: string;
+    cacheExpiryTime?: number;
     locales?: string[];
     defaultLocale?: string;
     getLocale?: () => Promise<string>;

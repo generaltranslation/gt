@@ -149,8 +149,8 @@ function getGT(id) {
                                             return [2 /*return*/]; // NOTHING MORE TO DO
                                         }
                                         if (!(typeof taggedEntry === 'string')) return [3 /*break*/, 3];
-                                        translationPromise_1 = I18NConfig.translate({
-                                            content: (0, generaltranslation_1.splitStringToContent)(taggedEntry),
+                                        translationPromise_1 = I18NConfig.translateContent({
+                                            source: (0, generaltranslation_1.splitStringToContent)(taggedEntry),
                                             targetLocale: locale,
                                             options: __assign({ id: entryID, hash: key }, additionalMetadata_1),
                                         });
@@ -166,7 +166,7 @@ function getGT(id) {
                                     case 3:
                                         ;
                                         translationPromise = I18NConfig.translateChildren({
-                                            children: entryAsObjects,
+                                            source: entryAsObjects,
                                             targetLocale: locale,
                                             metadata: __assign(__assign({ id: entryID, hash: key }, additionalMetadata_1), (renderSettings_1.timeout && { timeout: renderSettings_1.timeout })),
                                         });

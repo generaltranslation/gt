@@ -1,8 +1,9 @@
 import { isValidLocale, determineLocale, standardizeLocale, isSameDialect } from "generaltranslation";
-import { NextResponse } from "next/server";
 // import { ResponseCookies, RequestCookies } from "next/dist/compiled/@edge-runtime/cookies";
 import { libraryDefaultLocale, localeCookieName, localeHeaderName } from 'generaltranslation/internal'
 import { listSupportedLocales } from "@generaltranslation/supported-locales";
+import { createUnsupportedLocalesWarning } from "../errors/createErrors";
+import { NextResponse } from "next/server";
 
 /**
  * Extracts the locale from the given pathname.
@@ -31,7 +32,8 @@ function extractLocale(pathname: string): string | null {
  */
 export default function createNextMiddleware({
     defaultLocale = libraryDefaultLocale, 
-    locales, localeRouting = true, prefixDefaultLocale = false
+    locales = listSupportedLocales(), 
+    localeRouting = true, prefixDefaultLocale = false
 }: { 
     defaultLocale?: string; locales?: string[]; localeRouting?: boolean, prefixDefaultLocale?: boolean
 } 
@@ -39,9 +41,12 @@ export default function createNextMiddleware({
     defaultLocale: libraryDefaultLocale, localeRouting: true, prefixDefaultLocale: false
 }) {
 
-    if (!locales) {
-        locales = listSupportedLocales();
-    }
+    if (!isValidLocale(defaultLocale)) throw new Error(`gt-next middleware: defaultLocale "${defaultLocale}" is not a valid locale.`)
+
+    const warningLocales = locales.filter(locale => !isValidLocale(locale));
+    if (warningLocales.length) console.warn(createUnsupportedLocalesWarning(warningLocales))
+    
+    const approvedLocales = locales;
 
     /**
     * Processes the incoming request to determine the user's locale and sets a locale cookie.
@@ -70,26 +75,15 @@ export default function createNextMiddleware({
             const { pathname } = req.nextUrl
 
             const locale = extractLocale(pathname);
-
-            let pathnameHasLocale: boolean = false;
         
             if (locale && isValidLocale(locale)) {
-                if (locales) {
-                    const approvedLocale = determineLocale(locale, locales);
-                    if (approvedLocale) {
-                        userLocale = standardizeLocale(approvedLocale);
-                        pathnameHasLocale = true;
-                    }
-                } else {
-                    userLocale = standardizeLocale(locale);
-                    pathnameHasLocale = true;
+                const approvedLocale = determineLocale(locale, approvedLocales);
+                if (approvedLocale) {
+                    userLocale = standardizeLocale(approvedLocale);
+                    res.headers.set(localeHeaderName, userLocale);
+                    res.cookies.set(localeCookieName, userLocale);
+                    return res;
                 }
-            }
-
-            if (pathnameHasLocale) {
-                res.headers.set(localeHeaderName, userLocale);
-                res.cookies.set(localeCookieName, userLocale);
-                return res;
             }
 
             // If there's no locale, try to get one from the referer
@@ -98,23 +92,12 @@ export default function createNextMiddleware({
             if (referer && typeof referer === 'string') {
                 const refererLocale = extractLocale((new URL(referer))?.pathname);
                 if (refererLocale) {
-                    let refererLocaleIsValid = false;
-                    if (locales) {
-                        const approvedLocale = determineLocale(refererLocale, locales);
-                        if (approvedLocale) {
-                            userLocale = standardizeLocale(approvedLocale);
-                            refererLocaleIsValid = true;
-                        }
-                    } else {
-                        if (isValidLocale(refererLocale)) {
-                            userLocale = standardizeLocale(refererLocale);
-                            refererLocaleIsValid = true;
-                        }
-                    }
-                    if (refererLocaleIsValid) {
-                        req.nextUrl.pathname = `/${userLocale}/${pathname}`
-                        return NextResponse.redirect(req.nextUrl)
-                    }
+                    const approvedLocale = determineLocale(refererLocale, approvedLocales);
+                    if (approvedLocale) {
+                        userLocale = standardizeLocale(approvedLocale);
+                        req.nextUrl.pathname = `/${userLocale}/${pathname}`;
+                        return NextResponse.redirect(req.nextUrl);
+                    };
                 }
             }
         }
@@ -128,14 +111,9 @@ export default function createNextMiddleware({
             }*/
             const acceptedLocales = headerList.get('accept-language')?.split(',').map(item => item.split(';')?.[0].trim())?.filter(code => isValidLocale(code));
             if (acceptedLocales && acceptedLocales.length > 0) {
-                if (locales) {
-                    const approvedLocale = determineLocale(acceptedLocales, locales);
-                    if (approvedLocale) {
-                        userLocale = standardizeLocale(approvedLocale);
-                    }
-                }
-                else {
-                    return standardizeLocale(acceptedLocales[0])
+                const approvedLocale = determineLocale(acceptedLocales, approvedLocales);
+                if (approvedLocale) {
+                    userLocale = standardizeLocale(approvedLocale);
                 }
             }
             return userLocale;

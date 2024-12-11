@@ -11,6 +11,17 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -27,7 +38,8 @@ var ClientResolver_1 = __importDefault(require("./ClientResolver"));
 var createErrors_1 = require("../errors/createErrors");
 // meant to be used inside the server-side <GTProvider>
 function ClientProvider(_a) {
-    var children = _a.children, dictionary = _a.dictionary, translations = _a.translations, locale = _a.locale, defaultLocale = _a.defaultLocale, translationRequired = _a.translationRequired, requiredPrefix = _a.requiredPrefix;
+    var children = _a.children, dictionary = _a.dictionary, initialTranslations = _a.initialTranslations, locale = _a.locale, defaultLocale = _a.defaultLocale, translationRequired = _a.translationRequired, requiredPrefix = _a.requiredPrefix, renderSettings = _a.renderSettings, projectId = _a.projectId, devApiKey = _a.devApiKey, baseUrl = _a.baseUrl, metadata = __rest(_a, ["children", "dictionary", "initialTranslations", "locale", "defaultLocale", "translationRequired", "requiredPrefix", "renderSettings", "projectId", "devApiKey", "baseUrl"]);
+    var _b = (0, react_1.useState)(initialTranslations), translations = _b[0], setTranslations = _b[1];
     // For dictionaries
     var translate = (0, react_1.useCallback)(function (id, options, f) {
         var _a;
@@ -100,8 +112,17 @@ function ClientProvider(_a) {
         }
         return renderTranslation(translation.t);
     }, [dictionary, translations]);
+    var _c = (0, client_1.useDynamicTranslation)({
+        projectId: projectId,
+        devApiKey: devApiKey,
+        baseUrl: baseUrl,
+        setTranslations: setTranslations,
+        defaultLocale: defaultLocale
+    }), translateChildren = _c.translateChildren, translateContent = _c.translateContent;
     return ((0, jsx_runtime_1.jsx)(client_1.GTContext.Provider, { value: {
             translate: translate,
+            translateChildren: translateChildren,
+            translateContent: translateContent,
             locale: locale,
             defaultLocale: defaultLocale,
             translations: translations,

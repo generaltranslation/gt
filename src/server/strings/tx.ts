@@ -88,8 +88,8 @@ export default async function tx(
   }
 
   const { locale, ...others } = options;
-  const translationPromise = I18NConfig.translate({
-    content,
+  const translationPromise = I18NConfig.translateContent({
+    source: contentAsArray,
     targetLocale: locale,
     options: { ...others, ...(await getMetadata()), hash: key },
   });

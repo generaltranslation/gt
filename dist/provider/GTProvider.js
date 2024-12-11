@@ -156,8 +156,8 @@ function GTProvider(_a) {
                                             return [2 /*return*/, (translations[entryID] = translation)];
                                         }
                                         if (!(typeof taggedEntry === 'string')) return [3 /*break*/, 3];
-                                        translationPromise_1 = I18NConfig.translate({
-                                            content: (0, generaltranslation_1.splitStringToContent)(taggedEntry),
+                                        translationPromise_1 = I18NConfig.translateContent({
+                                            source: (0, generaltranslation_1.splitStringToContent)(taggedEntry),
                                             targetLocale: locale,
                                             options: __assign({ id: entryID, hash: key }, additionalMetadata),
                                         });
@@ -173,7 +173,7 @@ function GTProvider(_a) {
                                     case 3:
                                         ;
                                         translationPromise = I18NConfig.translateChildren({
-                                            children: entryAsObjects,
+                                            source: entryAsObjects,
                                             targetLocale: locale,
                                             metadata: __assign(__assign({ id: entryID, hash: key }, additionalMetadata), (renderSettings.timeout && { timeout: renderSettings.timeout })),
                                         });
@@ -192,7 +192,7 @@ function GTProvider(_a) {
                 case 6:
                     // Check and standardize flattened dictionary entries before passing them to the client
                     _d.sent();
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProvider_1.default, { dictionary: dictionary, translations: __assign(__assign({}, existingTranslations), translations), locale: locale, defaultLocale: defaultLocale, translationRequired: translationRequired, requiredPrefix: id, children: children }))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProvider_1.default, __assign({ dictionary: dictionary, initialTranslations: __assign(__assign({}, existingTranslations), translations), locale: locale, defaultLocale: defaultLocale, translationRequired: translationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings() }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });
     });

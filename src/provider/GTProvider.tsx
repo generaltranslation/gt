@@ -42,7 +42,6 @@ export default async function GTProvider({
   let translationsPromise;
   if (translationRequired) translationsPromise = I18NConfig.getTranslations(locale)
   
-
   // Flatten dictionaries for processing while waiting for translations
   const dictionaryEntries = flattenDictionary(id ? getDictionaryEntry(id) : getDictionary());
 
@@ -95,8 +94,8 @@ export default async function GTProvider({
       // Create a translation if it does not exist! 
 
       if (typeof taggedEntry === 'string') {
-        const translationPromise = I18NConfig.translate({
-          content: splitStringToContent(taggedEntry),
+        const translationPromise = I18NConfig.translateContent({
+          source: splitStringToContent(taggedEntry),
           targetLocale: locale,
           options: { id: entryID, hash: key, ...additionalMetadata },
         });
@@ -111,7 +110,7 @@ export default async function GTProvider({
       // Translate React children
 
       const translationPromise = I18NConfig.translateChildren({
-        children: entryAsObjects,
+        source: entryAsObjects,
         targetLocale: locale,
         metadata: {
           id: entryID,
@@ -140,11 +139,13 @@ export default async function GTProvider({
   return (
     <ClientProvider
       dictionary={dictionary}
-      translations={{ ...existingTranslations, ...translations }}
+      initialTranslations={{ ...existingTranslations, ...translations }}
       locale={locale}
       defaultLocale={defaultLocale}
       translationRequired={translationRequired}
       requiredPrefix={id}
+      renderSettings={I18NConfig.getRenderSettings()}
+      {...I18NConfig.getClientSideConfig()}
     >
       {children}
     </ClientProvider>

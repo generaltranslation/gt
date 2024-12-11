@@ -21,8 +21,8 @@ import InitGTProps from './config/props/InitGTProps';
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
- * @param {string} [baseURL=defaultInitGTProps.baseURL] - The base URL for the GT API. Set to an empty string to disable automatic translations.
- * @param {string} [cacheURL=defaultInitGTProps.cacheURL] - The URL for cached translations.
+ * @param {string} [baseUrl=defaultInitGTProps.baseUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
+ * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
  * @param {string[]} [locales] - List of supported locales for the application. Defaults to the first locale or the default locale if not provided.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
@@ -35,5 +35,5 @@ import InitGTProps from './config/props/InitGTProps';
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  *
  */
-export declare function initGT({ i18n, dictionary, apiKey, projectId, baseURL, cacheURL, locales, defaultLocale, renderSettings, _maxConcurrentRequests, _batchInterval, ...metadata }?: InitGTProps): (config?: NextConfig) => NextConfig;
+export declare function initGT({ i18n, dictionary, apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, locales, defaultLocale, renderSettings, _maxConcurrentRequests, _batchInterval, ...metadata }?: InitGTProps): (config?: NextConfig) => NextConfig;
 //# sourceMappingURL=config.d.ts.map

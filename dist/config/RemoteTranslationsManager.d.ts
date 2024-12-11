@@ -1,9 +1,14 @@
 /**
  * Configuration type for RemoteTranslationsManager.
+ * @typedef {object} RemoteTranslationsConfig
+ * @property {string} cacheUrl - The URL of the remote cache.
+ * @property {string} projectId - The project identifier for translations.
+ * @property {number} [cacheExpiryTime=60000] - The cache expiration time in milliseconds.
  */
 type RemoteTranslationsConfig = {
-    cacheURL: string;
+    cacheUrl: string;
     projectId: string;
+    cacheExpiryTime?: number;
 };
 /**
  * Manages remote translations.
@@ -13,8 +18,10 @@ export declare class RemoteTranslationsManager {
     private translationsMap;
     private fetchPromises;
     private requestedTranslations;
+    private lastFetchTime;
     /**
      * Creates an instance of RemoteTranslationsManager.
+     * @constructor
      */
     constructor();
     /**
@@ -28,6 +35,12 @@ export declare class RemoteTranslationsManager {
      * @returns {Promise<Record<string, any> | null>} The fetched translations or null if not found.
      */
     private _fetchTranslations;
+    /**
+     * Checks if translations are expired based on the configured TTL.
+     * @param {string} reference - The translation reference.
+     * @returns {boolean} True if expired, false otherwise.
+     */
+    private _isExpired;
     /**
      * Retrieves translations for a given locale.
      * @param {string} locale - The locale code.
@@ -44,11 +57,14 @@ export declare class RemoteTranslationsManager {
      */
     setTranslations(locale: string, key: string, id: string | undefined, translation: any): boolean;
     /**
-     * Marks translations as requested for a given locale
+     * Marks translations as requested for a given locale.
+     * @param {string} locale - The locale code.
      */
     setTranslationRequested(locale: string): void;
     /**
-     * Checks if translations have been requested for a given locale
+     * Checks if translations have been requested for a given locale.
+     * @param {string} locale - The locale code.
+     * @returns {boolean} True if requested, false otherwise.
      */
     getTranslationRequested(locale: string): boolean;
 }

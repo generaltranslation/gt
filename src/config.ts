@@ -3,8 +3,7 @@ import { NextConfig } from 'next';
 import defaultInitGTProps from './config/props/defaultInitGTProps';
 import InitGTProps from './config/props/InitGTProps'
 import { APIKeyMissingError, createUnsupportedLocalesWarning, projectIdMissingError } from './errors/createErrors';
-import { getSupportedLocale, listSupportedLocales } from '@generaltranslation/supported-locales';
-import { defaultBaseURL } from 'generaltranslation/internal';
+import { getSupportedLocale } from '@generaltranslation/supported-locales';
 /**
  * Initializes General Translation settings for a Next.js application.
  *
@@ -26,8 +25,8 @@ import { defaultBaseURL } from 'generaltranslation/internal';
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
- * @param {string} [baseURL=defaultInitGTProps.baseURL] - The base URL for the GT API. Set to an empty string to disable automatic translations.
- * @param {string} [cacheURL=defaultInitGTProps.cacheURL] - The URL for cached translations.
+ * @param {string} [baseUrl=defaultInitGTProps.baseUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
+ * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
  * @param {string[]} [locales] - List of supported locales for the application. Defaults to the first locale or the default locale if not provided.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
@@ -44,10 +43,12 @@ export function initGT({
   i18n,
   dictionary,
   apiKey = defaultInitGTProps.apiKey,
+  devApiKey = defaultInitGTProps.devApiKey,
   projectId = defaultInitGTProps.projectId,
-  baseURL = defaultInitGTProps.baseURL,
-  cacheURL = defaultInitGTProps.cacheURL,
-  locales,
+  baseUrl = defaultInitGTProps.baseUrl,
+  cacheUrl = defaultInitGTProps.cacheUrl,
+  cacheExpiryTime = defaultInitGTProps.cacheExpiryTime,
+  locales = defaultInitGTProps.locales,
   defaultLocale = defaultInitGTProps.defaultLocale,
   renderSettings = defaultInitGTProps.renderSettings,
   _maxConcurrentRequests = defaultInitGTProps._maxConcurrectRequests,
@@ -57,32 +58,31 @@ export function initGT({
   // Error checks
   if (
     !projectId &&
-    (cacheURL === defaultInitGTProps.cacheURL ||
-      baseURL === defaultInitGTProps.baseURL)
+    (cacheUrl === defaultInitGTProps.cacheUrl ||
+      baseUrl === defaultInitGTProps.baseUrl)
   )
     console.error(
       projectIdMissingError
     );
 
-  if ((!apiKey || !projectId) && baseURL === defaultInitGTProps.baseURL) {
+  if ((!apiKey || !projectId) && baseUrl === defaultInitGTProps.baseUrl) {
     console.error(
       APIKeyMissingError
     );
   }
 
-  if (!locales) {
-    locales = listSupportedLocales();
-  } else if (baseURL === defaultBaseURL) {
+  if (baseUrl === defaultInitGTProps.baseUrl) {
     const warningLocales = locales.filter(locale => !getSupportedLocale(locale));
-    if (warningLocales) console.warn(createUnsupportedLocalesWarning(warningLocales))
+    if (warningLocales.length) console.warn(createUnsupportedLocalesWarning(warningLocales))
   }
 
   // Store config params in environment variable to allow for global access (in some cases)
   const I18NConfigParams = JSON.stringify({
     apiKey,
     projectId,
-    baseURL,
-    cacheURL,
+    baseUrl,
+    cacheUrl,
+    cacheExpiryTime,
     locales,
     defaultLocale,
     renderSettings,

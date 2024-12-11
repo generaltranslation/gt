@@ -14,7 +14,7 @@ import { localeCookieName, localeHeaderName } from 'generaltranslation/internal'
  */
 export async function getNextLocale(
   defaultLocale: string = '',
-  locales?: string[] | undefined
+  locales: string[]
 ): Promise<string> {
 
   const [headersList, cookieStore] = await Promise.all([
@@ -45,12 +45,7 @@ export async function getNextLocale(
     // add defaultLocale just in case there are no matches
     preferredLocales.push(defaultLocale);
 
-    // if there are specified allowed locales
-    if (locales) {
-      return determineLocale(preferredLocales, locales) || defaultLocale;
-    }
-    // if there are no specified allowed locales
-    return preferredLocales[0];
+    return determineLocale(preferredLocales, locales) || defaultLocale;
 
   })();
 

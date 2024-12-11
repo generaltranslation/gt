@@ -135,9 +135,9 @@ function tx(content_1) {
                     _h.label = 4;
                 case 4:
                     locale = options.locale, others = __rest(options, ["locale"]);
-                    _e = (_d = I18NConfig).translate;
+                    _e = (_d = I18NConfig).translateContent;
                     _g = {
-                        content: content,
+                        source: contentAsArray,
                         targetLocale: locale
                     };
                     _f = [__assign({}, others)];

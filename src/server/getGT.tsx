@@ -80,8 +80,8 @@ export async function getGT(id?: string): Promise<(
                 }
                 
                 if (typeof taggedEntry === 'string') {
-                    const translationPromise = I18NConfig.translate({
-                      content: splitStringToContent(taggedEntry),
+                    const translationPromise = I18NConfig.translateContent({
+                      source: splitStringToContent(taggedEntry),
                       targetLocale: locale,
                       options: { id: entryID, hash: key, ...additionalMetadata },
                     });
@@ -94,7 +94,7 @@ export async function getGT(id?: string): Promise<(
                 };
     
                 const translationPromise = I18NConfig.translateChildren({
-                    children: entryAsObjects,
+                    source: entryAsObjects,
                     targetLocale: locale,
                     metadata: {
                       id: entryID,

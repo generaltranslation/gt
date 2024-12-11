@@ -3,9 +3,10 @@
 import {
   Suspense,
   useCallback,
+  useState,
 } from 'react';
 import {
-  GTContext,
+  GTContext, useDynamicTranslation
 } from 'gt-react/client';
 import { renderDefaultChildren, renderTranslatedChildren } from 'gt-react/internal';
 import { addGTIdentifier, extractEntryMetadata } from 'gt-react/internal';
@@ -19,22 +20,34 @@ import { createAdvancedFunctionsError, createNoEntryWarning, createRequiredPrefi
 export default function ClientProvider({
   children,
   dictionary,
-  translations,
+  initialTranslations,
   locale,
   defaultLocale,
   translationRequired,
   requiredPrefix,
+  renderSettings,
+  projectId, devApiKey, 
+  baseUrl, 
+  ...metadata
 }: {
   children: any;
   dictionary: ClientDictionary;
-  translations: ClientTranslations;
+  initialTranslations: Record<string, any>;
   locale: string;
   defaultLocale: string;
   translationRequired: boolean;
   requiredPrefix: string | undefined;
+  renderSettings: {
+    method: 'skeleton' | 'replace' | 'hang' | 'subtle';
+    timeout: number | null;
+  };
+  projectId: string;
+  devApiKey: string;
+  baseUrl: string;
 }) {
-  
 
+  const [translations, setTranslations] = useState(initialTranslations);
+  
   // For dictionaries
   const translate = useCallback(
     (id: string, options: Record<string, any> = {}, f?: Function) => {
@@ -137,10 +150,14 @@ export default function ClientProvider({
     [dictionary, translations]
   );
 
+  const { translateChildren, translateContent } = useDynamicTranslation({
+    projectId, devApiKey, baseUrl, setTranslations, defaultLocale
+  })
+
   return (
     <GTContext.Provider
       value={{
-        translate,
+        translate, translateChildren, translateContent,
         locale,
         defaultLocale,
         translations,

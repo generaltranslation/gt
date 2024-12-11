@@ -1,26 +1,29 @@
 import GT from 'generaltranslation';
 type I18NConfigurationParams = {
     apiKey: string;
+    devApiKey: string;
     projectId: string;
-    cacheURL: string;
-    baseURL: string;
+    cacheUrl: string;
+    baseUrl: string;
+    cacheExpiryTime?: number;
     defaultLocale: string;
-    locales?: string[];
+    locales: string[];
     renderSettings: {
         method: 'skeleton' | 'replace' | 'hang' | 'subtle';
         timeout: number | null;
     };
-    translations?: Record<string, () => Promise<Record<string, any>>>;
     maxConcurrentRequests: number;
     batchInterval: number;
     env?: string;
     [key: string]: any;
 };
 export default class I18NConfiguration {
-    baseURL: string;
+    apiKey: string;
+    devApiKey: string;
+    baseUrl: string;
     projectId: string;
     defaultLocale: string;
-    locales: string[] | undefined;
+    locales: string[];
     renderSettings: {
         method: 'skeleton' | 'replace' | 'hang' | 'subtle';
         timeout: number | null;
@@ -36,7 +39,15 @@ export default class I18NConfiguration {
     private _translationCache;
     private _taggedDictionary;
     private _template;
-    constructor({ apiKey, projectId, baseURL, cacheURL, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, batchInterval, env, ...metadata }: I18NConfigurationParams);
+    constructor({ apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, batchInterval, env, ...metadata }: I18NConfigurationParams);
+    /**
+     * Gets config for dynamic translation on the client side.
+    */
+    getClientSideConfig(): {
+        projectId: string;
+        devApiKey: string;
+        baseUrl: string;
+    };
     /**
      * Gets the application's default locale
      * @returns {string} A BCP-47 locale tag
@@ -44,9 +55,9 @@ export default class I18NConfiguration {
     getDefaultLocale(): string;
     /**
      * Gets the list of approved locales for this app
-     * @returns {string[] | undefined} A list of BCP-47 locale tags, or undefined if none were provided
+     * @returns {string[]} A list of BCP-47 locale tags, or undefined if none were provided
      */
-    getLocales(): string[] | undefined;
+    getLocales(): string[];
     /**
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
      */
@@ -67,6 +78,11 @@ export default class I18NConfiguration {
      * @returns True if translation is required, otherwise false
      */
     requiresTranslation(locale: string): boolean;
+    /**
+     * Check if the current environment is set to "development" or "test"
+     * @returns True if the current environment is development
+    */
+    isDevelopmentEnvironment(): boolean;
     addGTIdentifier(children: any, id?: string): any;
     /**
      * @returns {[any, string]} A xxhash hash and the children that were created from it
@@ -84,8 +100,8 @@ export default class I18NConfiguration {
      * @param params - Parameters for translation
      * @returns Translated string
      */
-    translate(params: {
-        content: string | (string | {
+    translateContent(params: {
+        source: string | (string | {
             key: string;
             variable?: string;
         })[];
@@ -98,7 +114,7 @@ export default class I18NConfiguration {
      * @returns A promise that resolves when translation is complete
      */
     translateChildren(params: {
-        children: any;
+        source: any;
         targetLocale: string;
         metadata: Record<string, any>;
     }): Promise<any>;

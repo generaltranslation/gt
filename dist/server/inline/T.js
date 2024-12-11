@@ -155,7 +155,7 @@ function T(_a) {
                     renderSettings = I18NConfig.getRenderSettings();
                     _e = (_d = I18NConfig).translateChildren;
                     _g = {
-                        children: childrenAsObjects,
+                        source: childrenAsObjects,
                         targetLocale: locale
                     };
                     _f = [__assign(__assign({}, (id && { id: id })), { hash: key })];
