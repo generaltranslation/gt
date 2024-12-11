@@ -79,6 +79,7 @@ export function initGT({
   // Store config params in environment variable to allow for global access (in some cases)
   const I18NConfigParams = JSON.stringify({
     apiKey,
+    devApiKey,
     projectId,
     baseUrl,
     cacheUrl,
