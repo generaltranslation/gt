@@ -2,6 +2,7 @@ import I18NConfiguration from "./I18NConfiguration";
 import defaultInitGTProps from "./props/defaultInitGTProps";
 import { APIKeyMissingError, projectIdMissingError, usingDefaultsWarning } from "../errors/createErrors";
 
+
 export default function getI18NConfig(): I18NConfiguration {
     
     const globalObj = globalThis as any;
@@ -24,15 +25,22 @@ export default function getI18NConfig(): I18NConfiguration {
         if (!projectId)
             console.error(projectIdMissingError);
         
-        const apiKey = process.env.GT_API_KEY || '';
-        if (!apiKey)
+        let apiKey; let devApiKey;
+        const envApiKey = process.env.GT_API_KEY || '';
+        const apiKeyType = envApiKey?.split('-')?.[1];
+        if (apiKeyType === "api") {
+            apiKey = envApiKey; 
+        } else if (apiKeyType === "dev") {
+            devApiKey = envApiKey;
+        }
+        if (!apiKey && !devApiKey)
             console.error(APIKeyMissingError);
 
         globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration({
             ...defaultInitGTProps, 
             maxConcurrentRequests: defaultInitGTProps._maxConcurrectRequests,
             batchInterval: defaultInitGTProps._batchInterval,
-            apiKey, projectId
+            apiKey, projectId, devApiKey
         });
     }
     

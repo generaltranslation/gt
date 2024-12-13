@@ -6,6 +6,7 @@ import getI18NConfig from '../../config/getI18NConfig';
 import getLocale from '../../request/getLocale';
 import getMetadata from '../../request/getMetadata';
 import { createStringTranslationError } from '../../errors/createErrors';
+import { Content } from 'gt-react/dist/types/types';
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -55,70 +56,68 @@ export default async function tx(
     [key: string]: any;
   } = {},
 ): Promise<string> {
+
   if (!content) return '';
 
   const I18NConfig = getI18NConfig();
+  const defaultLocale = I18NConfig.getDefaultLocale();
+  const locale = options.locale || (await getLocale());
+  
+  const contentArray = splitStringToContent(content);
 
-  const contentAsArray = splitStringToContent(content);
-
-  options.locale = options.locale || (await getLocale());
-
-  if (!I18NConfig.requiresTranslation(options.locale))
+  const r = (content: any, locales: string[]) => {
     return renderContentToString(
-      contentAsArray,
-      [options.locale, I18NConfig.getDefaultLocale()],
+      content,
+      locales,
       options.variables,
       options.variablesOptions
-  );
+    );
+  }
 
-  const [_, key] = I18NConfig.serializeAndHash(
-    content, options.context,
+  if (!I18NConfig.requiresTranslation(locale))
+    return r(contentArray, [defaultLocale]);
+    
+  const [_, hash] = I18NConfig.serializeAndHash(
+    contentArray, options.context,
     undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
   );
 
   if (options.id) {
-    const translations = await I18NConfig.getTranslations(options.locale);
-    if (translations?.[options.id] && translations[options.id].k === key)
-      return renderContentToString(
-        translations[options.id].t,
-        [options.locale, I18NConfig.getDefaultLocale()],
-        options.variables,
-        options.variablesOptions
-      );
-  }
+    const translations = await I18NConfig.getTranslations(locale);
+    const target = translations[options.id]?.[hash];
+    if (target) return r(target, [locale, defaultLocale]);
+  };
 
-  const { locale, ...others } = options;
   const translationPromise = I18NConfig.translateContent({
-    source: contentAsArray,
+    source: contentArray,
     targetLocale: locale,
-    options: { ...others, ...(await getMetadata()), hash: key },
+    options: { ...options, ...(await getMetadata()), hash },
   });
+
   const renderSettings = I18NConfig.getRenderSettings();
+
   if (
-    renderSettings.method !== 'subtle' ||
+    renderSettings.method !== "subtle" ||
     !options.id // because it is only saved if an id is present
   ) {
-    const translation = await translationPromise;
     try {
-      return renderContentToString(
-        translation,
-        [options.targetLocale, I18NConfig.getDefaultLocale()],
-        options.variables,
-        options.variableOptions
-      );
+      const target = await translationPromise;
+      return r(target, [locale, defaultLocale]);
     } catch (error) {
       console.error(
         createStringTranslationError(content, options.id),
         error
       );
-      return '';
+      return r(
+        contentArray,
+        [defaultLocale],
+      );
     }
+
   }
 
-  return renderContentToString(
-    contentAsArray,
-    [options.targetLocale, I18NConfig.getDefaultLocale()],
-    options.variables,
-    options.variableOptions
+  return r(
+    contentArray,
+    [defaultLocale],
   );
 }

@@ -10,7 +10,8 @@ import getMetadata from '../request/getMetadata';
 import { splitStringToContent } from 'generaltranslation';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
 import ClientProvider from './ClientProvider';
-import { ClientDictionary, ClientTranslations } from './types';
+import { Dictionary, TranslatedChildren, TranslationsObject } from 'gt-react/dist/types/types';
+import { createDictionarySubsetError } from '../errors/createErrors';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -28,7 +29,7 @@ export default async function GTProvider({
   id?: string;
 }) {
   
-  const getID = (suffix: string) => {
+  const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
   };
 
@@ -43,10 +44,23 @@ export default async function GTProvider({
   if (translationRequired) translationsPromise = I18NConfig.getTranslations(locale)
   
   // Flatten dictionaries for processing while waiting for translations
-  const dictionaryEntries = flattenDictionary(id ? getDictionaryEntry(id) : getDictionary());
+  const dictionarySubset = (id ? getDictionaryEntry(id) : getDictionary()) || {};
+  if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
+    throw new Error(createDictionarySubsetError(id ?? '', "<GTProvider>"));
+  const dictionaryEntries = flattenDictionary(dictionarySubset);
 
-  let dictionary: ClientDictionary = {};
-  let translations: ClientTranslations = {};
+  let dictionary: Dictionary = {};
+  let translations: {
+    [id: string]: {
+      [hash: string]: TranslatedChildren
+    } | {
+      promise: Promise<TranslatedChildren>,
+      errorFallback: any,
+      loadingFallback: any
+      hash: string,
+      type: 'jsx' | 'content'
+    }
+  } = {};
   
   // i.e. if a translation is required
   let existingTranslations = (translationsPromise) ? await translationsPromise : {};
@@ -58,78 +72,112 @@ export default async function GTProvider({
       // ---- POPULATING THE DICTIONARY ---- //
 
       // Get the entry from the dictionary
-      const entryID = getID(suffix);
+      const entryId = getId(suffix);
       let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
       if (typeof entry === 'undefined') return; 
 
-      // If entry is a function, execute it
-      if (typeof entry === 'function') {
-        entry = entry({});
-        metadata = { ...metadata, isFunction: true };
-      }
-
       // Tag the result of entry
-      const taggedEntry = I18NConfig.addGTIdentifier(entry, entryID);
-
-      // Set dictionary entry to be passed to the client
-      dictionary[entryID] = [taggedEntry, metadata];
+      const taggedEntry = I18NConfig.addGTIdentifier(entry, entryId);
 
       // If no translation is required, return
-      if (!translationRequired) return;
+      if (!translationRequired) return dictionary[entryId] = [taggedEntry, { ...metadata }];
 
       // ---- POPULATING TRANSLATIONS ---- //
 
-      const [entryAsObjects, key] = I18NConfig.serializeAndHash(
-        taggedEntry,
-        metadata?.context,
-        entryID
-      );
-
-      // If a translation already exists, add it to the translations
-      const translation = existingTranslations?.[entryID];
-      if (translation && translation.k === key) {
-        return (translations[entryID] = translation);
-      }
-
-      // Create a translation if it does not exist! 
+      // STRINGS
 
       if (typeof taggedEntry === 'string') {
-        const translationPromise = I18NConfig.translateContent({
-          source: splitStringToContent(taggedEntry),
-          targetLocale: locale,
-          options: { id: entryID, hash: key, ...additionalMetadata },
-        });
-        if (renderSettings.method !== "subtle") 
-          return translations[entryID] = {
-              t: await translationPromise,
-              k: key
-          };
-        return undefined;
-      };
 
-      // Translate React children
+        // Hash and add to dictionary
+        const contentArray = splitStringToContent(taggedEntry);
+        const [_, hash] = I18NConfig.serializeAndHash(
+          contentArray,
+          metadata?.context,
+          entryId
+        );
+        dictionary[entryId] = [taggedEntry, { ...metadata, hash }]
+
+        // If a translation already exists, add it to the translations
+        const translation = existingTranslations?.[entryId];
+        if (translation?.[hash])
+          return (translations[entryId] = { [hash]: translation[hash] });
+
+        // NEW TRANSLATION REQUIRED
+
+        const translationPromise = I18NConfig.translateContent({
+          source: contentArray,
+          targetLocale: locale,
+          options: { id: entryId, hash, ...additionalMetadata },
+        });
+
+        if (renderSettings.method === "skeleton") {
+          return translations[entryId] = {
+            promise: translationPromise,
+            hash,
+            errorFallback: contentArray,
+            loadingFallback: '',
+            type: 'content'
+          };
+        }
+        if (renderSettings.method === "replace") {
+          return translations[entryId] = {
+            promise: translationPromise,
+            hash,
+            errorFallback: contentArray,
+            loadingFallback: contentArray,
+            type: 'content'
+          };
+        }
+        if (renderSettings.method === "hang") {
+          return translations[entryId] = {
+            [hash]: await translationPromise
+          };
+        }
+        return undefined;
+      }
+
+      // JSX
+
+      // Hash and add to dictionary
+      const [entryAsObjects, hash] = I18NConfig.serializeAndHash(
+        taggedEntry,
+        metadata?.context,
+        entryId
+      );
+      dictionary[entryId] = [taggedEntry, { ...metadata, hash }]
+
+      // If a translation already exists, add it to the translations
+      const translation = existingTranslations?.[entryId];
+      if (translation?.[hash])
+        return (translations[entryId] = { [hash]: translation[hash] });
+
+      // NEW TRANSLATION REQUIRED
 
       const translationPromise = I18NConfig.translateChildren({
         source: entryAsObjects,
         targetLocale: locale,
         metadata: {
-          id: entryID,
-          hash: key,
+          id: entryId, hash,
           ...additionalMetadata,
           ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
         },
       });
 
-      let loadingFallback;
-      let errorFallback;
+      if (renderSettings.method === "subtle") return undefined;
+      if (renderSettings.method === "hang") return (
+        translations[entryId] = { [hash]: await translationPromise }
+      );
 
+      let loadingFallback; 
+      let errorFallback; // by leaving blank, will assume "skeleton"
       if (renderSettings.method === 'skeleton') {
-        loadingFallback = <React.Fragment key={`skeleton_${entryID}`} />;
+        loadingFallback = <React.Fragment key={`skeleton_${entryId}`} />;
       }
 
-      return (translations[entryID] = {
+      return (translations[entryId] = {
         promise: translationPromise,
-        k: key,
+        hash,
+        type: 'jsx',
         loadingFallback,
         errorFallback,
       });

@@ -88,6 +88,7 @@ var generaltranslation_1 = __importStar(require("generaltranslation"));
 var RemoteTranslationsManager_1 = __importDefault(require("./RemoteTranslationsManager"));
 var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
 var internal_1 = require("gt-react/internal");
+var createErrors_1 = require("../errors/createErrors");
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         var 
@@ -124,6 +125,9 @@ var I18NConfiguration = /** @class */ (function () {
         });
         // Default env is production
         this.env = env || "production";
+        if (this.env !== "development" && this.env !== "test" && this.devApiKey) {
+            throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
+        }
         // Other metadata
         this.metadata = __assign(__assign(__assign({ env: this.env, defaultLocale: this.defaultLocale }, (this.renderSettings.timeout && {
             timeout: this.renderSettings.timeout - batchInterval,
@@ -236,7 +240,8 @@ var I18NConfiguration = /** @class */ (function () {
         // In production, since dictionary content isn't changing, cache results
         var templateEntry = this._template.get(id);
         if (templateEntry) {
-            return [templateEntry.t, templateEntry.k];
+            var _a = Object.entries(templateEntry)[0], hash_1 = _a[0], target = _a[1];
+            return [target, hash_1];
         }
         var childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(children);
         var hash = (0, internal_1.hashReactChildrenObjects)(context ? [childrenAsObjects, context] : childrenAsObjects);

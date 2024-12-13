@@ -42,9 +42,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var internal_1 = require("generaltranslation/internal");
 var getDefaultFromEnv_1 = __importDefault(require("../../utils/getDefaultFromEnv"));
 var supported_locales_1 = require("@generaltranslation/supported-locales");
-exports.default = {
+var createErrors_1 = require("../../errors/createErrors");
+var defaultInitGTProps = {
     apiKey: (0, getDefaultFromEnv_1.default)('GT_API_KEY'),
-    devApiKey: (0, getDefaultFromEnv_1.default)('DEV_GT_API_KEY'),
+    devApiKey: '',
     projectId: (0, getDefaultFromEnv_1.default)('GT_PROJECT_ID'),
     baseUrl: internal_1.defaultBaseUrl,
     cacheUrl: internal_1.defaultCacheUrl,
@@ -68,4 +69,7 @@ exports.default = {
     _maxConcurrectRequests: 100,
     _batchInterval: 10
 };
+if (defaultInitGTProps.devApiKey && (defaultInitGTProps.env !== "development" && defaultInitGTProps.env !== "test"))
+    throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
+exports.default = defaultInitGTProps;
 //# sourceMappingURL=defaultInitGTProps.js.map

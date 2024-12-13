@@ -71,6 +71,16 @@ export function initGT({
     );
   }
 
+  const envApiKey = process.env.GT_API_KEY || '';
+  const apiKeyType = envApiKey?.split('-')?.[1];
+  if (apiKeyType === "api") {
+    apiKey = envApiKey; 
+  } else if (apiKeyType === "dev") {
+    devApiKey = envApiKey;
+  }
+  if (!apiKey && !devApiKey)
+    console.error(APIKeyMissingError);
+  
   if (baseUrl === defaultInitGTProps.baseUrl) {
     const warningLocales = locales.filter(locale => !getSupportedLocale(locale));
     if (warningLocales.length) console.warn(createUnsupportedLocalesWarning(warningLocales))

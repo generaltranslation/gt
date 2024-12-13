@@ -83,8 +83,8 @@ var server_1 = require("../server");
 var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
 var generaltranslation_1 = require("generaltranslation");
 var getMetadata_1 = __importDefault(require("../request/getMetadata"));
-var renderVariable_1 = __importDefault(require("./rendering/renderVariable"));
 var createErrors_1 = require("../errors/createErrors");
+var react_1 = __importDefault(require("react"));
 /**
  * Returns the translation function `t()`, which is used to translate an item from the dictionary.
  *
@@ -100,137 +100,88 @@ var createErrors_1 = require("../errors/createErrors");
  */
 function getGT(id) {
     return __awaiter(this, void 0, void 0, function () {
-        var getID, I18NConfig, defaultLocale, locale, translationRequired, translations, translationsPromise, additionalMetadata_1, renderSettings_1, dictionaryEntries, _a;
+        var getId, I18NConfig, defaultLocale, locale, translationRequired, filteredTranslations, translationsPromise, additionalMetadata_1, renderSettings_1, dictionarySubset, dictionaryEntries, translations_1;
         var _this = this;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0:
-                    getID = function (suffix) {
+                    getId = function (suffix) {
                         return id ? "".concat(id, ".").concat(suffix) : suffix;
                     };
                     I18NConfig = (0, getI18NConfig_1.default)();
                     defaultLocale = I18NConfig.getDefaultLocale();
                     return [4 /*yield*/, (0, server_1.getLocale)()];
                 case 1:
-                    locale = _b.sent();
+                    locale = _a.sent();
                     translationRequired = I18NConfig.requiresTranslation(locale);
-                    translations = {};
+                    filteredTranslations = {};
                     if (!translationRequired) return [3 /*break*/, 5];
                     translationsPromise = I18NConfig.getTranslations(locale);
                     return [4 /*yield*/, (0, getMetadata_1.default)()];
                 case 2:
-                    additionalMetadata_1 = _b.sent();
+                    additionalMetadata_1 = _a.sent();
                     renderSettings_1 = I18NConfig.getRenderSettings();
-                    dictionaryEntries = (0, internal_1.flattenDictionary)(id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)());
-                    _a = [{}];
+                    dictionarySubset = (id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)()) || {};
+                    if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
+                        throw new Error((0, createErrors_1.createDictionarySubsetError)(id !== null && id !== void 0 ? id : '', "getGT"));
+                    dictionaryEntries = (0, internal_1.flattenDictionary)(dictionarySubset);
                     return [4 /*yield*/, translationsPromise];
                 case 3:
-                    translations = __assign.apply(void 0, _a.concat([(_b.sent())]));
+                    translations_1 = _a.sent();
+                    // Translate all strings in advance
                     return [4 /*yield*/, Promise.all(Object.entries(dictionaryEntries).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var entryID, _c, entry, metadata, taggedEntry, _d, entryAsObjects, key, translation, translationPromise_1, _e, _f, translationPromise, _g, _h;
-                            var _j, _k;
+                            var _c, entry, metadata, contentArray, entryId, _d, _, hash, translation, translationPromise, _e, _f;
+                            var _g;
                             var suffix = _b[0], dictionaryEntry = _b[1];
-                            return __generator(this, function (_l) {
-                                switch (_l.label) {
+                            return __generator(this, function (_h) {
+                                switch (_h.label) {
                                     case 0:
-                                        entryID = getID(suffix);
                                         _c = (0, internal_1.extractEntryMetadata)(dictionaryEntry), entry = _c.entry, metadata = _c.metadata;
-                                        if (typeof entry === 'undefined')
+                                        if (typeof entry !== 'string')
                                             return [2 /*return*/];
-                                        // If entry is a function, execute it
-                                        if (typeof entry === 'function') {
-                                            entry = entry({});
-                                            metadata = __assign(__assign({}, metadata), { isFunction: true });
-                                        }
-                                        taggedEntry = I18NConfig.addGTIdentifier(entry, id);
-                                        _d = I18NConfig.serializeAndHash(taggedEntry, metadata === null || metadata === void 0 ? void 0 : metadata.context, entryID), entryAsObjects = _d[0], key = _d[1];
-                                        translation = translations[entryID];
-                                        if (translation && translation.k === key) {
-                                            return [2 /*return*/]; // NOTHING MORE TO DO
-                                        }
-                                        if (!(typeof taggedEntry === 'string')) return [3 /*break*/, 3];
-                                        translationPromise_1 = I18NConfig.translateContent({
-                                            source: (0, generaltranslation_1.splitStringToContent)(taggedEntry),
+                                        contentArray = (0, generaltranslation_1.splitStringToContent)(entry);
+                                        entryId = getId(suffix);
+                                        _d = I18NConfig.serializeAndHash(contentArray, metadata === null || metadata === void 0 ? void 0 : metadata.context, entryId), _ = _d[0], hash = _d[1];
+                                        translation = (_g = translations_1[entryId]) === null || _g === void 0 ? void 0 : _g[hash];
+                                        if (translation)
+                                            return [2 /*return*/, filteredTranslations[entryId] = translation]; // NOTHING MORE TO DO
+                                        translationPromise = I18NConfig.translateContent({
+                                            source: contentArray,
                                             targetLocale: locale,
-                                            options: __assign({ id: entryID, hash: key }, additionalMetadata_1),
+                                            options: __assign({ id: entryId, hash: hash }, additionalMetadata_1),
                                         });
                                         if (!(renderSettings_1.method !== "subtle")) return [3 /*break*/, 2];
-                                        _e = translations;
-                                        _f = entryID;
-                                        _j = {};
-                                        return [4 /*yield*/, translationPromise_1];
-                                    case 1: return [2 /*return*/, _e[_f] = (_j.t = _l.sent(),
-                                            _j.k = key,
-                                            _j)];
-                                    case 2: return [2 /*return*/]; // NOTHING MORE TO DO 
-                                    case 3:
-                                        ;
-                                        translationPromise = I18NConfig.translateChildren({
-                                            source: entryAsObjects,
-                                            targetLocale: locale,
-                                            metadata: __assign(__assign({ id: entryID, hash: key }, additionalMetadata_1), (renderSettings_1.timeout && { timeout: renderSettings_1.timeout })),
-                                        });
-                                        if (!(renderSettings_1.method !== "subtle")) return [3 /*break*/, 5];
-                                        _g = translations;
-                                        _h = entryID;
-                                        _k = {};
+                                        _e = filteredTranslations;
+                                        _f = entryId;
                                         return [4 /*yield*/, translationPromise];
-                                    case 4: return [2 /*return*/, _g[_h] = (_k.t = _l.sent(),
-                                            _k.k = key,
-                                            _k)];
-                                    case 5: return [2 /*return*/]; // NOTHING MORE TO DO 
+                                    case 1: return [2 /*return*/, _e[_f] = _h.sent()];
+                                    case 2: return [2 /*return*/];
                                 }
                             });
                         }); }))];
                 case 4:
-                    _b.sent();
-                    _b.label = 5;
-                case 5: return [2 /*return*/, function (id, options, f) {
-                        var _a, _b;
-                        id = getID(id);
+                    // Translate all strings in advance
+                    _a.sent();
+                    _a.label = 5;
+                case 5: return [2 /*return*/, function (id, options) {
+                        id = getId(id);
                         // Get entry
-                        var _c = (0, internal_1.extractEntryMetadata)((0, getDictionary_1.getDictionaryEntry)(id)), entry = _c.entry, metadata = _c.metadata;
-                        if (!entry) {
+                        var dictionaryEntry = (0, getDictionary_1.getDictionaryEntry)(id);
+                        if (dictionaryEntry === undefined || dictionaryEntry === null ||
+                            (typeof dictionaryEntry === 'object' && !Array.isArray(dictionaryEntry))) {
                             console.warn((0, createErrors_1.createNoEntryWarning)(id));
                             return undefined;
                         }
+                        ;
+                        var _a = (0, internal_1.extractEntryMetadata)(dictionaryEntry), entry = _a.entry, metadata = _a.metadata;
                         // Get variables and variable options
-                        var variables;
-                        var variablesOptions;
-                        if (options) {
-                            variables = options;
-                            if (metadata === null || metadata === void 0 ? void 0 : metadata.variablesOptions) {
-                                variablesOptions = metadata.variablesOptions;
-                            }
+                        var variables = options;
+                        var variablesOptions = metadata === null || metadata === void 0 ? void 0 : metadata.variablesOptions;
+                        if (typeof entry === 'string') {
+                            var contentArray = filteredTranslations[id] || (0, generaltranslation_1.splitStringToContent)(entry);
+                            return (0, generaltranslation_1.renderContentToString)(contentArray, [locale, defaultLocale], variables, variablesOptions);
                         }
-                        // Handle if the entry is a function
-                        if (typeof f === 'function') {
-                            entry = f(options);
-                        }
-                        else if (typeof entry === 'function') {
-                            entry = entry(options);
-                        }
-                        // Tag the result of entry
-                        var taggedEntry = I18NConfig.addGTIdentifier(entry, id);
-                        if (typeof taggedEntry === 'string')
-                            return (0, generaltranslation_1.renderContentToString)(((_a = translations[id]) === null || _a === void 0 ? void 0 : _a.t) || taggedEntry, [locale, defaultLocale], variables, variablesOptions);
-                        if (!translationRequired)
-                            return (0, internal_1.renderDefaultChildren)({
-                                children: taggedEntry,
-                                defaultLocale: defaultLocale,
-                                variables: variables,
-                                variablesOptions: variablesOptions,
-                                renderVariable: renderVariable_1.default
-                            });
-                        if ((_b = translations[id]) === null || _b === void 0 ? void 0 : _b.t) {
-                            return (0, internal_1.renderTranslatedChildren)({
-                                source: taggedEntry, target: translations[id].t,
-                                variables: variables,
-                                variablesOptions: variablesOptions,
-                                locales: [locale, defaultLocale],
-                                renderVariable: renderVariable_1.default
-                            });
-                        }
+                        return ((0, jsx_runtime_1.jsx)(T_1.default, __assign({ id: id, variables: variables, variablesOptions: variablesOptions }, metadata, { children: entry })));
                     }];
             }
         });
@@ -252,7 +203,7 @@ function getGT(id) {
  * console.log(t('hello')); // Translates item 'hello', returns as JSX
  */
 function useElement(id) {
-    var getID = function (suffix) {
+    var getId = function (suffix) {
         return id ? "".concat(id, ".").concat(suffix) : suffix;
     };
     /**
@@ -264,31 +215,21 @@ function useElement(id) {
     *
     * @returns {JSX.Element}
     */
-    function t(id, options, f) {
+    function t(id, options) {
         if (options === void 0) { options = {}; }
-        id = getID(id);
+        id = getId(id);
         // Get entry
-        var _a = (0, internal_1.extractEntryMetadata)((0, getDictionary_1.getDictionaryEntry)(id)), entry = _a.entry, metadata = _a.metadata;
-        // Get variables and variable options
-        var variables;
-        var variablesOptions;
-        if (options) {
-            variables = options;
-            if (metadata === null || metadata === void 0 ? void 0 : metadata.variablesOptions) {
-                variablesOptions = metadata.variablesOptions;
-            }
-        }
-        // Handle if the entry is a function
-        if (typeof f === 'function') {
-            entry = f(options);
-        }
-        else if (typeof entry === 'function') {
-            entry = entry(options);
-        }
-        if (!entry) {
+        var dictionaryEntry = (0, getDictionary_1.getDictionaryEntry)(id);
+        if (dictionaryEntry === undefined || dictionaryEntry === null ||
+            (typeof dictionaryEntry === 'object' && !Array.isArray(dictionaryEntry))) {
             console.warn((0, createErrors_1.createNoEntryWarning)(id));
-            return (0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, {});
+            return (0, jsx_runtime_1.jsx)(react_1.default.Fragment, {});
         }
+        ;
+        var _a = (0, internal_1.extractEntryMetadata)(dictionaryEntry), entry = _a.entry, metadata = _a.metadata;
+        // Get variables and variable options
+        var variables = options;
+        var variablesOptions = metadata === null || metadata === void 0 ? void 0 : metadata.variablesOptions;
         return ((0, jsx_runtime_1.jsx)(T_1.default, __assign({ id: id, variables: variables, variablesOptions: variablesOptions }, metadata, { children: entry })));
     }
     return t;

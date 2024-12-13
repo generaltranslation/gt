@@ -4,10 +4,12 @@ import remoteTranslationsManager, {
 } from './RemoteTranslationsManager';
 import defaultInitGTProps from './props/defaultInitGTProps';
 import { addGTIdentifier, hashReactChildrenObjects, writeChildrenAsObjects } from 'gt-react/internal';
+import { devApiKeyIncludedInProductionError } from '../errors/createErrors';
+import { TranslatedChildren } from 'gt-react/dist/types/types';
 
 type I18NConfigurationParams = {
-  apiKey: string;
-  devApiKey: string;
+  apiKey?: string;
+  devApiKey?: string;
   projectId: string;
   cacheUrl: string;
   baseUrl: string;
@@ -26,8 +28,8 @@ type I18NConfigurationParams = {
 
 export default class I18NConfiguration {
   // Cloud integration
-  apiKey: string;
-  devApiKey: string;
+  apiKey?: string;
+  devApiKey?: string;
   baseUrl: string;
   projectId: string;
   // Locale info
@@ -54,7 +56,7 @@ export default class I18NConfiguration {
   private _translationCache: Map<string, Promise<any>>;
   // Processed dictionary
   private _taggedDictionary: Map<string, any>;
-  private _template: Map<string, { k: string, t: any }>;
+  private _template: Map<string, { [hash: string]: TranslatedChildren }>;
 
   constructor({
     // Cloud integration
@@ -98,6 +100,9 @@ export default class I18NConfiguration {
     });
     // Default env is production
     this.env = env || "production";
+    if (this.env !== "development" && this.env !== "test" && this.devApiKey) {
+      throw new Error(devApiKeyIncludedInProductionError)
+    }
     // Other metadata
     this.metadata = {
       env: this.env,
@@ -232,7 +237,8 @@ export default class I18NConfiguration {
     // In production, since dictionary content isn't changing, cache results
     const templateEntry = this._template.get(id);
     if (templateEntry) {
-      return [templateEntry.t, templateEntry.k];
+      const [[ hash, target ]] = Object.entries(templateEntry);
+      return [target, hash];
     } 
     const childrenAsObjects = writeChildrenAsObjects(children);
     const hash = hashReactChildrenObjects(context ? [childrenAsObjects, context] : childrenAsObjects);

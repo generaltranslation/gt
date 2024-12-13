@@ -1,7 +1,7 @@
 import GT from 'generaltranslation';
 type I18NConfigurationParams = {
-    apiKey: string;
-    devApiKey: string;
+    apiKey?: string;
+    devApiKey?: string;
     projectId: string;
     cacheUrl: string;
     baseUrl: string;
@@ -18,8 +18,8 @@ type I18NConfigurationParams = {
     [key: string]: any;
 };
 export default class I18NConfiguration {
-    apiKey: string;
-    devApiKey: string;
+    apiKey?: string;
+    devApiKey?: string;
     baseUrl: string;
     projectId: string;
     defaultLocale: string;
@@ -45,7 +45,7 @@ export default class I18NConfiguration {
     */
     getClientSideConfig(): {
         projectId: string;
-        devApiKey: string;
+        devApiKey: string | undefined;
         baseUrl: string;
     };
     /**

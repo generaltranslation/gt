@@ -1,6 +1,6 @@
-declare const _default: {
+declare const defaultInitGTProps: {
     readonly apiKey: string;
-    readonly devApiKey: string;
+    readonly devApiKey: "";
     readonly projectId: string;
     readonly baseUrl: "https://prod.gtx.dev";
     readonly cacheUrl: "https://cache.gtx.dev";
@@ -17,5 +17,5 @@ declare const _default: {
     readonly _maxConcurrectRequests: 100;
     readonly _batchInterval: 10;
 };
-export default _default;
+export default defaultInitGTProps;
 //# sourceMappingURL=defaultInitGTProps.d.ts.map
