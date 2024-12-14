@@ -39,6 +39,7 @@ var path_1 = __importDefault(require("path"));
 var defaultInitGTProps_1 = __importDefault(require("./config/props/defaultInitGTProps"));
 var createErrors_1 = require("./errors/createErrors");
 var supported_locales_1 = require("@generaltranslation/supported-locales");
+var internal_1 = require("generaltranslation/internal");
 /**
  * Initializes General Translation settings for a Next.js application.
  *
@@ -77,7 +78,7 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
 function initGT(_a) {
     var _b;
     if (_a === void 0) { _a = defaultInitGTProps_1.default; }
-    var i18n = _a.i18n, dictionary = _a.dictionary, _c = _a.apiKey, apiKey = _c === void 0 ? defaultInitGTProps_1.default.apiKey : _c, _d = _a.devApiKey, devApiKey = _d === void 0 ? defaultInitGTProps_1.default.devApiKey : _d, _e = _a.projectId, projectId = _e === void 0 ? defaultInitGTProps_1.default.projectId : _e, _f = _a.baseUrl, baseUrl = _f === void 0 ? defaultInitGTProps_1.default.baseUrl : _f, _g = _a.cacheUrl, cacheUrl = _g === void 0 ? defaultInitGTProps_1.default.cacheUrl : _g, _h = _a.cacheExpiryTime, cacheExpiryTime = _h === void 0 ? defaultInitGTProps_1.default.cacheExpiryTime : _h, _j = _a.locales, locales = _j === void 0 ? defaultInitGTProps_1.default.locales : _j, _k = _a.defaultLocale, defaultLocale = _k === void 0 ? defaultInitGTProps_1.default.defaultLocale : _k, _l = _a.renderSettings, renderSettings = _l === void 0 ? defaultInitGTProps_1.default.renderSettings : _l, _m = _a._maxConcurrentRequests, _maxConcurrentRequests = _m === void 0 ? defaultInitGTProps_1.default._maxConcurrectRequests : _m, _o = _a._batchInterval, _batchInterval = _o === void 0 ? defaultInitGTProps_1.default._batchInterval : _o, metadata = __rest(_a, ["i18n", "dictionary", "apiKey", "devApiKey", "projectId", "baseUrl", "cacheUrl", "cacheExpiryTime", "locales", "defaultLocale", "renderSettings", "_maxConcurrentRequests", "_batchInterval"]);
+    var i18n = _a.i18n, dictionary = _a.dictionary, _c = _a.apiKey, apiKey = _c === void 0 ? defaultInitGTProps_1.default.apiKey : _c, _d = _a.devApiKey, devApiKey = _d === void 0 ? defaultInitGTProps_1.default.devApiKey : _d, _e = _a.projectId, projectId = _e === void 0 ? defaultInitGTProps_1.default.projectId : _e, _f = _a.baseUrl, baseUrl = _f === void 0 ? defaultInitGTProps_1.default.baseUrl : _f, _g = _a.cacheUrl, cacheUrl = _g === void 0 ? defaultInitGTProps_1.default.cacheUrl : _g, _h = _a.cacheExpiryTime, cacheExpiryTime = _h === void 0 ? defaultInitGTProps_1.default.cacheExpiryTime : _h, _j = _a.locales, locales = _j === void 0 ? defaultInitGTProps_1.default.locales : _j, _k = _a.defaultLocale, defaultLocale = _k === void 0 ? defaultInitGTProps_1.default.defaultLocale : _k, _l = _a.renderSettings, renderSettings = _l === void 0 ? internal_1.defaultRenderSettings : _l, _m = _a.env, env = _m === void 0 ? defaultInitGTProps_1.default.env : _m, _o = _a._maxConcurrentRequests, _maxConcurrentRequests = _o === void 0 ? defaultInitGTProps_1.default._maxConcurrectRequests : _o, _p = _a._batchInterval, _batchInterval = _p === void 0 ? defaultInitGTProps_1.default._batchInterval : _p, metadata = __rest(_a, ["i18n", "dictionary", "apiKey", "devApiKey", "projectId", "baseUrl", "cacheUrl", "cacheExpiryTime", "locales", "defaultLocale", "renderSettings", "env", "_maxConcurrentRequests", "_batchInterval"]);
     // Error checks
     if (!projectId &&
         (cacheUrl === defaultInitGTProps_1.default.cacheUrl ||
@@ -102,7 +103,7 @@ function initGT(_a) {
             console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));
     }
     // Store config params in environment variable to allow for global access (in some cases)
-    var I18NConfigParams = JSON.stringify(__assign({ apiKey: apiKey, devApiKey: devApiKey, projectId: projectId, baseUrl: baseUrl, cacheUrl: cacheUrl, cacheExpiryTime: cacheExpiryTime, locales: locales, defaultLocale: defaultLocale, renderSettings: renderSettings, maxConcurrentRequests: _maxConcurrentRequests, batchInterval: _batchInterval }, metadata));
+    var I18NConfigParams = JSON.stringify(__assign({ apiKey: apiKey, devApiKey: devApiKey, projectId: projectId, baseUrl: baseUrl, cacheUrl: cacheUrl, cacheExpiryTime: cacheExpiryTime, locales: locales, defaultLocale: defaultLocale, renderSettings: renderSettings, env: env, maxConcurrentRequests: _maxConcurrentRequests, batchInterval: _batchInterval }, metadata));
     // Use i18n and dictionary values as file paths if they are provided as such
     var resolvedI18NFilePath = typeof i18n === 'string' ? i18n : resolveConfigFilepath('i18n');
     var resolvedDictionaryFilePath = typeof dictionary === 'string'

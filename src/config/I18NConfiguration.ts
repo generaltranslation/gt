@@ -141,7 +141,8 @@ export default class I18NConfiguration {
     return {
       projectId: this.projectId,
       devApiKey: this.devApiKey,
-      baseUrl: this.baseUrl
+      baseUrl: this.baseUrl,
+      env: this.env
     }
   }
 

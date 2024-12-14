@@ -4,6 +4,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useState,
 } from 'react';
 import {
@@ -26,9 +27,10 @@ export default function ClientProvider({
   translationRequired,
   requiredPrefix,
   renderSettings,
-  projectId, devApiKey, 
-  baseUrl, 
-  ...metadata
+  projectId,
+  devApiKey, 
+  baseUrl,
+  env
 }: {
   children: any;
   dictionary: Dictionary,
@@ -44,11 +46,12 @@ export default function ClientProvider({
   projectId?: string;
   devApiKey?: string;
   baseUrl?: string;
+  env?: string;
 }) {
 
-  const [translations, setTranslations] = useState(initialTranslations);
+  const [translations, setTranslations] = useState<Record<string, any> | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     (async () => {
       const awaitedTranslations: Record<string, any> = {};
       Promise.all(
@@ -63,10 +66,11 @@ export default function ClientProvider({
           }
         })
       )
-      if (Object.keys(awaitedTranslations).length) 
-        setTranslations((prev) => ({ ...prev, ...awaitedTranslations }))
-    })()
-  }, [])
+      setTranslations((prev) => ({...initialTranslations, ...prev, ...awaitedTranslations }))
+    })();
+    setTranslations((prev) => ({ ...prev }));
+  }, []);
+  
   
   // For dictionaries
   const translate = useCallback(
@@ -106,7 +110,7 @@ export default function ClientProvider({
 
         if (!translationRequired) return r(entry);
           
-        const translation = translations[id];
+        const translation = translations?.[id];
 
         return r(
           translation?.[metadata?.hash] || 
@@ -129,7 +133,7 @@ export default function ClientProvider({
 
       // Fallback if there is no translation present
       if (!translationRequired) return rd();
-      const translation = translations[id];
+      const translation = translations?.[id];
       if (!translation) return rd();
 
       const rt = (target: any) => {
@@ -161,7 +165,7 @@ export default function ClientProvider({
 
   // For <T> components
   const { translateChildren, translateContent } = useDynamicTranslation({
-    projectId, devApiKey, baseUrl, setTranslations, defaultLocale
+    projectId, devApiKey, baseUrl, setTranslations, defaultLocale, env
   }); 
 
   return (
@@ -171,10 +175,11 @@ export default function ClientProvider({
         locale,
         defaultLocale,
         translations,
-        translationRequired
+        translationRequired,
+        renderSettings
       }}
     >
-      {children}
+      {translations && children}
     </GTContext.Provider>
   );
 }

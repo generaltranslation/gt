@@ -40,7 +40,6 @@ export default function createNextMiddleware({
 = { 
     defaultLocale: libraryDefaultLocale, localeRouting: true, prefixDefaultLocale: false
 }) {
-
     if (!isValidLocale(defaultLocale)) throw new Error(`gt-next middleware: defaultLocale "${defaultLocale}" is not a valid locale.`)
 
     const warningLocales = locales.filter(locale => !isValidLocale(locale));

@@ -13,13 +13,6 @@ const defaultInitGTProps = {
     defaultLocale: libraryDefaultLocale,
     getLocale: async () => libraryDefaultLocale,
     locales: listSupportedLocales(),
-    renderSettings: {
-        method: "skeleton",
-        timeout: (() => { 
-            const NODE_ENV = getDefaultFromEnv('NODE_ENV'); 
-            return NODE_ENV === "development" || NODE_ENV === "test"; 
-        })() ? null : 8000
-    },
     env: getDefaultFromEnv('NODE_ENV'),
     getMetadata: async () => ({}),
     _maxConcurrectRequests: 100,

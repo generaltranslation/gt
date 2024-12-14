@@ -1,6 +1,7 @@
 import I18NConfiguration from "./I18NConfiguration";
 import defaultInitGTProps from "./props/defaultInitGTProps";
 import { APIKeyMissingError, projectIdMissingError, usingDefaultsWarning } from "../errors/createErrors";
+import { defaultRenderSettings } from "generaltranslation/internal";
 
 
 export default function getI18NConfig(): I18NConfiguration {
@@ -38,6 +39,7 @@ export default function getI18NConfig(): I18NConfiguration {
 
         globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration({
             ...defaultInitGTProps, 
+            renderSettings: defaultRenderSettings,
             maxConcurrentRequests: defaultInitGTProps._maxConcurrectRequests,
             batchInterval: defaultInitGTProps._batchInterval,
             apiKey, projectId, devApiKey

@@ -4,6 +4,7 @@ import defaultInitGTProps from './config/props/defaultInitGTProps';
 import InitGTProps from './config/props/InitGTProps'
 import { APIKeyMissingError, createUnsupportedLocalesWarning, projectIdMissingError } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
+import { defaultRenderSettings } from 'generaltranslation/internal';
 /**
  * Initializes General Translation settings for a Next.js application.
  *
@@ -50,7 +51,8 @@ export function initGT({
   cacheExpiryTime = defaultInitGTProps.cacheExpiryTime,
   locales = defaultInitGTProps.locales,
   defaultLocale = defaultInitGTProps.defaultLocale,
-  renderSettings = defaultInitGTProps.renderSettings,
+  renderSettings = defaultRenderSettings,
+  env = defaultInitGTProps.env,
   _maxConcurrentRequests = defaultInitGTProps._maxConcurrectRequests,
   _batchInterval = defaultInitGTProps._batchInterval,
   ...metadata
@@ -97,6 +99,7 @@ export function initGT({
     locales,
     defaultLocale,
     renderSettings,
+    env,
     maxConcurrentRequests: _maxConcurrentRequests,
     batchInterval: _batchInterval,
     ...metadata,

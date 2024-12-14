@@ -47,6 +47,7 @@ export default class I18NConfiguration {
         projectId: string;
         devApiKey: string | undefined;
         baseUrl: string;
+        env: string;
     };
     /**
      * Gets the application's default locale

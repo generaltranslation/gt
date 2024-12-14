@@ -13,7 +13,7 @@ function GTProvider(params: {
     )
 }
 
-export { 
+export {
     GTProvider, T, useElement,
     Var, Num, Currency, DateTime, 
     Branch, Plural

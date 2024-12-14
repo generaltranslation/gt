@@ -8,10 +8,6 @@ declare const defaultInitGTProps: {
     readonly defaultLocale: "en-US";
     readonly getLocale: () => Promise<"en-US">;
     readonly locales: string[];
-    readonly renderSettings: {
-        readonly method: "skeleton";
-        readonly timeout: 8000 | null;
-    };
     readonly env: string;
     readonly getMetadata: () => Promise<{}>;
     readonly _maxConcurrectRequests: 100;

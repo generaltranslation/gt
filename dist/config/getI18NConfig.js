@@ -18,6 +18,7 @@ exports.default = getI18NConfig;
 var I18NConfiguration_1 = __importDefault(require("./I18NConfiguration"));
 var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
 var createErrors_1 = require("../errors/createErrors");
+var internal_1 = require("generaltranslation/internal");
 function getI18NConfig() {
     var _a;
     var globalObj = globalThis;
@@ -45,7 +46,7 @@ function getI18NConfig() {
         }
         if (!apiKey && !devApiKey)
             console.error(createErrors_1.APIKeyMissingError);
-        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { maxConcurrentRequests: defaultInitGTProps_1.default._maxConcurrectRequests, batchInterval: defaultInitGTProps_1.default._batchInterval, apiKey: apiKey, projectId: projectId, devApiKey: devApiKey }));
+        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { renderSettings: internal_1.defaultRenderSettings, maxConcurrentRequests: defaultInitGTProps_1.default._maxConcurrectRequests, batchInterval: defaultInitGTProps_1.default._batchInterval, apiKey: apiKey, projectId: projectId, devApiKey: devApiKey }));
     }
     return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
 }

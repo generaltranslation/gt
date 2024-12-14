@@ -55,13 +55,6 @@ var defaultInitGTProps = {
         return [2 /*return*/, internal_1.libraryDefaultLocale];
     }); }); },
     locales: (0, supported_locales_1.listSupportedLocales)(),
-    renderSettings: {
-        method: "skeleton",
-        timeout: (function () {
-            var NODE_ENV = (0, getDefaultFromEnv_1.default)('NODE_ENV');
-            return NODE_ENV === "development" || NODE_ENV === "test";
-        })() ? null : 8000
-    },
     env: (0, getDefaultFromEnv_1.default)('NODE_ENV'),
     getMetadata: function () { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
         return [2 /*return*/, ({})];

@@ -47,17 +47,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -74,9 +63,9 @@ var createErrors_1 = require("../errors/createErrors");
 // meant to be used inside the server-side <GTProvider>
 function ClientProvider(_a) {
     var _this = this;
-    var children = _a.children, dictionary = _a.dictionary, initialTranslations = _a.initialTranslations, locale = _a.locale, defaultLocale = _a.defaultLocale, translationRequired = _a.translationRequired, requiredPrefix = _a.requiredPrefix, renderSettings = _a.renderSettings, projectId = _a.projectId, devApiKey = _a.devApiKey, baseUrl = _a.baseUrl, metadata = __rest(_a, ["children", "dictionary", "initialTranslations", "locale", "defaultLocale", "translationRequired", "requiredPrefix", "renderSettings", "projectId", "devApiKey", "baseUrl"]);
-    var _b = (0, react_1.useState)(initialTranslations), translations = _b[0], setTranslations = _b[1];
-    (0, react_1.useEffect)(function () {
+    var children = _a.children, dictionary = _a.dictionary, initialTranslations = _a.initialTranslations, locale = _a.locale, defaultLocale = _a.defaultLocale, translationRequired = _a.translationRequired, requiredPrefix = _a.requiredPrefix, renderSettings = _a.renderSettings, projectId = _a.projectId, devApiKey = _a.devApiKey, baseUrl = _a.baseUrl, env = _a.env;
+    var _b = (0, react_1.useState)(null), translations = _b[0], setTranslations = _b[1];
+    (0, react_1.useLayoutEffect)(function () {
         (function () { return __awaiter(_this, void 0, void 0, function () {
             var awaitedTranslations;
             var _this = this;
@@ -106,11 +95,11 @@ function ClientProvider(_a) {
                         }
                     });
                 }); }));
-                if (Object.keys(awaitedTranslations).length)
-                    setTranslations(function (prev) { return (__assign(__assign({}, prev), awaitedTranslations)); });
+                setTranslations(function (prev) { return (__assign(__assign(__assign({}, initialTranslations), prev), awaitedTranslations)); });
                 return [2 /*return*/];
             });
         }); })();
+        setTranslations(function (prev) { return (__assign({}, prev)); });
     }, []);
     // For dictionaries
     var translate = (0, react_1.useCallback)(function (id, options) {
@@ -136,7 +125,7 @@ function ClientProvider(_a) {
             };
             if (!translationRequired)
                 return r(entry);
-            var translation_1 = translations[id];
+            var translation_1 = translations === null || translations === void 0 ? void 0 : translations[id];
             return r((translation_1 === null || translation_1 === void 0 ? void 0 : translation_1[metadata === null || metadata === void 0 ? void 0 : metadata.hash]) ||
                 (translation_1 === null || translation_1 === void 0 ? void 0 : translation_1.loadingFallback) ||
                 entry);
@@ -154,7 +143,7 @@ function ClientProvider(_a) {
         // Fallback if there is no translation present
         if (!translationRequired)
             return rd();
-        var translation = translations[id];
+        var translation = translations === null || translations === void 0 ? void 0 : translations[id];
         if (!translation)
             return rd();
         var rt = function (target) {
@@ -182,7 +171,8 @@ function ClientProvider(_a) {
         devApiKey: devApiKey,
         baseUrl: baseUrl,
         setTranslations: setTranslations,
-        defaultLocale: defaultLocale
+        defaultLocale: defaultLocale,
+        env: env
     }), translateChildren = _c.translateChildren, translateContent = _c.translateContent;
     return ((0, jsx_runtime_1.jsx)(client_1.GTContext.Provider, { value: {
             translate: translate,
@@ -191,7 +181,8 @@ function ClientProvider(_a) {
             locale: locale,
             defaultLocale: defaultLocale,
             translations: translations,
-            translationRequired: translationRequired
-        }, children: children }));
+            translationRequired: translationRequired,
+            renderSettings: renderSettings
+        }, children: translations && children }));
 }
 //# sourceMappingURL=ClientProvider.js.map

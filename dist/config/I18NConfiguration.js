@@ -159,7 +159,8 @@ var I18NConfiguration = /** @class */ (function () {
         return {
             projectId: this.projectId,
             devApiKey: this.devApiKey,
-            baseUrl: this.baseUrl
+            baseUrl: this.baseUrl,
+            env: this.env
         };
     };
     /**
@@ -193,6 +194,7 @@ var I18NConfiguration = /** @class */ (function () {
      * Timeout is a number or null, representing no assigned timeout.
      */
     I18NConfiguration.prototype.getRenderSettings = function () {
+        this.renderSettings.method = 'replace';
         return this.renderSettings;
     };
     /**
