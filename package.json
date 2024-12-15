@@ -119,6 +119,7 @@
         "i18n"
     ],
     "dependencies": {
-        "@generaltranslation/supported-locales": "^0.0.4"
+        "@generaltranslation/supported-locales": "^0.0.4",
+        "generaltranslation": "^5.0.0"
     }
 }

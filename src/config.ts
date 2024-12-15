@@ -4,7 +4,8 @@ import defaultInitGTProps from './config/props/defaultInitGTProps';
 import InitGTProps from './config/props/InitGTProps'
 import { APIKeyMissingError, createUnsupportedLocalesWarning, projectIdMissingError } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import { defaultRenderSettings } from 'generaltranslation/internal';
+import { defaultRenderSettings } from "gt-react/internal";
+
 /**
  * Initializes General Translation settings for a Next.js application.
  *

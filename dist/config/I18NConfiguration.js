@@ -194,7 +194,6 @@ var I18NConfiguration = /** @class */ (function () {
      * Timeout is a number or null, representing no assigned timeout.
      */
     I18NConfiguration.prototype.getRenderSettings = function () {
-        this.renderSettings.method = 'replace';
         return this.renderSettings;
     };
     /**

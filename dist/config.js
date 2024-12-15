@@ -39,7 +39,7 @@ var path_1 = __importDefault(require("path"));
 var defaultInitGTProps_1 = __importDefault(require("./config/props/defaultInitGTProps"));
 var createErrors_1 = require("./errors/createErrors");
 var supported_locales_1 = require("@generaltranslation/supported-locales");
-var internal_1 = require("generaltranslation/internal");
+var internal_1 = require("gt-react/internal");
 /**
  * Initializes General Translation settings for a Next.js application.
  *

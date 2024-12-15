@@ -1,8 +1,7 @@
 import I18NConfiguration from "./I18NConfiguration";
 import defaultInitGTProps from "./props/defaultInitGTProps";
 import { APIKeyMissingError, projectIdMissingError, usingDefaultsWarning } from "../errors/createErrors";
-import { defaultRenderSettings } from "generaltranslation/internal";
-
+import { defaultRenderSettings } from "gt-react/internal";
 
 export default function getI18NConfig(): I18NConfiguration {
     

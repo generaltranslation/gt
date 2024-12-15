@@ -18,7 +18,7 @@ exports.default = getI18NConfig;
 var I18NConfiguration_1 = __importDefault(require("./I18NConfiguration"));
 var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
 var createErrors_1 = require("../errors/createErrors");
-var internal_1 = require("generaltranslation/internal");
+var internal_1 = require("gt-react/internal");
 function getI18NConfig() {
     var _a;
     var globalObj = globalThis;
