@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 export type Updates = ({
-    "type": "react";
+    "type": "jsx";
     "data": {
-        "children": any;
+        "source": any;
         "metadata": Record<string, any>;
     };
 } | {
-    "type": "string";
+    "type": "content";
     "data": {
-        "content": any;
+        "source": any;
         "metadata": Record<string, any>;
     };
 })[];

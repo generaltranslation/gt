@@ -66,18 +66,18 @@ function createDictionaryUpdates(options, esbuildConfig) {
             const metadata = Object.assign(Object.assign({ id }, (context && { context })), { hash: (0, internal_1.hashReactChildrenObjects)(context ? [entryAsObjects, context] : entryAsObjects) });
             if (typeof entry === 'string') {
                 updates.push({
-                    type: 'string',
+                    type: 'content',
                     data: {
-                        content: (0, generaltranslation_1.splitStringToContent)(entryAsObjects),
+                        source: (0, generaltranslation_1.splitStringToContent)(entryAsObjects),
                         metadata,
                     },
                 });
             }
             else {
                 updates.push({
-                    type: 'react',
+                    type: 'jsx',
                     data: {
-                        children: entryAsObjects,
+                        source: entryAsObjects,
                         metadata,
                     },
                 });

@@ -87,17 +87,17 @@ export default async function createDictionaryUpdates(
 
         if (typeof entry === 'string') {
             updates.push({
-                type: 'string',
+                type: 'content',
                 data: { 
-                    content: splitStringToContent(entryAsObjects),
+                    source: splitStringToContent(entryAsObjects),
                     metadata,
                 },
             });
         } else {
             updates.push({
-                type: 'react',
+                type: 'jsx',
                 data: {
-                    children: entryAsObjects,
+                    source: entryAsObjects,
                     metadata,
                 },
             });

@@ -207,9 +207,9 @@ function createInlineUpdates(options) {
                                 const childrenAsObjects = (0, addGTIdentifierToSyntaxTree_1.default)(componentObj.tree);
                                 console.log(`Found <T> component in ${file} with id "${id}".`);
                                 updates.push({
-                                    type: "react",
+                                    type: "jsx",
                                     data: {
-                                        children: childrenAsObjects,
+                                        source: childrenAsObjects,
                                         metadata: componentObj.props
                                     }
                                 });

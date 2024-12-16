@@ -180,9 +180,9 @@ export default async function createInlineUpdates(
                 const childrenAsObjects = addGTIdentifierToSyntaxTree(componentObj.tree);
                 console.log(`Found <T> component in ${file} with id "${id}".`);
                 updates.push({
-                    type: "react",
+                    type: "jsx",
                     data: {
-                        children: childrenAsObjects,
+                        source: childrenAsObjects,
                         metadata: componentObj.props
                     }
                 });
