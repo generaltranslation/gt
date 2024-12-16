@@ -6,7 +6,9 @@
     "peerDependencies": {
         "next": ">=13.0.0 <16.0.0",
         "react": ">=16.8.0 || >=19.0.0-rc",
-        "react-dom": ">=16.8.0 || >=19.0.0-rc"
+        "react-dom": ">=16.8.0 || >=19.0.0-rc",
+        "@generaltranslation/supported-locales": "^0.0.4",
+        "generaltranslation": "^5.0.0"
     },
     "scripts": {
         "patch": "npm version patch",
@@ -28,7 +30,8 @@
         "@types/node": "^20.14.9",
         "@types/react": "^18.3.3",
         "@types/react-dom": "^18.3.0",
-        "typescript": "^5.5.2"
+        "typescript": "^5.5.2",
+        "gt-react-cli": "^1.1.0"
     },
     "exports": {
         ".": {
@@ -119,7 +122,6 @@
         "i18n"
     ],
     "dependencies": {
-        "@generaltranslation/supported-locales": "^0.0.4",
-        "generaltranslation": "^5.0.0"
+        "gt-react": "^7.0.0"
     }
 }

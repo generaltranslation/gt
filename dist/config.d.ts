@@ -35,5 +35,5 @@ import InitGTProps from './config/props/InitGTProps';
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  *
  */
-export declare function initGT({ i18n, dictionary, apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, locales, defaultLocale, renderSettings, env, _maxConcurrentRequests, _batchInterval, ...metadata }?: InitGTProps): (config?: NextConfig) => NextConfig;
+export declare function initGT({ i18n, dictionary, apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, locales, defaultLocale, renderSettings, env, _maxConcurrentRequests, _batchInterval, ...metadata }?: InitGTProps): (config?: NextConfig) => any;
 //# sourceMappingURL=config.d.ts.map

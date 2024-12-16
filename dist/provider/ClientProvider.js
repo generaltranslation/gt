@@ -90,6 +90,7 @@ function ClientProvider(_a) {
                             case 3:
                                 error_1 = _d.sent();
                                 console.error(error_1);
+                                awaitedTranslations[id] = undefined;
                                 return [3 /*break*/, 4];
                             case 4: return [2 /*return*/];
                         }

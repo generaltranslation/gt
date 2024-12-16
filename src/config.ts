@@ -114,7 +114,7 @@ export function initGT({
       ? dictionary
       : resolveConfigFilepath('dictionary');
 
-  return (config: NextConfig = {}): NextConfig => {
+  return (config: NextConfig = {}): any => {
     return {
       ...config,
       env: {

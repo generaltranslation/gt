@@ -62,6 +62,7 @@ export default function ClientProvider({
               awaitedTranslations[id] = { [obj.hash]: translation };
             } catch (error) {
               console.error(error);
+              awaitedTranslations[id] = undefined;
             }
           }
         })
