@@ -84,7 +84,7 @@ var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
 var generaltranslation_1 = require("generaltranslation");
 var getMetadata_1 = __importDefault(require("../request/getMetadata"));
 var createErrors_1 = require("../errors/createErrors");
-var react_1 = __importDefault(require("react"));
+var react_1 = __importStar(require("react"));
 /**
  * Returns the translation function `t()`, which is used to translate an item from the dictionary.
  *
@@ -168,7 +168,7 @@ function getGT(id) {
                         // Get entry
                         var dictionaryEntry = (0, getDictionary_1.getDictionaryEntry)(id);
                         if (dictionaryEntry === undefined || dictionaryEntry === null ||
-                            (typeof dictionaryEntry === 'object' && !Array.isArray(dictionaryEntry))) {
+                            (typeof dictionaryEntry === 'object' && !(0, react_1.isValidElement)(dictionaryEntry) && !Array.isArray(dictionaryEntry))) {
                             console.warn((0, createErrors_1.createNoEntryWarning)(id));
                             return undefined;
                         }
@@ -221,7 +221,7 @@ function useElement(id) {
         // Get entry
         var dictionaryEntry = (0, getDictionary_1.getDictionaryEntry)(id);
         if (dictionaryEntry === undefined || dictionaryEntry === null ||
-            (typeof dictionaryEntry === 'object' && !Array.isArray(dictionaryEntry))) {
+            (typeof dictionaryEntry === 'object' && !(0, react_1.isValidElement)(dictionaryEntry) && !Array.isArray(dictionaryEntry))) {
             console.warn((0, createErrors_1.createNoEntryWarning)(id));
             return (0, jsx_runtime_1.jsx)(react_1.default.Fragment, {});
         }

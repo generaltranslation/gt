@@ -7,7 +7,7 @@ import { renderContentToString, splitStringToContent } from "generaltranslation"
 import getMetadata from "../request/getMetadata";
 import renderVariable from "./rendering/renderVariable";
 import { createDictionarySubsetError, createNoEntryWarning } from "../errors/createErrors";
-import React from "react";
+import React, { isValidElement } from "react";
 import { Content } from "gt-react/dist/types/types";
 
 /**
@@ -100,7 +100,8 @@ export async function getGT(id?: string): Promise<(
         const dictionaryEntry = getDictionaryEntry(id);
         if (
             dictionaryEntry === undefined || dictionaryEntry === null || 
-            (typeof dictionaryEntry === 'object' && !Array.isArray(dictionaryEntry))) 
+            (typeof dictionaryEntry === 'object' && !isValidElement(dictionaryEntry) && !Array.isArray(dictionaryEntry)) 
+        )
         {
             console.warn(createNoEntryWarning(id))
             return undefined;
@@ -177,7 +178,8 @@ export function useElement(id?: string): (
         const dictionaryEntry = getDictionaryEntry(id);
         if (
             dictionaryEntry === undefined || dictionaryEntry === null || 
-            (typeof dictionaryEntry === 'object' && !Array.isArray(dictionaryEntry))) 
+            (typeof dictionaryEntry === 'object' && !isValidElement(dictionaryEntry) && !Array.isArray(dictionaryEntry)) 
+        )
         {
             console.warn(createNoEntryWarning(id))
             return <React.Fragment />;
