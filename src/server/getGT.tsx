@@ -55,7 +55,7 @@ export async function getGT(id?: string): Promise<(
 
         // Translate all strings in advance
         await Promise.all(
-            Object.entries(dictionaryEntries).map(async ([suffix, dictionaryEntry]) => {
+            Object.entries(dictionaryEntries ?? {}).map(async ([suffix, dictionaryEntry]) => {
                 
                 // Get the entry from the dictionary
                 let { entry, metadata } = extractEntryMetadata(dictionaryEntry);

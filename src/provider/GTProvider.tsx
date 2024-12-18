@@ -67,7 +67,7 @@ export default async function GTProvider({
   
   // Check and standardize flattened dictionary entries before passing them to the client
   await Promise.all(
-    Object.entries(dictionaryEntries).map(async ([suffix, dictionaryEntry]) => {
+    Object.entries(dictionaryEntries ?? {}).map(async ([suffix, dictionaryEntry]) => {
 
       // ---- POPULATING THE DICTIONARY ---- //
 

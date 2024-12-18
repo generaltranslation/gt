@@ -243,7 +243,7 @@ export default class I18NConfiguration {
     } 
     const childrenAsObjects = writeChildrenAsObjects(children);
     const hash = hashReactChildrenObjects(context ? [childrenAsObjects, context] : childrenAsObjects);
-    this._template.set(id, { k: hash, t: childrenAsObjects });
+    this._template.set(id, { [hash]: childrenAsObjects });
     return [childrenAsObjects, hash];
   }
 

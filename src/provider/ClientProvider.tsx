@@ -55,7 +55,7 @@ export default function ClientProvider({
     (async () => {
       const awaitedTranslations: Record<string, any> = {};
       Promise.all(
-        Object.entries(initialTranslations).map(async ([id, obj]) => {
+        Object.entries(initialTranslations ?? {}).map(async ([id, obj]) => {
           if (obj?.promise) {
             try {
               const translation = await obj.promise;
