@@ -6,7 +6,9 @@ import getI18NConfig from "../config/getI18NConfig";
 import { renderContentToString, splitStringToContent } from "generaltranslation";
 import getMetadata from "../request/getMetadata";
 import renderVariable from "./rendering/renderVariable";
-import { createNoEntryWarning } from "../errors/createErrors";
+import { createDictionarySubsetError, createNoEntryWarning } from "../errors/createErrors";
+import React, { isValidElement } from "react";
+import { Content } from "gt-react/dist/types/types";
 
 /**
  * Returns the translation function `t()`, which is used to translate an item from the dictionary.
@@ -23,11 +25,10 @@ import { createNoEntryWarning } from "../errors/createErrors";
  */
 export async function getGT(id?: string): Promise<(
     id: string, 
-    options?: Record<string, any>, 
-    f?: Function
+    options?: Record<string, any>
 ) => any> {
 
-    const getID = (suffix: string) => {
+    const getId = (suffix: string) => {
         return id ? `${id}.${suffix}` : suffix;
     }
 
@@ -36,7 +37,7 @@ export async function getGT(id?: string): Promise<(
     const locale = await getLocale();
     const translationRequired = I18NConfig.requiresTranslation(locale);
 
-    let translations: Record<string, any> = {};
+    let filteredTranslations: Record<string, any> = {};
 
     if (translationRequired) {
 
@@ -45,134 +46,90 @@ export async function getGT(id?: string): Promise<(
         const renderSettings = I18NConfig.getRenderSettings();
         
         // Flatten dictionaries for processing while waiting for translations
-        const dictionaryEntries = flattenDictionary(id ? getDictionaryEntry(id) : getDictionary());
+        const dictionarySubset = (id ? getDictionaryEntry(id) : getDictionary()) || {};
+        if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
+            throw new Error(createDictionarySubsetError(id ?? '', "getGT"));
+        const dictionaryEntries = flattenDictionary(dictionarySubset);
 
-        translations = { ...(await translationsPromise) };
+        const translations = await translationsPromise;
 
+        // Translate all strings in advance
         await Promise.all(
-            Object.entries(dictionaryEntries).map(async ([suffix, dictionaryEntry]) => {
+            Object.entries(dictionaryEntries ?? {}).map(async ([suffix, dictionaryEntry]) => {
                 
                 // Get the entry from the dictionary
-                const entryID = getID(suffix);
                 let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
-                if (typeof entry === 'undefined') return; 
-    
-                // If entry is a function, execute it
-                if (typeof entry === 'function') {
-                    entry = entry({});
-                    metadata = { ...metadata, isFunction: true };
-                }
+                if (typeof entry !== 'string') return; 
 
-                // Tag the result of entry
-                const taggedEntry = I18NConfig.addGTIdentifier(entry, id);
-    
-                // Set dictionary entry to be passed to the client
-                const [entryAsObjects, key] = I18NConfig.serializeAndHash(
-                    taggedEntry,
+                const contentArray = splitStringToContent(entry);
+
+                // Serialize and hash
+                const entryId = getId(suffix);
+                const [_, hash] = I18NConfig.serializeAndHash(
+                    contentArray,
                     metadata?.context,
-                    entryID
+                    entryId
                 );
             
                 // If a translation already exists, add it to the translations
-                const translation = translations[entryID];
-                if (translation && translation.k === key) {
-                    return; // NOTHING MORE TO DO
-                }
-                
-                if (typeof taggedEntry === 'string') {
-                    const translationPromise = I18NConfig.translate({
-                      content: splitStringToContent(taggedEntry),
-                      targetLocale: locale,
-                      options: { id: entryID, hash: key, ...additionalMetadata },
-                    });
-                    if (renderSettings.method !== "subtle") 
-                      return translations[entryID] = {
-                          t: await translationPromise,
-                          k: key
-                    };
-                    return; // NOTHING MORE TO DO 
-                };
-    
-                const translationPromise = I18NConfig.translateChildren({
-                    children: entryAsObjects,
+                const translation = translations[entryId]?.[hash];
+                if (translation) return filteredTranslations[entryId] = translation; // NOTHING MORE TO DO
+
+                // ----- TRANSLATE STRING ----- // 
+
+                const translationPromise = I18NConfig.translateContent({
+                    source: contentArray,
                     targetLocale: locale,
-                    metadata: {
-                      id: entryID,
-                      hash: key,
-                      ...additionalMetadata,
-                      ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
-                    },
+                    options: { id: entryId, hash, ...additionalMetadata },
                 });
-                if (renderSettings.method !== "subtle") 
-                    return translations[entryID] = {
-                        t: await translationPromise,
-                        k: key
-                    };
-                return; // NOTHING MORE TO DO 
-    
+                if (renderSettings.method !== "subtle") {
+                    return filteredTranslations[entryId] = await translationPromise;
+                }
             })
         );
     }
 
     return (
         id: string, 
-        options?: Record<string, any>,
-        f?: Function
+        options?: Record<string, any>
     ): JSX.Element | string | undefined => {
 
-        id = getID(id);
+        id = getId(id);
 
         // Get entry
-        let { entry, metadata } = extractEntryMetadata(
-            getDictionaryEntry(id)
-        );
-
-        if (!entry) {
-            console.warn(createNoEntryWarning(id));
+        const dictionaryEntry = getDictionaryEntry(id);
+        if (
+            dictionaryEntry === undefined || dictionaryEntry === null || 
+            (typeof dictionaryEntry === 'object' && !isValidElement(dictionaryEntry) && !Array.isArray(dictionaryEntry)) 
+        )
+        {
+            console.warn(createNoEntryWarning(id))
             return undefined;
-        }
+        };
+
+        let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
 
         // Get variables and variable options
-        let variables; let variablesOptions;
-        if (options) {
-            variables = options;
-            if (metadata?.variablesOptions) {
-                variablesOptions = metadata.variablesOptions;
-            }
-        }
+        let variables = options; 
+        let variablesOptions = metadata?.variablesOptions;
 
-        // Handle if the entry is a function
-        if (typeof f === 'function') {
-            entry = f(options);
-        } else if (typeof entry === 'function') {
-            entry = entry(options);
-        }
-
-        // Tag the result of entry
-        const taggedEntry = I18NConfig.addGTIdentifier(entry, id);
-
-        if (typeof taggedEntry === 'string')
+        if (typeof entry === 'string') {
+            const contentArray = filteredTranslations[id] || splitStringToContent(entry);
             return renderContentToString(
-                translations[id]?.t || taggedEntry,
-                [locale, defaultLocale],
-                variables, variablesOptions
-            );
-
-        if (!translationRequired)
-            return renderDefaultChildren({
-                children: taggedEntry, defaultLocale,
-                variables, variablesOptions, renderVariable
-            }) as string | JSX.Element | undefined;
-
-        if (translations[id]?.t) {
-            return renderTranslatedChildren({
-                source: taggedEntry, target: translations[id].t,
-                variables, variablesOptions, locales: [locale, defaultLocale], 
-                renderVariable
-            }) as string | JSX.Element | undefined;
+                contentArray, [locale, defaultLocale], variables, variablesOptions
+            )
         }
-        
 
+        return (
+            <T 
+                id={id}
+                variables={variables}
+                variablesOptions={variablesOptions}
+                {...metadata}
+            >
+                {entry}
+            </T>
+        );
     }
 }
 
@@ -194,11 +151,10 @@ export async function getGT(id?: string): Promise<(
  */
 export function useElement(id?: string): (
     id: string, 
-    options?: Record<string, any>, 
-    f?: Function
+    options?: Record<string, any>
 ) => JSX.Element {
 
-    const getID = (suffix: string) => {
+    const getId = (suffix: string) => {
         return id ? `${id}.${suffix}` : suffix;
     }
 
@@ -213,37 +169,27 @@ export function useElement(id?: string): (
     */
     function t(
         id: string, 
-        options: Record<string, any> = {}, 
-        f?: Function
+        options: Record<string, any> = {}
     ): JSX.Element {
 
-        id = getID(id);
+        id = getId(id);
 
         // Get entry
-        let { entry, metadata } = extractEntryMetadata(
-            getDictionaryEntry(id)
-        );
+        const dictionaryEntry = getDictionaryEntry(id);
+        if (
+            dictionaryEntry === undefined || dictionaryEntry === null || 
+            (typeof dictionaryEntry === 'object' && !isValidElement(dictionaryEntry) && !Array.isArray(dictionaryEntry)) 
+        )
+        {
+            console.warn(createNoEntryWarning(id))
+            return <React.Fragment />;
+        };
+
+        let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
 
         // Get variables and variable options
-        let variables; let variablesOptions;
-        if (options) {
-            variables = options;
-            if (metadata?.variablesOptions) {
-                variablesOptions = metadata.variablesOptions;
-            }
-        }
-
-        // Handle if the entry is a function
-        if (typeof f === 'function') {
-            entry = f(options);
-        } else if (typeof entry === 'function') {
-            entry = entry(options);
-        }
-
-        if (!entry) {
-            console.warn(createNoEntryWarning(id));
-            return <></>;
-        }
+        let variables = options; 
+        let variablesOptions = metadata?.variablesOptions;
 
         return (
             <T 

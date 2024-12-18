@@ -1,18 +1,25 @@
-import { libraryDefaultLocale, defaultCacheURL } from "generaltranslation/internal";
+import { libraryDefaultLocale, defaultCacheUrl, defaultBaseUrl } from "generaltranslation/internal";
 import getDefaultFromEnv from "../../utils/getDefaultFromEnv";
+import { listSupportedLocales } from "@generaltranslation/supported-locales";
+import { devApiKeyIncludedInProductionError } from "../../errors/createErrors";
 
-export default {
+const defaultInitGTProps = {
     apiKey: getDefaultFromEnv('GT_API_KEY'),
+    devApiKey: '',
     projectId: getDefaultFromEnv('GT_PROJECT_ID'),
-    baseURL: 'https://prod.gtx.dev',
-    cacheURL: defaultCacheURL,
+    baseUrl: defaultBaseUrl,
+    cacheUrl: defaultCacheUrl,
+    cacheExpiryTime: 6000,
     defaultLocale: libraryDefaultLocale,
     getLocale: async () => libraryDefaultLocale,
-    renderSettings: {
-        method: "skeleton",
-        timeout: getDefaultFromEnv('NODE_ENV') === "development" ? null : 8000
-    },
+    locales: listSupportedLocales(),
+    env: getDefaultFromEnv('NODE_ENV'),
     getMetadata: async () => ({}),
-    _maxConcurrectRequests: 2,
-    _batchInterval: 1000
+    _maxConcurrectRequests: 100,
+    _batchInterval: 10
 } as const;
+
+if (defaultInitGTProps.devApiKey && (defaultInitGTProps.env !== "development" && defaultInitGTProps.env !== "test"))
+    throw new Error(devApiKeyIncludedInProductionError)
+
+export default defaultInitGTProps;

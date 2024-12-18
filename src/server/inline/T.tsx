@@ -84,7 +84,7 @@ async function T({
   }
 
   // Gets tagged children with GT identifiers
-  // id is here for caching purposes (not enabled when the environment is "development")
+  // id is here for caching purposes
   const taggedChildren = I18NConfig.addGTIdentifier(children, id);
 
   // If no translation is required, render the default children
@@ -131,7 +131,7 @@ async function T({
 
   // On-demand translates the children
   const translationPromise = I18NConfig.translateChildren({
-    children: childrenAsObjects,
+    source: childrenAsObjects,
     targetLocale: locale,
     metadata: {
       ...(id && { id }),
@@ -153,6 +153,8 @@ async function T({
       renderVariable
     });
   });
+
+
 
   let loadingFallback; // Blank screen
   let errorFallback; // Default locale fallback

@@ -1,10 +1,10 @@
 "use strict";
 // ---- ERRORS ---- //
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createUnsupportedLocalesWarning = exports.createNoEntryWarning = exports.usingDefaultsWarning = exports.createAdvancedFunctionsError = exports.createRequiredPrefixError = exports.createStringTranslationError = exports.renderingError = exports.remoteTranslationsError = exports.APIKeyMissingError = exports.projectIdMissingError = void 0;
+exports.createUnsupportedLocalesWarning = exports.createNoEntryWarning = exports.usingDefaultsWarning = exports.createDictionarySubsetError = exports.devApiKeyIncludedInProductionError = exports.createRequiredPrefixError = exports.createStringTranslationError = exports.renderingError = exports.remoteTranslationsError = exports.APIKeyMissingError = exports.projectIdMissingError = void 0;
 var generaltranslation_1 = require("generaltranslation");
 exports.projectIdMissingError = 'General Translation: Project ID missing! Set projectId as GT_PROJECT_ID in the environment or by passing the projectId parameter to initGT(). Find your project ID: www.generaltranslation.com/dashboard.';
-exports.APIKeyMissingError = 'General Translation: API key is required for automatic translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off automatic translation by setting baseURL to an empty string.)';
+exports.APIKeyMissingError = 'General Translation: API key is required for automatic translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off automatic translation by setting baseUrl to an empty string.)';
 exports.remoteTranslationsError = 'General Translation: Error fetching remote translation.';
 exports.renderingError = 'General Translation: Rendering error.';
 var createStringTranslationError = function (content, id) { return "gt-next string translation error. tx(\"".concat(content, "\")").concat(id ? " with id \"".concat(id, "\"") : '', " failed."); };
@@ -13,11 +13,11 @@ var createRequiredPrefixError = function (id, requiredPrefix) {
     return "You are using <GTProvider> with a provided prefix id: \"".concat(requiredPrefix, "\", but one of the children of <GTProvider> has the id \"").concat(id, "\". Change the <GTProvider> id prop or your dictionary structure to proceed.");
 };
 exports.createRequiredPrefixError = createRequiredPrefixError;
-var createAdvancedFunctionsError = function (id, options) {
-    return "General Translation: You're trying to call a function in the server dictionary on the client-side, but functions can't be passed directly from server to client. " +
-        "Try including the function you want to call as a parameter in t(), like t(\"".concat(id, "\", ").concat(options ? JSON.stringify(options) : 'undefined', ", MyFunction)");
+exports.devApiKeyIncludedInProductionError = "General Translation: You are attempting a production build of your app with a developer API key (beginning \"gtx-dev-\"). Replace this API key with a production API key (beginning \"gtx-api-\") when you build your app for production.";
+var createDictionarySubsetError = function (id, functionName) {
+    return "General Translation: ".concat(functionName, " with id: \"").concat(id, "\". Invalid dictionary entry detected. Make sure you are navigating to the correct subroute of the dictionary with the ID you provide.");
 };
-exports.createAdvancedFunctionsError = createAdvancedFunctionsError;
+exports.createDictionarySubsetError = createDictionarySubsetError;
 // ---- WARNINGS ---- //
 exports.usingDefaultsWarning = 'General Translation: Unable to access gt-next configuration. Using defaults.';
 var createNoEntryWarning = function (id) { return "gt-next: No dictionary entry found for id: \"".concat(id, "\""); };

@@ -4,19 +4,22 @@ import remoteTranslationsManager, {
 } from './RemoteTranslationsManager';
 import defaultInitGTProps from './props/defaultInitGTProps';
 import { addGTIdentifier, hashReactChildrenObjects, writeChildrenAsObjects } from 'gt-react/internal';
+import { devApiKeyIncludedInProductionError } from '../errors/createErrors';
+import { TranslatedChildren } from 'gt-react/dist/types/types';
 
 type I18NConfigurationParams = {
-  apiKey: string;
+  apiKey?: string;
+  devApiKey?: string;
   projectId: string;
-  cacheURL: string;
-  baseURL: string;
+  cacheUrl: string;
+  baseUrl: string;
+  cacheExpiryTime?: number;
   defaultLocale: string;
-  locales?: string[];
+  locales: string[];
   renderSettings: {
     method: 'skeleton' | 'replace' | 'hang' | 'subtle';
     timeout: number | null;
   };
-  translations?: Record<string, () => Promise<Record<string, any>>>;
   maxConcurrentRequests: number;
   batchInterval: number;
   env?: string;
@@ -25,11 +28,13 @@ type I18NConfigurationParams = {
 
 export default class I18NConfiguration {
   // Cloud integration
-  baseURL: string;
+  apiKey?: string;
+  devApiKey?: string;
+  baseUrl: string;
   projectId: string;
   // Locale info
   defaultLocale: string;
-  locales: string[] | undefined;
+  locales: string[];
   // Rendering
   renderSettings: {
     method: 'skeleton' | 'replace' | 'hang' | 'subtle';
@@ -51,14 +56,16 @@ export default class I18NConfiguration {
   private _translationCache: Map<string, Promise<any>>;
   // Processed dictionary
   private _taggedDictionary: Map<string, any>;
-  private _template: Map<string, { k: string, t: any }>;
+  private _template: Map<string, { [hash: string]: TranslatedChildren }>;
 
   constructor({
     // Cloud integration
     apiKey,
+    devApiKey,
     projectId,
-    baseURL,
-    cacheURL,
+    baseUrl,
+    cacheUrl,
+    cacheExpiryTime,
     // Locale info
     defaultLocale,
     locales,
@@ -75,8 +82,10 @@ export default class I18NConfiguration {
     ...metadata
   }: I18NConfigurationParams) {
     // Cloud integration
+    this.apiKey = apiKey;
+    this.devApiKey = devApiKey;
     this.projectId = projectId;
-    this.baseURL = baseURL;
+    this.baseUrl = baseUrl;
     // Locales
     this.defaultLocale = defaultLocale;
     this.locales = locales;
@@ -87,10 +96,13 @@ export default class I18NConfiguration {
       projectId,
       apiKey,
       defaultLocale,
-      baseURL,
+      baseUrl,
     });
     // Default env is production
     this.env = env || "production";
+    if (this.env !== "development" && this.env !== "test" && this.devApiKey) {
+      throw new Error(devApiKeyIncludedInProductionError)
+    }
     // Other metadata
     this.metadata = {
       env: this.env,
@@ -102,11 +114,12 @@ export default class I18NConfiguration {
       ...metadata,
     };
     // Dictionary managers
-    if (cacheURL && projectId) {
+    if (cacheUrl && projectId) {
       this._remoteTranslationsManager = remoteTranslationsManager;
       this._remoteTranslationsManager.setConfig({
-        cacheURL,
+        cacheUrl,
         projectId,
+        cacheExpiryTime
       });
     }
     // Cache of hashes to speed up <GTProvider>
@@ -122,6 +135,18 @@ export default class I18NConfiguration {
   }
 
   /**
+   * Gets config for dynamic translation on the client side.
+  */
+  getClientSideConfig() {
+    return {
+      projectId: this.projectId,
+      devApiKey: this.devApiKey,
+      baseUrl: this.baseUrl,
+      env: this.env
+    }
+  }
+
+  /**
    * Gets the application's default locale
    * @returns {string} A BCP-47 locale tag
    */
@@ -131,9 +156,9 @@ export default class I18NConfiguration {
 
   /**
    * Gets the list of approved locales for this app
-   * @returns {string[] | undefined} A list of BCP-47 locale tags, or undefined if none were provided
+   * @returns {string[]} A list of BCP-47 locale tags, or undefined if none were provided
    */
-  getLocales(): string[] | undefined {
+  getLocales(): string[] {
     return this.locales;
   }
 
@@ -141,9 +166,9 @@ export default class I18NConfiguration {
    * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
    */
   translationEnabled(): boolean {
-    return this.baseURL &&
+    return this.baseUrl &&
       this.projectId &&
-      (this.baseURL === defaultInitGTProps.baseURL ? this.gt.apiKey : true)
+      (this.baseUrl === defaultInitGTProps.baseUrl ? this.gt.apiKey : true)
       ? true
       : false;
   }
@@ -173,10 +198,18 @@ export default class I18NConfiguration {
     );
   }
 
+  /**
+   * Check if the current environment is set to "development" or "test"
+   * @returns True if the current environment is development
+  */
+  isDevelopmentEnvironment(): boolean {
+    return this.env === "development" || this.env === "test";
+  }
+
   addGTIdentifier(children: any, id?: string): any {
 
     // In development, recompute every time
-    if (this.env === "development" || !id) {
+    if (this.isDevelopmentEnvironment() || !id) {
       return addGTIdentifier(children, id);
     }
     // In production, since dictionary content isn't changing, cache results
@@ -189,14 +222,13 @@ export default class I18NConfiguration {
     this._taggedDictionary.set(id, taggedChildren);
     return taggedChildren;
   }
-
   
   /**
    * @returns {[any, string]} A xxhash hash and the children that were created from it
   */
   serializeAndHash(children: any, context?: string, id?: string): [any, string] {
     // In development, recomputes hashes each time
-    if (this.env === "development" || !id) {
+    if (this.isDevelopmentEnvironment() || !id) {
       const childrenAsObjects = writeChildrenAsObjects(children);
       return [
         childrenAsObjects, 
@@ -206,11 +238,12 @@ export default class I18NConfiguration {
     // In production, since dictionary content isn't changing, cache results
     const templateEntry = this._template.get(id);
     if (templateEntry) {
-      return [templateEntry.t, templateEntry.k];
+      const [[ hash, target ]] = Object.entries(templateEntry);
+      return [target, hash];
     } 
     const childrenAsObjects = writeChildrenAsObjects(children);
     const hash = hashReactChildrenObjects(context ? [childrenAsObjects, context] : childrenAsObjects);
-    this._template.set(id, { k: hash, t: childrenAsObjects });
+    this._template.set(id, { [hash]: childrenAsObjects });
     return [childrenAsObjects, hash];
   }
 
@@ -232,8 +265,8 @@ export default class I18NConfiguration {
    * @returns Translated string
    */
 
-  async translate(params: {
-    content: string | (string | { key: string; variable?: string })[];
+  async translateContent(params: {
+    source: string | (string | { key: string; variable?: string })[];
     targetLocale: string;
     options: Record<string, any>;
   }): Promise<string> {
@@ -242,16 +275,16 @@ export default class I18NConfiguration {
     if (this._translationCache.has(cacheKey)) {
       return this._translationCache.get(cacheKey);
     }
-    const { content, targetLocale, options } = params;
+    const { source, targetLocale, options } = params;
     const translationPromise = new Promise<string>((resolve, reject) => {
       this._queue.push({
-        type: 'string',
+        type: 'content',
         data: {
-          content,
+          source,
           targetLocale,
           metadata: { ...this.metadata, projectId: this.projectId, ...options },
         },
-        revalidate: this.env !== "development" && (this._remoteTranslationsManager
+        revalidate: this.isDevelopmentEnvironment() && (this._remoteTranslationsManager
           ? this._remoteTranslationsManager.getTranslationRequested(
               targetLocale
             )
@@ -274,7 +307,7 @@ export default class I18NConfiguration {
    * @returns A promise that resolves when translation is complete
    */
   async translateChildren(params: {
-    children: any;
+    source: any;
     targetLocale: string;
     metadata: Record<string, any>;
   }): Promise<any> {
@@ -286,17 +319,17 @@ export default class I18NConfiguration {
       return this._translationCache.get(cacheKey);
     }
 
-    const { children, targetLocale, metadata } = params;
+    const { source, targetLocale, metadata } = params;
     const translationPromise = new Promise<any>((resolve, reject) => {
       // In memory queue to batch requests
       this._queue.push({
-        type: 'react',
+        type: 'jsx',
         data: {
-          children,
+          source,
           targetLocale,
           metadata: { ...this.metadata, ...metadata },
         },
-        revalidate: this.env !== "development" && (this._remoteTranslationsManager
+        revalidate: this.isDevelopmentEnvironment() && (this._remoteTranslationsManager
           ? this._remoteTranslationsManager.getTranslationRequested(
               targetLocale
             )
@@ -332,7 +365,6 @@ export default class I18NConfiguration {
         const result = results[index];
         if (!result) return item.reject('Translation failed.');
         if (result && typeof result === 'object') {
-          item.resolve(result.translation);
           if (
             result.translation &&
             result.locale &&
@@ -346,7 +378,9 @@ export default class I18NConfiguration {
               result.translation
             );
           }
+          return item.resolve(result.translation);
         }
+        return item.reject();
       });
     } catch (error) {
       console.error(error);

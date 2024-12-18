@@ -46,25 +46,32 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RemoteTranslationsManager = void 0;
 var generaltranslation_1 = require("generaltranslation");
 var createErrors_1 = require("../errors/createErrors");
+var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
 /**
  * Manages remote translations.
  */
 var RemoteTranslationsManager = /** @class */ (function () {
     /**
      * Creates an instance of RemoteTranslationsManager.
+     * @constructor
      */
     function RemoteTranslationsManager() {
         this.config = {
-            cacheURL: 'https://cache.gtx.dev',
+            cacheUrl: 'https://cache.gtx.dev',
             projectId: '',
+            cacheExpiryTime: defaultInitGTProps_1.default.cacheExpiryTime, // default to 60 seconds
         };
         this.translationsMap = new Map();
         this.fetchPromises = new Map();
         this.requestedTranslations = new Map();
+        this.lastFetchTime = new Map();
     }
     /**
      * Sets the configuration for the RemoteTranslationsManager.
@@ -85,13 +92,14 @@ var RemoteTranslationsManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 3, , 4]);
-                        return [4 /*yield*/, fetch("".concat(this.config.cacheURL, "/").concat(this.config.projectId, "/").concat(reference))];
+                        return [4 /*yield*/, fetch("".concat(this.config.cacheUrl, "/").concat(this.config.projectId, "/").concat(reference))];
                     case 1:
                         response = _a.sent();
                         return [4 /*yield*/, response.json()];
                     case 2:
                         result = _a.sent();
                         if (Object.keys(result).length) {
+                            this.lastFetchTime.set(reference, Date.now());
                             return [2 /*return*/, result];
                         }
                         return [3 /*break*/, 4];
@@ -105,6 +113,20 @@ var RemoteTranslationsManager = /** @class */ (function () {
         });
     };
     /**
+     * Checks if translations are expired based on the configured TTL.
+     * @param {string} reference - The translation reference.
+     * @returns {boolean} True if expired, false otherwise.
+     */
+    RemoteTranslationsManager.prototype._isExpired = function (reference) {
+        var _a;
+        var fetchTime = this.lastFetchTime.get(reference);
+        if (!fetchTime)
+            return true;
+        var now = Date.now();
+        var expiryTime = (_a = this.config.cacheExpiryTime) !== null && _a !== void 0 ? _a : defaultInitGTProps_1.default.cacheExpiryTime;
+        return now - fetchTime > expiryTime;
+    };
+    /**
      * Retrieves translations for a given locale.
      * @param {string} locale - The locale code.
      * @returns {Promise<Record<string, any> | null>} The translations data or null if not found.
@@ -116,7 +138,8 @@ var RemoteTranslationsManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         reference = (0, generaltranslation_1.standardizeLocale)(locale);
-                        if (this.translationsMap.has(reference)) {
+                        // If we have cached translations and they are not expired, return them
+                        if (this.translationsMap.has(reference) && !this._isExpired(reference)) {
                             return [2 /*return*/, this.translationsMap.get(reference) || null];
                         }
                         if (!this.fetchPromises.has(reference)) return [3 /*break*/, 2];
@@ -146,25 +169,29 @@ var RemoteTranslationsManager = /** @class */ (function () {
      * @returns {boolean} True if the entry was set successfully, false otherwise.
      */
     RemoteTranslationsManager.prototype.setTranslations = function (locale, key, id, translation) {
-        var _a;
+        var _a, _b;
         if (id === void 0) { id = key; }
         if (!(locale && key && id && translation))
             return false;
         var reference = (0, generaltranslation_1.standardizeLocale)(locale);
         var currentTranslations = this.translationsMap.get(reference) || {};
-        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[id] = translation && typeof translation === 'object' && translation.t
-            ? __assign(__assign({}, translation), { k: key }) : { k: key, t: translation }, _a)));
+        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[id] = (_b = {}, _b[key] = translation, _b), _a)));
+        // Reset the fetch time since we just manually updated the translation
+        this.lastFetchTime.set(reference, Date.now());
         return true;
     };
     /**
-     * Marks translations as requested for a given locale
+     * Marks translations as requested for a given locale.
+     * @param {string} locale - The locale code.
      */
     RemoteTranslationsManager.prototype.setTranslationRequested = function (locale) {
         var reference = (0, generaltranslation_1.standardizeLocale)(locale);
         this.requestedTranslations.set(reference, true);
     };
     /**
-     * Checks if translations have been requested for a given locale
+     * Checks if translations have been requested for a given locale.
+     * @param {string} locale - The locale code.
+     * @returns {boolean} True if requested, false otherwise.
      */
     RemoteTranslationsManager.prototype.getTranslationRequested = function (locale) {
         var reference = (0, generaltranslation_1.standardizeLocale)(locale);

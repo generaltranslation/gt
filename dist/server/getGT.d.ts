@@ -11,7 +11,7 @@
  * const t = await getGT();
  * console.log(t('hello')); // Translates item 'hello'
  */
-export declare function getGT(id?: string): Promise<(id: string, options?: Record<string, any>, f?: Function) => any>;
+export declare function getGT(id?: string): Promise<(id: string, options?: Record<string, any>) => any>;
 /**
  * Returns the translation function `t()`, which is used to translate an item from the dictionary.
  *
@@ -27,5 +27,5 @@ export declare function getGT(id?: string): Promise<(id: string, options?: Recor
  * const t = useElement();
  * console.log(t('hello')); // Translates item 'hello', returns as JSX
  */
-export declare function useElement(id?: string): (id: string, options?: Record<string, any>, f?: Function) => JSX.Element;
+export declare function useElement(id?: string): (id: string, options?: Record<string, any>) => JSX.Element;
 //# sourceMappingURL=getGT.d.ts.map

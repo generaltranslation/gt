@@ -46,17 +46,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -103,7 +92,8 @@ var createErrors_1 = require("../../errors/createErrors");
  */
 function tx(content_1) {
     return __awaiter(this, arguments, void 0, function (content, options) {
-        var I18NConfig, contentAsArray, _a, _b, _c, _, key, translations, locale, others, translationPromise, _d, _e, _f, renderSettings, translation;
+        var I18NConfig, defaultLocale, locale, _a, contentArray, r, _b, _, hash, translations, target, translationPromise, _c, _d, _e, renderSettings, target, error_1;
+        var _f;
         var _g;
         if (options === void 0) { options = {}; }
         return __generator(this, function (_h) {
@@ -112,55 +102,59 @@ function tx(content_1) {
                     if (!content)
                         return [2 /*return*/, ''];
                     I18NConfig = (0, getI18NConfig_1.default)();
-                    contentAsArray = (0, generaltranslation_1.splitStringToContent)(content);
-                    _a = options;
-                    _b = options.locale;
-                    if (_b) return [3 /*break*/, 2];
+                    defaultLocale = I18NConfig.getDefaultLocale();
+                    _a = options.locale;
+                    if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    _b = (_h.sent());
+                    _a = (_h.sent());
                     _h.label = 2;
                 case 2:
-                    _a.locale = _b;
-                    if (!I18NConfig.requiresTranslation(options.locale))
-                        return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(contentAsArray, [options.locale, I18NConfig.getDefaultLocale()], options.variables, options.variablesOptions)];
-                    _c = I18NConfig.serializeAndHash(content, options.context, undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
-                    ), _ = _c[0], key = _c[1];
+                    locale = _a;
+                    contentArray = (0, generaltranslation_1.splitStringToContent)(content);
+                    r = function (content, locales) {
+                        return (0, generaltranslation_1.renderContentToString)(content, locales, options.variables, options.variablesOptions);
+                    };
+                    if (!I18NConfig.requiresTranslation(locale))
+                        return [2 /*return*/, r(contentArray, [defaultLocale])];
+                    _b = I18NConfig.serializeAndHash(contentArray, options.context, undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
+                    ), _ = _b[0], hash = _b[1];
                     if (!options.id) return [3 /*break*/, 4];
-                    return [4 /*yield*/, I18NConfig.getTranslations(options.locale)];
+                    return [4 /*yield*/, I18NConfig.getTranslations(locale)];
                 case 3:
                     translations = _h.sent();
-                    if ((translations === null || translations === void 0 ? void 0 : translations[options.id]) && translations[options.id].k === key)
-                        return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(translations[options.id].t, [options.locale, I18NConfig.getDefaultLocale()], options.variables, options.variablesOptions)];
+                    target = (_g = translations[options.id]) === null || _g === void 0 ? void 0 : _g[hash];
+                    if (target)
+                        return [2 /*return*/, r(target, [locale, defaultLocale])];
                     _h.label = 4;
                 case 4:
-                    locale = options.locale, others = __rest(options, ["locale"]);
-                    _e = (_d = I18NConfig).translate;
-                    _g = {
-                        content: content,
+                    ;
+                    _d = (_c = I18NConfig).translateContent;
+                    _f = {
+                        source: contentArray,
                         targetLocale: locale
                     };
-                    _f = [__assign({}, others)];
+                    _e = [__assign({}, options)];
                     return [4 /*yield*/, (0, getMetadata_1.default)()];
                 case 5:
-                    translationPromise = _e.apply(_d, [(_g.options = __assign.apply(void 0, [__assign.apply(void 0, _f.concat([(_h.sent())])), { hash: key }]),
-                            _g)]);
+                    translationPromise = _d.apply(_c, [(_f.options = __assign.apply(void 0, [__assign.apply(void 0, _e.concat([(_h.sent())])), { hash: hash }]),
+                            _f)]);
                     renderSettings = I18NConfig.getRenderSettings();
-                    if (!(renderSettings.method !== 'subtle' ||
+                    if (!(renderSettings.method !== "subtle" ||
                         !options.id) // because it is only saved if an id is present
-                    ) return [3 /*break*/, 7]; // because it is only saved if an id is present
-                    return [4 /*yield*/, translationPromise];
+                    ) return [3 /*break*/, 9]; // because it is only saved if an id is present
+                    _h.label = 6;
                 case 6:
-                    translation = _h.sent();
-                    try {
-                        return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(translation, [options.targetLocale, I18NConfig.getDefaultLocale()], options.variables, options.variableOptions)];
-                    }
-                    catch (error) {
-                        console.error((0, createErrors_1.createStringTranslationError)(content, options.id), error);
-                        return [2 /*return*/, ''];
-                    }
-                    _h.label = 7;
-                case 7: return [2 /*return*/, (0, generaltranslation_1.renderContentToString)(contentAsArray, [options.targetLocale, I18NConfig.getDefaultLocale()], options.variables, options.variableOptions)];
+                    _h.trys.push([6, 8, , 9]);
+                    return [4 /*yield*/, translationPromise];
+                case 7:
+                    target = _h.sent();
+                    return [2 /*return*/, r(target, [locale, defaultLocale])];
+                case 8:
+                    error_1 = _h.sent();
+                    console.error((0, createErrors_1.createStringTranslationError)(content, options.id), error_1);
+                    return [2 /*return*/, r(contentArray, [defaultLocale])];
+                case 9: return [2 /*return*/, r(contentArray, [defaultLocale])];
             }
         });
     });

@@ -5,8 +5,9 @@ type InitGTProps = {
     // Cloud integration
     apiKey?: string;
     projectId?: string;
-    baseURL?: string;
-    cacheURL?: string;
+    baseUrl?: string;
+    cacheUrl?: string;
+    cacheExpiryTime?: number;
     // Locale info
     locales?: string[];
     defaultLocale?: string;

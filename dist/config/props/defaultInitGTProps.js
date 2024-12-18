@@ -41,23 +41,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var internal_1 = require("generaltranslation/internal");
 var getDefaultFromEnv_1 = __importDefault(require("../../utils/getDefaultFromEnv"));
-exports.default = {
+var supported_locales_1 = require("@generaltranslation/supported-locales");
+var createErrors_1 = require("../../errors/createErrors");
+var defaultInitGTProps = {
     apiKey: (0, getDefaultFromEnv_1.default)('GT_API_KEY'),
+    devApiKey: '',
     projectId: (0, getDefaultFromEnv_1.default)('GT_PROJECT_ID'),
-    baseURL: 'https://prod.gtx.dev',
-    cacheURL: internal_1.defaultCacheURL,
+    baseUrl: internal_1.defaultBaseUrl,
+    cacheUrl: internal_1.defaultCacheUrl,
+    cacheExpiryTime: 6000,
     defaultLocale: internal_1.libraryDefaultLocale,
     getLocale: function () { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
         return [2 /*return*/, internal_1.libraryDefaultLocale];
     }); }); },
-    renderSettings: {
-        method: "skeleton",
-        timeout: (0, getDefaultFromEnv_1.default)('NODE_ENV') === "development" ? null : 8000
-    },
+    locales: (0, supported_locales_1.listSupportedLocales)(),
+    env: (0, getDefaultFromEnv_1.default)('NODE_ENV'),
     getMetadata: function () { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
         return [2 /*return*/, ({})];
     }); }); },
-    _maxConcurrectRequests: 2,
-    _batchInterval: 1000
+    _maxConcurrectRequests: 100,
+    _batchInterval: 10
 };
+if (defaultInitGTProps.devApiKey && (defaultInitGTProps.env !== "development" && defaultInitGTProps.env !== "test"))
+    throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
+exports.default = defaultInitGTProps;
 //# sourceMappingURL=defaultInitGTProps.js.map

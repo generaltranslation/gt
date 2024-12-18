@@ -79,12 +79,7 @@ function getNextLocale() {
                             preferredLocales.push.apply(preferredLocales, acceptedLocales);
                         // add defaultLocale just in case there are no matches
                         preferredLocales.push(defaultLocale);
-                        // if there are specified allowed locales
-                        if (locales) {
-                            return (0, generaltranslation_1.determineLocale)(preferredLocales, locales) || defaultLocale;
-                        }
-                        // if there are no specified allowed locales
-                        return preferredLocales[0];
+                        return (0, generaltranslation_1.determineLocale)(preferredLocales, locales) || defaultLocale;
                     })();
                     return [2 /*return*/, userLocale];
             }

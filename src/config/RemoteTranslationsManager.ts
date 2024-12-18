@@ -1,12 +1,18 @@
 import { standardizeLocale } from "generaltranslation";
 import { remoteTranslationsError } from "../errors/createErrors";
+import defaultInitGTProps from "./props/defaultInitGTProps";
 
 /**
  * Configuration type for RemoteTranslationsManager.
+ * @typedef {object} RemoteTranslationsConfig
+ * @property {string} cacheUrl - The URL of the remote cache.
+ * @property {string} projectId - The project identifier for translations.
+ * @property {number} [cacheExpiryTime=60000] - The cache expiration time in milliseconds.
  */
 type RemoteTranslationsConfig = {
-  cacheURL: string;
+  cacheUrl: string;
   projectId: string;
+  cacheExpiryTime?: number;
 };
 
 /**
@@ -17,18 +23,22 @@ export class RemoteTranslationsManager {
   private translationsMap: Map<string, Record<string, any>>;
   private fetchPromises: Map<string, Promise<Record<string, any> | null>>;
   private requestedTranslations: Map<string, boolean>;
+  private lastFetchTime: Map<string, number>;
 
   /**
    * Creates an instance of RemoteTranslationsManager.
+   * @constructor
    */
   constructor() {
     this.config = {
-      cacheURL: 'https://cache.gtx.dev',
+      cacheUrl: 'https://cache.gtx.dev',
       projectId: '',
+      cacheExpiryTime: defaultInitGTProps.cacheExpiryTime, // default to 60 seconds
     };
     this.translationsMap = new Map();
     this.fetchPromises = new Map();
     this.requestedTranslations = new Map();
+    this.lastFetchTime = new Map();
   }
 
   /**
@@ -49,10 +59,11 @@ export class RemoteTranslationsManager {
   ): Promise<Record<string, any> | null> {
     try {
       const response = await fetch(
-        `${this.config.cacheURL}/${this.config.projectId}/${reference}`
+        `${this.config.cacheUrl}/${this.config.projectId}/${reference}`
       );
       const result = await response.json();
       if (Object.keys(result).length) {
+        this.lastFetchTime.set(reference, Date.now());
         return result;
       }
     } catch (error) {
@@ -62,15 +73,32 @@ export class RemoteTranslationsManager {
   }
 
   /**
+   * Checks if translations are expired based on the configured TTL.
+   * @param {string} reference - The translation reference.
+   * @returns {boolean} True if expired, false otherwise.
+   */
+  private _isExpired(reference: string): boolean {
+    const fetchTime = this.lastFetchTime.get(reference);
+    if (!fetchTime) return true;
+    const now = Date.now();
+    const expiryTime = this.config.cacheExpiryTime ?? defaultInitGTProps.cacheExpiryTime;
+    return now - fetchTime > expiryTime;
+  }
+
+  /**
    * Retrieves translations for a given locale.
    * @param {string} locale - The locale code.
    * @returns {Promise<Record<string, any> | null>} The translations data or null if not found.
    */
   async getTranslations(locale: string): Promise<Record<string, any> | null> {
     const reference = standardizeLocale(locale);
-    if (this.translationsMap.has(reference)) {
+
+    // If we have cached translations and they are not expired, return them
+    if (this.translationsMap.has(reference) && !this._isExpired(reference)) {
       return this.translationsMap.get(reference) || null;
     }
+
+    // If we have a fetch in progress, await that
     if (this.fetchPromises.has(reference)) {
       return (await this.fetchPromises.get(reference)) || null;
     }
@@ -106,24 +134,26 @@ export class RemoteTranslationsManager {
     const currentTranslations = this.translationsMap.get(reference) || {};
     this.translationsMap.set(reference, {
       ...currentTranslations,
-      [id]:
-        translation && typeof translation === 'object' && translation.t
-          ? { ...translation, k: key }
-          : { k: key, t: translation },
+      [id]: { [key]: translation },
     });
+    // Reset the fetch time since we just manually updated the translation
+    this.lastFetchTime.set(reference, Date.now());
     return true;
   }
 
   /**
-   * Marks translations as requested for a given locale
+   * Marks translations as requested for a given locale.
+   * @param {string} locale - The locale code.
    */
-  setTranslationRequested(locale: string) {
+  setTranslationRequested(locale: string): void {
     const reference = standardizeLocale(locale);
     this.requestedTranslations.set(reference, true);
   }
 
   /**
-   * Checks if translations have been requested for a given locale
+   * Checks if translations have been requested for a given locale.
+   * @param {string} locale - The locale code.
+   * @returns {boolean} True if requested, false otherwise.
    */
   getTranslationRequested(locale: string): boolean {
     const reference = standardizeLocale(locale);

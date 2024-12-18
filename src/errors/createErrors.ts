@@ -4,7 +4,7 @@ import { getLocaleProperties } from "generaltranslation"
 
 export const projectIdMissingError = 'General Translation: Project ID missing! Set projectId as GT_PROJECT_ID in the environment or by passing the projectId parameter to initGT(). Find your project ID: www.generaltranslation.com/dashboard.'
 
-export const APIKeyMissingError = 'General Translation: API key is required for automatic translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off automatic translation by setting baseURL to an empty string.)'
+export const APIKeyMissingError = 'General Translation: API key is required for automatic translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off automatic translation by setting baseUrl to an empty string.)'
 
 export const remoteTranslationsError = 'General Translation: Error fetching remote translation.'
 
@@ -15,11 +15,10 @@ export const createStringTranslationError = (content: string, id?: string) => `g
 export const createRequiredPrefixError = (id: string, requiredPrefix: string) => 
     `You are using <GTProvider> with a provided prefix id: "${requiredPrefix}", but one of the children of <GTProvider> has the id "${id}". Change the <GTProvider> id prop or your dictionary structure to proceed.`
 
-export const createAdvancedFunctionsError = (id: string, options?: Record<string, any>) => 
-    `General Translation: You're trying to call a function in the server dictionary on the client-side, but functions can't be passed directly from server to client. ` +
-        `Try including the function you want to call as a parameter in t(), like t("${id}", ${
-            options ? JSON.stringify(options) : 'undefined'
-                }, MyFunction)`
+export const devApiKeyIncludedInProductionError = `General Translation: You are attempting a production build of your app with a developer API key (beginning "gtx-dev-"). Replace this API key with a production API key (beginning "gtx-api-") when you build your app for production.`
+
+export const createDictionarySubsetError = (id: string, functionName: string) => 
+    `General Translation: ${functionName} with id: "${id}". Invalid dictionary entry detected. Make sure you are navigating to the correct subroute of the dictionary with the ID you provide.`
 
 // ---- WARNINGS ---- //
 

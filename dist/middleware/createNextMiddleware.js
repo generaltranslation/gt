@@ -2,10 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = createNextMiddleware;
 var generaltranslation_1 = require("generaltranslation");
-var server_1 = require("next/server");
 // import { ResponseCookies, RequestCookies } from "next/dist/compiled/@edge-runtime/cookies";
 var internal_1 = require("generaltranslation/internal");
 var supported_locales_1 = require("@generaltranslation/supported-locales");
+var createErrors_1 = require("../errors/createErrors");
+var server_1 = require("next/server");
 /**
  * Extracts the locale from the given pathname.
  *
@@ -33,10 +34,13 @@ function extractLocale(pathname) {
 function createNextMiddleware(_a) {
     var _b = _a === void 0 ? {
         defaultLocale: internal_1.libraryDefaultLocale, localeRouting: true, prefixDefaultLocale: false
-    } : _a, _c = _b.defaultLocale, defaultLocale = _c === void 0 ? internal_1.libraryDefaultLocale : _c, locales = _b.locales, _d = _b.localeRouting, localeRouting = _d === void 0 ? true : _d, _e = _b.prefixDefaultLocale, prefixDefaultLocale = _e === void 0 ? false : _e;
-    if (!locales) {
-        locales = (0, supported_locales_1.listSupportedLocales)();
-    }
+    } : _a, _c = _b.defaultLocale, defaultLocale = _c === void 0 ? internal_1.libraryDefaultLocale : _c, _d = _b.locales, locales = _d === void 0 ? (0, supported_locales_1.listSupportedLocales)() : _d, _e = _b.localeRouting, localeRouting = _e === void 0 ? true : _e, _f = _b.prefixDefaultLocale, prefixDefaultLocale = _f === void 0 ? false : _f;
+    if (!(0, generaltranslation_1.isValidLocale)(defaultLocale))
+        throw new Error("gt-next middleware: defaultLocale \"".concat(defaultLocale, "\" is not a valid locale."));
+    var warningLocales = locales.filter(function (locale) { return !(0, generaltranslation_1.isValidLocale)(locale); });
+    if (warningLocales.length)
+        console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));
+    var approvedLocales = locales;
     /**
     * Processes the incoming request to determine the user's locale and sets a locale cookie.
     * Optionally redirects the user based on the locale if locale-based routing is enabled.
@@ -59,48 +63,27 @@ function createNextMiddleware(_a) {
             // Check if there is any supported locale in the pathname
             var pathname = req.nextUrl.pathname;
             var locale = extractLocale(pathname);
-            var pathnameHasLocale = false;
             if (locale && (0, generaltranslation_1.isValidLocale)(locale)) {
-                if (locales) {
-                    var approvedLocale = (0, generaltranslation_1.determineLocale)(locale, locales);
-                    if (approvedLocale) {
-                        userLocale = (0, generaltranslation_1.standardizeLocale)(approvedLocale);
-                        pathnameHasLocale = true;
-                    }
+                var approvedLocale = (0, generaltranslation_1.determineLocale)(locale, approvedLocales);
+                if (approvedLocale) {
+                    userLocale = (0, generaltranslation_1.standardizeLocale)(approvedLocale);
+                    res.headers.set(internal_1.localeHeaderName, userLocale);
+                    res.cookies.set(internal_1.localeCookieName, userLocale);
+                    return res;
                 }
-                else {
-                    userLocale = (0, generaltranslation_1.standardizeLocale)(locale);
-                    pathnameHasLocale = true;
-                }
-            }
-            if (pathnameHasLocale) {
-                res.headers.set(internal_1.localeHeaderName, userLocale);
-                res.cookies.set(internal_1.localeCookieName, userLocale);
-                return res;
             }
             // If there's no locale, try to get one from the referer
             var referer = headerList.get('referer');
             if (referer && typeof referer === 'string') {
                 var refererLocale = extractLocale((_a = (new URL(referer))) === null || _a === void 0 ? void 0 : _a.pathname);
                 if (refererLocale) {
-                    var refererLocaleIsValid = false;
-                    if (locales) {
-                        var approvedLocale = (0, generaltranslation_1.determineLocale)(refererLocale, locales);
-                        if (approvedLocale) {
-                            userLocale = (0, generaltranslation_1.standardizeLocale)(approvedLocale);
-                            refererLocaleIsValid = true;
-                        }
-                    }
-                    else {
-                        if ((0, generaltranslation_1.isValidLocale)(refererLocale)) {
-                            userLocale = (0, generaltranslation_1.standardizeLocale)(refererLocale);
-                            refererLocaleIsValid = true;
-                        }
-                    }
-                    if (refererLocaleIsValid) {
+                    var approvedLocale = (0, generaltranslation_1.determineLocale)(refererLocale, approvedLocales);
+                    if (approvedLocale) {
+                        userLocale = (0, generaltranslation_1.standardizeLocale)(approvedLocale);
                         req.nextUrl.pathname = "/".concat(userLocale, "/").concat(pathname);
                         return server_1.NextResponse.redirect(req.nextUrl);
                     }
+                    ;
                 }
             }
         }
@@ -114,14 +97,9 @@ function createNextMiddleware(_a) {
             }*/
             var acceptedLocales = (_b = (_a = headerList.get('accept-language')) === null || _a === void 0 ? void 0 : _a.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); })) === null || _b === void 0 ? void 0 : _b.filter(function (code) { return (0, generaltranslation_1.isValidLocale)(code); });
             if (acceptedLocales && acceptedLocales.length > 0) {
-                if (locales) {
-                    var approvedLocale = (0, generaltranslation_1.determineLocale)(acceptedLocales, locales);
-                    if (approvedLocale) {
-                        userLocale = (0, generaltranslation_1.standardizeLocale)(approvedLocale);
-                    }
-                }
-                else {
-                    return (0, generaltranslation_1.standardizeLocale)(acceptedLocales[0]);
+                var approvedLocale = (0, generaltranslation_1.determineLocale)(acceptedLocales, approvedLocales);
+                if (approvedLocale) {
+                    userLocale = (0, generaltranslation_1.standardizeLocale)(approvedLocale);
                 }
             }
             return userLocale;
