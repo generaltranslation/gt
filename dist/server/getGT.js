@@ -129,7 +129,7 @@ function getGT(id) {
                 case 3:
                     translations_1 = _a.sent();
                     // Translate all strings in advance
-                    return [4 /*yield*/, Promise.all(Object.entries(dictionaryEntries).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
+                    return [4 /*yield*/, Promise.all(Object.entries(dictionaryEntries !== null && dictionaryEntries !== void 0 ? dictionaryEntries : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
                             var _c, entry, metadata, contentArray, entryId, _d, _, hash, translation, translationPromise, _e, _f;
                             var _g;
                             var suffix = _b[0], dictionaryEntry = _b[1];

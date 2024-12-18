@@ -230,6 +230,7 @@ var I18NConfiguration = /** @class */ (function () {
      * @returns {[any, string]} A xxhash hash and the children that were created from it
     */
     I18NConfiguration.prototype.serializeAndHash = function (children, context, id) {
+        var _a;
         // In development, recomputes hashes each time
         if (this.isDevelopmentEnvironment() || !id) {
             var childrenAsObjects_1 = (0, internal_1.writeChildrenAsObjects)(children);
@@ -241,12 +242,12 @@ var I18NConfiguration = /** @class */ (function () {
         // In production, since dictionary content isn't changing, cache results
         var templateEntry = this._template.get(id);
         if (templateEntry) {
-            var _a = Object.entries(templateEntry)[0], hash_1 = _a[0], target = _a[1];
+            var _b = Object.entries(templateEntry)[0], hash_1 = _b[0], target = _b[1];
             return [target, hash_1];
         }
         var childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(children);
         var hash = (0, internal_1.hashReactChildrenObjects)(context ? [childrenAsObjects, context] : childrenAsObjects);
-        this._template.set(id, { k: hash, t: childrenAsObjects });
+        this._template.set(id, (_a = {}, _a[hash] = childrenAsObjects, _a));
         return [childrenAsObjects, hash];
     };
     /**

@@ -71,7 +71,7 @@ function ClientProvider(_a) {
             var _this = this;
             return __generator(this, function (_a) {
                 awaitedTranslations = {};
-                Promise.all(Object.entries(initialTranslations).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
+                Promise.all(Object.entries(initialTranslations !== null && initialTranslations !== void 0 ? initialTranslations : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
                     var translation, error_1;
                     var _c;
                     var id = _b[0], obj = _b[1];

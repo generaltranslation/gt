@@ -132,7 +132,7 @@ function GTProvider(_a) {
                 case 5:
                     existingTranslations = _c;
                     // Check and standardize flattened dictionary entries before passing them to the client
-                    return [4 /*yield*/, Promise.all(Object.entries(dictionaryEntries).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
+                    return [4 /*yield*/, Promise.all(Object.entries(dictionaryEntries !== null && dictionaryEntries !== void 0 ? dictionaryEntries : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
                             var entryId, _c, entry, metadata, taggedEntry, contentArray, _d, _, hash_1, translation_1, translationPromise_1, _e, _f, _g, _h, entryAsObjects, hash, translation, translationPromise, _j, _k, _l, loadingFallback, errorFallback;
                             var _m, _o, _p, _q;
                             var suffix = _b[0], dictionaryEntry = _b[1];
