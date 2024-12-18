@@ -134,10 +134,7 @@ export class RemoteTranslationsManager {
     const currentTranslations = this.translationsMap.get(reference) || {};
     this.translationsMap.set(reference, {
       ...currentTranslations,
-      [id]:
-        translation && typeof translation === 'object' && translation.t
-          ? { ...translation, k: key }
-          : { k: key, t: translation },
+      [id]: { [key]: translation },
     });
     // Reset the fetch time since we just manually updated the translation
     this.lastFetchTime.set(reference, Date.now());

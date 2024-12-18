@@ -169,14 +169,13 @@ var RemoteTranslationsManager = /** @class */ (function () {
      * @returns {boolean} True if the entry was set successfully, false otherwise.
      */
     RemoteTranslationsManager.prototype.setTranslations = function (locale, key, id, translation) {
-        var _a;
+        var _a, _b;
         if (id === void 0) { id = key; }
         if (!(locale && key && id && translation))
             return false;
         var reference = (0, generaltranslation_1.standardizeLocale)(locale);
         var currentTranslations = this.translationsMap.get(reference) || {};
-        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[id] = translation && typeof translation === 'object' && translation.t
-            ? __assign(__assign({}, translation), { k: key }) : { k: key, t: translation }, _a)));
+        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[id] = (_b = {}, _b[key] = translation, _b), _a)));
         // Reset the fetch time since we just manually updated the translation
         this.lastFetchTime.set(reference, Date.now());
         return true;
