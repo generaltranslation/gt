@@ -284,7 +284,7 @@ export default class I18NConfiguration {
           targetLocale,
           metadata: { ...this.metadata, projectId: this.projectId, ...options },
         },
-        revalidate: this.isDevelopmentEnvironment() && (this._remoteTranslationsManager
+        revalidate: !this.isDevelopmentEnvironment() && (this._remoteTranslationsManager
           ? this._remoteTranslationsManager.getTranslationRequested(
               targetLocale
             )
@@ -329,7 +329,7 @@ export default class I18NConfiguration {
           targetLocale,
           metadata: { ...this.metadata, ...metadata },
         },
-        revalidate: this.isDevelopmentEnvironment() && (this._remoteTranslationsManager
+        revalidate: !this.isDevelopmentEnvironment() && (this._remoteTranslationsManager
           ? this._remoteTranslationsManager.getTranslationRequested(
               targetLocale
             )
