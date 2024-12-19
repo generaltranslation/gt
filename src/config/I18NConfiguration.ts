@@ -366,7 +366,7 @@ export default class I18NConfiguration {
         if (!result) return item.reject('Translation failed.');
         if (result && typeof result === 'object') {
           if (
-            result.translation &&
+            this.gt.isResultSuccessful(result) &&
             result.locale &&
             result.reference &&
             this._remoteTranslationsManager
@@ -377,8 +377,10 @@ export default class I18NConfiguration {
               result.reference.id,
               result.translation
             );
+            return item.resolve(result.translation);
+          } else if (this.gt.isResultError(result)) {
+            return item.reject(result.code.toString() + ' ' + result.error);
           }
-          return item.resolve(result.translation);
         }
         return item.reject();
       });

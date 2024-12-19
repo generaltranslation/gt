@@ -290,7 +290,7 @@ var I18NConfiguration = /** @class */ (function () {
                             targetLocale: targetLocale,
                             metadata: __assign(__assign(__assign({}, _this.metadata), { projectId: _this.projectId }), options),
                         },
-                        revalidate: _this.isDevelopmentEnvironment() && (_this._remoteTranslationsManager
+                        revalidate: !_this.isDevelopmentEnvironment() && (_this._remoteTranslationsManager
                             ? _this._remoteTranslationsManager.getTranslationRequested(targetLocale)
                             : false),
                         resolve: resolve,
@@ -332,7 +332,7 @@ var I18NConfiguration = /** @class */ (function () {
                             targetLocale: targetLocale,
                             metadata: __assign(__assign({}, _this.metadata), metadata),
                         },
-                        revalidate: _this.isDevelopmentEnvironment() && (_this._remoteTranslationsManager
+                        revalidate: !_this.isDevelopmentEnvironment() && (_this._remoteTranslationsManager
                             ? _this._remoteTranslationsManager.getTranslationRequested(targetLocale)
                             : false),
                         resolve: resolve,
@@ -375,13 +375,12 @@ var I18NConfiguration = /** @class */ (function () {
                             var result = results_1[index];
                             if (!result)
                                 return item.reject('Translation failed.');
-                            if (result && typeof result === 'object') {
-                                if (result.translation &&
-                                    result.locale &&
-                                    result.reference &&
-                                    _this._remoteTranslationsManager) {
-                                    _this._remoteTranslationsManager.setTranslations(result.locale, result.reference.key, result.reference.id, result.translation);
-                                }
+                            if (result && typeof result === 'object' &&
+                                _this.gt.isResultSuccessful(result) &&
+                                result.locale &&
+                                result.reference &&
+                                _this._remoteTranslationsManager) {
+                                _this._remoteTranslationsManager.setTranslations(result.locale, result.reference.key, result.reference.id, result.translation);
                                 return item.resolve(result.translation);
                             }
                             return item.reject();
