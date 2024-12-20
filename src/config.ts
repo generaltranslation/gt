@@ -33,6 +33,7 @@ import { defaultRenderSettings } from "gt-react/internal";
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
  * @param {number} [_maxConcurrentRequests=defaultInitGTProps._maxConcurrectRequests] - Maximum number of concurrent requests allowed.
+ * @param {number} [_maxBatchSize=defaultInitGTProps._maxBatchSize] - Maximum translation requests in the same batch.
  * @param {number} [_batchInterval=defaultInitGTProps._batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
@@ -55,6 +56,7 @@ export function initGT({
   renderSettings = defaultRenderSettings,
   env = defaultInitGTProps.env,
   _maxConcurrentRequests = defaultInitGTProps._maxConcurrectRequests,
+  _maxBatchSize = defaultInitGTProps._maxBatchSize,
   _batchInterval = defaultInitGTProps._batchInterval,
   ...metadata
 }: InitGTProps = defaultInitGTProps) {
@@ -102,6 +104,7 @@ export function initGT({
     renderSettings,
     env,
     maxConcurrentRequests: _maxConcurrentRequests,
+    maxBatchSize: _maxBatchSize,
     batchInterval: _batchInterval,
     ...metadata,
   });

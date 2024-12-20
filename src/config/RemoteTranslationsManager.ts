@@ -103,6 +103,7 @@ export class RemoteTranslationsManager {
       return (await this.fetchPromises.get(reference)) || null;
     }
 
+    // If we have not requested translations for this locale from the cache, do so now (remember, the tx might not be in the cache)
     const fetchPromise = this._fetchTranslations(reference);
     this.fetchPromises.set(reference, fetchPromise);
 

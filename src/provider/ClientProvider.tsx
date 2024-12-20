@@ -54,22 +54,25 @@ export default function ClientProvider({
   useLayoutEffect(() => {
     (async () => {
       const awaitedTranslations: Record<string, any> = {};
-      Promise.all(
+      await Promise.all(
         Object.entries(initialTranslations ?? {}).map(async ([id, obj]) => {
           if (obj?.promise) {
             try {
               const translation = await obj.promise;
-              awaitedTranslations[id] = { [obj.hash]: translation };
+              if ('error' in translation) {
+                awaitedTranslations[id] = undefined; // will create an error fallback
+              } else {
+                awaitedTranslations[id] = { [obj.hash]: translation };
+              }
             } catch (error) {
-              console.error(error);
               awaitedTranslations[id] = undefined;
             }
           }
         })
-      )
-      setTranslations((prev) => ({...initialTranslations, ...prev, ...awaitedTranslations }))
+      );
+      setTranslations((prev) => ({ ...prev, ...awaitedTranslations }));
     })();
-    setTranslations((prev) => ({ ...prev }));
+    setTranslations((prev) => ({ ...initialTranslations, ...prev }));
   }, []);
   
   
@@ -100,7 +103,7 @@ export default function ClientProvider({
 
       if (typeof entry === 'string') {
 
-        const r = (content: any) => {
+        const renderString = (content: any) => {
           return renderContentToString(
             content,
             [locale, defaultLocale],
@@ -109,21 +112,21 @@ export default function ClientProvider({
           );
         };
 
-        if (!translationRequired) return r(entry);
+        if (!translationRequired) return renderString(entry);
           
         const translation = translations?.[id];
-
-        return r(
+        
+        return renderString(
           translation?.[metadata?.hash] || 
           translation?.loadingFallback || 
-          entry
+          entry // error fallback
         );
 
       }
 
       // ----- JSX ENTRIES ----- // 
 
-      const rd = () => {
+      const renderDefault = () => {
         return renderDefaultChildren({
           children: entry,
           variables,
@@ -133,11 +136,12 @@ export default function ClientProvider({
       };
 
       // Fallback if there is no translation present
-      if (!translationRequired) return rd();
+      if (!translationRequired) return renderDefault();
       const translation = translations?.[id];
-      if (!translation) return rd();
 
-      const rt = (target: any) => {
+      if (!translation) return renderDefault(); // error fallback
+
+      const renderTranslation = (target: any) => {
         return renderTranslatedChildren({
           source: entry,
           target,
@@ -149,17 +153,13 @@ export default function ClientProvider({
       };
 
       if (translation?.promise) {
-        translation.errorFallback ||= rd();
+        translation.errorFallback ||= renderDefault();
         translation.loadingFallback ||= translation.errorFallback;
-        // suspense here for hydration reasons
-        return (
-          <Suspense fallback={translation.loadingFallback}>
-            {translation.loadingFallback}
-          </Suspense>
-        )
+        return (translation.loadingFallback);
       };
 
-      return rt(translation?.[metadata?.hash]);
+      
+      return renderTranslation(translation?.[metadata?.hash]);
     },
     [dictionary, translations]
   );

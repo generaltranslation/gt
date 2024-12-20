@@ -16,6 +16,7 @@ const defaultInitGTProps = {
     env: getDefaultFromEnv('NODE_ENV'),
     getMetadata: async () => ({}),
     _maxConcurrectRequests: 100,
+    _maxBatchSize: 25,
     _batchInterval: 10
 } as const;
 

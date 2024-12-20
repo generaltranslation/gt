@@ -70,37 +70,46 @@ function ClientProvider(_a) {
             var awaitedTranslations;
             var _this = this;
             return __generator(this, function (_a) {
-                awaitedTranslations = {};
-                Promise.all(Object.entries(initialTranslations !== null && initialTranslations !== void 0 ? initialTranslations : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                    var translation, error_1;
-                    var _c;
-                    var id = _b[0], obj = _b[1];
-                    return __generator(this, function (_d) {
-                        switch (_d.label) {
-                            case 0:
-                                if (!(obj === null || obj === void 0 ? void 0 : obj.promise)) return [3 /*break*/, 4];
-                                _d.label = 1;
-                            case 1:
-                                _d.trys.push([1, 3, , 4]);
-                                return [4 /*yield*/, obj.promise];
-                            case 2:
-                                translation = _d.sent();
-                                awaitedTranslations[id] = (_c = {}, _c[obj.hash] = translation, _c);
-                                return [3 /*break*/, 4];
-                            case 3:
-                                error_1 = _d.sent();
-                                console.error(error_1);
-                                awaitedTranslations[id] = undefined;
-                                return [3 /*break*/, 4];
-                            case 4: return [2 /*return*/];
-                        }
-                    });
-                }); }));
-                setTranslations(function (prev) { return (__assign(__assign(__assign({}, initialTranslations), prev), awaitedTranslations)); });
-                return [2 /*return*/];
+                switch (_a.label) {
+                    case 0:
+                        awaitedTranslations = {};
+                        return [4 /*yield*/, Promise.all(Object.entries(initialTranslations !== null && initialTranslations !== void 0 ? initialTranslations : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
+                                var translation, error_1;
+                                var _c;
+                                var id = _b[0], obj = _b[1];
+                                return __generator(this, function (_d) {
+                                    switch (_d.label) {
+                                        case 0:
+                                            if (!(obj === null || obj === void 0 ? void 0 : obj.promise)) return [3 /*break*/, 4];
+                                            _d.label = 1;
+                                        case 1:
+                                            _d.trys.push([1, 3, , 4]);
+                                            return [4 /*yield*/, obj.promise];
+                                        case 2:
+                                            translation = _d.sent();
+                                            if ('error' in translation) {
+                                                awaitedTranslations[id] = undefined; // will create an error fallback
+                                            }
+                                            else {
+                                                awaitedTranslations[id] = (_c = {}, _c[obj.hash] = translation, _c);
+                                            }
+                                            return [3 /*break*/, 4];
+                                        case 3:
+                                            error_1 = _d.sent();
+                                            awaitedTranslations[id] = undefined;
+                                            return [3 /*break*/, 4];
+                                        case 4: return [2 /*return*/];
+                                    }
+                                });
+                            }); }))];
+                    case 1:
+                        _a.sent();
+                        setTranslations(function (prev) { return (__assign(__assign({}, prev), awaitedTranslations)); });
+                        return [2 /*return*/];
+                }
             });
         }); })();
-        setTranslations(function (prev) { return (__assign({}, prev)); });
+        setTranslations(function (prev) { return (__assign(__assign({}, initialTranslations), prev)); });
     }, []);
     // For dictionaries
     var translate = (0, react_1.useCallback)(function (id, options) {
@@ -121,18 +130,19 @@ function ClientProvider(_a) {
         var variablesOptions = metadata === null || metadata === void 0 ? void 0 : metadata.variablesOptions;
         // ----- STRING ENTRIES ----- // 
         if (typeof entry === 'string') {
-            var r = function (content) {
+            var renderString = function (content) {
                 return (0, generaltranslation_1.renderContentToString)(content, [locale, defaultLocale], variables, variablesOptions);
             };
             if (!translationRequired)
-                return r(entry);
+                return renderString(entry);
             var translation_1 = translations === null || translations === void 0 ? void 0 : translations[id];
-            return r((translation_1 === null || translation_1 === void 0 ? void 0 : translation_1[metadata === null || metadata === void 0 ? void 0 : metadata.hash]) ||
+            return renderString((translation_1 === null || translation_1 === void 0 ? void 0 : translation_1[metadata === null || metadata === void 0 ? void 0 : metadata.hash]) ||
                 (translation_1 === null || translation_1 === void 0 ? void 0 : translation_1.loadingFallback) ||
-                entry);
+                entry // error fallback
+            );
         }
         // ----- JSX ENTRIES ----- // 
-        var rd = function () {
+        var renderDefault = function () {
             return (0, internal_1.renderDefaultChildren)({
                 children: entry,
                 variables: variables,
@@ -143,11 +153,11 @@ function ClientProvider(_a) {
         };
         // Fallback if there is no translation present
         if (!translationRequired)
-            return rd();
+            return renderDefault();
         var translation = translations === null || translations === void 0 ? void 0 : translations[id];
         if (!translation)
-            return rd();
-        var rt = function (target) {
+            return renderDefault(); // error fallback
+        var renderTranslation = function (target) {
             return (0, internal_1.renderTranslatedChildren)({
                 source: entry,
                 target: target,
@@ -158,13 +168,12 @@ function ClientProvider(_a) {
             });
         };
         if (translation === null || translation === void 0 ? void 0 : translation.promise) {
-            translation.errorFallback || (translation.errorFallback = rd());
+            translation.errorFallback || (translation.errorFallback = renderDefault());
             translation.loadingFallback || (translation.loadingFallback = translation.errorFallback);
-            // suspense here for hydration reasons
-            return ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: translation.loadingFallback, children: translation.loadingFallback }));
+            return (translation.loadingFallback);
         }
         ;
-        return rt(translation === null || translation === void 0 ? void 0 : translation[metadata === null || metadata === void 0 ? void 0 : metadata.hash]);
+        return renderTranslation(translation === null || translation === void 0 ? void 0 : translation[metadata === null || metadata === void 0 ? void 0 : metadata.hash]);
     }, [dictionary, translations]);
     // For <T> components
     var _c = (0, client_1.useDynamicTranslation)({

@@ -27,6 +27,7 @@ import InitGTProps from './config/props/InitGTProps';
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
  * @param {number} [_maxConcurrentRequests=defaultInitGTProps._maxConcurrectRequests] - Maximum number of concurrent requests allowed.
+ * @param {number} [_maxBatchSize=defaultInitGTProps._maxBatchSize] - Maximum translation requests in the same batch.
  * @param {number} [_batchInterval=defaultInitGTProps._batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
@@ -35,5 +36,5 @@ import InitGTProps from './config/props/InitGTProps';
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  *
  */
-export declare function initGT({ i18n, dictionary, apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, locales, defaultLocale, renderSettings, env, _maxConcurrentRequests, _batchInterval, ...metadata }?: InitGTProps): (config?: NextConfig) => any;
+export declare function initGT({ i18n, dictionary, apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, locales, defaultLocale, renderSettings, env, _maxConcurrentRequests, _maxBatchSize, _batchInterval, ...metadata }?: InitGTProps): (config?: NextConfig) => any;
 //# sourceMappingURL=config.d.ts.map

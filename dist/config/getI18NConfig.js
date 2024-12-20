@@ -46,7 +46,7 @@ function getI18NConfig() {
         }
         if (!apiKey && !devApiKey)
             console.error(createErrors_1.APIKeyMissingError);
-        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { renderSettings: internal_1.defaultRenderSettings, maxConcurrentRequests: defaultInitGTProps_1.default._maxConcurrectRequests, batchInterval: defaultInitGTProps_1.default._batchInterval, apiKey: apiKey, projectId: projectId, devApiKey: devApiKey }));
+        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { renderSettings: internal_1.defaultRenderSettings, maxConcurrentRequests: defaultInitGTProps_1.default._maxConcurrectRequests, maxBatchSize: defaultInitGTProps_1.default._maxBatchSize, batchInterval: defaultInitGTProps_1.default._batchInterval, apiKey: apiKey, projectId: projectId, devApiKey: devApiKey }));
     }
     return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
 }

@@ -168,7 +168,7 @@ export default async function GTProvider({
         translations[entryId] = { [hash]: await translationPromise }
       );
 
-      let loadingFallback; 
+      let loadingFallback;
       let errorFallback; // by leaving blank, will assume "skeleton"
       if (renderSettings.method === 'skeleton') {
         loadingFallback = <React.Fragment key={`skeleton_${entryId}`} />;

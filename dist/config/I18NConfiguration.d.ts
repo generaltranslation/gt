@@ -13,6 +13,7 @@ type I18NConfigurationParams = {
         timeout: number | null;
     };
     maxConcurrentRequests: number;
+    maxBatchSize: number;
     batchInterval: number;
     env?: string;
     [key: string]: any;
@@ -33,13 +34,14 @@ export default class I18NConfiguration {
     gt: GT;
     metadata: Record<string, any>;
     maxConcurrentRequests: number;
+    maxBatchSize: number;
     batchInterval: number;
     private _queue;
     private _activeRequests;
     private _translationCache;
     private _taggedDictionary;
     private _template;
-    constructor({ apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, batchInterval, env, ...metadata }: I18NConfigurationParams);
+    constructor({ apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, env, ...metadata }: I18NConfigurationParams);
     /**
      * Gets config for dynamic translation on the client side.
     */

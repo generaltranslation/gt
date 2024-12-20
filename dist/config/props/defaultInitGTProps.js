@@ -60,6 +60,7 @@ var defaultInitGTProps = {
         return [2 /*return*/, ({})];
     }); }); },
     _maxConcurrectRequests: 100,
+    _maxBatchSize: 25,
     _batchInterval: 10
 };
 if (defaultInitGTProps.devApiKey && (defaultInitGTProps.env !== "development" && defaultInitGTProps.env !== "test"))

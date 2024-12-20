@@ -4,7 +4,6 @@ export default async function Resolver({
     try {
         return await children;
     } catch (error) {
-        console.error(error);
         return fallback;
     }
 }

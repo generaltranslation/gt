@@ -21,6 +21,7 @@ type InitGTProps = {
     getMetadata?: () => Promise<Record<string, any>>
     // Batching config
     _maxConcurrentRequests?: number;
+    _maxBatchSize?: number;
     _batchInterval?: number; // ms
     // Translation assistance
     description?: string
