@@ -40,6 +40,7 @@ export default function getI18NConfig(): I18NConfiguration {
             ...defaultInitGTProps, 
             renderSettings: defaultRenderSettings,
             maxConcurrentRequests: defaultInitGTProps._maxConcurrectRequests,
+            maxBatchSize: defaultInitGTProps._maxBatchSize,
             batchInterval: defaultInitGTProps._batchInterval,
             apiKey, projectId, devApiKey
         });

@@ -11,6 +11,7 @@ declare const defaultInitGTProps: {
     readonly env: string;
     readonly getMetadata: () => Promise<{}>;
     readonly _maxConcurrectRequests: 100;
+    readonly _maxBatchSize: 25;
     readonly _batchInterval: 10;
 };
 export default defaultInitGTProps;

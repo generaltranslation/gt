@@ -103,7 +103,7 @@ var renderVariable_1 = __importDefault(require("../rendering/renderVariable"));
  */
 function T(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, translationRequired, translationsPromise, taggedChildren, _c, childrenAsObjects, key, translations, translation, target, renderSettings, translationPromise, _d, _e, _f, promise, loadingFallback, errorFallback;
+        var I18NConfig, locale, defaultLocale, translationRequired, translationsPromise, taggedChildren, _c, childrenAsObjects, key, translations, translation, target, renderSettings, translationPromise, _d, _e, _f, loadingFallback, errorFallback, renderTranslatedChildrenPromise;
         var _g;
         var children = _b.children, id = _b.id, context = _b.context, variables = _b.variables, variablesOptions = _b.variablesOptions;
         return __generator(this, function (_h) {
@@ -163,7 +163,17 @@ function T(_a) {
                 case 3:
                     translationPromise = _e.apply(_d, [(_g.metadata = __assign.apply(void 0, [__assign.apply(void 0, _f.concat([(_h.sent())])), (renderSettings.timeout && { timeout: renderSettings.timeout })]),
                             _g)]);
-                    promise = translationPromise.then(function (translation) {
+                    errorFallback = (0, internal_1.renderDefaultChildren)({
+                        children: taggedChildren,
+                        variables: variables,
+                        variablesOptions: variablesOptions,
+                        defaultLocale: defaultLocale,
+                        renderVariable: renderVariable_1.default
+                    });
+                    renderTranslatedChildrenPromise = translationPromise.then(function (translation) {
+                        if (translation === null || translation === void 0 ? void 0 : translation.error) {
+                            return errorFallback;
+                        }
                         var target = translation;
                         return (0, internal_1.renderTranslatedChildren)({
                             source: taggedChildren,
@@ -174,13 +184,6 @@ function T(_a) {
                             renderVariable: renderVariable_1.default
                         });
                     });
-                    errorFallback = (0, internal_1.renderDefaultChildren)({
-                        children: taggedChildren,
-                        variables: variables,
-                        variablesOptions: variablesOptions,
-                        defaultLocale: defaultLocale,
-                        renderVariable: renderVariable_1.default
-                    });
                     if (renderSettings.method === 'replace') {
                         loadingFallback = errorFallback;
                     }
@@ -189,7 +192,7 @@ function T(_a) {
                     }
                     if (renderSettings.method === 'hang') {
                         // Wait until the site is translated to return
-                        return [2 /*return*/, (0, jsx_runtime_1.jsx)(Resolver_1.default, { children: promise, fallback: errorFallback })];
+                        return [2 /*return*/, (0, jsx_runtime_1.jsx)(Resolver_1.default, { children: renderTranslatedChildrenPromise, fallback: errorFallback })];
                     }
                     if (!['skeleton', 'replace'].includes(renderSettings.method) && !id) {
                         // If none of those, i.e. "subtle"
@@ -199,7 +202,7 @@ function T(_a) {
                     }
                     // For skeleton & replace, return a suspense component so that
                     // something is shown while waiting for the translation
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: (0, jsx_runtime_1.jsx)(Resolver_1.default, { children: promise, fallback: errorFallback }) }))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: (0, jsx_runtime_1.jsx)(Resolver_1.default, { children: renderTranslatedChildrenPromise, fallback: errorFallback }) }))];
             }
         });
     });

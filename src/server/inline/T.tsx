@@ -141,19 +141,6 @@ async function T({
     },
   });
 
-  // Awaits the translation promise
-  let promise = translationPromise.then((translation) => {
-    let target = translation;
-    return renderTranslatedChildren({
-      source: taggedChildren,
-      target,
-      variables,
-      variablesOptions,
-      locales: [locale, defaultLocale],
-      renderVariable
-    });
-  });
-
 
 
   let loadingFallback; // Blank screen
@@ -167,6 +154,24 @@ async function T({
     renderVariable
   });
 
+  // Awaits the translation promise
+  let renderTranslatedChildrenPromise = translationPromise.then((translation) => {
+    if (translation?.error) {
+      return errorFallback;
+    }
+    let target = translation;
+    return renderTranslatedChildren({
+      source: taggedChildren,
+      target,
+      variables,
+      variablesOptions,
+      locales: [locale, defaultLocale],
+      renderVariable
+    });
+  });
+
+
+
   if (renderSettings.method === 'replace') {
     loadingFallback = errorFallback;
   } else if (renderSettings.method === 'skeleton') {
@@ -175,7 +180,7 @@ async function T({
 
   if (renderSettings.method === 'hang') {
     // Wait until the site is translated to return
-    return <Resolver children={promise} fallback={errorFallback} />;
+    return <Resolver children={renderTranslatedChildrenPromise} fallback={errorFallback} />;
   }
 
   if (!['skeleton', 'replace'].includes(renderSettings.method) && !id) {
@@ -189,7 +194,7 @@ async function T({
   // something is shown while waiting for the translation
   return (
     <Suspense fallback={loadingFallback}>
-      <Resolver children={promise} fallback={errorFallback} />
+      <Resolver children={renderTranslatedChildrenPromise} fallback={errorFallback} />
     </Suspense>
   );
 }

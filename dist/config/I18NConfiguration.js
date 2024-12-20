@@ -101,11 +101,11 @@ var I18NConfiguration = /** @class */ (function () {
         // Dictionaries
         dictionary = _a.dictionary, 
         // Batching config
-        maxConcurrentRequests = _a.maxConcurrentRequests, batchInterval = _a.batchInterval, 
+        maxConcurrentRequests = _a.maxConcurrentRequests, maxBatchSize = _a.maxBatchSize, batchInterval = _a.batchInterval, 
         // Environment
         env = _a.env, 
         // Other metadata
-        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "baseUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "batchInterval", "env"]);
+        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "baseUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "env"]);
         // Cloud integration
         this.apiKey = apiKey;
         this.devApiKey = devApiKey;
@@ -146,6 +146,7 @@ var I18NConfiguration = /** @class */ (function () {
         this._template = new Map();
         // Batching
         this.maxConcurrentRequests = maxConcurrentRequests;
+        this.maxBatchSize = maxBatchSize;
         this.batchInterval = batchInterval;
         this._queue = [];
         this._activeRequests = 0;
@@ -372,23 +373,34 @@ var I18NConfiguration = /** @class */ (function () {
                     case 2:
                         results_1 = _a.sent();
                         batch.forEach(function (item, index) {
+                            var _a;
                             var result = results_1[index];
                             if (!result)
                                 return item.reject('Translation failed.');
-                            if (result && typeof result === 'object' &&
-                                _this.gt.isResultSuccessful(result) &&
-                                result.locale &&
-                                result.reference &&
-                                _this._remoteTranslationsManager) {
-                                _this._remoteTranslationsManager.setTranslations(result.locale, result.reference.key, result.reference.id, result.translation);
-                                return item.resolve(result.translation);
+                            if (result && typeof result === 'object') {
+                                if ('translation' in result &&
+                                    result.translation &&
+                                    result.locale &&
+                                    result.reference &&
+                                    _this._remoteTranslationsManager) {
+                                    _this._remoteTranslationsManager.setTranslations(result.locale, result.reference.key, result.reference.id, result.translation);
+                                    return item.resolve(result.translation);
+                                }
+                                else if ('error' in result &&
+                                    result.error &&
+                                    result.code) {
+                                    console.error("Translation failed".concat(((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) ? " for id: ".concat(result.reference.id) : ''), result.code, result.error);
+                                    return item.resolve({
+                                        error: result.error,
+                                        code: result.code,
+                                    });
+                                }
                             }
-                            return item.reject();
+                            return item.reject('Translation failed.');
                         });
                         return [3 /*break*/, 5];
                     case 3:
                         error_1 = _a.sent();
-                        console.error(error_1);
                         batch.forEach(function (item) {
                             item.reject();
                         });
@@ -409,8 +421,9 @@ var I18NConfiguration = /** @class */ (function () {
         setInterval(function () {
             if (_this._queue.length > 0 &&
                 _this._activeRequests < _this.maxConcurrentRequests) {
-                _this._sendBatchRequest(_this._queue);
-                _this._queue = [];
+                var batchSize = Math.min(_this.maxBatchSize, _this._queue.length);
+                _this._sendBatchRequest(_this._queue.slice(0, batchSize));
+                _this._queue = _this._queue.slice(batchSize);
             }
         }, this.batchInterval);
     };

@@ -21,6 +21,7 @@ type I18NConfigurationParams = {
     timeout: number | null;
   };
   maxConcurrentRequests: number;
+  maxBatchSize: number;
   batchInterval: number;
   env?: string;
   [key: string]: any;
@@ -49,6 +50,7 @@ export default class I18NConfiguration {
   metadata: Record<string, any>;
   // Batching config
   maxConcurrentRequests: number;
+  maxBatchSize: number;
   batchInterval: number;
   private _queue: Array<any>;
   private _activeRequests: number;
@@ -75,6 +77,7 @@ export default class I18NConfiguration {
     dictionary,
     // Batching config
     maxConcurrentRequests,
+    maxBatchSize,
     batchInterval,
     // Environment
     env,
@@ -127,6 +130,7 @@ export default class I18NConfiguration {
     this._template = new Map();
     // Batching
     this.maxConcurrentRequests = maxConcurrentRequests;
+    this.maxBatchSize = maxBatchSize;
     this.batchInterval = batchInterval;
     this._queue = [];
     this._activeRequests = 0;
@@ -366,7 +370,8 @@ export default class I18NConfiguration {
         if (!result) return item.reject('Translation failed.');
         if (result && typeof result === 'object') {
           if (
-            this.gt.isResultSuccessful(result) &&
+            'translation' in result &&
+            result.translation &&
             result.locale &&
             result.reference &&
             this._remoteTranslationsManager
@@ -378,14 +383,20 @@ export default class I18NConfiguration {
               result.translation
             );
             return item.resolve(result.translation);
-          } else if (this.gt.isResultError(result)) {
-            return item.reject(result.code.toString() + ' ' + result.error);
+          } else if ('error' in result &&
+            result.error &&
+            result.code
+          ) {
+            console.error(`Translation failed${result?.reference?.id ? ` for id: ${result.reference.id}` : '' }`, result.code, result.error);
+            return item.resolve({
+              error: result.error,
+              code: result.code,
+            });
           }
         }
-        return item.reject();
+        return item.reject('Translation failed.');
       });
     } catch (error) {
-      console.error(error);
       batch.forEach((item) => {
         item.reject()
       });
@@ -403,8 +414,9 @@ export default class I18NConfiguration {
         this._queue.length > 0 &&
         this._activeRequests < this.maxConcurrentRequests
       ) {
-        this._sendBatchRequest(this._queue);
-        this._queue = [];
+        const batchSize = Math.min(this.maxBatchSize, this._queue.length);
+        this._sendBatchRequest(this._queue.slice(0, batchSize));
+        this._queue = this._queue.slice(batchSize);
       }
     }, this.batchInterval);
   }

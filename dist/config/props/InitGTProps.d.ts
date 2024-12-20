@@ -15,6 +15,7 @@ type InitGTProps = {
     };
     getMetadata?: () => Promise<Record<string, any>>;
     _maxConcurrentRequests?: number;
+    _maxBatchSize?: number;
     _batchInterval?: number;
     description?: string;
     preferredModel?: string;
