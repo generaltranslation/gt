@@ -98,7 +98,7 @@ export default class I18NConfiguration {
     this.gt = new GT({
       projectId,
       apiKey,
-      defaultLocale,
+      sourceLocale: defaultLocale,
       baseUrl,
     });
     // Default env is production
@@ -384,14 +384,10 @@ export default class I18NConfiguration {
             );
             return item.resolve(result.translation);
           } else if ('error' in result &&
-            result.error &&
-            result.code
+            result.error
           ) {
-            console.error(`Translation failed${result?.reference?.id ? ` for id: ${result.reference.id}` : '' }`, result.code, result.error);
-            return item.resolve({
-              error: result.error,
-              code: result.code,
-            });
+            console.error(`Translation failed${result?.reference?.id ? ` for id: ${result.reference.id}` : '' }`, result);
+            return item.resolve(result);
           }
         }
         return item.reject('Translation failed.');

@@ -120,7 +120,7 @@ var I18NConfiguration = /** @class */ (function () {
         this.gt = new generaltranslation_1.default({
             projectId: projectId,
             apiKey: apiKey,
-            defaultLocale: defaultLocale,
+            sourceLocale: defaultLocale,
             baseUrl: baseUrl,
         });
         // Default env is production
@@ -387,13 +387,9 @@ var I18NConfiguration = /** @class */ (function () {
                                     return item.resolve(result.translation);
                                 }
                                 else if ('error' in result &&
-                                    result.error &&
-                                    result.code) {
-                                    console.error("Translation failed".concat(((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) ? " for id: ".concat(result.reference.id) : ''), result.code, result.error);
-                                    return item.resolve({
-                                        error: result.error,
-                                        code: result.code,
-                                    });
+                                    result.error) {
+                                    console.error("Translation failed".concat(((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) ? " for id: ".concat(result.reference.id) : ''), result);
+                                    return item.resolve(result);
                                 }
                             }
                             return item.reject('Translation failed.');
