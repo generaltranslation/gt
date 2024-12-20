@@ -63,7 +63,7 @@ var createErrors_1 = require("../errors/createErrors");
 // meant to be used inside the server-side <GTProvider>
 function ClientProvider(_a) {
     var _this = this;
-    var children = _a.children, dictionary = _a.dictionary, initialTranslations = _a.initialTranslations, locale = _a.locale, defaultLocale = _a.defaultLocale, translationRequired = _a.translationRequired, requiredPrefix = _a.requiredPrefix, renderSettings = _a.renderSettings, projectId = _a.projectId, devApiKey = _a.devApiKey, baseUrl = _a.baseUrl, env = _a.env;
+    var children = _a.children, dictionary = _a.dictionary, initialTranslations = _a.initialTranslations, locale = _a.locale, defaultLocale = _a.defaultLocale, translationRequired = _a.translationRequired, requiredPrefix = _a.requiredPrefix, renderSettings = _a.renderSettings, projectId = _a.projectId, devApiKey = _a.devApiKey, baseUrl = _a.baseUrl;
     var _b = (0, react_1.useState)(null), translations = _b[0], setTranslations = _b[1];
     (0, react_1.useLayoutEffect)(function () {
         (function () { return __awaiter(_this, void 0, void 0, function () {
@@ -181,8 +181,7 @@ function ClientProvider(_a) {
         devApiKey: devApiKey,
         baseUrl: baseUrl,
         setTranslations: setTranslations,
-        defaultLocale: defaultLocale,
-        env: env
+        defaultLocale: defaultLocale
     }), translateChildren = _c.translateChildren, translateContent = _c.translateContent;
     return ((0, jsx_runtime_1.jsx)(client_1.GTContext.Provider, { value: {
             translate: translate,

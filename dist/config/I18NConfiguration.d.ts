@@ -15,7 +15,6 @@ type I18NConfigurationParams = {
     maxConcurrentRequests: number;
     maxBatchSize: number;
     batchInterval: number;
-    env?: string;
     [key: string]: any;
 };
 export default class I18NConfiguration {
@@ -29,7 +28,6 @@ export default class I18NConfiguration {
         method: 'skeleton' | 'replace' | 'hang' | 'subtle';
         timeout: number | null;
     };
-    env: string;
     private _remoteTranslationsManager;
     gt: GT;
     metadata: Record<string, any>;
@@ -41,7 +39,7 @@ export default class I18NConfiguration {
     private _translationCache;
     private _taggedDictionary;
     private _template;
-    constructor({ apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, env, ...metadata }: I18NConfigurationParams);
+    constructor({ apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, ...metadata }: I18NConfigurationParams);
     /**
      * Gets config for dynamic translation on the client side.
     */
@@ -49,7 +47,6 @@ export default class I18NConfiguration {
         projectId: string;
         devApiKey: string | undefined;
         baseUrl: string;
-        env: string;
     };
     /**
      * Gets the application's default locale

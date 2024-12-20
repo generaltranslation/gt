@@ -23,7 +23,6 @@ type I18NConfigurationParams = {
   maxConcurrentRequests: number;
   maxBatchSize: number;
   batchInterval: number;
-  env?: string;
   [key: string]: any;
 };
 
@@ -41,7 +40,6 @@ export default class I18NConfiguration {
     method: 'skeleton' | 'replace' | 'hang' | 'subtle';
     timeout: number | null;
   };
-  env: string;
   // Dictionaries
   private _remoteTranslationsManager: RemoteTranslationsManager | undefined;
   // GT
@@ -79,8 +77,6 @@ export default class I18NConfiguration {
     maxConcurrentRequests,
     maxBatchSize,
     batchInterval,
-    // Environment
-    env,
     // Other metadata
     ...metadata
   }: I18NConfigurationParams) {
@@ -102,18 +98,18 @@ export default class I18NConfiguration {
       baseUrl,
     });
     // Default env is production
-    this.env = env || "production";
-    if (this.env !== "development" && this.env !== "test" && this.devApiKey) {
+    if (process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test" && this.devApiKey) {
       throw new Error(devApiKeyIncludedInProductionError)
     }
     // Other metadata
     this.metadata = {
-      env: this.env,
-      defaultLocale: this.defaultLocale,
+      sourceLocale: this.defaultLocale,
       ...(this.renderSettings.timeout && {
         timeout: this.renderSettings.timeout - batchInterval,
       }),
       projectId: this.projectId,
+      publish: true,
+      fast: true,
       ...metadata,
     };
     // Dictionary managers
@@ -145,8 +141,7 @@ export default class I18NConfiguration {
     return {
       projectId: this.projectId,
       devApiKey: this.devApiKey,
-      baseUrl: this.baseUrl,
-      env: this.env
+      baseUrl: this.baseUrl
     }
   }
 
@@ -207,7 +202,7 @@ export default class I18NConfiguration {
    * @returns True if the current environment is development
   */
   isDevelopmentEnvironment(): boolean {
-    return this.env === "development" || this.env === "test";
+    return this.devApiKey ? true : false;
   }
 
   addGTIdentifier(children: any, id?: string): any {

@@ -1,7 +1,6 @@
 import { libraryDefaultLocale, defaultCacheUrl, defaultBaseUrl } from "generaltranslation/internal";
 import getDefaultFromEnv from "../../utils/getDefaultFromEnv";
 import { listSupportedLocales } from "@generaltranslation/supported-locales";
-import { devApiKeyIncludedInProductionError } from "../../errors/createErrors";
 
 const defaultInitGTProps = {
     apiKey: getDefaultFromEnv('GT_API_KEY'),
@@ -19,8 +18,5 @@ const defaultInitGTProps = {
     _maxBatchSize: 25,
     _batchInterval: 10
 } as const;
-
-if (defaultInitGTProps.devApiKey && (defaultInitGTProps.env !== "development" && defaultInitGTProps.env !== "test"))
-    throw new Error(devApiKeyIncludedInProductionError)
 
 export default defaultInitGTProps;

@@ -102,10 +102,8 @@ var I18NConfiguration = /** @class */ (function () {
         dictionary = _a.dictionary, 
         // Batching config
         maxConcurrentRequests = _a.maxConcurrentRequests, maxBatchSize = _a.maxBatchSize, batchInterval = _a.batchInterval, 
-        // Environment
-        env = _a.env, 
         // Other metadata
-        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "baseUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "env"]);
+        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "baseUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
         // Cloud integration
         this.apiKey = apiKey;
         this.devApiKey = devApiKey;
@@ -124,14 +122,13 @@ var I18NConfiguration = /** @class */ (function () {
             baseUrl: baseUrl,
         });
         // Default env is production
-        this.env = env || "production";
-        if (this.env !== "development" && this.env !== "test" && this.devApiKey) {
+        if (process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test" && this.devApiKey) {
             throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
         }
         // Other metadata
-        this.metadata = __assign(__assign(__assign({ env: this.env, defaultLocale: this.defaultLocale }, (this.renderSettings.timeout && {
+        this.metadata = __assign(__assign(__assign({ sourceLocale: this.defaultLocale }, (this.renderSettings.timeout && {
             timeout: this.renderSettings.timeout - batchInterval,
-        })), { projectId: this.projectId }), metadata);
+        })), { projectId: this.projectId, publish: true, fast: true }), metadata);
         // Dictionary managers
         if (cacheUrl && projectId) {
             this._remoteTranslationsManager = RemoteTranslationsManager_1.default;
@@ -160,8 +157,7 @@ var I18NConfiguration = /** @class */ (function () {
         return {
             projectId: this.projectId,
             devApiKey: this.devApiKey,
-            baseUrl: this.baseUrl,
-            env: this.env
+            baseUrl: this.baseUrl
         };
     };
     /**
@@ -211,7 +207,7 @@ var I18NConfiguration = /** @class */ (function () {
      * @returns True if the current environment is development
     */
     I18NConfiguration.prototype.isDevelopmentEnvironment = function () {
-        return this.env === "development" || this.env === "test";
+        return this.devApiKey ? true : false;
     };
     I18NConfiguration.prototype.addGTIdentifier = function (children, id) {
         // In development, recompute every time
