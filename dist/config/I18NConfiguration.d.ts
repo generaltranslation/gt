@@ -5,6 +5,7 @@ type I18NConfigurationParams = {
     projectId: string;
     cacheUrl: string;
     baseUrl: string;
+    clientBaseUrl: string;
     cacheExpiryTime?: number;
     defaultLocale: string;
     locales: string[];
@@ -22,6 +23,7 @@ export default class I18NConfiguration {
     apiKey?: string;
     devApiKey?: string;
     baseUrl: string;
+    clientBaseUrl: string;
     projectId: string;
     defaultLocale: string;
     locales: string[];
@@ -41,7 +43,7 @@ export default class I18NConfiguration {
     private _translationCache;
     private _taggedDictionary;
     private _template;
-    constructor({ apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, env, ...metadata }: I18NConfigurationParams);
+    constructor({ apiKey, devApiKey, projectId, baseUrl, clientBaseUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, env, ...metadata }: I18NConfigurationParams);
     /**
      * Gets config for dynamic translation on the client side.
     */

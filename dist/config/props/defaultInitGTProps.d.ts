@@ -3,6 +3,7 @@ declare const defaultInitGTProps: {
     readonly devApiKey: "";
     readonly projectId: string;
     readonly baseUrl: "https://prod.gtx.dev";
+    readonly clientBaseUrl: "https://prod.gtx.dev";
     readonly cacheUrl: "https://cache.gtx.dev";
     readonly cacheExpiryTime: 6000;
     readonly defaultLocale: "en-US";

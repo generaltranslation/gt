@@ -93,7 +93,7 @@ var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         var 
         // Cloud integration
-        apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, baseUrl = _a.baseUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
+        apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, baseUrl = _a.baseUrl, clientBaseUrl = _a.clientBaseUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
         // Locale info
         defaultLocale = _a.defaultLocale, locales = _a.locales, 
         // Render method
@@ -105,12 +105,13 @@ var I18NConfiguration = /** @class */ (function () {
         // Environment
         env = _a.env, 
         // Other metadata
-        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "baseUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "env"]);
+        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "baseUrl", "clientBaseUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "env"]);
         // Cloud integration
         this.apiKey = apiKey;
         this.devApiKey = devApiKey;
         this.projectId = projectId;
         this.baseUrl = baseUrl;
+        this.clientBaseUrl = clientBaseUrl;
         // Locales
         this.defaultLocale = defaultLocale;
         this.locales = locales;
@@ -160,7 +161,7 @@ var I18NConfiguration = /** @class */ (function () {
         return {
             projectId: this.projectId,
             devApiKey: this.devApiKey,
-            baseUrl: this.baseUrl,
+            baseUrl: this.clientBaseUrl,
             env: this.env
         };
     };
@@ -183,8 +184,9 @@ var I18NConfiguration = /** @class */ (function () {
      */
     I18NConfiguration.prototype.translationEnabled = function () {
         return this.baseUrl &&
+            this.clientBaseUrl &&
             this.projectId &&
-            (this.baseUrl === defaultInitGTProps_1.default.baseUrl ? this.gt.apiKey : true)
+            (this.baseUrl === defaultInitGTProps_1.default.baseUrl && this.clientBaseUrl === defaultInitGTProps_1.default.clientBaseUrl ? this.gt.apiKey : true)
             ? true
             : false;
     };

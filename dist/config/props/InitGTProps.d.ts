@@ -4,6 +4,7 @@ type InitGTProps = {
     apiKey?: string;
     projectId?: string;
     baseUrl?: string;
+    clientBaseUrl?: string;
     cacheUrl?: string;
     cacheExpiryTime?: number;
     locales?: string[];

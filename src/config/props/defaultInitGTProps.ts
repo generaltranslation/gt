@@ -1,4 +1,4 @@
-import { libraryDefaultLocale, defaultCacheUrl, defaultBaseUrl } from "generaltranslation/internal";
+import { libraryDefaultLocale, defaultCacheUrl, defaultBaseUrl, defaultClientBaseUrl } from "generaltranslation/internal";
 import getDefaultFromEnv from "../../utils/getDefaultFromEnv";
 import { listSupportedLocales } from "@generaltranslation/supported-locales";
 import { devApiKeyIncludedInProductionError } from "../../errors/createErrors";
@@ -8,6 +8,7 @@ const defaultInitGTProps = {
     devApiKey: '',
     projectId: getDefaultFromEnv('GT_PROJECT_ID'),
     baseUrl: defaultBaseUrl,
+    clientBaseUrl: defaultClientBaseUrl,
     cacheUrl: defaultCacheUrl,
     cacheExpiryTime: 6000,
     defaultLocale: libraryDefaultLocale,

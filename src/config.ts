@@ -28,6 +28,7 @@ import { defaultRenderSettings } from "gt-react/internal";
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
  * @param {string} [baseUrl=defaultInitGTProps.baseUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
+ * @param {string} [clientBaseUrl=defaultInitGTProps.clientBaseUrl] - The client base URL for the GT API. Set to an empty string to disable automatic translations.
  * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
  * @param {string[]} [locales] - List of supported locales for the application. Defaults to the first locale or the default locale if not provided.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
@@ -49,6 +50,7 @@ export function initGT({
   devApiKey = defaultInitGTProps.devApiKey,
   projectId = defaultInitGTProps.projectId,
   baseUrl = defaultInitGTProps.baseUrl,
+  clientBaseUrl = defaultInitGTProps.clientBaseUrl,
   cacheUrl = defaultInitGTProps.cacheUrl,
   cacheExpiryTime = defaultInitGTProps.cacheExpiryTime,
   locales = defaultInitGTProps.locales,
@@ -64,13 +66,16 @@ export function initGT({
   if (
     !projectId &&
     (cacheUrl === defaultInitGTProps.cacheUrl ||
-      baseUrl === defaultInitGTProps.baseUrl)
+      baseUrl === defaultInitGTProps.baseUrl ||
+      clientBaseUrl === defaultInitGTProps.clientBaseUrl)
   )
     console.error(
       projectIdMissingError
     );
 
-  if ((!apiKey || !projectId) && baseUrl === defaultInitGTProps.baseUrl) {
+  if ((!apiKey || !projectId)
+    && baseUrl === defaultInitGTProps.baseUrl
+    && clientBaseUrl === defaultInitGTProps.clientBaseUrl) {
     console.error(
       APIKeyMissingError
     );
@@ -86,7 +91,7 @@ export function initGT({
   if (!apiKey && !devApiKey)
     console.error(APIKeyMissingError);
   
-  if (baseUrl === defaultInitGTProps.baseUrl) {
+  if (baseUrl === defaultInitGTProps.baseUrl && clientBaseUrl === defaultInitGTProps.clientBaseUrl) {
     const warningLocales = locales.filter(locale => !getSupportedLocale(locale));
     if (warningLocales.length) console.warn(createUnsupportedLocalesWarning(warningLocales))
   }
@@ -97,6 +102,7 @@ export function initGT({
     devApiKey,
     projectId,
     baseUrl,
+    clientBaseUrl,
     cacheUrl,
     cacheExpiryTime,
     locales,

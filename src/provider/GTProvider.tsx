@@ -12,6 +12,7 @@ import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
 import ClientProvider from './ClientProvider';
 import { Dictionary, TranslatedChildren, TranslationsObject } from 'gt-react/dist/types/types';
 import { createDictionarySubsetError } from '../errors/createErrors';
+import { defaultClientBaseUrl } from 'generaltranslation/internal';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.

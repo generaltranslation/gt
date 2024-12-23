@@ -13,6 +13,7 @@ type I18NConfigurationParams = {
   projectId: string;
   cacheUrl: string;
   baseUrl: string;
+  clientBaseUrl: string;
   cacheExpiryTime?: number;
   defaultLocale: string;
   locales: string[];
@@ -32,6 +33,7 @@ export default class I18NConfiguration {
   apiKey?: string;
   devApiKey?: string;
   baseUrl: string;
+  clientBaseUrl: string;
   projectId: string;
   // Locale info
   defaultLocale: string;
@@ -66,6 +68,7 @@ export default class I18NConfiguration {
     devApiKey,
     projectId,
     baseUrl,
+    clientBaseUrl,
     cacheUrl,
     cacheExpiryTime,
     // Locale info
@@ -89,6 +92,7 @@ export default class I18NConfiguration {
     this.devApiKey = devApiKey;
     this.projectId = projectId;
     this.baseUrl = baseUrl;
+    this.clientBaseUrl = clientBaseUrl;
     // Locales
     this.defaultLocale = defaultLocale;
     this.locales = locales;
@@ -145,7 +149,7 @@ export default class I18NConfiguration {
     return {
       projectId: this.projectId,
       devApiKey: this.devApiKey,
-      baseUrl: this.baseUrl,
+      baseUrl: this.clientBaseUrl,
       env: this.env
     }
   }
@@ -171,8 +175,9 @@ export default class I18NConfiguration {
    */
   translationEnabled(): boolean {
     return this.baseUrl &&
+      this.clientBaseUrl &&
       this.projectId &&
-      (this.baseUrl === defaultInitGTProps.baseUrl ? this.gt.apiKey : true)
+      (this.baseUrl === defaultInitGTProps.baseUrl && this.clientBaseUrl === defaultInitGTProps.clientBaseUrl ? this.gt.apiKey : true)
       ? true
       : false;
   }

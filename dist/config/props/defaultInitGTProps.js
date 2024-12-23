@@ -48,6 +48,7 @@ var defaultInitGTProps = {
     devApiKey: '',
     projectId: (0, getDefaultFromEnv_1.default)('GT_PROJECT_ID'),
     baseUrl: internal_1.defaultBaseUrl,
+    clientBaseUrl: internal_1.defaultClientBaseUrl,
     cacheUrl: internal_1.defaultCacheUrl,
     cacheExpiryTime: 6000,
     defaultLocale: internal_1.libraryDefaultLocale,
