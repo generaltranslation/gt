@@ -29,7 +29,7 @@ export default function ClientProvider({
   renderSettings,
   projectId,
   devApiKey, 
-  baseUrl
+  runtimeUrl
 }: {
   children: any;
   dictionary: Dictionary,
@@ -44,7 +44,7 @@ export default function ClientProvider({
   };
   projectId?: string;
   devApiKey?: string;
-  baseUrl?: string;
+  runtimeUrl?: string;
 }) {
 
   const [translations, setTranslations] = useState<Record<string, any> | null>(null);
@@ -164,7 +164,7 @@ export default function ClientProvider({
 
   // For <T> components
   const { translateChildren, translateContent } = useDynamicTranslation({
-    projectId, devApiKey, baseUrl, setTranslations, defaultLocale
+    targetLocale: locale, projectId, devApiKey, runtimeUrl, setTranslations, defaultLocale
   }); 
 
   return (

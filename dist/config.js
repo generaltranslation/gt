@@ -61,14 +61,14 @@ var internal_1 = require("gt-react/internal");
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
- * @param {string} [baseUrl=defaultInitGTProps.baseUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
+ * @param {string} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
  * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
  * @param {string[]} [locales] - List of supported locales for the application. Defaults to the first locale or the default locale if not provided.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
- * @param {number} [_maxConcurrentRequests=defaultInitGTProps._maxConcurrectRequests] - Maximum number of concurrent requests allowed.
- * @param {number} [_maxBatchSize=defaultInitGTProps._maxBatchSize] - Maximum translation requests in the same batch.
- * @param {number} [_batchInterval=defaultInitGTProps._batchInterval] - The interval in milliseconds between batched translation requests.
+ * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
+ * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
+ * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @returns {function(NextConfig): NextConfig} - A function that accepts a Next.js config object and returns an updated config with GT settings applied.
@@ -77,16 +77,14 @@ var internal_1 = require("gt-react/internal");
  *
  */
 function initGT(_a) {
+    // ----- ERROR CHECKS ----- //
     var _b;
     if (_a === void 0) { _a = defaultInitGTProps_1.default; }
-    var i18n = _a.i18n, dictionary = _a.dictionary, _c = _a.apiKey, apiKey = _c === void 0 ? defaultInitGTProps_1.default.apiKey : _c, _d = _a.devApiKey, devApiKey = _d === void 0 ? defaultInitGTProps_1.default.devApiKey : _d, _e = _a.projectId, projectId = _e === void 0 ? defaultInitGTProps_1.default.projectId : _e, _f = _a.baseUrl, baseUrl = _f === void 0 ? defaultInitGTProps_1.default.baseUrl : _f, _g = _a.cacheUrl, cacheUrl = _g === void 0 ? defaultInitGTProps_1.default.cacheUrl : _g, _h = _a.cacheExpiryTime, cacheExpiryTime = _h === void 0 ? defaultInitGTProps_1.default.cacheExpiryTime : _h, _j = _a.locales, locales = _j === void 0 ? defaultInitGTProps_1.default.locales : _j, _k = _a.defaultLocale, defaultLocale = _k === void 0 ? defaultInitGTProps_1.default.defaultLocale : _k, _l = _a.renderSettings, renderSettings = _l === void 0 ? internal_1.defaultRenderSettings : _l, _m = _a._maxConcurrentRequests, _maxConcurrentRequests = _m === void 0 ? defaultInitGTProps_1.default._maxConcurrectRequests : _m, _o = _a._maxBatchSize, _maxBatchSize = _o === void 0 ? defaultInitGTProps_1.default._maxBatchSize : _o, _p = _a._batchInterval, _batchInterval = _p === void 0 ? defaultInitGTProps_1.default._batchInterval : _p, metadata = __rest(_a, ["i18n", "dictionary", "apiKey", "devApiKey", "projectId", "baseUrl", "cacheUrl", "cacheExpiryTime", "locales", "defaultLocale", "renderSettings", "_maxConcurrentRequests", "_maxBatchSize", "_batchInterval"]);
-    // Error checks
-    if (!projectId &&
-        (cacheUrl === defaultInitGTProps_1.default.cacheUrl ||
-            baseUrl === defaultInitGTProps_1.default.baseUrl))
-        console.error(createErrors_1.projectIdMissingError);
-    if ((!apiKey || !projectId) && baseUrl === defaultInitGTProps_1.default.baseUrl) {
-        console.error(createErrors_1.APIKeyMissingError);
+    var i18n = _a.i18n, dictionary = _a.dictionary, _c = _a.runtimeTranslation, runtimeTranslation = _c === void 0 ? defaultInitGTProps_1.default.runtimeTranslation : _c, _d = _a.remoteCache, remoteCache = _d === void 0 ? defaultInitGTProps_1.default.remoteCache : _d, _e = _a.apiKey, apiKey = _e === void 0 ? defaultInitGTProps_1.default.apiKey : _e, _f = _a.devApiKey, devApiKey = _f === void 0 ? defaultInitGTProps_1.default.devApiKey : _f, _g = _a.projectId, projectId = _g === void 0 ? defaultInitGTProps_1.default.projectId : _g, _h = _a.runtimeUrl, runtimeUrl = _h === void 0 ? defaultInitGTProps_1.default.runtimeUrl : _h, _j = _a.cacheUrl, cacheUrl = _j === void 0 ? defaultInitGTProps_1.default.cacheUrl : _j, _k = _a.cacheExpiryTime, cacheExpiryTime = _k === void 0 ? defaultInitGTProps_1.default.cacheExpiryTime : _k, _l = _a.locales, locales = _l === void 0 ? defaultInitGTProps_1.default.locales : _l, _m = _a.defaultLocale, defaultLocale = _m === void 0 ? defaultInitGTProps_1.default.defaultLocale : _m, _o = _a.renderSettings, renderSettings = _o === void 0 ? internal_1.defaultRenderSettings : _o, _p = _a.maxConcurrentRequests, maxConcurrentRequests = _p === void 0 ? defaultInitGTProps_1.default.maxConcurrentRequests : _p, _q = _a.maxBatchSize, maxBatchSize = _q === void 0 ? defaultInitGTProps_1.default.maxBatchSize : _q, _r = _a.batchInterval, batchInterval = _r === void 0 ? defaultInitGTProps_1.default.batchInterval : _r, metadata = __rest(_a, ["i18n", "dictionary", "runtimeTranslation", "remoteCache", "apiKey", "devApiKey", "projectId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "locales", "defaultLocale", "renderSettings", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
+    if (runtimeTranslation || remoteCache) {
+        if (!projectId) {
+            console.error(createErrors_1.projectIdMissingError);
+        }
     }
     var envApiKey = process.env.GT_API_KEY || '';
     var apiKeyType = (_b = envApiKey === null || envApiKey === void 0 ? void 0 : envApiKey.split('-')) === null || _b === void 0 ? void 0 : _b[1];
@@ -96,15 +94,18 @@ function initGT(_a) {
     else if (apiKeyType === "dev") {
         devApiKey = envApiKey;
     }
-    if (!apiKey && !devApiKey)
+    if (runtimeTranslation && !apiKey && !devApiKey) {
         console.error(createErrors_1.APIKeyMissingError);
-    if (baseUrl === defaultInitGTProps_1.default.baseUrl) {
+    }
+    if (runtimeUrl === defaultInitGTProps_1.default.runtimeUrl ||
+        cacheUrl === defaultInitGTProps_1.default.cacheUrl) {
         var warningLocales = locales.filter(function (locale) { return !(0, supported_locales_1.getSupportedLocale)(locale); });
         if (warningLocales.length)
             console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));
     }
+    ;
     // Store config params in environment variable to allow for global access (in some cases)
-    var I18NConfigParams = JSON.stringify(__assign({ apiKey: apiKey, devApiKey: devApiKey, projectId: projectId, baseUrl: baseUrl, cacheUrl: cacheUrl, cacheExpiryTime: cacheExpiryTime, locales: locales, defaultLocale: defaultLocale, renderSettings: renderSettings, maxConcurrentRequests: _maxConcurrentRequests, maxBatchSize: _maxBatchSize, batchInterval: _batchInterval }, metadata));
+    var I18NConfigParams = JSON.stringify(__assign({ remoteCache: remoteCache, runtimeTranslation: runtimeTranslation, apiKey: apiKey, devApiKey: devApiKey, projectId: projectId, runtimeUrl: runtimeUrl, cacheUrl: cacheUrl, cacheExpiryTime: cacheExpiryTime, locales: locales, defaultLocale: defaultLocale, renderSettings: renderSettings, maxConcurrentRequests: maxConcurrentRequests, maxBatchSize: maxBatchSize, batchInterval: batchInterval }, metadata));
     // Use i18n and dictionary values as file paths if they are provided as such
     var resolvedI18NFilePath = typeof i18n === 'string' ? i18n : resolveConfigFilepath('i18n');
     var resolvedDictionaryFilePath = typeof dictionary === 'string'

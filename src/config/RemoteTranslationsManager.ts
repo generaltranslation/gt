@@ -1,6 +1,7 @@
 import { standardizeLocale } from "generaltranslation";
 import { remoteTranslationsError } from "../errors/createErrors";
 import defaultInitGTProps from "./props/defaultInitGTProps";
+import { defaultCacheUrl } from "generaltranslation/internal";
 
 /**
  * Configuration type for RemoteTranslationsManager.
@@ -31,7 +32,7 @@ export class RemoteTranslationsManager {
    */
   constructor() {
     this.config = {
-      cacheUrl: 'https://cache.gtx.dev',
+      cacheUrl: defaultCacheUrl,
       projectId: '',
       cacheExpiryTime: defaultInitGTProps.cacheExpiryTime, // default to 60 seconds
     };

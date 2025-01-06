@@ -27,14 +27,14 @@ import { defaultRenderSettings } from "gt-react/internal";
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
- * @param {string} [baseUrl=defaultInitGTProps.baseUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
+ * @param {string} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
  * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
  * @param {string[]} [locales] - List of supported locales for the application. Defaults to the first locale or the default locale if not provided.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
- * @param {number} [_maxConcurrentRequests=defaultInitGTProps._maxConcurrectRequests] - Maximum number of concurrent requests allowed.
- * @param {number} [_maxBatchSize=defaultInitGTProps._maxBatchSize] - Maximum translation requests in the same batch.
- * @param {number} [_batchInterval=defaultInitGTProps._batchInterval] - The interval in milliseconds between batched translation requests.
+ * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
+ * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
+ * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @returns {function(NextConfig): NextConfig} - A function that accepts a Next.js config object and returns an updated config with GT settings applied.
@@ -45,34 +45,31 @@ import { defaultRenderSettings } from "gt-react/internal";
 export function initGT({
   i18n,
   dictionary,
+  runtimeTranslation = defaultInitGTProps.runtimeTranslation,
+  remoteCache = defaultInitGTProps.remoteCache,
   apiKey = defaultInitGTProps.apiKey,
   devApiKey = defaultInitGTProps.devApiKey,
   projectId = defaultInitGTProps.projectId,
-  baseUrl = defaultInitGTProps.baseUrl,
+  runtimeUrl = defaultInitGTProps.runtimeUrl,
   cacheUrl = defaultInitGTProps.cacheUrl,
   cacheExpiryTime = defaultInitGTProps.cacheExpiryTime,
   locales = defaultInitGTProps.locales,
   defaultLocale = defaultInitGTProps.defaultLocale,
   renderSettings = defaultRenderSettings,
-  _maxConcurrentRequests = defaultInitGTProps._maxConcurrectRequests,
-  _maxBatchSize = defaultInitGTProps._maxBatchSize,
-  _batchInterval = defaultInitGTProps._batchInterval,
+  maxConcurrentRequests = defaultInitGTProps.maxConcurrentRequests,
+  maxBatchSize = defaultInitGTProps.maxBatchSize,
+  batchInterval = defaultInitGTProps.batchInterval,
   ...metadata
 }: InitGTProps = defaultInitGTProps) {
-  // Error checks
-  if (
-    !projectId &&
-    (cacheUrl === defaultInitGTProps.cacheUrl ||
-      baseUrl === defaultInitGTProps.baseUrl)
-  )
-    console.error(
-      projectIdMissingError
-    );
 
-  if ((!apiKey || !projectId) && baseUrl === defaultInitGTProps.baseUrl) {
-    console.error(
-      APIKeyMissingError
-    );
+  // ----- ERROR CHECKS ----- //
+
+  if (runtimeTranslation || remoteCache) {
+    if (!projectId) {
+      console.error(
+        projectIdMissingError
+      );
+    }
   }
 
   const envApiKey = process.env.GT_API_KEY || '';
@@ -82,28 +79,36 @@ export function initGT({
   } else if (apiKeyType === "dev") {
     devApiKey = envApiKey;
   }
-  if (!apiKey && !devApiKey)
-    console.error(APIKeyMissingError);
-  
-  if (baseUrl === defaultInitGTProps.baseUrl) {
+  if (runtimeTranslation && !apiKey && !devApiKey) {
+    console.error(
+      APIKeyMissingError
+    );
+  }
+
+  if (
+    runtimeUrl === defaultInitGTProps.runtimeUrl ||
+    cacheUrl === defaultInitGTProps.cacheUrl
+  ) {
     const warningLocales = locales.filter(locale => !getSupportedLocale(locale));
     if (warningLocales.length) console.warn(createUnsupportedLocalesWarning(warningLocales))
-  }
+  };
 
   // Store config params in environment variable to allow for global access (in some cases)
   const I18NConfigParams = JSON.stringify({
+    remoteCache,
+    runtimeTranslation,
     apiKey,
     devApiKey,
     projectId,
-    baseUrl,
+    runtimeUrl,
     cacheUrl,
     cacheExpiryTime,
     locales,
     defaultLocale,
     renderSettings,
-    maxConcurrentRequests: _maxConcurrentRequests,
-    maxBatchSize: _maxBatchSize,
-    batchInterval: _batchInterval,
+    maxConcurrentRequests,
+    maxBatchSize,
+    batchInterval,
     ...metadata,
   });
 
@@ -115,7 +120,7 @@ export function initGT({
       ? dictionary
       : resolveConfigFilepath('dictionary');
 
-  return (config: NextConfig = {}): any => {
+  return (config: any = {}): any => {
     return {
       ...config,
       env: {
