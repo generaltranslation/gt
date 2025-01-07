@@ -1,4 +1,5 @@
 import fs from 'fs'
+import { displayCreatingNewConfigFile } from '../console/console';
 
 /**
  * Checks if the config file exists. If not, creates a new JSON file at the given filepath and writes the provided config object to it.
@@ -18,11 +19,12 @@ export default function updateConfigFile(
             );
             // Convert the config object to a JSON string
             const jsonContent = JSON.stringify(filteredConfigObject, null, 2);
-            console.log(`Creating new ${configFilepath} file...`, jsonContent)
             // Write the JSON string to the file, creating a new file if it doesn't exist
             fs.writeFileSync(configFilepath, jsonContent, 'utf-8');
+            // console.log
+            displayCreatingNewConfigFile(configFilepath)
         }
     } catch (error) {
-        console.error('An error occurred while updating the config file:', error);
+        console.error(`An error occurred while updating ${configFilepath}:`, error);
     }
 }

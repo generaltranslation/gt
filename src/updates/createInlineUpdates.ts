@@ -10,6 +10,8 @@ import generate from '@babel/generator';
 import * as t from '@babel/types';
 import addGTIdentifierToSyntaxTree from '../data-_gt/addGTIdentifierToSyntaxTree';
 import { hashReactChildrenObjects } from 'gt-react/internal';
+import { displayFoundTMessage } from '../console/console';
+import { warnHasUnwrappedExpression, warnNoId, warnVariableProp } from '../console/warnings';
 
 export default async function createInlineUpdates(
   options: Options
@@ -53,6 +55,9 @@ export default async function createInlineUpdates(
 
   const files = getFiles(appDirectory);
 
+  // Declare which components are considered valid "variable containers"
+  const variableComponents = ["Var", "DateTime", "Currency", "Num"];
+
   for (const file of files) {
     const code = fs.readFileSync(file, 'utf8');
 
@@ -72,34 +77,40 @@ export default async function createInlineUpdates(
         const openingElement = path.node.openingElement;
         const name = openingElement.name;
 
+        // Only proceed if it's <T> ...
         if (name.type === 'JSXIdentifier' && name.name === 'T') {
           const componentObj: any = { props: {} };
 
-          openingElement.attributes.forEach((attr) => {
-            if (attr.type === 'JSXAttribute') {
-              const attrName = attr.name.name;
-              let attrValue = null;
-              if (attr.value) {
-                if (attr.value.type === 'StringLiteral') {
-                  attrValue = attr.value.value;
-                } else if (attr.value.type === 'JSXExpressionContainer') {
-                  attrValue = buildJSXTree(attr.value.expression);
-                }
-              }
-              componentObj.props[attrName as any] = attrValue;
-            }
-          });
+          // We'll track this flag to know if any unwrapped {variable} is found in children
+          let hasUnwrappedExpression = false;
 
-          function buildJSXTree(node: any): any {
+          // We'll also track if `id` or `context` is variable
+          let hasVariableIdOrContext = false;
+
+          // The buildJSXTree function that handles children recursion
+          function buildJSXTree(node: any, isInsideVar = false): any {
+            // If we find a { foo } as a direct child and we're not inside <Var>, <DateTime>, <Currency>, or <Num>
+            if (t.isJSXExpressionContainer(node) && !isInsideVar) {
+              // Mark that we found an unwrapped expression
+              hasUnwrappedExpression = true;
+              // Return the code but note we've flagged it
+              return generate(node).code;
+            }
+
+            // JSX Text
             if (t.isJSXText(node)) {
               // Trim the text and replace multiple whitespaces with a single space
               return node.value.trim().replace(/\s+/g, ' ');
-            } else if (t.isJSXExpressionContainer(node)) {
-              return buildJSXTree(node.expression);
+            }
+            // If we are inside a variable component, keep going
+            else if (t.isJSXExpressionContainer(node)) {
+              return buildJSXTree(node.expression, isInsideVar);
+
+            // If it's a JSX element
             } else if (t.isJSXElement(node)) {
               const element = node;
-              const openingElement = element.openingElement;
-              const elementName = openingElement.name;
+              const elementName = element.openingElement.name;
+
               let typeName;
               if (t.isJSXIdentifier(elementName)) {
                 typeName = elementName.name;
@@ -108,9 +119,15 @@ export default async function createInlineUpdates(
               } else {
                 typeName = null;
               }
-          
+
+              // If this JSXElement is one of the recognized variable components,
+              // then for its children we set isInsideVar = true
+              const nextInsideVar = variableComponents.includes(typeName ?? '')
+                ? true
+                : isInsideVar;
+
               const props: { [key: string]: any } = {};
-              openingElement.attributes.forEach((attr) => {
+              element.openingElement.attributes.forEach((attr) => {
                 if (t.isJSXAttribute(attr)) {
                   const attrName = attr.name.name;
                   let attrValue = null;
@@ -118,7 +135,7 @@ export default async function createInlineUpdates(
                     if (t.isStringLiteral(attr.value)) {
                       attrValue = attr.value.value;
                     } else if (t.isJSXExpressionContainer(attr.value)) {
-                      attrValue = buildJSXTree(attr.value.expression);
+                      attrValue = buildJSXTree(attr.value.expression, nextInsideVar);
                     }
                   }
                   props[attrName as any] = attrValue;
@@ -126,84 +143,155 @@ export default async function createInlineUpdates(
                   props['...'] = generate(attr.argument).code;
                 }
               });
-          
+
               const children = element.children
-                .map((child) => buildJSXTree(child))
+                .map((child) => buildJSXTree(child, nextInsideVar))
                 .filter((child) => child !== null && child !== '');
-          
+
               if (children.length === 1) {
                 props.children = children[0];
               } else if (children.length > 1) {
                 props.children = children;
               }
-          
+
               return {
                 type: typeName,
                 props,
               };
-            } else if (t.isJSXFragment(node)) {
+            }
+            // If it's a JSX fragment
+            else if (t.isJSXFragment(node)) {
               const children = node.children
-                .map((child) => buildJSXTree(child))
-                .filter((child) => child !== null && child !== '');
-              
+                .map((child: any) => buildJSXTree(child, isInsideVar))
+                .filter((child: any) => child !== null && child !== '');
+
               return {
-                type: "",
+                type: '',
                 props: {
                   children: children.length === 1 ? children[0] : children
                 }
               };
-            } else if (t.isStringLiteral(node)) {
+            }
+            // If it's a string literal (standalone)
+            else if (t.isStringLiteral(node)) {
               return node.value;
-            } else if (t.isIdentifier(node) || t.isMemberExpression(node) ||
-                       t.isCallExpression(node) || t.isBinaryExpression(node) ||
-                       t.isLogicalExpression(node) || t.isConditionalExpression(node)) {
+            }
+            // If it's some other JS expression
+            else if (
+              t.isIdentifier(node) ||
+              t.isMemberExpression(node) ||
+              t.isCallExpression(node) ||
+              t.isBinaryExpression(node) ||
+              t.isLogicalExpression(node) ||
+              t.isConditionalExpression(node)
+            ) {
               return generate(node).code;
             } else {
               return generate(node).code;
             }
           }
+          // end buildJSXTree
 
+          // Gather <T>'s props
+          openingElement.attributes.forEach((attr) => {
+            if (!t.isJSXAttribute(attr)) return;
+
+            const attrName = attr.name.name;
+
+            if (typeof attrName !== 'string') return;
+
+            // We'll build the value with buildJSXTree, but also
+            // specifically check for variable "id" or "context"
+            if (attr.value) {
+              // If it's a plain string literal like id="hello"
+              if (t.isStringLiteral(attr.value)) {
+                componentObj.props[attrName] = attr.value.value;
+                // If it's `id` or `context` but contains braces, it's variable => skip
+                if ((attrName === 'id' || attrName === 'context')
+                  && /[{}]/.test(attr.value.value)) {
+                  warnVariableProp(file, attrName, attr.value.value);
+                  hasVariableIdOrContext = true;
+                }
+              } 
+              // If it's an expression container like id={"hello"}, id={someVar}, etc.
+              else if (t.isJSXExpressionContainer(attr.value)) {
+                const generatedVal = generate(attr.value.expression).code;
+                componentObj.props[attrName] = generatedVal;
+
+                // If that expression is not a simple string literal, skip
+                // But we need to detect if it's actually just {"hello"} vs {myVar}
+                if (attrName === 'id' || attrName === 'context') {
+                  // Check if the expression inside is a string literal
+                  if (t.isStringLiteral(attr.value.expression)) {
+                    // It's static => e.g. {"hello"}
+                    // But we still check for braces inside the string
+                    if (/[{}]/.test(attr.value.expression.value)) {
+                      warnVariableProp(file, attrName, attr.value.expression.value)
+                      hasVariableIdOrContext = true;
+                    } else {
+                      // It's a static string, so we are good
+                      componentObj.props[attrName] = attr.value.expression.value;
+                    }
+                  } else {
+                    // Expression is something else => definitely variable
+                    warnVariableProp(file, attrName, generatedVal)
+                    hasVariableIdOrContext = true;
+                  }
+                }
+              }
+            }
+          });
+
+          // If we already found a variable `id` or `context`, skip immediately
+          if (hasVariableIdOrContext) {
+            return;
+          }
+
+          // Build and store the "children" / tree
           const tree = path.node.children
             .map((child) => buildJSXTree(child))
             .filter((child) => child !== null && child !== '');
 
           componentObj.tree = tree.length === 1 ? tree[0] : tree;
 
+          // Check the id ...
           const id = componentObj.props.id;
-          
-          if (id) {
-            if (/[{}]/.test(id)) {
-                console.warn(`Found <T> component in ${file} with potentially variable id: "${id}". <T> components with variable IDs are translated at runtime.`);
-            } else if (/[{}]/.test(componentObj.props?.context || '')) {
-                console.warn(`Found <T> component in ${file} with potentially variable context. { id: "${id}", context: "${componentObj.props?.context}" }. <T> components with variable context are translated at runtime.`);
-            } else {
-                const childrenAsObjects = addGTIdentifierToSyntaxTree(componentObj.tree);
-                console.log(`Found <T> component in ${file} with id "${id}".`);
-                updates.push({
-                    type: "jsx",
-                    data: {
-                        source: childrenAsObjects,
-                        metadata: componentObj.props
-                    }
-                });
-            }
-            
+          // If user forgot to provide an `id`, warn
+          if (!id) {
+            warnNoId(file)
+            return;
           }
-          else {
-            console.warn(`Found <T> component in ${file} with no id. <T> components without IDs are translated at runtime.`);
+
+          // If we found an unwrapped expression, skip
+          if (hasUnwrappedExpression) {
+            warnHasUnwrappedExpression(file, id);
+            return;
           }
+
+          // If we reached here, this <T> is valid
+          const childrenAsObjects = addGTIdentifierToSyntaxTree(componentObj.tree);
+          displayFoundTMessage(file, id);
+
+          updates.push({
+            type: "jsx",
+            source: childrenAsObjects,
+            metadata: componentObj.props
+          });
         }
       },
     });
   }
 
-  await Promise.all(updates.map(async update => {
-    const context = update.data.metadata.context;
-    const hash = hashReactChildrenObjects(
-        context ? [(update.data as any).children, context] : (update.data as any).children
-    )
-    update.data.metadata.hash = hash;
-  }))
+  // Post-process to add a hash to each update
+  await Promise.all(
+    updates.map(async (update) => {
+      const context = update.metadata.context;
+      const hash = hashReactChildrenObjects(
+        context ? [update.source, context] : update.source
+      );
+      update.metadata.hash = hash;
+    })
+  );
 
   return updates;
 }

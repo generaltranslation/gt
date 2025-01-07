@@ -1,6 +1,7 @@
 import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
+import { displayResolvedPaths } from '../console/console';
 
 export default function createESBuildConfig(config: Record<string, any> = {}) {
     const esbuildOptions: esbuild.BuildOptions = {
@@ -70,13 +71,18 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
         if (config.compilerOptions.paths) {
             const aliases: any = {};
 
+            const resolvedPaths: [string, string][] = []
             for (const [key, value] of Object.entries(config.compilerOptions.paths)) {
                 if (Array.isArray(value) && typeof value[0] === 'string') {
                     const resolvedPath = path.resolve(process.cwd(), value[0].replace('/*', ''));
                     aliases[key.replace('/*', '')] = resolvedPath;
-                    console.log(`Resolved alias '${key}' to '${resolvedPath}'`);
+                    resolvedPaths.push([key, resolvedPath]);
                 }
             }
+            if (resolvedPaths.length) {
+                displayResolvedPaths(resolvedPaths)
+            }
+
 
             esbuildOptions.plugins = esbuildOptions.plugins || [];
 
@@ -123,8 +129,6 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
                 },
             });
         }
-    } else {
-        console.log('No compilerOptions found in the config.');
     }
 
     return esbuildOptions;

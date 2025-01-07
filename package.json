@@ -3,16 +3,14 @@
   "version": "1.1.0",
   "main": "dist/main.js",
   "bin": {
-    "i18n": "dist/main.js",
-    "translate": "dist/main.js",
-    "gt-update": "dist/main.js"
+    "translate": "dist/main.js"
   },
   "scripts": {
     "build": "tsc",
     "build-push-publish": "rm -r -f dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;"
   },
   "peerDependencies": {
-    "generaltranslation": "^5.0.0",
+    "generaltranslation": "^5.0.1",
     "gt-react": "^7.0.0"
   },
   "keywords": [],
@@ -24,10 +22,12 @@
     "@babel/parser": "^7.25.7",
     "@babel/traverse": "^7.25.7",
     "@types/react": "^18.3.4",
+    "chalk": "^5.4.1",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
     "esm": "^3.2.25",
+    "figlet": "^1.8.0",
     "mock-require": "^3.0.3",
     "react": "^18.3.1 || ^19.0.0",
     "ts-node": "^10.9.2",
@@ -36,6 +36,7 @@
   "devDependencies": {
     "@types/babel__generator": "^7.6.8",
     "@types/babel__traverse": "^7.20.6",
+    "@types/figlet": "^1.7.0",
     "@types/mock-require": "^2.0.3",
     "@types/node": "^22.5.1"
   }
