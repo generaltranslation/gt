@@ -80,11 +80,6 @@ export default class I18NConfiguration {
      * @returns True if translation is required, otherwise false
      */
     requiresTranslation(locale: string): boolean;
-    /**
-     * Check if the current environment is set to "development" or "test"
-     * @returns True if the current environment is development
-    */
-    isDevelopmentEnvironment(): boolean;
     addGTIdentifier(children: any, id?: string): any;
     /**
      * @returns {[any, string]} A xxhash hash and the children that were created from it

@@ -200,53 +200,19 @@ export default class I18NConfiguration {
     );
   }
 
-  /**
-   * Check if the current environment is set to "development" or "test"
-   * @returns True if the current environment is development
-  */
-  isDevelopmentEnvironment(): boolean {
-    return this.devApiKey ? true : false;
-  }
-
   addGTIdentifier(children: any, id?: string): any {
-
-    // In development, recompute every time
-    if (this.isDevelopmentEnvironment() || !id) {
-      return addGTIdentifier(children, id);
-    }
-    // In production, since dictionary content isn't changing, cache results
-    const taggedDictionaryEntry = this._taggedDictionary.get(id);
-    if (taggedDictionaryEntry) {
-      return taggedDictionaryEntry;
-    }
-    const taggedChildren = addGTIdentifier(children, id);
-    
-    this._taggedDictionary.set(id, taggedChildren);
-    return taggedChildren;
+    return addGTIdentifier(children, id);
   }
   
   /**
    * @returns {[any, string]} A xxhash hash and the children that were created from it
   */
   serializeAndHash(children: any, context?: string, id?: string): [any, string] {
-    // In development, recomputes hashes each time
-    if (this.isDevelopmentEnvironment() || !id) {
-      const childrenAsObjects = writeChildrenAsObjects(children);
-      return [
-        childrenAsObjects, 
-        hashReactChildrenObjects(context ? [childrenAsObjects, context] : childrenAsObjects)
-      ];
-    }
-    // In production, since dictionary content isn't changing, cache results
-    const templateEntry = this._template.get(id);
-    if (templateEntry) {
-      const [[ hash, target ]] = Object.entries(templateEntry);
-      return [target, hash];
-    } 
     const childrenAsObjects = writeChildrenAsObjects(children);
-    const hash = hashReactChildrenObjects(context ? [childrenAsObjects, context] : childrenAsObjects);
-    this._template.set(id, { [hash]: childrenAsObjects });
-    return [childrenAsObjects, hash];
+    return [
+      childrenAsObjects, 
+      hashReactChildrenObjects(context ? [childrenAsObjects, context] : childrenAsObjects)
+    ];
   }
 
   /**
