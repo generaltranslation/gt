@@ -1,7 +1,8 @@
 import path from 'path';
+import fs from 'fs';
 import { NextConfig } from 'next';
 import defaultInitGTProps from './config/props/defaultInitGTProps';
-import InitGTProps from './config/props/InitGTProps'
+import InitGTProps from './config/props/InitGTProps';
 import { APIKeyMissingError, createUnsupportedLocalesWarning, projectIdMissingError } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import { defaultRenderSettings } from "gt-react/internal";
@@ -23,13 +24,18 @@ import { defaultRenderSettings } from "gt-react/internal";
  *
  * export default withGT({})
  *
+ * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
  * @param {string|undefined} i18n - Optional i18n configuration file path. If a string is provided, it will be used as a path.
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
+ * @param {string} [devApiKey=defaultInitGTProps.devApiKey] - API key for dev environment only.
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
  * @param {string} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
  * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
- * @param {string[]} [locales] - List of supported locales for the application. Defaults to the first locale or the default locale if not provided.
+ * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - How long to cache translations in memory (milliseconds).
+ * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
+ * @param {boolean} [remoteCache=defaultInitGTProps.remoteCache] - Whether to enable remote caching of translations.
+ * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
  * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
@@ -43,88 +49,148 @@ import { defaultRenderSettings } from "gt-react/internal";
  *
  */
 export function initGT({
+  config = './gt.config.json',
   i18n,
   dictionary,
   runtimeTranslation = defaultInitGTProps.runtimeTranslation,
   remoteCache = defaultInitGTProps.remoteCache,
   apiKey = defaultInitGTProps.apiKey,
-  devApiKey = defaultInitGTProps.devApiKey,
+  devApiKey,
   projectId = defaultInitGTProps.projectId,
   runtimeUrl = defaultInitGTProps.runtimeUrl,
   cacheUrl = defaultInitGTProps.cacheUrl,
   cacheExpiryTime = defaultInitGTProps.cacheExpiryTime,
   locales = defaultInitGTProps.locales,
   defaultLocale = defaultInitGTProps.defaultLocale,
-  renderSettings = defaultRenderSettings,
+  renderSettings,
   maxConcurrentRequests = defaultInitGTProps.maxConcurrentRequests,
   maxBatchSize = defaultInitGTProps.maxBatchSize,
   batchInterval = defaultInitGTProps.batchInterval,
   ...metadata
 }: InitGTProps = defaultInitGTProps) {
+  
+  // Load from config file if it's a string and exists
+  let loadedConfig: Partial<InitGTProps> = {};
+  try {
+    if (typeof config === 'string' && fs.existsSync(config)) {
+      const fileContent = fs.readFileSync(config, 'utf-8');
+      loadedConfig = JSON.parse(fileContent);
+    }
+    if (loadedConfig.locales?.length === 0) {
+      loadedConfig.locales = locales;
+    }
+  } catch (error) {
+    console.error('Error reading GT config file:', error);
+  }
+
+  // Merge loaded file config, default props, and function args
+  const mergedConfig: InitGTProps = {
+    ...defaultInitGTProps,
+    ...loadedConfig,
+    ...{
+      i18n,
+      dictionary,
+      runtimeTranslation,
+      remoteCache,
+      apiKey,
+      devApiKey,
+      projectId,
+      runtimeUrl,
+      cacheUrl,
+      cacheExpiryTime,
+      locales,
+      defaultLocale,
+      renderSettings: renderSettings || defaultRenderSettings,
+      maxConcurrentRequests,
+      maxBatchSize,
+      batchInterval,
+      ...metadata
+    }
+  };
+
+  // Destructure final config
+  const {
+    i18n: finalI18n,
+    dictionary: finalDictionary,
+    runtimeTranslation: finalRuntimeTranslation,
+    remoteCache: finalRemoteCache,
+    apiKey: finalApiKey,
+    devApiKey: finalDevApiKey,
+    projectId: finalProjectId,
+    runtimeUrl: finalRuntimeUrl,
+    cacheUrl: finalCacheUrl,
+    cacheExpiryTime: finalCacheExpiryTime,
+    locales: finalLocales,
+    defaultLocale: finalDefaultLocale,
+    renderSettings: finalRenderSettings,
+    maxConcurrentRequests: finalMaxConcurrentRequests,
+    maxBatchSize: finalMaxBatchSize,
+    batchInterval: finalBatchInterval,
+    ...restMetadata
+  } = mergedConfig;
 
   // ----- ERROR CHECKS ----- //
-
-  if (runtimeTranslation || remoteCache) {
-    if (!projectId) {
-      console.error(
-        projectIdMissingError
-      );
+  if (finalRuntimeTranslation || finalRemoteCache) {
+    if (!finalProjectId) {
+      console.error(projectIdMissingError);
     }
   }
 
   const envApiKey = process.env.GT_API_KEY || '';
-  const apiKeyType = envApiKey?.split('-')?.[1];
-  if (apiKeyType === "api") {
-    apiKey = envApiKey; 
-  } else if (apiKeyType === "dev") {
-    devApiKey = envApiKey;
+  const apiKeyType = envApiKey.split('-')?.[1];
+  let resolvedApiKey = finalApiKey;
+  let resolvedDevApiKey = finalDevApiKey;
+
+  if (apiKeyType === 'api') {
+    resolvedApiKey = envApiKey;
+  } else if (apiKeyType === 'dev') {
+    resolvedDevApiKey = envApiKey;
   }
-  if (runtimeTranslation && !apiKey && !devApiKey) {
-    console.error(
-      APIKeyMissingError
-    );
+
+  if (finalRuntimeTranslation && !resolvedApiKey && !resolvedDevApiKey) {
+    console.error(APIKeyMissingError);
   }
 
   if (
-    runtimeUrl === defaultInitGTProps.runtimeUrl ||
-    cacheUrl === defaultInitGTProps.cacheUrl
+    finalRuntimeUrl === defaultInitGTProps.runtimeUrl ||
+    finalCacheUrl === defaultInitGTProps.cacheUrl
   ) {
-    const warningLocales = locales.filter(locale => !getSupportedLocale(locale));
-    if (warningLocales.length) console.warn(createUnsupportedLocalesWarning(warningLocales))
-  };
+    const warningLocales = (finalLocales || defaultInitGTProps.locales).filter(locale => !getSupportedLocale(locale));
+    if (warningLocales.length) console.warn(createUnsupportedLocalesWarning(warningLocales));
+  }
 
   // Store config params in environment variable to allow for global access (in some cases)
   const I18NConfigParams = JSON.stringify({
-    remoteCache,
-    runtimeTranslation,
-    apiKey,
-    devApiKey,
-    projectId,
-    runtimeUrl,
-    cacheUrl,
-    cacheExpiryTime,
-    locales,
-    defaultLocale,
-    renderSettings,
-    maxConcurrentRequests,
-    maxBatchSize,
-    batchInterval,
-    ...metadata,
+    remoteCache: finalRemoteCache,
+    runtimeTranslation: finalRuntimeTranslation,
+    apiKey: resolvedApiKey,
+    devApiKey: resolvedDevApiKey,
+    projectId: finalProjectId,
+    runtimeUrl: finalRuntimeUrl,
+    cacheUrl: finalCacheUrl,
+    cacheExpiryTime: finalCacheExpiryTime,
+    locales: finalLocales,
+    defaultLocale: finalDefaultLocale,
+    renderSettings: finalRenderSettings,
+    maxConcurrentRequests: finalMaxConcurrentRequests,
+    maxBatchSize: finalMaxBatchSize,
+    batchInterval: finalBatchInterval,
+    ...restMetadata,
   });
 
-  // Use i18n and dictionary values as file paths if they are provided as such
+  // Resolve i18n and dictionary paths
   const resolvedI18NFilePath =
-    typeof i18n === 'string' ? i18n : resolveConfigFilepath('i18n');
+    typeof finalI18n === 'string' ? finalI18n : resolveConfigFilepath('i18n');
   const resolvedDictionaryFilePath =
-    typeof dictionary === 'string'
-      ? dictionary
+    typeof finalDictionary === 'string'
+      ? finalDictionary
       : resolveConfigFilepath('dictionary');
 
-  return (config: any = {}): any => {
+  return (nextConfig: any = {}): any => {
     return {
-      ...config,
+      ...nextConfig,
       env: {
-        ...config.env,
+        ...nextConfig.env,
         _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
       },
       webpack: function webpack(
@@ -133,21 +199,19 @@ export function initGT({
         >
       ) {
         if (resolvedI18NFilePath) {
-          // Add alias for importing request handler
           webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
             webpackConfig.context,
             resolvedI18NFilePath
           );
         }
         if (resolvedDictionaryFilePath) {
-          // Add alias for importing dictionary via webpack
           webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
             webpackConfig.context,
             resolvedDictionaryFilePath
           );
         }
-        if (typeof config?.webpack === 'function') {
-          return config.webpack(webpackConfig, options);
+        if (typeof nextConfig?.webpack === 'function') {
+          return nextConfig.webpack(webpackConfig, options);
         }
         return webpackConfig;
       },
@@ -155,7 +219,13 @@ export function initGT({
   };
 }
 
-// Function to search for both i18n.js and dictionary.js
+/**
+ * Resolves a configuration filepath for i18n or dictionary files.
+ *
+ * @param {string} fileName - The base name of the config file to look for.
+ * @param {string} [cwd] - An optional current working directory path.
+ * @returns {string|undefined} - The path if found; otherwise undefined.
+ */
 function resolveConfigFilepath(
   fileName: string,
   cwd?: string
@@ -168,7 +238,7 @@ function resolveConfigFilepath(
   }
 
   function pathExists(pathname: string) {
-    return require('fs').existsSync(resolvePath(pathname));
+    return fs.existsSync(resolvePath(pathname));
   }
 
   // Check for file existence in the root and src directories with supported extensions
@@ -185,7 +255,12 @@ function resolveConfigFilepath(
   return undefined;
 }
 
-// Helper function to handle multiple extensions
+/**
+ * Helper function to handle multiple extensions.
+ *
+ * @param {string} localPath - The local path to which extensions will be appended.
+ * @returns {string[]} - Array of possible paths with supported TypeScript/JavaScript extensions.
+ */
 function withExtensions(localPath: string) {
   return [
     `${localPath}.ts`,
