@@ -9,7 +9,7 @@ function GTProvider(params: {
     throw new Error(
         `You're attempting to import <GTProvider> on the client. `
         + `Are you sure you want to do this? It's better to import <GTProvider> in a file not marked 'use client' so that it can fetch translations on the server. `
-        + `If you really need to put <GTProvider> on the client, import <GTProvider> from 'gt-next/client' (not recommended in server-first apps).`
+        + `If you really need to put <GTProvider> on the client, import <GTProvider> from 'gt-react' instead (discouraged in server-first apps).`
     )
 }
 
