@@ -43,24 +43,25 @@ var internal_1 = require("generaltranslation/internal");
 var getDefaultFromEnv_1 = __importDefault(require("../../utils/getDefaultFromEnv"));
 var supported_locales_1 = require("@generaltranslation/supported-locales");
 var defaultInitGTProps = {
+    remoteCache: true,
+    runtimeTranslation: true,
     apiKey: (0, getDefaultFromEnv_1.default)('GT_API_KEY'),
     devApiKey: '',
     projectId: (0, getDefaultFromEnv_1.default)('GT_PROJECT_ID'),
-    baseUrl: internal_1.defaultBaseUrl,
+    runtimeUrl: internal_1.defaultRuntimeApiUrl,
     cacheUrl: internal_1.defaultCacheUrl,
-    cacheExpiryTime: 6000,
+    cacheExpiryTime: 60000,
     defaultLocale: internal_1.libraryDefaultLocale,
     getLocale: function () { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
         return [2 /*return*/, internal_1.libraryDefaultLocale];
     }); }); },
     locales: (0, supported_locales_1.listSupportedLocales)(),
-    env: (0, getDefaultFromEnv_1.default)('NODE_ENV'),
     getMetadata: function () { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
         return [2 /*return*/, ({})];
     }); }); },
-    _maxConcurrectRequests: 100,
-    _maxBatchSize: 25,
-    _batchInterval: 10
+    maxConcurrentRequests: 100,
+    maxBatchSize: 25,
+    batchInterval: 10
 };
 exports.default = defaultInitGTProps;
 //# sourceMappingURL=defaultInitGTProps.js.map

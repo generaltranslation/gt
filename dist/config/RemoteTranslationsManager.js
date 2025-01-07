@@ -54,6 +54,7 @@ exports.RemoteTranslationsManager = void 0;
 var generaltranslation_1 = require("generaltranslation");
 var createErrors_1 = require("../errors/createErrors");
 var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
+var internal_1 = require("generaltranslation/internal");
 /**
  * Manages remote translations.
  */
@@ -64,7 +65,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
      */
     function RemoteTranslationsManager() {
         this.config = {
-            cacheUrl: 'https://cache.gtx.dev',
+            cacheUrl: internal_1.defaultCacheUrl,
             projectId: '',
             cacheExpiryTime: defaultInitGTProps_1.default.cacheExpiryTime, // default to 60 seconds
         };

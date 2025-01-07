@@ -49,6 +49,7 @@ function Resolver(_a) {
                 case 1: return [2 /*return*/, _c.sent()];
                 case 2:
                     error_1 = _c.sent();
+                    console.error(error_1);
                     return [2 /*return*/, fallback];
                 case 3: return [2 /*return*/];
             }

@@ -1,11 +1,14 @@
 type InitGTProps = {
+    // Feature flags
+    remoteCache?: boolean;
+    runtimeTranslation?: boolean;
     // Request scoped filepath
     dictionary?: string;
     i18n?: string
     // Cloud integration
     apiKey?: string;
     projectId?: string;
-    baseUrl?: string;
+    runtimeUrl?: string;
     cacheUrl?: string;
     cacheExpiryTime?: number;
     // Locale info
@@ -20,13 +23,11 @@ type InitGTProps = {
     // Other metadata
     getMetadata?: () => Promise<Record<string, any>>
     // Batching config
-    _maxConcurrentRequests?: number;
-    _maxBatchSize?: number;
-    _batchInterval?: number; // ms
+    maxConcurrentRequests?: number;
+    maxBatchSize?: number;
+    batchInterval?: number; // ms
     // Translation assistance
     description?: string
-    // AI
-    preferredModel?: string; // see docs.generaltranslation.com for a list of the most recent options
     // Other
     [key: string]: any;
 }

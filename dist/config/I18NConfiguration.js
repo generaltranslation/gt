@@ -10,29 +10,6 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -84,16 +61,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var generaltranslation_1 = __importStar(require("generaltranslation"));
+var generaltranslation_1 = require("generaltranslation");
 var RemoteTranslationsManager_1 = __importDefault(require("./RemoteTranslationsManager"));
-var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         var 
         // Cloud integration
-        apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, baseUrl = _a.baseUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
+        runtimeTranslation = _a.runtimeTranslation, remoteCache = _a.remoteCache, apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
         // Locale info
         defaultLocale = _a.defaultLocale, locales = _a.locales, 
         // Render method
@@ -103,24 +79,20 @@ var I18NConfiguration = /** @class */ (function () {
         // Batching config
         maxConcurrentRequests = _a.maxConcurrentRequests, maxBatchSize = _a.maxBatchSize, batchInterval = _a.batchInterval, 
         // Other metadata
-        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "baseUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
+        metadata = __rest(_a, ["runtimeTranslation", "remoteCache", "apiKey", "devApiKey", "projectId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
+        // Feature flags
+        this.runtimeTranslation = runtimeTranslation;
+        this.remoteCache = remoteCache;
         // Cloud integration
         this.apiKey = apiKey;
         this.devApiKey = devApiKey;
         this.projectId = projectId;
-        this.baseUrl = baseUrl;
+        this.runtimeUrl = runtimeUrl;
         // Locales
         this.defaultLocale = defaultLocale;
         this.locales = locales;
         // Render method
         this.renderSettings = renderSettings;
-        // GT
-        this.gt = new generaltranslation_1.default({
-            projectId: projectId,
-            apiKey: apiKey,
-            sourceLocale: defaultLocale,
-            baseUrl: baseUrl,
-        });
         // Default env is production
         if (process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test" && this.devApiKey) {
             throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
@@ -157,7 +129,7 @@ var I18NConfiguration = /** @class */ (function () {
         return {
             projectId: this.projectId,
             devApiKey: this.devApiKey,
-            baseUrl: this.baseUrl
+            runtimeUrl: this.runtimeUrl
         };
     };
     /**
@@ -178,11 +150,10 @@ var I18NConfiguration = /** @class */ (function () {
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
      */
     I18NConfiguration.prototype.translationEnabled = function () {
-        return this.baseUrl &&
+        return (this.runtimeTranslation &&
             this.projectId &&
-            (this.baseUrl === defaultInitGTProps_1.default.baseUrl ? this.gt.apiKey : true)
-            ? true
-            : false;
+            this.runtimeUrl &&
+            (this.apiKey || this.devApiKey)) ? true : false;
     };
     /**
      * Get the rendering instructions
@@ -282,21 +253,15 @@ var I18NConfiguration = /** @class */ (function () {
                 translationPromise = new Promise(function (resolve, reject) {
                     _this._queue.push({
                         type: 'content',
-                        data: {
-                            source: source,
-                            targetLocale: targetLocale,
-                            metadata: __assign(__assign(__assign({}, _this.metadata), { projectId: _this.projectId }), options),
-                        },
-                        revalidate: !_this.isDevelopmentEnvironment() && (_this._remoteTranslationsManager
-                            ? _this._remoteTranslationsManager.getTranslationRequested(targetLocale)
-                            : false),
+                        source: source,
+                        targetLocale: targetLocale,
+                        metadata: options,
                         resolve: resolve,
                         reject: reject,
                     });
                 }).catch(function (error) {
                     _this._translationCache.delete(cacheKey);
-                    console.error(error);
-                    return '';
+                    throw new Error(error);
                 });
                 this._translationCache.set(cacheKey, translationPromise);
                 return [2 /*return*/, translationPromise];
@@ -324,21 +289,16 @@ var I18NConfiguration = /** @class */ (function () {
                     // In memory queue to batch requests
                     _this._queue.push({
                         type: 'jsx',
-                        data: {
-                            source: source,
-                            targetLocale: targetLocale,
-                            metadata: __assign(__assign({}, _this.metadata), metadata),
-                        },
-                        revalidate: !_this.isDevelopmentEnvironment() && (_this._remoteTranslationsManager
-                            ? _this._remoteTranslationsManager.getTranslationRequested(targetLocale)
-                            : false),
+                        source: source,
+                        targetLocale: targetLocale,
+                        metadata: metadata,
                         resolve: resolve,
                         reject: reject,
                     });
                 }).catch(function (error) {
-                    _this._translationCache.delete(cacheKey);
                     console.error(error);
-                    return null;
+                    _this._translationCache.delete(cacheKey);
+                    throw new Error(error);
                 });
                 this._translationCache.set(cacheKey, translationPromise);
                 return [2 /*return*/, translationPromise];
@@ -351,35 +311,46 @@ var I18NConfiguration = /** @class */ (function () {
      */
     I18NConfiguration.prototype._sendBatchRequest = function (batch) {
         return __awaiter(this, void 0, void 0, function () {
-            var batchPromise, results_1, error_1;
+            var response, _a, results_1, error_1;
             var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         this._activeRequests++;
-                        _a.label = 1;
+                        _b.label = 1;
                     case 1:
-                        _a.trys.push([1, 3, 4, 5]);
-                        batchPromise = this.gt.translateBatch(batch);
-                        batch.forEach(function (item) {
-                            if (_this._remoteTranslationsManager && !item.revalidate)
-                                _this._remoteTranslationsManager.setTranslationRequested(item.data.targetLocale);
-                        });
-                        return [4 /*yield*/, batchPromise];
+                        _b.trys.push([1, 6, 7, 8]);
+                        return [4 /*yield*/, fetch("".concat(this.runtimeUrl, "/v1/runtime/").concat(this.projectId, "/server"), {
+                                method: 'POST',
+                                headers: __assign(__assign({ 'Content-Type': 'application/json' }, (this.apiKey && { 'x-gt-api-key': this.apiKey })), (this.devApiKey && { 'x-gt-dev-api-key': this.devApiKey })),
+                                body: JSON.stringify({
+                                    requests: batch.map(function (item) {
+                                        var source = item.source, metadata = item.metadata, type = item.type;
+                                        return { source: source, metadata: metadata, type: type };
+                                    }),
+                                    targetLocale: batch[0].targetLocale,
+                                    metadata: this.metadata
+                                }),
+                            })];
                     case 2:
-                        results_1 = _a.sent();
+                        response = _b.sent();
+                        if (!!response.ok) return [3 /*break*/, 4];
+                        _a = Error.bind;
+                        return [4 /*yield*/, response.text()];
+                    case 3: throw new (_a.apply(Error, [void 0, _b.sent()]))();
+                    case 4: return [4 /*yield*/, response.json()];
+                    case 5:
+                        results_1 = _b.sent();
                         batch.forEach(function (item, index) {
                             var _a;
                             var result = results_1[index];
                             if (!result)
                                 return item.reject('Translation failed.');
                             if (result && typeof result === 'object') {
-                                if ('translation' in result &&
-                                    result.translation &&
-                                    result.locale &&
-                                    result.reference &&
-                                    _this._remoteTranslationsManager) {
-                                    _this._remoteTranslationsManager.setTranslations(result.locale, result.reference.key, result.reference.id, result.translation);
+                                if ('translation' in result) {
+                                    if (_this._remoteTranslationsManager) {
+                                        _this._remoteTranslationsManager.setTranslations(result.locale, result.reference.key, result.reference.id, result.translation);
+                                    }
                                     return item.resolve(result.translation);
                                 }
                                 else if ('error' in result &&
@@ -390,17 +361,17 @@ var I18NConfiguration = /** @class */ (function () {
                             }
                             return item.reject('Translation failed.');
                         });
-                        return [3 /*break*/, 5];
-                    case 3:
-                        error_1 = _a.sent();
+                        return [3 /*break*/, 8];
+                    case 6:
+                        error_1 = _b.sent();
                         batch.forEach(function (item) {
-                            item.reject();
+                            item.reject("gt-next translation failed with error: ".concat(error_1));
                         });
-                        return [3 /*break*/, 5];
-                    case 4:
+                        return [3 /*break*/, 8];
+                    case 7:
                         this._activeRequests--;
                         return [7 /*endfinally*/];
-                    case 5: return [2 /*return*/];
+                    case 8: return [2 /*return*/];
                 }
             });
         });

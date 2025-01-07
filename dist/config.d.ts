@@ -1,4 +1,3 @@
-import { NextConfig } from 'next';
 import InitGTProps from './config/props/InitGTProps';
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -17,18 +16,23 @@ import InitGTProps from './config/props/InitGTProps';
  *
  * export default withGT({})
  *
+ * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
  * @param {string|undefined} i18n - Optional i18n configuration file path. If a string is provided, it will be used as a path.
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
+ * @param {string} [devApiKey=defaultInitGTProps.devApiKey] - API key for dev environment only.
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
- * @param {string} [baseUrl=defaultInitGTProps.baseUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
+ * @param {string} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
  * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
- * @param {string[]} [locales] - List of supported locales for the application. Defaults to the first locale or the default locale if not provided.
+ * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - How long to cache translations in memory (milliseconds).
+ * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
+ * @param {boolean} [remoteCache=defaultInitGTProps.remoteCache] - Whether to enable remote caching of translations.
+ * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
- * @param {number} [_maxConcurrentRequests=defaultInitGTProps._maxConcurrectRequests] - Maximum number of concurrent requests allowed.
- * @param {number} [_maxBatchSize=defaultInitGTProps._maxBatchSize] - Maximum translation requests in the same batch.
- * @param {number} [_batchInterval=defaultInitGTProps._batchInterval] - The interval in milliseconds between batched translation requests.
+ * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
+ * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
+ * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @returns {function(NextConfig): NextConfig} - A function that accepts a Next.js config object and returns an updated config with GT settings applied.
@@ -36,5 +40,5 @@ import InitGTProps from './config/props/InitGTProps';
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  *
  */
-export declare function initGT({ i18n, dictionary, apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, locales, defaultLocale, renderSettings, _maxConcurrentRequests, _maxBatchSize, _batchInterval, ...metadata }?: InitGTProps): (config?: NextConfig) => any;
+export declare function initGT({ config, i18n, dictionary, runtimeTranslation, remoteCache, apiKey, devApiKey, projectId, runtimeUrl, cacheUrl, cacheExpiryTime, locales, defaultLocale, renderSettings, maxConcurrentRequests, maxBatchSize, batchInterval, ...metadata }?: InitGTProps): (nextConfig?: any) => any;
 //# sourceMappingURL=config.d.ts.map

@@ -1,10 +1,11 @@
-import GT from 'generaltranslation';
 type I18NConfigurationParams = {
+    remoteCache: boolean;
+    runtimeTranslation: boolean;
     apiKey?: string;
     devApiKey?: string;
     projectId: string;
     cacheUrl: string;
-    baseUrl: string;
+    runtimeUrl: string;
     cacheExpiryTime?: number;
     defaultLocale: string;
     locales: string[];
@@ -18,9 +19,11 @@ type I18NConfigurationParams = {
     [key: string]: any;
 };
 export default class I18NConfiguration {
+    runtimeTranslation: boolean;
+    remoteCache: boolean;
     apiKey?: string;
     devApiKey?: string;
-    baseUrl: string;
+    runtimeUrl: string;
     projectId: string;
     defaultLocale: string;
     locales: string[];
@@ -29,7 +32,6 @@ export default class I18NConfiguration {
         timeout: number | null;
     };
     private _remoteTranslationsManager;
-    gt: GT;
     metadata: Record<string, any>;
     maxConcurrentRequests: number;
     maxBatchSize: number;
@@ -39,14 +41,14 @@ export default class I18NConfiguration {
     private _translationCache;
     private _taggedDictionary;
     private _template;
-    constructor({ apiKey, devApiKey, projectId, baseUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, ...metadata }: I18NConfigurationParams);
+    constructor({ runtimeTranslation, remoteCache, apiKey, devApiKey, projectId, runtimeUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, ...metadata }: I18NConfigurationParams);
     /**
      * Gets config for dynamic translation on the client side.
     */
     getClientSideConfig(): {
         projectId: string;
         devApiKey: string | undefined;
-        baseUrl: string;
+        runtimeUrl: string;
     };
     /**
      * Gets the application's default locale
