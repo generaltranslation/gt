@@ -36,7 +36,7 @@ GT_API_KEY="your-api-key"
 GT_PROJECT_ID="your-project-id"
 ```
 
- * Get your `API Key` and `Project ID` from the [General Translation Dashboard](www.generaltranslation.com).
+ * Get your `API Key` and `Project ID` from the [General Translation Dashboard](https://www.generaltranslation.com).
 
 ### Step 2: Add the `<GTProvider>`
 
