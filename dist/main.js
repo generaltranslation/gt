@@ -46,7 +46,6 @@ commander_1.program
     .option('--options <path>', 'Filepath to options JSON file, by default gt.config.json', "./gt.config.json")
     .option('--apiKey <key>', 'API key for General Translation cloud service', process.env.GT_API_KEY)
     .option('--projectId <id>', 'Project ID for the translation service', process.env.GT_PROJECT_ID)
-    .option('--baseUrl <url>', 'Url endpoint for the translation service', internal_1.defaultBaseUrl)
     .option('--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file', (0, findFilepath_1.default)(['./tsconfig.json', './jsconfig.json']))
     .option('--dictionary <path>', 'Path to dictionary file', (0, findFilepath_1.default)([
     './dictionary.js', './src/dictionary.js',
@@ -72,6 +71,8 @@ commander_1.program
     // --options filepath || gt.config.json
     const gtConfig = (0, loadJSON_1.default)(options.options) || {};
     options = Object.assign(Object.assign({}, gtConfig), options);
+    if (!options.baseUrl)
+        options.baseUrl = internal_1.defaultBaseUrl;
     // Error if no API key at this point
     if (!options.apiKey)
         throw new Error('No General Translation API key found. Use the --apiKey flag to provide one.');
@@ -142,19 +143,23 @@ commander_1.program
         const { projectId, defaultLocale } = options;
         const globalMetadata = Object.assign(Object.assign({}, (projectId && { projectId })), (defaultLocale && { sourceLocale: defaultLocale }));
         const body = {
-            requests: updates,
+            updates,
             locales: options.locales,
             metadata: globalMetadata
         };
-        const response = yield fetch(`${options.baseUrl}/project/${projectId}/translations/update`, {
+        const response = yield fetch(`${options.baseUrl}/v1/project/translations/update`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: Object.assign({ "Content-Type": "application/json" }, (apiKey && { 'x-gt-api-key': apiKey })),
             body: JSON.stringify(body),
         });
+        console.log();
+        if (!response.ok) {
+            throw new Error(response.status +
+                '. ' +
+                (yield response.text()));
+        }
         const result = yield response.text();
-        console.log(`\n`, result);
+        console.log(result);
     }
     else {
         throw new Error(errors_1.noTranslationsError);

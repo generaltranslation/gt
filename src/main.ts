@@ -59,10 +59,6 @@ program
     process.env.GT_PROJECT_ID
   )
   .option(
-    '--baseUrl <url>', 'Url endpoint for the translation service',
-    defaultBaseUrl
-  )
-  .option(
     '--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file',
     findFilepath(['./tsconfig.json', './jsconfig.json'])
   )
@@ -106,7 +102,9 @@ program
 
     // --options filepath || gt.config.json
     const gtConfig = loadJSON(options.options) || {};
+
     options = { ...gtConfig, ...options }
+    if (!options.baseUrl) options.baseUrl = defaultBaseUrl;
 
     // Error if no API key at this point
     if (!options.apiKey) throw new Error(
@@ -193,22 +191,31 @@ program
         };
 
         const body = {
-            requests: updates,
+            updates,
             locales: options.locales,
             metadata: globalMetadata
         }
 
-        const response = await fetch(`${options.baseUrl}/project/${projectId}/translations/update`, {
+        const response = await fetch(`${options.baseUrl}/v1/project/translations/update`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              ...(apiKey && { 'x-gt-api-key': apiKey })
             },
             body: JSON.stringify(body),
         });
 
-        const result = await response.text();
+        console.log();
 
-        console.log(`\n`, result);
+        if (!response.ok) {
+            throw new Error(
+                response.status + 
+                '. ' + 
+                await response.text()
+            );
+        }
+        const result = await response.text();
+        console.log(result);
     } else {
         throw new Error(noTranslationsError)
     }
