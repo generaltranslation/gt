@@ -65,7 +65,6 @@ var generaltranslation_1 = require("generaltranslation");
 var RemoteTranslationsManager_1 = __importDefault(require("./RemoteTranslationsManager"));
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
-var server_1 = require("../server");
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         var 
@@ -243,18 +242,19 @@ var I18NConfiguration = /** @class */ (function () {
      */
     I18NConfiguration.prototype.translateContent = function (params) {
         return __awaiter(this, void 0, void 0, function () {
-            var cacheKey, source, options, translationPromise;
+            var cacheKey, source, targetLocale, options, translationPromise;
             var _this = this;
             return __generator(this, function (_a) {
                 cacheKey = constructCacheKey(params.targetLocale, params.options);
                 if (this._translationCache.has(cacheKey)) {
                     return [2 /*return*/, this._translationCache.get(cacheKey)];
                 }
-                source = params.source, options = params.options;
+                source = params.source, targetLocale = params.targetLocale, options = params.options;
                 translationPromise = new Promise(function (resolve, reject) {
                     _this._queue.push({
                         type: 'content',
                         source: source,
+                        targetLocale: targetLocale,
                         metadata: options,
                         resolve: resolve,
                         reject: reject,
@@ -275,7 +275,7 @@ var I18NConfiguration = /** @class */ (function () {
      */
     I18NConfiguration.prototype.translateChildren = function (params) {
         return __awaiter(this, void 0, void 0, function () {
-            var cacheKey, source, metadata, translationPromise;
+            var cacheKey, source, targetLocale, metadata, translationPromise;
             var _this = this;
             return __generator(this, function (_a) {
                 cacheKey = constructCacheKey(params.targetLocale, params.metadata);
@@ -284,12 +284,13 @@ var I18NConfiguration = /** @class */ (function () {
                     // Returns the previous request
                     return [2 /*return*/, this._translationCache.get(cacheKey)];
                 }
-                source = params.source, metadata = params.metadata;
+                source = params.source, targetLocale = params.targetLocale, metadata = params.metadata;
                 translationPromise = new Promise(function (resolve, reject) {
                     // In memory queue to batch requests
                     _this._queue.push({
                         type: 'jsx',
                         source: source,
+                        targetLocale: targetLocale,
                         metadata: metadata,
                         resolve: resolve,
                         reject: reject,
@@ -310,43 +311,36 @@ var I18NConfiguration = /** @class */ (function () {
      */
     I18NConfiguration.prototype._sendBatchRequest = function (batch) {
         return __awaiter(this, void 0, void 0, function () {
-            var response, _a, _b, _c, _d, _e, results_1, error_1;
-            var _f, _g;
+            var response, _a, results_1, error_1;
             var _this = this;
-            return __generator(this, function (_h) {
-                switch (_h.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         this._activeRequests++;
-                        _h.label = 1;
+                        _b.label = 1;
                     case 1:
-                        _h.trys.push([1, 7, 8, 9]);
-                        _a = fetch;
-                        _b = ["".concat(this.runtimeUrl, "/v1/runtime/").concat(this.projectId, "/server")];
-                        _f = {
-                            method: 'POST',
-                            headers: __assign(__assign({ 'Content-Type': 'application/json' }, (this.apiKey && { 'x-gt-api-key': this.apiKey })), (this.devApiKey && { 'x-gt-dev-api-key': this.devApiKey }))
-                        };
-                        _d = (_c = JSON).stringify;
-                        _g = {
-                            requests: batch.map(function (item) {
-                                var source = item.source, metadata = item.metadata, type = item.type;
-                                return { source: source, metadata: metadata, type: type };
-                            })
-                        };
-                        return [4 /*yield*/, (0, server_1.getLocale)()];
-                    case 2: return [4 /*yield*/, _a.apply(void 0, _b.concat([(_f.body = _d.apply(_c, [(_g.targetLocale = _h.sent(),
-                                    _g.metadata = this.metadata,
-                                    _g)]),
-                                _f)]))];
-                    case 3:
-                        response = _h.sent();
-                        if (!!response.ok) return [3 /*break*/, 5];
-                        _e = Error.bind;
+                        _b.trys.push([1, 6, 7, 8]);
+                        return [4 /*yield*/, fetch("".concat(this.runtimeUrl, "/v1/runtime/").concat(this.projectId, "/server"), {
+                                method: 'POST',
+                                headers: __assign(__assign({ 'Content-Type': 'application/json' }, (this.apiKey && { 'x-gt-api-key': this.apiKey })), (this.devApiKey && { 'x-gt-dev-api-key': this.devApiKey })),
+                                body: JSON.stringify({
+                                    requests: batch.map(function (item) {
+                                        var source = item.source, metadata = item.metadata, type = item.type;
+                                        return { source: source, metadata: metadata, type: type };
+                                    }),
+                                    targetLocale: batch[0].targetLocale,
+                                    metadata: this.metadata
+                                }),
+                            })];
+                    case 2:
+                        response = _b.sent();
+                        if (!!response.ok) return [3 /*break*/, 4];
+                        _a = Error.bind;
                         return [4 /*yield*/, response.text()];
-                    case 4: throw new (_e.apply(Error, [void 0, _h.sent()]))();
-                    case 5: return [4 /*yield*/, response.json()];
-                    case 6:
-                        results_1 = _h.sent();
+                    case 3: throw new (_a.apply(Error, [void 0, _b.sent()]))();
+                    case 4: return [4 /*yield*/, response.json()];
+                    case 5:
+                        results_1 = _b.sent();
                         batch.forEach(function (item, index) {
                             var _a;
                             var result = results_1[index];
@@ -367,17 +361,17 @@ var I18NConfiguration = /** @class */ (function () {
                             }
                             return item.reject('Translation failed.');
                         });
-                        return [3 /*break*/, 9];
-                    case 7:
-                        error_1 = _h.sent();
+                        return [3 /*break*/, 8];
+                    case 6:
+                        error_1 = _b.sent();
                         batch.forEach(function (item) {
                             item.reject("gt-next translation failed with error: ".concat(error_1));
                         });
-                        return [3 /*break*/, 9];
-                    case 8:
+                        return [3 /*break*/, 8];
+                    case 7:
                         this._activeRequests--;
                         return [7 /*endfinally*/];
-                    case 9: return [2 /*return*/];
+                    case 8: return [2 /*return*/];
                 }
             });
         });

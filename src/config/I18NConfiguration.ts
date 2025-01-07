@@ -277,11 +277,12 @@ export default class I18NConfiguration {
     if (this._translationCache.has(cacheKey)) {
       return this._translationCache.get(cacheKey);
     }
-    const { source, options } = params;
+    const { source, targetLocale, options } = params;
     const translationPromise = new Promise<string>((resolve, reject) => {
       this._queue.push({
         type: 'content',
         source,
+        targetLocale,
         metadata: options,
         resolve,
         reject,
@@ -305,19 +306,20 @@ export default class I18NConfiguration {
     metadata: Record<string, any>;
   }): Promise<any> {
     const cacheKey = constructCacheKey(params.targetLocale, params.metadata);
-    
+
     // In memory cache to make sure the same translation isn't requested twice
     if (this._translationCache.has(cacheKey)) {
       // Returns the previous request
       return this._translationCache.get(cacheKey);
     }
 
-    const { source, metadata } = params;
+    const { source, targetLocale, metadata } = params;
     const translationPromise = new Promise<any>((resolve, reject) => {
       // In memory queue to batch requests
       this._queue.push({
         type: 'jsx',
         source,
+        targetLocale,
         metadata,
         resolve,
         reject,
@@ -350,10 +352,11 @@ export default class I18NConfiguration {
             const { source, metadata, type } = item;
             return { source, metadata, type };
           }),
-          targetLocale: await getLocale(),
+          targetLocale: batch[0].targetLocale,
           metadata: this.metadata
         }),
       });
+     
       if (!response.ok) {
         throw new Error(await response.text())
       }
