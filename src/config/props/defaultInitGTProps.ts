@@ -17,7 +17,7 @@ const defaultInitGTProps = {
     getMetadata: async () => ({}),
     maxConcurrentRequests: 100,
     maxBatchSize: 25,
-    batchInterval: 10
+    batchInterval: 50
 } as const;
 
 export default defaultInitGTProps;

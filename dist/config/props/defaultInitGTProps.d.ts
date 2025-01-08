@@ -13,7 +13,7 @@ declare const defaultInitGTProps: {
     readonly getMetadata: () => Promise<{}>;
     readonly maxConcurrentRequests: 100;
     readonly maxBatchSize: 25;
-    readonly batchInterval: 10;
+    readonly batchInterval: 50;
 };
 export default defaultInitGTProps;
 //# sourceMappingURL=defaultInitGTProps.d.ts.map
