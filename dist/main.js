@@ -1,5 +1,38 @@
 #!/usr/bin/env node
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -27,8 +60,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const commander_1 = require("commander");
 const dotenv_1 = __importDefault(require("dotenv"));
 const loadJSON_1 = __importDefault(require("./fs/loadJSON"));
-const findFilepath_1 = __importDefault(require("./fs/findFilepath"));
-const parseNextConfig_1 = require("./fs/parseNextConfig");
+const findFilepath_1 = __importStar(require("./fs/findFilepath"));
 const createESBuildConfig_1 = __importDefault(require("./config/createESBuildConfig"));
 const createDictionaryUpdates_1 = __importDefault(require("./updates/createDictionaryUpdates"));
 const createInlineUpdates_1 = __importDefault(require("./updates/createInlineUpdates"));
@@ -59,7 +91,7 @@ commander_1.program
     "./dictionary.tsx",
     "./src/dictionary.tsx",
 ]))
-    .option("--app <path>", "Filepath to the app's source directory, by default ./src || ./app", (0, findFilepath_1.default)(["./src", "./app"]))
+    .option("--src <path>", "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(["./src", "./app", "./pages", "./components"]))
     .option("--defaultLanguage, --defaultLocale <locale>", "Default locale (e.g., en)")
     .option("--languages, --locales <locales...>", "Space-separated list of locales (e.g., en fr es)", [])
     .option("--replace", "Replace existing translations in the remote dictionary", false)
@@ -99,16 +131,16 @@ commander_1.program
             }
         }
     }
-    // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
-    // not foolproof but can't hurt
-    const nextConfigFilepath = (0, findFilepath_1.default)([
-        "./next.config.mjs",
-        "./next.config.js",
-        "./next.config.ts",
-        "./next.config.cjs",
-    ]);
-    if (nextConfigFilepath)
-        options = Object.assign(Object.assign({}, (0, parseNextConfig_1.parseNextConfig)(nextConfigFilepath)), options);
+    // // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
+    // // not foolproof but can't hurt
+    // const nextConfigFilepath = findFilepath([
+    //   "./next.config.mjs",
+    //   "./next.config.js",
+    //   "./next.config.ts",
+    //   "./next.config.cjs",
+    // ]);
+    // if (nextConfigFilepath)
+    //   options = { ...parseNextConfig(nextConfigFilepath), ...options };
     // if there's no existing config file, creates one
     // does not include the API key to avoid exposing it
     const { apiKey } = options, rest = __rest(options, ["apiKey"]);
@@ -150,7 +182,6 @@ commander_1.program
         }
         return update;
     });
-    console.log(updates);
     // Send updates to General Translation API
     if (updates.length) {
         const { projectId, defaultLocale } = options;

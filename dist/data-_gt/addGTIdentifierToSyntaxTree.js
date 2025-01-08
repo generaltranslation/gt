@@ -19,27 +19,40 @@ function addGTIdentifierToSyntaxTree(tree, startingIndex = 0) {
     // Object to keep track of the current index for GT IDs
     let indexObject = { index: startingIndex };
     const handleSingleChild = (child) => {
-        if (child && typeof child === 'object') {
+        if (child && typeof child === "object") {
             const { type, props } = child;
             indexObject.index += 1;
             let generaltranslation = { id: indexObject.index };
             if (type === "Var") {
-                return { variable: "variable", key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { 'data-_gt': generaltranslation }), "variable") };
+                return {
+                    variable: "variable",
+                    key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation }), "variable"),
+                };
             }
             else if (type === "Num") {
-                return { variable: "number", key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { 'data-_gt': generaltranslation }), "number") };
+                return {
+                    variable: "number",
+                    key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation }), "number"),
+                };
             }
             else if (type === "Currency") {
-                return { variable: "currency", key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { 'data-_gt': generaltranslation }), "currency") };
+                return {
+                    variable: "currency",
+                    key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation }), "currency"),
+                };
             }
             else if (type === "DateTime") {
-                return { variable: "datetime", key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { 'data-_gt': generaltranslation }), "datetime") };
+                return {
+                    variable: "datetime",
+                    key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation }), "datetime"),
+                };
             }
             if (type === "Plural") {
                 generaltranslation.transformation = "plural";
                 const pluralBranches = Object.entries(props).reduce((acc, [branchName, branch]) => {
                     if ((0, internal_2.isAcceptedPluralForm)(branchName)) {
-                        acc[branchName] = addGTIdentifierToSyntaxTree(branch, indexObject.index);
+                        acc[branchName] =
+                            addGTIdentifierToSyntaxTree(branch, indexObject.index);
                     }
                     return acc;
                 }, {});
@@ -50,7 +63,8 @@ function addGTIdentifierToSyntaxTree(tree, startingIndex = 0) {
                 generaltranslation.transformation = "branch";
                 const { children, branch } = props, branches = __rest(props, ["children", "branch"]);
                 const resultBranches = Object.entries(branches).reduce((acc, [branchName, branch]) => {
-                    acc[branchName] = addGTIdentifierToSyntaxTree(branch, indexObject.index);
+                    acc[branchName] =
+                        addGTIdentifierToSyntaxTree(branch, indexObject.index);
                     return acc;
                 }, {});
                 if (Object.keys(resultBranches).length)
@@ -58,13 +72,17 @@ function addGTIdentifierToSyntaxTree(tree, startingIndex = 0) {
             }
             return {
                 type: type || `C${generaltranslation.id}`,
-                props: Object.assign({ 'data-_gt': generaltranslation }, (typeof props.children !== 'undefined' && { children: handleChildren(props.children) }))
+                props: Object.assign({ "data-_gt": generaltranslation }, (typeof props.children !== "undefined" && {
+                    children: handleChildren(props.children),
+                })),
             };
         }
         return child.toString();
     };
     const handleChildren = (children) => {
-        return Array.isArray(children) ? children.map(handleSingleChild) : handleSingleChild(children);
+        return Array.isArray(children)
+            ? children.map(handleSingleChild)
+            : handleSingleChild(children);
     };
     return handleChildren(tree);
 }

@@ -20,7 +20,7 @@ function parseNextConfig(filePath) {
         return {};
     }
     // Read the file content
-    const fileContent = fs_1.default.readFileSync(absoluteFilePath, 'utf8');
+    const fileContent = fs_1.default.readFileSync(absoluteFilePath, "utf8");
     // Regular expressions to extract the values
     const defaultLocaleRegex = /defaultLocale:\s*['"]([^'"]+)['"]/;
     const projectIdRegex = /projectId:\s*['"]([^'"]+)['"]/;
@@ -29,16 +29,22 @@ function parseNextConfig(filePath) {
     const defaultLocaleMatch = fileContent.match(defaultLocaleRegex);
     const projectIdMatch = fileContent.match(projectIdRegex);
     const localesMatch = fileContent.match(localesRegex);
-    const defaultLocale = defaultLocaleMatch && typeof defaultLocaleMatch[1] === 'string' ? defaultLocaleMatch[1] : undefined;
-    const projectId = projectIdMatch && typeof projectIdMatch[1] === 'string' ? projectIdMatch[1] : undefined;
+    const defaultLocale = defaultLocaleMatch && typeof defaultLocaleMatch[1] === "string"
+        ? defaultLocaleMatch[1]
+        : undefined;
+    const projectId = projectIdMatch && typeof projectIdMatch[1] === "string"
+        ? projectIdMatch[1]
+        : undefined;
     const locales = localesMatch
         ? localesMatch[1]
-            .split(',')
-            .map(locale => locale.trim().replace(/['"]/g, ''))
-            .filter(locale => typeof locale === 'string')
+            .split(",")
+            .map((locale) => locale.trim().replace(/['"]/g, ""))
+            .filter((locale) => typeof locale === "string")
         : undefined;
     // Ensure approvedLocales is an array of strings
-    const validLocales = locales && locales.every(locale => (0, generaltranslation_1.isValidLocale)(locale)) ? locales : undefined;
+    const validLocales = locales && locales.every((locale) => (0, generaltranslation_1.isValidLocale)(locale))
+        ? locales
+        : undefined;
     // Return the extracted values if they pass type checks or return null
     if (defaultLocale || projectId || validLocales) {
         return Object.assign(Object.assign(Object.assign({}, (defaultLocale && { defaultLocale })), (projectId && { projectId })), (validLocales && { locales: validLocales }));

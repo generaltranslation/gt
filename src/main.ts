@@ -3,7 +3,7 @@
 import { program } from "commander";
 import dotenv from "dotenv";
 import loadJSON from "./fs/loadJSON";
-import findFilepath from "./fs/findFilepath";
+import findFilepath, { findFilepaths } from "./fs/findFilepath";
 import { parseNextConfig } from "./fs/parseNextConfig";
 import createESBuildConfig from "./config/createESBuildConfig";
 import createDictionaryUpdates from "./updates/createDictionaryUpdates";
@@ -41,7 +41,7 @@ export type Options = {
   projectId?: string;
   jsconfig?: string;
   dictionary?: string;
-  app?: string;
+  src?: string[];
   defaultLocale?: string;
   locales?: string[];
   baseUrl: string;
@@ -92,9 +92,9 @@ program
     ])
   )
   .option(
-    "--app <path>",
-    "Filepath to the app's source directory, by default ./src || ./app",
-    findFilepath(["./src", "./app"])
+    "--src <path>",
+    "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
+    findFilepaths(["./src", "./app", "./pages", "./components"])
   )
   .option(
     "--defaultLanguage, --defaultLocale <locale>",
@@ -165,16 +165,16 @@ program
       }
     }
 
-    // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
-    // not foolproof but can't hurt
-    const nextConfigFilepath = findFilepath([
-      "./next.config.mjs",
-      "./next.config.js",
-      "./next.config.ts",
-      "./next.config.cjs",
-    ]);
-    if (nextConfigFilepath)
-      options = { ...parseNextConfig(nextConfigFilepath), ...options };
+    // // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
+    // // not foolproof but can't hurt
+    // const nextConfigFilepath = findFilepath([
+    //   "./next.config.mjs",
+    //   "./next.config.js",
+    //   "./next.config.ts",
+    //   "./next.config.cjs",
+    // ]);
+    // if (nextConfigFilepath)
+    //   options = { ...parseNextConfig(nextConfigFilepath), ...options };
 
     // if there's no existing config file, creates one
     // does not include the API key to avoid exposing it
@@ -223,7 +223,7 @@ program
       }
       return update;
     });
-    console.log(updates);
+
     // Send updates to General Translation API
     if (updates.length) {
       const { projectId, defaultLocale } = options;

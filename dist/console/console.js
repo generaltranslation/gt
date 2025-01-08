@@ -5,14 +5,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.displayCreatingNewConfigFile = exports.displayFoundTMessage = exports.displayResolvedPaths = exports.displayProjectId = exports.displayInitializingText = exports.displayAsciiTitle = void 0;
 const figlet_1 = __importDefault(require("figlet"));
-const displayAsciiTitle = () => console.log('\n' + figlet_1.default.textSync('GT', {
-    font: 'Univers'
-}));
+const displayAsciiTitle = () => console.log("\n" +
+    figlet_1.default.textSync("GT", {
+        font: "Univers",
+    }));
 exports.displayAsciiTitle = displayAsciiTitle;
 const displayInitializingText = () => {
-    console.log(`General Translation, Inc.` +
-        `\nhttps://generaltranslation.com/docs` +
-        `\n`);
+    console.log(`General Translation, Inc.` + `\nhttps://generaltranslation.com/docs` + `\n`);
 };
 exports.displayInitializingText = displayInitializingText;
 const displayProjectId = (projectId) => {
@@ -20,8 +19,10 @@ const displayProjectId = (projectId) => {
 };
 exports.displayProjectId = displayProjectId;
 const displayResolvedPaths = (resolvedPaths) => {
-    console.log('Resolving path aliases:');
-    console.log(resolvedPaths.map(([key, resolvedPath]) => `'${key}' -> '${resolvedPath}'`).join('\n'));
+    console.log("Resolving path aliases:");
+    console.log(resolvedPaths
+        .map(([key, resolvedPath]) => `'${key}' -> '${resolvedPath}'`)
+        .join("\n"));
     console.log();
 };
 exports.displayResolvedPaths = displayResolvedPaths;

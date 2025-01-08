@@ -90,7 +90,7 @@ function createInlineUpdates(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const updates = [];
         // Use the provided app directory or default to the current directory
-        const appDirectory = options.app || "./";
+        const srcDirectory = options.src || ["./"];
         // Define the file extensions to look for
         const extensions = [".js", ".jsx", ".tsx"];
         /**
@@ -119,8 +119,7 @@ function createInlineUpdates(options) {
             }
             return files;
         }
-        const files = getFiles(appDirectory);
-        console.log(files);
+        const files = srcDirectory.flatMap((dir) => getFiles(dir));
         // Declare which components are considered valid "variable containers"
         const variableComponents = ["Var", "DateTime", "Currency", "Num"];
         for (const file of files) {
