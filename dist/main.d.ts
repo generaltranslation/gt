@@ -1,16 +1,12 @@
 #!/usr/bin/env node
 export type Updates = ({
     "type": "jsx";
-    "data": {
-        "source": any;
-        "metadata": Record<string, any>;
-    };
+    "source": any;
+    "metadata": Record<string, any>;
 } | {
     "type": "content";
-    "data": {
-        "source": any;
-        "metadata": Record<string, any>;
-    };
+    "source": any;
+    "metadata": Record<string, any>;
 })[];
 export type Options = {
     options: string;
@@ -21,8 +17,8 @@ export type Options = {
     app?: string;
     defaultLocale?: string;
     locales?: string[];
-    description?: string;
-    replace: boolean;
+    baseUrl: string;
     inline: boolean;
+    replace: boolean;
     retranslate: boolean;
 };

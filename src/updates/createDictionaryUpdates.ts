@@ -43,7 +43,7 @@ export default async function createDictionaryUpdates(
         try {
             dictionaryModule = require(tempFilePath);
         } catch (error) {
-            console.error('Failed to load the bundled dictionary code:', error);
+            console.error(`Failed to load the bundled dictionary code:`, error);
             process.exit(1);
         } finally {
             // Clean up the temporary file
@@ -71,10 +71,6 @@ export default async function createDictionaryUpdates(
         
         const taggedEntry = addGTIdentifier(entry);
 
-        if (typeof entry === 'function') {
-            entry = entry({});
-        }
-
         const entryAsObjects = writeChildrenAsObjects(taggedEntry);
         const context = props?.context;
         const metadata: Record<string, any> = { 
@@ -88,18 +84,14 @@ export default async function createDictionaryUpdates(
         if (typeof entry === 'string') {
             updates.push({
                 type: 'content',
-                data: { 
-                    source: splitStringToContent(entryAsObjects),
-                    metadata,
-                },
+                source: splitStringToContent(taggedEntry),
+                metadata,
             });
         } else {
             updates.push({
                 type: 'jsx',
-                data: {
-                    source: entryAsObjects,
-                    metadata,
-                },
+                source: entryAsObjects,
+                metadata,
             });
         };
     }

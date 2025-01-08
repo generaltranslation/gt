@@ -41,7 +41,7 @@ function createDictionaryUpdates(options, esbuildConfig) {
                 dictionaryModule = require(tempFilePath);
             }
             catch (error) {
-                console.error('Failed to load the bundled dictionary code:', error);
+                console.error(`Failed to load the bundled dictionary code:`, error);
                 process.exit(1);
             }
             finally {
@@ -58,28 +58,21 @@ function createDictionaryUpdates(options, esbuildConfig) {
             let { entry, metadata: props // context, etc.
              } = (0, internal_1.extractEntryMetadata)(dictionary[id]);
             const taggedEntry = (0, internal_1.addGTIdentifier)(entry);
-            if (typeof entry === 'function') {
-                entry = entry({});
-            }
             const entryAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedEntry);
             const context = props === null || props === void 0 ? void 0 : props.context;
             const metadata = Object.assign(Object.assign({ id }, (context && { context })), { hash: (0, internal_1.hashReactChildrenObjects)(context ? [entryAsObjects, context] : entryAsObjects) });
             if (typeof entry === 'string') {
                 updates.push({
                     type: 'content',
-                    data: {
-                        source: (0, generaltranslation_1.splitStringToContent)(entryAsObjects),
-                        metadata,
-                    },
+                    source: (0, generaltranslation_1.splitStringToContent)(taggedEntry),
+                    metadata,
                 });
             }
             else {
                 updates.push({
                     type: 'jsx',
-                    data: {
-                        source: entryAsObjects,
-                        metadata,
-                    },
+                    source: entryAsObjects,
+                    metadata,
                 });
             }
             ;

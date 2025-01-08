@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = createESBuildConfig;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const console_1 = require("../console/console");
 function createESBuildConfig(config = {}) {
     const esbuildOptions = {
         bundle: true,
@@ -77,12 +78,16 @@ function createESBuildConfig(config = {}) {
     if (config.compilerOptions) {
         if (config.compilerOptions.paths) {
             const aliases = {};
+            const resolvedPaths = [];
             for (const [key, value] of Object.entries(config.compilerOptions.paths)) {
                 if (Array.isArray(value) && typeof value[0] === 'string') {
                     const resolvedPath = path_1.default.resolve(process.cwd(), value[0].replace('/*', ''));
                     aliases[key.replace('/*', '')] = resolvedPath;
-                    console.log(`Resolved alias '${key}' to '${resolvedPath}'`);
+                    resolvedPaths.push([key, resolvedPath]);
                 }
+            }
+            if (resolvedPaths.length) {
+                (0, console_1.displayResolvedPaths)(resolvedPaths);
             }
             esbuildOptions.plugins = esbuildOptions.plugins || [];
             esbuildOptions.plugins.push({
@@ -126,9 +131,6 @@ function createESBuildConfig(config = {}) {
                 },
             });
         }
-    }
-    else {
-        console.log('No compilerOptions found in the config.');
     }
     return esbuildOptions;
 }
