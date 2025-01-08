@@ -1,17 +1,62 @@
-import React from 'react';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
+import React from "react";
+import fs from "fs";
+import path from "path";
+import os from "os";
 import { Options, Updates } from "../main";
 
-import { parse } from '@babel/parser';
-import traverse from '@babel/traverse';
-import generate from '@babel/generator';
-import * as t from '@babel/types';
-import addGTIdentifierToSyntaxTree from '../data-_gt/addGTIdentifierToSyntaxTree';
-import { hashReactChildrenObjects } from 'gt-react/internal';
-import { displayFoundTMessage } from '../console/console';
-import { warnHasUnwrappedExpression, warnNoId, warnVariableProp } from '../console/warnings';
+import { parse } from "@babel/parser";
+import traverse from "@babel/traverse";
+import generate from "@babel/generator";
+import * as t from "@babel/types";
+import addGTIdentifierToSyntaxTree from "../data-_gt/addGTIdentifierToSyntaxTree";
+import { hashReactChildrenObjects } from "gt-react/internal";
+import { displayFoundTMessage } from "../console/console";
+import {
+  warnHasUnwrappedExpression,
+  warnNoId,
+  warnVariableProp,
+} from "../console/warnings";
+
+function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
+  isStatic: boolean;
+  value?: string;
+} {
+  // Handle empty expressions
+  if (t.isJSXEmptyExpression(expr)) {
+    return { isStatic: true, value: "" };
+  }
+
+  // Handle direct string literals
+  if (t.isStringLiteral(expr)) {
+    return { isStatic: true, value: expr.value };
+  }
+
+  // Handle template literals without expressions
+  if (t.isTemplateLiteral(expr) && expr.expressions.length === 0) {
+    return { isStatic: true, value: expr.quasis[0].value.raw };
+  }
+
+  // Handle binary expressions (string concatenation)
+  if (t.isBinaryExpression(expr) && expr.operator === "+") {
+    // Type guard to ensure we only process Expression types
+    if (t.isExpression(expr.left) && t.isExpression(expr.right)) {
+      const left = isStaticExpression(expr.left);
+      const right = isStaticExpression(expr.right);
+
+      if (
+        left.isStatic &&
+        right.isStatic &&
+        left.value !== undefined &&
+        right.value !== undefined
+      ) {
+        return { isStatic: true, value: left.value + right.value };
+      }
+    }
+  }
+
+  // Not a static expression
+  return { isStatic: false };
+}
 
 export default async function createInlineUpdates(
   options: Options
@@ -19,10 +64,10 @@ export default async function createInlineUpdates(
   const updates: Updates = [];
 
   // Use the provided app directory or default to the current directory
-  const appDirectory = options.app || './';
+  const appDirectory = options.app || "./";
 
   // Define the file extensions to look for
-  const extensions = ['.js', '.jsx', '.tsx'];
+  const extensions = [".js", ".jsx", ".tsx"];
 
   /**
    * Recursively scan the directory and collect all files with the specified extensions,
@@ -36,7 +81,7 @@ export default async function createInlineUpdates(
 
     for (const item of items) {
       // Skip hidden files and directories
-      if (item.startsWith('.')) continue;
+      if (item.startsWith(".")) continue;
 
       const fullPath = path.join(dir, item);
       const stat = fs.statSync(fullPath);
@@ -54,18 +99,19 @@ export default async function createInlineUpdates(
   }
 
   const files = getFiles(appDirectory);
+  console.log(files);
 
   // Declare which components are considered valid "variable containers"
   const variableComponents = ["Var", "DateTime", "Currency", "Num"];
 
   for (const file of files) {
-    const code = fs.readFileSync(file, 'utf8');
+    const code = fs.readFileSync(file, "utf8");
 
     let ast;
     try {
       ast = parse(code, {
-        sourceType: 'module',
-        plugins: ['jsx', 'typescript'],
+        sourceType: "module",
+        plugins: ["jsx", "typescript"],
       });
     } catch (error) {
       console.error(`Error parsing file ${file}:`, error);
@@ -78,7 +124,7 @@ export default async function createInlineUpdates(
         const name = openingElement.name;
 
         // Only proceed if it's <T> ...
-        if (name.type === 'JSXIdentifier' && name.name === 'T') {
+        if (name.type === "JSXIdentifier" && name.name === "T") {
           const componentObj: any = { props: {} };
 
           // We'll track this flag to know if any unwrapped {variable} is found in children
@@ -89,24 +135,33 @@ export default async function createInlineUpdates(
 
           // The buildJSXTree function that handles children recursion
           function buildJSXTree(node: any, isInsideVar = false): any {
-            // If we find a { foo } as a direct child and we're not inside <Var>, <DateTime>, <Currency>, or <Num>
             if (t.isJSXExpressionContainer(node) && !isInsideVar) {
-              // Mark that we found an unwrapped expression
+              const expr = node.expression;
+
+              // Check if the expression is statically analyzable
+              const staticAnalysis = isStaticExpression(expr);
+              if (
+                staticAnalysis.isStatic &&
+                staticAnalysis.value !== undefined
+              ) {
+                return staticAnalysis.value;
+              }
+
+              // If we reach here, it's a variable or complex expression
               hasUnwrappedExpression = true;
-              // Return the code but note we've flagged it
               return generate(node).code;
             }
 
             // JSX Text
             if (t.isJSXText(node)) {
               // Trim the text and replace multiple whitespaces with a single space
-              return node.value.trim().replace(/\s+/g, ' ');
+              return node.value.trim().replace(/\s+/g, " ");
             }
             // If we are inside a variable component, keep going
             else if (t.isJSXExpressionContainer(node)) {
               return buildJSXTree(node.expression, isInsideVar);
 
-            // If it's a JSX element
+              // If it's a JSX element
             } else if (t.isJSXElement(node)) {
               const element = node;
               const elementName = element.openingElement.name;
@@ -122,7 +177,7 @@ export default async function createInlineUpdates(
 
               // If this JSXElement is one of the recognized variable components,
               // then for its children we set isInsideVar = true
-              const nextInsideVar = variableComponents.includes(typeName ?? '')
+              const nextInsideVar = variableComponents.includes(typeName ?? "")
                 ? true
                 : isInsideVar;
 
@@ -135,18 +190,21 @@ export default async function createInlineUpdates(
                     if (t.isStringLiteral(attr.value)) {
                       attrValue = attr.value.value;
                     } else if (t.isJSXExpressionContainer(attr.value)) {
-                      attrValue = buildJSXTree(attr.value.expression, nextInsideVar);
+                      attrValue = buildJSXTree(
+                        attr.value.expression,
+                        nextInsideVar
+                      );
                     }
                   }
                   props[attrName as any] = attrValue;
                 } else if (t.isJSXSpreadAttribute(attr)) {
-                  props['...'] = generate(attr.argument).code;
+                  props["..."] = generate(attr.argument).code;
                 }
               });
 
               const children = element.children
                 .map((child) => buildJSXTree(child, nextInsideVar))
-                .filter((child) => child !== null && child !== '');
+                .filter((child) => child !== null && child !== "");
 
               if (children.length === 1) {
                 props.children = children[0];
@@ -163,13 +221,13 @@ export default async function createInlineUpdates(
             else if (t.isJSXFragment(node)) {
               const children = node.children
                 .map((child: any) => buildJSXTree(child, isInsideVar))
-                .filter((child: any) => child !== null && child !== '');
+                .filter((child: any) => child !== null && child !== "");
 
               return {
-                type: '',
+                type: "",
                 props: {
-                  children: children.length === 1 ? children[0] : children
-                }
+                  children: children.length === 1 ? children[0] : children,
+                },
               };
             }
             // If it's a string literal (standalone)
@@ -195,49 +253,29 @@ export default async function createInlineUpdates(
           // Gather <T>'s props
           openingElement.attributes.forEach((attr) => {
             if (!t.isJSXAttribute(attr)) return;
-
             const attrName = attr.name.name;
+            if (typeof attrName !== "string") return;
 
-            if (typeof attrName !== 'string') return;
-
-            // We'll build the value with buildJSXTree, but also
-            // specifically check for variable "id" or "context"
             if (attr.value) {
               // If it's a plain string literal like id="hello"
               if (t.isStringLiteral(attr.value)) {
                 componentObj.props[attrName] = attr.value.value;
-                // If it's `id` or `context` but contains braces, it's variable => skip
-                if ((attrName === 'id' || attrName === 'context')
-                  && /[{}]/.test(attr.value.value)) {
-                  warnVariableProp(file, attrName, attr.value.value);
-                  hasVariableIdOrContext = true;
-                }
-              } 
+              }
               // If it's an expression container like id={"hello"}, id={someVar}, etc.
               else if (t.isJSXExpressionContainer(attr.value)) {
-                const generatedVal = generate(attr.value.expression).code;
-                componentObj.props[attrName] = generatedVal;
+                const expr = attr.value.expression;
 
-                // If that expression is not a simple string literal, skip
-                // But we need to detect if it's actually just {"hello"} vs {myVar}
-                if (attrName === 'id' || attrName === 'context') {
-                  // Check if the expression inside is a string literal
-                  if (t.isStringLiteral(attr.value.expression)) {
-                    // It's static => e.g. {"hello"}
-                    // But we still check for braces inside the string
-                    if (/[{}]/.test(attr.value.expression.value)) {
-                      warnVariableProp(file, attrName, attr.value.expression.value)
-                      hasVariableIdOrContext = true;
-                    } else {
-                      // It's a static string, so we are good
-                      componentObj.props[attrName] = attr.value.expression.value;
-                    }
-                  } else {
-                    // Expression is something else => definitely variable
-                    warnVariableProp(file, attrName, generatedVal)
+                // Only check for static expressions on id and context props
+                if (attrName === "id" || attrName === "context") {
+                  const staticAnalysis = isStaticExpression(expr);
+                  if (!staticAnalysis.isStatic) {
+                    warnVariableProp(file, attrName, generate(expr).code);
                     hasVariableIdOrContext = true;
                   }
                 }
+
+                // Store the value (for all props)
+                componentObj.props[attrName] = generate(expr).code;
               }
             }
           });
@@ -250,7 +288,7 @@ export default async function createInlineUpdates(
           // Build and store the "children" / tree
           const tree = path.node.children
             .map((child) => buildJSXTree(child))
-            .filter((child) => child !== null && child !== '');
+            .filter((child) => child !== null && child !== "");
 
           componentObj.tree = tree.length === 1 ? tree[0] : tree;
 
@@ -258,7 +296,7 @@ export default async function createInlineUpdates(
           const id = componentObj.props.id;
           // If user forgot to provide an `id`, warn
           if (!id) {
-            warnNoId(file)
+            warnNoId(file);
             return;
           }
 
@@ -269,13 +307,15 @@ export default async function createInlineUpdates(
           }
 
           // If we reached here, this <T> is valid
-          const childrenAsObjects = addGTIdentifierToSyntaxTree(componentObj.tree);
+          const childrenAsObjects = addGTIdentifierToSyntaxTree(
+            componentObj.tree
+          );
           displayFoundTMessage(file, id);
 
           updates.push({
             type: "jsx",
             source: childrenAsObjects,
-            metadata: componentObj.props
+            metadata: componentObj.props,
           });
         }
       },

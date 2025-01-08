@@ -38,28 +38,33 @@ const console_1 = require("./console/console");
 const warnings_1 = require("./console/warnings");
 const errors_1 = require("./console/errors");
 const internal_1 = require("generaltranslation/internal");
-dotenv_1.default.config({ path: '.env' });
-dotenv_1.default.config({ path: '.env.local', override: true });
+dotenv_1.default.config({ path: ".env" });
+dotenv_1.default.config({ path: ".env.local", override: true });
 commander_1.program
-    .name('translate')
-    .description('Scans the project for a dictionary and/or <T> tags, and updates the General Translation remote dictionary with the latest content.')
-    .option('--options <path>', 'Filepath to options JSON file, by default gt.config.json', "./gt.config.json")
-    .option('--apiKey <key>', 'API key for General Translation cloud service', process.env.GT_API_KEY)
-    .option('--projectId <id>', 'Project ID for the translation service', process.env.GT_PROJECT_ID)
-    .option('--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file', (0, findFilepath_1.default)(['./tsconfig.json', './jsconfig.json']))
-    .option('--dictionary <path>', 'Path to dictionary file', (0, findFilepath_1.default)([
-    './dictionary.js', './src/dictionary.js',
-    './dictionary.json', './src/dictionary.json',
-    './dictionary.jsx', './src/dictionary.jsx',
-    './dictionary.ts', './src/dictionary.ts',
-    './dictionary.tsx', './src/dictionary.tsx'
+    .name("translate")
+    .description("Scans the project for a dictionary and/or <T> tags, and updates the General Translation remote dictionary with the latest content.")
+    .option("--options <path>", "Filepath to options JSON file, by default gt.config.json", "./gt.config.json")
+    .option("--apiKey <key>", "API key for General Translation cloud service", process.env.GT_API_KEY)
+    .option("--projectId <id>", "Project ID for the translation service", process.env.GT_PROJECT_ID)
+    .option("--tsconfig, --jsconfig <path>", "Path to jsconfig or tsconfig file", (0, findFilepath_1.default)(["./tsconfig.json", "./jsconfig.json"]))
+    .option("--dictionary <path>", "Path to dictionary file", (0, findFilepath_1.default)([
+    "./dictionary.js",
+    "./src/dictionary.js",
+    "./dictionary.json",
+    "./src/dictionary.json",
+    "./dictionary.jsx",
+    "./src/dictionary.jsx",
+    "./dictionary.ts",
+    "./src/dictionary.ts",
+    "./dictionary.tsx",
+    "./src/dictionary.tsx",
 ]))
-    .option('--app <path>', "Filepath to the app's source directory, by default ./src || ./app", (0, findFilepath_1.default)(['./src', './app']))
-    .option('--defaultLanguage, --defaultLocale <locale>', 'Default locale (e.g., en)')
-    .option('--languages, --locales <locales...>', 'Space-separated list of locales (e.g., en fr es)', [])
-    .option('--replace', 'Replace existing translations in the remote dictionary', false)
-    .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
-    .option('--retranslate', 'Forces a new translation for all content.', false)
+    .option("--app <path>", "Filepath to the app's source directory, by default ./src || ./app", (0, findFilepath_1.default)(["./src", "./app"]))
+    .option("--defaultLanguage, --defaultLocale <locale>", "Default locale (e.g., en)")
+    .option("--languages, --locales <locales...>", "Space-separated list of locales (e.g., en fr es)", [])
+    .option("--replace", "Replace existing translations in the remote dictionary", false)
+    .option("--inline", "Include inline <T> tags in addition to dictionary file", true)
+    .option("--retranslate", "Forces a new translation for all content.", false)
     .action((options) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     (0, console_1.displayAsciiTitle)();
@@ -75,14 +80,14 @@ commander_1.program
         options.baseUrl = internal_1.defaultBaseUrl;
     // Error if no API key at this point
     if (!options.apiKey)
-        throw new Error('No General Translation API key found. Use the --apiKey flag to provide one.');
+        throw new Error("No General Translation API key found. Use the --apiKey flag to provide one.");
     // Warn if apiKey is present in gt.config.json
     if (gtConfig.apiKey) {
         (0, warnings_1.warnApiKeyInConfig)(options.options);
     }
     // Error if no API key at this point
     if (!options.projectId)
-        throw new Error('No General Translation Project ID found. Use the --projectId flag to provide one.');
+        throw new Error("No General Translation Project ID found. Use the --projectId flag to provide one.");
     (0, console_1.displayProjectId)(options.projectId);
     // Check locales
     if (options.defaultLocale && !(0, generaltranslation_1.isValidLocale)(options.defaultLocale))
@@ -96,7 +101,12 @@ commander_1.program
     }
     // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
     // not foolproof but can't hurt
-    const nextConfigFilepath = (0, findFilepath_1.default)(['./next.config.mjs', './next.config.js', './next.config.ts', './next.config.cjs']);
+    const nextConfigFilepath = (0, findFilepath_1.default)([
+        "./next.config.mjs",
+        "./next.config.js",
+        "./next.config.ts",
+        "./next.config.cjs",
+    ]);
     if (nextConfigFilepath)
         options = Object.assign(Object.assign({}, (0, parseNextConfig_1.parseNextConfig)(nextConfigFilepath)), options);
     // if there's no existing config file, creates one
@@ -118,16 +128,18 @@ commander_1.program
         else {
             esbuildConfig = (0, createESBuildConfig_1.default)({});
         }
-        updates = [...updates, ...(yield (0, createDictionaryUpdates_1.default)(options, esbuildConfig))];
+        updates = [
+            ...updates,
+            ...(yield (0, createDictionaryUpdates_1.default)(options, esbuildConfig)),
+        ];
     }
-    // Scan through project for <T> tags 
+    // Scan through project for <T> tags
     if (options.inline) {
         updates = [...updates, ...(yield (0, createInlineUpdates_1.default)(options))];
     }
-    ;
     // Metadata addition and validation
     const idHashMap = new Map();
-    updates = updates.map(update => {
+    updates = updates.map((update) => {
         const existingHash = idHashMap.get(update.metadata.id);
         if (existingHash) {
             if (existingHash !== update.metadata.hash)
@@ -138,6 +150,7 @@ commander_1.program
         }
         return update;
     });
+    console.log(updates);
     // Send updates to General Translation API
     if (updates.length) {
         const { projectId, defaultLocale } = options;
@@ -145,18 +158,16 @@ commander_1.program
         const body = {
             updates,
             locales: options.locales,
-            metadata: globalMetadata
+            metadata: globalMetadata,
         };
         const response = yield fetch(`${options.baseUrl}/v1/project/translations/update`, {
             method: "POST",
-            headers: Object.assign({ "Content-Type": "application/json" }, (apiKey && { 'x-gt-api-key': apiKey })),
+            headers: Object.assign({ "Content-Type": "application/json" }, (apiKey && { "x-gt-api-key": apiKey })),
             body: JSON.stringify(body),
         });
         console.log();
         if (!response.ok) {
-            throw new Error(response.status +
-                '. ' +
-                (yield response.text()));
+            throw new Error(response.status + ". " + (yield response.text()));
         }
         const result = yield response.text();
         console.log(result);
