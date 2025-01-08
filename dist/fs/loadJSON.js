@@ -13,7 +13,7 @@ const path_1 = __importDefault(require("path"));
  */
 function loadJSON(filepath) {
     try {
-        const data = fs_1.default.readFileSync(path_1.default.resolve(filepath), 'utf-8');
+        const data = fs_1.default.readFileSync(path_1.default.resolve(filepath), "utf-8");
         return JSON.parse(data);
     }
     catch (error) {

@@ -32,7 +32,7 @@ function createDictionaryUpdates(options, esbuildConfig) {
         else {
             const result = yield (0, esbuild_1.build)(Object.assign(Object.assign({}, esbuildConfig), { entryPoints: [options.dictionary], write: false }));
             const bundledCode = result.outputFiles[0].text;
-            const tempFilePath = path_1.default.join(os_1.default.tmpdir(), 'bundled-dictionary.js');
+            const tempFilePath = path_1.default.join(os_1.default.tmpdir(), "bundled-dictionary.js");
             fs_1.default.writeFileSync(tempFilePath, bundledCode);
             globalThis.React = react_1.default;
             // Load the module using require
@@ -48,34 +48,35 @@ function createDictionaryUpdates(options, esbuildConfig) {
                 // Clean up the temporary file
                 fs_1.default.unlinkSync(tempFilePath);
             }
-            dictionary = (0, internal_1.flattenDictionary)(dictionaryModule.default || dictionaryModule.dictionary || dictionaryModule);
+            dictionary = (0, internal_1.flattenDictionary)(dictionaryModule.default ||
+                dictionaryModule.dictionary ||
+                dictionaryModule);
         }
         if (!Object.keys(dictionary).length)
             throw new Error(`Dictionary filepath provided: "${options.dictionary}", but no entries found.`);
         // ----- CREATE PARTIAL UPDATES ----- //
         let updates = [];
         for (const id of Object.keys(dictionary)) {
-            let { entry, metadata: props // context, etc.
+            let { entry, metadata: props, // context, etc.
              } = (0, internal_1.extractEntryMetadata)(dictionary[id]);
             const taggedEntry = (0, internal_1.addGTIdentifier)(entry);
             const entryAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedEntry);
             const context = props === null || props === void 0 ? void 0 : props.context;
             const metadata = Object.assign(Object.assign({ id }, (context && { context })), { hash: (0, internal_1.hashReactChildrenObjects)(context ? [entryAsObjects, context] : entryAsObjects) });
-            if (typeof entry === 'string') {
+            if (typeof entry === "string") {
                 updates.push({
-                    type: 'content',
+                    type: "content",
                     source: (0, generaltranslation_1.splitStringToContent)(taggedEntry),
                     metadata,
                 });
             }
             else {
                 updates.push({
-                    type: 'jsx',
+                    type: "jsx",
                     source: entryAsObjects,
                     metadata,
                 });
             }
-            ;
         }
         return updates;
     });

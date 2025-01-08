@@ -14,7 +14,7 @@ export type Options = {
     projectId?: string;
     jsconfig?: string;
     dictionary?: string;
-    app?: string;
+    src?: string[];
     defaultLocale?: string;
     locales?: string[];
     baseUrl: string;
