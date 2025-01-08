@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 export type Updates = ({
-    "type": "jsx";
-    "source": any;
-    "metadata": Record<string, any>;
+    type: "jsx";
+    source: any;
+    metadata: Record<string, any>;
 } | {
-    "type": "content";
-    "source": any;
-    "metadata": Record<string, any>;
+    type: "content";
+    source: any;
+    metadata: Record<string, any>;
 })[];
 export type Options = {
     options: string;
