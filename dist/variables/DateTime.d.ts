@@ -24,7 +24,7 @@ declare function DateTime({ children, name, value, options, locales, ...props }:
     options?: Intl.DateTimeFormatOptions;
     locales?: string[];
     'data-_gt'?: any;
-}): JSX.Element;
+}): React.JSX.Element;
 declare namespace DateTime {
     var gtTransformation: string;
 }

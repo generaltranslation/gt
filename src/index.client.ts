@@ -5,7 +5,7 @@ import {
 function GTProvider(params: {
     children?: any,
     id?: string
-}): JSX.Element {
+}): React.JSX.Element {
     throw new Error(
         `You're attempting to import <GTProvider> on the client. `
         + `Are you sure you want to do this? It's better to import <GTProvider> in a file not marked 'use client' so that it can fetch translations on the server. `

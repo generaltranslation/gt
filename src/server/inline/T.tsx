@@ -194,7 +194,7 @@ async function T({
   // For skeleton & replace, return a suspense component so that
   // something is shown while waiting for the translation
   return (
-    <Suspense fallback={loadingFallback}>
+    <Suspense fallback={loadingFallback as React.ReactNode}>
       <Resolver children={renderTranslatedChildrenPromise} fallback={errorFallback} />
     </Suspense>
   );

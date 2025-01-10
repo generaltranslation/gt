@@ -26,7 +26,7 @@ function Var({
     name?: string;
     value?: any;
     'data-_gt'?: any
-}): JSX.Element {
+}): React.JSX.Element {
     
     const { "data-_gt": generaltranslation } = props;
     

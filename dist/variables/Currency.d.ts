@@ -26,7 +26,7 @@ declare function Currency({ children, name, value, currency, options, locales, .
     options?: Intl.NumberFormatOptions;
     locales?: string[];
     'data-_gt'?: any;
-}): JSX.Element;
+}): React.JSX.Element;
 declare namespace Currency {
     var gtTransformation: string;
 }
