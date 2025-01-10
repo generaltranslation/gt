@@ -18,6 +18,7 @@ import {
 import { warnApiKeyInConfig } from "./console/warnings";
 import { noTranslationsError } from "./console/errors";
 import { defaultBaseUrl } from "generaltranslation/internal";
+import chalk from "chalk";
 
 dotenv.config({ path: ".env" });
 dotenv.config({ path: ".env.local", override: true });
@@ -256,7 +257,7 @@ program
         throw new Error(response.status + ". " + (await response.text()));
       }
       const result = await response.text();
-      console.log(result);
+      console.log(chalk.green("✓ ") + chalk.green.bold(result));
     } else {
       throw new Error(noTranslationsError);
     }
