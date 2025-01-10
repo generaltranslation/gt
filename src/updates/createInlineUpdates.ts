@@ -9,13 +9,12 @@ import traverse from "@babel/traverse";
 import generate from "@babel/generator";
 import * as t from "@babel/types";
 import addGTIdentifierToSyntaxTree from "../data-_gt/addGTIdentifierToSyntaxTree";
-import { hashReactChildrenObjects } from "gt-react/internal";
-import { displayFoundTMessage } from "../console/console";
 import {
   warnHasUnwrappedExpression,
   warnNoId,
   warnVariableProp,
 } from "../console/warnings";
+import { hashJsxChildren } from "generaltranslation/id";
 
 function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
   isStatic: boolean;
@@ -350,7 +349,7 @@ export default async function createInlineUpdates(
   await Promise.all(
     updates.map(async (update) => {
       const context = update.metadata.context;
-      const hash = hashReactChildrenObjects(
+      const hash = hashJsxChildren(
         context ? [update.source, context] : update.source
       );
       update.metadata.hash = hash;

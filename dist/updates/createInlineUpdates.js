@@ -43,8 +43,8 @@ const traverse_1 = __importDefault(require("@babel/traverse"));
 const generator_1 = __importDefault(require("@babel/generator"));
 const t = __importStar(require("@babel/types"));
 const addGTIdentifierToSyntaxTree_1 = __importDefault(require("../data-_gt/addGTIdentifierToSyntaxTree"));
-const internal_1 = require("gt-react/internal");
 const warnings_1 = require("../console/warnings");
+const id_1 = require("generaltranslation/id");
 function isStaticExpression(expr) {
     // Handle empty expressions
     if (t.isJSXEmptyExpression(expr)) {
@@ -324,7 +324,7 @@ function createInlineUpdates(options) {
         // Post-process to add a hash to each update
         yield Promise.all(updates.map((update) => __awaiter(this, void 0, void 0, function* () {
             const context = update.metadata.context;
-            const hash = (0, internal_1.hashReactChildrenObjects)(context ? [update.source, context] : update.source);
+            const hash = (0, id_1.hashJsxChildren)(context ? [update.source, context] : update.source);
             update.metadata.hash = hash;
         })));
         return updates;

@@ -6,13 +6,13 @@ import { build, BuildOptions } from "esbuild";
 import { Options, Updates } from "../main";
 import {
   addGTIdentifier,
-  hashReactChildrenObjects,
   extractEntryMetadata,
   flattenDictionary,
   writeChildrenAsObjects,
 } from "gt-react/internal";
 import { splitStringToContent } from "generaltranslation";
 import loadJSON from "../fs/loadJSON";
+import { hashJsxChildren } from "generaltranslation/id";
 
 export default async function createDictionaryUpdates(
   options: Options & { dictionary: string },
@@ -81,7 +81,7 @@ export default async function createDictionaryUpdates(
     const metadata: Record<string, any> = {
       id,
       ...(context && { context }),
-      hash: hashReactChildrenObjects(
+      hash: hashJsxChildren(
         context ? [entryAsObjects, context] : entryAsObjects
       ),
     };
