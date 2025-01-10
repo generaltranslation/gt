@@ -1,6 +1,6 @@
 {
     "name": "gt-next",
-    "version": "3.0.14",
+    "version": "3.0.15",
     "description": "A Next.js library for automatic internationalization.",
     "main": "dist/index.server.js",
     "peerDependencies": {
@@ -28,9 +28,9 @@
     "homepage": "https://github.com/general-translation/gt-next#readme",
     "devDependencies": {
         "@types/node": "^22.10.5",
-        "@types/react": ">=18.3.3 <20.0.0",
-        "@types/react-dom": ">=18.3.3 <20.0.0",
-        "gt-react-cli": "^1.1.2",
+        "@types/react": ">=18.0.0 <20.0.0",
+        "@types/react-dom": ">=18.0.0 <20.0.0",
+        "gt-react-cli": "^1.1.7",
         "typescript": "^5.7.3"
     },
     "exports": {
@@ -122,6 +122,6 @@
         "i18n"
     ],
     "dependencies": {
-        "gt-react": "^7.0.6"
+        "gt-react": "^7.0.9"
     }
 }
