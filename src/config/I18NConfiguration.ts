@@ -2,11 +2,10 @@ import GT, { requiresTranslation } from 'generaltranslation';
 import remoteTranslationsManager, {
   RemoteTranslationsManager,
 } from './RemoteTranslationsManager';
-import defaultInitGTProps from './props/defaultInitGTProps';
-import { addGTIdentifier, hashReactChildrenObjects, writeChildrenAsObjects } from 'gt-react/internal';
+import { addGTIdentifier, writeChildrenAsObjects } from 'gt-react/internal';
 import { devApiKeyIncludedInProductionError } from '../errors/createErrors';
 import { TranslatedChildren } from 'gt-react/dist/types/types';
-import { getLocale } from '../server';
+import { hashJsxChildren } from 'generaltranslation/id'
 
 type I18NConfigurationParams = {
   remoteCache: boolean;
@@ -211,7 +210,7 @@ export default class I18NConfiguration {
     const childrenAsObjects = writeChildrenAsObjects(children);
     return [
       childrenAsObjects, 
-      hashReactChildrenObjects(context ? [childrenAsObjects, context] : childrenAsObjects)
+      hashJsxChildren(context ? [childrenAsObjects, context] : childrenAsObjects)
     ];
   }
 
