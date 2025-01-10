@@ -37,7 +37,7 @@ function Currency({
     options?: Intl.NumberFormatOptions;
     locales?: string[],
     'data-_gt'?: any
-}): JSX.Element {
+}): React.JSX.Element {
     
     const { "data-_gt": generaltranslation } = props;
 

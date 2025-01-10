@@ -25,7 +25,7 @@ declare function Num({ children, name, value, options, locales, ...props }: {
     options?: Intl.NumberFormatOptions;
     locales?: string[];
     'data-_gt'?: any;
-}): JSX.Element;
+}): React.JSX.Element;
 declare namespace Num {
     var gtTransformation: string;
 }

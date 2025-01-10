@@ -21,7 +21,7 @@ declare function Var({ children, name, value, ...props }: {
     name?: string;
     value?: any;
     'data-_gt'?: any;
-}): JSX.Element;
+}): React.JSX.Element;
 declare namespace Var {
     var gtTransformation: string;
 }

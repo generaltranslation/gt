@@ -34,7 +34,7 @@ function DateTime({
     options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
     locales?: string[],
     'data-_gt'?: any
-}): JSX.Element {
+}): React.JSX.Element {
 
     // Extract general translation data from props
     const { "data-_gt": generaltranslation } = props;

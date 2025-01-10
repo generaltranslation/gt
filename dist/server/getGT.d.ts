@@ -1,3 +1,4 @@
+import React from "react";
 /**
  * Returns the translation function `t()`, which is used to translate an item from the dictionary.
  *
@@ -27,5 +28,5 @@ export declare function getGT(id?: string): Promise<(id: string, options?: Recor
  * const t = useElement();
  * console.log(t('hello')); // Translates item 'hello', returns as JSX
  */
-export declare function useElement(id?: string): (id: string, options?: Record<string, any>) => JSX.Element;
+export declare function useElement(id?: string): (id: string, options?: Record<string, any>) => React.JSX.Element;
 //# sourceMappingURL=getGT.d.ts.map

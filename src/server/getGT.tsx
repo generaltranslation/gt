@@ -8,7 +8,7 @@ import getMetadata from "../request/getMetadata";
 import renderVariable from "./rendering/renderVariable";
 import { createDictionarySubsetError, createNoEntryWarning } from "../errors/createErrors";
 import React, { isValidElement } from "react";
-import { Content } from "gt-react/dist/types/types";
+import { Content, DictionaryEntry } from "gt-react/dist/types/types";
 
 /**
  * Returns the translation function `t()`, which is used to translate an item from the dictionary.
@@ -92,7 +92,7 @@ export async function getGT(id?: string): Promise<(
     return (
         id: string, 
         options?: Record<string, any>
-    ): JSX.Element | string | undefined => {
+    ): React.JSX.Element | string | undefined => {
 
         id = getId(id);
 
@@ -107,7 +107,7 @@ export async function getGT(id?: string): Promise<(
             return undefined;
         };
 
-        let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
+        let { entry, metadata } = extractEntryMetadata(dictionaryEntry as DictionaryEntry);
 
         // Get variables and variable options
         let variables = options; 
@@ -152,7 +152,7 @@ export async function getGT(id?: string): Promise<(
 export function useElement(id?: string): (
     id: string, 
     options?: Record<string, any>
-) => JSX.Element {
+) => React.JSX.Element {
 
     const getId = (suffix: string) => {
         return id ? `${id}.${suffix}` : suffix;
@@ -170,7 +170,7 @@ export function useElement(id?: string): (
     function t(
         id: string, 
         options: Record<string, any> = {}
-    ): JSX.Element {
+    ): React.JSX.Element {
 
         id = getId(id);
 
@@ -185,7 +185,7 @@ export function useElement(id?: string): (
             return <React.Fragment />;
         };
 
-        let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
+        let { entry, metadata } = extractEntryMetadata(dictionaryEntry as DictionaryEntry);
 
         // Get variables and variable options
         let variables = options; 
