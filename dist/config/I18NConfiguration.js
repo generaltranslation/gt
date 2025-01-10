@@ -198,7 +198,7 @@ var I18NConfiguration = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, ((_a = this._remoteTranslationsManager) === null || _a === void 0 ? void 0 : _a.getTranslations(locale))];
-                    case 1: return [2 /*return*/, ((_b.sent()) || {})];
+                    case 1: return [2 /*return*/, (_b.sent()) || {}];
                 }
             });
         });

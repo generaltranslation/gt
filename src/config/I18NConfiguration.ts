@@ -222,9 +222,7 @@ export default class I18NConfiguration {
    * @returns A promise that resolves to the translations.
    */
   async getTranslations(locale: string): Promise<Record<string, any>> {
-    return (
-      (await this._remoteTranslationsManager?.getTranslations(locale)) || {}
-    );
+    return await this._remoteTranslationsManager?.getTranslations(locale) || {};
   }
 
   /**
@@ -232,7 +230,6 @@ export default class I18NConfiguration {
    * @param params - Parameters for translation
    * @returns Translated string
    */
-
   async translateContent(params: {
     source: string | (string | { key: string; variable?: string })[];
     targetLocale: string;

@@ -30,7 +30,7 @@
         "@types/node": "^20.14.9",
         "@types/react": "^18.3.3",
         "@types/react-dom": "^18.3.0",
-        "gt-react-cli": "^1.1.2",
+        "gt-react-cli": "^1.1.7",
         "typescript": "^5.5.2"
     },
     "exports": {
@@ -122,6 +122,6 @@
         "i18n"
     ],
     "dependencies": {
-        "gt-react": "^7.0.4"
+        "gt-react": "^7.0.5"
     }
 }
