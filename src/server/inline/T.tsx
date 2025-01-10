@@ -91,6 +91,7 @@ async function T({
   // The dictionary wraps text in this <T> component
   // Thus, we need to also handle variables
   if (!translationRequired) {
+    console.log("No translation required")
     return renderDefaultChildren({
       children: taggedChildren,
       variables,
@@ -114,9 +115,9 @@ async function T({
   const translation = id ? translations?.[id] : undefined;
 
   // checks if an appropriate translation exists
-  if (translation?.k === key) {
+  if (translation && translation?.[key]) {
     // a translation exists!
-    let target = translation.t;
+    let target = translation[key];
     return renderTranslatedChildren({
       source: taggedChildren,
       target,
