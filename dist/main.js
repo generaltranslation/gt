@@ -60,6 +60,7 @@ const console_1 = require("./console/console");
 const warnings_1 = require("./console/warnings");
 const errors_1 = require("./console/errors");
 const internal_1 = require("generaltranslation/internal");
+const chalk_1 = __importDefault(require("chalk"));
 dotenv_1.default.config({ path: ".env" });
 dotenv_1.default.config({ path: ".env.local", override: true });
 commander_1.program
@@ -191,7 +192,7 @@ commander_1.program
             throw new Error(response.status + ". " + (yield response.text()));
         }
         const result = yield response.text();
-        console.log(result);
+        console.log(chalk_1.default.green("✓ ") + chalk_1.default.green.bold(result));
     }
     else {
         throw new Error(errors_1.noTranslationsError);

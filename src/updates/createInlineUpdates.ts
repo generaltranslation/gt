@@ -37,7 +37,12 @@ function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
   }
 
   // Handle binary expressions (string concatenation)
-  if (t.isBinaryExpression(expr) && expr.operator === "+") {
+  if (t.isBinaryExpression(expr)) {
+    // Only handle string concatenation
+    if (expr.operator !== "+") {
+      return { isStatic: false };
+    }
+
     // Type guard to ensure we only process Expression types
     if (t.isExpression(expr.left) && t.isExpression(expr.right)) {
       const left = isStaticExpression(expr.left);
@@ -52,6 +57,26 @@ function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
         return { isStatic: true, value: left.value + right.value };
       }
     }
+  }
+
+  // Handle parenthesized expressions
+  if (t.isParenthesizedExpression(expr)) {
+    return isStaticExpression(expr.expression);
+  }
+
+  // Handle numeric literals by converting them to strings
+  if (t.isNumericLiteral(expr)) {
+    return { isStatic: true, value: String(expr.value) };
+  }
+
+  // Handle boolean literals by converting them to strings
+  if (t.isBooleanLiteral(expr)) {
+    return { isStatic: true, value: String(expr.value) };
+  }
+
+  // Handle null literal
+  if (t.isNullLiteral(expr)) {
+    return { isStatic: true, value: "null" };
   }
 
   // Not a static expression
@@ -309,7 +334,7 @@ export default async function createInlineUpdates(
           const childrenAsObjects = addGTIdentifierToSyntaxTree(
             componentObj.tree
           );
-          displayFoundTMessage(file, id);
+          // displayFoundTMessage(file, id);
 
           updates.push({
             type: "jsx",

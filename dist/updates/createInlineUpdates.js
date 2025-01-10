@@ -44,7 +44,6 @@ const generator_1 = __importDefault(require("@babel/generator"));
 const t = __importStar(require("@babel/types"));
 const addGTIdentifierToSyntaxTree_1 = __importDefault(require("../data-_gt/addGTIdentifierToSyntaxTree"));
 const internal_1 = require("gt-react/internal");
-const console_1 = require("../console/console");
 const warnings_1 = require("../console/warnings");
 function isStaticExpression(expr) {
     // Handle empty expressions
@@ -60,7 +59,11 @@ function isStaticExpression(expr) {
         return { isStatic: true, value: expr.quasis[0].value.raw };
     }
     // Handle binary expressions (string concatenation)
-    if (t.isBinaryExpression(expr) && expr.operator === "+") {
+    if (t.isBinaryExpression(expr)) {
+        // Only handle string concatenation
+        if (expr.operator !== "+") {
+            return { isStatic: false };
+        }
         // Type guard to ensure we only process Expression types
         if (t.isExpression(expr.left) && t.isExpression(expr.right)) {
             const left = isStaticExpression(expr.left);
@@ -72,6 +75,22 @@ function isStaticExpression(expr) {
                 return { isStatic: true, value: left.value + right.value };
             }
         }
+    }
+    // Handle parenthesized expressions
+    if (t.isParenthesizedExpression(expr)) {
+        return isStaticExpression(expr.expression);
+    }
+    // Handle numeric literals by converting them to strings
+    if (t.isNumericLiteral(expr)) {
+        return { isStatic: true, value: String(expr.value) };
+    }
+    // Handle boolean literals by converting them to strings
+    if (t.isBooleanLiteral(expr)) {
+        return { isStatic: true, value: String(expr.value) };
+    }
+    // Handle null literal
+    if (t.isNullLiteral(expr)) {
+        return { isStatic: true, value: "null" };
     }
     // Not a static expression
     return { isStatic: false };
@@ -292,7 +311,7 @@ function createInlineUpdates(options) {
                         }
                         // If we reached here, this <T> is valid
                         const childrenAsObjects = (0, addGTIdentifierToSyntaxTree_1.default)(componentObj.tree);
-                        (0, console_1.displayFoundTMessage)(file, id);
+                        // displayFoundTMessage(file, id);
                         updates.push({
                             type: "jsx",
                             source: childrenAsObjects,
