@@ -65,6 +65,7 @@ var generaltranslation_1 = require("generaltranslation");
 var RemoteTranslationsManager_1 = __importDefault(require("./RemoteTranslationsManager"));
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
+var id_1 = require("generaltranslation/id");
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         var 
@@ -183,7 +184,7 @@ var I18NConfiguration = /** @class */ (function () {
         var childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(children);
         return [
             childrenAsObjects,
-            (0, internal_1.hashReactChildrenObjects)(context ? [childrenAsObjects, context] : childrenAsObjects)
+            (0, id_1.hashJsxChildren)(context ? [childrenAsObjects, context] : childrenAsObjects)
         ];
     };
     /**
