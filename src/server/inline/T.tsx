@@ -91,7 +91,6 @@ async function T({
   // The dictionary wraps text in this <T> component
   // Thus, we need to also handle variables
   if (!translationRequired) {
-    console.log("No translation required")
     return renderDefaultChildren({
       children: taggedChildren,
       variables,
