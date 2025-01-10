@@ -126,6 +126,7 @@ function T(_a) {
                     // The dictionary wraps text in this <T> component
                     // Thus, we need to also handle variables
                     if (!translationRequired) {
+                        console.log("No translation required");
                         return [2 /*return*/, (0, internal_1.renderDefaultChildren)({
                                 children: taggedChildren,
                                 variables: variables,
@@ -141,8 +142,8 @@ function T(_a) {
                     translations = _h.sent();
                     translation = id ? translations === null || translations === void 0 ? void 0 : translations[id] : undefined;
                     // checks if an appropriate translation exists
-                    if ((translation === null || translation === void 0 ? void 0 : translation.k) === key) {
-                        target = translation.t;
+                    if (translation && (translation === null || translation === void 0 ? void 0 : translation[key])) {
+                        target = translation[key];
                         return [2 /*return*/, (0, internal_1.renderTranslatedChildren)({
                                 source: taggedChildren,
                                 target: target,
