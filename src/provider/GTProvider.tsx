@@ -10,7 +10,7 @@ import getMetadata from '../request/getMetadata';
 import { splitStringToContent } from 'generaltranslation';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
 import ClientProvider from './ClientProvider';
-import { Dictionary, TranslatedChildren, TranslationsObject } from 'gt-react/dist/types/types';
+import { Dictionary, TranslatedChildren } from 'gt-react/dist/types/types';
 import { createDictionarySubsetError } from '../errors/createErrors';
 
 /**
