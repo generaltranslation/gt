@@ -3,7 +3,7 @@ import getLocale from '../../request/getLocale';
 import getMetadata from '../../request/getMetadata';
 import { Suspense } from 'react';
 import Resolver from './Resolver';
-import { renderDefaultChildren, renderTranslatedChildren } from 'gt-react/internal';
+import { renderDefaultChildren, renderSkeleton, renderTranslatedChildren } from 'gt-react/internal';
 import renderVariable from '../rendering/renderVariable';
 
 type RenderSettings = {
@@ -144,20 +144,18 @@ async function T({
 
 
   let loadingFallback; // Blank screen
-  let errorFallback; // Default locale fallback
 
-  errorFallback = renderDefaultChildren({
-    children: taggedChildren,
-    variables,
-    variablesOptions,
-    defaultLocale,
-    renderVariable
-  });
 
   // Awaits the translation promise
   let renderTranslatedChildrenPromise = translationPromise.then((translation) => {
     if (translation?.error) {
-      return errorFallback;
+      return renderDefaultChildren({
+        children: taggedChildren,
+        variables,
+        variablesOptions,
+        defaultLocale,
+        renderVariable
+      });;
     }
     let target = translation;
     return renderTranslatedChildren({
@@ -170,13 +168,30 @@ async function T({
     });
   });
 
-
-
   if (renderSettings.method === 'replace') {
-    loadingFallback = errorFallback;
+    loadingFallback = renderDefaultChildren({
+      children: taggedChildren,
+      variables,
+      variablesOptions,
+      defaultLocale,
+      renderVariable
+    });
   } else if (renderSettings.method === 'skeleton') {
-    loadingFallback = <></>; // blank
+    loadingFallback = renderSkeleton({
+      children: taggedChildren,
+      variables,
+      defaultLocale,
+      renderVariable
+    });
   }
+  
+  const errorFallback = renderDefaultChildren({
+    children: taggedChildren,
+    variables,
+    variablesOptions,
+    defaultLocale,
+    renderVariable
+  });
 
   if (renderSettings.method === 'hang') {
     // Wait until the site is translated to return
