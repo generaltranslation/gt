@@ -5,7 +5,6 @@
     "main": "dist/index.server.js",
     "peerDependencies": {
         "@generaltranslation/supported-locales": "^0.0.4",
-        "generaltranslation": "^5.0.4",
         "next": ">=13.0.0 <16.0.0",
         "react": ">=16.8.0 <20.0.0",
         "react-dom": ">=16.8.0 <20.0.0"
@@ -122,6 +121,7 @@
         "i18n"
     ],
     "dependencies": {
-        "gt-react": "^7.0.9"
+        "generaltranslation": "^5.0.5",
+        "gt-react": "^7.0.11"
     }
 }
