@@ -159,7 +159,7 @@ var I18NConfiguration = /** @class */ (function () {
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.
-     * As of 1/10/25: method is "skeleton", "replace", "hang", "subtle".
+     * As of 7/31/24: method is "skeleton", "replace", "hang", "subtle".
      * Timeout is a number or null, representing no assigned timeout.
      */
     I18NConfiguration.prototype.getRenderSettings = function () {
