@@ -85,6 +85,7 @@ function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
 export default async function createInlineUpdates(
   options: Options
 ): Promise<Updates> {
+  console.log("Hello ==== ");
   const updates: Updates = [];
 
   // Use the provided app directory or default to the current directory
@@ -160,26 +161,23 @@ export default async function createInlineUpdates(
           function buildJSXTree(node: any, isInsideVar = false): any {
             if (t.isJSXExpressionContainer(node) && !isInsideVar) {
               const expr = node.expression;
-
-              // Check if the expression is statically analyzable
               const staticAnalysis = isStaticExpression(expr);
               if (
                 staticAnalysis.isStatic &&
                 staticAnalysis.value !== undefined
               ) {
+                // Preserve the exact whitespace for static string expressions
                 return staticAnalysis.value;
               }
-
-              // If we reach here, it's a variable or complex expression
               hasUnwrappedExpression = true;
               return generate(node).code;
             }
 
-            // JSX Text
+            // Handle JSX Text nodes
             if (t.isJSXText(node)) {
-              // Trim the text and replace multiple whitespaces with a single space
-              return node.value.trim().replace(/\s+/g, " ");
+              return node.value;
             }
+
             // If we are inside a variable component, keep going
             else if (t.isJSXExpressionContainer(node)) {
               return buildJSXTree(node.expression, isInsideVar);
@@ -227,7 +225,39 @@ export default async function createInlineUpdates(
 
               const children = element.children
                 .map((child) => buildJSXTree(child, nextInsideVar))
-                .filter((child) => child !== null && child !== "");
+                .filter((child) => child !== null && child !== "")
+                // Process whitespace between elements
+                .map((child, index, array) => {
+                  if (typeof child === "string") {
+                    // Always trim start of first child and end of last child
+                    if (index === 0) {
+                      child = child.trimStart();
+                    }
+                    if (index === array.length - 1) {
+                      child = child.trimEnd();
+                    }
+
+                    // If previous or next item is a JSX expression or element,
+                    // trim whitespace accordingly
+                    const prevItem = index > 0 ? array[index - 1] : null;
+                    const nextItem =
+                      index < array.length - 1 ? array[index + 1] : null;
+
+                    if (
+                      typeof prevItem === "object" ||
+                      typeof nextItem === "object"
+                    ) {
+                      if (typeof prevItem === "object") {
+                        child = child.trimStart();
+                      }
+                      if (typeof nextItem === "object") {
+                        child = child.trimEnd();
+                      }
+                    }
+                  }
+                  return child;
+                })
+                .filter((child) => child !== "" && child !== " "); // Remove empty strings after trimming
 
               if (children.length === 1) {
                 props.children = children[0];
@@ -308,12 +338,15 @@ export default async function createInlineUpdates(
             return;
           }
 
-          // Build and store the "children" / tree
+          // Build initial tree
           const tree = path.node.children
             .map((child) => buildJSXTree(child))
-            .filter((child) => child !== null && child !== "");
+            .filter((child) => child !== null);
 
-          componentObj.tree = tree.length === 1 ? tree[0] : tree;
+          // Process the tree to handle whitespace
+          const processedTree = processTreeWhitespace(tree);
+          componentObj.tree =
+            processedTree.length === 1 ? processedTree[0] : processedTree;
 
           // Check the id ...
           const id = componentObj.props.id;
@@ -334,7 +367,6 @@ export default async function createInlineUpdates(
             componentObj.tree
           );
           // displayFoundTMessage(file, id);
-
           updates.push({
             type: "jsx",
             source: childrenAsObjects,
@@ -352,9 +384,61 @@ export default async function createInlineUpdates(
       const hash = hashJsxChildren(
         context ? [update.source, context] : update.source
       );
+      if (update.metadata.id === "client-var-t-2-cond") {
+        console.log("hash", hash);
+        console.log("source", JSON.stringify(update.source));
+      }
       update.metadata.hash = hash;
     })
   );
 
   return updates;
+}
+
+function processTreeWhitespace(tree: any[]): any[] {
+  // Step 1: Convert the tree to a string representation to handle text
+  let treeStr = tree
+    .map((item) => {
+      if (typeof item === "string") {
+        return item;
+      }
+      // Use special markers for components/expressions
+      return "\u0000COMPONENT\u0000";
+    })
+    .join("");
+
+  // Step 2: Convert newlines to spaces
+  treeStr = treeStr.replace(/\s*\n\s*/g, " ");
+
+  // Step 3: Collapse multiple spaces into one
+  treeStr = treeStr.replace(/\s+/g, " ");
+
+  // Step 4: Remove spaces around components
+  treeStr = treeStr.replace(
+    /\s*\u0000COMPONENT\u0000\s*/g,
+    "\u0000COMPONENT\u0000"
+  );
+
+  // Step 5: Split back into array and reconstruct
+  const parts = treeStr.split("\u0000COMPONENT\u0000");
+  const result: any[] = [];
+  let componentIndex = 0;
+
+  parts.forEach((part, index) => {
+    if (part) {
+      result.push(part);
+    }
+    if (index < parts.length - 1) {
+      // Add back the original component/expression
+      while (componentIndex < tree.length) {
+        const item = tree[componentIndex++];
+        if (typeof item !== "string") {
+          result.push(item);
+          break;
+        }
+      }
+    }
+  });
+
+  return result.filter((item) => item !== "");
 }
