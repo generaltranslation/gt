@@ -410,12 +410,13 @@ export default async function createInlineUpdates(
     updates.map(async (update) => {
       const context = update.metadata.context;
       const hash = hashJsxChildren(
-        context ? [update.source, context] : update.source
+        context
+          ? {
+              source: update.source,
+              context,
+            }
+          : { source: update.source }
       );
-      if (update.metadata.id === "client-var-t-2-cond") {
-        console.log("hash", hash);
-        console.log("source", JSON.stringify(update.source));
-      }
       update.metadata.hash = hash;
     })
   );

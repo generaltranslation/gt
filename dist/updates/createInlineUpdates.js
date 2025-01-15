@@ -385,11 +385,12 @@ function createInlineUpdates(options) {
         // Post-process to add a hash to each update
         yield Promise.all(updates.map((update) => __awaiter(this, void 0, void 0, function* () {
             const context = update.metadata.context;
-            const hash = (0, id_1.hashJsxChildren)(context ? [update.source, context] : update.source);
-            if (update.metadata.id === "client-var-t-2-cond") {
-                console.log("hash", hash);
-                console.log("source", JSON.stringify(update.source));
-            }
+            const hash = (0, id_1.hashJsxChildren)(context
+                ? {
+                    source: update.source,
+                    context,
+                }
+                : { source: update.source });
             update.metadata.hash = hash;
         })));
         return updates;
