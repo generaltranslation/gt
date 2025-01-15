@@ -5,7 +5,8 @@ import remoteTranslationsManager, {
 import { addGTIdentifier, writeChildrenAsObjects } from 'gt-react/internal';
 import { devApiKeyIncludedInProductionError } from '../errors/createErrors';
 import { TranslatedChildren } from 'gt-react/dist/types/types';
-import { hashJsxChildren } from 'generaltranslation/id'
+import { hashJsxChildren } from 'generaltranslation/id';
+import { JsxChildren } from 'generaltranslation/dist/types';
 
 type I18NConfigurationParams = {
   remoteCache: boolean;
@@ -99,8 +100,12 @@ export default class I18NConfiguration {
     // Render method
     this.renderSettings = renderSettings;
     // Default env is production
-    if (process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test" && this.devApiKey) {
-      throw new Error(devApiKeyIncludedInProductionError)
+    if (
+      process.env.NODE_ENV !== 'development' &&
+      process.env.NODE_ENV !== 'test' &&
+      this.devApiKey
+    ) {
+      throw new Error(devApiKeyIncludedInProductionError);
     }
     // Other metadata
     this.metadata = {
@@ -119,7 +124,7 @@ export default class I18NConfiguration {
       this._remoteTranslationsManager.setConfig({
         cacheUrl,
         projectId,
-        cacheExpiryTime
+        cacheExpiryTime,
       });
     }
     // Cache of hashes to speed up <GTProvider>
@@ -137,13 +142,13 @@ export default class I18NConfiguration {
 
   /**
    * Gets config for dynamic translation on the client side.
-  */
+   */
   getClientSideConfig() {
     return {
       projectId: this.projectId,
       devApiKey: this.devApiKey,
-      runtimeUrl: this.runtimeUrl
-    }
+      runtimeUrl: this.runtimeUrl,
+    };
   }
 
   /**
@@ -166,12 +171,12 @@ export default class I18NConfiguration {
    * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
    */
   translationEnabled(): boolean {
-    return (
-      this.runtimeTranslation && 
-      this.projectId && 
-      this.runtimeUrl && 
+    return this.runtimeTranslation &&
+      this.projectId &&
+      this.runtimeUrl &&
       (this.apiKey || this.devApiKey)
-    ) ? true : false;
+      ? true
+      : false;
   }
 
   /**
@@ -202,15 +207,23 @@ export default class I18NConfiguration {
   addGTIdentifier(children: any, id?: string): any {
     return addGTIdentifier(children, id);
   }
-  
+
   /**
    * @returns {[any, string]} A xxhash hash and the children that were created from it
-  */
-  serializeAndHash(children: any, context?: string, id?: string): [any, string] {
+   */
+  serializeAndHash(
+    children: any,
+    context?: string,
+    id?: string
+  ): [any, string] {
     const childrenAsObjects = writeChildrenAsObjects(children);
     return [
-      childrenAsObjects, 
-      hashJsxChildren(context ? [childrenAsObjects, context] : childrenAsObjects)
+      childrenAsObjects,
+      hashJsxChildren(
+        context
+          ? { source: childrenAsObjects as unknown as JsxChildren, context }
+          : { source: childrenAsObjects as unknown as JsxChildren }
+      ),
     ];
   }
 
@@ -221,7 +234,9 @@ export default class I18NConfiguration {
    * @returns A promise that resolves to the translations.
    */
   async getTranslations(locale: string): Promise<Record<string, any>> {
-    return await this._remoteTranslationsManager?.getTranslations(locale) || {};
+    return (
+      (await this._remoteTranslationsManager?.getTranslations(locale)) || {}
+    );
   }
 
   /**
@@ -234,7 +249,6 @@ export default class I18NConfiguration {
     targetLocale: string;
     options: Record<string, any>;
   }): Promise<string> {
-    
     const cacheKey = constructCacheKey(params.targetLocale, params.options);
     if (this._translationCache.has(cacheKey)) {
       return this._translationCache.get(cacheKey);
@@ -264,7 +278,7 @@ export default class I18NConfiguration {
    */
   async translateChildren(params: {
     source: any;
-    targetLocale: string
+    targetLocale: string;
     metadata: Record<string, any>;
   }): Promise<any> {
     const cacheKey = constructCacheKey(params.targetLocale, params.metadata);
@@ -287,9 +301,9 @@ export default class I18NConfiguration {
         reject,
       });
     }).catch((error) => {
-      console.error(error)
+      console.error(error);
       this._translationCache.delete(cacheKey);
-      throw new Error(error)
+      throw new Error(error);
     });
     this._translationCache.set(cacheKey, translationPromise);
     return translationPromise;
@@ -302,34 +316,35 @@ export default class I18NConfiguration {
   private async _sendBatchRequest(batch: Array<any>): Promise<void> {
     this._activeRequests++;
     try {
-      const response = await fetch(`${this.runtimeUrl}/v1/runtime/${this.projectId}/server`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(this.apiKey && { 'x-gt-api-key': this.apiKey }),
-          ...(this.devApiKey && { 'x-gt-dev-api-key': this.devApiKey })
-        },
-        body: JSON.stringify({
-          requests: batch.map(item => {
-            const { source, metadata, type } = item;
-            return { source, metadata, type };
+      const response = await fetch(
+        `${this.runtimeUrl}/v1/runtime/${this.projectId}/server`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(this.apiKey && { 'x-gt-api-key': this.apiKey }),
+            ...(this.devApiKey && { 'x-gt-dev-api-key': this.devApiKey }),
+          },
+          body: JSON.stringify({
+            requests: batch.map((item) => {
+              const { source, metadata, type } = item;
+              return { source, metadata, type };
+            }),
+            targetLocale: batch[0].targetLocale,
+            metadata: this.metadata,
           }),
-          targetLocale: batch[0].targetLocale,
-          metadata: this.metadata
-        }),
-      });
-     
+        }
+      );
+
       if (!response.ok) {
-        throw new Error(await response.text())
+        throw new Error(await response.text());
       }
       const results = await response.json();
       batch.forEach((item, index) => {
         const result = results[index];
         if (!result) return item.reject('Translation failed.');
         if (result && typeof result === 'object') {
-          if (
-            'translation' in result
-          ) {
+          if ('translation' in result) {
             if (this._remoteTranslationsManager) {
               this._remoteTranslationsManager.setTranslations(
                 result.locale,
@@ -339,10 +354,13 @@ export default class I18NConfiguration {
               );
             }
             return item.resolve(result.translation);
-          } else if ('error' in result &&
-            result.error
-          ) {
-            console.error(`Translation failed${result?.reference?.id ? ` for id: ${result.reference.id}` : '' }`, result);
+          } else if ('error' in result && result.error) {
+            console.error(
+              `Translation failed${
+                result?.reference?.id ? ` for id: ${result.reference.id}` : ''
+              }`,
+              result
+            );
             return item.resolve(result);
           }
         }
@@ -350,7 +368,7 @@ export default class I18NConfiguration {
       });
     } catch (error) {
       batch.forEach((item) => {
-        item.reject(`gt-next translation failed with error: ${error}`)
+        item.reject(`gt-next translation failed with error: ${error}`);
       });
     } finally {
       this._activeRequests--;
