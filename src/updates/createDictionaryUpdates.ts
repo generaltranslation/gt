@@ -82,7 +82,12 @@ export default async function createDictionaryUpdates(
       id,
       ...(context && { context }),
       hash: hashJsxChildren(
-        context ? [entryAsObjects, context] : entryAsObjects
+        context
+          ? {
+              source: entryAsObjects,
+              context,
+            }
+          : { source: entryAsObjects }
       ),
     };
 

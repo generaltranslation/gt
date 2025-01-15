@@ -63,7 +63,12 @@ function createDictionaryUpdates(options, esbuildConfig) {
             const taggedEntry = (0, internal_1.addGTIdentifier)(entry);
             const entryAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedEntry);
             const context = props === null || props === void 0 ? void 0 : props.context;
-            const metadata = Object.assign(Object.assign({ id }, (context && { context })), { hash: (0, id_1.hashJsxChildren)(context ? [entryAsObjects, context] : entryAsObjects) });
+            const metadata = Object.assign(Object.assign({ id }, (context && { context })), { hash: (0, id_1.hashJsxChildren)(context
+                    ? {
+                        source: entryAsObjects,
+                        context,
+                    }
+                    : { source: entryAsObjects }) });
             if (typeof entry === "string") {
                 updates.push({
                     type: "content",

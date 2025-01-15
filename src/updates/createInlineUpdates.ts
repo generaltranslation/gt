@@ -85,6 +85,7 @@ function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
 export default async function createInlineUpdates(
   options: Options
 ): Promise<Updates> {
+  console.log("Hello ==== ");
   const updates: Updates = [];
 
   // Use the provided app directory or default to the current directory
@@ -160,26 +161,28 @@ export default async function createInlineUpdates(
           function buildJSXTree(node: any, isInsideVar = false): any {
             if (t.isJSXExpressionContainer(node) && !isInsideVar) {
               const expr = node.expression;
-
-              // Check if the expression is statically analyzable
               const staticAnalysis = isStaticExpression(expr);
               if (
                 staticAnalysis.isStatic &&
                 staticAnalysis.value !== undefined
               ) {
+                // Preserve the exact whitespace for static string expressions
                 return staticAnalysis.value;
               }
-
-              // If we reach here, it's a variable or complex expression
+              // Keep existing behavior for non-static expressions
               hasUnwrappedExpression = true;
               return generate(node).code;
             }
 
-            // JSX Text
+            // Updated JSX Text handling
             if (t.isJSXText(node)) {
-              // Trim the text and replace multiple whitespaces with a single space
-              return node.value.trim().replace(/\s+/g, " ");
+              const text = node.value
+                .replace(/\s*\n\s*/g, " ") // Replace newlines (and their surrounding whitespace) with a single space
+                .replace(/\s+/g, " "); // Collapse multiple spaces into one
+
+              return text;
             }
+
             // If we are inside a variable component, keep going
             else if (t.isJSXExpressionContainer(node)) {
               return buildJSXTree(node.expression, isInsideVar);
@@ -227,7 +230,39 @@ export default async function createInlineUpdates(
 
               const children = element.children
                 .map((child) => buildJSXTree(child, nextInsideVar))
-                .filter((child) => child !== null && child !== "");
+                .filter((child) => child !== null && child !== "")
+                // Process whitespace between elements
+                .map((child, index, array) => {
+                  if (typeof child === "string") {
+                    // Always trim start of first child and end of last child
+                    if (index === 0) {
+                      child = child.trimStart();
+                    }
+                    if (index === array.length - 1) {
+                      child = child.trimEnd();
+                    }
+
+                    // If previous or next item is a JSX expression or element,
+                    // trim whitespace accordingly
+                    const prevItem = index > 0 ? array[index - 1] : null;
+                    const nextItem =
+                      index < array.length - 1 ? array[index + 1] : null;
+
+                    if (
+                      typeof prevItem === "object" ||
+                      typeof nextItem === "object"
+                    ) {
+                      if (typeof prevItem === "object") {
+                        child = child.trimStart();
+                      }
+                      if (typeof nextItem === "object") {
+                        child = child.trimEnd();
+                      }
+                    }
+                  }
+                  return child;
+                })
+                .filter((child) => child !== "" && child !== " "); // Remove empty strings after trimming
 
               if (children.length === 1) {
                 props.children = children[0];
@@ -311,7 +346,33 @@ export default async function createInlineUpdates(
           // Build and store the "children" / tree
           const tree = path.node.children
             .map((child) => buildJSXTree(child))
-            .filter((child) => child !== null && child !== "");
+            .filter((child) => child !== null && child !== "")
+            // Additional processing to ensure no extra whitespace between components
+            .map((child, index, array) => {
+              if (typeof child === "string") {
+                child = child.trim();
+
+                // Only preserve a single space between text nodes
+                const prevItem = index > 0 ? array[index - 1] : null;
+                const nextItem =
+                  index < array.length - 1 ? array[index + 1] : null;
+
+                if (
+                  typeof prevItem === "object" ||
+                  typeof nextItem === "object"
+                ) {
+                  // If adjacent to a component/expression, trim that side
+                  if (typeof prevItem === "object") {
+                    child = child.trimStart();
+                  }
+                  if (typeof nextItem === "object") {
+                    child = child.trimEnd();
+                  }
+                }
+              }
+              return child;
+            })
+            .filter((child) => child !== "" && child !== " ");
 
           componentObj.tree = tree.length === 1 ? tree[0] : tree;
 
@@ -334,7 +395,6 @@ export default async function createInlineUpdates(
             componentObj.tree
           );
           // displayFoundTMessage(file, id);
-
           updates.push({
             type: "jsx",
             source: childrenAsObjects,
@@ -350,7 +410,12 @@ export default async function createInlineUpdates(
     updates.map(async (update) => {
       const context = update.metadata.context;
       const hash = hashJsxChildren(
-        context ? [update.source, context] : update.source
+        context
+          ? {
+              source: update.source,
+              context,
+            }
+          : { source: update.source }
       );
       update.metadata.hash = hash;
     })
