@@ -85,7 +85,6 @@ function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
 export default async function createInlineUpdates(
   options: Options
 ): Promise<Updates> {
-  console.log("Hello ==== ");
   const updates: Updates = [];
 
   // Use the provided app directory or default to the current directory
