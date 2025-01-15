@@ -20,7 +20,7 @@ type I18NConfigurationParams = {
   defaultLocale: string;
   locales: string[];
   renderSettings: {
-    method: 'skeleton' | 'replace' | 'hang' | 'subtle';
+    method: 'skeleton' | 'replace' | 'hang' | 'subtle' | 'default';
     timeout: number | null;
   };
   maxConcurrentRequests: number;
@@ -43,7 +43,7 @@ export default class I18NConfiguration {
   locales: string[];
   // Rendering
   renderSettings: {
-    method: 'skeleton' | 'replace' | 'hang' | 'subtle';
+    method: 'skeleton' | 'replace' | 'hang' | 'subtle' | 'default';
     timeout: number | null;
   };
   // Dictionaries
@@ -186,7 +186,7 @@ export default class I18NConfiguration {
    * Timeout is a number or null, representing no assigned timeout.
    */
   getRenderSettings(): {
-    method: 'skeleton' | 'replace' | 'hang' | 'subtle';
+    method: 'skeleton' | 'replace' | 'hang' | 'subtle' | 'default';
     timeout: number | null;
   } {
     return this.renderSettings;

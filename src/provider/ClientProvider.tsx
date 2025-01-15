@@ -39,7 +39,7 @@ export default function ClientProvider({
   translationRequired: boolean;
   requiredPrefix: string | undefined;
   renderSettings: {
-    method: 'skeleton' | 'replace' | 'hang' | 'subtle';
+    method: 'skeleton' | 'replace' | 'hang' | 'subtle' | 'default';
     timeout: number | null;
   };
   projectId?: string;
