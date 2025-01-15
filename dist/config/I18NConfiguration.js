@@ -95,7 +95,9 @@ var I18NConfiguration = /** @class */ (function () {
         // Render method
         this.renderSettings = renderSettings;
         // Default env is production
-        if (process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test" && this.devApiKey) {
+        if (process.env.NODE_ENV !== 'development' &&
+            process.env.NODE_ENV !== 'test' &&
+            this.devApiKey) {
             throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
         }
         // Other metadata
@@ -108,7 +110,7 @@ var I18NConfiguration = /** @class */ (function () {
             this._remoteTranslationsManager.setConfig({
                 cacheUrl: cacheUrl,
                 projectId: projectId,
-                cacheExpiryTime: cacheExpiryTime
+                cacheExpiryTime: cacheExpiryTime,
             });
         }
         // Cache of hashes to speed up <GTProvider>
@@ -125,12 +127,12 @@ var I18NConfiguration = /** @class */ (function () {
     }
     /**
      * Gets config for dynamic translation on the client side.
-    */
+     */
     I18NConfiguration.prototype.getClientSideConfig = function () {
         return {
             projectId: this.projectId,
             devApiKey: this.devApiKey,
-            runtimeUrl: this.runtimeUrl
+            runtimeUrl: this.runtimeUrl,
         };
     };
     /**
@@ -151,10 +153,12 @@ var I18NConfiguration = /** @class */ (function () {
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
      */
     I18NConfiguration.prototype.translationEnabled = function () {
-        return (this.runtimeTranslation &&
+        return this.runtimeTranslation &&
             this.projectId &&
             this.runtimeUrl &&
-            (this.apiKey || this.devApiKey)) ? true : false;
+            (this.apiKey || this.devApiKey)
+            ? true
+            : false;
     };
     /**
      * Get the rendering instructions
@@ -179,12 +183,14 @@ var I18NConfiguration = /** @class */ (function () {
     };
     /**
      * @returns {[any, string]} A xxhash hash and the children that were created from it
-    */
+     */
     I18NConfiguration.prototype.serializeAndHash = function (children, context, id) {
         var childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(children);
         return [
             childrenAsObjects,
-            (0, id_1.hashJsxChildren)(context ? [childrenAsObjects, context] : childrenAsObjects)
+            (0, id_1.hashJsxChildren)(context
+                ? { source: childrenAsObjects, context: context }
+                : { source: childrenAsObjects }),
         ];
     };
     /**
@@ -199,7 +205,7 @@ var I18NConfiguration = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, ((_a = this._remoteTranslationsManager) === null || _a === void 0 ? void 0 : _a.getTranslations(locale))];
-                    case 1: return [2 /*return*/, (_b.sent()) || {}];
+                    case 1: return [2 /*return*/, ((_b.sent()) || {})];
                 }
             });
         });
@@ -298,7 +304,7 @@ var I18NConfiguration = /** @class */ (function () {
                                         return { source: source, metadata: metadata, type: type };
                                     }),
                                     targetLocale: batch[0].targetLocale,
-                                    metadata: this.metadata
+                                    metadata: this.metadata,
                                 }),
                             })];
                     case 2:
@@ -322,8 +328,7 @@ var I18NConfiguration = /** @class */ (function () {
                                     }
                                     return item.resolve(result.translation);
                                 }
-                                else if ('error' in result &&
-                                    result.error) {
+                                else if ('error' in result && result.error) {
                                     console.error("Translation failed".concat(((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) ? " for id: ".concat(result.reference.id) : ''), result);
                                     return item.resolve(result);
                                 }

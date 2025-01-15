@@ -3,7 +3,11 @@ import getLocale from '../../request/getLocale';
 import getMetadata from '../../request/getMetadata';
 import { Suspense } from 'react';
 import Resolver from './Resolver';
-import { renderDefaultChildren, renderSkeleton, renderTranslatedChildren } from 'gt-react/internal';
+import {
+  renderDefaultChildren,
+  renderSkeleton,
+  renderTranslatedChildren,
+} from 'gt-react/internal';
 import renderVariable from '../rendering/renderVariable';
 
 type RenderSettings = {
@@ -66,7 +70,6 @@ async function T({
   context?: string;
   [key: string]: any;
 }): Promise<any> {
-
   if (!children) {
     return;
   }
@@ -95,15 +98,16 @@ async function T({
       children: taggedChildren,
       variables,
       variablesOptions,
-      defaultLocale, renderVariable
+      defaultLocale,
+      renderVariable,
     });
   }
-
 
   // Turns tagged children into objects
   // The key (a hash) is used to identify the translation
   const [childrenAsObjects, key] = I18NConfig.serializeAndHash(
-    taggedChildren, context,
+    taggedChildren,
+    context,
     undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
   );
 
@@ -123,7 +127,7 @@ async function T({
       variables,
       variablesOptions,
       locales: [locale, defaultLocale],
-      renderVariable
+      renderVariable,
     });
   }
 
@@ -141,32 +145,31 @@ async function T({
     },
   });
 
-
-
   let loadingFallback; // Blank screen
 
-
   // Awaits the translation promise
-  let renderTranslatedChildrenPromise = translationPromise.then((translation) => {
-    if (translation?.error) {
-      return renderDefaultChildren({
-        children: taggedChildren,
+  let renderTranslatedChildrenPromise = translationPromise.then(
+    (translation) => {
+      if (translation?.error) {
+        return renderDefaultChildren({
+          children: taggedChildren,
+          variables,
+          variablesOptions,
+          defaultLocale,
+          renderVariable,
+        });
+      }
+      let target = translation;
+      return renderTranslatedChildren({
+        source: taggedChildren,
+        target,
         variables,
         variablesOptions,
-        defaultLocale,
-        renderVariable
-      });;
+        locales: [locale, defaultLocale],
+        renderVariable,
+      });
     }
-    let target = translation;
-    return renderTranslatedChildren({
-      source: taggedChildren,
-      target,
-      variables,
-      variablesOptions,
-      locales: [locale, defaultLocale],
-      renderVariable
-    });
-  });
+  );
 
   if (renderSettings.method === 'replace') {
     loadingFallback = renderDefaultChildren({
@@ -174,28 +177,33 @@ async function T({
       variables,
       variablesOptions,
       defaultLocale,
-      renderVariable
+      renderVariable,
     });
   } else if (renderSettings.method === 'skeleton') {
     loadingFallback = renderSkeleton({
       children: taggedChildren,
       variables,
       defaultLocale,
-      renderVariable
+      renderVariable,
     });
   }
-  
+
   const errorFallback = renderDefaultChildren({
     children: taggedChildren,
     variables,
     variablesOptions,
     defaultLocale,
-    renderVariable
+    renderVariable,
   });
 
   if (renderSettings.method === 'hang') {
     // Wait until the site is translated to return
-    return <Resolver children={renderTranslatedChildrenPromise} fallback={errorFallback} />;
+    return (
+      <Resolver
+        children={renderTranslatedChildrenPromise}
+        fallback={errorFallback}
+      />
+    );
   }
 
   if (!['skeleton', 'replace'].includes(renderSettings.method) && !id) {
@@ -209,11 +217,14 @@ async function T({
   // something is shown while waiting for the translation
   return (
     <Suspense fallback={loadingFallback as React.ReactNode}>
-      <Resolver children={renderTranslatedChildrenPromise} fallback={errorFallback} />
+      <Resolver
+        children={renderTranslatedChildrenPromise}
+        fallback={errorFallback}
+      />
     </Suspense>
   );
 }
 
-T.gtTransformation = "translate-server";
+T.gtTransformation = 'translate-server';
 
 export default T;

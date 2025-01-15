@@ -44,7 +44,7 @@ export default class I18NConfiguration {
     constructor({ runtimeTranslation, remoteCache, apiKey, devApiKey, projectId, runtimeUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, ...metadata }: I18NConfigurationParams);
     /**
      * Gets config for dynamic translation on the client side.
-    */
+     */
     getClientSideConfig(): {
         projectId: string;
         devApiKey: string | undefined;
@@ -83,7 +83,7 @@ export default class I18NConfiguration {
     addGTIdentifier(children: any, id?: string): any;
     /**
      * @returns {[any, string]} A xxhash hash and the children that were created from it
-    */
+     */
     serializeAndHash(children: any, context?: string, id?: string): [any, string];
     /**
      * Get the translation dictionaries for this user's locale, if they exist

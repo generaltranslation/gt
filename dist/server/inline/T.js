@@ -131,7 +131,7 @@ function T(_a) {
                                 variables: variables,
                                 variablesOptions: variablesOptions,
                                 defaultLocale: defaultLocale,
-                                renderVariable: renderVariable_1.default
+                                renderVariable: renderVariable_1.default,
                             })];
                     }
                     _c = I18NConfig.serializeAndHash(taggedChildren, context, undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
@@ -149,7 +149,7 @@ function T(_a) {
                                 variables: variables,
                                 variablesOptions: variablesOptions,
                                 locales: [locale, defaultLocale],
-                                renderVariable: renderVariable_1.default
+                                renderVariable: renderVariable_1.default,
                             })];
                     }
                     renderSettings = I18NConfig.getRenderSettings();
@@ -170,9 +170,8 @@ function T(_a) {
                                 variables: variables,
                                 variablesOptions: variablesOptions,
                                 defaultLocale: defaultLocale,
-                                renderVariable: renderVariable_1.default
+                                renderVariable: renderVariable_1.default,
                             });
-                            ;
                         }
                         var target = translation;
                         return (0, internal_1.renderTranslatedChildren)({
@@ -181,7 +180,7 @@ function T(_a) {
                             variables: variables,
                             variablesOptions: variablesOptions,
                             locales: [locale, defaultLocale],
-                            renderVariable: renderVariable_1.default
+                            renderVariable: renderVariable_1.default,
                         });
                     });
                     if (renderSettings.method === 'replace') {
@@ -190,7 +189,7 @@ function T(_a) {
                             variables: variables,
                             variablesOptions: variablesOptions,
                             defaultLocale: defaultLocale,
-                            renderVariable: renderVariable_1.default
+                            renderVariable: renderVariable_1.default,
                         });
                     }
                     else if (renderSettings.method === 'skeleton') {
@@ -198,7 +197,7 @@ function T(_a) {
                             children: taggedChildren,
                             variables: variables,
                             defaultLocale: defaultLocale,
-                            renderVariable: renderVariable_1.default
+                            renderVariable: renderVariable_1.default,
                         });
                     }
                     errorFallback = (0, internal_1.renderDefaultChildren)({
@@ -206,11 +205,11 @@ function T(_a) {
                         variables: variables,
                         variablesOptions: variablesOptions,
                         defaultLocale: defaultLocale,
-                        renderVariable: renderVariable_1.default
+                        renderVariable: renderVariable_1.default,
                     });
                     if (renderSettings.method === 'hang') {
                         // Wait until the site is translated to return
-                        return [2 /*return*/, (0, jsx_runtime_1.jsx)(Resolver_1.default, { children: renderTranslatedChildrenPromise, fallback: errorFallback })];
+                        return [2 /*return*/, ((0, jsx_runtime_1.jsx)(Resolver_1.default, { children: renderTranslatedChildrenPromise, fallback: errorFallback }))];
                     }
                     if (!['skeleton', 'replace'].includes(renderSettings.method) && !id) {
                         // If none of those, i.e. "subtle"
@@ -225,6 +224,6 @@ function T(_a) {
         });
     });
 }
-T.gtTransformation = "translate-server";
+T.gtTransformation = 'translate-server';
 exports.default = T;
 //# sourceMappingURL=T.js.map
