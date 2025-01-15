@@ -107,7 +107,6 @@ function isStaticExpression(expr) {
 }
 function createInlineUpdates(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log("Hello ==== ");
         const updates = [];
         // Use the provided app directory or default to the current directory
         const srcDirectory = options.src || ["./"];
