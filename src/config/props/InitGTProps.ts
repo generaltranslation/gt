@@ -17,7 +17,7 @@ type InitGTProps = {
     getLocale?: () => Promise<string>;
     // Rendering
     renderSettings?: {
-        method: "skeleton" | "replace" | "hang" | "subtle",
+        method: "skeleton" | "replace" | "hang" | "subtle" | "default",
         timeout: number | null
     }
     // Other metadata

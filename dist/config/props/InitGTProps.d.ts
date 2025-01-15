@@ -12,7 +12,7 @@ type InitGTProps = {
     defaultLocale?: string;
     getLocale?: () => Promise<string>;
     renderSettings?: {
-        method: "skeleton" | "replace" | "hang" | "subtle";
+        method: "skeleton" | "replace" | "hang" | "subtle" | "default";
         timeout: number | null;
     };
     getMetadata?: () => Promise<Record<string, any>>;
