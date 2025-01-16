@@ -6,7 +6,6 @@ import getI18NConfig from '../../config/getI18NConfig';
 import getLocale from '../../request/getLocale';
 import getMetadata from '../../request/getMetadata';
 import { createStringTranslationError } from '../../errors/createErrors';
-import { Content } from 'gt-react/dist/types/types';
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -48,21 +47,20 @@ export default async function tx(
     id?: string;
     locale?: string;
     context?: string;
-    variables?: Record<string, any>,
+    variables?: Record<string, any>;
     variableOptions?: Record<
       string,
       Intl.NumberFormatOptions | Intl.DateTimeFormatOptions
-    >
+    >;
     [key: string]: any;
-  } = {},
+  } = {}
 ): Promise<string> {
-
   if (!content) return '';
 
   const I18NConfig = getI18NConfig();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const locale = options.locale || (await getLocale());
-  
+
   const contentArray = splitStringToContent(content);
 
   const r = (content: any, locales: string[]) => {
@@ -72,13 +70,14 @@ export default async function tx(
       options.variables,
       options.variablesOptions
     );
-  }
+  };
 
   if (!I18NConfig.requiresTranslation(locale))
     return r(contentArray, [defaultLocale]);
-    
+
   const [_, hash] = I18NConfig.serializeAndHash(
-    contentArray, options.context,
+    contentArray,
+    options.context,
     undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
   );
 
@@ -86,7 +85,7 @@ export default async function tx(
     const translations = await I18NConfig.getTranslations(locale);
     const target = translations[options.id]?.[hash];
     if (target) return r(target, [locale, defaultLocale]);
-  };
+  }
 
   const translationPromise = I18NConfig.translateContent({
     source: contentArray,
@@ -97,27 +96,17 @@ export default async function tx(
   const renderSettings = I18NConfig.getRenderSettings();
 
   if (
-    renderSettings.method !== "subtle" ||
+    renderSettings.method !== 'subtle' ||
     !options.id // because it is only saved if an id is present
   ) {
     try {
       const target = await translationPromise;
       return r(target, [locale, defaultLocale]);
     } catch (error) {
-      console.error(
-        createStringTranslationError(content, options.id),
-        error
-      );
-      return r(
-        contentArray,
-        [defaultLocale],
-      );
+      console.error(createStringTranslationError(content, options.id), error);
+      return r(contentArray, [defaultLocale]);
     }
-
   }
 
-  return r(
-    contentArray,
-    [defaultLocale],
-  );
+  return r(contentArray, [defaultLocale]);
 }
