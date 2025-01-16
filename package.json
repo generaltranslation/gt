@@ -1,8 +1,10 @@
 {
   "name": "gt-next",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "description": "A Next.js library for automatic internationalization.",
-  "main": "dist/index.server.js",
+  "main": "./dist/cjs/index.server.js",
+  "module": "./dist/esm/index.server.js",
+  "types": "./dist/types/index.server.d.ts",
   "peerDependencies": {
     "next": ">=13.0.0 <16.0.0",
     "react": ">=16.8.0 <20.0.0",
@@ -10,8 +12,10 @@
   },
   "scripts": {
     "patch": "npm version patch",
-    "transpile": "tsc",
-    "build": "npm run transpile",
+    "transpile": "npm run build",
+    "build": "npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc --project tsconfig.cjs.json",
+    "build:esm": "tsc --project tsconfig.esm.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -32,14 +36,20 @@
   },
   "exports": {
     ".": {
-      "node": "./dist/index.server.js",
-      "browser": "./dist/index.client.js",
-      "types": "./dist/index.server.d.ts",
-      "default": "./dist/index.server.js"
+      "node": {
+        "import": "./dist/esm/index.server.js",
+        "require": "./dist/cjs/index.server.js"
+      },
+      "browser": {
+        "import": "./dist/esm/index.client.js",
+        "require": "./dist/cjs/index.client.js"
+      },
+      "types": "./dist/types/index.server.d.ts"
     },
     "./config": {
-      "types": "./dist/config.d.ts",
-      "default": "./dist/config.js"
+      "import": "./dist/esm/config.js",
+      "require": "./dist/cjs/config.js",
+      "types": "./dist/types/config.d.ts"
     },
     "./client": {
       "types": "./dist/client.d.ts",
@@ -120,7 +130,7 @@
   ],
   "dependencies": {
     "@generaltranslation/supported-locales": "^1.1.2",
-    "generaltranslation": "^6.1.2",
-    "gt-react": "^8.2.2"
+    "generaltranslation": "^6.1.3",
+    "gt-react": "^8.2.3"
   }
 }
