@@ -66,6 +66,7 @@ var RemoteTranslationsManager_1 = __importDefault(require("./RemoteTranslationsM
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
 var id_1 = require("generaltranslation/id");
+var types_1 = require("../types/types");
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         var 
@@ -163,11 +164,20 @@ var I18NConfiguration = /** @class */ (function () {
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.
-     * As of 7/31/24: method is "skeleton", "replace", "hang", "subtle".
+     * As of 1/14/25: method is "skeleton", "replace", "hang", "subtle", "default".
      * Timeout is a number or null, representing no assigned timeout.
      */
     I18NConfiguration.prototype.getRenderSettings = function () {
         return this.renderSettings;
+    };
+    /**
+     * Checks if regional translation is required (ie en-US -> en-GB)
+     * @param locale - The user's locale
+     * @returns True if a regional translation is required, otherwise false
+     */
+    I18NConfiguration.prototype.requiresRegionalTranslation = function (locale) {
+        return (this.translationEnabled() &&
+            (0, generaltranslation_1.requiresRegionalTranslation)(this.defaultLocale, locale, this.locales));
     };
     /**
      * Check if translation is required based on the user's locale
@@ -317,10 +327,10 @@ var I18NConfiguration = /** @class */ (function () {
                     case 5:
                         results_1 = _b.sent();
                         batch.forEach(function (item, index) {
-                            var _a;
+                            // check if entry is missing
                             var result = results_1[index];
                             if (!result)
-                                return item.reject('Translation failed.');
+                                return item.reject(new types_1.GTTranslationError('Translation failed.', 500));
                             if (result && typeof result === 'object') {
                                 if ('translation' in result) {
                                     if (_this._remoteTranslationsManager) {
@@ -329,17 +339,17 @@ var I18NConfiguration = /** @class */ (function () {
                                     return item.resolve(result.translation);
                                 }
                                 else if ('error' in result && result.error) {
-                                    console.error("Translation failed".concat(((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) ? " for id: ".concat(result.reference.id) : ''), result);
-                                    return item.resolve(result);
+                                    return item.reject(new types_1.GTTranslationError('Translation failed.', 500));
                                 }
                             }
-                            return item.reject('Translation failed.');
+                            return item.reject(new types_1.GTTranslationError('Translation failed.', 500));
                         });
                         return [3 /*break*/, 8];
                     case 6:
                         error_1 = _b.sent();
+                        console.error(error_1);
                         batch.forEach(function (item) {
-                            item.reject("gt-next translation failed with error: ".concat(error_1));
+                            return item.reject(new types_1.GTTranslationError('Translation failed.', 500));
                         });
                         return [3 /*break*/, 8];
                     case 7:

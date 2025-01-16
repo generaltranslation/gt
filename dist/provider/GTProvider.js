@@ -94,6 +94,7 @@ var generaltranslation_1 = require("generaltranslation");
 var getDictionary_1 = __importStar(require("../dictionary/getDictionary"));
 var ClientProvider_1 = __importDefault(require("./ClientProvider"));
 var createErrors_1 = require("../errors/createErrors");
+var types_1 = require("../types/types");
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -104,7 +105,7 @@ var createErrors_1 = require("../errors/createErrors");
  */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var getId, I18NConfig, locale, additionalMetadata, defaultLocale, renderSettings, translationRequired, translationsPromise, dictionarySubset, dictionaryEntries, dictionary, translations, existingTranslations, _c;
+        var getId, I18NConfig, locale, additionalMetadata, defaultLocale, renderSettings, regionalTranslationRequired, translationRequired, translationsPromise, dictionarySubset, dictionaryEntries, dictionary, translations, existingTranslations, _c;
         var _this = this;
         var children = _b.children, id = _b.id;
         return __generator(this, function (_d) {
@@ -122,7 +123,8 @@ function GTProvider(_a) {
                     additionalMetadata = _d.sent();
                     defaultLocale = I18NConfig.getDefaultLocale();
                     renderSettings = I18NConfig.getRenderSettings();
-                    translationRequired = I18NConfig.requiresTranslation(locale);
+                    regionalTranslationRequired = I18NConfig.requiresRegionalTranslation(locale);
+                    translationRequired = I18NConfig.requiresTranslation(locale) || regionalTranslationRequired;
                     if (translationRequired)
                         translationsPromise = I18NConfig.getTranslations(locale);
                     dictionarySubset = (id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)()) || {};
@@ -143,7 +145,7 @@ function GTProvider(_a) {
                     existingTranslations = _c;
                     // Check and standardize flattened dictionary entries before passing them to the client
                     return [4 /*yield*/, Promise.all(Object.entries(dictionaryEntries !== null && dictionaryEntries !== void 0 ? dictionaryEntries : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var entryId, _c, entry, metadata, taggedEntry, contentArray, _d, _, hash_1, translation_1, translationPromise_1, _e, _f, _g, _h, entryAsObjects, hash, translation, translationPromise, _j, _k, _l, loadingFallback, errorFallback;
+                            var entryId, _c, entry, metadata, taggedEntry, contentArray, _d, _, hash_1, translation_1, translationPromise_1, _e, _f, _g, error_1, result, _h, entryAsObjects, hash, translation, translationPromise, _j, _k, _l, loadingFallback, errorFallback;
                             var _m, _o, _p, _q;
                             var suffix = _b[0], dictionaryEntry = _b[1];
                             return __generator(this, function (_r) {
@@ -157,7 +159,7 @@ function GTProvider(_a) {
                                         // If no translation is required, return
                                         if (!translationRequired)
                                             return [2 /*return*/, dictionary[entryId] = [taggedEntry, __assign({}, metadata)]];
-                                        if (!(typeof taggedEntry === 'string')) return [3 /*break*/, 3];
+                                        if (!(typeof taggedEntry === 'string')) return [3 /*break*/, 5];
                                         contentArray = (0, generaltranslation_1.splitStringToContent)(taggedEntry);
                                         _d = I18NConfig.serializeAndHash(contentArray, metadata === null || metadata === void 0 ? void 0 : metadata.context, entryId), _ = _d[0], hash_1 = _d[1];
                                         dictionary[entryId] = [taggedEntry, __assign(__assign({}, metadata), { hash: hash_1 })];
@@ -173,8 +175,6 @@ function GTProvider(_a) {
                                             return [2 /*return*/, translations[entryId] = {
                                                     promise: translationPromise_1,
                                                     hash: hash_1,
-                                                    errorFallback: contentArray,
-                                                    loadingFallback: '',
                                                     type: 'content'
                                                 }];
                                         }
@@ -182,21 +182,47 @@ function GTProvider(_a) {
                                             return [2 /*return*/, translations[entryId] = {
                                                     promise: translationPromise_1,
                                                     hash: hash_1,
-                                                    errorFallback: contentArray,
-                                                    loadingFallback: contentArray,
                                                     type: 'content'
                                                 }];
                                         }
-                                        if (!(renderSettings.method === "hang")) return [3 /*break*/, 2];
+                                        if (renderSettings.method === "default") {
+                                            return [2 /*return*/, translations[entryId] = {
+                                                    promise: translationPromise_1,
+                                                    hash: hash_1,
+                                                    type: 'content'
+                                                }];
+                                        }
+                                        if (!(renderSettings.method === "hang")) return [3 /*break*/, 4];
+                                        _r.label = 1;
+                                    case 1:
+                                        _r.trys.push([1, 3, , 4]);
                                         _e = translations;
                                         _f = entryId;
                                         _o = {};
                                         _g = hash_1;
                                         return [4 /*yield*/, translationPromise_1];
-                                    case 1: return [2 /*return*/, _e[_f] = (_o[_g] = _r.sent(),
-                                            _o)];
-                                    case 2: return [2 /*return*/, undefined];
+                                    case 2:
+                                        _e[_f] = (_o[_g] = _r.sent(),
+                                            _o);
+                                        return [3 /*break*/, 4];
                                     case 3:
+                                        error_1 = _r.sent();
+                                        result = void 0;
+                                        if (error_1 instanceof types_1.GTTranslationError) {
+                                            result = error_1.toTranslationError();
+                                        }
+                                        else {
+                                            result = {
+                                                error: "An unknonwn error occured",
+                                                code: 500
+                                            };
+                                        }
+                                        translations[entryId] = result;
+                                        return [3 /*break*/, 4];
+                                    case 4: 
+                                    // Subtle rendering
+                                    return [2 /*return*/, undefined];
+                                    case 5:
                                         _h = I18NConfig.serializeAndHash(taggedEntry, metadata === null || metadata === void 0 ? void 0 : metadata.context, entryId), entryAsObjects = _h[0], hash = _h[1];
                                         dictionary[entryId] = [taggedEntry, __assign(__assign({}, metadata), { hash: hash })];
                                         translation = existingTranslations === null || existingTranslations === void 0 ? void 0 : existingTranslations[entryId];
@@ -209,14 +235,14 @@ function GTProvider(_a) {
                                         });
                                         if (renderSettings.method === "subtle")
                                             return [2 /*return*/, undefined];
-                                        if (!(renderSettings.method === "hang")) return [3 /*break*/, 5];
+                                        if (!(renderSettings.method === "hang")) return [3 /*break*/, 7];
                                         _j = translations;
                                         _k = entryId;
                                         _q = {};
                                         _l = hash;
                                         return [4 /*yield*/, translationPromise];
-                                    case 4: return [2 /*return*/, (_j[_k] = (_q[_l] = _r.sent(), _q))];
-                                    case 5:
+                                    case 6: return [2 /*return*/, (_j[_k] = (_q[_l] = _r.sent(), _q))];
+                                    case 7:
                                         if (renderSettings.method === 'skeleton') {
                                             loadingFallback = (0, jsx_runtime_1.jsx)(react_1.default.Fragment, {}, "skeleton_".concat(entryId));
                                         }
@@ -224,8 +250,6 @@ function GTProvider(_a) {
                                                 promise: translationPromise,
                                                 hash: hash,
                                                 type: 'jsx',
-                                                loadingFallback: loadingFallback,
-                                                errorFallback: errorFallback,
                                             })];
                                 }
                             });
@@ -233,7 +257,7 @@ function GTProvider(_a) {
                 case 6:
                     // Check and standardize flattened dictionary entries before passing them to the client
                     _d.sent();
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProvider_1.default, __assign({ dictionary: dictionary, initialTranslations: __assign(__assign({}, existingTranslations), translations), locale: locale, defaultLocale: defaultLocale, translationRequired: translationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings() }, I18NConfig.getClientSideConfig(), { children: children })))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProvider_1.default, __assign({ dictionary: dictionary, initialTranslations: __assign(__assign({}, existingTranslations), translations), locale: locale, defaultLocale: defaultLocale, translationRequired: translationRequired, regionalTranslationRequired: regionalTranslationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings() }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });
     });

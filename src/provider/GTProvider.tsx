@@ -10,8 +10,9 @@ import getMetadata from '../request/getMetadata';
 import { splitStringToContent } from 'generaltranslation';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
 import ClientProvider from './ClientProvider';
-import { Dictionary, TranslatedChildren } from 'gt-react/dist/types/types';
+import { Dictionary } from 'gt-react/internal';
 import { createDictionarySubsetError } from '../errors/createErrors';
+import { Translations, GTTranslationError, TranslationPromise } from '../types/types';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -38,7 +39,8 @@ export default async function GTProvider({
   const additionalMetadata = await getMetadata();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const renderSettings = I18NConfig.getRenderSettings();
-  const translationRequired = I18NConfig.requiresTranslation(locale);
+  const regionalTranslationRequired = I18NConfig.requiresRegionalTranslation(locale);
+  const translationRequired = I18NConfig.requiresTranslation(locale) || regionalTranslationRequired;
   
   let translationsPromise;
   if (translationRequired) translationsPromise = I18NConfig.getTranslations(locale)
@@ -50,17 +52,7 @@ export default async function GTProvider({
   const dictionaryEntries = flattenDictionary(dictionarySubset);
 
   let dictionary: Dictionary = {};
-  let translations: {
-    [id: string]: {
-      [hash: string]: TranslatedChildren
-    } | {
-      promise: Promise<TranslatedChildren>,
-      errorFallback: any,
-      loadingFallback: any
-      hash: string,
-      type: 'jsx' | 'content'
-    }
-  } = {};
+  let translations: Translations = {};
   
   // i.e. if a translation is required
   let existingTranslations = (translationsPromise) ? await translationsPromise : {};
@@ -114,8 +106,6 @@ export default async function GTProvider({
           return translations[entryId] = {
             promise: translationPromise,
             hash,
-            errorFallback: contentArray,
-            loadingFallback: '',
             type: 'content'
           };
         }
@@ -123,16 +113,36 @@ export default async function GTProvider({
           return translations[entryId] = {
             promise: translationPromise,
             hash,
-            errorFallback: contentArray,
-            loadingFallback: contentArray,
+            type: 'content'
+          };
+        }
+        if (renderSettings.method === "default") {
+          return translations[entryId] = {
+            promise: translationPromise,
+            hash,
             type: 'content'
           };
         }
         if (renderSettings.method === "hang") {
-          return translations[entryId] = {
-            [hash]: await translationPromise
-          };
+          try {
+            translations[entryId] = {
+              [hash]: await translationPromise
+            };
+          } catch (error) {
+            let result;
+            if (error instanceof GTTranslationError) {
+              result = error.toTranslationError();
+            } else {
+              result = {
+                error: "An unknonwn error occured",
+                code: 500
+              }
+            }
+            translations[entryId] = result;
+          }
         }
+
+        // Subtle rendering
         return undefined;
       }
 
@@ -178,8 +188,6 @@ export default async function GTProvider({
         promise: translationPromise,
         hash,
         type: 'jsx',
-        loadingFallback,
-        errorFallback,
       });
     })
   );
@@ -191,6 +199,7 @@ export default async function GTProvider({
       locale={locale}
       defaultLocale={defaultLocale}
       translationRequired={translationRequired}
+      regionalTranslationRequired={regionalTranslationRequired}
       requiredPrefix={id}
       renderSettings={I18NConfig.getRenderSettings()}
       {...I18NConfig.getClientSideConfig()}

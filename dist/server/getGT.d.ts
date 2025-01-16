@@ -12,7 +12,7 @@ import React from "react";
  * const t = await getGT();
  * console.log(t('hello')); // Translates item 'hello'
  */
-export declare function getGT(id?: string): Promise<(id: string, options?: Record<string, any>) => any>;
+export declare function getGT(id?: string): Promise<(id: string, options?: Record<string, any>) => React.ReactNode>;
 /**
  * Returns the translation function `t()`, which is used to translate an item from the dictionary.
  *
