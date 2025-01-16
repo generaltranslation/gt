@@ -110,7 +110,6 @@ const supportedLocales = {
     "te": {}, // Telugu
     "th": {}, // Thai
     "tl": {}, // Tagalog
-    "tlh": {}, // Klingon
     "tr": {}, // Turkish
     "uk": {}, // Ukrainian
     "ur": {}, // Urdu
