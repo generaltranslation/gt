@@ -1,11 +1,22 @@
-import { requiresRegionalTranslation, requiresTranslation } from 'generaltranslation';
+import {
+  requiresRegionalTranslation,
+  requiresTranslation,
+} from 'generaltranslation';
 import remoteTranslationsManager, {
   RemoteTranslationsManager,
 } from './RemoteTranslationsManager';
-import { addGTIdentifier, writeChildrenAsObjects, RenderMethod, TranslatedChildren, isTranslationError, TranslatedContent, TranslationError } from 'gt-react/internal';
+import {
+  addGTIdentifier,
+  writeChildrenAsObjects,
+  RenderMethod,
+  TranslatedChildren,
+  isTranslationError,
+  TranslatedContent,
+  TranslationError,
+} from 'gt-react/internal';
 import { devApiKeyIncludedInProductionError } from '../errors/createErrors';
 import { hashJsxChildren } from 'generaltranslation/id';
-import { JsxChildren } from 'generaltranslation/dist/types';
+import { JsxChildren } from 'generaltranslation/id';
 import { GTTranslationError } from '../types/types';
 type I18NConfigurationParams = {
   remoteCache: boolean;
@@ -265,16 +276,18 @@ export default class I18NConfiguration {
       return this._translationCache.get(cacheKey);
     }
     const { source, targetLocale, options } = params;
-    const translationPromise = new Promise<TranslatedContent>((resolve, reject) => {
-      this._queue.push({
-        type: 'content',
-        source,
-        targetLocale,
-        metadata: options,
-        resolve,
-        reject,
-      });
-    }).catch((error) => {
+    const translationPromise = new Promise<TranslatedContent>(
+      (resolve, reject) => {
+        this._queue.push({
+          type: 'content',
+          source,
+          targetLocale,
+          metadata: options,
+          resolve,
+          reject,
+        });
+      }
+    ).catch((error) => {
       this._translationCache.delete(cacheKey);
       throw new Error(error);
     });
@@ -301,17 +314,19 @@ export default class I18NConfiguration {
     }
 
     const { source, targetLocale, metadata } = params;
-    const translationPromise = new Promise<TranslatedChildren>((resolve, reject) => {
-      // In memory queue to batch requests
-      this._queue.push({
-        type: 'jsx',
-        source,
-        targetLocale,
-        metadata,
-        resolve,
-        reject,
-      });
-    }).catch((error) => {
+    const translationPromise = new Promise<TranslatedChildren>(
+      (resolve, reject) => {
+        // In memory queue to batch requests
+        this._queue.push({
+          type: 'jsx',
+          source,
+          targetLocale,
+          metadata,
+          resolve,
+          reject,
+        });
+      }
+    ).catch((error) => {
       console.error(error);
       this._translationCache.delete(cacheKey);
       throw new Error(error);
@@ -356,7 +371,10 @@ export default class I18NConfiguration {
       batch.forEach((item, index) => {
         // check if entry is missing
         const result = results[index];
-        if (!result) return item.reject(new GTTranslationError('Translation failed.', 500));
+        if (!result)
+          return item.reject(
+            new GTTranslationError('Translation failed.', 500)
+          );
         if (result && typeof result === 'object') {
           if ('translation' in result) {
             if (this._remoteTranslationsManager) {
@@ -369,7 +387,9 @@ export default class I18NConfiguration {
             }
             return item.resolve(result.translation);
           } else if ('error' in result && result.error) {
-            return item.reject(new GTTranslationError('Translation failed.', 500));
+            return item.reject(
+              new GTTranslationError('Translation failed.', 500)
+            );
           }
         }
         return item.reject(new GTTranslationError('Translation failed.', 500));
