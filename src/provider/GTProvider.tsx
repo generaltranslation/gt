@@ -12,7 +12,9 @@ import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
 import ClientProvider from './ClientProvider';
 import { Dictionary } from 'gt-react/internal';
 import { createDictionarySubsetError } from '../errors/createErrors';
-import { Translations, GTTranslationError, TranslationPromise } from '../types/types';
+import { Translations, GTTranslationError, } from '../types/types';
+import { requiresRegionalTranslation, requiresTranslation, isSameLanguage, isSameDialect } from 'generaltranslation';
+
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -43,7 +45,7 @@ export default async function GTProvider({
   const translationRequired = I18NConfig.requiresTranslation(locale) || regionalTranslationRequired;
   
   let translationsPromise;
-  if (translationRequired) translationsPromise = I18NConfig.getTranslations(locale)
+  if (translationRequired) translationsPromise = I18NConfig.getTranslations(locale);
   
   // Flatten dictionaries for processing while waiting for translations
   const dictionarySubset = (id ? getDictionaryEntry(id) : getDictionary()) || {};
