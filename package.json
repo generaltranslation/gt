@@ -10,7 +10,7 @@
     "build-push-publish": "rm -r -f dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;"
   },
   "peerDependencies": {
-    "gt-react": "^8.1.2"
+    "gt-react": "^8.2.2"
   },
   "keywords": [],
   "author": "",
