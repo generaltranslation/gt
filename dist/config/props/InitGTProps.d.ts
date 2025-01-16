@@ -1,3 +1,4 @@
+import { RenderMethod } from "gt-react/internal";
 type InitGTProps = {
     remoteCache?: boolean;
     runtimeTranslation?: boolean;
@@ -12,7 +13,7 @@ type InitGTProps = {
     defaultLocale?: string;
     getLocale?: () => Promise<string>;
     renderSettings?: {
-        method: "skeleton" | "replace" | "hang" | "subtle" | "default";
+        method: RenderMethod;
         timeout: number | null;
     };
     getMetadata?: () => Promise<Record<string, any>>;

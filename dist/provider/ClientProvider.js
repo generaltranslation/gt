@@ -60,10 +60,11 @@ var internal_2 = require("gt-react/internal");
 var generaltranslation_1 = require("generaltranslation");
 var renderVariable_1 = __importDefault(require("../server/rendering/renderVariable"));
 var createErrors_1 = require("../errors/createErrors");
+var checkTypes_1 = require("../utils/checkTypes");
 // meant to be used inside the server-side <GTProvider>
 function ClientProvider(_a) {
     var _this = this;
-    var children = _a.children, dictionary = _a.dictionary, initialTranslations = _a.initialTranslations, locale = _a.locale, defaultLocale = _a.defaultLocale, translationRequired = _a.translationRequired, requiredPrefix = _a.requiredPrefix, renderSettings = _a.renderSettings, projectId = _a.projectId, devApiKey = _a.devApiKey, runtimeUrl = _a.runtimeUrl;
+    var children = _a.children, dictionary = _a.dictionary, initialTranslations = _a.initialTranslations, locale = _a.locale, defaultLocale = _a.defaultLocale, translationRequired = _a.translationRequired, regionalTranslationRequired = _a.regionalTranslationRequired, requiredPrefix = _a.requiredPrefix, renderSettings = _a.renderSettings, projectId = _a.projectId, devApiKey = _a.devApiKey, runtimeUrl = _a.runtimeUrl;
     var _b = (0, react_1.useState)(null), translations = _b[0], setTranslations = _b[1];
     (0, react_1.useLayoutEffect)(function () {
         (function () { return __awaiter(_this, void 0, void 0, function () {
@@ -73,30 +74,28 @@ function ClientProvider(_a) {
                 switch (_a.label) {
                     case 0:
                         awaitedTranslations = {};
-                        return [4 /*yield*/, Promise.all(Object.entries(initialTranslations !== null && initialTranslations !== void 0 ? initialTranslations : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
+                        return [4 /*yield*/, Promise.all(Object.entries(initialTranslations).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
                                 var translation, error_1;
                                 var _c;
-                                var id = _b[0], obj = _b[1];
+                                var id = _b[0], translationEntry = _b[1];
                                 return __generator(this, function (_d) {
                                     switch (_d.label) {
                                         case 0:
-                                            if (!(obj === null || obj === void 0 ? void 0 : obj.promise)) return [3 /*break*/, 4];
+                                            if (!(0, checkTypes_1.isTranslationPromise)(translationEntry)) return [3 /*break*/, 4];
                                             _d.label = 1;
                                         case 1:
                                             _d.trys.push([1, 3, , 4]);
-                                            return [4 /*yield*/, obj.promise];
+                                            return [4 /*yield*/, translationEntry.promise];
                                         case 2:
                                             translation = _d.sent();
-                                            if ('error' in translation) {
-                                                awaitedTranslations[id] = undefined; // will create an error fallback
-                                            }
-                                            else {
-                                                awaitedTranslations[id] = (_c = {}, _c[obj.hash] = translation, _c);
-                                            }
+                                            awaitedTranslations[id] = (_c = {}, _c[translationEntry.hash] = translation, _c);
                                             return [3 /*break*/, 4];
                                         case 3:
                                             error_1 = _d.sent();
-                                            awaitedTranslations[id] = undefined;
+                                            awaitedTranslations[id] = {
+                                                error: "An error occurred.",
+                                                code: 500
+                                            };
                                             return [3 /*break*/, 4];
                                         case 4: return [2 /*return*/];
                                     }
@@ -113,6 +112,7 @@ function ClientProvider(_a) {
     }, []);
     // For dictionaries
     var translate = (0, react_1.useCallback)(function (id, options) {
+        var _a, _b, _c;
         if (options === void 0) { options = {}; }
         if (requiredPrefix && !(id === null || id === void 0 ? void 0 : id.startsWith(requiredPrefix)))
             throw new Error((0, createErrors_1.createRequiredPrefixError)(id, requiredPrefix));
@@ -124,25 +124,17 @@ function ClientProvider(_a) {
         }
         ;
         // Get the entry from the dictionary
-        var _a = (0, internal_2.extractEntryMetadata)(dictionaryEntry), entry = _a.entry, metadata = _a.metadata;
+        var _d = (0, internal_2.extractEntryMetadata)(dictionaryEntry), entry = _d.entry, metadata = _d.metadata;
         // Initialize and populate variables and variables' metadata
         var variables = options;
         var variablesOptions = metadata === null || metadata === void 0 ? void 0 : metadata.variablesOptions;
-        // ----- STRING ENTRIES ----- // 
-        if (typeof entry === 'string') {
-            var renderString = function (content) {
-                return (0, generaltranslation_1.renderContentToString)(content, [locale, defaultLocale], variables, variablesOptions);
-            };
-            if (!translationRequired)
+        // ----- RENDER METHODS ----- //
+        var renderString = function (content) {
+            return (0, generaltranslation_1.renderContentToString)(content, [locale, defaultLocale], variables, variablesOptions);
+        };
+        var renderDefaultLocale = function () {
+            if (typeof entry === 'string')
                 return renderString(entry);
-            var translation_1 = translations === null || translations === void 0 ? void 0 : translations[id];
-            return renderString((translation_1 === null || translation_1 === void 0 ? void 0 : translation_1[metadata === null || metadata === void 0 ? void 0 : metadata.hash]) ||
-                (translation_1 === null || translation_1 === void 0 ? void 0 : translation_1.loadingFallback) ||
-                entry // error fallback
-            );
-        }
-        // ----- JSX ENTRIES ----- // 
-        var renderDefault = function () {
             return (0, internal_1.renderDefaultChildren)({
                 children: entry,
                 variables: variables,
@@ -151,13 +143,31 @@ function ClientProvider(_a) {
                 renderVariable: renderVariable_1.default
             });
         };
-        // Fallback if there is no translation present
-        if (!translationRequired)
-            return renderDefault();
-        var translation = translations === null || translations === void 0 ? void 0 : translations[id];
-        if (!translation)
-            return renderDefault(); // error fallback
+        var renderLoadingSkeleton = function () {
+            if (typeof entry === 'string')
+                return renderString('');
+            return (0, internal_1.renderSkeleton)({
+                children: entry,
+                variables: variables,
+                defaultLocale: defaultLocale,
+                renderVariable: renderVariable_1.default
+            });
+        };
+        var renderLoadingHang = function () {
+            // TODO: double check that this has the desired behavior
+            if (typeof entry === 'string')
+                return renderString('');
+            return undefined;
+        };
+        var renderLoadingDefault = function () {
+            if (regionalTranslationRequired)
+                return renderDefaultLocale();
+            return renderLoadingSkeleton();
+        };
+        // render translated content
         var renderTranslation = function (target) {
+            if (typeof entry === 'string')
+                return renderString(target);
             return (0, internal_1.renderTranslatedChildren)({
                 source: entry,
                 target: target,
@@ -167,12 +177,31 @@ function ClientProvider(_a) {
                 renderVariable: renderVariable_1.default
             });
         };
-        if (translation === null || translation === void 0 ? void 0 : translation.promise) {
-            translation.errorFallback || (translation.errorFallback = renderDefault());
-            translation.loadingFallback || (translation.loadingFallback = translation.errorFallback);
-            return (translation.loadingFallback);
+        // ----- RENDER BEHAVIOR ----- //
+        // No tx required, so render default locale
+        if (!translationRequired)
+            return renderDefaultLocale();
+        // error behavior -> fallback to default language
+        if ((_a = translations === null || translations === void 0 ? void 0 : translations[id]) === null || _a === void 0 ? void 0 : _a.error) {
+            return renderDefaultLocale();
         }
-        ;
+        // loading behavior
+        if (!translations || ((_b = translations[id]) === null || _b === void 0 ? void 0 : _b.promise) || !((_c = translations[id]) === null || _c === void 0 ? void 0 : _c[metadata === null || metadata === void 0 ? void 0 : metadata.hash])) {
+            if (renderSettings.method === 'skeleton') {
+                return renderLoadingSkeleton();
+            }
+            if (renderSettings.method === 'replace') {
+                return renderDefaultLocale();
+            }
+            if (renderSettings.method === 'hang') {
+                return renderLoadingHang();
+            }
+            if (renderSettings.method === 'subtle') {
+                return renderDefaultLocale();
+            }
+            return renderLoadingDefault();
+        }
+        var translation = translations === null || translations === void 0 ? void 0 : translations[id];
         return renderTranslation(translation === null || translation === void 0 ? void 0 : translation[metadata === null || metadata === void 0 ? void 0 : metadata.hash]);
     }, [dictionary, translations]);
     // For <T> components
@@ -192,7 +221,8 @@ function ClientProvider(_a) {
             defaultLocale: defaultLocale,
             translations: translations,
             translationRequired: translationRequired,
-            renderSettings: renderSettings
+            regionalTranslationRequired: regionalTranslationRequired,
+            renderSettings: renderSettings,
         }, children: translations && children }));
 }
 //# sourceMappingURL=ClientProvider.js.map

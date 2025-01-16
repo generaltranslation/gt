@@ -1,5 +1,4 @@
-export default function Resolver({ children, fallback }: {
+export default function Resolver({ children }: {
     children: any;
-    fallback: any;
 }): Promise<any>;
 //# sourceMappingURL=Resolver.d.ts.map

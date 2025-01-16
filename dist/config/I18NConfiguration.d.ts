@@ -1,3 +1,4 @@
+import { RenderMethod, TranslatedChildren, TranslatedContent } from 'gt-react/internal';
 type I18NConfigurationParams = {
     remoteCache: boolean;
     runtimeTranslation: boolean;
@@ -10,7 +11,7 @@ type I18NConfigurationParams = {
     defaultLocale: string;
     locales: string[];
     renderSettings: {
-        method: 'skeleton' | 'replace' | 'hang' | 'subtle' | 'default';
+        method: RenderMethod;
         timeout: number | null;
     };
     maxConcurrentRequests: number;
@@ -28,7 +29,7 @@ export default class I18NConfiguration {
     defaultLocale: string;
     locales: string[];
     renderSettings: {
-        method: 'skeleton' | 'replace' | 'hang' | 'subtle' | 'default';
+        method: RenderMethod;
         timeout: number | null;
     };
     private _remoteTranslationsManager;
@@ -67,13 +68,19 @@ export default class I18NConfiguration {
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.
-     * As of 7/31/24: method is "skeleton", "replace", "hang", "subtle".
+     * As of 1/14/25: method is "skeleton", "replace", "hang", "subtle", "default".
      * Timeout is a number or null, representing no assigned timeout.
      */
     getRenderSettings(): {
-        method: 'skeleton' | 'replace' | 'hang' | 'subtle' | 'default';
+        method: RenderMethod;
         timeout: number | null;
     };
+    /**
+     * Checks if regional translation is required (ie en-US -> en-GB)
+     * @param locale - The user's locale
+     * @returns True if a regional translation is required, otherwise false
+     */
+    requiresRegionalTranslation(locale: string): boolean;
     /**
      * Check if translation is required based on the user's locale
      * @param locale - The user's locale
@@ -104,7 +111,7 @@ export default class I18NConfiguration {
         })[];
         targetLocale: string;
         options: Record<string, any>;
-    }): Promise<string>;
+    }): Promise<TranslatedContent>;
     /**
      * Translate the children components
      * @param params - Parameters for translation
@@ -114,7 +121,7 @@ export default class I18NConfiguration {
         source: any;
         targetLocale: string;
         metadata: Record<string, any>;
-    }): Promise<any>;
+    }): Promise<TranslatedChildren>;
     /**
      * Send a batch request for React translation
      * @param batch - The batch of requests to be sent

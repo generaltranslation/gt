@@ -1,21 +1,20 @@
 'use client';
 
 import {
-  Suspense,
   useCallback,
-  useEffect,
   useLayoutEffect,
   useState,
 } from 'react';
 import {
   GTContext, useDynamicTranslation
 } from 'gt-react/client';
-import { renderDefaultChildren, renderTranslatedChildren } from 'gt-react/internal';
+import { renderDefaultChildren, renderTranslatedChildren, Dictionary, RenderMethod, renderSkeleton, isTranslationError, TranslationsObject } from 'gt-react/internal';
 import { extractEntryMetadata } from 'gt-react/internal';
 import { renderContentToString } from 'generaltranslation';
 import renderVariable from '../server/rendering/renderVariable';
-import { Dictionary } from 'gt-react/dist/types/types';
 import { createNoEntryWarning, createRequiredPrefixError } from '../errors/createErrors';
+import { Translations } from '../types/types';
+import { isTranslationPromise } from '../utils/checkTypes';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -25,6 +24,7 @@ export default function ClientProvider({
   locale,
   defaultLocale,
   translationRequired,
+  regionalTranslationRequired,
   requiredPrefix,
   renderSettings,
   projectId,
@@ -33,13 +33,14 @@ export default function ClientProvider({
 }: {
   children: any;
   dictionary: Dictionary,
-  initialTranslations: Record<string, any>;
+  initialTranslations: Translations;
   locale: string;
   defaultLocale: string;
   translationRequired: boolean;
+  regionalTranslationRequired: boolean;
   requiredPrefix: string | undefined;
   renderSettings: {
-    method: 'skeleton' | 'replace' | 'hang' | 'subtle' | 'default';
+    method: RenderMethod;
     timeout: number | null;
   };
   projectId?: string;
@@ -51,19 +52,18 @@ export default function ClientProvider({
 
   useLayoutEffect(() => {
     (async () => {
-      const awaitedTranslations: Record<string, any> = {};
+      const awaitedTranslations: TranslationsObject = {};
       await Promise.all(
-        Object.entries(initialTranslations ?? {}).map(async ([id, obj]) => {
-          if (obj?.promise) {
+        Object.entries(initialTranslations).map(async ([id, translationEntry]) => {
+          if (isTranslationPromise(translationEntry)) {
             try {
-              const translation = await obj.promise;
-              if ('error' in translation) {
-                awaitedTranslations[id] = undefined; // will create an error fallback
-              } else {
-                awaitedTranslations[id] = { [obj.hash]: translation };
-              }
+              const translation = await translationEntry.promise;
+              awaitedTranslations[id] = { [translationEntry.hash]: translation };
             } catch (error) {
-              awaitedTranslations[id] = undefined;
+              awaitedTranslations[id] = {
+                error: "An error occurred.",
+                code: 500
+              };
             }
           }
         })
@@ -97,34 +97,18 @@ export default function ClientProvider({
       let variables = options;
       let variablesOptions = metadata?.variablesOptions;
 
-      // ----- STRING ENTRIES ----- // 
-
-      if (typeof entry === 'string') {
-
-        const renderString = (content: any) => {
-          return renderContentToString(
-            content,
-            [locale, defaultLocale],
-            variables,
-            variablesOptions
-          );
-        };
-
-        if (!translationRequired) return renderString(entry);
-          
-        const translation = translations?.[id];
-        
-        return renderString(
-          translation?.[metadata?.hash] || 
-          translation?.loadingFallback || 
-          entry // error fallback
+      // ----- RENDER METHODS ----- //
+      const renderString = (content: any) => {
+        return renderContentToString(
+          content,
+          [locale, defaultLocale],
+          variables,
+          variablesOptions
         );
+      };
 
-      }
-
-      // ----- JSX ENTRIES ----- // 
-
-      const renderDefault = () => {
+      const renderDefaultLocale = () => {
+        if (typeof entry === 'string') return renderString(entry);
         return renderDefaultChildren({
           children: entry,
           variables,
@@ -133,13 +117,30 @@ export default function ClientProvider({
         });
       };
 
-      // Fallback if there is no translation present
-      if (!translationRequired) return renderDefault();
-      const translation = translations?.[id];
+      const renderLoadingSkeleton = () => {
+        if (typeof entry === 'string') return renderString('');
+        return renderSkeleton({
+          children: entry,
+          variables,
+          defaultLocale,
+          renderVariable
+        });
+      }
 
-      if (!translation) return renderDefault(); // error fallback
+      const renderLoadingHang = () => {
+        // TODO: double check that this has the desired behavior
+        if (typeof entry === 'string') return renderString('');
+        return undefined;
+      }
 
+      const renderLoadingDefault = () => {
+        if (regionalTranslationRequired) return renderDefaultLocale();
+        return renderLoadingSkeleton();
+      }
+
+      // render translated content
       const renderTranslation = (target: any) => {
+        if (typeof entry === 'string') return renderString(target);
         return renderTranslatedChildren({
           source: entry,
           target,
@@ -149,14 +150,36 @@ export default function ClientProvider({
           renderVariable
         });
       };
-
-      if (translation?.promise) {
-        translation.errorFallback ||= renderDefault();
-        translation.loadingFallback ||= translation.errorFallback;
-        return (translation.loadingFallback);
-      };
-
       
+      
+      // ----- RENDER BEHAVIOR ----- //
+      
+      // No tx required, so render default locale
+      if (!translationRequired) return renderDefaultLocale();
+
+      // error behavior -> fallback to default language
+      if (translations?.[id]?.error) {
+        return renderDefaultLocale();
+      }
+
+      // loading behavior
+      if (!translations || translations[id]?.promise || !translations[id]?.[metadata?.hash]) {
+        if (renderSettings.method === 'skeleton') {
+          return renderLoadingSkeleton();
+        }
+        if (renderSettings.method === 'replace') {
+          return renderDefaultLocale();
+        }
+        if (renderSettings.method === 'hang') {
+          return renderLoadingHang();
+        }
+        if (renderSettings.method === 'subtle') {
+          return renderDefaultLocale();
+        }
+        return renderLoadingDefault();
+      }
+
+      const translation = translations?.[id];
       return renderTranslation(translation?.[metadata?.hash]);
     },
     [dictionary, translations]
@@ -175,7 +198,8 @@ export default function ClientProvider({
         defaultLocale,
         translations,
         translationRequired,
-        renderSettings
+        regionalTranslationRequired,
+        renderSettings,
       }}
     >
       {translations && children}

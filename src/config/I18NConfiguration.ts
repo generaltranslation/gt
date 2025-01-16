@@ -1,13 +1,12 @@
-import GT, { requiresTranslation } from 'generaltranslation';
+import { requiresRegionalTranslation, requiresTranslation } from 'generaltranslation';
 import remoteTranslationsManager, {
   RemoteTranslationsManager,
 } from './RemoteTranslationsManager';
-import { addGTIdentifier, writeChildrenAsObjects } from 'gt-react/internal';
+import { addGTIdentifier, writeChildrenAsObjects, RenderMethod, TranslatedChildren, isTranslationError, TranslatedContent, TranslationError } from 'gt-react/internal';
 import { devApiKeyIncludedInProductionError } from '../errors/createErrors';
-import { TranslatedChildren } from 'gt-react/dist/types/types';
 import { hashJsxChildren } from 'generaltranslation/id';
 import { JsxChildren } from 'generaltranslation/dist/types';
-
+import { GTTranslationError } from '../types/types';
 type I18NConfigurationParams = {
   remoteCache: boolean;
   runtimeTranslation: boolean;
@@ -20,7 +19,7 @@ type I18NConfigurationParams = {
   defaultLocale: string;
   locales: string[];
   renderSettings: {
-    method: 'skeleton' | 'replace' | 'hang' | 'subtle' | 'default';
+    method: RenderMethod;
     timeout: number | null;
   };
   maxConcurrentRequests: number;
@@ -43,7 +42,7 @@ export default class I18NConfiguration {
   locales: string[];
   // Rendering
   renderSettings: {
-    method: 'skeleton' | 'replace' | 'hang' | 'subtle' | 'default';
+    method: RenderMethod;
     timeout: number | null;
   };
   // Dictionaries
@@ -182,14 +181,26 @@ export default class I18NConfiguration {
   /**
    * Get the rendering instructions
    * @returns An object containing the current method and timeout.
-   * As of 7/31/24: method is "skeleton", "replace", "hang", "subtle".
+   * As of 1/14/25: method is "skeleton", "replace", "hang", "subtle", "default".
    * Timeout is a number or null, representing no assigned timeout.
    */
   getRenderSettings(): {
-    method: 'skeleton' | 'replace' | 'hang' | 'subtle' | 'default';
+    method: RenderMethod;
     timeout: number | null;
   } {
     return this.renderSettings;
+  }
+
+  /**
+   * Checks if regional translation is required (ie en-US -> en-GB)
+   * @param locale - The user's locale
+   * @returns True if a regional translation is required, otherwise false
+   */
+  requiresRegionalTranslation(locale: string): boolean {
+    return (
+      this.translationEnabled() &&
+      requiresRegionalTranslation(this.defaultLocale, locale, this.locales)
+    );
   }
 
   /**
@@ -248,13 +259,13 @@ export default class I18NConfiguration {
     source: string | (string | { key: string; variable?: string })[];
     targetLocale: string;
     options: Record<string, any>;
-  }): Promise<string> {
+  }): Promise<TranslatedContent> {
     const cacheKey = constructCacheKey(params.targetLocale, params.options);
     if (this._translationCache.has(cacheKey)) {
       return this._translationCache.get(cacheKey);
     }
     const { source, targetLocale, options } = params;
-    const translationPromise = new Promise<string>((resolve, reject) => {
+    const translationPromise = new Promise<TranslatedContent>((resolve, reject) => {
       this._queue.push({
         type: 'content',
         source,
@@ -280,7 +291,7 @@ export default class I18NConfiguration {
     source: any;
     targetLocale: string;
     metadata: Record<string, any>;
-  }): Promise<any> {
+  }): Promise<TranslatedChildren> {
     const cacheKey = constructCacheKey(params.targetLocale, params.metadata);
 
     // In memory cache to make sure the same translation isn't requested twice
@@ -290,7 +301,7 @@ export default class I18NConfiguration {
     }
 
     const { source, targetLocale, metadata } = params;
-    const translationPromise = new Promise<any>((resolve, reject) => {
+    const translationPromise = new Promise<TranslatedChildren>((resolve, reject) => {
       // In memory queue to batch requests
       this._queue.push({
         type: 'jsx',
@@ -339,10 +350,13 @@ export default class I18NConfiguration {
       if (!response.ok) {
         throw new Error(await response.text());
       }
+
       const results = await response.json();
+
       batch.forEach((item, index) => {
+        // check if entry is missing
         const result = results[index];
-        if (!result) return item.reject('Translation failed.');
+        if (!result) return item.reject(new GTTranslationError('Translation failed.', 500));
         if (result && typeof result === 'object') {
           if ('translation' in result) {
             if (this._remoteTranslationsManager) {
@@ -355,20 +369,15 @@ export default class I18NConfiguration {
             }
             return item.resolve(result.translation);
           } else if ('error' in result && result.error) {
-            console.error(
-              `Translation failed${
-                result?.reference?.id ? ` for id: ${result.reference.id}` : ''
-              }`,
-              result
-            );
-            return item.resolve(result);
+            return item.reject(new GTTranslationError('Translation failed.', 500));
           }
         }
-        return item.reject('Translation failed.');
+        return item.reject(new GTTranslationError('Translation failed.', 500));
       });
     } catch (error) {
+      console.error(error);
       batch.forEach((item) => {
-        item.reject(`gt-next translation failed with error: ${error}`);
+        return item.reject(new GTTranslationError('Translation failed.', 500));
       });
     } finally {
       this._activeRequests--;

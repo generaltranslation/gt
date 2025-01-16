@@ -39,19 +39,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Resolver;
 function Resolver(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var error_1;
-        var children = _b.children, fallback = _b.fallback;
+        var children = _b.children;
         return __generator(this, function (_c) {
             switch (_c.label) {
-                case 0:
-                    _c.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, children];
+                case 0: return [4 /*yield*/, children];
                 case 1: return [2 /*return*/, _c.sent()];
-                case 2:
-                    error_1 = _c.sent();
-                    console.error(error_1);
-                    return [2 /*return*/, fallback];
-                case 3: return [2 /*return*/];
             }
         });
     });

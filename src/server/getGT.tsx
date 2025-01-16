@@ -26,7 +26,7 @@ import { Content, DictionaryEntry } from "gt-react/dist/types/types";
 export async function getGT(id?: string): Promise<(
     id: string, 
     options?: Record<string, any>
-) => any> {
+) => React.ReactNode> {
 
     const getId = (suffix: string) => {
         return id ? `${id}.${suffix}` : suffix;
@@ -92,7 +92,7 @@ export async function getGT(id?: string): Promise<(
     return (
         id: string, 
         options?: Record<string, any>
-    ): React.JSX.Element | string | undefined => {
+    ): React.ReactNode => {
 
         id = getId(id);
 
