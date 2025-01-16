@@ -119,9 +119,9 @@
     "i18n"
   ],
   "dependencies": {
-    "@generaltranslation/supported-locales": "^1.1.1",
+    "@generaltranslation/supported-locales": "^1.1.2",
     "generaltranslation": "^6.1.2",
-    "gt-react": "^8.2.1",
+    "gt-react": "^8.2.2",
     "gt-react-cli": "^1.1.13"
   }
 }
