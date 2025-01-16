@@ -1,9 +1,10 @@
 {
   "name": "gt-next",
-  "version": "4.2.4-beta",
+  "version": "4.2.5",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
+    "generaltranslation": "^6.1.3",
     "next": ">=13.0.0 <16.0.0",
     "react": ">=16.8.0 <20.0.0",
     "react-dom": ">=16.8.0 <20.0.0"
