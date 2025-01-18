@@ -11,7 +11,7 @@ export default function ClientProvider({ children, dictionary, initialTranslatio
     requiredPrefix: string | undefined;
     renderSettings: {
         method: RenderMethod;
-        timeout: number | null;
+        timeout?: number;
     };
     projectId?: string;
     devApiKey?: string;

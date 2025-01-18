@@ -14,7 +14,7 @@ type InitGTProps = {
     getLocale?: () => Promise<string>;
     renderSettings?: {
         method: RenderMethod;
-        timeout: number | null;
+        timeout?: number;
     };
     getMetadata?: () => Promise<Record<string, any>>;
     maxConcurrentRequests?: number;

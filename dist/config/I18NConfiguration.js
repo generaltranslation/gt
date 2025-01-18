@@ -93,13 +93,17 @@ var I18NConfiguration = /** @class */ (function () {
         // Locales
         this.defaultLocale = defaultLocale;
         this.locales = locales;
-        // Render method
-        this.renderSettings = renderSettings;
         // Default env is production
         if (process.env.NODE_ENV !== 'development' &&
             process.env.NODE_ENV !== 'test' &&
             this.devApiKey) {
             throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
+        }
+        // Render method
+        this.renderSettings = renderSettings;
+        if (this.devApiKey && this.renderSettings.method === 'subtle') { // disable subtle if in dev
+            console.warn('Subtle render method cannot be used in dev environments, falling back to default.');
+            this.renderSettings.method = 'default';
         }
         // Other metadata
         this.metadata = __assign(__assign(__assign({ sourceLocale: this.defaultLocale }, (this.renderSettings.timeout && {
@@ -164,7 +168,7 @@ var I18NConfiguration = /** @class */ (function () {
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.
-     * As of 1/14/25: method is "skeleton", "replace", "hang", "subtle", "default".
+     * As of 1/17/25: method is "skeleton", "replace", "subtle", "default".
      * Timeout is a number or null, representing no assigned timeout.
      */
     I18NConfiguration.prototype.getRenderSettings = function () {
@@ -327,6 +331,7 @@ var I18NConfiguration = /** @class */ (function () {
                     case 5:
                         results_1 = _b.sent();
                         batch.forEach(function (item, index) {
+                            var _a, _b, _c;
                             // check if entry is missing
                             var result = results_1[index];
                             if (!result)
@@ -334,7 +339,10 @@ var I18NConfiguration = /** @class */ (function () {
                             if (result && typeof result === 'object') {
                                 if ('translation' in result) {
                                     if (_this._remoteTranslationsManager) {
-                                        _this._remoteTranslationsManager.setTranslations(result.locale, result.reference.key, result.reference.id, result.translation);
+                                        _this._remoteTranslationsManager.setTranslations(result.locale, ((_a = item.metadata) === null || _a === void 0 ? void 0 : _a.hash) || result.reference.key, result.reference.id, result.translation);
+                                    }
+                                    if (((_b = item.metadata) === null || _b === void 0 ? void 0 : _b.hash) !== result.reference.key) {
+                                        console.warn("Mismatching ids or hashes! Expected hash: ".concat((_c = item.metadata) === null || _c === void 0 ? void 0 : _c.hash, ", but got id: ").concat(result.reference.id, " hash: ").concat(result.reference.key, ". We will still render your translation, but make sure to update to the newest version: www.generaltranslation.com/docs"));
                                     }
                                     return item.resolve(result.translation);
                                 }

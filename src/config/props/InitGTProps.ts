@@ -20,7 +20,7 @@ type InitGTProps = {
     // Rendering
     renderSettings?: {
         method: RenderMethod,
-        timeout: number | null
+        timeout?: number
     }
     // Other metadata
     getMetadata?: () => Promise<Record<string, any>>

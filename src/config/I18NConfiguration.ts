@@ -10,9 +10,7 @@ import {
   writeChildrenAsObjects,
   RenderMethod,
   TranslatedChildren,
-  isTranslationError,
   TranslatedContent,
-  TranslationError,
 } from 'gt-react/internal';
 import { devApiKeyIncludedInProductionError } from '../errors/createErrors';
 import { hashJsxChildren } from 'generaltranslation/id';
@@ -31,7 +29,7 @@ type I18NConfigurationParams = {
   locales: string[];
   renderSettings: {
     method: RenderMethod;
-    timeout: number | null;
+    timeout?: number;
   };
   maxConcurrentRequests: number;
   maxBatchSize: number;
@@ -54,7 +52,7 @@ export default class I18NConfiguration {
   // Rendering
   renderSettings: {
     method: RenderMethod;
-    timeout: number | null;
+    timeout?: number;
   };
   // Dictionaries
   private _remoteTranslationsManager: RemoteTranslationsManager | undefined;
@@ -107,8 +105,6 @@ export default class I18NConfiguration {
     // Locales
     this.defaultLocale = defaultLocale;
     this.locales = locales;
-    // Render method
-    this.renderSettings = renderSettings;
     // Default env is production
     if (
       process.env.NODE_ENV !== 'development' &&
@@ -116,6 +112,12 @@ export default class I18NConfiguration {
       this.devApiKey
     ) {
       throw new Error(devApiKeyIncludedInProductionError);
+    }
+    // Render method
+    this.renderSettings = renderSettings;
+    if (this.devApiKey && this.renderSettings.method === 'subtle') { // disable subtle if in dev
+      console.warn('Subtle render method cannot be used in dev environments, falling back to default.');
+      this.renderSettings.method = 'default';
     }
     // Other metadata
     this.metadata = {
@@ -192,12 +194,12 @@ export default class I18NConfiguration {
   /**
    * Get the rendering instructions
    * @returns An object containing the current method and timeout.
-   * As of 1/14/25: method is "skeleton", "replace", "hang", "subtle", "default".
+   * As of 1/17/25: method is "skeleton", "replace", "subtle", "default".
    * Timeout is a number or null, representing no assigned timeout.
    */
   getRenderSettings(): {
     method: RenderMethod;
-    timeout: number | null;
+    timeout?: number;
   } {
     return this.renderSettings;
   }
@@ -380,11 +382,15 @@ export default class I18NConfiguration {
             if (this._remoteTranslationsManager) {
               this._remoteTranslationsManager.setTranslations(
                 result.locale,
-                result.reference.key,
+                item.metadata?.hash || result.reference.key,
                 result.reference.id,
                 result.translation
               );
             }
+            if (item.metadata?.hash !== result.reference.key) {
+              console.warn(`Mismatching ids or hashes! Expected hash: ${item.metadata?.hash}, but got id: ${result.reference.id} hash: ${result.reference.key}. We will still render your translation, but make sure to update to the newest version: www.generaltranslation.com/docs`);
+            }
+            
             return item.resolve(result.translation);
           } else if ('error' in result && result.error) {
             return item.reject(

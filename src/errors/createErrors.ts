@@ -12,6 +12,8 @@ export const renderingError = 'General Translation: Rendering error.'
 
 export const createStringTranslationError = (content: string, id?: string) => `gt-next string translation error. tx("${content}")${id ? ` with id "${id}"` : '' } failed.`
 
+export const createDictionaryStringTranslationError = (id: string) => `gt-next string translation error. Translation from dictionary with id: ${id} failed.`
+
 export const createRequiredPrefixError = (id: string, requiredPrefix: string) => 
     `You are using <GTProvider> with a provided prefix id: "${requiredPrefix}", but one of the children of <GTProvider> has the id "${id}". Change the <GTProvider> id prop or your dictionary structure to proceed.`
 

@@ -100,8 +100,13 @@ function initGT(_a) {
     catch (error) {
         console.error('Error reading GT config file:', error);
     }
+    var _renderSettings = renderSettings || internal_1.defaultRenderSettings;
+    if ((renderSettings === null || renderSettings === void 0 ? void 0 : renderSettings.method) === "subtle" && devApiKey) {
+        console.warn('Subtle render method cannot be used in dev environments, falling back to default.');
+        _renderSettings.method = "default";
+    }
     // Merge loaded file config, default props, and function args
-    var mergedConfig = __assign(__assign(__assign({}, defaultInitGTProps_1.default), loadedConfig), __assign({ i18n: i18n, dictionary: dictionary, runtimeTranslation: runtimeTranslation, remoteCache: remoteCache, apiKey: apiKey, devApiKey: devApiKey, projectId: projectId, runtimeUrl: runtimeUrl, cacheUrl: cacheUrl, cacheExpiryTime: cacheExpiryTime, locales: locales, defaultLocale: defaultLocale, renderSettings: renderSettings || internal_1.defaultRenderSettings, maxConcurrentRequests: maxConcurrentRequests, maxBatchSize: maxBatchSize, batchInterval: batchInterval }, metadata));
+    var mergedConfig = __assign(__assign(__assign({}, defaultInitGTProps_1.default), loadedConfig), __assign({ i18n: i18n, dictionary: dictionary, runtimeTranslation: runtimeTranslation, remoteCache: remoteCache, apiKey: apiKey, devApiKey: devApiKey, projectId: projectId, runtimeUrl: runtimeUrl, cacheUrl: cacheUrl, cacheExpiryTime: cacheExpiryTime, locales: locales, defaultLocale: defaultLocale, renderSettings: _renderSettings, maxConcurrentRequests: maxConcurrentRequests, maxBatchSize: maxBatchSize, batchInterval: batchInterval }, metadata));
     // Destructure final config
     var finalI18n = mergedConfig.i18n, finalDictionary = mergedConfig.dictionary, finalRuntimeTranslation = mergedConfig.runtimeTranslation, finalRemoteCache = mergedConfig.remoteCache, finalApiKey = mergedConfig.apiKey, finalDevApiKey = mergedConfig.devApiKey, finalProjectId = mergedConfig.projectId, finalRuntimeUrl = mergedConfig.runtimeUrl, finalCacheUrl = mergedConfig.cacheUrl, finalCacheExpiryTime = mergedConfig.cacheExpiryTime, finalLocales = mergedConfig.locales, finalDefaultLocale = mergedConfig.defaultLocale, finalRenderSettings = mergedConfig.renderSettings, finalMaxConcurrentRequests = mergedConfig.maxConcurrentRequests, finalMaxBatchSize = mergedConfig.maxBatchSize, finalBatchInterval = mergedConfig.batchInterval, restMetadata = __rest(mergedConfig, ["i18n", "dictionary", "runtimeTranslation", "remoteCache", "apiKey", "devApiKey", "projectId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "locales", "defaultLocale", "renderSettings", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
     // ----- ERROR CHECKS ----- //

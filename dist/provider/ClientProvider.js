@@ -145,19 +145,13 @@ function ClientProvider(_a) {
         };
         var renderLoadingSkeleton = function () {
             if (typeof entry === 'string')
-                return renderString('');
+                return renderString(entry);
             return (0, internal_1.renderSkeleton)({
                 children: entry,
                 variables: variables,
                 defaultLocale: defaultLocale,
                 renderVariable: renderVariable_1.default
             });
-        };
-        var renderLoadingHang = function () {
-            // TODO: double check that this has the desired behavior
-            if (typeof entry === 'string')
-                return renderString('');
-            return undefined;
         };
         var renderLoadingDefault = function () {
             if (regionalTranslationRequired)
@@ -193,12 +187,10 @@ function ClientProvider(_a) {
             if (renderSettings.method === 'replace') {
                 return renderDefaultLocale();
             }
-            if (renderSettings.method === 'hang') {
-                return renderLoadingHang();
-            }
             if (renderSettings.method === 'subtle') {
                 return renderDefaultLocale();
             }
+            // default behavior
             return renderLoadingDefault();
         }
         var translation = translations === null || translations === void 0 ? void 0 : translations[id];

@@ -2,13 +2,17 @@ import getI18NConfig from '../../config/getI18NConfig';
 import getLocale from '../../request/getLocale';
 import getMetadata from '../../request/getMetadata';
 import { Suspense } from 'react';
-import Resolver from './Resolver';
 import {
   renderDefaultChildren,
   renderSkeleton,
   renderTranslatedChildren,
 } from 'gt-react/internal';
 import renderVariable from '../rendering/renderVariable';
+
+
+async function Resolver({ children }: { children: React.ReactNode }) {
+  return await children
+}
 
 /**
  * Translation component that renders its children translated into the user's given locale.
@@ -41,10 +45,9 @@ import renderVariable from '../rendering/renderVariable';
  * @param {React.ReactNode} children - The content to be translated or displayed.
  * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
  * @param {Object} [renderSettings] - Optional settings controlling how fallback content is rendered during translation.
- * @param {"skeleton" | "replace" | "hang" | "subtle" | "default"} [renderSettings.method] - Specifies the rendering method:
+ * @param {"skeleton" | "replace" | "subtle" | "default"} [renderSettings.method] - Specifies the rendering method:
  *  - "skeleton": show a placeholder while translation is loading.
  *  - "replace": show the default content as a fallback while the translation is loading.
- *  - "hang": wait until the translation is fully loaded before rendering anything.
  *  - "subtle": display children without a translation initially, with translations being applied later if available.
  *  - "default": behave like skeleton unless language is same (ie en-GB vs en-US), then behave like replace
  * @param {number | null} [renderSettings.timeout] - Optional timeout for translation loading.
@@ -137,12 +140,12 @@ async function T({
     metadata: {
       ...(id && { id }),
       hash: key,
+      ...(context && { context }),
       ...(await getMetadata()),
       ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
     },
   });
 
-  let loadingFallback; // Blank screen
 
   // render in default language
   const renderDefaultLocale = () => {
@@ -171,7 +174,7 @@ async function T({
 
   // Awaits the translation promise
   let renderTranslatedChildrenPromise = translationPromise.then(
-    (translation) => {
+    async (translation) => {
       return renderTranslatedChildren({
         source: taggedChildren,
         target: translation,
@@ -185,25 +188,20 @@ async function T({
     return renderDefaultLocale();
   });
 
+  let loadingFallback; // Blank screen
   if (renderSettings.method === 'replace') {
     loadingFallback = renderDefaultLocale();
   } else if (renderSettings.method === 'skeleton') {
     loadingFallback = renderLoadingSkeleton();
-  } else if (renderSettings.method === 'hang') {
-    return (<Resolver children={renderTranslatedChildrenPromise}/>);
-  } else if (renderSettings.method === 'subtle') {
-    return undefined; // TODO: implement subtle rendering
+  } else if (renderSettings.method === 'subtle' && id !== undefined) { // exclude entries with missing ids bc these don't get cached
+    return renderDefaultLocale();
   } else {
     loadingFallback = renderLoadingDefault();
   }
 
-  // For skeleton & replace, return a suspense component so that
-  // something is shown while waiting for the translation
   return (
-    <Suspense fallback={loadingFallback as React.ReactNode}>
-      <Resolver
-        children={renderTranslatedChildrenPromise}
-      />
+    <Suspense fallback={loadingFallback}>
+      <Resolver children={renderTranslatedChildrenPromise} />
     </Suspense>
   );
 }

@@ -92,7 +92,7 @@ var createErrors_1 = require("../../errors/createErrors");
  */
 function tx(content_1) {
     return __awaiter(this, arguments, void 0, function (content, options) {
-        var I18NConfig, defaultLocale, locale, _a, contentArray, r, _b, _, hash, translations, target, translationPromise, _c, _d, _e, renderSettings, target, error_1;
+        var I18NConfig, defaultLocale, locale, _a, contentArray, renderContent, _b, _, hash, translations, target, translationPromise, _c, _d, _e, renderSettings, target, error_1;
         var _f;
         var _g;
         if (options === void 0) { options = {}; }
@@ -112,11 +112,11 @@ function tx(content_1) {
                 case 2:
                     locale = _a;
                     contentArray = (0, generaltranslation_1.splitStringToContent)(content);
-                    r = function (content, locales) {
+                    renderContent = function (content, locales) {
                         return (0, generaltranslation_1.renderContentToString)(content, locales, options.variables, options.variablesOptions);
                     };
                     if (!I18NConfig.requiresTranslation(locale))
-                        return [2 /*return*/, r(contentArray, [defaultLocale])];
+                        return [2 /*return*/, renderContent(contentArray, [defaultLocale])];
                     _b = I18NConfig.serializeAndHash(contentArray, options.context, undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
                     ), _ = _b[0], hash = _b[1];
                     if (!options.id) return [3 /*break*/, 4];
@@ -125,7 +125,7 @@ function tx(content_1) {
                     translations = _h.sent();
                     target = (_g = translations[options.id]) === null || _g === void 0 ? void 0 : _g[hash];
                     if (target)
-                        return [2 /*return*/, r(target, [locale, defaultLocale])];
+                        return [2 /*return*/, renderContent(target, [locale, defaultLocale])];
                     _h.label = 4;
                 case 4:
                     _d = (_c = I18NConfig).translateContent;
@@ -139,21 +139,21 @@ function tx(content_1) {
                     translationPromise = _d.apply(_c, [(_f.options = __assign.apply(void 0, [__assign.apply(void 0, _e.concat([(_h.sent())])), { hash: hash }]),
                             _f)]);
                     renderSettings = I18NConfig.getRenderSettings();
-                    if (!(renderSettings.method !== 'subtle' ||
-                        !options.id) // because it is only saved if an id is present
-                    ) return [3 /*break*/, 9]; // because it is only saved if an id is present
+                    // subtle: wait for CDN to populate or for API to respond, do fallback for now
+                    if (renderSettings.method === 'subtle' || !options.id)
+                        return [2 /*return*/, renderContent(contentArray, [defaultLocale])];
                     _h.label = 6;
                 case 6:
                     _h.trys.push([6, 8, , 9]);
                     return [4 /*yield*/, translationPromise];
                 case 7:
                     target = _h.sent();
-                    return [2 /*return*/, r(target, [locale, defaultLocale])];
+                    return [2 /*return*/, renderContent(target, [locale, defaultLocale])];
                 case 8:
                     error_1 = _h.sent();
                     console.error((0, createErrors_1.createStringTranslationError)(content, options.id), error_1);
-                    return [2 /*return*/, r(contentArray, [defaultLocale])];
-                case 9: return [2 /*return*/, r(contentArray, [defaultLocale])];
+                    return [2 /*return*/, renderContent(contentArray, [defaultLocale])];
+                case 9: return [2 /*return*/];
             }
         });
     });

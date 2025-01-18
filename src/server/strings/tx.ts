@@ -63,7 +63,7 @@ export default async function tx(
 
   const contentArray = splitStringToContent(content);
 
-  const r = (content: any, locales: string[]) => {
+  const renderContent = (content: any, locales: string[]) => {
     return renderContentToString(
       content,
       locales,
@@ -73,7 +73,7 @@ export default async function tx(
   };
 
   if (!I18NConfig.requiresTranslation(locale))
-    return r(contentArray, [defaultLocale]);
+    return renderContent(contentArray, [defaultLocale]);
 
   const [_, hash] = I18NConfig.serializeAndHash(
     contentArray,
@@ -81,12 +81,14 @@ export default async function tx(
     undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
   );
 
+  // Check cache for translation
   if (options.id) {
     const translations = await I18NConfig.getTranslations(locale);
     const target = translations[options.id]?.[hash];
-    if (target) return r(target, [locale, defaultLocale]);
+    if (target) return renderContent(target, [locale, defaultLocale]);
   }
 
+  // New translation required
   const translationPromise = I18NConfig.translateContent({
     source: contentArray,
     targetLocale: locale,
@@ -95,18 +97,14 @@ export default async function tx(
 
   const renderSettings = I18NConfig.getRenderSettings();
 
-  if (
-    renderSettings.method !== 'subtle' ||
-    !options.id // because it is only saved if an id is present
-  ) {
-    try {
-      const target = await translationPromise;
-      return r(target, [locale, defaultLocale]);
-    } catch (error) {
-      console.error(createStringTranslationError(content, options.id), error);
-      return r(contentArray, [defaultLocale]);
-    }
-  }
+  // subtle: wait for CDN to populate or for API to respond, do fallback for now
+  if (renderSettings.method === 'subtle' || !options.id) return renderContent(contentArray, [defaultLocale]);
 
-  return r(contentArray, [defaultLocale]);
+  try {
+    const target = await translationPromise;
+    return renderContent(target, [locale, defaultLocale]);
+  } catch (error) {
+    console.error(createStringTranslationError(content, options.id), error);
+    return renderContent(contentArray, [defaultLocale]);
+  }
 }

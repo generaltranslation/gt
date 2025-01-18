@@ -96,56 +96,23 @@ export default async function GTProvider({
         if (translation?.[hash])
           return (translations[entryId] = { [hash]: translation[hash] });
 
-        // NEW TRANSLATION REQUIRED
-
+        // New translation required
         const translationPromise = I18NConfig.translateContent({
           source: contentArray,
           targetLocale: locale,
-          options: { id: entryId, hash, ...additionalMetadata },
+          options: {
+            id: entryId,
+            hash,
+            ...additionalMetadata,
+            ...(metadata?.context && { context: metadata.context }),
+          },
         });
-
-        if (renderSettings.method === "skeleton") {
-          return translations[entryId] = {
-            promise: translationPromise,
-            hash,
-            type: 'content'
-          };
-        }
-        if (renderSettings.method === "replace") {
-          return translations[entryId] = {
-            promise: translationPromise,
-            hash,
-            type: 'content'
-          };
-        }
-        if (renderSettings.method === "default") {
-          return translations[entryId] = {
-            promise: translationPromise,
-            hash,
-            type: 'content'
-          };
-        }
-        if (renderSettings.method === "hang") {
-          try {
-            translations[entryId] = {
-              [hash]: await translationPromise
-            };
-          } catch (error) {
-            let result;
-            if (error instanceof GTTranslationError) {
-              result = error.toTranslationError();
-            } else {
-              result = {
-                error: "An unknonwn error occured",
-                code: 500
-              }
-            }
-            translations[entryId] = result;
-          }
-        }
-
-        // Subtle rendering
-        return undefined;
+        
+        return translations[entryId] = {
+          promise: translationPromise,
+          hash,
+          type: 'content'
+        };
       }
 
       // JSX
@@ -163,28 +130,17 @@ export default async function GTProvider({
       if (translation?.[hash])
         return (translations[entryId] = { [hash]: translation[hash] });
 
-      // NEW TRANSLATION REQUIRED
-
+      // New translation required
       const translationPromise = I18NConfig.translateChildren({
         source: entryAsObjects,
         targetLocale: locale,
         metadata: {
           id: entryId, hash,
+          ...(metadata?.context && { context: metadata.context }),
           ...additionalMetadata,
           ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
         },
       });
-
-      if (renderSettings.method === "subtle") return undefined;
-      if (renderSettings.method === "hang") return (
-        translations[entryId] = { [hash]: await translationPromise }
-      );
-
-      let loadingFallback;
-      let errorFallback; // by leaving blank, will assume "skeleton"
-      if (renderSettings.method === 'skeleton') {
-        loadingFallback = <React.Fragment key={`skeleton_${entryId}`} />;
-      }
 
       return (translations[entryId] = {
         promise: translationPromise,

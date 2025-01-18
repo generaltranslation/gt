@@ -83,6 +83,12 @@ export function initGT({
     console.error('Error reading GT config file:', error);
   }
 
+  let _renderSettings = renderSettings || defaultRenderSettings;
+  if (renderSettings?.method === "subtle" && devApiKey ) {
+    console.warn('Subtle render method cannot be used in dev environments, falling back to default.');
+    _renderSettings.method = "default";
+  }
+
   // Merge loaded file config, default props, and function args
   const mergedConfig: InitGTProps = {
     ...defaultInitGTProps,
@@ -100,7 +106,7 @@ export function initGT({
       cacheExpiryTime,
       locales,
       defaultLocale,
-      renderSettings: renderSettings || defaultRenderSettings,
+      renderSettings: _renderSettings,
       maxConcurrentRequests,
       maxBatchSize,
       batchInterval,

@@ -7,10 +7,8 @@ function isTranslationPromise(target) {
         return false;
     }
     var hasPromise = 'promise' in target && target.promise instanceof Promise;
-    var hasErrorFallback = 'errorFallback' in target;
-    var hasLoadingFallback = 'loadingFallback' in target;
     var hasHash = 'hash' in target && typeof target.hash === 'string';
     var hasType = 'type' in target && (target.type === 'jsx' || target.type === 'content');
-    return hasPromise && hasErrorFallback && hasLoadingFallback && hasHash && hasType;
+    return hasPromise && hasHash && hasType;
 }
 //# sourceMappingURL=checkTypes.js.map

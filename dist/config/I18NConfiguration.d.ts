@@ -12,7 +12,7 @@ type I18NConfigurationParams = {
     locales: string[];
     renderSettings: {
         method: RenderMethod;
-        timeout: number | null;
+        timeout?: number;
     };
     maxConcurrentRequests: number;
     maxBatchSize: number;
@@ -30,7 +30,7 @@ export default class I18NConfiguration {
     locales: string[];
     renderSettings: {
         method: RenderMethod;
-        timeout: number | null;
+        timeout?: number;
     };
     private _remoteTranslationsManager;
     metadata: Record<string, any>;
@@ -68,12 +68,12 @@ export default class I18NConfiguration {
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.
-     * As of 1/14/25: method is "skeleton", "replace", "hang", "subtle", "default".
+     * As of 1/17/25: method is "skeleton", "replace", "subtle", "default".
      * Timeout is a number or null, representing no assigned timeout.
      */
     getRenderSettings(): {
         method: RenderMethod;
-        timeout: number | null;
+        timeout?: number;
     };
     /**
      * Checks if regional translation is required (ie en-US -> en-GB)

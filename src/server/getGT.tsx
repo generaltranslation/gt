@@ -12,10 +12,10 @@ import {
   splitStringToContent,
 } from 'generaltranslation';
 import getMetadata from '../request/getMetadata';
-import renderVariable from './rendering/renderVariable';
 import {
   createDictionarySubsetError,
   createNoEntryWarning,
+  createDictionaryStringTranslationError,
 } from '../errors/createErrors';
 import React, { isValidElement } from 'react';
 /**
@@ -41,7 +41,9 @@ export async function getGT(
   const I18NConfig = getI18NConfig();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const locale = await getLocale();
-  const translationRequired = I18NConfig.requiresTranslation(locale);
+  const regionalTranslationRequired = I18NConfig.requiresRegionalTranslation(locale);
+  const translationRequired = I18NConfig.requiresTranslation(locale) || regionalTranslationRequired;
+
 
   let filteredTranslations: Record<string, any> = {};
 
@@ -88,8 +90,16 @@ export async function getGT(
             targetLocale: locale,
             options: { id: entryId, hash, ...additionalMetadata },
           });
-          if (renderSettings.method !== 'subtle') {
-            return (filteredTranslations[entryId] = await translationPromise);
+          
+          // subtle: wait for CDN to populate or for API to respond, do fallback for now
+          if (renderSettings.method == 'subtle') return filteredTranslations[entryId] = contentArray;
+
+          // for server-side rendering, all strings are blocking
+          try {
+            filteredTranslations[entryId] = await translationPromise;
+          } catch (error) {
+            console.error(createDictionaryStringTranslationError(entryId), error);
+            filteredTranslations[entryId] = contentArray;
           }
         }
       )
@@ -99,7 +109,7 @@ export async function getGT(
   return (id: string, options?: Record<string, any>): React.ReactNode => {
     id = getId(id);
 
-    // Get entry
+    // Get entry   
     const dictionaryEntry = getDictionaryEntry(id);
     if (
       dictionaryEntry === undefined ||

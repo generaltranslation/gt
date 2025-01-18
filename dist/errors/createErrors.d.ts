@@ -3,6 +3,7 @@ export declare const APIKeyMissingError = "General Translation: API key is requi
 export declare const remoteTranslationsError = "General Translation: Error fetching remote translation.";
 export declare const renderingError = "General Translation: Rendering error.";
 export declare const createStringTranslationError: (content: string, id?: string) => string;
+export declare const createDictionaryStringTranslationError: (id: string) => string;
 export declare const createRequiredPrefixError: (id: string, requiredPrefix: string) => string;
 export declare const devApiKeyIncludedInProductionError = "General Translation: You are attempting a production build of your app with a developer API key (beginning \"gtx-dev-\"). Replace this API key with a production API key (beginning \"gtx-api-\") when you build your app for production.";
 export declare const createDictionarySubsetError: (id: string, functionName: string) => string;
