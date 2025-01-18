@@ -55,9 +55,19 @@ var getI18NConfig_1 = __importDefault(require("../../config/getI18NConfig"));
 var getLocale_1 = __importDefault(require("../../request/getLocale"));
 var getMetadata_1 = __importDefault(require("../../request/getMetadata"));
 var react_1 = require("react");
-var Resolver_1 = __importDefault(require("./Resolver"));
 var internal_1 = require("gt-react/internal");
 var renderVariable_1 = __importDefault(require("../rendering/renderVariable"));
+function Resolver(_a) {
+    return __awaiter(this, arguments, void 0, function (_b) {
+        var children = _b.children;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0: return [4 /*yield*/, children];
+                case 1: return [2 /*return*/, _c.sent()];
+            }
+        });
+    });
+}
 /**
  * Translation component that renders its children translated into the user's given locale.
  *
@@ -89,10 +99,9 @@ var renderVariable_1 = __importDefault(require("../rendering/renderVariable"));
  * @param {React.ReactNode} children - The content to be translated or displayed.
  * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
  * @param {Object} [renderSettings] - Optional settings controlling how fallback content is rendered during translation.
- * @param {"skeleton" | "replace" | "hang" | "subtle" | "default"} [renderSettings.method] - Specifies the rendering method:
+ * @param {"skeleton" | "replace" | "subtle" | "default"} [renderSettings.method] - Specifies the rendering method:
  *  - "skeleton": show a placeholder while translation is loading.
  *  - "replace": show the default content as a fallback while the translation is loading.
- *  - "hang": wait until the translation is fully loaded before rendering anything.
  *  - "subtle": display children without a translation initially, with translations being applied later if available.
  *  - "default": behave like skeleton unless language is same (ie en-GB vs en-US), then behave like replace
  * @param {number | null} [renderSettings.timeout] - Optional timeout for translation loading.
@@ -104,8 +113,9 @@ var renderVariable_1 = __importDefault(require("../rendering/renderVariable"));
  */
 function T(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, regionalTranslationRequired, translationRequired, translationsPromise, taggedChildren, _c, childrenAsObjects, key, translations, translation, target, renderSettings, translationPromise, _d, _e, _f, loadingFallback, renderDefaultLocale, renderLoadingSkeleton, renderLoadingDefault, renderTranslatedChildrenPromise;
+        var I18NConfig, locale, defaultLocale, regionalTranslationRequired, translationRequired, translationsPromise, taggedChildren, _c, childrenAsObjects, key, translations, translation, target, renderSettings, translationPromise, _d, _e, _f, renderDefaultLocale, renderLoadingSkeleton, renderLoadingDefault, renderTranslatedChildrenPromise, loadingFallback;
         var _g;
+        var _this = this;
         var children = _b.children, id = _b.id, context = _b.context, variables = _b.variables, variablesOptions = _b.variablesOptions;
         return __generator(this, function (_h) {
             switch (_h.label) {
@@ -160,7 +170,7 @@ function T(_a) {
                         source: childrenAsObjects,
                         targetLocale: locale
                     };
-                    _f = [__assign(__assign({}, (id && { id: id })), { hash: key })];
+                    _f = [__assign(__assign(__assign({}, (id && { id: id })), { hash: key }), (context && { context: context }))];
                     return [4 /*yield*/, (0, getMetadata_1.default)()];
                 case 3:
                     translationPromise = _e.apply(_d, [(_g.metadata = __assign.apply(void 0, [__assign.apply(void 0, _f.concat([(_h.sent())])), (renderSettings.timeout && { timeout: renderSettings.timeout })]),
@@ -187,16 +197,18 @@ function T(_a) {
                             return renderDefaultLocale();
                         return renderLoadingSkeleton();
                     };
-                    renderTranslatedChildrenPromise = translationPromise.then(function (translation) {
-                        return (0, internal_1.renderTranslatedChildren)({
-                            source: taggedChildren,
-                            target: translation,
-                            variables: variables,
-                            variablesOptions: variablesOptions,
-                            locales: [locale, defaultLocale],
-                            renderVariable: renderVariable_1.default,
+                    renderTranslatedChildrenPromise = translationPromise.then(function (translation) { return __awaiter(_this, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            return [2 /*return*/, (0, internal_1.renderTranslatedChildren)({
+                                    source: taggedChildren,
+                                    target: translation,
+                                    variables: variables,
+                                    variablesOptions: variablesOptions,
+                                    locales: [locale, defaultLocale],
+                                    renderVariable: renderVariable_1.default,
+                                })];
                         });
-                    }).catch(function () {
+                    }); }).catch(function () {
                         return renderDefaultLocale();
                     });
                     if (renderSettings.method === 'replace') {
@@ -205,18 +217,13 @@ function T(_a) {
                     else if (renderSettings.method === 'skeleton') {
                         loadingFallback = renderLoadingSkeleton();
                     }
-                    else if (renderSettings.method === 'hang') {
-                        return [2 /*return*/, ((0, jsx_runtime_1.jsx)(Resolver_1.default, { children: renderTranslatedChildrenPromise }))];
-                    }
-                    else if (renderSettings.method === 'subtle') {
-                        return [2 /*return*/, undefined]; // TODO: implement subtle rendering
+                    else if (renderSettings.method === 'subtle' && id !== undefined) { // exclude entries with missing ids bc these don't get cached
+                        return [2 /*return*/, renderDefaultLocale()];
                     }
                     else {
                         loadingFallback = renderLoadingDefault();
                     }
-                    // For skeleton & replace, return a suspense component so that
-                    // something is shown while waiting for the translation
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: (0, jsx_runtime_1.jsx)(Resolver_1.default, { children: renderTranslatedChildrenPromise }) }))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: (0, jsx_runtime_1.jsx)(Resolver, { children: renderTranslatedChildrenPromise }) }))];
             }
         });
     });

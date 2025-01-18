@@ -110,7 +110,7 @@ var react_1 = __importStar(require("react"));
  */
 function getGT(id) {
     return __awaiter(this, void 0, void 0, function () {
-        var getId, I18NConfig, defaultLocale, locale, translationRequired, filteredTranslations, translationsPromise, additionalMetadata_1, renderSettings_1, dictionarySubset, dictionaryEntries, translations_1;
+        var getId, I18NConfig, defaultLocale, locale, regionalTranslationRequired, translationRequired, filteredTranslations, translationsPromise, additionalMetadata_1, renderSettings_1, dictionarySubset, dictionaryEntries, translations_1;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -123,7 +123,8 @@ function getGT(id) {
                     return [4 /*yield*/, (0, server_1.getLocale)()];
                 case 1:
                     locale = _a.sent();
-                    translationRequired = I18NConfig.requiresTranslation(locale);
+                    regionalTranslationRequired = I18NConfig.requiresRegionalTranslation(locale);
+                    translationRequired = I18NConfig.requiresTranslation(locale) || regionalTranslationRequired;
                     filteredTranslations = {};
                     if (!translationRequired) return [3 /*break*/, 5];
                     translationsPromise = I18NConfig.getTranslations(locale);
@@ -140,7 +141,7 @@ function getGT(id) {
                     translations_1 = _a.sent();
                     // Translate all strings in advance
                     return [4 /*yield*/, Promise.all(Object.entries(dictionaryEntries !== null && dictionaryEntries !== void 0 ? dictionaryEntries : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var _c, entry, metadata, contentArray, entryId, _d, _, hash, translation, translationPromise, _e, _f;
+                            var _c, entry, metadata, contentArray, entryId, _d, _, hash, translation, translationPromise, _e, _f, error_1;
                             var _g;
                             var suffix = _b[0], dictionaryEntry = _b[1];
                             return __generator(this, function (_h) {
@@ -160,12 +161,24 @@ function getGT(id) {
                                             targetLocale: locale,
                                             options: __assign({ id: entryId, hash: hash }, additionalMetadata_1),
                                         });
-                                        if (!(renderSettings_1.method !== 'subtle')) return [3 /*break*/, 2];
+                                        // subtle: wait for CDN to populate or for API to respond, do fallback for now
+                                        if (renderSettings_1.method == 'subtle')
+                                            return [2 /*return*/, filteredTranslations[entryId] = contentArray];
+                                        _h.label = 1;
+                                    case 1:
+                                        _h.trys.push([1, 3, , 4]);
                                         _e = filteredTranslations;
                                         _f = entryId;
                                         return [4 /*yield*/, translationPromise];
-                                    case 1: return [2 /*return*/, (_e[_f] = _h.sent())];
-                                    case 2: return [2 /*return*/];
+                                    case 2:
+                                        _e[_f] = _h.sent();
+                                        return [3 /*break*/, 4];
+                                    case 3:
+                                        error_1 = _h.sent();
+                                        console.error((0, createErrors_1.createDictionaryStringTranslationError)(entryId), error_1);
+                                        filteredTranslations[entryId] = contentArray;
+                                        return [3 /*break*/, 4];
+                                    case 4: return [2 /*return*/];
                                 }
                             });
                         }); }))];
@@ -175,7 +188,7 @@ function getGT(id) {
                     _a.label = 5;
                 case 5: return [2 /*return*/, function (id, options) {
                         id = getId(id);
-                        // Get entry
+                        // Get entry   
                         var dictionaryEntry = (0, getDictionary_1.getDictionaryEntry)(id);
                         if (dictionaryEntry === undefined ||
                             dictionaryEntry === null ||

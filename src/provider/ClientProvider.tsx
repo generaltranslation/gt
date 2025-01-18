@@ -41,7 +41,7 @@ export default function ClientProvider({
   requiredPrefix: string | undefined;
   renderSettings: {
     method: RenderMethod;
-    timeout: number | null;
+    timeout?: number;
   };
   projectId?: string;
   devApiKey?: string;
@@ -118,19 +118,13 @@ export default function ClientProvider({
       };
 
       const renderLoadingSkeleton = () => {
-        if (typeof entry === 'string') return renderString('');
+        if (typeof entry === 'string') return renderString(entry);
         return renderSkeleton({
           children: entry,
           variables,
           defaultLocale,
           renderVariable
         });
-      }
-
-      const renderLoadingHang = () => {
-        // TODO: double check that this has the desired behavior
-        if (typeof entry === 'string') return renderString('');
-        return undefined;
       }
 
       const renderLoadingDefault = () => {
@@ -164,18 +158,17 @@ export default function ClientProvider({
 
       // loading behavior
       if (!translations || translations[id]?.promise || !translations[id]?.[metadata?.hash]) {
+        
         if (renderSettings.method === 'skeleton') {
           return renderLoadingSkeleton();
         }
         if (renderSettings.method === 'replace') {
           return renderDefaultLocale();
         }
-        if (renderSettings.method === 'hang') {
-          return renderLoadingHang();
-        }
         if (renderSettings.method === 'subtle') {
           return renderDefaultLocale();
         }
+        // default behavior
         return renderLoadingDefault();
       }
 
