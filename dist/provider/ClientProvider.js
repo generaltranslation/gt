@@ -197,7 +197,7 @@ function ClientProvider(_a) {
         return renderTranslation(translation === null || translation === void 0 ? void 0 : translation[metadata === null || metadata === void 0 ? void 0 : metadata.hash]);
     }, [dictionary, translations]);
     // For <T> components
-    var _c = (0, client_1.useDynamicTranslation)({
+    var _c = (0, client_1.useRuntimeTranslation)({
         targetLocale: locale,
         projectId: projectId,
         devApiKey: devApiKey,
