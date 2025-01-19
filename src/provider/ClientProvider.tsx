@@ -6,7 +6,7 @@ import {
   useState,
 } from 'react';
 import {
-  GTContext, useDynamicTranslation
+  GTContext, useRuntimeTranslation
 } from 'gt-react/client';
 import { renderDefaultChildren, renderTranslatedChildren, Dictionary, RenderMethod, renderSkeleton, isTranslationError, TranslationsObject } from 'gt-react/internal';
 import { extractEntryMetadata } from 'gt-react/internal';
@@ -179,7 +179,7 @@ export default function ClientProvider({
   );
 
   // For <T> components
-  const { translateChildren, translateContent } = useDynamicTranslation({
+  const { translateChildren, translateContent } = useRuntimeTranslation({
     targetLocale: locale, projectId, devApiKey, runtimeUrl, setTranslations, defaultLocale
   }); 
 
