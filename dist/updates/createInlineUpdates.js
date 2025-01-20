@@ -15,23 +15,13 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -55,6 +45,37 @@ const t = __importStar(require("@babel/types"));
 const addGTIdentifierToSyntaxTree_1 = __importDefault(require("../data-_gt/addGTIdentifierToSyntaxTree"));
 const warnings_1 = require("../console/warnings");
 const id_1 = require("generaltranslation/id");
+function handleStringChild(child, index, childrenTypes) {
+    let result = child;
+    if (index === 0) {
+        result = result.trimStart();
+    }
+    if (index === childrenTypes.length - 1) {
+        result = result.trimEnd();
+    }
+    result = (() => {
+        let newResult = '';
+        let newline = false;
+        for (const char of result) {
+            if (char === '\n') {
+                newResult = newResult.trimEnd();
+                newline = true;
+                continue;
+            }
+            if (!newline) {
+                newResult += char;
+                continue;
+            }
+            if (char.trim() === '')
+                continue;
+            newResult += char;
+            newline = false;
+        }
+        return newResult;
+    })();
+    result = result.replace(/\s+/g, ' ');
+    return result;
+}
 function isStaticExpression(expr) {
     // Handle empty expressions
     if (t.isJSXEmptyExpression(expr)) {
@@ -173,17 +194,19 @@ function createInlineUpdates(options) {
                                 if (staticAnalysis.isStatic &&
                                     staticAnalysis.value !== undefined) {
                                     // Preserve the exact whitespace for static string expressions
-                                    return staticAnalysis.value;
+                                    return {
+                                        expression: true,
+                                        result: staticAnalysis.value
+                                    };
                                 }
                                 // Keep existing behavior for non-static expressions
                                 hasUnwrappedExpression = true;
                                 return (0, generator_1.default)(node).code;
                             }
                             // Updated JSX Text handling
+                            // JSX Text handling following React's rules
                             if (t.isJSXText(node)) {
-                                const text = node.value
-                                    .replace(/\s*\n\s*/g, " ") // Replace newlines (and their surrounding whitespace) with a single space
-                                    .replace(/\s+/g, " "); // Collapse multiple spaces into one
+                                let text = node.value;
                                 return text;
                             }
                             // If we are inside a variable component, keep going
@@ -229,35 +252,7 @@ function createInlineUpdates(options) {
                                     }
                                 });
                                 const children = element.children
-                                    .map((child) => buildJSXTree(child, nextInsideVar))
-                                    .filter((child) => child !== null && child !== "")
-                                    // Process whitespace between elements
-                                    .map((child, index, array) => {
-                                    if (typeof child === "string") {
-                                        // Always trim start of first child and end of last child
-                                        if (index === 0) {
-                                            child = child.trimStart();
-                                        }
-                                        if (index === array.length - 1) {
-                                            child = child.trimEnd();
-                                        }
-                                        // If previous or next item is a JSX expression or element,
-                                        // trim whitespace accordingly
-                                        const prevItem = index > 0 ? array[index - 1] : null;
-                                        const nextItem = index < array.length - 1 ? array[index + 1] : null;
-                                        if (typeof prevItem === "object" ||
-                                            typeof nextItem === "object") {
-                                            if (typeof prevItem === "object") {
-                                                child = child.trimStart();
-                                            }
-                                            if (typeof nextItem === "object") {
-                                                child = child.trimEnd();
-                                            }
-                                        }
-                                    }
-                                    return child;
-                                })
-                                    .filter((child) => child !== "" && child !== " "); // Remove empty strings after trimming
+                                    .map((child) => buildJSXTree(child, nextInsideVar));
                                 if (children.length === 1) {
                                     props.children = children[0];
                                 }
@@ -332,30 +327,47 @@ function createInlineUpdates(options) {
                             return;
                         }
                         // Build and store the "children" / tree
-                        const tree = path.node.children
-                            .map((child) => buildJSXTree(child))
-                            .filter((child) => child !== null && child !== "")
-                            // Additional processing to ensure no extra whitespace between components
-                            .map((child, index, array) => {
-                            if (typeof child === "string") {
-                                child = child.trim();
-                                // Only preserve a single space between text nodes
-                                const prevItem = index > 0 ? array[index - 1] : null;
-                                const nextItem = index < array.length - 1 ? array[index + 1] : null;
-                                if (typeof prevItem === "object" ||
-                                    typeof nextItem === "object") {
-                                    // If adjacent to a component/expression, trim that side
-                                    if (typeof prevItem === "object") {
-                                        child = child.trimStart();
+                        const initialTree = buildJSXTree(path.node).props.children;
+                        const handleChildrenWhitespace = (currentTree) => {
+                            var _a;
+                            if (Array.isArray(currentTree)) {
+                                const childrenTypes = currentTree.map(child => {
+                                    if (typeof child === 'string')
+                                        return "text";
+                                    if (typeof child === 'object' && 'expression' in child)
+                                        return "expression";
+                                    return "element";
+                                });
+                                const newChildren = [];
+                                currentTree.forEach((child, index) => {
+                                    if (childrenTypes[index] === "text") {
+                                        const string = handleStringChild(child, index, childrenTypes);
+                                        if (string)
+                                            newChildren.push(string);
                                     }
-                                    if (typeof nextItem === "object") {
-                                        child = child.trimEnd();
+                                    else if (childrenTypes[index] === "expression") {
+                                        newChildren.push(child.result);
                                     }
-                                }
+                                    else {
+                                        newChildren.push(handleChildrenWhitespace(child));
+                                    }
+                                });
+                                return newChildren.length === 1 ? newChildren[0] : newChildren;
                             }
-                            return child;
-                        })
-                            .filter((child) => child !== "" && child !== " ");
+                            else if ((_a = currentTree === null || currentTree === void 0 ? void 0 : currentTree.props) === null || _a === void 0 ? void 0 : _a.children) {
+                                const currentTreeChildren = handleChildrenWhitespace(currentTree.props.children);
+                                return Object.assign(Object.assign({}, currentTree), { props: Object.assign(Object.assign({}, currentTree.props), (currentTreeChildren && { children: currentTreeChildren })) });
+                            }
+                            else if (typeof currentTree === 'object' && "expression" in currentTree === true) {
+                                return currentTree.result;
+                            }
+                            else if (typeof currentTree === 'string') {
+                                return handleStringChild(currentTree, 0, ["text"]);
+                            }
+                            return currentTree;
+                        };
+                        const whitespaceHandledTree = handleChildrenWhitespace(initialTree);
+                        const tree = (0, addGTIdentifierToSyntaxTree_1.default)(whitespaceHandledTree);
                         componentObj.tree = tree.length === 1 ? tree[0] : tree;
                         // Check the id ...
                         const id = componentObj.props.id;
@@ -370,7 +382,7 @@ function createInlineUpdates(options) {
                             return;
                         }
                         // If we reached here, this <T> is valid
-                        const childrenAsObjects = (0, addGTIdentifierToSyntaxTree_1.default)(componentObj.tree);
+                        const childrenAsObjects = componentObj.tree;
                         // displayFoundTMessage(file, id);
                         updates.push({
                             type: "jsx",

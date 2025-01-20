@@ -26,24 +26,28 @@ function addGTIdentifierToSyntaxTree(tree, startingIndex = 0) {
             if (type === "Var") {
                 return {
                     variable: "variable",
+                    id: indexObject.index,
                     key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation }), "variable"),
                 };
             }
             else if (type === "Num") {
                 return {
                     variable: "number",
+                    id: indexObject.index,
                     key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation }), "number"),
                 };
             }
             else if (type === "Currency") {
                 return {
                     variable: "currency",
+                    id: indexObject.index,
                     key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation }), "currency"),
                 };
             }
             else if (type === "DateTime") {
                 return {
                     variable: "datetime",
+                    id: indexObject.index,
                     key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation }), "datetime"),
                 };
             }

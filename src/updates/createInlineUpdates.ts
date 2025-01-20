@@ -16,6 +16,37 @@ import {
 } from "../console/warnings";
 import { hashJsxChildren } from "generaltranslation/id";
 
+function handleStringChild(child: string, index: number, childrenTypes: ("expression" | "text" | "element")[]) {
+  let result = child;
+  if (index === 0) {
+    result = result.trimStart();
+  }
+  if (index === childrenTypes.length - 1) {
+    result = result.trimEnd();
+  }
+  result = (() => {
+    let newResult = '';
+    let newline = false;
+    for (const char of result) {
+      if (char === '\n') {
+        newResult = newResult.trimEnd();
+        newline = true;
+        continue;
+      }
+      if (!newline) {
+        newResult += char;
+        continue;
+      }
+      if (char.trim() === '') continue;
+      newResult += char;
+      newline = false;
+    }
+    return newResult;
+  })();
+  result = result.replace(/\s+/g, ' ')
+  return result;
+}
+
 function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
   isStatic: boolean;
   value?: string;
@@ -166,7 +197,10 @@ export default async function createInlineUpdates(
                 staticAnalysis.value !== undefined
               ) {
                 // Preserve the exact whitespace for static string expressions
-                return staticAnalysis.value;
+                return {
+                  expression: true,
+                  result: staticAnalysis.value
+                };
               }
               // Keep existing behavior for non-static expressions
               hasUnwrappedExpression = true;
@@ -174,11 +208,9 @@ export default async function createInlineUpdates(
             }
 
             // Updated JSX Text handling
+            // JSX Text handling following React's rules
             if (t.isJSXText(node)) {
-              const text = node.value
-                .replace(/\s*\n\s*/g, " ") // Replace newlines (and their surrounding whitespace) with a single space
-                .replace(/\s+/g, " "); // Collapse multiple spaces into one
-
+              let text = node.value;
               return text;
             }
 
@@ -229,40 +261,7 @@ export default async function createInlineUpdates(
 
               const children = element.children
                 .map((child) => buildJSXTree(child, nextInsideVar))
-                .filter((child) => child !== null && child !== "")
-                // Process whitespace between elements
-                .map((child, index, array) => {
-                  if (typeof child === "string") {
-                    // Always trim start of first child and end of last child
-                    if (index === 0) {
-                      child = child.trimStart();
-                    }
-                    if (index === array.length - 1) {
-                      child = child.trimEnd();
-                    }
-
-                    // If previous or next item is a JSX expression or element,
-                    // trim whitespace accordingly
-                    const prevItem = index > 0 ? array[index - 1] : null;
-                    const nextItem =
-                      index < array.length - 1 ? array[index + 1] : null;
-
-                    if (
-                      typeof prevItem === "object" ||
-                      typeof nextItem === "object"
-                    ) {
-                      if (typeof prevItem === "object") {
-                        child = child.trimStart();
-                      }
-                      if (typeof nextItem === "object") {
-                        child = child.trimEnd();
-                      }
-                    }
-                  }
-                  return child;
-                })
-                .filter((child) => child !== "" && child !== " "); // Remove empty strings after trimming
-
+                
               if (children.length === 1) {
                 props.children = children[0];
               } else if (children.length > 1) {
@@ -279,7 +278,6 @@ export default async function createInlineUpdates(
               const children = node.children
                 .map((child: any) => buildJSXTree(child, isInsideVar))
                 .filter((child: any) => child !== null && child !== "");
-
               return {
                 type: "",
                 props: {
@@ -343,35 +341,49 @@ export default async function createInlineUpdates(
           }
 
           // Build and store the "children" / tree
-          const tree = path.node.children
-            .map((child) => buildJSXTree(child))
-            .filter((child) => child !== null && child !== "")
-            // Additional processing to ensure no extra whitespace between components
-            .map((child, index, array) => {
-              if (typeof child === "string") {
-                child = child.trim();
-
-                // Only preserve a single space between text nodes
-                const prevItem = index > 0 ? array[index - 1] : null;
-                const nextItem =
-                  index < array.length - 1 ? array[index + 1] : null;
-
-                if (
-                  typeof prevItem === "object" ||
-                  typeof nextItem === "object"
-                ) {
-                  // If adjacent to a component/expression, trim that side
-                  if (typeof prevItem === "object") {
-                    child = child.trimStart();
-                  }
-                  if (typeof nextItem === "object") {
-                    child = child.trimEnd();
-                  }
+          const initialTree = buildJSXTree(path.node).props.children;
+          const handleChildrenWhitespace = (currentTree: any): any => {
+            if (Array.isArray(currentTree)) {
+              const childrenTypes: ("text" | "element" | "expression")[] = 
+                currentTree.map(child => {
+                  if (typeof child === 'string') return "text";
+                  if (typeof child === 'object' && 'expression' in child) return "expression"
+                  return "element";
+                })
+              ;
+              const newChildren: any[] = [];
+              currentTree.forEach((child, index) => {
+                if (childrenTypes[index] === "text") {
+                  const string = handleStringChild(child, index, childrenTypes);
+                  if (string) newChildren.push(string);
+                } else if (childrenTypes[index] === "expression") {
+                  newChildren.push(child.result);
+                } else {
+                  newChildren.push(handleChildrenWhitespace(child))
+                }
+              })
+              return newChildren.length === 1 ? newChildren[0] : newChildren;
+            } else if (currentTree?.props?.children) {
+              const currentTreeChildren = handleChildrenWhitespace(currentTree.props.children);
+               return {
+                ...currentTree,
+                props: {
+                  ...currentTree.props,
+                  ...(currentTreeChildren && { children: currentTreeChildren })
                 }
               }
-              return child;
-            })
-            .filter((child) => child !== "" && child !== " ");
+            } else if (typeof currentTree === 'object' && "expression" in currentTree === true) {
+              return currentTree.result;
+            } else if (typeof currentTree === 'string') {
+              return handleStringChild(currentTree, 0, ["text"]);
+            }
+            return currentTree;
+          }
+          const whitespaceHandledTree = handleChildrenWhitespace(initialTree)
+          
+          const tree = addGTIdentifierToSyntaxTree(
+            whitespaceHandledTree
+          );
 
           componentObj.tree = tree.length === 1 ? tree[0] : tree;
 
@@ -390,9 +402,8 @@ export default async function createInlineUpdates(
           }
 
           // If we reached here, this <T> is valid
-          const childrenAsObjects = addGTIdentifierToSyntaxTree(
-            componentObj.tree
-          );
+          const childrenAsObjects = componentObj.tree;
+
           // displayFoundTMessage(file, id);
           updates.push({
             type: "jsx",

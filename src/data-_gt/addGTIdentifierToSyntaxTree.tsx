@@ -19,6 +19,7 @@ export default function addGTIdentifierToSyntaxTree(
       if (type === "Var") {
         return {
           variable: "variable",
+          id: indexObject.index,
           key: getVariableName(
             { ...props, "data-_gt": generaltranslation },
             "variable"
@@ -27,6 +28,7 @@ export default function addGTIdentifierToSyntaxTree(
       } else if (type === "Num") {
         return {
           variable: "number",
+          id: indexObject.index,
           key: getVariableName(
             { ...props, "data-_gt": generaltranslation },
             "number"
@@ -35,6 +37,7 @@ export default function addGTIdentifierToSyntaxTree(
       } else if (type === "Currency") {
         return {
           variable: "currency",
+          id: indexObject.index,
           key: getVariableName(
             { ...props, "data-_gt": generaltranslation },
             "currency"
@@ -43,6 +46,7 @@ export default function addGTIdentifierToSyntaxTree(
       } else if (type === "DateTime") {
         return {
           variable: "datetime",
+          id: indexObject.index,
           key: getVariableName(
             { ...props, "data-_gt": generaltranslation },
             "datetime"
