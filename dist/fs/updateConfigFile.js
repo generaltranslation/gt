@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = updateConfigFile;
 const fs_1 = __importDefault(require("fs"));
 const console_1 = require("../console/console");
-const EXCLUDED_KEYS = ["src", "locales"];
+const EXCLUDED_KEYS = ["src", "locales", "dryRun", "ignoreErrors"];
 /**
  * Checks if the config file exists. If not, creates a new JSON file at the given filepath and writes the provided config object to it.
  * @param {string} configFilepath - The path to the config file.

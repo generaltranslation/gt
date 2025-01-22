@@ -47,8 +47,9 @@ export type Options = {
   locales?: string[];
   baseUrl: string;
   inline: boolean;
-  replace: boolean;
   retranslate: boolean;
+  ignoreErrors: boolean;
+  dryRun: boolean;
 };
 
 program
@@ -107,16 +108,20 @@ program
     []
   )
   .option(
-    "--replace",
-    "Replace existing translations in the remote dictionary",
-    false
-  )
-  .option(
     "--inline",
     "Include inline <T> tags in addition to dictionary file",
     true
   )
-  .option("--retranslate", "Forces a new translation for all content.", false)
+  .option(
+    "--ignore-errors",
+    "Ignore errors encountered while scanning for <T> tags",
+    false
+  )
+  .option(
+    "--dry-run",
+    "Dry run, does not send updates to General Translation API",
+    false
+  )
   .action(async (options: Options) => {
     displayAsciiTitle();
     displayInitializingText();
@@ -185,6 +190,7 @@ program
     // ---- CREATING UPDATES ---- //
 
     let updates: Updates = [];
+    let errors: string[] = [];
 
     // Parse dictionary with esbuildConfig
     if (options.dictionary) {
@@ -207,23 +213,74 @@ program
 
     // Scan through project for <T> tags
     if (options.inline) {
-      updates = [...updates, ...(await createInlineUpdates(options))];
+      const { updates: newUpdates, errors: newErrors } =
+        await createInlineUpdates(options);
+      errors = [...errors, ...newErrors];
+      updates = [...updates, ...newUpdates];
     }
 
     // Metadata addition and validation
     const idHashMap = new Map<string, string>();
+    const duplicateIds = new Set<string>();
+
     updates = updates.map((update) => {
       const existingHash = idHashMap.get(update.metadata.id);
       if (existingHash) {
-        if (existingHash !== update.metadata.hash)
-          throw new Error(
-            `Hashes don't match on two translations with the same id: ${update.metadata.id}. Check your <T id="${update.metadata.id}"> tags and make sure you're not accidentally duplicating IDs.`
+        if (existingHash !== update.metadata.hash) {
+          errors.push(
+            `Hashes don't match on two translations with the same id: ${chalk.blue(
+              update.metadata.id
+            )}. Check your ${chalk.green(
+              `<T id="${chalk.blue(update.metadata.id)}">`
+            )} tags and make sure you're not accidentally duplicating IDs.`
           );
+          duplicateIds.add(update.metadata.id);
+        }
       } else {
         idHashMap.set(update.metadata.id, update.metadata.hash);
       }
       return update;
     });
+
+    // Filter out updates with duplicate IDs
+    updates = updates.filter((update) => !duplicateIds.has(update.metadata.id));
+
+    if (errors.length > 0) {
+      if (options.ignoreErrors) {
+        console.log(
+          chalk.red(
+            `CLI Tool encountered errors while scanning for ${chalk.green(
+              "<T>"
+            )} tags.\n`
+          )
+        );
+        console.log(
+          errors
+            .map((error) => chalk.yellow("• Warning: ") + error + "\n")
+            .join(""),
+          chalk.white(
+            `These ${chalk.green("<T>")} components will not be translated.\n`
+          )
+        );
+      } else {
+        console.log(
+          chalk.red(
+            `CLI Tool encountered errors while scanning for ${chalk.green(
+              "<T>"
+            )} tags.\n`
+          )
+        );
+        console.log(
+          chalk.gray("To ignore these errors, re-run with --ignore-errors\n\n"),
+          errors.map((error) => chalk.red("• Error: ") + error + "\n").join("")
+        );
+        process.exit(1);
+      }
+    }
+
+    if (options.dryRun) {
+      process.exit(0);
+    }
 
     // Send updates to General Translation API
     if (updates.length) {
@@ -239,25 +296,44 @@ program
         metadata: globalMetadata,
       };
 
-      const response = await fetch(
-        `${options.baseUrl}/v1/project/translations/update`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(apiKey && { "x-gt-api-key": apiKey }),
-          },
-          body: JSON.stringify(body),
+      const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+      let i = 0;
+      const loadingInterval = setInterval(() => {
+        process.stdout.write(
+          `\r${chalk.blue(
+            frames[i]
+          )} Sending updates to General Translation API...`
+        );
+        i = (i + 1) % frames.length;
+      }, 80);
+
+      try {
+        const response = await fetch(
+          `${options.baseUrl}/v1/project/translations/update`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-gt-api-key": apiKey }),
+            },
+            body: JSON.stringify(body),
+          }
+        );
+
+        clearInterval(loadingInterval);
+        process.stdout.write("\n\n"); // New line after loading is done
+
+        if (!response.ok) {
+          throw new Error(response.status + ". " + (await response.text()));
         }
-      );
-
-      console.log();
-
-      if (!response.ok) {
-        throw new Error(response.status + ". " + (await response.text()));
+        const result = await response.text();
+        console.log(chalk.green("✓ ") + chalk.green.bold(result));
+      } catch (error) {
+        clearInterval(loadingInterval);
+        process.stdout.write("\n");
+        console.log(chalk.red("✗ Failed to send updates"));
+        throw error;
       }
-      const result = await response.text();
-      console.log(chalk.green("✓ ") + chalk.green.bold(result));
     } else {
       throw new Error(noTranslationsError);
     }
