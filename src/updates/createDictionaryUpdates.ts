@@ -94,7 +94,7 @@ export default async function createDictionaryUpdates(
     if (typeof entry === "string") {
       updates.push({
         type: "content",
-        source: splitStringToContent(taggedEntry),
+        source: splitStringToContent(entry),
         metadata,
       });
     } else {

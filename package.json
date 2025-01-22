@@ -1,6 +1,6 @@
 {
   "name": "gt-react-cli",
-  "version": "1.1.16",
+  "version": "1.1.17",
   "main": "dist/main.js",
   "bin": {
     "translate": "dist/main.js"
@@ -10,7 +10,7 @@
     "build-push-publish": "rm -r -f dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;"
   },
   "peerDependencies": {
-    "gt-react": "^8.2.13"
+    "gt-react": "^8.2.15"
   },
   "keywords": [],
   "author": "",
@@ -38,6 +38,7 @@
     "@types/babel__traverse": "^7.20.6",
     "@types/figlet": "^1.7.0",
     "@types/mock-require": "^2.0.3",
-    "@types/node": "^22.5.1"
+    "@types/node": "^22.5.1",
+    "gt-react": "^8.2.15"
   }
 }

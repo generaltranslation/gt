@@ -17,35 +17,38 @@ export const warnVariableProp = (
   attrName: string,
   value: string
 ) => {
-  console.warn(
-    chalk.yellow("WARNING: ") +
-      `Found ${chalk.green("<T>")} component in ${chalk.cyan(
-        file
-      )} with variable ${attrName}: "${chalk.white(value)}". ` +
-      `Change "${attrName}" to ensure this content is translated.\n`
+  return (
+    `Found ${chalk.green("<T>")} component in ${chalk.cyan(
+      file
+    )} with variable ${attrName}: "${chalk.white(value)}". ` +
+    `Change "${attrName}" to ensure this content is translated.\n`
   );
 };
 
 export const warnNoId = (file: string) => {
-  console.warn(
-    chalk.yellow("WARNING: ") +
-      `Found ${chalk.green("<T>")} component in ${chalk.cyan(
-        file
-      )} with no id. ` +
-      chalk.white("Add an id to ensure the content is translated.\n")
+  return (
+    `Found ${chalk.green("<T>")} component in ${chalk.cyan(
+      file
+    )} with no id. ` +
+    chalk.white("Add an id to ensure the content is translated.\n")
   );
 };
 
-export const warnHasUnwrappedExpression = (file: string, id: string) => {
-  console.warn(
-    chalk.yellow("WARNING: ") +
-      `${chalk.green("<T>")} with id "${id}" in ${chalk.cyan(
-        file
-      )} has children that could change at runtime. ` +
-      chalk.white("Use a variable component like ") +
-      chalk.green("<Var>") +
-      chalk.white(" (") +
-      chalk.blue("https://generaltranslation.com/docs") +
-      chalk.white(") to translate this properly.\n")
+export const warnHasUnwrappedExpression = (
+  file: string,
+  id: string,
+  unwrappedExpressions: string[]
+) => {
+  return (
+    `${chalk.green("<T>")} with id "${id}" in ${chalk.cyan(
+      file
+    )} has children: ${unwrappedExpressions.join(
+      ", "
+    )} that could change at runtime. ` +
+    chalk.white("Use a variable component like ") +
+    chalk.green("<Var>") +
+    chalk.white(" (") +
+    chalk.blue("https://generaltranslation.com/docs") +
+    chalk.white(") to translate this properly.\n")
   );
 };

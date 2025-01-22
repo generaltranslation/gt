@@ -14,20 +14,17 @@ const warnApiKeyInConfig = (optionsFilepath) => {
 };
 exports.warnApiKeyInConfig = warnApiKeyInConfig;
 const warnVariableProp = (file, attrName, value) => {
-    console.warn(chalk_1.default.yellow("WARNING: ") +
-        `Found ${chalk_1.default.green("<T>")} component in ${chalk_1.default.cyan(file)} with variable ${attrName}: "${chalk_1.default.white(value)}". ` +
+    return (`Found ${chalk_1.default.green("<T>")} component in ${chalk_1.default.cyan(file)} with variable ${attrName}: "${chalk_1.default.white(value)}". ` +
         `Change "${attrName}" to ensure this content is translated.\n`);
 };
 exports.warnVariableProp = warnVariableProp;
 const warnNoId = (file) => {
-    console.warn(chalk_1.default.yellow("WARNING: ") +
-        `Found ${chalk_1.default.green("<T>")} component in ${chalk_1.default.cyan(file)} with no id. ` +
+    return (`Found ${chalk_1.default.green("<T>")} component in ${chalk_1.default.cyan(file)} with no id. ` +
         chalk_1.default.white("Add an id to ensure the content is translated.\n"));
 };
 exports.warnNoId = warnNoId;
-const warnHasUnwrappedExpression = (file, id) => {
-    console.warn(chalk_1.default.yellow("WARNING: ") +
-        `${chalk_1.default.green("<T>")} with id "${id}" in ${chalk_1.default.cyan(file)} has children that could change at runtime. ` +
+const warnHasUnwrappedExpression = (file, id, unwrappedExpressions) => {
+    return (`${chalk_1.default.green("<T>")} with id "${id}" in ${chalk_1.default.cyan(file)} has children: ${unwrappedExpressions.join(", ")} that could change at runtime. ` +
         chalk_1.default.white("Use a variable component like ") +
         chalk_1.default.green("<Var>") +
         chalk_1.default.white(" (") +

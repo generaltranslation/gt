@@ -72,7 +72,7 @@ function createDictionaryUpdates(options, esbuildConfig) {
             if (typeof entry === "string") {
                 updates.push({
                     type: "content",
-                    source: (0, generaltranslation_1.splitStringToContent)(taggedEntry),
+                    source: (0, generaltranslation_1.splitStringToContent)(entry),
                     metadata,
                 });
             }

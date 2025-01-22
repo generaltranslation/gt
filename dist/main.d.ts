@@ -19,6 +19,7 @@ export type Options = {
     locales?: string[];
     baseUrl: string;
     inline: boolean;
-    replace: boolean;
     retranslate: boolean;
+    ignoreErrors: boolean;
+    dryRun: boolean;
 };

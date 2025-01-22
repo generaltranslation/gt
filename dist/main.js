@@ -16,13 +16,23 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -85,9 +95,9 @@ commander_1.program
     .option("--src <path>", "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(["./src", "./app", "./pages", "./components"]))
     .option("--defaultLanguage, --defaultLocale <locale>", "Default locale (e.g., en)")
     .option("--languages, --locales <locales...>", "Space-separated list of locales (e.g., en fr es)", [])
-    .option("--replace", "Replace existing translations in the remote dictionary", false)
     .option("--inline", "Include inline <T> tags in addition to dictionary file", true)
-    .option("--retranslate", "Forces a new translation for all content.", false)
+    .option("--ignore-errors", "Ignore errors encountered while scanning for <T> tags", false)
+    .option("--dry-run", "Dry run, does not send updates to General Translation API", false)
     .action((options) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     (0, console_1.displayAsciiTitle)();
@@ -139,6 +149,7 @@ commander_1.program
         (0, updateConfigFile_1.default)(rest.options, rest);
     // ---- CREATING UPDATES ---- //
     let updates = [];
+    let errors = [];
     // Parse dictionary with esbuildConfig
     if (options.dictionary) {
         let esbuildConfig;
@@ -158,21 +169,44 @@ commander_1.program
     }
     // Scan through project for <T> tags
     if (options.inline) {
-        updates = [...updates, ...(yield (0, createInlineUpdates_1.default)(options))];
+        const { updates: newUpdates, errors: newErrors } = yield (0, createInlineUpdates_1.default)(options);
+        errors = [...errors, ...newErrors];
+        updates = [...updates, ...newUpdates];
     }
     // Metadata addition and validation
     const idHashMap = new Map();
+    const duplicateIds = new Set();
     updates = updates.map((update) => {
         const existingHash = idHashMap.get(update.metadata.id);
         if (existingHash) {
-            if (existingHash !== update.metadata.hash)
-                throw new Error(`Hashes don't match on two translations with the same id: ${update.metadata.id}. Check your <T id="${update.metadata.id}"> tags and make sure you're not accidentally duplicating IDs.`);
+            if (existingHash !== update.metadata.hash) {
+                errors.push(`Hashes don't match on two translations with the same id: ${chalk_1.default.blue(update.metadata.id)}. Check your ${chalk_1.default.green(`<T id="${chalk_1.default.blue(update.metadata.id)}">`)} tags and make sure you're not accidentally duplicating IDs.`);
+                duplicateIds.add(update.metadata.id);
+            }
         }
         else {
             idHashMap.set(update.metadata.id, update.metadata.hash);
         }
         return update;
     });
+    // Filter out updates with duplicate IDs
+    updates = updates.filter((update) => !duplicateIds.has(update.metadata.id));
+    if (errors.length > 0) {
+        if (options.ignoreErrors) {
+            console.log(chalk_1.default.red(`CLI Tool encountered errors while scanning for ${chalk_1.default.green("<T>")} tags.\n`));
+            console.log(errors
+                .map((error) => chalk_1.default.yellow("• Warning: ") + error + "\n")
+                .join(""), chalk_1.default.white(`These ${chalk_1.default.green("<T>")} components will not be translated.\n`));
+        }
+        else {
+            console.log(chalk_1.default.red(`CLI Tool encountered errors while scanning for ${chalk_1.default.green("<T>")} tags.\n`));
+            console.log(chalk_1.default.gray("To ignore these errors, re-run with --ignore-errors\n\n"), errors.map((error) => chalk_1.default.red("• Error: ") + error + "\n").join(""));
+            process.exit(1);
+        }
+    }
+    if (options.dryRun) {
+        process.exit(0);
+    }
     // Send updates to General Translation API
     if (updates.length) {
         const { projectId, defaultLocale } = options;
@@ -182,17 +216,32 @@ commander_1.program
             locales: options.locales,
             metadata: globalMetadata,
         };
-        const response = yield fetch(`${options.baseUrl}/v1/project/translations/update`, {
-            method: "POST",
-            headers: Object.assign({ "Content-Type": "application/json" }, (apiKey && { "x-gt-api-key": apiKey })),
-            body: JSON.stringify(body),
-        });
-        console.log();
-        if (!response.ok) {
-            throw new Error(response.status + ". " + (yield response.text()));
+        const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+        let i = 0;
+        const loadingInterval = setInterval(() => {
+            process.stdout.write(`\r${chalk_1.default.blue(frames[i])} Sending updates to General Translation API...`);
+            i = (i + 1) % frames.length;
+        }, 80);
+        try {
+            const response = yield fetch(`${options.baseUrl}/v1/project/translations/update`, {
+                method: "POST",
+                headers: Object.assign({ "Content-Type": "application/json" }, (apiKey && { "x-gt-api-key": apiKey })),
+                body: JSON.stringify(body),
+            });
+            clearInterval(loadingInterval);
+            process.stdout.write("\n\n"); // New line after loading is done
+            if (!response.ok) {
+                throw new Error(response.status + ". " + (yield response.text()));
+            }
+            const result = yield response.text();
+            console.log(chalk_1.default.green("✓ ") + chalk_1.default.green.bold(result));
         }
-        const result = yield response.text();
-        console.log(chalk_1.default.green("✓ ") + chalk_1.default.green.bold(result));
+        catch (error) {
+            clearInterval(loadingInterval);
+            process.stdout.write("\n");
+            console.log(chalk_1.default.red("✗ Failed to send updates"));
+            throw error;
+        }
     }
     else {
         throw new Error(errors_1.noTranslationsError);

@@ -1,7 +1,7 @@
 import fs from "fs";
 import { displayCreatingNewConfigFile } from "../console/console";
 
-const EXCLUDED_KEYS = ["src", "locales"];
+const EXCLUDED_KEYS = ["src", "locales", "dryRun", "ignoreErrors"];
 /**
  * Checks if the config file exists. If not, creates a new JSON file at the given filepath and writes the provided config object to it.
  * @param {string} configFilepath - The path to the config file.

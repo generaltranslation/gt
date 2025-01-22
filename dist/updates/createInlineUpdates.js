@@ -15,13 +15,23 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -54,10 +64,10 @@ function handleStringChild(child, index, childrenTypes) {
         result = result.trimEnd();
     }
     result = (() => {
-        let newResult = '';
+        let newResult = "";
         let newline = false;
         for (const char of result) {
-            if (char === '\n') {
+            if (char === "\n") {
                 newResult = newResult.trimEnd();
                 newline = true;
                 continue;
@@ -66,14 +76,14 @@ function handleStringChild(child, index, childrenTypes) {
                 newResult += char;
                 continue;
             }
-            if (char.trim() === '')
+            if (char.trim() === "")
                 continue;
             newResult += char;
             newline = false;
         }
         return newResult;
     })();
-    result = result.replace(/\s+/g, ' ');
+    result = result.replace(/\s+/g, " ");
     return result;
 }
 function isStaticExpression(expr) {
@@ -129,6 +139,7 @@ function isStaticExpression(expr) {
 function createInlineUpdates(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const updates = [];
+        const errors = [];
         // Use the provided app directory or default to the current directory
         const srcDirectory = options.src || ["./"];
         // Define the file extensions to look for
@@ -183,9 +194,7 @@ function createInlineUpdates(options) {
                     if (name.type === "JSXIdentifier" && name.name === "T") {
                         const componentObj = { props: {} };
                         // We'll track this flag to know if any unwrapped {variable} is found in children
-                        let hasUnwrappedExpression = false;
-                        // We'll also track if `id` or `context` is variable
-                        let hasVariableIdOrContext = false;
+                        const unwrappedExpressions = [];
                         // The buildJSXTree function that handles children recursion
                         function buildJSXTree(node, isInsideVar = false) {
                             if (t.isJSXExpressionContainer(node) && !isInsideVar) {
@@ -196,12 +205,13 @@ function createInlineUpdates(options) {
                                     // Preserve the exact whitespace for static string expressions
                                     return {
                                         expression: true,
-                                        result: staticAnalysis.value
+                                        result: staticAnalysis.value,
                                     };
                                 }
                                 // Keep existing behavior for non-static expressions
-                                hasUnwrappedExpression = true;
-                                return (0, generator_1.default)(node).code;
+                                const code = (0, generator_1.default)(node).code;
+                                unwrappedExpressions.push(code); // Keep track of unwrapped expressions for error reporting
+                                return code;
                             }
                             // Updated JSX Text handling
                             // JSX Text handling following React's rules
@@ -251,8 +261,7 @@ function createInlineUpdates(options) {
                                         props["..."] = (0, generator_1.default)(attr.argument).code;
                                     }
                                 });
-                                const children = element.children
-                                    .map((child) => buildJSXTree(child, nextInsideVar));
+                                const children = element.children.map((child) => buildJSXTree(child, nextInsideVar));
                                 if (children.length === 1) {
                                     props.children = children[0];
                                 }
@@ -309,32 +318,28 @@ function createInlineUpdates(options) {
                                 // If it's an expression container like id={"hello"}, id={someVar}, etc.
                                 else if (t.isJSXExpressionContainer(attr.value)) {
                                     const expr = attr.value.expression;
+                                    const code = (0, generator_1.default)(expr).code;
                                     // Only check for static expressions on id and context props
                                     if (attrName === "id" || attrName === "context") {
                                         const staticAnalysis = isStaticExpression(expr);
                                         if (!staticAnalysis.isStatic) {
-                                            (0, warnings_1.warnVariableProp)(file, attrName, (0, generator_1.default)(expr).code);
-                                            hasVariableIdOrContext = true;
+                                            errors.push((0, warnings_1.warnVariableProp)(file, attrName, code));
                                         }
                                     }
                                     // Store the value (for all props)
-                                    componentObj.props[attrName] = (0, generator_1.default)(expr).code;
+                                    componentObj.props[attrName] = code;
                                 }
                             }
                         });
-                        // If we already found a variable `id` or `context`, skip immediately
-                        if (hasVariableIdOrContext) {
-                            return;
-                        }
                         // Build and store the "children" / tree
                         const initialTree = buildJSXTree(path.node).props.children;
                         const handleChildrenWhitespace = (currentTree) => {
                             var _a;
                             if (Array.isArray(currentTree)) {
-                                const childrenTypes = currentTree.map(child => {
-                                    if (typeof child === 'string')
+                                const childrenTypes = currentTree.map((child) => {
+                                    if (typeof child === "string")
                                         return "text";
-                                    if (typeof child === 'object' && 'expression' in child)
+                                    if (typeof child === "object" && "expression" in child)
                                         return "expression";
                                     return "element";
                                 });
@@ -358,10 +363,11 @@ function createInlineUpdates(options) {
                                 const currentTreeChildren = handleChildrenWhitespace(currentTree.props.children);
                                 return Object.assign(Object.assign({}, currentTree), { props: Object.assign(Object.assign({}, currentTree.props), (currentTreeChildren && { children: currentTreeChildren })) });
                             }
-                            else if (typeof currentTree === 'object' && "expression" in currentTree === true) {
+                            else if (typeof currentTree === "object" &&
+                                "expression" in currentTree === true) {
                                 return currentTree.result;
                             }
-                            else if (typeof currentTree === 'string') {
+                            else if (typeof currentTree === "string") {
                                 return handleStringChild(currentTree, 0, ["text"]);
                             }
                             return currentTree;
@@ -373,20 +379,19 @@ function createInlineUpdates(options) {
                         const id = componentObj.props.id;
                         // If user forgot to provide an `id`, warn
                         if (!id) {
-                            (0, warnings_1.warnNoId)(file);
-                            return;
+                            errors.push((0, warnings_1.warnNoId)(file));
                         }
                         // If we found an unwrapped expression, skip
-                        if (hasUnwrappedExpression) {
-                            (0, warnings_1.warnHasUnwrappedExpression)(file, id);
-                            return;
+                        if (unwrappedExpressions.length > 0) {
+                            errors.push((0, warnings_1.warnHasUnwrappedExpression)(file, id, unwrappedExpressions));
                         }
-                        // If we reached here, this <T> is valid
-                        const childrenAsObjects = componentObj.tree;
+                        if (errors.length > 0)
+                            return;
+                        // <T> is valid here
                         // displayFoundTMessage(file, id);
                         updates.push({
                             type: "jsx",
-                            source: childrenAsObjects,
+                            source: componentObj.tree,
                             metadata: componentObj.props,
                         });
                     }
@@ -404,6 +409,6 @@ function createInlineUpdates(options) {
                 : { source: update.source });
             update.metadata.hash = hash;
         })));
-        return updates;
+        return { updates, errors };
     });
 }

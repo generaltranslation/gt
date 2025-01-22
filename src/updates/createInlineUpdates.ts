@@ -16,7 +16,11 @@ import {
 } from "../console/warnings";
 import { hashJsxChildren } from "generaltranslation/id";
 
-function handleStringChild(child: string, index: number, childrenTypes: ("expression" | "text" | "element")[]) {
+function handleStringChild(
+  child: string,
+  index: number,
+  childrenTypes: ("expression" | "text" | "element")[]
+) {
   let result = child;
   if (index === 0) {
     result = result.trimStart();
@@ -25,10 +29,10 @@ function handleStringChild(child: string, index: number, childrenTypes: ("expres
     result = result.trimEnd();
   }
   result = (() => {
-    let newResult = '';
+    let newResult = "";
     let newline = false;
     for (const char of result) {
-      if (char === '\n') {
+      if (char === "\n") {
         newResult = newResult.trimEnd();
         newline = true;
         continue;
@@ -37,13 +41,13 @@ function handleStringChild(child: string, index: number, childrenTypes: ("expres
         newResult += char;
         continue;
       }
-      if (char.trim() === '') continue;
+      if (char.trim() === "") continue;
       newResult += char;
       newline = false;
     }
     return newResult;
   })();
-  result = result.replace(/\s+/g, ' ')
+  result = result.replace(/\s+/g, " ");
   return result;
 }
 
@@ -115,8 +119,10 @@ function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
 
 export default async function createInlineUpdates(
   options: Options
-): Promise<Updates> {
+): Promise<{ updates: Updates; errors: string[] }> {
   const updates: Updates = [];
+
+  const errors: string[] = [];
 
   // Use the provided app directory or default to the current directory
   const srcDirectory = options.src || ["./"];
@@ -182,10 +188,7 @@ export default async function createInlineUpdates(
           const componentObj: any = { props: {} };
 
           // We'll track this flag to know if any unwrapped {variable} is found in children
-          let hasUnwrappedExpression = false;
-
-          // We'll also track if `id` or `context` is variable
-          let hasVariableIdOrContext = false;
+          const unwrappedExpressions: string[] = [];
 
           // The buildJSXTree function that handles children recursion
           function buildJSXTree(node: any, isInsideVar = false): any {
@@ -199,12 +202,13 @@ export default async function createInlineUpdates(
                 // Preserve the exact whitespace for static string expressions
                 return {
                   expression: true,
-                  result: staticAnalysis.value
+                  result: staticAnalysis.value,
                 };
               }
               // Keep existing behavior for non-static expressions
-              hasUnwrappedExpression = true;
-              return generate(node).code;
+              const code = generate(node).code;
+              unwrappedExpressions.push(code); // Keep track of unwrapped expressions for error reporting
+              return code;
             }
 
             // Updated JSX Text handling
@@ -259,9 +263,10 @@ export default async function createInlineUpdates(
                 }
               });
 
-              const children = element.children
-                .map((child) => buildJSXTree(child, nextInsideVar))
-                
+              const children = element.children.map((child) =>
+                buildJSXTree(child, nextInsideVar)
+              );
+
               if (children.length === 1) {
                 props.children = children[0];
               } else if (children.length > 1) {
@@ -319,38 +324,33 @@ export default async function createInlineUpdates(
               // If it's an expression container like id={"hello"}, id={someVar}, etc.
               else if (t.isJSXExpressionContainer(attr.value)) {
                 const expr = attr.value.expression;
+                const code = generate(expr).code;
 
                 // Only check for static expressions on id and context props
                 if (attrName === "id" || attrName === "context") {
                   const staticAnalysis = isStaticExpression(expr);
                   if (!staticAnalysis.isStatic) {
-                    warnVariableProp(file, attrName, generate(expr).code);
-                    hasVariableIdOrContext = true;
+                    errors.push(warnVariableProp(file, attrName, code));
                   }
                 }
 
                 // Store the value (for all props)
-                componentObj.props[attrName] = generate(expr).code;
+                componentObj.props[attrName] = code;
               }
             }
           });
-
-          // If we already found a variable `id` or `context`, skip immediately
-          if (hasVariableIdOrContext) {
-            return;
-          }
 
           // Build and store the "children" / tree
           const initialTree = buildJSXTree(path.node).props.children;
           const handleChildrenWhitespace = (currentTree: any): any => {
             if (Array.isArray(currentTree)) {
-              const childrenTypes: ("text" | "element" | "expression")[] = 
-                currentTree.map(child => {
-                  if (typeof child === 'string') return "text";
-                  if (typeof child === 'object' && 'expression' in child) return "expression"
+              const childrenTypes: ("text" | "element" | "expression")[] =
+                currentTree.map((child) => {
+                  if (typeof child === "string") return "text";
+                  if (typeof child === "object" && "expression" in child)
+                    return "expression";
                   return "element";
-                })
-              ;
+                });
               const newChildren: any[] = [];
               currentTree.forEach((child, index) => {
                 if (childrenTypes[index] === "text") {
@@ -359,31 +359,34 @@ export default async function createInlineUpdates(
                 } else if (childrenTypes[index] === "expression") {
                   newChildren.push(child.result);
                 } else {
-                  newChildren.push(handleChildrenWhitespace(child))
+                  newChildren.push(handleChildrenWhitespace(child));
                 }
-              })
+              });
               return newChildren.length === 1 ? newChildren[0] : newChildren;
             } else if (currentTree?.props?.children) {
-              const currentTreeChildren = handleChildrenWhitespace(currentTree.props.children);
-               return {
+              const currentTreeChildren = handleChildrenWhitespace(
+                currentTree.props.children
+              );
+              return {
                 ...currentTree,
                 props: {
                   ...currentTree.props,
-                  ...(currentTreeChildren && { children: currentTreeChildren })
-                }
-              }
-            } else if (typeof currentTree === 'object' && "expression" in currentTree === true) {
+                  ...(currentTreeChildren && { children: currentTreeChildren }),
+                },
+              };
+            } else if (
+              typeof currentTree === "object" &&
+              "expression" in currentTree === true
+            ) {
               return currentTree.result;
-            } else if (typeof currentTree === 'string') {
+            } else if (typeof currentTree === "string") {
               return handleStringChild(currentTree, 0, ["text"]);
             }
             return currentTree;
-          }
-          const whitespaceHandledTree = handleChildrenWhitespace(initialTree)
-          
-          const tree = addGTIdentifierToSyntaxTree(
-            whitespaceHandledTree
-          );
+          };
+          const whitespaceHandledTree = handleChildrenWhitespace(initialTree);
+
+          const tree = addGTIdentifierToSyntaxTree(whitespaceHandledTree);
 
           componentObj.tree = tree.length === 1 ? tree[0] : tree;
 
@@ -391,23 +394,22 @@ export default async function createInlineUpdates(
           const id = componentObj.props.id;
           // If user forgot to provide an `id`, warn
           if (!id) {
-            warnNoId(file);
-            return;
+            errors.push(warnNoId(file));
           }
-
           // If we found an unwrapped expression, skip
-          if (hasUnwrappedExpression) {
-            warnHasUnwrappedExpression(file, id);
-            return;
+          if (unwrappedExpressions.length > 0) {
+            errors.push(
+              warnHasUnwrappedExpression(file, id, unwrappedExpressions)
+            );
           }
 
-          // If we reached here, this <T> is valid
-          const childrenAsObjects = componentObj.tree;
+          if (errors.length > 0) return;
 
+          // <T> is valid here
           // displayFoundTMessage(file, id);
           updates.push({
             type: "jsx",
-            source: childrenAsObjects,
+            source: componentObj.tree,
             metadata: componentObj.props,
           });
         }
@@ -431,5 +433,5 @@ export default async function createInlineUpdates(
     })
   );
 
-  return updates;
+  return { updates, errors };
 }
