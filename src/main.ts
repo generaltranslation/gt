@@ -63,12 +63,12 @@ program
     "./gt.config.json"
   )
   .option(
-    "--apiKey <key>",
+    "--api-key <key>",
     "API key for General Translation cloud service",
     process.env.GT_API_KEY
   )
   .option(
-    "--projectId <id>",
+    "--project-id <id>",
     "Project ID for the translation service",
     process.env.GT_PROJECT_ID
   )
@@ -99,7 +99,7 @@ program
     findFilepaths(["./src", "./app", "./pages", "./components"])
   )
   .option(
-    "--defaultLanguage, --defaultLocale <locale>",
+    "--default-language, --default-locale <locale>",
     "Default locale (e.g., en)"
   )
   .option(

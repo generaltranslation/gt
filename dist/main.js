@@ -77,8 +77,8 @@ commander_1.program
     .name("translate")
     .description("Scans the project for a dictionary and/or <T> tags, and updates the General Translation remote dictionary with the latest content.")
     .option("--options <path>", "Filepath to options JSON file, by default gt.config.json", "./gt.config.json")
-    .option("--apiKey <key>", "API key for General Translation cloud service", process.env.GT_API_KEY)
-    .option("--projectId <id>", "Project ID for the translation service", process.env.GT_PROJECT_ID)
+    .option("--api-key <key>", "API key for General Translation cloud service", process.env.GT_API_KEY)
+    .option("--project-id <id>", "Project ID for the translation service", process.env.GT_PROJECT_ID)
     .option("--tsconfig, --jsconfig <path>", "Path to jsconfig or tsconfig file", (0, findFilepath_1.default)(["./tsconfig.json", "./jsconfig.json"]))
     .option("--dictionary <path>", "Path to dictionary file", (0, findFilepath_1.default)([
     "./dictionary.js",
@@ -93,7 +93,7 @@ commander_1.program
     "./src/dictionary.tsx",
 ]))
     .option("--src <path>", "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(["./src", "./app", "./pages", "./components"]))
-    .option("--defaultLanguage, --defaultLocale <locale>", "Default locale (e.g., en)")
+    .option("--default-language, --default-locale <locale>", "Default locale (e.g., en)")
     .option("--languages, --locales <locales...>", "Space-separated list of locales (e.g., en fr es)", [])
     .option("--inline", "Include inline <T> tags in addition to dictionary file", true)
     .option("--ignore-errors", "Ignore errors encountered while scanning for <T> tags", false)
