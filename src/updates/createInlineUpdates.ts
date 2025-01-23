@@ -5,7 +5,7 @@ import os from "os";
 import { Options, Updates } from "../main";
 
 import { parse } from "@babel/parser";
-import traverse from "@babel/traverse";
+import traverse, { NodePath } from "@babel/traverse";
 import generate from "@babel/generator";
 import * as t from "@babel/types";
 import addGTIdentifierToSyntaxTree from "../data-_gt/addGTIdentifierToSyntaxTree";
@@ -15,6 +15,9 @@ import {
   warnVariableProp,
 } from "../console/warnings";
 import { hashJsxChildren } from "generaltranslation/id";
+
+// Declare which components are considered valid "variable containers"
+const VARIABLE_COMPONENTS = ["Var", "DateTime", "Currency", "Num"];
 
 function handleStringChild(
   child: string,
@@ -125,6 +128,238 @@ function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
   return { isStatic: false };
 }
 
+function parseJSXElement(
+  node: t.JSXElement,
+  updates: Updates,
+  errors: string[],
+  file: string
+) {
+  const openingElement = node.openingElement;
+  const name = openingElement.name;
+
+  // Only proceed if it's <T> ...
+  if (name.type === "JSXIdentifier" && name.name === "T") {
+    const componentObj: any = { props: {} };
+
+    // We'll track this flag to know if any unwrapped {variable} is found in children
+    const unwrappedExpressions: string[] = [];
+
+    // The buildJSXTree function that handles children recursion
+    function buildJSXTree(node: any): any {
+      if (t.isJSXExpressionContainer(node)) {
+        const expr = node.expression;
+        const staticAnalysis = isStaticExpression(expr);
+        if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
+          // Preserve the exact whitespace for static string expressions
+          return {
+            expression: true,
+            result: staticAnalysis.value,
+          };
+        }
+        // Keep existing behavior for non-static expressions
+        const code = generate(node).code;
+        unwrappedExpressions.push(code); // Keep track of unwrapped expressions for error reporting
+        return code;
+      }
+
+      // Updated JSX Text handling
+      // JSX Text handling following React's rules
+      if (t.isJSXText(node)) {
+        let text = node.value;
+        return text;
+      } else if (t.isJSXExpressionContainer(node)) {
+        return buildJSXTree(node.expression);
+
+        // If it's a JSX element
+      } else if (t.isJSXElement(node)) {
+        const element = node;
+        const elementName = element.openingElement.name;
+
+        let typeName;
+        if (t.isJSXIdentifier(elementName)) {
+          typeName = elementName.name;
+        } else if (t.isJSXMemberExpression(elementName)) {
+          typeName = generate(elementName).code;
+        } else {
+          typeName = null;
+        }
+
+        // If this JSXElement is one of the recognized variable components,
+        const elementIsVariable = VARIABLE_COMPONENTS.includes(typeName ?? "");
+
+        const props: { [key: string]: any } = {};
+        element.openingElement.attributes.forEach((attr) => {
+          if (t.isJSXAttribute(attr)) {
+            const attrName = attr.name.name;
+            let attrValue = null;
+            if (attr.value) {
+              if (t.isStringLiteral(attr.value)) {
+                attrValue = attr.value.value;
+              } else if (t.isJSXExpressionContainer(attr.value)) {
+                attrValue = buildJSXTree(attr.value.expression);
+              }
+            }
+            props[attrName as any] = attrValue;
+          } else if (t.isJSXSpreadAttribute(attr)) {
+            props["..."] = generate(attr.argument).code;
+          }
+        });
+
+        if (elementIsVariable) {
+          parseJSXElement(element, updates, errors, file);
+          return {
+            type: typeName,
+            props,
+          };
+        }
+
+        const children = element.children.map((child) => buildJSXTree(child));
+        if (children.length === 1) {
+          props.children = children[0];
+        } else if (children.length > 1) {
+          props.children = children;
+        }
+
+        return {
+          type: typeName,
+          props,
+        };
+      }
+      // If it's a JSX fragment
+      else if (t.isJSXFragment(node)) {
+        const children = node.children
+          .map((child: any) => buildJSXTree(child))
+          .filter((child: any) => child !== null && child !== "");
+        return {
+          type: "",
+          props: {
+            children: children.length === 1 ? children[0] : children,
+          },
+        };
+      }
+      // If it's a string literal (standalone)
+      else if (t.isStringLiteral(node)) {
+        return node.value;
+      }
+      // If it's some other JS expression
+      else if (
+        t.isIdentifier(node) ||
+        t.isMemberExpression(node) ||
+        t.isCallExpression(node) ||
+        t.isBinaryExpression(node) ||
+        t.isLogicalExpression(node) ||
+        t.isConditionalExpression(node)
+      ) {
+        return generate(node).code;
+      } else {
+        return generate(node).code;
+      }
+    }
+    // end buildJSXTree
+
+    // Gather <T>'s props
+    openingElement.attributes.forEach((attr) => {
+      if (!t.isJSXAttribute(attr)) return;
+      const attrName = attr.name.name;
+      if (typeof attrName !== "string") return;
+
+      if (attr.value) {
+        // If it's a plain string literal like id="hello"
+        if (t.isStringLiteral(attr.value)) {
+          componentObj.props[attrName] = attr.value.value;
+        }
+        // If it's an expression container like id={"hello"}, id={someVar}, etc.
+        else if (t.isJSXExpressionContainer(attr.value)) {
+          const expr = attr.value.expression;
+          const code = generate(expr).code;
+
+          // Only check for static expressions on id and context props
+          if (attrName === "id" || attrName === "context") {
+            const staticAnalysis = isStaticExpression(expr);
+            if (!staticAnalysis.isStatic) {
+              errors.push(warnVariableProp(file, attrName, code));
+            }
+          }
+
+          // Store the value (for all props)
+          componentObj.props[attrName] = code;
+        }
+      }
+    });
+
+    // Build and store the "children" / tree
+    const initialTree = buildJSXTree(node).props.children;
+    const handleChildrenWhitespace = (currentTree: any): any => {
+      if (Array.isArray(currentTree)) {
+        const childrenTypes: ("text" | "element" | "expression")[] =
+          currentTree.map((child) => {
+            if (typeof child === "string") return "text";
+            if (typeof child === "object" && "expression" in child)
+              return "expression";
+            return "element";
+          });
+        const newChildren: any[] = [];
+        currentTree.forEach((child, index) => {
+          if (childrenTypes[index] === "text") {
+            const string = handleStringChild(child, index, childrenTypes);
+            if (string) newChildren.push(string);
+          } else if (childrenTypes[index] === "expression") {
+            newChildren.push(child.result);
+          } else {
+            newChildren.push(handleChildrenWhitespace(child));
+          }
+        });
+        return newChildren.length === 1 ? newChildren[0] : newChildren;
+      } else if (currentTree?.props?.children) {
+        const currentTreeChildren = handleChildrenWhitespace(
+          currentTree.props.children
+        );
+        return {
+          ...currentTree,
+          props: {
+            ...currentTree.props,
+            ...(currentTreeChildren && { children: currentTreeChildren }),
+          },
+        };
+      } else if (
+        typeof currentTree === "object" &&
+        "expression" in currentTree === true
+      ) {
+        return currentTree.result;
+      } else if (typeof currentTree === "string") {
+        return handleStringChild(currentTree, 0, ["text"]);
+      }
+      return currentTree;
+    };
+    const whitespaceHandledTree = handleChildrenWhitespace(initialTree);
+
+    const tree = addGTIdentifierToSyntaxTree(whitespaceHandledTree);
+
+    componentObj.tree = tree.length === 1 ? tree[0] : tree;
+
+    // Check the id ...
+    const id = componentObj.props.id;
+    // If user forgot to provide an `id`, warn
+    if (!id) {
+      errors.push(warnNoId(file));
+    }
+    // If we found an unwrapped expression, skip
+    if (unwrappedExpressions.length > 0) {
+      errors.push(warnHasUnwrappedExpression(file, id, unwrappedExpressions));
+    }
+
+    if (errors.length > 0) return;
+
+    // <T> is valid here
+    // displayFoundTMessage(file, id);
+    updates.push({
+      type: "jsx",
+      source: componentObj.tree,
+      metadata: componentObj.props,
+    });
+  }
+}
+
 export default async function createInlineUpdates(
   options: Options
 ): Promise<{ updates: Updates; errors: string[] }> {
@@ -169,9 +404,6 @@ export default async function createInlineUpdates(
 
   const files = srcDirectory.flatMap((dir) => getFiles(dir));
 
-  // Declare which components are considered valid "variable containers"
-  const variableComponents = ["Var", "DateTime", "Currency", "Num"];
-
   for (const file of files) {
     const code = fs.readFileSync(file, "utf8");
 
@@ -188,238 +420,7 @@ export default async function createInlineUpdates(
 
     traverse(ast, {
       JSXElement(path) {
-        const openingElement = path.node.openingElement;
-        const name = openingElement.name;
-
-        // Only proceed if it's <T> ...
-        if (name.type === "JSXIdentifier" && name.name === "T") {
-          const componentObj: any = { props: {} };
-
-          // We'll track this flag to know if any unwrapped {variable} is found in children
-          const unwrappedExpressions: string[] = [];
-
-          // The buildJSXTree function that handles children recursion
-          function buildJSXTree(node: any): any {
-            if (t.isJSXExpressionContainer(node)) {
-              const expr = node.expression;
-              const staticAnalysis = isStaticExpression(expr);
-              if (
-                staticAnalysis.isStatic &&
-                staticAnalysis.value !== undefined
-              ) {
-                // Preserve the exact whitespace for static string expressions
-                return {
-                  expression: true,
-                  result: staticAnalysis.value,
-                };
-              }
-              // Keep existing behavior for non-static expressions
-              const code = generate(node).code;
-              unwrappedExpressions.push(code); // Keep track of unwrapped expressions for error reporting
-              return code;
-            }
-
-            // Updated JSX Text handling
-            // JSX Text handling following React's rules
-            if (t.isJSXText(node)) {
-              let text = node.value;
-              return text;
-            } else if (t.isJSXExpressionContainer(node)) {
-              return buildJSXTree(node.expression);
-
-              // If it's a JSX element
-            } else if (t.isJSXElement(node)) {
-              const element = node;
-              const elementName = element.openingElement.name;
-
-              let typeName;
-              if (t.isJSXIdentifier(elementName)) {
-                typeName = elementName.name;
-              } else if (t.isJSXMemberExpression(elementName)) {
-                typeName = generate(elementName).code;
-              } else {
-                typeName = null;
-              }
-
-              // If this JSXElement is one of the recognized variable components,
-              const elementIsVariable = variableComponents.includes(
-                typeName ?? ""
-              );
-
-              const props: { [key: string]: any } = {};
-              element.openingElement.attributes.forEach((attr) => {
-                if (t.isJSXAttribute(attr)) {
-                  const attrName = attr.name.name;
-                  let attrValue = null;
-                  if (attr.value) {
-                    if (t.isStringLiteral(attr.value)) {
-                      attrValue = attr.value.value;
-                    } else if (t.isJSXExpressionContainer(attr.value)) {
-                      attrValue = buildJSXTree(attr.value.expression);
-                    }
-                  }
-                  props[attrName as any] = attrValue;
-                } else if (t.isJSXSpreadAttribute(attr)) {
-                  props["..."] = generate(attr.argument).code;
-                }
-              });
-
-              if (elementIsVariable) {
-                return {
-                  type: typeName,
-                  props,
-                };
-              }
-
-              const children = element.children.map((child) =>
-                buildJSXTree(child)
-              );
-              if (children.length === 1) {
-                props.children = children[0];
-              } else if (children.length > 1) {
-                props.children = children;
-              }
-
-              return {
-                type: typeName,
-                props,
-              };
-            }
-            // If it's a JSX fragment
-            else if (t.isJSXFragment(node)) {
-              const children = node.children
-                .map((child: any) => buildJSXTree(child))
-                .filter((child: any) => child !== null && child !== "");
-              return {
-                type: "",
-                props: {
-                  children: children.length === 1 ? children[0] : children,
-                },
-              };
-            }
-            // If it's a string literal (standalone)
-            else if (t.isStringLiteral(node)) {
-              return node.value;
-            }
-            // If it's some other JS expression
-            else if (
-              t.isIdentifier(node) ||
-              t.isMemberExpression(node) ||
-              t.isCallExpression(node) ||
-              t.isBinaryExpression(node) ||
-              t.isLogicalExpression(node) ||
-              t.isConditionalExpression(node)
-            ) {
-              return generate(node).code;
-            } else {
-              return generate(node).code;
-            }
-          }
-          // end buildJSXTree
-
-          // Gather <T>'s props
-          openingElement.attributes.forEach((attr) => {
-            if (!t.isJSXAttribute(attr)) return;
-            const attrName = attr.name.name;
-            if (typeof attrName !== "string") return;
-
-            if (attr.value) {
-              // If it's a plain string literal like id="hello"
-              if (t.isStringLiteral(attr.value)) {
-                componentObj.props[attrName] = attr.value.value;
-              }
-              // If it's an expression container like id={"hello"}, id={someVar}, etc.
-              else if (t.isJSXExpressionContainer(attr.value)) {
-                const expr = attr.value.expression;
-                const code = generate(expr).code;
-
-                // Only check for static expressions on id and context props
-                if (attrName === "id" || attrName === "context") {
-                  const staticAnalysis = isStaticExpression(expr);
-                  if (!staticAnalysis.isStatic) {
-                    errors.push(warnVariableProp(file, attrName, code));
-                  }
-                }
-
-                // Store the value (for all props)
-                componentObj.props[attrName] = code;
-              }
-            }
-          });
-
-          // Build and store the "children" / tree
-          const initialTree = buildJSXTree(path.node).props.children;
-          const handleChildrenWhitespace = (currentTree: any): any => {
-            if (Array.isArray(currentTree)) {
-              const childrenTypes: ("text" | "element" | "expression")[] =
-                currentTree.map((child) => {
-                  if (typeof child === "string") return "text";
-                  if (typeof child === "object" && "expression" in child)
-                    return "expression";
-                  return "element";
-                });
-              const newChildren: any[] = [];
-              currentTree.forEach((child, index) => {
-                if (childrenTypes[index] === "text") {
-                  const string = handleStringChild(child, index, childrenTypes);
-                  if (string) newChildren.push(string);
-                } else if (childrenTypes[index] === "expression") {
-                  newChildren.push(child.result);
-                } else {
-                  newChildren.push(handleChildrenWhitespace(child));
-                }
-              });
-              return newChildren.length === 1 ? newChildren[0] : newChildren;
-            } else if (currentTree?.props?.children) {
-              const currentTreeChildren = handleChildrenWhitespace(
-                currentTree.props.children
-              );
-              return {
-                ...currentTree,
-                props: {
-                  ...currentTree.props,
-                  ...(currentTreeChildren && { children: currentTreeChildren }),
-                },
-              };
-            } else if (
-              typeof currentTree === "object" &&
-              "expression" in currentTree === true
-            ) {
-              return currentTree.result;
-            } else if (typeof currentTree === "string") {
-              return handleStringChild(currentTree, 0, ["text"]);
-            }
-            return currentTree;
-          };
-          const whitespaceHandledTree = handleChildrenWhitespace(initialTree);
-
-          const tree = addGTIdentifierToSyntaxTree(whitespaceHandledTree);
-
-          componentObj.tree = tree.length === 1 ? tree[0] : tree;
-
-          // Check the id ...
-          const id = componentObj.props.id;
-          // If user forgot to provide an `id`, warn
-          if (!id) {
-            errors.push(warnNoId(file));
-          }
-          // If we found an unwrapped expression, skip
-          if (unwrappedExpressions.length > 0) {
-            errors.push(
-              warnHasUnwrappedExpression(file, id, unwrappedExpressions)
-            );
-          }
-
-          if (errors.length > 0) return;
-
-          // <T> is valid here
-          // displayFoundTMessage(file, id);
-          updates.push({
-            type: "jsx",
-            source: componentObj.tree,
-            metadata: componentObj.props,
-          });
-        }
+        parseJSXElement(path.node, updates, errors, file);
       },
     });
   }
