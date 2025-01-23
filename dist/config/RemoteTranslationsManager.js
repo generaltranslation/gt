@@ -84,11 +84,11 @@ var RemoteTranslationsManager = /** @class */ (function () {
     /**
      * Fetches translations from the remote cache.
      * @param {string} reference - The translation reference.
-     * @returns {Promise<Record<string, any> | null>} The fetched translations or null if not found.
+     * @returns {Promise<TranslationsObject | undefined>} The fetched translations or null if not found.
      */
     RemoteTranslationsManager.prototype._fetchTranslations = function (reference) {
         return __awaiter(this, void 0, void 0, function () {
-            var response, result, error_1;
+            var response, result, parsedResult, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -100,15 +100,25 @@ var RemoteTranslationsManager = /** @class */ (function () {
                     case 2:
                         result = _a.sent();
                         if (Object.keys(result).length) {
+                            // Record our fetch time
                             this.lastFetchTime.set(reference, Date.now());
-                            return [2 /*return*/, result];
+                            parsedResult = Object.entries(result).reduce(function (translationsAcc, _a) {
+                                var id = _a[0], hashToTranslation = _a[1];
+                                translationsAcc[id] = Object.entries(hashToTranslation || {}).reduce(function (idAcc, _a) {
+                                    var hash = _a[0], content = _a[1];
+                                    idAcc[hash] = { state: 'success', entry: content };
+                                    return idAcc;
+                                }, {});
+                                return translationsAcc;
+                            }, {});
+                            return [2 /*return*/, parsedResult];
                         }
                         return [3 /*break*/, 4];
                     case 3:
                         error_1 = _a.sent();
                         console.error(createErrors_1.remoteTranslationsError, error_1);
                         return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/, null];
+                    case 4: return [2 /*return*/, undefined];
                 }
             });
         });
@@ -128,24 +138,24 @@ var RemoteTranslationsManager = /** @class */ (function () {
         return now - fetchTime > expiryTime;
     };
     /**
-     * Retrieves translations for a given locale.
+     * Retrieves translations for a given locale from the remote or local cache.
      * @param {string} locale - The locale code.
-     * @returns {Promise<Record<string, any> | null>} The translations data or null if not found.
+     * @returns {Promise<TranslationsObject | undefined>} The translations data or null if not found.
      */
-    RemoteTranslationsManager.prototype.getTranslations = function (locale) {
+    RemoteTranslationsManager.prototype.getCachedTranslations = function (locale) {
         return __awaiter(this, void 0, void 0, function () {
             var reference, fetchPromise, retrievedTranslations;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         reference = (0, generaltranslation_1.standardizeLocale)(locale);
-                        // If we have cached translations and they are not expired, return them
+                        // If we have cached translations locally and they are not expired, return them
                         if (this.translationsMap.has(reference) && !this._isExpired(reference)) {
-                            return [2 /*return*/, this.translationsMap.get(reference) || null];
+                            return [2 /*return*/, this.translationsMap.get(reference)];
                         }
                         if (!this.fetchPromises.has(reference)) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.fetchPromises.get(reference)];
-                    case 1: return [2 /*return*/, (_a.sent()) || null];
+                    case 1: return [2 /*return*/, _a.sent()];
                     case 2:
                         fetchPromise = this._fetchTranslations(reference);
                         this.fetchPromises.set(reference, fetchPromise);
@@ -153,6 +163,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
                     case 3:
                         retrievedTranslations = _a.sent();
                         this.fetchPromises.delete(reference);
+                        // Populate our record of translations
                         if (retrievedTranslations) {
                             this.translationsMap.set(reference, retrievedTranslations);
                         }
@@ -176,7 +187,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
             return false;
         var reference = (0, generaltranslation_1.standardizeLocale)(locale);
         var currentTranslations = this.translationsMap.get(reference) || {};
-        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[id] = (_b = {}, _b[key] = translation, _b), _a)));
+        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[id] = __assign(__assign({}, (currentTranslations[id] || {})), (_b = {}, _b[key] = translation, _b)), _a)));
         // Reset the fetch time since we just manually updated the translation
         this.lastFetchTime.set(reference, Date.now());
         return true;

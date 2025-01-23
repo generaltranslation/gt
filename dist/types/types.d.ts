@@ -1,13 +1,11 @@
-import { TranslatedChildren, TranslatedContent, TranslationError } from "gt-react/internal";
-export type TranslationPromise = {
-    promise: Promise<TranslatedChildren> | Promise<TranslatedContent>;
-    hash: string;
-    type: 'jsx' | 'content';
+import { TaggedChildren, TranslationError, Metadata } from "gt-react/internal";
+export type TaggedEntry = string | TaggedChildren;
+export type TaggedDictionaryEntry = TaggedEntry | [TaggedEntry] | [TaggedEntry, Metadata];
+export type TaggedDictionary = {
+    [key: string]: TaggedDictionary | TaggedDictionaryEntry;
 };
-export type Translations = {
-    [id: string]: {
-        [hash: string]: TranslatedChildren | TranslatedContent;
-    } | TranslationError | TranslationPromise;
+export type FlattenedTaggedDictionary = {
+    [key: string]: TaggedDictionaryEntry;
 };
 export declare class GTTranslationError extends Error {
     error: string;

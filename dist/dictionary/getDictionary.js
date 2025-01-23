@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getDictionary;
 exports.getDictionaryEntry = getDictionaryEntry;
 var internal_1 = require("gt-react/internal");
-var dictionary;
+var dictionary = undefined;
 function getDictionary() {
     if (dictionary)
         return dictionary;
@@ -17,6 +17,8 @@ function getDictionary() {
 }
 function getDictionaryEntry(id) {
     var obj = getDictionary();
+    if (!obj)
+        return undefined;
     return (0, internal_1.getDictionaryEntry)(obj, id);
 }
 //# sourceMappingURL=getDictionary.js.map

@@ -2,6 +2,7 @@ import { standardizeLocale } from "generaltranslation";
 import { remoteTranslationsError } from "../errors/createErrors";
 import defaultInitGTProps from "./props/defaultInitGTProps";
 import { defaultCacheUrl } from "generaltranslation/internal";
+import { TranslationsObject, TranslationLoading, TranslationError, TranslationSuccess } from "gt-react/internal";
 
 /**
  * Configuration type for RemoteTranslationsManager.
@@ -21,8 +22,8 @@ type RemoteTranslationsConfig = {
  */
 export class RemoteTranslationsManager {
   private config: RemoteTranslationsConfig;
-  private translationsMap: Map<string, Record<string, any>>;
-  private fetchPromises: Map<string, Promise<Record<string, any> | null>>;
+  private translationsMap: Map<string, TranslationsObject>;
+  private fetchPromises: Map<string, Promise<TranslationsObject | undefined>>;
   private requestedTranslations: Map<string, boolean>;
   private lastFetchTime: Map<string, number>;
 
@@ -53,24 +54,36 @@ export class RemoteTranslationsManager {
   /**
    * Fetches translations from the remote cache.
    * @param {string} reference - The translation reference.
-   * @returns {Promise<Record<string, any> | null>} The fetched translations or null if not found.
+   * @returns {Promise<TranslationsObject | undefined>} The fetched translations or null if not found.
    */
   private async _fetchTranslations(
     reference: string
-  ): Promise<Record<string, any> | null> {
+  ): Promise<TranslationsObject | undefined> {
     try {
       const response = await fetch(
         `${this.config.cacheUrl}/${this.config.projectId}/${reference}`
       );
       const result = await response.json();
       if (Object.keys(result).length) {
+
+        // Record our fetch time
         this.lastFetchTime.set(reference, Date.now());
-        return result;
+
+        // Parse response
+        const parsedResult = Object.entries(result).reduce((translationsAcc: Record<string, any>, [id, hashToTranslation]: [string, any]) => {
+          translationsAcc[id] = Object.entries(hashToTranslation || {}).reduce((idAcc: Record<string, any>, [hash, content]) => {
+            idAcc[hash] = { state: 'success', entry: content };
+            return idAcc;
+          }, {});
+          return translationsAcc;
+        }, {})
+
+        return parsedResult;
       }
     } catch (error) {
       console.error(remoteTranslationsError, error);
     }
-    return null;
+    return undefined;
   }
 
   /**
@@ -87,33 +100,36 @@ export class RemoteTranslationsManager {
   }
 
   /**
-   * Retrieves translations for a given locale.
+   * Retrieves translations for a given locale from the remote or local cache.
    * @param {string} locale - The locale code.
-   * @returns {Promise<Record<string, any> | null>} The translations data or null if not found.
+   * @returns {Promise<TranslationsObject | undefined>} The translations data or null if not found.
    */
-  async getTranslations(locale: string): Promise<Record<string, any> | null> {
+  async getCachedTranslations(locale: string): Promise<TranslationsObject | undefined> {
     const reference = standardizeLocale(locale);
 
-    // If we have cached translations and they are not expired, return them
+    // If we have cached translations locally and they are not expired, return them
     if (this.translationsMap.has(reference) && !this._isExpired(reference)) {
-      return this.translationsMap.get(reference) || null;
+      return this.translationsMap.get(reference);
     }
 
     // If we have a fetch in progress, await that
     if (this.fetchPromises.has(reference)) {
-      return (await this.fetchPromises.get(reference)) || null;
+      return await this.fetchPromises.get(reference);
     }
 
     // If we have not requested translations for this locale from the cache, do so now (remember, the tx might not be in the cache)
     const fetchPromise = this._fetchTranslations(reference);
     this.fetchPromises.set(reference, fetchPromise);
 
+    // Hook cache fetch promise so we can return the cached translations
     const retrievedTranslations = await fetchPromise;
     this.fetchPromises.delete(reference);
 
+    // Populate our record of translations
     if (retrievedTranslations) {
       this.translationsMap.set(reference, retrievedTranslations);
     }
+
     return retrievedTranslations;
   }
 
@@ -129,14 +145,17 @@ export class RemoteTranslationsManager {
     locale: string,
     key: string,
     id: string = key,
-    translation: any
+    translation: TranslationSuccess | TranslationLoading | TranslationError
   ): boolean {
     if (!(locale && key && id && translation)) return false;
     const reference = standardizeLocale(locale);
     const currentTranslations = this.translationsMap.get(reference) || {};
     this.translationsMap.set(reference, {
       ...currentTranslations,
-      [id]: { [key]: translation },
+      [id]: {
+        ...(currentTranslations[id] || {}),
+        [key]: translation,
+      },
     });
     // Reset the fetch time since we just manually updated the translation
     this.lastFetchTime.set(reference, Date.now());

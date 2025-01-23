@@ -1,7 +1,4 @@
-import {
-  requiresRegionalTranslation,
-  requiresTranslation,
-} from 'generaltranslation';
+import { requiresTranslation } from 'generaltranslation';
 import remoteTranslationsManager, {
   RemoteTranslationsManager,
 } from './RemoteTranslationsManager';
@@ -11,11 +8,13 @@ import {
   RenderMethod,
   TranslatedChildren,
   TranslatedContent,
+  Children,
 } from 'gt-react/internal';
-import { devApiKeyIncludedInProductionError } from '../errors/createErrors';
+import { createMismatchingHashWarning, createMismatchingIdHashWarning, devApiKeyIncludedInProductionError } from '../errors/createErrors';
 import { hashJsxChildren } from 'generaltranslation/id';
-import { JsxChildren } from 'generaltranslation/id';
+import { Content, JsxChildren } from 'generaltranslation/internal';
 import { GTTranslationError } from '../types/types';
+import { TaggedChildren, TranslationsObject } from 'gt-react/internal';
 type I18NConfigurationParams = {
   remoteCache: boolean;
   runtimeTranslation: boolean;
@@ -37,7 +36,26 @@ type I18NConfigurationParams = {
   [key: string]: any;
 };
 
+
+type QueueEntry = {
+  type: 'content',
+  source: Content,
+  targetLocale: string,
+  metadata: { hash: string } & Record<string, any>,
+  resolve: (value: TranslatedContent | PromiseLike<TranslatedContent>) => void,
+  reject: (reason?: any) => void,
+} | {
+  type: 'jsx',
+  source: JsxChildren,
+  targetLocale: string,
+  metadata: { hash: string } & Record<string, any>,
+  resolve: (value: TranslatedChildren | PromiseLike<TranslatedChildren>) => void,
+  reject: (reason?: any) => void,
+};
+
 export default class I18NConfiguration {
+
+
   // Feature flags
   runtimeTranslation: boolean;
   remoteCache: boolean;
@@ -62,7 +80,7 @@ export default class I18NConfiguration {
   maxConcurrentRequests: number;
   maxBatchSize: number;
   batchInterval: number;
-  private _queue: Array<any>;
+  private _queue: Array<QueueEntry>;
   private _activeRequests: number;
   // Cache for ongoing translation requests
   private _translationCache: Map<string, Promise<any>>;
@@ -115,10 +133,6 @@ export default class I18NConfiguration {
     }
     // Render method
     this.renderSettings = renderSettings;
-    if (this.devApiKey && this.renderSettings.method === 'subtle') { // disable subtle if in dev
-      console.warn('Subtle render method cannot be used in dev environments, falling back to default.');
-      this.renderSettings.method = 'default';
-    }
     // Other metadata
     this.metadata = {
       sourceLocale: this.defaultLocale,
@@ -160,7 +174,12 @@ export default class I18NConfiguration {
       projectId: this.projectId,
       devApiKey: this.devApiKey,
       runtimeUrl: this.runtimeUrl,
+      runtimeTranslations: this.runtimeTranslation,
     };
+  }
+
+  getRuntimeTranslationEnabled() {
+    return this.runtimeTranslation;
   }
 
   /**
@@ -183,8 +202,7 @@ export default class I18NConfiguration {
    * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
    */
   translationEnabled(): boolean {
-    return this.runtimeTranslation &&
-      this.projectId &&
+    return this.projectId &&
       this.runtimeUrl &&
       (this.apiKey || this.devApiKey)
       ? true
@@ -194,7 +212,7 @@ export default class I18NConfiguration {
   /**
    * Get the rendering instructions
    * @returns An object containing the current method and timeout.
-   * As of 1/17/25: method is "skeleton", "replace", "subtle", "default".
+   * As of 1/22/25: method is "skeleton", "replace", "default".
    * Timeout is a number or null, representing no assigned timeout.
    */
   getRenderSettings(): {
@@ -202,18 +220,6 @@ export default class I18NConfiguration {
     timeout?: number;
   } {
     return this.renderSettings;
-  }
-
-  /**
-   * Checks if regional translation is required (ie en-US -> en-GB)
-   * @param locale - The user's locale
-   * @returns True if a regional translation is required, otherwise false
-   */
-  requiresRegionalTranslation(locale: string): boolean {
-    return (
-      this.translationEnabled() &&
-      requiresRegionalTranslation(this.defaultLocale, locale, this.locales)
-    );
   }
 
   /**
@@ -228,38 +234,53 @@ export default class I18NConfiguration {
     );
   }
 
-  addGTIdentifier(children: any, id?: string): any {
-    return addGTIdentifier(children, id);
+  addGTIdentifier(children: Children): TaggedChildren {
+    return addGTIdentifier(children);
   }
 
   /**
-   * @returns {[any, string]} A xxhash hash and the children that were created from it
+   * @param {TaggedChildren} children - The children to be serialized
+   * @param {string} context - The context in which the children are being serialized
+   * @returns {[JsxChildren, string]} Serialized children and SHA256 hash generated from it
    */
-  serializeAndHash(
-    children: any,
+  serializeAndHashChildren(
+    children: TaggedChildren,
     context?: string,
-    id?: string
-  ): [any, string] {
+  ): [JsxChildren, string] {
     const childrenAsObjects = writeChildrenAsObjects(children);
     return [
       childrenAsObjects,
-      hashJsxChildren(
-        context
-          ? { source: childrenAsObjects as unknown as JsxChildren, context }
-          : { source: childrenAsObjects as unknown as JsxChildren }
-      ),
+      hashJsxChildren({
+        source: childrenAsObjects,
+        ...(context && { context }),
+      }),
     ];
   }
 
   /**
+   * @param {Content} content - The content to be hashed
+   * @param {string} context - The context in which the content are being hashed
+   * @returns {string} A SHA256 hash of the content
+   */
+  hashContent(
+    content: Content,
+    context?: string,
+  ): string {
+    return hashJsxChildren({
+      source: content,
+      ...(context && { context }),
+    });
+  }
+
+  /**
    * Get the translation dictionaries for this user's locale, if they exist
-   * Globally shared cache
+   * Globally shared cache or saved locally
    * @param locale - The locale set by the user
    * @returns A promise that resolves to the translations.
    */
-  async getTranslations(locale: string): Promise<Record<string, any>> {
+  async getCachedTranslations(locale: string): Promise<TranslationsObject> {
     return (
-      (await this._remoteTranslationsManager?.getTranslations(locale)) || {}
+      (await this._remoteTranslationsManager?.getCachedTranslations(locale)) || {}
     );
   }
 
@@ -269,9 +290,9 @@ export default class I18NConfiguration {
    * @returns Translated string
    */
   async translateContent(params: {
-    source: string | (string | { key: string; variable?: string })[];
+    source: Content;
     targetLocale: string;
-    options: Record<string, any>;
+    options: { hash: string } & Record<string, any>;
   }): Promise<TranslatedContent> {
     const cacheKey = constructCacheKey(params.targetLocale, params.options);
     if (this._translationCache.has(cacheKey)) {
@@ -303,9 +324,9 @@ export default class I18NConfiguration {
    * @returns A promise that resolves when translation is complete
    */
   async translateChildren(params: {
-    source: any;
+    source: JsxChildren;
     targetLocale: string;
-    metadata: Record<string, any>;
+    metadata: { hash: string } & Record<string, any>;
   }): Promise<TranslatedChildren> {
     const cacheKey = constructCacheKey(params.targetLocale, params.metadata);
 
@@ -341,9 +362,10 @@ export default class I18NConfiguration {
    * Send a batch request for React translation
    * @param batch - The batch of requests to be sent
    */
-  private async _sendBatchRequest(batch: Array<any>): Promise<void> {
+  private async _sendBatchRequest(batch: Array<QueueEntry>): Promise<void> {
     this._activeRequests++;
     try {
+      // ----- TRANSLATION REQUEST ----- //
       const response = await fetch(
         `${this.runtimeUrl}/v1/runtime/${this.projectId}/server`,
         {
@@ -364,46 +386,71 @@ export default class I18NConfiguration {
         }
       );
 
+
+      // ----- PROCESS RESPONSE ----- //
+
       if (!response.ok) {
         throw new Error(await response.text());
       }
-
       const results = await response.json();
-
-      batch.forEach((item, index) => {
+      batch.forEach((request, index) => {
         // check if entry is missing
         const result = results[index];
-        if (!result)
-          return item.reject(
-            new GTTranslationError('Translation failed.', 500)
-          );
+
+        let errorMsg = 'Translation failed.';
+        let errorCode = 500;
+        if (!result) return request.reject(new GTTranslationError(errorMsg, errorCode));
+
+          
         if (result && typeof result === 'object') {
-          if ('translation' in result) {
+          if ('translation' in result && result.translation) {
+            // record translations
             if (this._remoteTranslationsManager) {
               this._remoteTranslationsManager.setTranslations(
-                result.locale,
-                item.metadata?.hash || result.reference.key,
-                result.reference.id,
-                result.translation
+                request.targetLocale,
+                request.metadata.hash,
+                request.metadata.id,
+                { state: 'success', target: result.translation }
               );
             }
-            if (item.metadata?.hash !== result.reference.key) {
-              console.warn(`Mismatching ids or hashes! Expected hash: ${item.metadata?.hash}, but got id: ${result.reference.id} hash: ${result.reference.key}. We will still render your translation, but make sure to update to the newest version: www.generaltranslation.com/docs`);
+            // check for mismatching ids or hashes
+            if (result?.reference?.id !== request.metadata?.id || result?.reference?.key !== request.metadata?.hash) {
+                if (!request.metadata.id) {
+                    console.warn(createMismatchingHashWarning(request.metadata.hash, result.reference?.key));
+                } else {
+                    console.warn(createMismatchingIdHashWarning(request.metadata.id, request.metadata.hash, result?.reference?.id, result.reference?.key));
+                }
             }
-            
-            return item.resolve(result.translation);
+            return request.resolve(result.translation);
           } else if ('error' in result && result.error) {
-            return item.reject(
-              new GTTranslationError('Translation failed.', 500)
-            );
+            errorMsg = result.error || errorMsg;
+            errorCode = result.code || errorCode;
           }
         }
-        return item.reject(new GTTranslationError('Translation failed.', 500));
+        // record translation error
+        if (this._remoteTranslationsManager) {
+          this._remoteTranslationsManager.setTranslations(
+            request.targetLocale,
+            request.metadata.hash,
+            request.metadata.id,
+            { state: 'error', error: result.error || 'Translation failed.', code: result.code || 500}
+          );
+        }
+        return request.reject(new GTTranslationError(errorMsg, errorCode));
       });
     } catch (error) {
       console.error(error);
-      batch.forEach((item) => {
-        return item.reject(new GTTranslationError('Translation failed.', 500));
+      batch.forEach((request) => {
+        // record translation error
+        if (this._remoteTranslationsManager) {
+          this._remoteTranslationsManager.setTranslations(
+            request.targetLocale,
+            request.metadata.hash,
+            request.metadata.id,
+            { state: 'error', error: 'Translation failed.', code: 500}
+          );
+        }
+        return request.reject(new GTTranslationError('Translation failed.', 500));
       });
     } finally {
       this._activeRequests--;

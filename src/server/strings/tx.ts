@@ -1,4 +1,5 @@
 import {
+  isSameLanguage,
   renderContentToString,
   splitStringToContent,
 } from 'generaltranslation';
@@ -55,13 +56,18 @@ export default async function tx(
     [key: string]: any;
   } = {}
 ): Promise<string> {
-  if (!content) return '';
+
+  // ----- SET UP ----- //
+
+  if (!content) return '';  // No content to translate
 
   const I18NConfig = getI18NConfig();
-  const defaultLocale = I18NConfig.getDefaultLocale();
   const locale = options.locale || (await getLocale());
+  const defaultLocale = I18NConfig.getDefaultLocale();
+  const translationRequired = I18NConfig.requiresTranslation(locale);
+  const contentArray = splitStringToContent(content); // parse content
 
-  const contentArray = splitStringToContent(content);
+  // ----- RENDER METHOD ----- //
 
   const renderContent = (content: any, locales: string[]) => {
     return renderContentToString(
@@ -72,18 +78,18 @@ export default async function tx(
     );
   };
 
-  if (!I18NConfig.requiresTranslation(locale))
-    return renderContent(contentArray, [defaultLocale]);
 
-  const [_, hash] = I18NConfig.serializeAndHash(
-    contentArray,
-    options.context,
-    undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
-  );
+  // ----- RENDER LOGIC ----- //
 
-  // Check cache for translation
+  // translation required
+  if (translationRequired) return renderContent(contentArray, [defaultLocale]);
+
+  // get hash
+  const hash = I18NConfig.hashContent(contentArray, options.context);
+
+  // Check cache for translation (if there is no id, then we don't cache)
   if (options.id) {
-    const translations = await I18NConfig.getTranslations(locale);
+    const translations = await I18NConfig.getCachedTranslations(locale);
     const target = translations[options.id]?.[hash];
     if (target) return renderContent(target, [locale, defaultLocale]);
   }
@@ -94,11 +100,6 @@ export default async function tx(
     targetLocale: locale,
     options: { ...options, ...(await getMetadata()), hash },
   });
-
-  const renderSettings = I18NConfig.getRenderSettings();
-
-  // subtle: wait for CDN to populate or for API to respond, do fallback for now
-  if (renderSettings.method === 'subtle' || !options.id) return renderContent(contentArray, [defaultLocale]);
 
   try {
     const target = await translationPromise;

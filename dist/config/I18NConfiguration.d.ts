@@ -1,4 +1,6 @@
-import { RenderMethod, TranslatedChildren, TranslatedContent } from 'gt-react/internal';
+import { RenderMethod, TranslatedChildren, TranslatedContent, Children } from 'gt-react/internal';
+import { Content, JsxChildren } from 'generaltranslation/internal';
+import { TaggedChildren, TranslationsObject } from 'gt-react/internal';
 type I18NConfigurationParams = {
     remoteCache: boolean;
     runtimeTranslation: boolean;
@@ -50,7 +52,9 @@ export default class I18NConfiguration {
         projectId: string;
         devApiKey: string | undefined;
         runtimeUrl: string;
+        runtimeTranslations: boolean;
     };
+    getRuntimeTranslationEnabled(): boolean;
     /**
      * Gets the application's default locale
      * @returns {string} A BCP-47 locale tag
@@ -68,7 +72,7 @@ export default class I18NConfiguration {
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.
-     * As of 1/17/25: method is "skeleton", "replace", "subtle", "default".
+     * As of 1/22/25: method is "skeleton", "replace", "default".
      * Timeout is a number or null, representing no assigned timeout.
      */
     getRenderSettings(): {
@@ -76,41 +80,42 @@ export default class I18NConfiguration {
         timeout?: number;
     };
     /**
-     * Checks if regional translation is required (ie en-US -> en-GB)
-     * @param locale - The user's locale
-     * @returns True if a regional translation is required, otherwise false
-     */
-    requiresRegionalTranslation(locale: string): boolean;
-    /**
      * Check if translation is required based on the user's locale
      * @param locale - The user's locale
      * @returns True if translation is required, otherwise false
      */
     requiresTranslation(locale: string): boolean;
-    addGTIdentifier(children: any, id?: string): any;
+    addGTIdentifier(children: Children): TaggedChildren;
     /**
-     * @returns {[any, string]} A xxhash hash and the children that were created from it
+     * @param {TaggedChildren} children - The children to be serialized
+     * @param {string} context - The context in which the children are being serialized
+     * @returns {[JsxChildren, string]} Serialized children and SHA256 hash generated from it
      */
-    serializeAndHash(children: any, context?: string, id?: string): [any, string];
+    serializeAndHashChildren(children: TaggedChildren, context?: string): [JsxChildren, string];
+    /**
+     * @param {Content} content - The content to be hashed
+     * @param {string} context - The context in which the content are being hashed
+     * @returns {string} A SHA256 hash of the content
+     */
+    hashContent(content: Content, context?: string): string;
     /**
      * Get the translation dictionaries for this user's locale, if they exist
-     * Globally shared cache
+     * Globally shared cache or saved locally
      * @param locale - The locale set by the user
      * @returns A promise that resolves to the translations.
      */
-    getTranslations(locale: string): Promise<Record<string, any>>;
+    getCachedTranslations(locale: string): Promise<TranslationsObject>;
     /**
      * Translate content into language associated with a given locale
      * @param params - Parameters for translation
      * @returns Translated string
      */
     translateContent(params: {
-        source: string | (string | {
-            key: string;
-            variable?: string;
-        })[];
+        source: Content;
         targetLocale: string;
-        options: Record<string, any>;
+        options: {
+            hash: string;
+        } & Record<string, any>;
     }): Promise<TranslatedContent>;
     /**
      * Translate the children components
@@ -118,9 +123,11 @@ export default class I18NConfiguration {
      * @returns A promise that resolves when translation is complete
      */
     translateChildren(params: {
-        source: any;
+        source: JsxChildren;
         targetLocale: string;
-        metadata: Record<string, any>;
+        metadata: {
+            hash: string;
+        } & Record<string, any>;
     }): Promise<TranslatedChildren>;
     /**
      * Send a batch request for React translation

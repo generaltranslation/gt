@@ -1,17 +1,13 @@
-import { TranslatedChildren, TranslatedContent, TranslationError } from "gt-react/internal";
+import { TaggedChildren, TranslationError, Metadata } from "gt-react/internal";
 
-export type TranslationPromise = {
-  promise: Promise<TranslatedChildren> | Promise<TranslatedContent>,
-  hash: string,
-  type: 'jsx' | 'content'
+export type TaggedEntry = string | TaggedChildren;
+export type TaggedDictionaryEntry = TaggedEntry | [ TaggedEntry ] | [ TaggedEntry, Metadata ];
+export type TaggedDictionary = {
+    [key: string]: TaggedDictionary | TaggedDictionaryEntry;
 }
-
-export type Translations = {
-  [id: string]:
-    { [hash: string]: TranslatedChildren | TranslatedContent }
-    | TranslationError
-    | TranslationPromise
-};
+export type FlattenedTaggedDictionary = {
+    [key: string]: TaggedDictionaryEntry
+}
 
 export class GTTranslationError extends Error {
   constructor(public error: string, public code: number) {
@@ -21,6 +17,7 @@ export class GTTranslationError extends Error {
 
   toTranslationError(): TranslationError {
     return {
+      state: 'error',
       error: this.error,
       code: this.code
     }

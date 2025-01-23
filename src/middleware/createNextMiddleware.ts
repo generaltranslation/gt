@@ -1,5 +1,4 @@
 import { isValidLocale, determineLocale, standardizeLocale, isSameDialect } from "generaltranslation";
-// import { ResponseCookies, RequestCookies } from "next/dist/compiled/@edge-runtime/cookies";
 import { libraryDefaultLocale, localeCookieName, localeHeaderName } from 'generaltranslation/internal'
 import { listSupportedLocales } from "@generaltranslation/supported-locales";
 import { createUnsupportedLocalesWarning } from "../errors/createErrors";
