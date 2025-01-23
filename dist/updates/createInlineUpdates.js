@@ -56,34 +56,43 @@ const addGTIdentifierToSyntaxTree_1 = __importDefault(require("../data-_gt/addGT
 const warnings_1 = require("../console/warnings");
 const id_1 = require("generaltranslation/id");
 function handleStringChild(child, index, childrenTypes) {
-    let result = child;
+    // Normalize line endings to \n for consistency across platforms
+    let result = child.replace(/\r\n|\r/g, "\n");
+    // Collapse multiple spaces/tabs into a single space
+    result = result.replace(/[\t ]+/g, " ");
+    // If it's the first child, trim the start
     if (index === 0) {
         result = result.trimStart();
     }
+    // If it's the last child, trim the end
     if (index === childrenTypes.length - 1) {
         result = result.trimEnd();
     }
-    result = (() => {
-        let newResult = "";
-        let newline = false;
-        for (const char of result) {
-            if (char === "\n") {
-                newResult = newResult.trimEnd();
-                newline = true;
-                continue;
-            }
-            if (!newline) {
-                newResult += char;
-                continue;
-            }
-            if (char.trim() === "")
-                continue;
-            newResult += char;
-            newline = false;
+    let newResult = "";
+    let newline = false;
+    for (const char of result) {
+        if (char === "\n") {
+            if (newResult.trim())
+                newResult += " ";
+            else
+                newResult = "";
+            newline = true;
+            continue;
         }
-        return newResult;
-    })();
-    result = result.replace(/\s+/g, " ");
+        if (!newline) {
+            newResult += char;
+            continue;
+        }
+        if (char.trim() === "")
+            continue;
+        newResult += char;
+        newline = false;
+    }
+    if (newline)
+        newResult = newResult.trimEnd();
+    result = newResult;
+    // Collapse multiple spaces/tabs into a single space
+    result = result.replace(/[\t ]+/g, " ");
     return result;
 }
 function isStaticExpression(expr) {
@@ -196,8 +205,8 @@ function createInlineUpdates(options) {
                         // We'll track this flag to know if any unwrapped {variable} is found in children
                         const unwrappedExpressions = [];
                         // The buildJSXTree function that handles children recursion
-                        function buildJSXTree(node, isInsideVar = false) {
-                            if (t.isJSXExpressionContainer(node) && !isInsideVar) {
+                        function buildJSXTree(node) {
+                            if (t.isJSXExpressionContainer(node)) {
                                 const expr = node.expression;
                                 const staticAnalysis = isStaticExpression(expr);
                                 if (staticAnalysis.isStatic &&
@@ -219,9 +228,8 @@ function createInlineUpdates(options) {
                                 let text = node.value;
                                 return text;
                             }
-                            // If we are inside a variable component, keep going
                             else if (t.isJSXExpressionContainer(node)) {
-                                return buildJSXTree(node.expression, isInsideVar);
+                                return buildJSXTree(node.expression);
                                 // If it's a JSX element
                             }
                             else if (t.isJSXElement(node)) {
@@ -238,10 +246,7 @@ function createInlineUpdates(options) {
                                     typeName = null;
                                 }
                                 // If this JSXElement is one of the recognized variable components,
-                                // then for its children we set isInsideVar = true
-                                const nextInsideVar = variableComponents.includes(typeName !== null && typeName !== void 0 ? typeName : "")
-                                    ? true
-                                    : isInsideVar;
+                                const elementIsVariable = variableComponents.includes(typeName !== null && typeName !== void 0 ? typeName : "");
                                 const props = {};
                                 element.openingElement.attributes.forEach((attr) => {
                                     if (t.isJSXAttribute(attr)) {
@@ -252,7 +257,7 @@ function createInlineUpdates(options) {
                                                 attrValue = attr.value.value;
                                             }
                                             else if (t.isJSXExpressionContainer(attr.value)) {
-                                                attrValue = buildJSXTree(attr.value.expression, nextInsideVar);
+                                                attrValue = buildJSXTree(attr.value.expression);
                                             }
                                         }
                                         props[attrName] = attrValue;
@@ -261,7 +266,13 @@ function createInlineUpdates(options) {
                                         props["..."] = (0, generator_1.default)(attr.argument).code;
                                     }
                                 });
-                                const children = element.children.map((child) => buildJSXTree(child, nextInsideVar));
+                                if (elementIsVariable) {
+                                    return {
+                                        type: typeName,
+                                        props,
+                                    };
+                                }
+                                const children = element.children.map((child) => buildJSXTree(child));
                                 if (children.length === 1) {
                                     props.children = children[0];
                                 }
@@ -276,7 +287,7 @@ function createInlineUpdates(options) {
                             // If it's a JSX fragment
                             else if (t.isJSXFragment(node)) {
                                 const children = node.children
-                                    .map((child) => buildJSXTree(child, isInsideVar))
+                                    .map((child) => buildJSXTree(child))
                                     .filter((child) => child !== null && child !== "");
                                 return {
                                     type: "",

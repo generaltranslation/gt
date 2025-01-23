@@ -21,33 +21,41 @@ function handleStringChild(
   index: number,
   childrenTypes: ("expression" | "text" | "element")[]
 ) {
-  let result = child;
+  // Normalize line endings to \n for consistency across platforms
+  let result = child.replace(/\r\n|\r/g, "\n");
+
+  // Collapse multiple spaces/tabs into a single space
+  result = result.replace(/[\t ]+/g, " ");
+
+  // If it's the first child, trim the start
   if (index === 0) {
     result = result.trimStart();
   }
+  // If it's the last child, trim the end
   if (index === childrenTypes.length - 1) {
     result = result.trimEnd();
   }
-  result = (() => {
-    let newResult = "";
-    let newline = false;
-    for (const char of result) {
-      if (char === "\n") {
-        newResult = newResult.trimEnd();
-        newline = true;
-        continue;
-      }
-      if (!newline) {
-        newResult += char;
-        continue;
-      }
-      if (char.trim() === "") continue;
-      newResult += char;
-      newline = false;
+  let newResult = "";
+  let newline = false;
+  for (const char of result) {
+    if (char === "\n") {
+      if (newResult.trim()) newResult += " ";
+      else newResult = "";
+      newline = true;
+      continue;
     }
-    return newResult;
-  })();
-  result = result.replace(/\s+/g, " ");
+    if (!newline) {
+      newResult += char;
+      continue;
+    }
+    if (char.trim() === "") continue;
+    newResult += char;
+    newline = false;
+  }
+  if (newline) newResult = newResult.trimEnd();
+  result = newResult;
+  // Collapse multiple spaces/tabs into a single space
+  result = result.replace(/[\t ]+/g, " ");
   return result;
 }
 
@@ -191,8 +199,8 @@ export default async function createInlineUpdates(
           const unwrappedExpressions: string[] = [];
 
           // The buildJSXTree function that handles children recursion
-          function buildJSXTree(node: any, isInsideVar = false): any {
-            if (t.isJSXExpressionContainer(node) && !isInsideVar) {
+          function buildJSXTree(node: any): any {
+            if (t.isJSXExpressionContainer(node)) {
               const expr = node.expression;
               const staticAnalysis = isStaticExpression(expr);
               if (
@@ -216,11 +224,8 @@ export default async function createInlineUpdates(
             if (t.isJSXText(node)) {
               let text = node.value;
               return text;
-            }
-
-            // If we are inside a variable component, keep going
-            else if (t.isJSXExpressionContainer(node)) {
-              return buildJSXTree(node.expression, isInsideVar);
+            } else if (t.isJSXExpressionContainer(node)) {
+              return buildJSXTree(node.expression);
 
               // If it's a JSX element
             } else if (t.isJSXElement(node)) {
@@ -237,10 +242,9 @@ export default async function createInlineUpdates(
               }
 
               // If this JSXElement is one of the recognized variable components,
-              // then for its children we set isInsideVar = true
-              const nextInsideVar = variableComponents.includes(typeName ?? "")
-                ? true
-                : isInsideVar;
+              const elementIsVariable = variableComponents.includes(
+                typeName ?? ""
+              );
 
               const props: { [key: string]: any } = {};
               element.openingElement.attributes.forEach((attr) => {
@@ -251,10 +255,7 @@ export default async function createInlineUpdates(
                     if (t.isStringLiteral(attr.value)) {
                       attrValue = attr.value.value;
                     } else if (t.isJSXExpressionContainer(attr.value)) {
-                      attrValue = buildJSXTree(
-                        attr.value.expression,
-                        nextInsideVar
-                      );
+                      attrValue = buildJSXTree(attr.value.expression);
                     }
                   }
                   props[attrName as any] = attrValue;
@@ -263,10 +264,16 @@ export default async function createInlineUpdates(
                 }
               });
 
-              const children = element.children.map((child) =>
-                buildJSXTree(child, nextInsideVar)
-              );
+              if (elementIsVariable) {
+                return {
+                  type: typeName,
+                  props,
+                };
+              }
 
+              const children = element.children.map((child) =>
+                buildJSXTree(child)
+              );
               if (children.length === 1) {
                 props.children = children[0];
               } else if (children.length > 1) {
@@ -281,7 +288,7 @@ export default async function createInlineUpdates(
             // If it's a JSX fragment
             else if (t.isJSXFragment(node)) {
               const children = node.children
-                .map((child: any) => buildJSXTree(child, isInsideVar))
+                .map((child: any) => buildJSXTree(child))
                 .filter((child: any) => child !== null && child !== "");
               return {
                 type: "",

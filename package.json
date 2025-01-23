@@ -1,6 +1,6 @@
 {
   "name": "gt-react-cli",
-  "version": "1.1.18",
+  "version": "1.1.19",
   "main": "dist/main.js",
   "bin": {
     "translate": "dist/main.js"
