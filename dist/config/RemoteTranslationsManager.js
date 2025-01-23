@@ -106,7 +106,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
                                 var id = _a[0], hashToTranslation = _a[1];
                                 translationsAcc[id] = Object.entries(hashToTranslation || {}).reduce(function (idAcc, _a) {
                                     var hash = _a[0], content = _a[1];
-                                    idAcc[hash] = { state: 'success', entry: content };
+                                    idAcc[hash] = { state: 'success', target: content };
                                     return idAcc;
                                 }, {});
                                 return translationsAcc;

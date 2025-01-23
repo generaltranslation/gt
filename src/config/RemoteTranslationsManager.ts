@@ -72,7 +72,7 @@ export class RemoteTranslationsManager {
         // Parse response
         const parsedResult = Object.entries(result).reduce((translationsAcc: Record<string, any>, [id, hashToTranslation]: [string, any]) => {
           translationsAcc[id] = Object.entries(hashToTranslation || {}).reduce((idAcc: Record<string, any>, [hash, content]) => {
-            idAcc[hash] = { state: 'success', entry: content };
+            idAcc[hash] = { state: 'success', target: content };
             return idAcc;
           }, {});
           return translationsAcc;
