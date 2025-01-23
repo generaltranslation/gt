@@ -66,9 +66,6 @@ export default async function GTProvider({
   await Promise.all(
     Object.entries(flattenedDictionarySubset ?? {}).map(async ([suffix, dictionaryEntry]) => {
 
-      // If no translation is required, return
-      if (!translationRequired) return;
-
       // Get the entry from the dictionary
       if (!dictionaryEntry) return; // dictionary entries cannot be falsey
       const entryId = getId(suffix);
@@ -83,7 +80,9 @@ export default async function GTProvider({
         const taggedChildren = I18NConfig.addGTIdentifier(entry);
         const [childrenAsObjects, hash] = I18NConfig.serializeAndHashChildren(entry, metadata?.context);
         dictionary[entryId] = [taggedChildren as Entry, { ...metadata, hash }];
-        
+
+        // if no tx required, we are done
+        if (!translationRequired) return;
 
         // Check if the translation already exists
         const translationEntry = translations?.[entryId]?.[hash];
@@ -115,6 +114,9 @@ export default async function GTProvider({
 
       // Add to client dictionary
       dictionary[entryId] = [entry, { ...metadata, hash }];
+
+      // if no tx required, we are done
+      if (!translationRequired) return;
 
       // Check if the translation already exists
       const translationEntry = translations?.[entryId]?.[hash];

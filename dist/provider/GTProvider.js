@@ -152,9 +152,6 @@ function GTProvider(_a) {
                             return __generator(this, function (_j) {
                                 switch (_j.label) {
                                     case 0:
-                                        // If no translation is required, return
-                                        if (!translationRequired)
-                                            return [2 /*return*/];
                                         // Get the entry from the dictionary
                                         if (!dictionaryEntry)
                                             return [2 /*return*/]; // dictionary entries cannot be falsey
@@ -167,6 +164,9 @@ function GTProvider(_a) {
                                             taggedChildren = I18NConfig.addGTIdentifier(entry);
                                             _d = I18NConfig.serializeAndHashChildren(entry, metadata === null || metadata === void 0 ? void 0 : metadata.context), childrenAsObjects = _d[0], hash_1 = _d[1];
                                             dictionary[entryId] = [taggedChildren, __assign(__assign({}, metadata), { hash: hash_1 })];
+                                            // if no tx required, we are done
+                                            if (!translationRequired)
+                                                return [2 /*return*/];
                                             translationEntry_1 = (_g = translations === null || translations === void 0 ? void 0 : translations[entryId]) === null || _g === void 0 ? void 0 : _g[hash_1];
                                             // If the translation already exists, then do not translate on demand
                                             // or runtime translation disabled
@@ -187,6 +187,9 @@ function GTProvider(_a) {
                                         hash = (metadata === null || metadata === void 0 ? void 0 : metadata.hash) || I18NConfig.hashContent(contentArray, metadata === null || metadata === void 0 ? void 0 : metadata.context);
                                         // Add to client dictionary
                                         dictionary[entryId] = [entry, __assign(__assign({}, metadata), { hash: hash })];
+                                        // if no tx required, we are done
+                                        if (!translationRequired)
+                                            return [2 /*return*/];
                                         translationEntry = (_h = translations === null || translations === void 0 ? void 0 : translations[entryId]) === null || _h === void 0 ? void 0 : _h[hash];
                                         // If the translation already exists, then do not translate on demand
                                         if (translationEntry)
