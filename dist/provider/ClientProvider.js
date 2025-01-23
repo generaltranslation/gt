@@ -198,10 +198,6 @@ function ClientProvider(_a) {
         }
         // loading behavior
         if (!translationEntry || (translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === "loading") {
-            console.log("loading");
-            console.log(id, hash);
-            console.log("!translationEntry: ".concat(!translationEntry));
-            console.log("translationEntry?.state === \"loading\": ".concat((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === "loading"));
             var loadingFallback = void 0;
             if (renderSettings.method === "skeleton") {
                 loadingFallback = renderLoadingSkeleton();
