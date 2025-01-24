@@ -327,26 +327,27 @@ var I18NConfiguration = /** @class */ (function () {
                     case 5:
                         results_1 = _b.sent();
                         batch.forEach(function (request, index) {
-                            var _a, _b, _c, _d, _e, _f, _g;
+                            var _a, _b, _c, _d, _e, _f;
                             // check if entry is missing
                             var result = results_1[index];
                             var errorMsg = 'Translation failed.';
                             var errorCode = 500;
                             if (!result)
                                 return request.reject(new types_1.GTTranslationError(errorMsg, errorCode));
+                            var id = request.metadata.id || request.metadata.hash;
                             if (result && typeof result === 'object') {
                                 if ('translation' in result && result.translation) {
                                     // record translations
                                     if (_this._remoteTranslationsManager) {
-                                        _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, request.metadata.id, { state: 'success', target: result.translation });
+                                        _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, id, { state: 'success', target: result.translation });
                                     }
                                     // check for mismatching ids or hashes
-                                    if (((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) !== ((_b = request.metadata) === null || _b === void 0 ? void 0 : _b.id) || ((_c = result === null || result === void 0 ? void 0 : result.reference) === null || _c === void 0 ? void 0 : _c.key) !== ((_d = request.metadata) === null || _d === void 0 ? void 0 : _d.hash)) {
+                                    if (((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) !== id || ((_b = result === null || result === void 0 ? void 0 : result.reference) === null || _b === void 0 ? void 0 : _b.key) !== ((_c = request.metadata) === null || _c === void 0 ? void 0 : _c.hash)) {
                                         if (!request.metadata.id) {
-                                            console.warn((0, createErrors_1.createMismatchingHashWarning)(request.metadata.hash, (_e = result.reference) === null || _e === void 0 ? void 0 : _e.key));
+                                            console.warn((0, createErrors_1.createMismatchingHashWarning)(request.metadata.hash, (_d = result.reference) === null || _d === void 0 ? void 0 : _d.key));
                                         }
                                         else {
-                                            console.warn((0, createErrors_1.createMismatchingIdHashWarning)(request.metadata.id, request.metadata.hash, (_f = result === null || result === void 0 ? void 0 : result.reference) === null || _f === void 0 ? void 0 : _f.id, (_g = result.reference) === null || _g === void 0 ? void 0 : _g.key));
+                                            console.warn((0, createErrors_1.createMismatchingIdHashWarning)(id, request.metadata.hash, (_e = result === null || result === void 0 ? void 0 : result.reference) === null || _e === void 0 ? void 0 : _e.id, (_f = result.reference) === null || _f === void 0 ? void 0 : _f.key));
                                         }
                                     }
                                     return request.resolve(result.translation);
@@ -358,7 +359,7 @@ var I18NConfiguration = /** @class */ (function () {
                             }
                             // record translation error
                             if (_this._remoteTranslationsManager) {
-                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, request.metadata.id, { state: 'error', error: result.error || 'Translation failed.', code: result.code || 500 });
+                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, id, { state: 'error', error: result.error || 'Translation failed.', code: result.code || 500 });
                             }
                             return request.reject(new types_1.GTTranslationError(errorMsg, errorCode));
                         });
@@ -369,7 +370,7 @@ var I18NConfiguration = /** @class */ (function () {
                         batch.forEach(function (request) {
                             // record translation error
                             if (_this._remoteTranslationsManager) {
-                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, request.metadata.id, { state: 'error', error: 'Translation failed.', code: 500 });
+                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, request.metadata.id || request.metadata.hash, { state: 'error', error: 'Translation failed.', code: 500 });
                             }
                             return request.reject(new types_1.GTTranslationError('Translation failed.', 500));
                         });

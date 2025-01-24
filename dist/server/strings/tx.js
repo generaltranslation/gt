@@ -92,7 +92,7 @@ var createErrors_1 = require("../../errors/createErrors");
  */
 function tx(content_1) {
     return __awaiter(this, arguments, void 0, function (content, options) {
-        var I18NConfig, locale, _a, defaultLocale, translationRequired, contentArray, renderContent, hash, translations, target, translationPromise, _b, _c, _d, target, error_1;
+        var I18NConfig, locale, _a, defaultLocale, translationRequired, contentArray, renderContent, hash, translations, translationResult, error_1, translationPromise, _b, _c, _d, target, error_2;
         var _e;
         var _f;
         if (options === void 0) { options = {}; }
@@ -100,8 +100,15 @@ function tx(content_1) {
             switch (_g.label) {
                 case 0:
                     // ----- SET UP ----- //
-                    if (!content)
-                        return [2 /*return*/, '']; // No content to translate
+                    // No content to translate
+                    if (!content) {
+                        // Reject empty strings
+                        if (content === "") {
+                            console.warn("gt-next warn: Empty string found in tx() ".concat(options.id && "with id: ".concat(options.id)));
+                            "";
+                        }
+                        return [2 /*return*/, ''];
+                    }
                     I18NConfig = (0, getI18NConfig_1.default)();
                     _a = options.locale;
                     if (_a) return [3 /*break*/, 2];
@@ -119,23 +126,32 @@ function tx(content_1) {
                     };
                     // ----- RENDER LOGIC ----- //
                     // translation required
-                    if (translationRequired)
+                    if (!translationRequired)
                         return [2 /*return*/, renderContent(contentArray, [defaultLocale])];
-                    // Reject empty strings
-                    if (!content.length) {
-                        console.warn("gt-next warn: Empty string found in tx() ".concat(options.id && "with id: ".concat(options.id)));
-                        return [2 /*return*/, content];
-                    }
                     hash = I18NConfig.hashContent(contentArray, options.context);
-                    if (!options.id) return [3 /*break*/, 4];
-                    return [4 /*yield*/, I18NConfig.getCachedTranslations(locale)];
+                    if (!options.id) return [3 /*break*/, 6];
+                    translations = void 0;
+                    _g.label = 3;
                 case 3:
-                    translations = _g.sent();
-                    target = (_f = translations[options.id]) === null || _f === void 0 ? void 0 : _f[hash];
-                    if (target)
-                        return [2 /*return*/, renderContent(target, [locale, defaultLocale])];
-                    _g.label = 4;
+                    _g.trys.push([3, 5, , 6]);
+                    return [4 /*yield*/, I18NConfig.getCachedTranslations(locale)];
                 case 4:
+                    translations = _g.sent();
+                    if ((_f = translations === null || translations === void 0 ? void 0 : translations[options.id]) === null || _f === void 0 ? void 0 : _f[hash]) {
+                        translationResult = translations[options.id][hash];
+                        if (translationResult.state !== 'success') {
+                            // fallback error
+                            return [2 /*return*/, renderContent(content, [locale, defaultLocale])];
+                        }
+                        return [2 /*return*/, renderContent(translationResult.target, [locale, defaultLocale])];
+                    }
+                    return [3 /*break*/, 6];
+                case 5:
+                    error_1 = _g.sent();
+                    console.error('Error fetching translations from cache:', error_1);
+                    // fallback error
+                    return [2 /*return*/, renderContent(content, [locale, defaultLocale])];
+                case 6:
                     _c = (_b = I18NConfig).translateContent;
                     _e = {
                         source: contentArray,
@@ -143,21 +159,21 @@ function tx(content_1) {
                     };
                     _d = [__assign({}, options)];
                     return [4 /*yield*/, (0, getMetadata_1.default)()];
-                case 5:
+                case 7:
                     translationPromise = _c.apply(_b, [(_e.options = __assign.apply(void 0, [__assign.apply(void 0, _d.concat([(_g.sent())])), { hash: hash }]),
                             _e)]);
-                    _g.label = 6;
-                case 6:
-                    _g.trys.push([6, 8, , 9]);
+                    _g.label = 8;
+                case 8:
+                    _g.trys.push([8, 10, , 11]);
                     return [4 /*yield*/, translationPromise];
-                case 7:
+                case 9:
                     target = _g.sent();
                     return [2 /*return*/, renderContent(target, [locale, defaultLocale])];
-                case 8:
-                    error_1 = _g.sent();
-                    console.error((0, createErrors_1.createStringTranslationError)(content, options.id), error_1);
+                case 10:
+                    error_2 = _g.sent();
+                    console.error((0, createErrors_1.createStringTranslationError)(content, options.id), error_2);
                     return [2 /*return*/, renderContent(contentArray, [defaultLocale])];
-                case 9: return [2 /*return*/];
+                case 11: return [2 /*return*/];
             }
         });
     });

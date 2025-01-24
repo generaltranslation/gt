@@ -403,7 +403,7 @@ export default class I18NConfiguration {
         let errorCode = 500;
         if (!result) return request.reject(new GTTranslationError(errorMsg, errorCode));
 
-          
+        const id = request.metadata.id || request.metadata.hash;
         if (result && typeof result === 'object') {
           if ('translation' in result && result.translation) {
             // record translations
@@ -411,16 +411,16 @@ export default class I18NConfiguration {
               this._remoteTranslationsManager.setTranslations(
                 request.targetLocale,
                 request.metadata.hash,
-                request.metadata.id,
+                id,
                 { state: 'success', target: result.translation }
               );
             }
             // check for mismatching ids or hashes
-            if (result?.reference?.id !== request.metadata?.id || result?.reference?.key !== request.metadata?.hash) {
+            if (result?.reference?.id !== id || result?.reference?.key !== request.metadata?.hash) {
                 if (!request.metadata.id) {
                     console.warn(createMismatchingHashWarning(request.metadata.hash, result.reference?.key));
                 } else {
-                    console.warn(createMismatchingIdHashWarning(request.metadata.id, request.metadata.hash, result?.reference?.id, result.reference?.key));
+                    console.warn(createMismatchingIdHashWarning(id, request.metadata.hash, result?.reference?.id, result.reference?.key));
                 }
             }
             return request.resolve(result.translation);
@@ -434,7 +434,7 @@ export default class I18NConfiguration {
           this._remoteTranslationsManager.setTranslations(
             request.targetLocale,
             request.metadata.hash,
-            request.metadata.id,
+            id,
             { state: 'error', error: result.error || 'Translation failed.', code: result.code || 500}
           );
         }
@@ -448,7 +448,7 @@ export default class I18NConfiguration {
           this._remoteTranslationsManager.setTranslations(
             request.targetLocale,
             request.metadata.hash,
-            request.metadata.id,
+            request.metadata.id || request.metadata.hash,
             { state: 'error', error: 'Translation failed.', code: 500}
           );
         }
