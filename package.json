@@ -1,9 +1,10 @@
 {
   "name": "gt-react-cli",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "main": "dist/main.js",
   "bin": {
-    "gt-cli": "dist/main.js"
+    "gt-cli": "dist/main.js",
+    "gt-react-cli": "dist/main.js"
   },
   "scripts": {
     "build": "tsc",
