@@ -7,6 +7,7 @@ import getI18NConfig from '../../config/getI18NConfig';
 import getLocale from '../../request/getLocale';
 import getMetadata from '../../request/getMetadata';
 import { createStringTranslationError } from '../../errors/createErrors';
+import { Content } from 'generaltranslation/internal';
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -59,7 +60,14 @@ export default async function tx(
 
   // ----- SET UP ----- //
 
-  if (!content) return '';  // No content to translate
+  // No content to translate
+  if (!content) {
+    // Reject empty strings
+    if (content === "") {
+      console.warn(`gt-next warn: Empty string found in tx() ${options.id && `with id: ${options.id}`}`);``
+    }
+    return '';
+  }
 
   const I18NConfig = getI18NConfig();
   const locale = options.locale || (await getLocale());
@@ -82,22 +90,30 @@ export default async function tx(
   // ----- RENDER LOGIC ----- //
 
   // translation required
-  if (translationRequired) return renderContent(contentArray, [defaultLocale]);
+  if (!translationRequired) return renderContent(contentArray, [defaultLocale]);
 
-  // Reject empty strings
-  if (!content.length) {
-    console.warn(`gt-next warn: Empty string found in tx() ${options.id && `with id: ${options.id}`}`);
-    return content;
-  }
 
   // get hash
   const hash = I18NConfig.hashContent(contentArray, options.context);
 
   // Check cache for translation (if there is no id, then we don't cache)
   if (options.id) {
-    const translations = await I18NConfig.getCachedTranslations(locale);
-    const target = translations[options.id]?.[hash];
-    if (target) return renderContent(target, [locale, defaultLocale]);
+    let translations;
+    try {
+      translations = await I18NConfig.getCachedTranslations(locale);
+      if (translations?.[options.id]?.[hash]) {
+        const translationResult = translations[options.id][hash];
+        if (translationResult.state !== 'success') {
+          // fallback error
+          return renderContent(content, [locale, defaultLocale]);
+        }
+        return renderContent(translationResult.target, [locale, defaultLocale]);
+      }
+    } catch (error) {
+      console.error('Error fetching translations from cache:', error);
+      // fallback error
+      return renderContent(content, [locale, defaultLocale]);
+    }
   }
 
   // New translation required
