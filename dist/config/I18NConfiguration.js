@@ -101,10 +101,6 @@ var I18NConfiguration = /** @class */ (function () {
         }
         // Render method
         this.renderSettings = renderSettings;
-        if (this.devApiKey && this.renderSettings.method === 'subtle') { // disable subtle if in dev
-            console.warn('Subtle render method cannot be used in dev environments, falling back to default.');
-            this.renderSettings.method = 'default';
-        }
         // Other metadata
         this.metadata = __assign(__assign(__assign({ sourceLocale: this.defaultLocale }, (this.renderSettings.timeout && {
             timeout: this.renderSettings.timeout - batchInterval,
@@ -138,7 +134,11 @@ var I18NConfiguration = /** @class */ (function () {
             projectId: this.projectId,
             devApiKey: this.devApiKey,
             runtimeUrl: this.runtimeUrl,
+            runtimeTranslations: this.runtimeTranslation,
         };
+    };
+    I18NConfiguration.prototype.getRuntimeTranslationEnabled = function () {
+        return this.runtimeTranslation;
     };
     /**
      * Gets the application's default locale
@@ -158,8 +158,7 @@ var I18NConfiguration = /** @class */ (function () {
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
      */
     I18NConfiguration.prototype.translationEnabled = function () {
-        return this.runtimeTranslation &&
-            this.projectId &&
+        return this.projectId &&
             this.runtimeUrl &&
             (this.apiKey || this.devApiKey)
             ? true
@@ -168,20 +167,11 @@ var I18NConfiguration = /** @class */ (function () {
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.
-     * As of 1/17/25: method is "skeleton", "replace", "subtle", "default".
+     * As of 1/22/25: method is "skeleton", "replace", "default".
      * Timeout is a number or null, representing no assigned timeout.
      */
     I18NConfiguration.prototype.getRenderSettings = function () {
         return this.renderSettings;
-    };
-    /**
-     * Checks if regional translation is required (ie en-US -> en-GB)
-     * @param locale - The user's locale
-     * @returns True if a regional translation is required, otherwise false
-     */
-    I18NConfiguration.prototype.requiresRegionalTranslation = function (locale) {
-        return (this.translationEnabled() &&
-            (0, generaltranslation_1.requiresRegionalTranslation)(this.defaultLocale, locale, this.locales));
     };
     /**
      * Check if translation is required based on the user's locale
@@ -192,33 +182,41 @@ var I18NConfiguration = /** @class */ (function () {
         return (this.translationEnabled() &&
             (0, generaltranslation_1.requiresTranslation)(this.defaultLocale, locale, this.locales));
     };
-    I18NConfiguration.prototype.addGTIdentifier = function (children, id) {
-        return (0, internal_1.addGTIdentifier)(children, id);
+    I18NConfiguration.prototype.addGTIdentifier = function (children) {
+        return (0, internal_1.addGTIdentifier)(children);
     };
     /**
-     * @returns {[any, string]} A xxhash hash and the children that were created from it
+     * @param {TaggedChildren} children - The children to be serialized
+     * @param {string} context - The context in which the children are being serialized
+     * @returns {[JsxChildren, string]} Serialized children and SHA256 hash generated from it
      */
-    I18NConfiguration.prototype.serializeAndHash = function (children, context, id) {
+    I18NConfiguration.prototype.serializeAndHashChildren = function (children, context) {
         var childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(children);
         return [
             childrenAsObjects,
-            (0, id_1.hashJsxChildren)(context
-                ? { source: childrenAsObjects, context: context }
-                : { source: childrenAsObjects }),
+            (0, id_1.hashJsxChildren)(__assign({ source: childrenAsObjects }, (context && { context: context }))),
         ];
     };
     /**
+     * @param {Content} content - The content to be hashed
+     * @param {string} context - The context in which the content are being hashed
+     * @returns {string} A SHA256 hash of the content
+     */
+    I18NConfiguration.prototype.hashContent = function (content, context) {
+        return (0, id_1.hashJsxChildren)(__assign({ source: content }, (context && { context: context })));
+    };
+    /**
      * Get the translation dictionaries for this user's locale, if they exist
-     * Globally shared cache
+     * Globally shared cache or saved locally
      * @param locale - The locale set by the user
      * @returns A promise that resolves to the translations.
      */
-    I18NConfiguration.prototype.getTranslations = function (locale) {
+    I18NConfiguration.prototype.getCachedTranslations = function (locale) {
         return __awaiter(this, void 0, void 0, function () {
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, ((_a = this._remoteTranslationsManager) === null || _a === void 0 ? void 0 : _a.getTranslations(locale))];
+                    case 0: return [4 /*yield*/, ((_a = this._remoteTranslationsManager) === null || _a === void 0 ? void 0 : _a.getCachedTranslations(locale))];
                     case 1: return [2 /*return*/, ((_b.sent()) || {})];
                 }
             });
@@ -268,9 +266,7 @@ var I18NConfiguration = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 cacheKey = constructCacheKey(params.targetLocale, params.metadata);
-                // In memory cache to make sure the same translation isn't requested twice
                 if (this._translationCache.has(cacheKey)) {
-                    // Returns the previous request
                     return [2 /*return*/, this._translationCache.get(cacheKey)];
                 }
                 source = params.source, targetLocale = params.targetLocale, metadata = params.metadata;
@@ -330,34 +326,52 @@ var I18NConfiguration = /** @class */ (function () {
                     case 4: return [4 /*yield*/, response.json()];
                     case 5:
                         results_1 = _b.sent();
-                        batch.forEach(function (item, index) {
-                            var _a, _b, _c;
+                        batch.forEach(function (request, index) {
+                            var _a, _b, _c, _d, _e, _f, _g;
                             // check if entry is missing
                             var result = results_1[index];
+                            var errorMsg = 'Translation failed.';
+                            var errorCode = 500;
                             if (!result)
-                                return item.reject(new types_1.GTTranslationError('Translation failed.', 500));
+                                return request.reject(new types_1.GTTranslationError(errorMsg, errorCode));
                             if (result && typeof result === 'object') {
-                                if ('translation' in result) {
+                                if ('translation' in result && result.translation) {
+                                    // record translations
                                     if (_this._remoteTranslationsManager) {
-                                        _this._remoteTranslationsManager.setTranslations(result.locale, ((_a = item.metadata) === null || _a === void 0 ? void 0 : _a.hash) || result.reference.key, result.reference.id, result.translation);
+                                        _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, request.metadata.id, { state: 'success', target: result.translation });
                                     }
-                                    if (((_b = item.metadata) === null || _b === void 0 ? void 0 : _b.hash) !== result.reference.key) {
-                                        console.warn("Mismatching ids or hashes! Expected hash: ".concat((_c = item.metadata) === null || _c === void 0 ? void 0 : _c.hash, ", but got id: ").concat(result.reference.id, " hash: ").concat(result.reference.key, ". We will still render your translation, but make sure to update to the newest version: www.generaltranslation.com/docs"));
+                                    // check for mismatching ids or hashes
+                                    if (((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) !== ((_b = request.metadata) === null || _b === void 0 ? void 0 : _b.id) || ((_c = result === null || result === void 0 ? void 0 : result.reference) === null || _c === void 0 ? void 0 : _c.key) !== ((_d = request.metadata) === null || _d === void 0 ? void 0 : _d.hash)) {
+                                        if (!request.metadata.id) {
+                                            console.warn((0, createErrors_1.createMismatchingHashWarning)(request.metadata.hash, (_e = result.reference) === null || _e === void 0 ? void 0 : _e.key));
+                                        }
+                                        else {
+                                            console.warn((0, createErrors_1.createMismatchingIdHashWarning)(request.metadata.id, request.metadata.hash, (_f = result === null || result === void 0 ? void 0 : result.reference) === null || _f === void 0 ? void 0 : _f.id, (_g = result.reference) === null || _g === void 0 ? void 0 : _g.key));
+                                        }
                                     }
-                                    return item.resolve(result.translation);
+                                    return request.resolve(result.translation);
                                 }
                                 else if ('error' in result && result.error) {
-                                    return item.reject(new types_1.GTTranslationError('Translation failed.', 500));
+                                    errorMsg = result.error || errorMsg;
+                                    errorCode = result.code || errorCode;
                                 }
                             }
-                            return item.reject(new types_1.GTTranslationError('Translation failed.', 500));
+                            // record translation error
+                            if (_this._remoteTranslationsManager) {
+                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, request.metadata.id, { state: 'error', error: result.error || 'Translation failed.', code: result.code || 500 });
+                            }
+                            return request.reject(new types_1.GTTranslationError(errorMsg, errorCode));
                         });
                         return [3 /*break*/, 8];
                     case 6:
                         error_1 = _b.sent();
                         console.error(error_1);
-                        batch.forEach(function (item) {
-                            return item.reject(new types_1.GTTranslationError('Translation failed.', 500));
+                        batch.forEach(function (request) {
+                            // record translation error
+                            if (_this._remoteTranslationsManager) {
+                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, request.metadata.id, { state: 'error', error: 'Translation failed.', code: 500 });
+                            }
+                            return request.reject(new types_1.GTTranslationError('Translation failed.', 500));
                         });
                         return [3 /*break*/, 8];
                     case 7:

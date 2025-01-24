@@ -1,8 +1,8 @@
-import { getDictionaryEntry as getEntry } from "gt-react/internal";
+import { Dictionary, DictionaryEntry, getDictionaryEntry as getEntry } from "gt-react/internal";
 
-let dictionary: Record<string, any>;
+let dictionary: Dictionary | undefined = undefined;
 
-export default function getDictionary() {
+export default function getDictionary(): Dictionary | undefined {
     if (dictionary) return dictionary;
     try {
         dictionary = require('gt-next/_dictionary').default;
@@ -12,7 +12,8 @@ export default function getDictionary() {
     return dictionary;
 }
 
-export function getDictionaryEntry(id: string) {
+export function getDictionaryEntry(id: string): Dictionary | DictionaryEntry | undefined {
     const obj = getDictionary();
+    if (!obj) return undefined;
     return getEntry(obj, id);
 }

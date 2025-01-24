@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = createNextMiddleware;
 var generaltranslation_1 = require("generaltranslation");
-// import { ResponseCookies, RequestCookies } from "next/dist/compiled/@edge-runtime/cookies";
 var internal_1 = require("generaltranslation/internal");
 var supported_locales_1 = require("@generaltranslation/supported-locales");
 var createErrors_1 = require("../errors/createErrors");

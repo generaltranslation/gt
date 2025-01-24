@@ -3,11 +3,15 @@ import getLocale from '../../request/getLocale';
 import getMetadata from '../../request/getMetadata';
 import { Suspense } from 'react';
 import {
+  isEmptyReactFragment,
   renderDefaultChildren,
   renderSkeleton,
   renderTranslatedChildren,
+  TranslatedChildren,
 } from 'gt-react/internal';
 import renderVariable from '../rendering/renderVariable';
+import { isSameLanguage } from 'generaltranslation';
+import React from 'react';
 
 
 async function Resolver({ children }: { children: React.ReactNode }) {
@@ -45,10 +49,9 @@ async function Resolver({ children }: { children: React.ReactNode }) {
  * @param {React.ReactNode} children - The content to be translated or displayed.
  * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
  * @param {Object} [renderSettings] - Optional settings controlling how fallback content is rendered during translation.
- * @param {"skeleton" | "replace" | "subtle" | "default"} [renderSettings.method] - Specifies the rendering method:
+ * @param {"skeleton" | "replace" | "default"} [renderSettings.method] - Specifies the rendering method:
  *  - "skeleton": show a placeholder while translation is loading.
  *  - "replace": show the default content as a fallback while the translation is loading.
- *  - "subtle": display children without a translation initially, with translations being applied later if available.
  *  - "default": behave like skeleton unless language is same (ie en-GB vs en-US), then behave like replace
  * @param {number | null} [renderSettings.timeout] - Optional timeout for translation loading.
  * @param {any} [context] - Additional context for translation key generation.
@@ -72,83 +75,24 @@ async function T({
   if (!children) {
     return;
   }
+  
+  if (isEmptyReactFragment(children)) return <React.Fragment />;
+  // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
-  const regionalTranslationRequired = I18NConfig.requiresRegionalTranslation(locale);
-  const translationRequired = I18NConfig.requiresTranslation(locale) || regionalTranslationRequired;
-
-  // Promise for getting translations from cache
-  // Async request is made here to request translations from the remote cache
-  let translationsPromise;
-  if (translationRequired) {
-    translationsPromise = I18NConfig.getTranslations(locale);
-  }
+  const renderSettings = I18NConfig.getRenderSettings();
+  const translationRequired = I18NConfig.requiresTranslation(locale);
+  const dialectTranslationRequired = translationRequired && isSameLanguage(locale, defaultLocale);
 
   // Gets tagged children with GT identifiers
-  // id is here for caching purposes
-  const taggedChildren = I18NConfig.addGTIdentifier(children, id);
+  const taggedChildren = I18NConfig.addGTIdentifier(children);
 
-  // If no translation is required, render the default children
-  // The dictionary wraps text in this <T> component
-  // Thus, we need to also handle variables
-  if (!translationRequired) {
-    return renderDefaultChildren({
-      children: taggedChildren,
-      variables,
-      variablesOptions,
-      defaultLocale,
-      renderVariable,
-    });
-  }
-
-  // Turns tagged children into objects
-  // The key (a hash) is used to identify the translation
-  const [childrenAsObjects, key] = I18NConfig.serializeAndHash(
-    taggedChildren,
-    context,
-    undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
-  );
-
-  // Wait for translations from the cache
-  const translations = await translationsPromise;
-
-  // Gets the translation for the given id
-  const translation = id ? translations?.[id] : undefined;
-
-  // checks if an appropriate translation exists
-  if (translation && translation?.[key]) {
-    // a translation exists!
-    let target = translation[key];
-    return renderTranslatedChildren({
-      source: taggedChildren,
-      target,
-      variables,
-      variablesOptions,
-      locales: [locale, defaultLocale],
-      renderVariable,
-    });
-  }
-
-  const renderSettings = I18NConfig.getRenderSettings();
-
-  // On-demand translates the children
-  const translationPromise = I18NConfig.translateChildren({
-    source: childrenAsObjects,
-    targetLocale: locale,
-    metadata: {
-      ...(id && { id }),
-      hash: key,
-      ...(context && { context }),
-      ...(await getMetadata()),
-      ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
-    },
-  });
-
+  // ----- RENDER METHODS ----- //
 
   // render in default language
-  const renderDefaultLocale = () => {
+  const renderDefaultLocale = () => { 
     return renderDefaultChildren({
       children: taggedChildren,
       variables,
@@ -168,13 +112,66 @@ async function T({
   }
 
   const renderLoadingDefault = () => {
-    if (regionalTranslationRequired) return renderDefaultLocale();
+    if (dialectTranslationRequired) return renderDefaultLocale();
     return renderLoadingSkeleton();
   }
 
-  // Awaits the translation promise
-  let renderTranslatedChildrenPromise = translationPromise.then(
-    async (translation) => {
+  // ----- CHECK TRANSLATIONS REQUIRED ----- //
+
+  // If no translation is required, render the default children
+  // The dictionary wraps text in this <T> component
+  // Thus, we need to also handle variables
+  if (!translationRequired) {
+    return renderDefaultLocale();
+  }
+
+  // ----- CHECK CACHED TRANSLATIONS ----- //
+
+  // Begin by sending check to cache for translations
+  const translationsPromise = translationRequired && I18NConfig.getCachedTranslations(locale);
+
+  // Turns tagged children into objects
+  // The key (a hash) is used to identify the translation
+  const [childrenAsObjects, key] = I18NConfig.serializeAndHashChildren(taggedChildren, context);
+
+  // Block until cache check resolves
+  const translations = (translationsPromise) ? await translationsPromise : {};
+
+  // Gets the translation entry
+  const translationEntry = translations?.[id]?.[key];
+
+
+  // ----- CHECK CACHED TRANSLATIONS ----- //
+
+  // if we have a cached translation, render it
+  if (translationEntry?.state === 'success') { 
+    return renderTranslatedChildren({
+      source: taggedChildren,
+      target: translationEntry.target,
+      variables,
+      variablesOptions,
+      locales: [locale, defaultLocale],
+      renderVariable,
+    });
+  } else if (translationEntry?.state === 'error') {
+    return renderDefaultLocale();
+  }
+
+  // ----- TRANSLATE ON DEMAND ----- //
+
+  // On-demand translation request sent
+  // (no entry has been found, this means that the translation is either (1) loading or (2) missing)
+  const translationPromise = I18NConfig.translateChildren({ // do on demand translation
+    source: childrenAsObjects,
+    targetLocale: locale,
+    metadata: {
+      ...(id && { id }),
+      hash: key,
+      ...(context && { context }),
+      ...(await getMetadata()),
+      ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
+    },
+  }).then((translation) => {  // render the translation
       return renderTranslatedChildren({
         source: taggedChildren,
         target: translation,
@@ -184,24 +181,23 @@ async function T({
         renderVariable,
       });
     }
-  ).catch(() => {
+  ).catch(() => { // render the default locale if there is an error instead
     return renderDefaultLocale();
   });
 
+  // Loading behavior
   let loadingFallback; // Blank screen
   if (renderSettings.method === 'replace') {
     loadingFallback = renderDefaultLocale();
   } else if (renderSettings.method === 'skeleton') {
     loadingFallback = renderLoadingSkeleton();
-  } else if (renderSettings.method === 'subtle' && id !== undefined) { // exclude entries with missing ids bc these don't get cached
-    return renderDefaultLocale();
   } else {
     loadingFallback = renderLoadingDefault();
   }
 
   return (
     <Suspense fallback={loadingFallback}>
-      <Resolver children={renderTranslatedChildrenPromise} />
+      <Resolver children={translationPromise} />
     </Suspense>
   );
 }

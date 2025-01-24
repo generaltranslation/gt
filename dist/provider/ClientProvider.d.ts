@@ -1,13 +1,16 @@
-import { Dictionary, RenderMethod } from 'gt-react/internal';
-import { Translations } from '../types/types';
-export default function ClientProvider({ children, dictionary, initialTranslations, locale, defaultLocale, translationRequired, regionalTranslationRequired, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl }: {
+import { RenderMethod, TranslationsObject, TranslatedChildren } from 'gt-react/internal';
+import React from 'react';
+import { FlattenedTaggedDictionary } from '../types/types';
+export default function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale, defaultLocale, translationRequired, dialectTranslationRequired, locales, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslations, }: {
     children: any;
-    dictionary: Dictionary;
-    initialTranslations: Translations;
+    dictionary: FlattenedTaggedDictionary;
+    initialTranslations: TranslationsObject;
+    translationPromises: Record<string, Promise<TranslatedChildren>>;
     locale: string;
+    locales: string[];
     defaultLocale: string;
     translationRequired: boolean;
-    regionalTranslationRequired: boolean;
+    dialectTranslationRequired: boolean;
     requiredPrefix: string | undefined;
     renderSettings: {
         method: RenderMethod;
@@ -16,5 +19,6 @@ export default function ClientProvider({ children, dictionary, initialTranslatio
     projectId?: string;
     devApiKey?: string;
     runtimeUrl?: string;
-}): import("react/jsx-runtime").JSX.Element;
+    runtimeTranslations?: boolean;
+}): React.JSX.Element;
 //# sourceMappingURL=ClientProvider.d.ts.map
