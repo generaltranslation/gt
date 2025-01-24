@@ -1,15 +1,6 @@
-# GT-Next: Seamless Internationalization for Next.js
+# gt-next: Automatic i18n for Next.js
 
-GT-Next is a powerful internationalization library designed for Next.js applications. It allows you to effortlessly translate your app into multiple languages, leveraging cloud-based translation APIs, on demand translations, and global caching.
-
-## Features
-
-- **Inline Translations**: Use the `<T>` component to translate JSX content directly in your components.
-- **Dynamic Translation**: Translate content on demand with minimal setup.
-- **Template Dictionaries**: Manage translatable content using a scalable dictionary design pattern.
-- **Variable Components**: Insert dynamic, untranslatable content like numbers, dates, and currencies with ease.
-- **Branching Components**: Handle conditional rendering and pluralization directly in translations.
-- **Secure Translation**: Sensitive content remains local and safe.
+gt-next is a powerful internationalization library designed for Next.js applications. It replaces your existing localization library, and integrates with [generaltranslation.com](https://generaltranslation.com) for translations.
 
 ## Installation
 
@@ -41,13 +32,18 @@ GT_PROJECT_ID="your-project-id"
 ### Step 2: Add the `<GTProvider>`
 
 Add the `<GTProvider>` component to add translations for client-side
-content.
+content, and set the <html> `lang` attribute using `getLocale()`.
+
 ```jsx
 import { GTProvider } from 'gt-next'
+import { getLocale } from 'gt-next/server'
  
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+
+    const lang = await getLocale();
+
     return (
-        <html lang="en">
+        <html lang={lang}>
             <body>
                 <GTProvider>
                     { children }
@@ -61,17 +57,14 @@ export default function RootLayout({ children }) {
 ### Step 3: Translate Content with `<T>`
 
 The `<T>` component is the simplest way to translate inline JSX content.
+
 ```jsx
 import { T } from 'gt-next';
-import { MyComponent } from '@components/MyComponent';
 
 export default function HomePage() {
     return (
         <T id="greeting">
-            Hello, world!
-            <MyComponent>
-                This gets translated too!
-            </MyComponent>
+            <p>Hello, world!</p>
         </T>
     );
 }

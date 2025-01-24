@@ -9,7 +9,6 @@ import {
 } from 'gt-react/internal';
 import renderVariable from '../rendering/renderVariable';
 
-
 async function Resolver({ children }: { children: React.ReactNode }) {
   return await children
 }
