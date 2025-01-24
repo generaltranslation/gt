@@ -15,6 +15,7 @@ import {
   warnVariableProp,
 } from "../console/warnings";
 import { hashJsxChildren } from "generaltranslation/id";
+import { isAcceptedPluralForm } from "generaltranslation/internal";
 
 // Declare which components are considered valid "variable containers"
 const VARIABLE_COMPONENTS = ["Var", "DateTime", "Currency", "Num"];
@@ -169,7 +170,6 @@ function parseJSXElement(
         return text;
       } else if (t.isJSXExpressionContainer(node)) {
         return buildJSXTree(node.expression);
-
         // If it's a JSX element
       } else if (t.isJSXElement(node)) {
         const element = node;
@@ -188,6 +188,10 @@ function parseJSXElement(
         const elementIsVariable = VARIABLE_COMPONENTS.includes(typeName ?? "");
 
         const props: { [key: string]: any } = {};
+
+        const elementIsPlural = typeName === "Plural";
+        const elementIsBranch = typeName === "Branch";
+
         element.openingElement.attributes.forEach((attr) => {
           if (t.isJSXAttribute(attr)) {
             const attrName = attr.name.name;
@@ -196,12 +200,22 @@ function parseJSXElement(
               if (t.isStringLiteral(attr.value)) {
                 attrValue = attr.value.value;
               } else if (t.isJSXExpressionContainer(attr.value)) {
+                if (
+                  (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
+                  (elementIsBranch && attrName !== "branch")
+                ) {
+                  // Make sure that variable strings like {`I have ${count} book`} are invalid!
+                  if (
+                    t.isTemplateLiteral(attr.value.expression) && 
+                    !isStaticExpression(attr.value.expression).isStatic
+                  ) {
+                    unwrappedExpressions.push(generate(attr.value).code);
+                  }
+                }
                 attrValue = buildJSXTree(attr.value.expression);
               }
             }
             props[attrName as any] = attrValue;
-          } else if (t.isJSXSpreadAttribute(attr)) {
-            props["..."] = generate(attr.argument).code;
           }
         });
 
@@ -343,6 +357,7 @@ function parseJSXElement(
     if (!id) {
       errors.push(warnNoId(file));
     }
+
     // If we found an unwrapped expression, skip
     if (unwrappedExpressions.length > 0) {
       errors.push(warnHasUnwrappedExpression(file, id, unwrappedExpressions));
