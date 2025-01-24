@@ -139,7 +139,7 @@ function getGT(id) {
                     translations_1 = _a.sent();
                     // Translate all strings in sub dictionary (block until completed)
                     return [4 /*yield*/, Promise.all(Object.entries(flattenedDictionaryEntries !== null && flattenedDictionaryEntries !== void 0 ? flattenedDictionaryEntries : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var _c, entry, metadata, contentArray, hash, entryId, translationEntry, translationPromise, _d, _e, error_1;
+                            var _c, entry, metadata, entryId, contentArray, hash, translationEntry, translationPromise, _d, _e, error_1;
                             var _f;
                             var suffix = _b[0], dictionaryEntry = _b[1];
                             return __generator(this, function (_g) {
@@ -149,9 +149,13 @@ function getGT(id) {
                                         // only tx strings
                                         if (typeof entry !== 'string')
                                             return [2 /*return*/];
+                                        entryId = getId(suffix);
+                                        if (!entry.length) {
+                                            console.warn("gt-next warn: Empty string found in dictionary with id: ".concat(entryId));
+                                            return [2 /*return*/];
+                                        }
                                         contentArray = (0, generaltranslation_1.splitStringToContent)(entry);
                                         hash = I18NConfig.hashContent(contentArray, metadata === null || metadata === void 0 ? void 0 : metadata.context);
-                                        entryId = getId(suffix);
                                         translationEntry = (_f = translations_1[entryId]) === null || _f === void 0 ? void 0 : _f[hash];
                                         if (translationEntry) {
                                             // success
@@ -190,7 +194,7 @@ function getGT(id) {
                         // Get entry
                         id = getId(id);
                         var dictionaryEntry = (0, getDictionary_1.getDictionaryEntry)(id);
-                        if (!dictionaryEntry === undefined || // no entry found
+                        if (dictionaryEntry === undefined || dictionaryEntry === null || // no entry found
                             (typeof dictionaryEntry === 'object' && !(0, react_1.isValidElement)(dictionaryEntry) && !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
                         ) {
                             console.warn((0, createErrors_1.createNoEntryWarning)(id));
@@ -204,6 +208,11 @@ function getGT(id) {
                         if (typeof entry === 'string') {
                             var contentArray = filteredTranslations[id] || (0, generaltranslation_1.splitStringToContent)(entry);
                             return (0, generaltranslation_1.renderContentToString)(contentArray, [locale, defaultLocale], variables, variablesOptions);
+                        }
+                        // Reject empty fragments
+                        if ((0, internal_1.isEmptyReactFragment)(entry)) {
+                            console.warn("gt-next warn: Empty fragment found in dictionary with id: ".concat(id));
+                            return entry;
                         }
                         // Translate on demand
                         return ((0, jsx_runtime_1.jsx)(T_1.default, __assign({ id: id, variables: variables, variablesOptions: variablesOptions }, metadata, { children: entry })));
@@ -252,6 +261,11 @@ function useElement(id) {
             return (0, jsx_runtime_1.jsx)(react_1.default.Fragment, {});
         }
         var _a = (0, internal_1.extractEntryMetadata)(dictionaryEntry), entry = _a.entry, metadata = _a.metadata;
+        // Reject empty fragments
+        if ((0, internal_1.isEmptyReactFragment)(entry)) {
+            console.warn("gt-next warn: Empty fragment found in dictionary with id: ".concat(id));
+            return entry;
+        }
         // Get variables and variable options
         var variables = options;
         var variablesOptions = metadata === null || metadata === void 0 ? void 0 : metadata.variablesOptions;

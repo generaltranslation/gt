@@ -3,6 +3,7 @@ import getLocale from '../../request/getLocale';
 import getMetadata from '../../request/getMetadata';
 import { Suspense } from 'react';
 import {
+  isEmptyReactFragment,
   renderDefaultChildren,
   renderSkeleton,
   renderTranslatedChildren,
@@ -10,6 +11,7 @@ import {
 } from 'gt-react/internal';
 import renderVariable from '../rendering/renderVariable';
 import { isSameLanguage } from 'generaltranslation';
+import React from 'react';
 
 
 async function Resolver({ children }: { children: React.ReactNode }) {
@@ -73,6 +75,8 @@ async function T({
   if (!children) {
     return;
   }
+  
+  if (isEmptyReactFragment(children)) return <React.Fragment />;
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();

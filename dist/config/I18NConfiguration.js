@@ -266,9 +266,7 @@ var I18NConfiguration = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 cacheKey = constructCacheKey(params.targetLocale, params.metadata);
-                // In memory cache to make sure the same translation isn't requested twice
                 if (this._translationCache.has(cacheKey)) {
-                    // Returns the previous request
                     return [2 /*return*/, this._translationCache.get(cacheKey)];
                 }
                 source = params.source, targetLocale = params.targetLocale, metadata = params.metadata;

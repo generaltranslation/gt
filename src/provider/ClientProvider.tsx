@@ -4,19 +4,15 @@ import {
   isValidElement,
   useCallback,
   useLayoutEffect,
-  useMemo,
   useState,
 } from 'react';
 import {
   GTContext, useRuntimeTranslation
 } from 'gt-react/client';
-import { Dictionary, RenderMethod, TranslationsObject, getDictionaryEntry, DictionaryEntry, TranslatedContent, FlattenedDictionary, TranslatedChildren, TranslationError, TranslationSuccess, renderDefaultChildren, renderSkeleton, TaggedChildren, renderVariable, renderTranslatedChildren } from 'gt-react/internal';
-import { extractEntryMetadata } from 'gt-react/internal';
+import { RenderMethod, TranslationsObject, TranslatedContent, TranslatedChildren, TranslationError, TranslationSuccess, renderDefaultChildren, renderSkeleton, TaggedChildren, renderVariable, renderTranslatedChildren, isEmptyReactFragment } from 'gt-react/internal';
 import { renderContentToString, splitStringToContent } from 'generaltranslation';
 import React from 'react';
-import { hashJsxChildren } from 'generaltranslation/id';
 import { listSupportedLocales } from '@generaltranslation/supported-locales';
-import { T } from 'gt-react';
 import { FlattenedTaggedDictionary, GTTranslationError, TaggedDictionary, TaggedDictionaryEntry } from '../types/types';
 import extractTaggedEntryMetadata from '../utils/extractTaggedEntryMetadata';
 
@@ -102,7 +98,7 @@ export default function ClientProvider({
 
       // Get the dictionary entry
       const dictionaryEntry: TaggedDictionary | TaggedDictionaryEntry | undefined = dictionary[id]; // this is a flattened dictionary
-      if (dictionaryEntry === undefined || // entry not found
+      if ((!dictionaryEntry && dictionaryEntry !== "") || // entry not found
         (typeof dictionaryEntry === 'object' && !isValidElement(dictionaryEntry) && !Array.isArray(dictionaryEntry))
       ) {
         return undefined; // dictionary entry not found
@@ -118,6 +114,13 @@ export default function ClientProvider({
       // ----- RENDER STRINGS ----- //
 
       if (typeof entry === 'string') { // render strings
+
+        // Reject empty strings
+        if (!entry.length) {
+          console.warn(`gt-next warn: Empty string found in dictionary with id: ${id}`);
+          return entry;
+        }
+      
         // no translation required
         const content = splitStringToContent(entry);
         if (!translationRequired) {
@@ -214,6 +217,11 @@ export default function ClientProvider({
 
       // error behavior
       if (translationEntry.state === "error") {
+        // Reject empty fragments
+        if (isEmptyReactFragment(entry)) {
+          console.warn(`gt-next warn: Empty fragment found in dictionary with id: ${id}`);
+          return entry;
+        }
         return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
       }
 

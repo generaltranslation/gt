@@ -294,10 +294,12 @@ export default class I18NConfiguration {
     targetLocale: string;
     options: { hash: string } & Record<string, any>;
   }): Promise<TranslatedContent> {
+    // check internal cache
     const cacheKey = constructCacheKey(params.targetLocale, params.options);
     if (this._translationCache.has(cacheKey)) {
       return this._translationCache.get(cacheKey);
     }
+    // add to tx queue
     const { source, targetLocale, options } = params;
     const translationPromise = new Promise<TranslatedContent>(
       (resolve, reject) => {
@@ -328,14 +330,14 @@ export default class I18NConfiguration {
     targetLocale: string;
     metadata: { hash: string } & Record<string, any>;
   }): Promise<TranslatedChildren> {
-    const cacheKey = constructCacheKey(params.targetLocale, params.metadata);
-
+    
     // In memory cache to make sure the same translation isn't requested twice
+    const cacheKey = constructCacheKey(params.targetLocale, params.metadata);
     if (this._translationCache.has(cacheKey)) {
-      // Returns the previous request
       return this._translationCache.get(cacheKey);
     }
 
+    // Add to translation queue
     const { source, targetLocale, metadata } = params;
     const translationPromise = new Promise<TranslatedChildren>(
       (resolve, reject) => {

@@ -84,6 +84,12 @@ export default async function tx(
   // translation required
   if (translationRequired) return renderContent(contentArray, [defaultLocale]);
 
+  // Reject empty strings
+  if (!content.length) {
+    console.warn(`gt-next warn: Empty string found in tx() ${options.id && `with id: ${options.id}`}`);
+    return content;
+  }
+
   // get hash
   const hash = I18NConfig.hashContent(contentArray, options.context);
 

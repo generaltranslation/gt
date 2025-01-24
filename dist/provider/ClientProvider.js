@@ -131,7 +131,7 @@ function ClientProvider(_a) {
         if (options === void 0) { options = {}; }
         // Get the dictionary entry
         var dictionaryEntry = dictionary[id]; // this is a flattened dictionary
-        if (dictionaryEntry === undefined || // entry not found
+        if ((!dictionaryEntry && dictionaryEntry !== "") || // entry not found
             (typeof dictionaryEntry === 'object' && !(0, react_1.isValidElement)(dictionaryEntry) && !Array.isArray(dictionaryEntry))) {
             return undefined; // dictionary entry not found
         }
@@ -143,6 +143,11 @@ function ClientProvider(_a) {
         var translationEntry = (_a = translations === null || translations === void 0 ? void 0 : translations[id]) === null || _a === void 0 ? void 0 : _a[hash];
         // ----- RENDER STRINGS ----- //
         if (typeof entry === 'string') { // render strings
+            // Reject empty strings
+            if (!entry.length) {
+                console.warn("gt-next warn: Empty string found in dictionary with id: ".concat(id));
+                return entry;
+            }
             // no translation required
             var content = (0, generaltranslation_1.splitStringToContent)(entry);
             if (!translationRequired) {
@@ -213,6 +218,11 @@ function ClientProvider(_a) {
         }
         // error behavior
         if (translationEntry.state === "error") {
+            // Reject empty fragments
+            if ((0, internal_1.isEmptyReactFragment)(entry)) {
+                console.warn("gt-next warn: Empty fragment found in dictionary with id: ".concat(id));
+                return entry;
+            }
             return (0, jsx_runtime_1.jsx)(react_2.default.Fragment, { children: renderDefaultLocale() });
         }
         // render translated content

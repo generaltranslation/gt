@@ -58,6 +58,7 @@ var react_1 = require("react");
 var internal_1 = require("gt-react/internal");
 var renderVariable_1 = __importDefault(require("../rendering/renderVariable"));
 var generaltranslation_1 = require("generaltranslation");
+var react_2 = __importDefault(require("react"));
 function Resolver(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
         var children = _b.children;
@@ -123,6 +124,8 @@ function T(_a) {
                     if (!children) {
                         return [2 /*return*/];
                     }
+                    if ((0, internal_1.isEmptyReactFragment)(children))
+                        return [2 /*return*/, (0, jsx_runtime_1.jsx)(react_2.default.Fragment, {})];
                     I18NConfig = (0, getI18NConfig_1.default)();
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:

@@ -4,6 +4,7 @@ import {
   DictionaryEntry,
   Entry,
   TranslatedChildren,
+  isEmptyReactFragment,
 } from 'gt-react/internal';
 import { ReactNode } from 'react';
 import getI18NConfig from '../config/getI18NConfig';
@@ -15,6 +16,7 @@ import ClientProvider from './ClientProvider';
 import { Dictionary, TranslationsObject } from 'gt-react/internal';
 import { createDictionarySubsetError } from '../errors/createErrors';
 import { FlattenedTaggedDictionary } from '../types/types'; 
+import React from 'react';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -66,19 +68,19 @@ export default async function GTProvider({
   await Promise.all(
     Object.entries(flattenedDictionarySubset ?? {}).map(async ([suffix, dictionaryEntry]) => {
 
+      // reject bad dictionary entries (we want to do a custom warning for empty strings later)
+      if (!dictionaryEntry && dictionaryEntry !== "") return;
+
       // Get the entry from the dictionary
-      if (!dictionaryEntry) return; // dictionary entries cannot be falsey
       const entryId = getId(suffix);
 
-
       let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
-      if (!entry) return; // dictionary entries cannot be falsey
 
-      // Only translate strings
+      // jsx tx
       if (typeof entry !== 'string') {
         // Populating the dictionary that we will pass to the client
         const taggedChildren = I18NConfig.addGTIdentifier(entry);
-        const [childrenAsObjects, hash] = I18NConfig.serializeAndHashChildren(entry, metadata?.context);
+        const [childrenAsObjects, hash] = I18NConfig.serializeAndHashChildren(taggedChildren, metadata?.context);
         dictionary[entryId] = [taggedChildren as Entry, { ...metadata, hash }];
 
         // if no tx required, we are done
@@ -89,7 +91,16 @@ export default async function GTProvider({
 
         // If the translation already exists, then do not translate on demand
         // or runtime translation disabled
-        if (translationEntry) return;
+        if (translationEntry) {
+          // if it is loading, we can just hook into the promise by calling translateChildren
+          if (translationEntry.state !== "loading") return;
+        }
+
+        // Reject empty fragments
+        if (isEmptyReactFragment(entry)) {
+          translations[entryId] = { [hash]: { state: 'error', error: 'Empty fragments are not allowed for translation.', code: 400 } };
+          return;
+        }
 
         // Perform on-demand translation
         const translationPromise = I18NConfig.translateChildren({
@@ -106,7 +117,8 @@ export default async function GTProvider({
         translations[entryId] = { [hash]: { state: 'loading' } };
         promises[entryId] = translationPromise;
         return;
-      };
+      }
+
 
       // Get serialize and hash string entry
       const contentArray = splitStringToContent(entry);
@@ -123,6 +135,12 @@ export default async function GTProvider({
 
       // If the translation already exists, then do not translate on demand
       if (translationEntry) return;
+
+      // Reject empty strings
+      if (!entry.length) {
+        translations[entryId] = { [hash]: { state: 'error', error: 'Empty strings are not allowed for translation.', code: 400 } };
+        return;
+      }
       
       // Perform on-demand translation
       try {

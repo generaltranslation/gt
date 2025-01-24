@@ -121,6 +121,11 @@ function tx(content_1) {
                     // translation required
                     if (translationRequired)
                         return [2 /*return*/, renderContent(contentArray, [defaultLocale])];
+                    // Reject empty strings
+                    if (!content.length) {
+                        console.warn("gt-next warn: Empty string found in tx() ".concat(options.id && "with id: ".concat(options.id)));
+                        return [2 /*return*/, content];
+                    }
                     hash = I18NConfig.hashContent(contentArray, options.context);
                     if (!options.id) return [3 /*break*/, 4];
                     return [4 /*yield*/, I18NConfig.getCachedTranslations(locale)];

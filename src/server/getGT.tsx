@@ -4,6 +4,7 @@ import {
   DictionaryEntry,
   Dictionary,
   TranslatedContent,
+  isEmptyReactFragment,
 } from 'gt-react/internal';
 import T from './inline/T';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
@@ -77,12 +78,18 @@ export async function getGT(
           // only tx strings
           if (typeof entry !== 'string') return;
 
+          // Reject empty strings
+          const entryId = getId(suffix);
+          if (!entry.length) {
+            console.warn(`gt-next warn: Empty string found in dictionary with id: ${entryId}`);
+            return;
+          }
+
           // Serialize and hash
           const contentArray = splitStringToContent(entry);
           const hash = I18NConfig.hashContent(contentArray, metadata?.context);
 
           // If a translation already exists int our cache from earlier, add it to the translations
-          const entryId = getId(suffix);
           const translationEntry = translations[entryId]?.[hash];
           if (translationEntry) {
             // success
@@ -118,7 +125,7 @@ export async function getGT(
     id = getId(id);
     const dictionaryEntry = getDictionaryEntry(id);
     if (
-      !dictionaryEntry === undefined || // no entry found
+      dictionaryEntry === undefined || dictionaryEntry === null || // no entry found
       (typeof dictionaryEntry === 'object' && !isValidElement(dictionaryEntry) && !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
     ) {
       console.warn(createNoEntryWarning(id));
@@ -139,6 +146,12 @@ export async function getGT(
         variables,
         variablesOptions
       );
+    }
+
+    // Reject empty fragments
+    if (isEmptyReactFragment(entry)) {
+      console.warn(`gt-next warn: Empty fragment found in dictionary with id: ${id}`);
+      return entry;
     }
 
     // Translate on demand
@@ -199,6 +212,13 @@ export function useElement(
       return <React.Fragment />;
     }
     let { entry, metadata } = extractEntryMetadata(dictionaryEntry as DictionaryEntry);
+
+
+    // Reject empty fragments
+    if (isEmptyReactFragment(entry)) {
+      console.warn(`gt-next warn: Empty fragment found in dictionary with id: ${id}`);
+      return entry;
+    }
 
     // Get variables and variable options
     let variables = options;
