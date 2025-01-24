@@ -57,6 +57,8 @@ var getMetadata_1 = __importDefault(require("../../request/getMetadata"));
 var react_1 = require("react");
 var internal_1 = require("gt-react/internal");
 var renderVariable_1 = __importDefault(require("../rendering/renderVariable"));
+var generaltranslation_1 = require("generaltranslation");
+var react_2 = __importDefault(require("react"));
 function Resolver(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
         var children = _b.children;
@@ -99,10 +101,9 @@ function Resolver(_a) {
  * @param {React.ReactNode} children - The content to be translated or displayed.
  * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
  * @param {Object} [renderSettings] - Optional settings controlling how fallback content is rendered during translation.
- * @param {"skeleton" | "replace" | "subtle" | "default"} [renderSettings.method] - Specifies the rendering method:
+ * @param {"skeleton" | "replace" | "default"} [renderSettings.method] - Specifies the rendering method:
  *  - "skeleton": show a placeholder while translation is loading.
  *  - "replace": show the default content as a fallback while the translation is loading.
- *  - "subtle": display children without a translation initially, with translations being applied later if available.
  *  - "default": behave like skeleton unless language is same (ie en-GB vs en-US), then behave like replace
  * @param {number | null} [renderSettings.timeout] - Optional timeout for translation loading.
  * @param {any} [context] - Additional context for translation key generation.
@@ -113,68 +114,27 @@ function Resolver(_a) {
  */
 function T(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, regionalTranslationRequired, translationRequired, translationsPromise, taggedChildren, _c, childrenAsObjects, key, translations, translation, target, renderSettings, translationPromise, _d, _e, _f, renderDefaultLocale, renderLoadingSkeleton, renderLoadingDefault, renderTranslatedChildrenPromise, loadingFallback;
-        var _g;
-        var _this = this;
+        var I18NConfig, locale, defaultLocale, renderSettings, translationRequired, dialectTranslationRequired, taggedChildren, renderDefaultLocale, renderLoadingSkeleton, renderLoadingDefault, translationsPromise, _c, childrenAsObjects, key, translations, _d, translationEntry, translationPromise, _e, _f, _g, loadingFallback;
+        var _h;
+        var _j;
         var children = _b.children, id = _b.id, context = _b.context, variables = _b.variables, variablesOptions = _b.variablesOptions;
-        return __generator(this, function (_h) {
-            switch (_h.label) {
+        return __generator(this, function (_k) {
+            switch (_k.label) {
                 case 0:
                     if (!children) {
                         return [2 /*return*/];
                     }
+                    if ((0, internal_1.isEmptyReactFragment)(children))
+                        return [2 /*return*/, (0, jsx_runtime_1.jsx)(react_2.default.Fragment, {})];
                     I18NConfig = (0, getI18NConfig_1.default)();
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    locale = _h.sent();
+                    locale = _k.sent();
                     defaultLocale = I18NConfig.getDefaultLocale();
-                    regionalTranslationRequired = I18NConfig.requiresRegionalTranslation(locale);
-                    translationRequired = I18NConfig.requiresTranslation(locale) || regionalTranslationRequired;
-                    if (translationRequired) {
-                        translationsPromise = I18NConfig.getTranslations(locale);
-                    }
-                    taggedChildren = I18NConfig.addGTIdentifier(children, id);
-                    // If no translation is required, render the default children
-                    // The dictionary wraps text in this <T> component
-                    // Thus, we need to also handle variables
-                    if (!translationRequired) {
-                        return [2 /*return*/, (0, internal_1.renderDefaultChildren)({
-                                children: taggedChildren,
-                                variables: variables,
-                                variablesOptions: variablesOptions,
-                                defaultLocale: defaultLocale,
-                                renderVariable: renderVariable_1.default,
-                            })];
-                    }
-                    _c = I18NConfig.serializeAndHash(taggedChildren, context, undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
-                    ), childrenAsObjects = _c[0], key = _c[1];
-                    return [4 /*yield*/, translationsPromise];
-                case 2:
-                    translations = _h.sent();
-                    translation = id ? translations === null || translations === void 0 ? void 0 : translations[id] : undefined;
-                    // checks if an appropriate translation exists
-                    if (translation && (translation === null || translation === void 0 ? void 0 : translation[key])) {
-                        target = translation[key];
-                        return [2 /*return*/, (0, internal_1.renderTranslatedChildren)({
-                                source: taggedChildren,
-                                target: target,
-                                variables: variables,
-                                variablesOptions: variablesOptions,
-                                locales: [locale, defaultLocale],
-                                renderVariable: renderVariable_1.default,
-                            })];
-                    }
                     renderSettings = I18NConfig.getRenderSettings();
-                    _e = (_d = I18NConfig).translateChildren;
-                    _g = {
-                        source: childrenAsObjects,
-                        targetLocale: locale
-                    };
-                    _f = [__assign(__assign(__assign({}, (id && { id: id })), { hash: key }), (context && { context: context }))];
-                    return [4 /*yield*/, (0, getMetadata_1.default)()];
-                case 3:
-                    translationPromise = _e.apply(_d, [(_g.metadata = __assign.apply(void 0, [__assign.apply(void 0, _f.concat([(_h.sent())])), (renderSettings.timeout && { timeout: renderSettings.timeout })]),
-                            _g)]);
+                    translationRequired = I18NConfig.requiresTranslation(locale);
+                    dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, defaultLocale);
+                    taggedChildren = I18NConfig.addGTIdentifier(children);
                     renderDefaultLocale = function () {
                         return (0, internal_1.renderDefaultChildren)({
                             children: taggedChildren,
@@ -193,22 +153,64 @@ function T(_a) {
                         });
                     };
                     renderLoadingDefault = function () {
-                        if (regionalTranslationRequired)
+                        if (dialectTranslationRequired)
                             return renderDefaultLocale();
                         return renderLoadingSkeleton();
                     };
-                    renderTranslatedChildrenPromise = translationPromise.then(function (translation) { return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            return [2 /*return*/, (0, internal_1.renderTranslatedChildren)({
-                                    source: taggedChildren,
-                                    target: translation,
-                                    variables: variables,
-                                    variablesOptions: variablesOptions,
-                                    locales: [locale, defaultLocale],
-                                    renderVariable: renderVariable_1.default,
-                                })];
+                    // ----- CHECK TRANSLATIONS REQUIRED ----- //
+                    // If no translation is required, render the default children
+                    // The dictionary wraps text in this <T> component
+                    // Thus, we need to also handle variables
+                    if (!translationRequired) {
+                        return [2 /*return*/, renderDefaultLocale()];
+                    }
+                    translationsPromise = translationRequired && I18NConfig.getCachedTranslations(locale);
+                    _c = I18NConfig.serializeAndHashChildren(taggedChildren, context), childrenAsObjects = _c[0], key = _c[1];
+                    if (!(translationsPromise)) return [3 /*break*/, 3];
+                    return [4 /*yield*/, translationsPromise];
+                case 2:
+                    _d = _k.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    _d = {};
+                    _k.label = 4;
+                case 4:
+                    translations = _d;
+                    translationEntry = (_j = translations === null || translations === void 0 ? void 0 : translations[id]) === null || _j === void 0 ? void 0 : _j[key];
+                    // ----- CHECK CACHED TRANSLATIONS ----- //
+                    // if we have a cached translation, render it
+                    if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success') {
+                        return [2 /*return*/, (0, internal_1.renderTranslatedChildren)({
+                                source: taggedChildren,
+                                target: translationEntry.target,
+                                variables: variables,
+                                variablesOptions: variablesOptions,
+                                locales: [locale, defaultLocale],
+                                renderVariable: renderVariable_1.default,
+                            })];
+                    }
+                    else if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error') {
+                        return [2 /*return*/, renderDefaultLocale()];
+                    }
+                    _f = (_e = I18NConfig).translateChildren;
+                    _h = {
+                        source: childrenAsObjects,
+                        targetLocale: locale
+                    };
+                    _g = [__assign(__assign(__assign({}, (id && { id: id })), { hash: key }), (context && { context: context }))];
+                    return [4 /*yield*/, (0, getMetadata_1.default)()];
+                case 5:
+                    translationPromise = _f.apply(_e, [(_h.metadata = __assign.apply(void 0, [__assign.apply(void 0, _g.concat([(_k.sent())])), (renderSettings.timeout && { timeout: renderSettings.timeout })]),
+                            _h)]).then(function (translation) {
+                        return (0, internal_1.renderTranslatedChildren)({
+                            source: taggedChildren,
+                            target: translation,
+                            variables: variables,
+                            variablesOptions: variablesOptions,
+                            locales: [locale, defaultLocale],
+                            renderVariable: renderVariable_1.default,
                         });
-                    }); }).catch(function () {
+                    }).catch(function () {
                         return renderDefaultLocale();
                     });
                     if (renderSettings.method === 'replace') {
@@ -217,13 +219,10 @@ function T(_a) {
                     else if (renderSettings.method === 'skeleton') {
                         loadingFallback = renderLoadingSkeleton();
                     }
-                    else if (renderSettings.method === 'subtle' && id !== undefined) { // exclude entries with missing ids bc these don't get cached
-                        return [2 /*return*/, renderDefaultLocale()];
-                    }
                     else {
                         loadingFallback = renderLoadingDefault();
                     }
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: (0, jsx_runtime_1.jsx)(Resolver, { children: renderTranslatedChildrenPromise }) }))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: (0, jsx_runtime_1.jsx)(Resolver, { children: translationPromise }) }))];
             }
         });
     });

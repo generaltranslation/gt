@@ -27,6 +27,7 @@ var GTTranslationError = /** @class */ (function (_super) {
     }
     GTTranslationError.prototype.toTranslationError = function () {
         return {
+            state: 'error',
             error: this.error,
             code: this.code
         };

@@ -10,4 +10,6 @@ export declare const createDictionarySubsetError: (id: string, functionName: str
 export declare const usingDefaultsWarning = "General Translation: Unable to access gt-next configuration. Using defaults.";
 export declare const createNoEntryWarning: (id: string) => string;
 export declare const createUnsupportedLocalesWarning: (locales: string[]) => string;
+export declare const createMismatchingHashWarning: (expectedHash: string, receivedHash: string) => string;
+export declare const createMismatchingIdHashWarning: (expectedId: string, expectedHash: string, receivedId: string, receivedHash: string) => string;
 //# sourceMappingURL=createErrors.d.ts.map

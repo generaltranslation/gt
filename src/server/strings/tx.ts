@@ -1,4 +1,5 @@
 import {
+  isSameLanguage,
   renderContentToString,
   splitStringToContent,
 } from 'generaltranslation';
@@ -6,6 +7,7 @@ import getI18NConfig from '../../config/getI18NConfig';
 import getLocale from '../../request/getLocale';
 import getMetadata from '../../request/getMetadata';
 import { createStringTranslationError } from '../../errors/createErrors';
+import { Content } from 'generaltranslation/internal';
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -55,13 +57,25 @@ export default async function tx(
     [key: string]: any;
   } = {}
 ): Promise<string> {
-  if (!content) return '';
+
+  // ----- SET UP ----- //
+
+  // No content to translate
+  if (!content) {
+    // Reject empty strings
+    if (content === "") {
+      console.warn(`gt-next warn: Empty string found in tx() ${options.id && `with id: ${options.id}`}`);``
+    }
+    return '';
+  }
 
   const I18NConfig = getI18NConfig();
-  const defaultLocale = I18NConfig.getDefaultLocale();
   const locale = options.locale || (await getLocale());
+  const defaultLocale = I18NConfig.getDefaultLocale();
+  const translationRequired = I18NConfig.requiresTranslation(locale);
+  const contentArray = splitStringToContent(content); // parse content
 
-  const contentArray = splitStringToContent(content);
+  // ----- RENDER METHOD ----- //
 
   const renderContent = (content: any, locales: string[]) => {
     return renderContentToString(
@@ -72,20 +86,34 @@ export default async function tx(
     );
   };
 
-  if (!I18NConfig.requiresTranslation(locale))
-    return renderContent(contentArray, [defaultLocale]);
 
-  const [_, hash] = I18NConfig.serializeAndHash(
-    contentArray,
-    options.context,
-    undefined // id is not provided here, to catch erroneous situations where the same id is being used for different <T> components
-  );
+  // ----- RENDER LOGIC ----- //
 
-  // Check cache for translation
+  // translation required
+  if (!translationRequired) return renderContent(contentArray, [defaultLocale]);
+
+
+  // get hash
+  const hash = I18NConfig.hashContent(contentArray, options.context);
+
+  // Check cache for translation (if there is no id, then we don't cache)
   if (options.id) {
-    const translations = await I18NConfig.getTranslations(locale);
-    const target = translations[options.id]?.[hash];
-    if (target) return renderContent(target, [locale, defaultLocale]);
+    let translations;
+    try {
+      translations = await I18NConfig.getCachedTranslations(locale);
+      if (translations?.[options.id]?.[hash]) {
+        const translationResult = translations[options.id][hash];
+        if (translationResult.state !== 'success') {
+          // fallback error
+          return renderContent(content, [locale, defaultLocale]);
+        }
+        return renderContent(translationResult.target, [locale, defaultLocale]);
+      }
+    } catch (error) {
+      console.error('Error fetching translations from cache:', error);
+      // fallback error
+      return renderContent(content, [locale, defaultLocale]);
+    }
   }
 
   // New translation required
@@ -94,11 +122,6 @@ export default async function tx(
     targetLocale: locale,
     options: { ...options, ...(await getMetadata()), hash },
   });
-
-  const renderSettings = I18NConfig.getRenderSettings();
-
-  // subtle: wait for CDN to populate or for API to respond, do fallback for now
-  if (renderSettings.method === 'subtle' || !options.id) return renderContent(contentArray, [defaultLocale]);
 
   try {
     const target = await translationPromise;

@@ -1,3 +1,4 @@
+import { TranslationsObject, TranslationLoading, TranslationError, TranslationSuccess } from "gt-react/internal";
 /**
  * Configuration type for RemoteTranslationsManager.
  * @typedef {object} RemoteTranslationsConfig
@@ -32,7 +33,7 @@ export declare class RemoteTranslationsManager {
     /**
      * Fetches translations from the remote cache.
      * @param {string} reference - The translation reference.
-     * @returns {Promise<Record<string, any> | null>} The fetched translations or null if not found.
+     * @returns {Promise<TranslationsObject | undefined>} The fetched translations or null if not found.
      */
     private _fetchTranslations;
     /**
@@ -42,11 +43,11 @@ export declare class RemoteTranslationsManager {
      */
     private _isExpired;
     /**
-     * Retrieves translations for a given locale.
+     * Retrieves translations for a given locale from the remote or local cache.
      * @param {string} locale - The locale code.
-     * @returns {Promise<Record<string, any> | null>} The translations data or null if not found.
+     * @returns {Promise<TranslationsObject | undefined>} The translations data or null if not found.
      */
-    getTranslations(locale: string): Promise<Record<string, any> | null>;
+    getCachedTranslations(locale: string): Promise<TranslationsObject | undefined>;
     /**
      * Sets a new translation entry.
      * @param {string} locale - The locale code.
@@ -55,7 +56,7 @@ export declare class RemoteTranslationsManager {
      * @param {any} translation - The translation value.
      * @returns {boolean} True if the entry was set successfully, false otherwise.
      */
-    setTranslations(locale: string, key: string, id: string | undefined, translation: any): boolean;
+    setTranslations(locale: string, key: string, id: string | undefined, translation: TranslationSuccess | TranslationLoading | TranslationError): boolean;
     /**
      * Marks translations as requested for a given locale.
      * @param {string} locale - The locale code.

@@ -100,7 +100,7 @@ var react_1 = __importStar(require("react"));
  */
 function getGT(id) {
     return __awaiter(this, void 0, void 0, function () {
-        var getId, I18NConfig, defaultLocale, locale, regionalTranslationRequired, translationRequired, filteredTranslations, translationsPromise, additionalMetadata_1, renderSettings_1, dictionarySubset, dictionaryEntries, translations_1;
+        var getId, I18NConfig, defaultLocale, locale, translationRequired, filteredTranslations, translationsPromise, additionalMetadata_1, dictionarySubset, flattenedDictionaryEntries, translations_1;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -113,78 +113,80 @@ function getGT(id) {
                     return [4 /*yield*/, (0, server_1.getLocale)()];
                 case 1:
                     locale = _a.sent();
-                    regionalTranslationRequired = I18NConfig.requiresRegionalTranslation(locale);
-                    translationRequired = I18NConfig.requiresTranslation(locale) || regionalTranslationRequired;
+                    translationRequired = I18NConfig.requiresTranslation(locale);
                     filteredTranslations = {};
                     if (!translationRequired) return [3 /*break*/, 5];
-                    translationsPromise = I18NConfig.getTranslations(locale);
+                    translationsPromise = I18NConfig.getCachedTranslations(locale);
                     return [4 /*yield*/, (0, getMetadata_1.default)()];
                 case 2:
                     additionalMetadata_1 = _a.sent();
-                    renderSettings_1 = I18NConfig.getRenderSettings();
                     dictionarySubset = (id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)()) || {};
-                    if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
+                    if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset)) // check that it is a Dictionary, not a Dictionary Entry
                         throw new Error((0, createErrors_1.createDictionarySubsetError)(id !== null && id !== void 0 ? id : '', 'getGT'));
-                    dictionaryEntries = (0, internal_1.flattenDictionary)(dictionarySubset);
+                    flattenedDictionaryEntries = (0, internal_1.flattenDictionary)(dictionarySubset);
                     return [4 /*yield*/, translationsPromise];
                 case 3:
                     translations_1 = _a.sent();
-                    // Translate all strings in advance
-                    return [4 /*yield*/, Promise.all(Object.entries(dictionaryEntries !== null && dictionaryEntries !== void 0 ? dictionaryEntries : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var _c, entry, metadata, contentArray, entryId, _d, _, hash, translation, translationPromise, _e, _f, error_1;
-                            var _g;
+                    // Translate all strings in sub dictionary (block until completed)
+                    return [4 /*yield*/, Promise.all(Object.entries(flattenedDictionaryEntries !== null && flattenedDictionaryEntries !== void 0 ? flattenedDictionaryEntries : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
+                            var _c, entry, metadata, entryId, contentArray, hash, translationEntry, translationPromise, _d, _e, error_1;
+                            var _f;
                             var suffix = _b[0], dictionaryEntry = _b[1];
-                            return __generator(this, function (_h) {
-                                switch (_h.label) {
+                            return __generator(this, function (_g) {
+                                switch (_g.label) {
                                     case 0:
                                         _c = (0, internal_1.extractEntryMetadata)(dictionaryEntry), entry = _c.entry, metadata = _c.metadata;
+                                        // only tx strings
                                         if (typeof entry !== 'string')
                                             return [2 /*return*/];
-                                        contentArray = (0, generaltranslation_1.splitStringToContent)(entry);
                                         entryId = getId(suffix);
-                                        _d = I18NConfig.serializeAndHash(contentArray, metadata === null || metadata === void 0 ? void 0 : metadata.context, entryId), _ = _d[0], hash = _d[1];
-                                        translation = (_g = translations_1[entryId]) === null || _g === void 0 ? void 0 : _g[hash];
-                                        if (translation)
-                                            return [2 /*return*/, (filteredTranslations[entryId] = translation)]; // NOTHING MORE TO DO
+                                        if (!entry.length) {
+                                            console.warn("gt-next warn: Empty string found in dictionary with id: ".concat(entryId));
+                                            return [2 /*return*/];
+                                        }
+                                        contentArray = (0, generaltranslation_1.splitStringToContent)(entry);
+                                        hash = I18NConfig.hashContent(contentArray, metadata === null || metadata === void 0 ? void 0 : metadata.context);
+                                        translationEntry = (_f = translations_1[entryId]) === null || _f === void 0 ? void 0 : _f[hash];
+                                        if (translationEntry) {
+                                            // success
+                                            if (translationEntry.state === 'success')
+                                                return [2 /*return*/, (filteredTranslations[entryId] = translationEntry.target)];
+                                            // error
+                                            return [2 /*return*/];
+                                        }
                                         translationPromise = I18NConfig.translateContent({
                                             source: contentArray,
                                             targetLocale: locale,
                                             options: __assign({ id: entryId, hash: hash }, additionalMetadata_1),
                                         });
-                                        // subtle: wait for CDN to populate or for API to respond, do fallback for now
-                                        if (renderSettings_1.method == 'subtle')
-                                            return [2 /*return*/, filteredTranslations[entryId] = contentArray];
-                                        _h.label = 1;
+                                        _g.label = 1;
                                     case 1:
-                                        _h.trys.push([1, 3, , 4]);
-                                        _e = filteredTranslations;
-                                        _f = entryId;
+                                        _g.trys.push([1, 3, , 4]);
+                                        _d = filteredTranslations;
+                                        _e = entryId;
                                         return [4 /*yield*/, translationPromise];
                                     case 2:
-                                        _e[_f] = _h.sent();
+                                        _d[_e] = _g.sent();
                                         return [3 /*break*/, 4];
                                     case 3:
-                                        error_1 = _h.sent();
+                                        error_1 = _g.sent();
                                         console.error((0, createErrors_1.createDictionaryStringTranslationError)(entryId), error_1);
-                                        filteredTranslations[entryId] = contentArray;
-                                        return [3 /*break*/, 4];
+                                        return [2 /*return*/];
                                     case 4: return [2 /*return*/];
                                 }
                             });
                         }); }))];
                 case 4:
-                    // Translate all strings in advance
+                    // Translate all strings in sub dictionary (block until completed)
                     _a.sent();
                     _a.label = 5;
                 case 5: return [2 /*return*/, function (id, options) {
+                        // Get entry
                         id = getId(id);
-                        // Get entry   
                         var dictionaryEntry = (0, getDictionary_1.getDictionaryEntry)(id);
-                        if (dictionaryEntry === undefined ||
-                            dictionaryEntry === null ||
-                            (typeof dictionaryEntry === 'object' &&
-                                !(0, react_1.isValidElement)(dictionaryEntry) &&
-                                !Array.isArray(dictionaryEntry))) {
+                        if (dictionaryEntry === undefined || dictionaryEntry === null || // no entry found
+                            (typeof dictionaryEntry === 'object' && !(0, react_1.isValidElement)(dictionaryEntry) && !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
+                        ) {
                             console.warn((0, createErrors_1.createNoEntryWarning)(id));
                             return undefined;
                         }
@@ -192,10 +194,17 @@ function getGT(id) {
                         // Get variables and variable options
                         var variables = options;
                         var variablesOptions = metadata === null || metadata === void 0 ? void 0 : metadata.variablesOptions;
+                        // Render strings
                         if (typeof entry === 'string') {
                             var contentArray = filteredTranslations[id] || (0, generaltranslation_1.splitStringToContent)(entry);
                             return (0, generaltranslation_1.renderContentToString)(contentArray, [locale, defaultLocale], variables, variablesOptions);
                         }
+                        // Reject empty fragments
+                        if ((0, internal_1.isEmptyReactFragment)(entry)) {
+                            console.warn("gt-next warn: Empty fragment found in dictionary with id: ".concat(id));
+                            return entry;
+                        }
+                        // Translate on demand
                         return ((0, jsx_runtime_1.jsx)(T_1.default, __assign({ id: id, variables: variables, variablesOptions: variablesOptions }, metadata, { children: entry })));
                     }];
             }
@@ -235,18 +244,22 @@ function useElement(id) {
         id = getId(id);
         // Get entry
         var dictionaryEntry = (0, getDictionary_1.getDictionaryEntry)(id);
-        if (dictionaryEntry === undefined ||
-            dictionaryEntry === null ||
-            (typeof dictionaryEntry === 'object' &&
-                !(0, react_1.isValidElement)(dictionaryEntry) &&
-                !Array.isArray(dictionaryEntry))) {
+        if (dictionaryEntry === undefined || // no entry found
+            (typeof dictionaryEntry === 'object' && !(0, react_1.isValidElement)(dictionaryEntry) && !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
+        ) {
             console.warn((0, createErrors_1.createNoEntryWarning)(id));
             return (0, jsx_runtime_1.jsx)(react_1.default.Fragment, {});
         }
         var _a = (0, internal_1.extractEntryMetadata)(dictionaryEntry), entry = _a.entry, metadata = _a.metadata;
+        // Reject empty fragments
+        if ((0, internal_1.isEmptyReactFragment)(entry)) {
+            console.warn("gt-next warn: Empty fragment found in dictionary with id: ".concat(id));
+            return entry;
+        }
         // Get variables and variable options
         var variables = options;
         var variablesOptions = metadata === null || metadata === void 0 ? void 0 : metadata.variablesOptions;
+        // Translate on demand
         return ((0, jsx_runtime_1.jsx)(T_1.default, __assign({ id: id, variables: variables, variablesOptions: variablesOptions }, metadata, { children: entry })));
     }
     return t;
