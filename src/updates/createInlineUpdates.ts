@@ -201,12 +201,13 @@ function parseJSXElement(
                 attrValue = attr.value.value;
               } else if (t.isJSXExpressionContainer(attr.value)) {
                 if (
-                  (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
+                  (elementIsPlural &&
+                    isAcceptedPluralForm(attrName as string)) ||
                   (elementIsBranch && attrName !== "branch")
                 ) {
                   // Make sure that variable strings like {`I have ${count} book`} are invalid!
                   if (
-                    t.isTemplateLiteral(attr.value.expression) && 
+                    t.isTemplateLiteral(attr.value.expression) &&
                     !isStaticExpression(attr.value.expression).isStatic
                   ) {
                     unwrappedExpressions.push(generate(attr.value).code);
