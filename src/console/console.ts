@@ -3,11 +3,16 @@ import chalk from "chalk";
 
 export const displayAsciiTitle = () =>
   console.log(
-    "\n" +
+    "\n\n" +
       chalk.cyan(
-        figlet.textSync("GT", {
-          font: "Univers",
-        })
+        `  ,ad8888ba,  888888888888  
+ d8"'    \`"8b      88       
+d8'                88       
+88                 88       
+88      88888      88       
+Y8,        88      88       
+ Y8a.    .a88      88       
+  \`"Y88888P"       88       \n\n`
       )
   );
 

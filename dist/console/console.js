@@ -4,12 +4,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.displayCreatingNewConfigFile = exports.displayFoundTMessage = exports.displayResolvedPaths = exports.displayProjectId = exports.displayInitializingText = exports.displayAsciiTitle = void 0;
-const figlet_1 = __importDefault(require("figlet"));
 const chalk_1 = __importDefault(require("chalk"));
-const displayAsciiTitle = () => console.log("\n" +
-    chalk_1.default.cyan(figlet_1.default.textSync("GT", {
-        font: "Univers",
-    })));
+const displayAsciiTitle = () => console.log("\n\n" +
+    chalk_1.default.cyan(`  ,ad8888ba,  888888888888  
+ d8"'    \`"8b      88       
+d8'                88       
+88                 88       
+88      88888      88       
+Y8,        88      88       
+ Y8a.    .a88      88       
+  \`"Y88888P"       88       \n\n`));
 exports.displayAsciiTitle = displayAsciiTitle;
 const displayInitializingText = () => {
     console.log(chalk_1.default.bold.blue("General Translation, Inc.") +

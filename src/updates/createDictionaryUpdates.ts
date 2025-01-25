@@ -51,7 +51,6 @@ export default async function createDictionaryUpdates(
       // Clean up the temporary file
       fs.unlinkSync(tempFilePath);
     }
-
     dictionary = flattenDictionary(
       dictionaryModule.default ||
         dictionaryModule.dictionary ||
@@ -73,7 +72,6 @@ export default async function createDictionaryUpdates(
       entry,
       metadata: props, // context, etc.
     } = extractEntryMetadata(dictionary[id]);
-
     const taggedEntry = addGTIdentifier(entry);
 
     const entryAsObjects = writeChildrenAsObjects(taggedEntry);

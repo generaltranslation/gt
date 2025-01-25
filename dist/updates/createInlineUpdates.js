@@ -210,7 +210,8 @@ function parseJSXElement(node, updates, errors, file) {
                                 attrValue = attr.value.value;
                             }
                             else if (t.isJSXExpressionContainer(attr.value)) {
-                                if ((elementIsPlural && (0, internal_1.isAcceptedPluralForm)(attrName)) ||
+                                if ((elementIsPlural &&
+                                    (0, internal_1.isAcceptedPluralForm)(attrName)) ||
                                     (elementIsBranch && attrName !== "branch")) {
                                     // Make sure that variable strings like {`I have ${count} book`} are invalid!
                                     if (t.isTemplateLiteral(attr.value.expression) &&
