@@ -235,7 +235,8 @@ function ClientProvider(_a) {
         devApiKey: devApiKey,
         runtimeUrl: runtimeUrl,
         setTranslations: setTranslations,
-        defaultLocale: defaultLocale
+        defaultLocale: defaultLocale,
+        renderSettings: renderSettings
     }), translateChildren = _e.translateChildren, translateContent = _e.translateContent;
     return ((0, jsx_runtime_1.jsx)(client_1.GTContext.Provider, { value: {
             translateDictionaryEntry: translateDictionaryEntry,
