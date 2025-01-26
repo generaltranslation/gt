@@ -13,7 +13,6 @@ import renderVariable from '../rendering/renderVariable';
 import { isSameLanguage } from 'generaltranslation';
 import React from 'react';
 
-
 async function Resolver({ children }: { children: React.ReactNode }) {
   return await children
 }
