@@ -9,6 +9,7 @@ import {
   TranslatedChildren,
   TranslatedContent,
   Children,
+  defaultRenderSettings,
 } from 'gt-react/internal';
 import { createMismatchingHashWarning, createMismatchingIdHashWarning, devApiKeyIncludedInProductionError } from '../errors/createErrors';
 import { hashJsxChildren } from 'generaltranslation/id';
@@ -132,7 +133,10 @@ export default class I18NConfiguration {
       throw new Error(devApiKeyIncludedInProductionError);
     }
     // Render method
-    this.renderSettings = renderSettings;
+    this.renderSettings = {
+      method: renderSettings.method,
+      ...((renderSettings.timeout !== undefined || defaultRenderSettings.timeout !== undefined) && {timeout: renderSettings.timeout || defaultRenderSettings.timeout}),
+    };
     // Other metadata
     this.metadata = {
       sourceLocale: this.defaultLocale,
@@ -367,8 +371,22 @@ export default class I18NConfiguration {
   private async _sendBatchRequest(batch: Array<QueueEntry>): Promise<void> {
     this._activeRequests++;
     try {
-      // ----- TRANSLATION REQUEST ----- //
-      const response = await fetch(
+
+      // ----- TRANSLATION REQUEST WITH ABORT CONTROLLER ----- //
+      const fetchWithAbort = async (url: string, options: RequestInit | undefined, timeout: number | undefined) => {
+        const controller = new AbortController();
+        const timeoutId = (timeout === undefined) ? undefined : setTimeout(() => controller.abort(), timeout);
+        try {
+          return await fetch(url, { ...options, signal: controller.signal, });
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') throw new Error('Request timed out'); // Handle the timeout case
+          throw error; // Re-throw other errors
+        } finally {
+          if (timeoutId !== undefined) clearTimeout(timeoutId); // Ensure timeout is cleared
+        }
+      };
+
+      const response = await fetchWithAbort(
         `${this.runtimeUrl}/v1/runtime/${this.projectId}/server`,
         {
           method: 'POST',
@@ -385,7 +403,8 @@ export default class I18NConfiguration {
             targetLocale: batch[0].targetLocale,
             metadata: this.metadata,
           }),
-        }
+        },
+        this.renderSettings.timeout // Pass the timeout duration in milliseconds
       );
 
 
