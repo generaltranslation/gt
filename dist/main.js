@@ -71,7 +71,7 @@ const warnings_1 = require("./console/warnings");
 const errors_1 = require("./console/errors");
 const internal_1 = require("generaltranslation/internal");
 const chalk_1 = __importDefault(require("chalk"));
-const wrapWithT_1 = __importDefault(require("./updates/wrapWithT"));
+const scanForContent_1 = __importDefault(require("./updates/scanForContent"));
 dotenv_1.default.config({ path: '.env' });
 dotenv_1.default.config({ path: '.env.local', override: true });
 commander_1.program
@@ -250,8 +250,8 @@ commander_1.program
     }
 }));
 commander_1.program
-    .command('wrap')
-    .description('Wraps all JSX elements in the src directory with a <T> tag, with unique ids')
+    .command('scan')
+    .description('Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids')
     .option('--src <path>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
     .option('--framework <framework>', 'Framework to use for wrapping JSX elements, by default next', 'next')
     .action((options) => __awaiter(void 0, void 0, void 0, function* () {
@@ -267,6 +267,6 @@ commander_1.program
         options.framework = 'react';
     }
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    yield (0, wrapWithT_1.default)(options);
+    yield (0, scanForContent_1.default)(options);
 }));
 commander_1.program.parse();

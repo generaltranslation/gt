@@ -9,7 +9,7 @@ import * as t from '@babel/types';
  */
 export interface WrapResult {
     node: t.JSXElement;
-    needsWrapping: boolean;
+    hasMeaningfulContent: boolean;
 }
 /**
  * Recursively traverse a JSX element and wrap variables with a <Var> component
@@ -25,7 +25,7 @@ export declare function wrapJsxElement(node: t.JSXElement, options: {
     idCount: number;
     usedImports: string[];
     modified: boolean;
-}, isMeaningful: (node: t.Node) => boolean): WrapResult;
+}, isMeaningful: (node: t.Node) => boolean, mark: boolean): WrapResult;
 /**
  * Wraps a JSX element with a <T> component and unique id
  * @param rootNode - The JSX element to wrap

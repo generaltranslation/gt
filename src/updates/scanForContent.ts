@@ -31,6 +31,11 @@ function isMeaningful(node: t.Node): boolean {
       return MEANINGFUL_REGEX.test(value.value);
     }
   }
+  if (t.isBinaryExpression(node)) {
+    if (node.operator === '+') {
+      return isMeaningful(node.left) || isMeaningful(node.right);
+    }
+  }
   return false;
 }
 
@@ -48,7 +53,7 @@ const IMPORT_MAP = {
  * @param options - The options object
  * @returns An object containing the updates and errors
  */
-export default async function wrapWithT(
+export default async function scanForContent(
   options: WrapOptions
 ): Promise<{ updates: Updates; errors: string[] }> {
   const updates: Updates = [];
@@ -260,7 +265,7 @@ export default async function wrapWithT(
       const output = generate(
         ast,
         {
-          retainLines: false,
+          retainLines: true,
           retainFunctionParens: true,
           comments: true,
           compact: 'auto',

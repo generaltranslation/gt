@@ -37,14 +37,15 @@ exports.wrapJsxElement = wrapJsxElement;
 exports.handleJsxElement = handleJsxElement;
 const t = __importStar(require("@babel/types"));
 const isStaticExpression_1 = require("./isStaticExpression");
-function wrapJsxExpression(node, options, isMeaningful) {
+function wrapJsxExpression(node, options, isMeaningful, mark) {
     const expression = t.isParenthesizedExpression(node.expression)
         ? node.expression.expression
         : node.expression;
+    let hasMeaningfulContent = false;
     let wrappedInT = false;
     // Handle JSX Element directly, no need to wrap with Var
     if (t.isJSXElement(expression)) {
-        const result = wrapJsxElement(expression, options, isMeaningful);
+        const result = wrapJsxElement(expression, options, isMeaningful, mark);
         // re-wrap the result in a JSXExpressionContainer
         if (t.isParenthesizedExpression(node.expression)) {
             node.expression.expression = result.node;
@@ -54,7 +55,7 @@ function wrapJsxExpression(node, options, isMeaningful) {
         }
         return {
             node,
-            needsWrapping: result.needsWrapping,
+            hasMeaningfulContent: result.hasMeaningfulContent,
         };
     }
     // Handle conditional expressions (ternary)
@@ -67,8 +68,11 @@ function wrapJsxExpression(node, options, isMeaningful) {
             : expression.alternate;
         // Handle consequent
         if (t.isJSXElement(consequent)) {
-            const consequentResult = wrapJsxElement(consequent, options, isMeaningful);
-            const wrapped = wrapWithT(consequentResult.node, options);
+            const consequentResult = wrapJsxElement(consequent, options, isMeaningful, mark);
+            hasMeaningfulContent =
+                hasMeaningfulContent || consequentResult.hasMeaningfulContent;
+            const wrapped = wrapWithT(consequentResult.node, options, !consequentResult.hasMeaningfulContent);
+            wrappedInT = true;
             // Re-insert into parenthesized expression if necessary
             if (t.isParenthesizedExpression(expression.consequent)) {
                 expression.consequent.expression = wrapped;
@@ -76,11 +80,12 @@ function wrapJsxExpression(node, options, isMeaningful) {
             else {
                 expression.consequent = wrapped;
             }
-            wrappedInT = true;
         }
         else if (t.isConditionalExpression(consequent)) {
             // Recursively handle nested ternary in consequent
-            const consequentResult = wrapJsxExpression(t.jsxExpressionContainer(consequent), options, isMeaningful);
+            const consequentResult = wrapJsxExpression(t.jsxExpressionContainer(consequent), options, isMeaningful, mark);
+            hasMeaningfulContent =
+                hasMeaningfulContent || consequentResult.hasMeaningfulContent;
             if (t.isJSXExpressionContainer(consequentResult.node) &&
                 t.isExpression(consequentResult.node.expression)) {
                 expression.consequent = consequentResult.node.expression;
@@ -95,8 +100,11 @@ function wrapJsxExpression(node, options, isMeaningful) {
         }
         // Handle alternate
         if (t.isJSXElement(alternate)) {
-            const alternateResult = wrapJsxElement(alternate, options, isMeaningful);
-            const wrapped = wrapWithT(alternateResult.node, options);
+            const alternateResult = wrapJsxElement(alternate, options, isMeaningful, mark);
+            hasMeaningfulContent =
+                hasMeaningfulContent || alternateResult.hasMeaningfulContent;
+            const wrapped = wrapWithT(alternateResult.node, options, !alternateResult.hasMeaningfulContent);
+            wrappedInT = true;
             // Re-insert into parenthesized expression if necessary
             if (t.isParenthesizedExpression(expression.alternate)) {
                 expression.alternate.expression = wrapped;
@@ -104,11 +112,12 @@ function wrapJsxExpression(node, options, isMeaningful) {
             else {
                 expression.alternate = wrapped;
             }
-            wrappedInT = true;
         }
         else if (t.isConditionalExpression(alternate)) {
             // Recursively handle nested ternary in alternate
-            const alternateResult = wrapJsxExpression(t.jsxExpressionContainer(alternate), options, isMeaningful);
+            const alternateResult = wrapJsxExpression(t.jsxExpressionContainer(alternate), options, isMeaningful, mark);
+            hasMeaningfulContent =
+                hasMeaningfulContent || alternateResult.hasMeaningfulContent;
             if (t.isJSXExpressionContainer(alternateResult.node) &&
                 t.isExpression(alternateResult.node.expression)) {
                 expression.alternate = alternateResult.node.expression;
@@ -131,8 +140,11 @@ function wrapJsxExpression(node, options, isMeaningful) {
             ? expression.right.expression
             : expression.right;
         if (t.isJSXElement(left)) {
-            const leftResult = wrapJsxElement(left, options, isMeaningful);
-            const wrapped = wrapWithT(leftResult.node, options);
+            const leftResult = wrapJsxElement(left, options, isMeaningful, mark);
+            hasMeaningfulContent =
+                hasMeaningfulContent || leftResult.hasMeaningfulContent;
+            const wrapped = wrapWithT(leftResult.node, options, leftResult.hasMeaningfulContent);
+            wrappedInT = true;
             // Re-insert into parenthesized expression if necessary
             if (t.isParenthesizedExpression(expression.left)) {
                 expression.left.expression = wrapped;
@@ -140,11 +152,12 @@ function wrapJsxExpression(node, options, isMeaningful) {
             else {
                 expression.left = wrapped;
             }
-            wrappedInT = true;
         }
         else if (t.isLogicalExpression(left)) {
             // Recursively handle nested logical expressions
-            const leftResult = wrapJsxExpression(t.jsxExpressionContainer(left), options, isMeaningful);
+            const leftResult = wrapJsxExpression(t.jsxExpressionContainer(left), options, isMeaningful, mark);
+            hasMeaningfulContent =
+                hasMeaningfulContent || leftResult.hasMeaningfulContent;
             if (t.isJSXExpressionContainer(leftResult.node) &&
                 t.isExpression(leftResult.node.expression)) {
                 // Re-insert into parenthesized expression if necessary
@@ -157,8 +170,11 @@ function wrapJsxExpression(node, options, isMeaningful) {
             }
         }
         if (t.isJSXElement(right)) {
-            const rightResult = wrapJsxElement(right, options, isMeaningful);
-            const wrapped = wrapWithT(rightResult.node, options);
+            const rightResult = wrapJsxElement(right, options, isMeaningful, mark);
+            hasMeaningfulContent =
+                hasMeaningfulContent || rightResult.hasMeaningfulContent;
+            const wrapped = wrapWithT(rightResult.node, options, !rightResult.hasMeaningfulContent);
+            wrappedInT = true;
             // Re-insert into parenthesized expression if necessary
             if (t.isParenthesizedExpression(expression.right)) {
                 expression.right.expression = wrapped;
@@ -166,11 +182,12 @@ function wrapJsxExpression(node, options, isMeaningful) {
             else {
                 expression.right = wrapped;
             }
-            wrappedInT = true;
         }
         else if (t.isLogicalExpression(right)) {
             // Recursively handle nested logical expressions
-            const rightResult = wrapJsxExpression(t.jsxExpressionContainer(right), options, isMeaningful);
+            const rightResult = wrapJsxExpression(t.jsxExpressionContainer(right), options, isMeaningful, mark);
+            hasMeaningfulContent =
+                hasMeaningfulContent || rightResult.hasMeaningfulContent;
             if (t.isJSXExpressionContainer(rightResult.node) &&
                 t.isExpression(rightResult.node.expression)) {
                 // Re-insert into parenthesized expression if necessary
@@ -188,15 +205,14 @@ function wrapJsxExpression(node, options, isMeaningful) {
     // wrap with Var
     if (!staticCheck.isStatic || wrappedInT) {
         return {
-            node: wrapWithVar(node, options),
-            needsWrapping: true,
+            node: wrapWithVar(node, options, mark),
+            hasMeaningfulContent: hasMeaningfulContent,
         };
     }
     // If it's a static expression, check if it's meaningful
-    const checkMeaningful = isMeaningful(expression);
     return {
         node,
-        needsWrapping: checkMeaningful,
+        hasMeaningfulContent: hasMeaningfulContent || isMeaningful(expression),
     };
 }
 /**
@@ -206,7 +222,7 @@ function wrapJsxExpression(node, options, isMeaningful) {
  * @param isMeaningful - A function to determine if a node is meaningful
  * @returns The wrapped JSX element
  */
-function wrapJsxElement(node, options, isMeaningful) {
+function wrapJsxElement(node, options, isMeaningful, mark) {
     const TComponentName = options.TComponent || 'T';
     const VarComponentName = options.VarComponent || 'Var';
     // Handle JSX Element
@@ -217,37 +233,39 @@ function wrapJsxElement(node, options, isMeaningful) {
             (name.name === TComponentName || name.name === VarComponentName)) {
             return {
                 node,
-                needsWrapping: false,
+                hasMeaningfulContent: false,
             };
         }
         // Process children recursively (DFS postorder)
-        let needsWrapping = false;
+        let hasMeaningfulContent = false;
         const processedChildren = node.children.map((child) => {
             if (t.isJSXElement(child)) {
-                const result = wrapJsxElement(child, options, isMeaningful);
-                needsWrapping = needsWrapping || result.needsWrapping;
+                const result = wrapJsxElement(child, options, isMeaningful, mark);
+                hasMeaningfulContent =
+                    hasMeaningfulContent || result.hasMeaningfulContent;
                 return result.node;
             }
             if (t.isJSXExpressionContainer(child)) {
-                const result = wrapJsxExpression(child, options, isMeaningful);
-                needsWrapping = needsWrapping || result.needsWrapping;
+                const result = wrapJsxExpression(child, options, isMeaningful, mark);
+                hasMeaningfulContent =
+                    hasMeaningfulContent || result.hasMeaningfulContent;
                 return result.node;
             }
             if (isMeaningful(child)) {
-                needsWrapping = true;
+                hasMeaningfulContent = true;
             }
             return child;
         });
         node.children = processedChildren;
         return {
             node,
-            needsWrapping: needsWrapping,
+            hasMeaningfulContent: hasMeaningfulContent,
         };
     }
     // For any other node types, return as-is
     return {
         node,
-        needsWrapping: true,
+        hasMeaningfulContent: false,
     };
 }
 /**
@@ -258,14 +276,18 @@ function wrapJsxElement(node, options, isMeaningful) {
  * @returns The wrapped JSX element
  */
 function handleJsxElement(rootNode, options, isMeaningful) {
-    const result = wrapJsxElement(rootNode, options, isMeaningful);
+    const result = wrapJsxElement(rootNode, options, isMeaningful, true);
     // Only wrap with T at the root level if there's meaningful content
-    if (result.needsWrapping) {
-        return wrapWithT(result.node, options);
+    if (result.hasMeaningfulContent) {
+        const output = wrapJsxElement(result.node, options, isMeaningful, false);
+        return wrapWithT(output.node, options, false);
     }
     return result.node;
 }
-function wrapWithT(node, options) {
+function wrapWithT(node, options, mark) {
+    if (mark) {
+        return node;
+    }
     const TComponentName = options.TComponent || 'T';
     const uniqueId = `${options.idPrefix}.${options.idCount}`;
     options.modified = true;
@@ -275,7 +297,10 @@ function wrapWithT(node, options) {
     }
     return t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier(TComponentName), [t.jsxAttribute(t.jsxIdentifier('id'), t.stringLiteral(uniqueId))], false), t.jsxClosingElement(t.jsxIdentifier(TComponentName)), [node], false);
 }
-function wrapWithVar(node, options) {
+function wrapWithVar(node, options, mark) {
+    if (mark) {
+        return node;
+    }
     const VarComponentName = options.VarComponent || 'Var';
     options.modified = true;
     if (!options.usedImports.includes(VarComponentName)) {

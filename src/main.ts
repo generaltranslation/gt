@@ -19,7 +19,7 @@ import { warnApiKeyInConfig } from './console/warnings';
 import { noTranslationsError } from './console/errors';
 import { defaultBaseUrl } from 'generaltranslation/internal';
 import chalk from 'chalk';
-import wrapWithT from './updates/wrapWithT';
+import scanForContent from './updates/scanForContent';
 
 dotenv.config({ path: '.env' });
 dotenv.config({ path: '.env.local', override: true });
@@ -352,9 +352,9 @@ program
   });
 
 program
-  .command('wrap')
+  .command('scan')
   .description(
-    'Wraps all JSX elements in the src directory with a <T> tag, with unique ids'
+    'Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids'
   )
   .option(
     '--src <path>',
@@ -379,7 +379,7 @@ program
     }
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    await wrapWithT(options);
+    await scanForContent(options);
   });
 
 program.parse();

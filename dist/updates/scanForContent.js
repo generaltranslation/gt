@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = wrapWithT;
+exports.default = scanForContent;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const t = __importStar(require("@babel/types"));
@@ -95,7 +95,7 @@ const IMPORT_MAP = {
  * @param options - The options object
  * @returns An object containing the updates and errors
  */
-function wrapWithT(options) {
+function scanForContent(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const updates = [];
         const errors = [];
@@ -254,7 +254,7 @@ function wrapWithT(options) {
             }
             try {
                 const output = (0, generator_1.default)(ast, {
-                    retainLines: false,
+                    retainLines: true,
                     retainFunctionParens: true,
                     comments: true,
                     compact: 'auto',
