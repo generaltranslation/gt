@@ -114,7 +114,7 @@ function Resolver(_a) {
  */
 function T(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, renderSettings, translationRequired, dialectTranslationRequired, taggedChildren, renderDefaultLocale, renderLoadingSkeleton, renderLoadingDefault, translationsPromise, _c, childrenAsObjects, key, translations, _d, translationEntry, translationPromise, _e, _f, _g, loadingFallback;
+        var I18NConfig, locale, defaultLocale, renderSettings, translationRequired, dialectTranslationRequired, taggedChildren, renderDefaultLocale, renderLoadingDefault, translationsPromise, _c, childrenAsObjects, key, translations, _d, translationEntry, translationPromise, _e, _f, _g, loadingFallback;
         var _h;
         var _j;
         var children = _b.children, id = _b.id, context = _b.context, variables = _b.variables, variablesOptions = _b.variablesOptions;
@@ -144,18 +144,10 @@ function T(_a) {
                             renderVariable: renderVariable_1.default,
                         });
                     };
-                    renderLoadingSkeleton = function () {
-                        return (0, internal_1.renderSkeleton)({
-                            children: taggedChildren,
-                            variables: variables,
-                            defaultLocale: defaultLocale,
-                            renderVariable: renderVariable_1.default,
-                        });
-                    };
                     renderLoadingDefault = function () {
                         if (dialectTranslationRequired)
                             return renderDefaultLocale();
-                        return renderLoadingSkeleton();
+                        return (0, internal_1.renderSkeleton)();
                     };
                     // ----- CHECK TRANSLATIONS REQUIRED ----- //
                     // If no translation is required, render the default children
@@ -166,7 +158,7 @@ function T(_a) {
                     }
                     translationsPromise = translationRequired && I18NConfig.getCachedTranslations(locale);
                     _c = I18NConfig.serializeAndHashChildren(taggedChildren, context), childrenAsObjects = _c[0], key = _c[1];
-                    if (!(translationsPromise)) return [3 /*break*/, 3];
+                    if (!translationsPromise) return [3 /*break*/, 3];
                     return [4 /*yield*/, translationsPromise];
                 case 2:
                     _d = _k.sent();
@@ -194,6 +186,7 @@ function T(_a) {
                     }
                     _f = (_e = I18NConfig).translateChildren;
                     _h = {
+                        // do on demand translation
                         source: childrenAsObjects,
                         targetLocale: locale
                     };
@@ -201,7 +194,9 @@ function T(_a) {
                     return [4 /*yield*/, (0, getMetadata_1.default)()];
                 case 5:
                     translationPromise = _f.apply(_e, [(_h.metadata = __assign.apply(void 0, [__assign.apply(void 0, _g.concat([(_k.sent())])), (renderSettings.timeout && { timeout: renderSettings.timeout })]),
-                            _h)]).then(function (translation) {
+                            _h)])
+                        .then(function (translation) {
+                        // render the translation
                         return (0, internal_1.renderTranslatedChildren)({
                             source: taggedChildren,
                             target: translation,
@@ -210,14 +205,16 @@ function T(_a) {
                             locales: [locale, defaultLocale],
                             renderVariable: renderVariable_1.default,
                         });
-                    }).catch(function () {
+                    })
+                        .catch(function () {
+                        // render the default locale if there is an error instead
                         return renderDefaultLocale();
                     });
                     if (renderSettings.method === 'replace') {
                         loadingFallback = renderDefaultLocale();
                     }
                     else if (renderSettings.method === 'skeleton') {
-                        loadingFallback = renderLoadingSkeleton();
+                        loadingFallback = (0, internal_1.renderSkeleton)();
                     }
                     else {
                         loadingFallback = renderLoadingDefault();
