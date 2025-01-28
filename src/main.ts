@@ -153,7 +153,7 @@ program
     // Error if no API key at this point
     if (!options.apiKey)
       throw new Error(
-        'No General Translation API key found. Use the --apiKey flag to provide one.'
+        'No General Translation API key found. Use the --api-key flag to provide one.'
       );
     // Warn if apiKey is present in gt.config.json
     if (gtConfig.apiKey) {
@@ -163,7 +163,7 @@ program
     // Error if no API key at this point
     if (!options.projectId)
       throw new Error(
-        'No General Translation Project ID found. Use the --projectId flag to provide one.'
+        'No General Translation Project ID found. Use the --project-id flag to provide one.'
       );
 
     displayProjectId(options.projectId);
@@ -369,6 +369,14 @@ program
   .action(async (options: WrapOptions) => {
     displayAsciiTitle();
     displayInitializingText();
+
+    // Determine if the project is a Next.js project by checking dependencies
+    const packageJson = loadJSON('./package.json');
+    if (packageJson?.dependencies?.next) {
+      options.framework = 'next';
+    } else {
+      options.framework = 'react';
+    }
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
     await wrapWithT(options);

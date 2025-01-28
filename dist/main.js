@@ -115,14 +115,14 @@ commander_1.program
         options.baseUrl = internal_1.defaultBaseUrl;
     // Error if no API key at this point
     if (!options.apiKey)
-        throw new Error('No General Translation API key found. Use the --apiKey flag to provide one.');
+        throw new Error('No General Translation API key found. Use the --api-key flag to provide one.');
     // Warn if apiKey is present in gt.config.json
     if (gtConfig.apiKey) {
         (0, warnings_1.warnApiKeyInConfig)(options.options);
     }
     // Error if no API key at this point
     if (!options.projectId)
-        throw new Error('No General Translation Project ID found. Use the --projectId flag to provide one.');
+        throw new Error('No General Translation Project ID found. Use the --project-id flag to provide one.');
     (0, console_1.displayProjectId)(options.projectId);
     // Check locales
     if (options.defaultLocale && !(0, generaltranslation_1.isValidLocale)(options.defaultLocale))
@@ -255,8 +255,17 @@ commander_1.program
     .option('--src <path>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
     .option('--framework <framework>', 'Framework to use for wrapping JSX elements, by default next', 'next')
     .action((options) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     (0, console_1.displayAsciiTitle)();
     (0, console_1.displayInitializingText)();
+    // Determine if the project is a Next.js project by checking dependencies
+    const packageJson = (0, loadJSON_1.default)('./package.json');
+    if ((_a = packageJson === null || packageJson === void 0 ? void 0 : packageJson.dependencies) === null || _a === void 0 ? void 0 : _a.next) {
+        options.framework = 'next';
+    }
+    else {
+        options.framework = 'react';
+    }
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
     yield (0, wrapWithT_1.default)(options);
 }));

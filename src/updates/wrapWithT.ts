@@ -111,7 +111,10 @@ export default async function wrapWithT(
       ImportDeclaration(path) {
         const source = path.node.source.value;
         if (source === 'gt-next' || source === 'gt-react') {
-          initialImports = path.node.specifiers.map((spec) => spec.local.name);
+          initialImports = [
+            ...initialImports,
+            ...path.node.specifiers.map((spec) => spec.local.name),
+          ];
         }
         // Check for conflicting imports only if they're not from gt-next/gt-react
         if (source !== 'gt-next' && source !== 'gt-react') {
@@ -124,6 +127,11 @@ export default async function wrapWithT(
         }
       },
     });
+
+    // If the file already has a T import, skip processing it
+    if (initialImports.includes(IMPORT_MAP.T)) {
+      continue;
+    }
 
     traverse(ast, {
       JSXElement(path) {

@@ -141,7 +141,10 @@ function wrapWithT(options) {
                 ImportDeclaration(path) {
                     const source = path.node.source.value;
                     if (source === 'gt-next' || source === 'gt-react') {
-                        initialImports = path.node.specifiers.map((spec) => spec.local.name);
+                        initialImports = [
+                            ...initialImports,
+                            ...path.node.specifiers.map((spec) => spec.local.name),
+                        ];
                     }
                     // Check for conflicting imports only if they're not from gt-next/gt-react
                     if (source !== 'gt-next' && source !== 'gt-react') {
@@ -156,6 +159,10 @@ function wrapWithT(options) {
                     }
                 },
             });
+            // If the file already has a T import, skip processing it
+            if (initialImports.includes(IMPORT_MAP.T)) {
+                continue;
+            }
             (0, traverse_1.default)(ast, {
                 JSXElement(path) {
                     // Check if this JSX element has any JSX element ancestors

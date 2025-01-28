@@ -1,9 +1,9 @@
-import figlet from "figlet";
-import chalk from "chalk";
+import figlet from 'figlet';
+import chalk from 'chalk';
 
 export const displayAsciiTitle = () =>
   console.log(
-    "\n\n" +
+    '\n\n' +
       chalk.cyan(
         `  ,ad8888ba,  888888888888  
  d8"'    \`"8b      88       
@@ -18,9 +18,9 @@ Y8,        88      88
 
 export const displayInitializingText = () => {
   console.log(
-    chalk.bold.blue("General Translation, Inc.") +
-      chalk.gray("\nhttps://generaltranslation.com/docs") +
-      "\n"
+    chalk.bold.blue('General Translation, Inc.') +
+      chalk.gray('\nhttps://generaltranslation.com/docs') +
+      '\n'
   );
 };
 
@@ -29,20 +29,20 @@ export const displayProjectId = (projectId: string) => {
 };
 
 export const displayResolvedPaths = (resolvedPaths: [string, string][]) => {
-  console.log(chalk.blue.bold("Resolving path aliases:"));
+  console.log(chalk.blue.bold('Resolving path aliases:'));
   console.log(
     resolvedPaths
       .map(([key, resolvedPath]) =>
         chalk.gray(`'${chalk.white(key)}' -> '${chalk.green(resolvedPath)}'`)
       )
-      .join("\n")
+      .join('\n')
   );
   console.log();
 };
 
 export const displayFoundTMessage = (file: string, id: string) => {
   console.log(
-    `Found ${chalk.cyan("<T>")} component in ${chalk.green(
+    `Found ${chalk.cyan('<T>')} component in ${chalk.green(
       file
     )} with id "${chalk.yellow(id)}"`
   );
