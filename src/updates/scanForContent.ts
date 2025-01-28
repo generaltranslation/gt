@@ -79,13 +79,6 @@ export default async function scanForContent(
       // Skip hidden files and directories
       if (item.startsWith('.')) continue;
 
-      // Skip layout files with supported extensions if framework is next
-      if (
-        framework === 'next' &&
-        extensions.some((ext) => item === `layout${ext}`)
-      )
-        continue;
-
       const fullPath = path.join(dir, item);
       const stat = fs.statSync(fullPath);
 

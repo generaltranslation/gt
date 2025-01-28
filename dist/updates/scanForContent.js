@@ -116,10 +116,6 @@ function scanForContent(options) {
                 // Skip hidden files and directories
                 if (item.startsWith('.'))
                     continue;
-                // Skip layout files with supported extensions if framework is next
-                if (framework === 'next' &&
-                    extensions.some((ext) => item === `layout${ext}`))
-                    continue;
                 const fullPath = path_1.default.join(dir, item);
                 const stat = fs_1.default.statSync(fullPath);
                 if (stat.isDirectory()) {
