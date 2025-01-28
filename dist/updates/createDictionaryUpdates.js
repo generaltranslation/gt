@@ -49,25 +49,19 @@ function createDictionaryUpdates(options, esbuildConfig) {
                 // Clean up the temporary file
                 fs_1.default.unlinkSync(tempFilePath);
             }
-            // console.log(dictionaryModule.default);
             dictionary = (0, internal_1.flattenDictionary)(dictionaryModule.default ||
                 dictionaryModule.dictionary ||
                 dictionaryModule);
-            // console.log(dictionary);
         }
         if (!Object.keys(dictionary).length)
             throw new Error(`Dictionary filepath provided: "${options.dictionary}", but no entries found.`);
         // ----- CREATE PARTIAL UPDATES ----- //
         let updates = [];
         for (const id of Object.keys(dictionary)) {
-            // console.log(dictionary[id]);
             let { entry, metadata: props, // context, etc.
              } = (0, internal_1.extractEntryMetadata)(dictionary[id]);
-            // console.log(entry);
             const taggedEntry = (0, internal_1.addGTIdentifier)(entry);
             const entryAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedEntry);
-            if (id === "dashboard.project_dashboard.project_context_placeholder")
-                console.log(JSON.stringify(entryAsObjects, null));
             const context = props === null || props === void 0 ? void 0 : props.context;
             const metadata = Object.assign(Object.assign({ id }, (context && { context })), { hash: (0, id_1.hashJsxChildren)(context
                     ? {
