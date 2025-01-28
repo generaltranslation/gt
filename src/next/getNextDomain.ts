@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { headers } from 'next/headers';
 
 /**
  * Retrieves the 'host' header from the headers list.
@@ -10,6 +10,6 @@ import { headers } from "next/headers";
  * or null if not available.
  */
 export async function getNextDomain(): Promise<string | null> {
-    const headerList = await headers();
-    return headerList.get('host') || null;
+  const headerList = await headers();
+  return headerList.get('host') || null;
 }

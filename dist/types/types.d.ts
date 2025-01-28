@@ -1,4 +1,4 @@
-import { TaggedChildren, TranslationError, Metadata } from "gt-react/internal";
+import { TaggedChildren, TranslationError, Metadata } from 'gt-react/internal';
 export type TaggedEntry = string | TaggedChildren;
 export type TaggedDictionaryEntry = TaggedEntry | [TaggedEntry] | [TaggedEntry, Metadata];
 export type TaggedDictionary = {

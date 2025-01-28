@@ -1,4 +1,4 @@
-import { TranslationsObject, TranslationLoading, TranslationError, TranslationSuccess } from "gt-react/internal";
+import { TranslationsObject, TranslationLoading, TranslationError, TranslationSuccess } from 'gt-react/internal';
 /**
  * Configuration type for RemoteTranslationsManager.
  * @typedef {object} RemoteTranslationsConfig

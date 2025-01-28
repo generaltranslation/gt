@@ -11,7 +11,11 @@ import {
   Children,
   defaultRenderSettings,
 } from 'gt-react/internal';
-import { createMismatchingHashWarning, createMismatchingIdHashWarning, devApiKeyIncludedInProductionError } from '../errors/createErrors';
+import {
+  createMismatchingHashWarning,
+  createMismatchingIdHashWarning,
+  devApiKeyIncludedInProductionError,
+} from '../errors/createErrors';
 import { hashJsxChildren } from 'generaltranslation/id';
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { GTTranslationError } from '../types/types';
@@ -37,26 +41,29 @@ type I18NConfigurationParams = {
   [key: string]: any;
 };
 
-
-type QueueEntry = {
-  type: 'content',
-  source: Content,
-  targetLocale: string,
-  metadata: { hash: string } & Record<string, any>,
-  resolve: (value: TranslatedContent | PromiseLike<TranslatedContent>) => void,
-  reject: (reason?: any) => void,
-} | {
-  type: 'jsx',
-  source: JsxChildren,
-  targetLocale: string,
-  metadata: { hash: string } & Record<string, any>,
-  resolve: (value: TranslatedChildren | PromiseLike<TranslatedChildren>) => void,
-  reject: (reason?: any) => void,
-};
+type QueueEntry =
+  | {
+      type: 'content';
+      source: Content;
+      targetLocale: string;
+      metadata: { hash: string } & Record<string, any>;
+      resolve: (
+        value: TranslatedContent | PromiseLike<TranslatedContent>
+      ) => void;
+      reject: (reason?: any) => void;
+    }
+  | {
+      type: 'jsx';
+      source: JsxChildren;
+      targetLocale: string;
+      metadata: { hash: string } & Record<string, any>;
+      resolve: (
+        value: TranslatedChildren | PromiseLike<TranslatedChildren>
+      ) => void;
+      reject: (reason?: any) => void;
+    };
 
 export default class I18NConfiguration {
-
-
   // Feature flags
   runtimeTranslation: boolean;
   remoteCache: boolean;
@@ -135,7 +142,10 @@ export default class I18NConfiguration {
     // Render method
     this.renderSettings = {
       method: renderSettings.method,
-      ...((renderSettings.timeout !== undefined || defaultRenderSettings.timeout !== undefined) && {timeout: renderSettings.timeout || defaultRenderSettings.timeout}),
+      ...((renderSettings.timeout !== undefined ||
+        defaultRenderSettings.timeout !== undefined) && {
+        timeout: renderSettings.timeout || defaultRenderSettings.timeout,
+      }),
     };
     // Other metadata
     this.metadata = {
@@ -206,9 +216,7 @@ export default class I18NConfiguration {
    * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
    */
   translationEnabled(): boolean {
-    return this.projectId &&
-      this.runtimeUrl &&
-      (this.apiKey || this.devApiKey)
+    return this.projectId && this.runtimeUrl && (this.apiKey || this.devApiKey)
       ? true
       : false;
   }
@@ -249,7 +257,7 @@ export default class I18NConfiguration {
    */
   serializeAndHashChildren(
     children: TaggedChildren,
-    context?: string,
+    context?: string
   ): [JsxChildren, string] {
     const childrenAsObjects = writeChildrenAsObjects(children);
     return [
@@ -266,10 +274,7 @@ export default class I18NConfiguration {
    * @param {string} context - The context in which the content are being hashed
    * @returns {string} A SHA256 hash of the content
    */
-  hashContent(
-    content: Content,
-    context?: string,
-  ): string {
+  hashContent(content: Content, context?: string): string {
     return hashJsxChildren({
       source: content,
       ...(context && { context }),
@@ -284,7 +289,8 @@ export default class I18NConfiguration {
    */
   async getCachedTranslations(locale: string): Promise<TranslationsObject> {
     return (
-      (await this._remoteTranslationsManager?.getCachedTranslations(locale)) || {}
+      (await this._remoteTranslationsManager?.getCachedTranslations(locale)) ||
+      {}
     );
   }
 
@@ -334,7 +340,6 @@ export default class I18NConfiguration {
     targetLocale: string;
     metadata: { hash: string } & Record<string, any>;
   }): Promise<TranslatedChildren> {
-    
     // In memory cache to make sure the same translation isn't requested twice
     const cacheKey = constructCacheKey(params.targetLocale, params.metadata);
     if (this._translationCache.has(cacheKey)) {
@@ -371,15 +376,22 @@ export default class I18NConfiguration {
   private async _sendBatchRequest(batch: Array<QueueEntry>): Promise<void> {
     this._activeRequests++;
     try {
-
       // ----- TRANSLATION REQUEST WITH ABORT CONTROLLER ----- //
-      const fetchWithAbort = async (url: string, options: RequestInit | undefined, timeout: number | undefined) => {
+      const fetchWithAbort = async (
+        url: string,
+        options: RequestInit | undefined,
+        timeout: number | undefined
+      ) => {
         const controller = new AbortController();
-        const timeoutId = (timeout === undefined) ? undefined : setTimeout(() => controller.abort(), timeout);
+        const timeoutId =
+          timeout === undefined
+            ? undefined
+            : setTimeout(() => controller.abort(), timeout);
         try {
-          return await fetch(url, { ...options, signal: controller.signal, });
+          return await fetch(url, { ...options, signal: controller.signal });
         } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError') throw new Error('Request timed out'); // Handle the timeout case
+          if (error instanceof Error && error.name === 'AbortError')
+            throw new Error('Request timed out'); // Handle the timeout case
           throw error; // Re-throw other errors
         } finally {
           if (timeoutId !== undefined) clearTimeout(timeoutId); // Ensure timeout is cleared
@@ -407,7 +419,6 @@ export default class I18NConfiguration {
         this.renderSettings.timeout // Pass the timeout duration in milliseconds
       );
 
-
       // ----- PROCESS RESPONSE ----- //
 
       if (!response.ok) {
@@ -420,7 +431,8 @@ export default class I18NConfiguration {
 
         let errorMsg = 'Translation failed.';
         let errorCode = 500;
-        if (!result) return request.reject(new GTTranslationError(errorMsg, errorCode));
+        if (!result)
+          return request.reject(new GTTranslationError(errorMsg, errorCode));
 
         const id = request.metadata.id || request.metadata.hash;
         if (result && typeof result === 'object') {
@@ -435,12 +447,27 @@ export default class I18NConfiguration {
               );
             }
             // check for mismatching ids or hashes
-            if (result?.reference?.id !== id || result?.reference?.key !== request.metadata?.hash) {
-                if (!request.metadata.id) {
-                    console.warn(createMismatchingHashWarning(request.metadata.hash, result.reference?.key));
-                } else {
-                    console.warn(createMismatchingIdHashWarning(id, request.metadata.hash, result?.reference?.id, result.reference?.key));
-                }
+            if (
+              result?.reference?.id !== id ||
+              result?.reference?.key !== request.metadata?.hash
+            ) {
+              if (!request.metadata.id) {
+                console.warn(
+                  createMismatchingHashWarning(
+                    request.metadata.hash,
+                    result.reference?.key
+                  )
+                );
+              } else {
+                console.warn(
+                  createMismatchingIdHashWarning(
+                    id,
+                    request.metadata.hash,
+                    result?.reference?.id,
+                    result.reference?.key
+                  )
+                );
+              }
             }
             return request.resolve(result.translation);
           } else if ('error' in result && result.error) {
@@ -454,7 +481,11 @@ export default class I18NConfiguration {
             request.targetLocale,
             request.metadata.hash,
             id,
-            { state: 'error', error: result.error || 'Translation failed.', code: result.code || 500}
+            {
+              state: 'error',
+              error: result.error || 'Translation failed.',
+              code: result.code || 500,
+            }
           );
         }
         return request.reject(new GTTranslationError(errorMsg, errorCode));
@@ -468,10 +499,12 @@ export default class I18NConfiguration {
             request.targetLocale,
             request.metadata.hash,
             request.metadata.id || request.metadata.hash,
-            { state: 'error', error: 'Translation failed.', code: 500}
+            { state: 'error', error: 'Translation failed.', code: 500 }
           );
         }
-        return request.reject(new GTTranslationError('Translation failed.', 500));
+        return request.reject(
+          new GTTranslationError('Translation failed.', 500)
+        );
       });
     } finally {
       this._activeRequests--;

@@ -11,15 +11,15 @@ var Currency_1 = __importDefault(require("../../variables/Currency"));
 var DateTime_1 = __importDefault(require("../../variables/DateTime"));
 function renderVariable(_a) {
     var variableType = _a.variableType, variableName = _a.variableName, variableValue = _a.variableValue, variableOptions = _a.variableOptions, locales = _a.locales;
-    if (variableType === "number") {
+    if (variableType === 'number') {
         return ((0, jsx_runtime_1.jsx)(Num_1.default, { name: variableName, value: variableValue, options: variableOptions, locales: locales }));
     }
-    else if (variableType === "datetime") {
+    else if (variableType === 'datetime') {
         return ((0, jsx_runtime_1.jsx)(DateTime_1.default, { name: variableName, value: variableValue, options: variableOptions, locales: locales }));
     }
-    else if (variableType === "currency") {
+    else if (variableType === 'currency') {
         return ((0, jsx_runtime_1.jsx)(Currency_1.default, { name: variableName, value: variableValue, options: variableOptions, locales: locales }));
     }
-    return ((0, jsx_runtime_1.jsx)(Var_1.default, { name: variableName, value: variableValue }));
+    return (0, jsx_runtime_1.jsx)(Var_1.default, { name: variableName, value: variableValue });
 }
 //# sourceMappingURL=renderVariable.js.map

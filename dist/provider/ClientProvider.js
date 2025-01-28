@@ -70,7 +70,7 @@ function ClientProvider(_a) {
      * (b) All string dictionary translations have been resolved at this point
      * (c) JSX dictionary entries are either (1) resolved (so success/error) or (2) not resolved/not yet requested.
      *     They will NOT be loading at this point.
-    */
+     */
     var _d = (0, react_1.useState)(null), translations = _d[0], setTranslations = _d[1];
     (0, react_1.useLayoutEffect)(function () {
         setTranslations(function (prev) { return (__assign(__assign({}, prev), initialTranslations)); });
@@ -106,7 +106,7 @@ function ClientProvider(_a) {
                                                 result = error_1.toTranslationError();
                                             }
                                             else {
-                                                result = { state: 'error', error: "An error occured", code: 500 };
+                                                result = { state: 'error', error: 'An error occured', code: 500 };
                                             }
                                             return [3 /*break*/, 4];
                                         case 4:
@@ -131,8 +131,10 @@ function ClientProvider(_a) {
         if (options === void 0) { options = {}; }
         // Get the dictionary entry
         var dictionaryEntry = dictionary[id]; // this is a flattened dictionary
-        if ((!dictionaryEntry && dictionaryEntry !== "") || // entry not found
-            (typeof dictionaryEntry === 'object' && !(0, react_1.isValidElement)(dictionaryEntry) && !Array.isArray(dictionaryEntry))) {
+        if ((!dictionaryEntry && dictionaryEntry !== '') || // entry not found
+            (typeof dictionaryEntry === 'object' &&
+                !(0, react_1.isValidElement)(dictionaryEntry) &&
+                !Array.isArray(dictionaryEntry))) {
             return undefined; // dictionary entry not found
         }
         // Parse the dictionary entry
@@ -142,7 +144,8 @@ function ClientProvider(_a) {
         var hash = metadata === null || metadata === void 0 ? void 0 : metadata.hash;
         var translationEntry = (_a = translations === null || translations === void 0 ? void 0 : translations[id]) === null || _a === void 0 ? void 0 : _a[hash];
         // ----- RENDER STRINGS ----- //
-        if (typeof entry === 'string') { // render strings
+        if (typeof entry === 'string') {
+            // render strings
             // Reject empty strings
             if (!entry.length) {
                 console.warn("gt-next warn: Empty string found in dictionary with id: ".concat(id));
@@ -160,7 +163,7 @@ function ClientProvider(_a) {
             // render translated content
             return (0, generaltranslation_1.renderContentToString)(translationEntry.target, [locale, defaultLocale], variables, variablesOptions);
         }
-        // ----- RENDER METHODS FOR JSX ----- // 
+        // ----- RENDER METHODS FOR JSX ----- //
         var taggedChildren = entry;
         // for default/fallback rendering
         var renderDefaultLocale = function () {
@@ -169,22 +172,14 @@ function ClientProvider(_a) {
                 variables: variables,
                 variablesOptions: variablesOptions,
                 defaultLocale: defaultLocale,
-                renderVariable: internal_1.renderVariable
-            });
-        };
-        var renderLoadingSkeleton = function () {
-            return (0, internal_1.renderSkeleton)({
-                children: taggedChildren,
-                variables: variables,
-                defaultLocale: defaultLocale,
-                renderVariable: internal_1.renderVariable
+                renderVariable: internal_1.renderVariable,
             });
         };
         var renderLoadingDefault = function () {
             if (dialectTranslationRequired) {
                 return renderDefaultLocale();
             }
-            return renderLoadingSkeleton();
+            return (0, internal_1.renderSkeleton)();
         };
         var renderTranslation = function (target) {
             return (0, internal_1.renderTranslatedChildren)({
@@ -193,7 +188,7 @@ function ClientProvider(_a) {
                 variables: variables,
                 variablesOptions: variablesOptions,
                 locales: [locale, defaultLocale],
-                renderVariable: internal_1.renderVariable
+                renderVariable: internal_1.renderVariable,
             });
         };
         // ----- RENDER JSX ----- //
@@ -202,22 +197,23 @@ function ClientProvider(_a) {
             return (0, jsx_runtime_1.jsx)(react_2.default.Fragment, { children: renderDefaultLocale() });
         }
         // loading behavior
-        if (!translationEntry || (translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === "loading") {
+        if (!translationEntry || (translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'loading') {
             var loadingFallback = void 0;
-            if (renderSettings.method === "skeleton") {
-                loadingFallback = renderLoadingSkeleton();
+            if (renderSettings.method === 'skeleton') {
+                loadingFallback = (0, internal_1.renderSkeleton)();
             }
-            else if (renderSettings.method === "replace") {
+            else if (renderSettings.method === 'replace') {
                 loadingFallback = renderDefaultLocale();
             }
-            else { // default
+            else {
+                // default
                 loadingFallback = renderLoadingDefault();
             }
             // The suspense exists here for hydration reasons
             return (0, jsx_runtime_1.jsx)(react_2.default.Fragment, { children: loadingFallback });
         }
         // error behavior
-        if (translationEntry.state === "error") {
+        if (translationEntry.state === 'error') {
             // Reject empty fragments
             if ((0, internal_1.isEmptyReactFragment)(entry)) {
                 console.warn("gt-next warn: Empty fragment found in dictionary with id: ".concat(id));
@@ -226,7 +222,7 @@ function ClientProvider(_a) {
             return (0, jsx_runtime_1.jsx)(react_2.default.Fragment, { children: renderDefaultLocale() });
         }
         // render translated content
-        return (0, jsx_runtime_1.jsx)(react_2.default.Fragment, { children: renderTranslation(translationEntry.target) });
+        return ((0, jsx_runtime_1.jsx)(react_2.default.Fragment, { children: renderTranslation(translationEntry.target) }));
     }, [dictionary, translations]);
     // For <T> components
     var _e = (0, client_1.useRuntimeTranslation)({
@@ -236,7 +232,7 @@ function ClientProvider(_a) {
         runtimeUrl: runtimeUrl,
         setTranslations: setTranslations,
         defaultLocale: defaultLocale,
-        renderSettings: renderSettings
+        renderSettings: renderSettings,
     }), translateChildren = _e.translateChildren, translateContent = _e.translateContent;
     return ((0, jsx_runtime_1.jsx)(client_1.GTContext.Provider, { value: {
             translateDictionaryEntry: translateDictionaryEntry,

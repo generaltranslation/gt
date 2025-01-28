@@ -29,7 +29,7 @@ var GTTranslationError = /** @class */ (function (_super) {
         return {
             state: 'error',
             error: this.error,
-            code: this.code
+            code: this.code,
         };
     };
     return GTTranslationError;

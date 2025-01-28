@@ -14,7 +14,7 @@ import { isSameLanguage } from 'generaltranslation';
 import React from 'react';
 
 async function Resolver({ children }: { children: React.ReactNode }) {
-  return await children
+  return await children;
 }
 
 /**
@@ -74,8 +74,9 @@ async function T({
   if (!children) {
     return;
   }
-  
+
   if (isEmptyReactFragment(children)) return <React.Fragment />;
+
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
@@ -83,7 +84,8 @@ async function T({
   const defaultLocale = I18NConfig.getDefaultLocale();
   const renderSettings = I18NConfig.getRenderSettings();
   const translationRequired = I18NConfig.requiresTranslation(locale);
-  const dialectTranslationRequired = translationRequired && isSameLanguage(locale, defaultLocale);
+  const dialectTranslationRequired =
+    translationRequired && isSameLanguage(locale, defaultLocale);
 
   // Gets tagged children with GT identifiers
   const taggedChildren = I18NConfig.addGTIdentifier(children);
@@ -91,7 +93,7 @@ async function T({
   // ----- RENDER METHODS ----- //
 
   // render in default language
-  const renderDefaultLocale = () => { 
+  const renderDefaultLocale = () => {
     return renderDefaultChildren({
       children: taggedChildren,
       variables,
@@ -99,21 +101,12 @@ async function T({
       defaultLocale,
       renderVariable,
     });
-  }
-
-  const renderLoadingSkeleton = () => {
-    return renderSkeleton({
-      children: taggedChildren,
-      variables,
-      defaultLocale,
-      renderVariable,
-    });
-  }
+  };
 
   const renderLoadingDefault = () => {
     if (dialectTranslationRequired) return renderDefaultLocale();
-    return renderLoadingSkeleton();
-  }
+    return renderSkeleton();
+  };
 
   // ----- CHECK TRANSLATIONS REQUIRED ----- //
 
@@ -127,23 +120,26 @@ async function T({
   // ----- CHECK CACHED TRANSLATIONS ----- //
 
   // Begin by sending check to cache for translations
-  const translationsPromise = translationRequired && I18NConfig.getCachedTranslations(locale);
+  const translationsPromise =
+    translationRequired && I18NConfig.getCachedTranslations(locale);
 
   // Turns tagged children into objects
   // The key (a hash) is used to identify the translation
-  const [childrenAsObjects, key] = I18NConfig.serializeAndHashChildren(taggedChildren, context);
+  const [childrenAsObjects, key] = I18NConfig.serializeAndHashChildren(
+    taggedChildren,
+    context
+  );
 
   // Block until cache check resolves
-  const translations = (translationsPromise) ? await translationsPromise : {};
+  const translations = translationsPromise ? await translationsPromise : {};
 
   // Gets the translation entry
   const translationEntry = translations?.[id]?.[key];
 
-
   // ----- CHECK CACHED TRANSLATIONS ----- //
 
   // if we have a cached translation, render it
-  if (translationEntry?.state === 'success') { 
+  if (translationEntry?.state === 'success') {
     return renderTranslatedChildren({
       source: taggedChildren,
       target: translationEntry.target,
@@ -160,7 +156,8 @@ async function T({
 
   // On-demand translation request sent
   // (no entry has been found, this means that the translation is either (1) loading or (2) missing)
-  const translationPromise = I18NConfig.translateChildren({ // do on demand translation
+  const translationPromise = I18NConfig.translateChildren({
+    // do on demand translation
     source: childrenAsObjects,
     targetLocale: locale,
     metadata: {
@@ -170,7 +167,9 @@ async function T({
       ...(await getMetadata()),
       ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
     },
-  }).then((translation) => {  // render the translation
+  })
+    .then((translation) => {
+      // render the translation
       return renderTranslatedChildren({
         source: taggedChildren,
         target: translation,
@@ -179,17 +178,18 @@ async function T({
         locales: [locale, defaultLocale],
         renderVariable,
       });
-    }
-  ).catch(() => { // render the default locale if there is an error instead
-    return renderDefaultLocale();
-  });
+    })
+    .catch(() => {
+      // render the default locale if there is an error instead
+      return renderDefaultLocale();
+    });
 
   // Loading behavior
   let loadingFallback; // Blank screen
   if (renderSettings.method === 'replace') {
     loadingFallback = renderDefaultLocale();
   } else if (renderSettings.method === 'skeleton') {
-    loadingFallback = renderLoadingSkeleton();
+    loadingFallback = renderSkeleton();
   } else {
     loadingFallback = renderLoadingDefault();
   }

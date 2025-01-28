@@ -4,7 +4,7 @@ import getI18NConfig from '../config/getI18NConfig';
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
  * It formats the number according to the current locale and optionally passed formatting options.
- * 
+ *
  * @example
  * ```jsx
  * <Num
@@ -21,49 +21,58 @@ import getI18NConfig from '../config/getI18NConfig';
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {Promise<JSX.Element>} The formatted number component.
  */
-function Num({ 
-    children, 
-    name, 
-    value, 
-    options = {},
-    locales = [getI18NConfig().getDefaultLocale()],
-    ...props 
+function Num({
+  children,
+  name,
+  value,
+  options = {},
+  locales = [getI18NConfig().getDefaultLocale()],
+  ...props
 }: {
-    children?: any;
-    name?: string;
-    value?: any;
-    options?: Intl.NumberFormatOptions,
-    locales?: string[]
-    'data-_gt'?: any
+  children?: any;
+  name?: string;
+  value?: any;
+  options?: Intl.NumberFormatOptions;
+  locales?: string[];
+  'data-_gt'?: any;
 }): React.JSX.Element {
+  const { 'data-_gt': generaltranslation } = props;
 
-    const { "data-_gt": generaltranslation } = props;
+  // Determine the value to be used
+  let renderedValue =
+    typeof children !== 'undefined' && typeof value === 'undefined'
+      ? children
+      : value;
+  renderedValue =
+    typeof renderedValue === 'string'
+      ? parseFloat(renderedValue)
+      : renderedValue;
 
-    // Determine the value to be used
-    let renderedValue = (typeof children !== 'undefined' && typeof value === 'undefined') ? children : value;
-    renderedValue = (typeof renderedValue === 'string') ? parseFloat(renderedValue) : renderedValue;
+  // Format the number according to the locale
+  const formattedValue =
+    typeof renderedValue === 'number'
+      ? formatNum({ value: renderedValue, locales, options })
+      : renderedValue;
 
-    // Format the number according to the locale
-    const formattedValue = (typeof renderedValue === 'number') ? 
-        formatNum({ value: renderedValue, locales, options }) : 
-            renderedValue;
+  return (
+    <span
+      data-_gt={generaltranslation}
+      data-_gt-variable-name={name}
+      data-_gt-variable-type={'number'}
+      data-_gt-variable-options={JSON.stringify(options)}
+      data-_gt-unformatted-value={
+        typeof renderedValue === 'number' && !isNaN(renderedValue)
+          ? renderedValue
+          : undefined
+      }
+      style={{ display: 'contents' }}
+      suppressHydrationWarning
+    >
+      {formattedValue}
+    </span>
+  );
+}
 
-    return (
-        <span 
-            data-_gt={generaltranslation} 
-            data-_gt-variable-name={name} 
-            data-_gt-variable-type={"number"} 
-            data-_gt-variable-options={JSON.stringify(options)}
-            data-_gt-unformatted-value={typeof renderedValue === 'number' && !isNaN(renderedValue) ? renderedValue : undefined}
-            style={{ display: 'contents' }}
-            suppressHydrationWarning
-        >
-            {formattedValue}
-        </span>
-    );
-
-};
-
-Num.gtTransformation = "variable-number";
+Num.gtTransformation = 'variable-number';
 
 export default Num;

@@ -9,8 +9,8 @@
  * @returns {string} The value of the environment variable, or an empty string if the variable is not set.
  */
 export default function getDefaultFromEnv(VARIABLE: string): string {
-    if (typeof process !== 'undefined' && process?.env?.[VARIABLE]) {
-        return process.env[VARIABLE] as string;
-    }
-    return '';
+  if (typeof process !== 'undefined' && process?.env?.[VARIABLE]) {
+    return process.env[VARIABLE] as string;
+  }
+  return '';
 }

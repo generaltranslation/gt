@@ -53,7 +53,8 @@ function getMetadata() {
                 case 2:
                     _c.trys.push([2, 5, , 6]);
                     customRequestConfig = require('gt-next/_request');
-                    customGetMetadata = ((_b = customRequestConfig === null || customRequestConfig === void 0 ? void 0 : customRequestConfig.default) === null || _b === void 0 ? void 0 : _b.getMetadata) || customRequestConfig.getMetadata;
+                    customGetMetadata = ((_b = customRequestConfig === null || customRequestConfig === void 0 ? void 0 : customRequestConfig.default) === null || _b === void 0 ? void 0 : _b.getMetadata) ||
+                        customRequestConfig.getMetadata;
                     return [4 /*yield*/, customGetMetadata()];
                 case 3:
                     metadata = _c.sent();
@@ -76,9 +77,7 @@ function getMetadata() {
                         });
                     }); };
                     return [2 /*return*/, getMetadataFunction()];
-                case 6:
-                    ;
-                    return [2 /*return*/];
+                case 6: return [2 /*return*/];
             }
         });
     });

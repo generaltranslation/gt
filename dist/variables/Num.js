@@ -41,15 +41,21 @@ function Num(_a) {
     var children = _a.children, name = _a.name, value = _a.value, _b = _a.options, options = _b === void 0 ? {} : _b, _c = _a.locales, locales = _c === void 0 ? [(0, getI18NConfig_1.default)().getDefaultLocale()] : _c, props = __rest(_a, ["children", "name", "value", "options", "locales"]);
     var generaltranslation = props["data-_gt"];
     // Determine the value to be used
-    var renderedValue = (typeof children !== 'undefined' && typeof value === 'undefined') ? children : value;
-    renderedValue = (typeof renderedValue === 'string') ? parseFloat(renderedValue) : renderedValue;
+    var renderedValue = typeof children !== 'undefined' && typeof value === 'undefined'
+        ? children
+        : value;
+    renderedValue =
+        typeof renderedValue === 'string'
+            ? parseFloat(renderedValue)
+            : renderedValue;
     // Format the number according to the locale
-    var formattedValue = (typeof renderedValue === 'number') ?
-        (0, generaltranslation_1.formatNum)({ value: renderedValue, locales: locales, options: options }) :
-        renderedValue;
-    return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-variable-name": name, "data-_gt-variable-type": "number", "data-_gt-variable-options": JSON.stringify(options), "data-_gt-unformatted-value": typeof renderedValue === 'number' && !isNaN(renderedValue) ? renderedValue : undefined, style: { display: 'contents' }, suppressHydrationWarning: true, children: formattedValue }));
+    var formattedValue = typeof renderedValue === 'number'
+        ? (0, generaltranslation_1.formatNum)({ value: renderedValue, locales: locales, options: options })
+        : renderedValue;
+    return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-variable-name": name, "data-_gt-variable-type": 'number', "data-_gt-variable-options": JSON.stringify(options), "data-_gt-unformatted-value": typeof renderedValue === 'number' && !isNaN(renderedValue)
+            ? renderedValue
+            : undefined, style: { display: 'contents' }, suppressHydrationWarning: true, children: formattedValue }));
 }
-;
-Num.gtTransformation = "variable-number";
+Num.gtTransformation = 'variable-number';
 exports.default = Num;
 //# sourceMappingURL=Num.js.map

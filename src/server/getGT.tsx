@@ -51,7 +51,6 @@ export async function getGT(
   let filteredTranslations: Record<string, TranslatedContent> = {};
 
   if (translationRequired) {
-
     // send a request to cache for translations
     let translationsPromise = I18NConfig.getCachedTranslations(locale);
 
@@ -59,10 +58,14 @@ export async function getGT(
     const additionalMetadata = await getMetadata();
 
     // Flatten dictionaries for processing while waiting for translations
-    const dictionarySubset = (id ? getDictionaryEntry(id) : getDictionary()) || {};
-    if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))  // check that it is a Dictionary, not a Dictionary Entry
+    const dictionarySubset =
+      (id ? getDictionaryEntry(id) : getDictionary()) || {};
+    if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
+      // check that it is a Dictionary, not a Dictionary Entry
       throw new Error(createDictionarySubsetError(id ?? '', 'getGT'));
-    const flattenedDictionaryEntries = flattenDictionary(dictionarySubset as Dictionary);
+    const flattenedDictionaryEntries = flattenDictionary(
+      dictionarySubset as Dictionary
+    );
 
     // Block until cache check resolves
     const translations = await translationsPromise;
@@ -71,7 +74,6 @@ export async function getGT(
     await Promise.all(
       Object.entries(flattenedDictionaryEntries ?? {}).map(
         async ([suffix, dictionaryEntry]) => {
-
           // Get the entry from the dictionary
           let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
 
@@ -81,7 +83,9 @@ export async function getGT(
           // Reject empty strings
           const entryId = getId(suffix);
           if (!entry.length) {
-            console.warn(`gt-next warn: Empty string found in dictionary with id: ${entryId}`);
+            console.warn(
+              `gt-next warn: Empty string found in dictionary with id: ${entryId}`
+            );
             return;
           }
 
@@ -93,7 +97,9 @@ export async function getGT(
           const translationEntry = translations[entryId]?.[hash];
           if (translationEntry) {
             // success
-            if (translationEntry.state === 'success') return (filteredTranslations[entryId] = translationEntry.target as TranslatedContent);
+            if (translationEntry.state === 'success')
+              return (filteredTranslations[entryId] =
+                translationEntry.target as TranslatedContent);
             // error
             return;
           }
@@ -106,12 +112,15 @@ export async function getGT(
             targetLocale: locale,
             options: { id: entryId, hash, ...additionalMetadata },
           });
-          
+
           // for server-side rendering, all strings are blocking
           try {
             filteredTranslations[entryId] = await translationPromise;
           } catch (error) {
-            console.error(createDictionaryStringTranslationError(entryId), error);
+            console.error(
+              createDictionaryStringTranslationError(entryId),
+              error
+            );
             return;
           }
         }
@@ -120,18 +129,22 @@ export async function getGT(
   }
 
   return (id: string, options?: Record<string, any>): React.ReactNode => {
-
     // Get entry
     id = getId(id);
     const dictionaryEntry = getDictionaryEntry(id);
     if (
-      dictionaryEntry === undefined || dictionaryEntry === null || // no entry found
-      (typeof dictionaryEntry === 'object' && !isValidElement(dictionaryEntry) && !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
+      dictionaryEntry === undefined ||
+      dictionaryEntry === null || // no entry found
+      (typeof dictionaryEntry === 'object' &&
+        !isValidElement(dictionaryEntry) &&
+        !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
     ) {
       console.warn(createNoEntryWarning(id));
       return undefined;
     }
-    let { entry, metadata } = extractEntryMetadata(dictionaryEntry as DictionaryEntry);
+    let { entry, metadata } = extractEntryMetadata(
+      dictionaryEntry as DictionaryEntry
+    );
 
     // Get variables and variable options
     let variables = options;
@@ -139,7 +152,8 @@ export async function getGT(
 
     // Render strings
     if (typeof entry === 'string') {
-      const contentArray = filteredTranslations[id] || splitStringToContent(entry);
+      const contentArray =
+        filteredTranslations[id] || splitStringToContent(entry);
       return renderContentToString(
         contentArray,
         [locale, defaultLocale],
@@ -150,7 +164,9 @@ export async function getGT(
 
     // Reject empty fragments
     if (isEmptyReactFragment(entry)) {
-      console.warn(`gt-next warn: Empty fragment found in dictionary with id: ${id}`);
+      console.warn(
+        `gt-next warn: Empty fragment found in dictionary with id: ${id}`
+      );
       return entry;
     }
 
@@ -206,17 +222,22 @@ export function useElement(
     const dictionaryEntry = getDictionaryEntry(id);
     if (
       dictionaryEntry === undefined || // no entry found
-      (typeof dictionaryEntry === 'object' && !isValidElement(dictionaryEntry) && !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
+      (typeof dictionaryEntry === 'object' &&
+        !isValidElement(dictionaryEntry) &&
+        !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
     ) {
       console.warn(createNoEntryWarning(id));
       return <React.Fragment />;
     }
-    let { entry, metadata } = extractEntryMetadata(dictionaryEntry as DictionaryEntry);
-
+    let { entry, metadata } = extractEntryMetadata(
+      dictionaryEntry as DictionaryEntry
+    );
 
     // Reject empty fragments
     if (isEmptyReactFragment(entry)) {
-      console.warn(`gt-next warn: Empty fragment found in dictionary with id: ${id}`);
+      console.warn(
+        `gt-next warn: Empty fragment found in dictionary with id: ${id}`
+      );
       return entry;
     }
 

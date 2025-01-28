@@ -57,14 +57,18 @@ export default async function tx(
     [key: string]: any;
   } = {}
 ): Promise<string> {
-
   // ----- SET UP ----- //
 
   // No content to translate
   if (!content) {
     // Reject empty strings
-    if (content === "") {
-      console.warn(`gt-next warn: Empty string found in tx() ${options.id && `with id: ${options.id}`}`);``
+    if (content === '') {
+      console.warn(
+        `gt-next warn: Empty string found in tx() ${
+          options.id && `with id: ${options.id}`
+        }`
+      );
+      ``;
     }
     return '';
   }
@@ -86,12 +90,10 @@ export default async function tx(
     );
   };
 
-
   // ----- RENDER LOGIC ----- //
 
   // translation required
   if (!translationRequired) return renderContent(contentArray, [defaultLocale]);
-
 
   // get hash
   const hash = I18NConfig.hashContent(contentArray, options.context);

@@ -109,7 +109,9 @@ function GTProvider(_a) {
         return __generator(this, function (_d) {
             switch (_d.label) {
                 case 0:
-                    getId = function (suffix) { return id ? "".concat(id, ".").concat(suffix) : suffix; };
+                    getId = function (suffix) {
+                        return id ? "".concat(id, ".").concat(suffix) : suffix;
+                    };
                     I18NConfig = (0, getI18NConfig_1.default)();
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
@@ -122,10 +124,11 @@ function GTProvider(_a) {
                     dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, defaultLocale);
                     translationsPromise = translationRequired && I18NConfig.getCachedTranslations(locale);
                     dictionarySubset = (id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)()) || {};
-                    if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset)) // cannot be a DictionaryEntry, must be a Dictionary
-                        throw new Error((0, createErrors_1.createDictionarySubsetError)(id !== null && id !== void 0 ? id : '', "<GTProvider>"));
+                    if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
+                        // cannot be a DictionaryEntry, must be a Dictionary
+                        throw new Error((0, createErrors_1.createDictionarySubsetError)(id !== null && id !== void 0 ? id : '', '<GTProvider>'));
                     flattenedDictionarySubset = (0, internal_1.flattenDictionary)(dictionarySubset);
-                    if (!(translationsPromise)) return [3 /*break*/, 4];
+                    if (!translationsPromise) return [3 /*break*/, 4];
                     return [4 /*yield*/, translationsPromise];
                 case 3:
                     _c = _d.sent();
@@ -153,7 +156,7 @@ function GTProvider(_a) {
                                 switch (_l.label) {
                                     case 0:
                                         // reject bad dictionary entries (we want to do a custom warning for empty strings later)
-                                        if (!dictionaryEntry && dictionaryEntry !== "")
+                                        if (!dictionaryEntry && dictionaryEntry !== '')
                                             return [2 /*return*/];
                                         entryId = getId(suffix);
                                         _c = (0, internal_1.extractEntryMetadata)(dictionaryEntry), entry = _c.entry, metadata = _c.metadata;
@@ -161,7 +164,10 @@ function GTProvider(_a) {
                                         if (typeof entry !== 'string') {
                                             taggedChildren = I18NConfig.addGTIdentifier(entry);
                                             _d = I18NConfig.serializeAndHashChildren(taggedChildren, metadata === null || metadata === void 0 ? void 0 : metadata.context), childrenAsObjects = _d[0], hash_1 = _d[1];
-                                            dictionary[entryId] = [taggedChildren, __assign(__assign({}, metadata), { hash: hash_1 })];
+                                            dictionary[entryId] = [
+                                                taggedChildren,
+                                                __assign(__assign({}, metadata), { hash: hash_1 }),
+                                            ];
                                             // if no tx required, we are done
                                             if (!translationRequired)
                                                 return [2 /*return*/];
@@ -170,12 +176,18 @@ function GTProvider(_a) {
                                             // or runtime translation disabled
                                             if (translationEntry_1) {
                                                 // if it is loading, we can just hook into the promise by calling translateChildren
-                                                if (translationEntry_1.state !== "loading")
+                                                if (translationEntry_1.state !== 'loading')
                                                     return [2 /*return*/];
                                             }
                                             // Reject empty fragments
                                             if ((0, internal_1.isEmptyReactFragment)(entry)) {
-                                                translations[entryId] = (_e = {}, _e[hash_1] = { state: 'error', error: 'Empty fragments are not allowed for translation.', code: 400 }, _e);
+                                                translations[entryId] = (_e = {},
+                                                    _e[hash_1] = {
+                                                        state: 'error',
+                                                        error: 'Empty fragments are not allowed for translation.',
+                                                        code: 400,
+                                                    },
+                                                    _e);
                                                 return [2 /*return*/];
                                             }
                                             translationPromise = I18NConfig.translateChildren({
@@ -189,7 +201,8 @@ function GTProvider(_a) {
                                             return [2 /*return*/];
                                         }
                                         contentArray = (0, generaltranslation_1.splitStringToContent)(entry);
-                                        hash = (metadata === null || metadata === void 0 ? void 0 : metadata.hash) || I18NConfig.hashContent(contentArray, metadata === null || metadata === void 0 ? void 0 : metadata.context);
+                                        hash = (metadata === null || metadata === void 0 ? void 0 : metadata.hash) ||
+                                            I18NConfig.hashContent(contentArray, metadata === null || metadata === void 0 ? void 0 : metadata.context);
                                         // Add to client dictionary
                                         dictionary[entryId] = [entry, __assign(__assign({}, metadata), { hash: hash })];
                                         // if no tx required, we are done
@@ -201,7 +214,13 @@ function GTProvider(_a) {
                                             return [2 /*return*/];
                                         // Reject empty strings
                                         if (!entry.length) {
-                                            translations[entryId] = (_g = {}, _g[hash] = { state: 'error', error: 'Empty strings are not allowed for translation.', code: 400 }, _g);
+                                            translations[entryId] = (_g = {},
+                                                _g[hash] = {
+                                                    state: 'error',
+                                                    error: 'Empty strings are not allowed for translation.',
+                                                    code: 400,
+                                                },
+                                                _g);
                                             return [2 /*return*/];
                                         }
                                         _l.label = 1;
@@ -215,7 +234,9 @@ function GTProvider(_a) {
                                     case 2:
                                         translation = _l.sent();
                                         // overwriting any old translations, this is most recent on demand, so should be most accurate
-                                        translations[entryId] = (_h = {}, _h[hash] = { state: 'success', target: translation }, _h);
+                                        translations[entryId] = (_h = {},
+                                            _h[hash] = { state: 'success', target: translation },
+                                            _h);
                                         return [3 /*break*/, 4];
                                     case 3:
                                         error_1 = _l.sent();
