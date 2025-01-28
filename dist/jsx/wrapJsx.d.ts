@@ -8,7 +8,7 @@ import * as t from '@babel/types';
  * @param options - Optional component names for T and Var
  */
 export interface WrapResult {
-    node: t.JSXElement | t.JSXExpressionContainer;
+    node: t.JSXElement;
     needsWrapping: boolean;
 }
 /**
@@ -18,7 +18,7 @@ export interface WrapResult {
  * @param isMeaningful - A function to determine if a node is meaningful
  * @returns The wrapped JSX element
  */
-export declare function wrapJsxElement(node: t.JSXElement | t.JSXExpressionContainer, options: {
+export declare function wrapJsxElement(node: t.JSXElement, options: {
     TComponent?: string;
     VarComponent?: string;
     idPrefix: string;
@@ -33,11 +33,11 @@ export declare function wrapJsxElement(node: t.JSXElement | t.JSXExpressionConta
  * @param isMeaningful - A function to determine if a node is meaningful
  * @returns The wrapped JSX element
  */
-export declare function handleJsxElement(rootNode: t.JSXElement | t.JSXExpressionContainer, options: {
+export declare function handleJsxElement(rootNode: t.JSXElement, options: {
     usedImports: string[];
     TComponent?: string;
     VarComponent?: string;
     idPrefix: string;
     idCount: number;
     modified: boolean;
-}, isMeaningful: (node: t.Node) => boolean): t.JSXElement | t.JSXExpressionContainer;
+}, isMeaningful: (node: t.Node) => boolean): t.JSXElement;

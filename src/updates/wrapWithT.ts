@@ -8,10 +8,28 @@ import generate from '@babel/generator';
 import * as babel from '@babel/types';
 
 import { handleJsxElement } from '../jsx/wrapJsx';
+import { isStaticExpression } from '../jsx/isStaticExpression';
 
+const MEANINGFUL_REGEX = /[\p{L}\p{N}]/u;
+
+/**
+ * Checks if a node is meaningful. Does not recurse into children.
+ * @param node - The node to check
+ * @returns Whether the node is meaningful
+ */
 function isMeaningful(node: t.Node): boolean {
-  if (t.isStringLiteral(node)) {
-    return /[\p{L}\p{N}]/u.test(node.value);
+  if (t.isStringLiteral(node) || t.isJSXText(node)) {
+    return MEANINGFUL_REGEX.test(node.value);
+  }
+  // Handle template literals without expressions
+  if (t.isTemplateLiteral(node) && node.expressions.length === 0) {
+    return MEANINGFUL_REGEX.test(node.quasis[0].value.raw);
+  }
+  if (t.isJSXExpressionContainer(node)) {
+    const value = isStaticExpression(node.expression);
+    if (value.isStatic && value.value) {
+      return MEANINGFUL_REGEX.test(value.value);
+    }
   }
   return false;
 }
@@ -55,6 +73,13 @@ export default async function wrapWithT(
     for (const item of items) {
       // Skip hidden files and directories
       if (item.startsWith('.')) continue;
+
+      // Skip layout files with supported extensions if framework is next
+      if (
+        framework === 'next' &&
+        extensions.some((ext) => item === `layout${ext}`)
+      )
+        continue;
 
       const fullPath = path.join(dir, item);
       const stat = fs.statSync(fullPath);
@@ -132,7 +157,7 @@ export default async function wrapWithT(
     if (initialImports.includes(IMPORT_MAP.T)) {
       continue;
     }
-
+    let globalId = 0;
     traverse(ast, {
       JSXElement(path) {
         // Check if this JSX element has any JSX element ancestors
@@ -149,14 +174,17 @@ export default async function wrapWithT(
         const opts = {
           ...importAlias,
           idPrefix: relativePath,
-          idCount: 0,
+          idCount: globalId,
           usedImports,
           modified: false,
         };
         const wrapped = handleJsxElement(path.node, opts, isMeaningful);
-        modified = opts.modified;
         path.replaceWith(wrapped);
         path.skip();
+
+        // Update global counters
+        modified = opts.modified;
+        globalId = opts.idCount;
       },
     });
     if (!modified) continue;
@@ -245,7 +273,7 @@ export default async function wrapWithT(
       if (needsImport.length > 0) {
         // Add newline after the comment only
         processedCode = processedCode.replace(
-          /((?:import\s*{\s*(?:GTT|T)\s*,\s*(?:GTVar|Var)\s*}\s*from|const\s*{\s*(?:GTT|T)\s*,\s*(?:GTVar|Var)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)['"];?)/,
+          /((?:import\s*{\s*(?:(?:T(?:\s+as\s+GTT)?)|(?:GTT))\s*,\s*(?:(?:Var(?:\s+as\s+GTVar)?)|(?:GTVar))\s*}\s*from|const\s*{\s*(?:GTT|T)\s*,\s*(?:GTVar|Var)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)['"];?)/,
           '\n$1\n'
         );
       }

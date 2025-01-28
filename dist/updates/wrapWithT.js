@@ -54,9 +54,26 @@ const traverse_1 = __importDefault(require("@babel/traverse"));
 const generator_1 = __importDefault(require("@babel/generator"));
 const babel = __importStar(require("@babel/types"));
 const wrapJsx_1 = require("../jsx/wrapJsx");
+const isStaticExpression_1 = require("../jsx/isStaticExpression");
+const MEANINGFUL_REGEX = /[\p{L}\p{N}]/u;
+/**
+ * Checks if a node is meaningful. Does not recurse into children.
+ * @param node - The node to check
+ * @returns Whether the node is meaningful
+ */
 function isMeaningful(node) {
-    if (t.isStringLiteral(node)) {
-        return /[\p{L}\p{N}]/u.test(node.value);
+    if (t.isStringLiteral(node) || t.isJSXText(node)) {
+        return MEANINGFUL_REGEX.test(node.value);
+    }
+    // Handle template literals without expressions
+    if (t.isTemplateLiteral(node) && node.expressions.length === 0) {
+        return MEANINGFUL_REGEX.test(node.quasis[0].value.raw);
+    }
+    if (t.isJSXExpressionContainer(node)) {
+        const value = (0, isStaticExpression_1.isStaticExpression)(node.expression);
+        if (value.isStatic && value.value) {
+            return MEANINGFUL_REGEX.test(value.value);
+        }
     }
     return false;
 }
@@ -93,6 +110,10 @@ function wrapWithT(options) {
             for (const item of items) {
                 // Skip hidden files and directories
                 if (item.startsWith('.'))
+                    continue;
+                // Skip layout files with supported extensions if framework is next
+                if (framework === 'next' &&
+                    extensions.some((ext) => item === `layout${ext}`))
                     continue;
                 const fullPath = path_1.default.join(dir, item);
                 const stat = fs_1.default.statSync(fullPath);
@@ -163,6 +184,7 @@ function wrapWithT(options) {
             if (initialImports.includes(IMPORT_MAP.T)) {
                 continue;
             }
+            let globalId = 0;
             (0, traverse_1.default)(ast, {
                 JSXElement(path) {
                     // Check if this JSX element has any JSX element ancestors
@@ -175,11 +197,13 @@ function wrapWithT(options) {
                         currentPath = currentPath.parentPath;
                     }
                     // At this point, we're only processing top-level JSX elements
-                    const opts = Object.assign(Object.assign({}, importAlias), { idPrefix: relativePath, idCount: 0, usedImports, modified: false });
+                    const opts = Object.assign(Object.assign({}, importAlias), { idPrefix: relativePath, idCount: globalId, usedImports, modified: false });
                     const wrapped = (0, wrapJsx_1.handleJsxElement)(path.node, opts, isMeaningful);
-                    modified = opts.modified;
                     path.replaceWith(wrapped);
                     path.skip();
+                    // Update global counters
+                    modified = opts.modified;
+                    globalId = opts.idCount;
                 },
             });
             if (!modified)
@@ -234,7 +258,7 @@ function wrapWithT(options) {
                 let processedCode = output.code;
                 if (needsImport.length > 0) {
                     // Add newline after the comment only
-                    processedCode = processedCode.replace(/((?:import\s*{\s*(?:GTT|T)\s*,\s*(?:GTVar|Var)\s*}\s*from|const\s*{\s*(?:GTT|T)\s*,\s*(?:GTVar|Var)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)['"];?)/, '\n$1\n');
+                    processedCode = processedCode.replace(/((?:import\s*{\s*(?:(?:T(?:\s+as\s+GTT)?)|(?:GTT))\s*,\s*(?:(?:Var(?:\s+as\s+GTVar)?)|(?:GTVar))\s*}\s*from|const\s*{\s*(?:GTT|T)\s*,\s*(?:GTVar|Var)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)['"];?)/, '\n$1\n');
                 }
                 // Write the modified code back to the file
                 fs_1.default.writeFileSync(file, processedCode);
