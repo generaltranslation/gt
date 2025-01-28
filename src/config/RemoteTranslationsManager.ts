@@ -1,8 +1,13 @@
-import { standardizeLocale } from "generaltranslation";
-import { remoteTranslationsError } from "../errors/createErrors";
-import defaultInitGTProps from "./props/defaultInitGTProps";
-import { defaultCacheUrl } from "generaltranslation/internal";
-import { TranslationsObject, TranslationLoading, TranslationError, TranslationSuccess } from "gt-react/internal";
+import { standardizeLocale } from 'generaltranslation';
+import { remoteTranslationsError } from '../errors/createErrors';
+import defaultInitGTProps from './props/defaultInitGTProps';
+import { defaultCacheUrl } from 'generaltranslation/internal';
+import {
+  TranslationsObject,
+  TranslationLoading,
+  TranslationError,
+  TranslationSuccess,
+} from 'gt-react/internal';
 
 /**
  * Configuration type for RemoteTranslationsManager.
@@ -65,18 +70,25 @@ export class RemoteTranslationsManager {
       );
       const result = await response.json();
       if (Object.keys(result).length) {
-
         // Record our fetch time
         this.lastFetchTime.set(reference, Date.now());
 
         // Parse response
-        const parsedResult = Object.entries(result).reduce((translationsAcc: Record<string, any>, [id, hashToTranslation]: [string, any]) => {
-          translationsAcc[id] = Object.entries(hashToTranslation || {}).reduce((idAcc: Record<string, any>, [hash, content]) => {
-            idAcc[hash] = { state: 'success', target: content };
-            return idAcc;
-          }, {});
-          return translationsAcc;
-        }, {})
+        const parsedResult = Object.entries(result).reduce(
+          (
+            translationsAcc: Record<string, any>,
+            [id, hashToTranslation]: [string, any]
+          ) => {
+            translationsAcc[id] = Object.entries(
+              hashToTranslation || {}
+            ).reduce((idAcc: Record<string, any>, [hash, content]) => {
+              idAcc[hash] = { state: 'success', target: content };
+              return idAcc;
+            }, {});
+            return translationsAcc;
+          },
+          {}
+        );
 
         return parsedResult;
       }
@@ -95,7 +107,8 @@ export class RemoteTranslationsManager {
     const fetchTime = this.lastFetchTime.get(reference);
     if (!fetchTime) return true;
     const now = Date.now();
-    const expiryTime = this.config.cacheExpiryTime ?? defaultInitGTProps.cacheExpiryTime;
+    const expiryTime =
+      this.config.cacheExpiryTime ?? defaultInitGTProps.cacheExpiryTime;
     return now - fetchTime > expiryTime;
   }
 
@@ -104,7 +117,9 @@ export class RemoteTranslationsManager {
    * @param {string} locale - The locale code.
    * @returns {Promise<TranslationsObject | undefined>} The translations data or null if not found.
    */
-  async getCachedTranslations(locale: string): Promise<TranslationsObject | undefined> {
+  async getCachedTranslations(
+    locale: string
+  ): Promise<TranslationsObject | undefined> {
     const reference = standardizeLocale(locale);
 
     // If we have cached translations locally and they are not expired, return them

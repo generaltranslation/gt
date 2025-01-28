@@ -1,7 +1,14 @@
 import { headers } from 'next/headers';
 import { cookies } from 'next/headers';
-import { determineLocale, isValidLocale, standardizeLocale } from 'generaltranslation';
-import { localeCookieName, localeHeaderName } from 'generaltranslation/internal';
+import {
+  determineLocale,
+  isValidLocale,
+  standardizeLocale,
+} from 'generaltranslation';
+import {
+  localeCookieName,
+  localeHeaderName,
+} from 'generaltranslation/internal';
 
 /**
  * Retrieves the 'accept-language' header from the headers list.
@@ -16,13 +23,9 @@ export async function getNextLocale(
   defaultLocale: string = '',
   locales: string[]
 ): Promise<string> {
-
-  const [headersList, cookieStore] = await Promise.all([
-    headers(), cookies()
-  ]);
+  const [headersList, cookieStore] = await Promise.all([headers(), cookies()]);
 
   let userLocale = (() => {
-
     const preferredLocales: string[] = [];
 
     // Language routed to by middleware
@@ -33,7 +36,7 @@ export async function getNextLocale(
     if (cookieLocale?.value) {
       preferredLocales.push(cookieLocale.value);
     }
-    
+
     // Browser languages, in preference order
     const acceptedLocales = headersList
       .get('accept-language')
@@ -46,9 +49,7 @@ export async function getNextLocale(
     preferredLocales.push(defaultLocale);
 
     return determineLocale(preferredLocales, locales) || defaultLocale;
-
   })();
 
   return userLocale;
-  
 }

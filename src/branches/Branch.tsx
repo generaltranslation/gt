@@ -6,7 +6,7 @@
  *
  * @example
  * ```jsx
- * <Branch 
+ * <Branch
  *  branch={user.gender}
  *  female={<p>She is happy.</p>}
  *  male={<p>He is happy.</p>}
@@ -23,26 +23,32 @@
  * @returns {JSX.Element} The rendered branch or fallback content.
  */
 function Branch({
-    children, name = "branch", branch, ...props
+  children,
+  name = 'branch',
+  branch,
+  ...props
 }: {
-    children?: any;
-    name?: string,
-    branch?: string;
-    [key: string]: any;
+  children?: any;
+  name?: string;
+  branch?: string;
+  [key: string]: any;
 }) {
-    const { 'data-_gt': generaltranslation, ...branches } = props;
-    const renderedBranch = (branch && typeof branches[branch] !== 'undefined') ? branches[branch] : children;
-    return (
-        <span 
-            data-_gt={generaltranslation} 
-            data-_gt-name={name || "branch"} 
-            data-_gt-branch-name={branch}
-            style={{ display: 'contents' }}
-        >
-            {renderedBranch}
-        </span>
-    );
+  const { 'data-_gt': generaltranslation, ...branches } = props;
+  const renderedBranch =
+    branch && typeof branches[branch] !== 'undefined'
+      ? branches[branch]
+      : children;
+  return (
+    <span
+      data-_gt={generaltranslation}
+      data-_gt-name={name || 'branch'}
+      data-_gt-branch-name={branch}
+      style={{ display: 'contents' }}
+    >
+      {renderedBranch}
+    </span>
+  );
 }
 
-Branch.gtTransformation = "branch";
+Branch.gtTransformation = 'branch';
 export default Branch;

@@ -131,7 +131,8 @@ function getGT(id) {
                 case 2:
                     additionalMetadata_1 = _a.sent();
                     dictionarySubset = (id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)()) || {};
-                    if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset)) // check that it is a Dictionary, not a Dictionary Entry
+                    if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
+                        // check that it is a Dictionary, not a Dictionary Entry
                         throw new Error((0, createErrors_1.createDictionarySubsetError)(id !== null && id !== void 0 ? id : '', 'getGT'));
                     flattenedDictionaryEntries = (0, internal_1.flattenDictionary)(dictionarySubset);
                     return [4 /*yield*/, translationsPromise];
@@ -160,7 +161,8 @@ function getGT(id) {
                                         if (translationEntry) {
                                             // success
                                             if (translationEntry.state === 'success')
-                                                return [2 /*return*/, (filteredTranslations[entryId] = translationEntry.target)];
+                                                return [2 /*return*/, (filteredTranslations[entryId] =
+                                                        translationEntry.target)];
                                             // error
                                             return [2 /*return*/];
                                         }
@@ -194,8 +196,11 @@ function getGT(id) {
                         // Get entry
                         id = getId(id);
                         var dictionaryEntry = (0, getDictionary_1.getDictionaryEntry)(id);
-                        if (dictionaryEntry === undefined || dictionaryEntry === null || // no entry found
-                            (typeof dictionaryEntry === 'object' && !(0, react_1.isValidElement)(dictionaryEntry) && !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
+                        if (dictionaryEntry === undefined ||
+                            dictionaryEntry === null || // no entry found
+                            (typeof dictionaryEntry === 'object' &&
+                                !(0, react_1.isValidElement)(dictionaryEntry) &&
+                                !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
                         ) {
                             console.warn((0, createErrors_1.createNoEntryWarning)(id));
                             return undefined;
@@ -255,7 +260,9 @@ function useElement(id) {
         // Get entry
         var dictionaryEntry = (0, getDictionary_1.getDictionaryEntry)(id);
         if (dictionaryEntry === undefined || // no entry found
-            (typeof dictionaryEntry === 'object' && !(0, react_1.isValidElement)(dictionaryEntry) && !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
+            (typeof dictionaryEntry === 'object' &&
+                !(0, react_1.isValidElement)(dictionaryEntry) &&
+                !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
         ) {
             console.warn((0, createErrors_1.createNoEntryWarning)(id));
             return (0, jsx_runtime_1.jsx)(react_1.default.Fragment, {});

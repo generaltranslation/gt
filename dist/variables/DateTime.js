@@ -45,7 +45,7 @@ function DateTime(_a) {
         value = children;
     }
     if (!value) {
-        return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-variable-name": name, "data-_gt-variable-type": "date", "data-_gt-variable-options": options, style: { display: 'contents' } }));
+        return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-variable-name": name, "data-_gt-variable-type": 'date', "data-_gt-variable-options": options, style: { display: 'contents' } }));
     }
     // Convert value to a Date object if it's a Unix time, string, or Date object
     var dateValue;
@@ -59,13 +59,14 @@ function DateTime(_a) {
         dateValue = value;
     }
     // Format the date according to the locale and options
-    var dateString = dateValue ? (0, generaltranslation_1.formatDateTime)({ value: dateValue, locales: locales, options: options }) : '';
+    var dateString = dateValue
+        ? (0, generaltranslation_1.formatDateTime)({ value: dateValue, locales: locales, options: options })
+        : '';
     var formattedValue = dateString.replace(/[\u200F\u202B\u202E]/g, '');
     // Render the formatted date within a span element
-    return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-variable-name": name, "data-_gt-variable-type": "date", "data-_gt-variable-options": JSON.stringify(options), "data-_gt-unformatted-value": isValidDate(dateValue) ? dateValue : undefined, style: { display: 'contents' }, suppressHydrationWarning: true, children: formattedValue }));
+    return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-variable-name": name, "data-_gt-variable-type": 'date', "data-_gt-variable-options": JSON.stringify(options), "data-_gt-unformatted-value": isValidDate(dateValue) ? dateValue : undefined, style: { display: 'contents' }, suppressHydrationWarning: true, children: formattedValue }));
 }
-;
-DateTime.gtTransformation = "variable-datetime";
+DateTime.gtTransformation = 'variable-datetime';
 exports.default = DateTime;
 /**
  * Checks if the input is a valid date object or a string that can be converted to a date.

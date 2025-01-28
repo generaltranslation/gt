@@ -100,7 +100,10 @@ var I18NConfiguration = /** @class */ (function () {
             throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
         }
         // Render method
-        this.renderSettings = __assign({ method: renderSettings.method }, ((renderSettings.timeout !== undefined || internal_1.defaultRenderSettings.timeout !== undefined) && { timeout: renderSettings.timeout || internal_1.defaultRenderSettings.timeout }));
+        this.renderSettings = __assign({ method: renderSettings.method }, ((renderSettings.timeout !== undefined ||
+            internal_1.defaultRenderSettings.timeout !== undefined) && {
+            timeout: renderSettings.timeout || internal_1.defaultRenderSettings.timeout,
+        }));
         // Other metadata
         this.metadata = __assign(__assign(__assign({ sourceLocale: this.defaultLocale }, (this.renderSettings.timeout && {
             timeout: this.renderSettings.timeout - batchInterval,
@@ -158,9 +161,7 @@ var I18NConfiguration = /** @class */ (function () {
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
      */
     I18NConfiguration.prototype.translationEnabled = function () {
-        return this.projectId &&
-            this.runtimeUrl &&
-            (this.apiKey || this.devApiKey)
+        return this.projectId && this.runtimeUrl && (this.apiKey || this.devApiKey)
             ? true
             : false;
     };
@@ -217,7 +218,8 @@ var I18NConfiguration = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, ((_a = this._remoteTranslationsManager) === null || _a === void 0 ? void 0 : _a.getCachedTranslations(locale))];
-                    case 1: return [2 /*return*/, ((_b.sent()) || {})];
+                    case 1: return [2 /*return*/, ((_b.sent()) ||
+                            {})];
                 }
             });
         });
@@ -311,7 +313,9 @@ var I18NConfiguration = /** @class */ (function () {
                                 switch (_a.label) {
                                     case 0:
                                         controller = new AbortController();
-                                        timeoutId = (timeout === undefined) ? undefined : setTimeout(function () { return controller.abort(); }, timeout);
+                                        timeoutId = timeout === undefined
+                                            ? undefined
+                                            : setTimeout(function () { return controller.abort(); }, timeout);
                                         _a.label = 1;
                                     case 1:
                                         _a.trys.push([1, 3, 4, 5]);
@@ -368,7 +372,8 @@ var I18NConfiguration = /** @class */ (function () {
                                         _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, id, { state: 'success', target: result.translation });
                                     }
                                     // check for mismatching ids or hashes
-                                    if (((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) !== id || ((_b = result === null || result === void 0 ? void 0 : result.reference) === null || _b === void 0 ? void 0 : _b.key) !== ((_c = request.metadata) === null || _c === void 0 ? void 0 : _c.hash)) {
+                                    if (((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) !== id ||
+                                        ((_b = result === null || result === void 0 ? void 0 : result.reference) === null || _b === void 0 ? void 0 : _b.key) !== ((_c = request.metadata) === null || _c === void 0 ? void 0 : _c.hash)) {
                                         if (!request.metadata.id) {
                                             console.warn((0, createErrors_1.createMismatchingHashWarning)(request.metadata.hash, (_d = result.reference) === null || _d === void 0 ? void 0 : _d.key));
                                         }
@@ -385,7 +390,11 @@ var I18NConfiguration = /** @class */ (function () {
                             }
                             // record translation error
                             if (_this._remoteTranslationsManager) {
-                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, id, { state: 'error', error: result.error || 'Translation failed.', code: result.code || 500 });
+                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, id, {
+                                    state: 'error',
+                                    error: result.error || 'Translation failed.',
+                                    code: result.code || 500,
+                                });
                             }
                             return request.reject(new types_1.GTTranslationError(errorMsg, errorCode));
                         });

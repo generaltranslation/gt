@@ -61,7 +61,7 @@ var defaultInitGTProps = {
     }); }); },
     maxConcurrentRequests: 100,
     maxBatchSize: 25,
-    batchInterval: 50
+    batchInterval: 50,
 };
 exports.default = defaultInitGTProps;
 //# sourceMappingURL=defaultInitGTProps.js.map

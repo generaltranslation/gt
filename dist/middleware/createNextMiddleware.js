@@ -32,7 +32,9 @@ function extractLocale(pathname) {
  */
 function createNextMiddleware(_a) {
     var _b = _a === void 0 ? {
-        defaultLocale: internal_1.libraryDefaultLocale, localeRouting: true, prefixDefaultLocale: false
+        defaultLocale: internal_1.libraryDefaultLocale,
+        localeRouting: true,
+        prefixDefaultLocale: false,
     } : _a, _c = _b.defaultLocale, defaultLocale = _c === void 0 ? internal_1.libraryDefaultLocale : _c, _d = _b.locales, locales = _d === void 0 ? (0, supported_locales_1.listSupportedLocales)() : _d, _e = _b.localeRouting, localeRouting = _e === void 0 ? true : _e, _f = _b.prefixDefaultLocale, prefixDefaultLocale = _f === void 0 ? false : _f;
     if (!(0, generaltranslation_1.isValidLocale)(defaultLocale))
         throw new Error("gt-next middleware: defaultLocale \"".concat(defaultLocale, "\" is not a valid locale."));
@@ -41,18 +43,18 @@ function createNextMiddleware(_a) {
         console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));
     var approvedLocales = locales;
     /**
-    * Processes the incoming request to determine the user's locale and sets a locale cookie.
-    * Optionally redirects the user based on the locale if locale-based routing is enabled.
-    *
-    * - Checks if the request URL contains a locale.
-    * - Falls back to the referer URL for locale if needed.
-    * - If no locale is found in the URL or referer, it checks the 'Accept-Language' header.
-    * - Sets a cookie with the detected or default locale.
-    * - Redirects to the correct locale route if locale routing is enabled.
-    *
-    * @param {any} req - The incoming request object, containing URL and headers.
-    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
-    */
+     * Processes the incoming request to determine the user's locale and sets a locale cookie.
+     * Optionally redirects the user based on the locale if locale-based routing is enabled.
+     *
+     * - Checks if the request URL contains a locale.
+     * - Falls back to the referer URL for locale if needed.
+     * - If no locale is found in the URL or referer, it checks the 'Accept-Language' header.
+     * - Sets a cookie with the detected or default locale.
+     * - Redirects to the correct locale route if locale routing is enabled.
+     *
+     * @param {any} req - The incoming request object, containing URL and headers.
+     * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
+     */
     function nextMiddleware(req) {
         var _a;
         var headerList = new Headers(req.headers);
@@ -74,7 +76,7 @@ function createNextMiddleware(_a) {
             // If there's no locale, try to get one from the referer
             var referer = headerList.get('referer');
             if (referer && typeof referer === 'string') {
-                var refererLocale = extractLocale((_a = (new URL(referer))) === null || _a === void 0 ? void 0 : _a.pathname);
+                var refererLocale = extractLocale((_a = new URL(referer)) === null || _a === void 0 ? void 0 : _a.pathname);
                 if (refererLocale) {
                     var approvedLocale = (0, generaltranslation_1.determineLocale)(refererLocale, approvedLocales);
                     if (approvedLocale) {
@@ -82,19 +84,19 @@ function createNextMiddleware(_a) {
                         req.nextUrl.pathname = "/".concat(userLocale, "/").concat(pathname);
                         return server_1.NextResponse.redirect(req.nextUrl);
                     }
-                    ;
                 }
             }
         }
         userLocale = (function () {
             var _a, _b;
             /* Removed until preloading can be accurately detected
-            const cookieLocale = req.cookies.get(localeCookieName);
-            if (cookieLocale?.value) {
-                if (isValidLocale(cookieLocale.value))
-                    return standardizeLocale(cookieLocale.value)
-            }*/
-            var acceptedLocales = (_b = (_a = headerList.get('accept-language')) === null || _a === void 0 ? void 0 : _a.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); })) === null || _b === void 0 ? void 0 : _b.filter(function (code) { return (0, generaltranslation_1.isValidLocale)(code); });
+                  const cookieLocale = req.cookies.get(localeCookieName);
+                  if (cookieLocale?.value) {
+                      if (isValidLocale(cookieLocale.value))
+                          return standardizeLocale(cookieLocale.value)
+                  }*/
+            var acceptedLocales = (_b = (_a = headerList
+                .get('accept-language')) === null || _a === void 0 ? void 0 : _a.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); })) === null || _b === void 0 ? void 0 : _b.filter(function (code) { return (0, generaltranslation_1.isValidLocale)(code); });
             if (acceptedLocales && acceptedLocales.length > 0) {
                 var approvedLocale = (0, generaltranslation_1.determineLocale)(acceptedLocales, approvedLocales);
                 if (approvedLocale) {

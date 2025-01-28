@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 /**
  * Middleware factory to create a Next.js middleware for i18n routing and locale detection.
  *
@@ -13,7 +13,7 @@ import { NextResponse } from "next/server";
  * @param {boolean} [config.localeRouting=true] - Flag to enable or disable automatic locale-based routing.
  * @returns {function} - A middleware function that processes the request and response.
  */
-export default function createNextMiddleware({ defaultLocale, locales, localeRouting, prefixDefaultLocale }?: {
+export default function createNextMiddleware({ defaultLocale, locales, localeRouting, prefixDefaultLocale, }?: {
     defaultLocale?: string;
     locales?: string[];
     localeRouting?: boolean;

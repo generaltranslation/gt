@@ -42,9 +42,11 @@ var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
 function Plural(_a) {
     var children = _a.children, n = _a.n, _b = _a.locales, locales = _b === void 0 ? [(0, getI18NConfig_1.default)().getDefaultLocale()] : _b, props = __rest(_a, ["children", "n", "locales"]);
     var generaltranslation = props["data-_gt"], branches = __rest(props, ['data-_gt']);
-    var branch = (typeof n === 'number' ? (0, internal_1.getPluralBranch)(n, locales, branches) : children) || children;
+    var branch = (typeof n === 'number'
+        ? (0, internal_1.getPluralBranch)(n, locales, branches)
+        : children) || children;
     return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-n": n, style: { display: 'contents' }, children: branch }));
 }
-Plural.gtTransformation = "plural";
+Plural.gtTransformation = 'plural';
 exports.default = Plural;
 //# sourceMappingURL=Plural.js.map

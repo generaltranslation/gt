@@ -76,6 +76,7 @@ async function T({
   }
 
   if (isEmptyReactFragment(children)) return <React.Fragment />;
+
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();

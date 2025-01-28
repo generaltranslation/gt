@@ -12,8 +12,8 @@ Object.defineProperty(exports, "T", { enumerable: true, get: function () { retur
 Object.defineProperty(exports, "Branch", { enumerable: true, get: function () { return gt_react_1.Branch; } });
 Object.defineProperty(exports, "Plural", { enumerable: true, get: function () { return gt_react_1.Plural; } });
 function GTProvider(params) {
-    throw new Error("You're attempting to import <GTProvider> on the client. "
-        + "Are you sure you want to do this? It's better to import <GTProvider> in a file not marked 'use client' so that it can fetch translations on the server. "
-        + "If you really need to put <GTProvider> on the client, import <GTProvider> from 'gt-react' instead (discouraged in server-first apps).");
+    throw new Error("You're attempting to import <GTProvider> on the client. " +
+        "Are you sure you want to do this? It's better to import <GTProvider> in a file not marked 'use client' so that it can fetch translations on the server. " +
+        "If you really need to put <GTProvider> on the client, import <GTProvider> from 'gt-react' instead (discouraged in server-first apps).");
 }
 //# sourceMappingURL=index.client.js.map

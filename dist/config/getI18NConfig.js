@@ -38,10 +38,10 @@ function getI18NConfig() {
         var devApiKey = void 0;
         var envApiKey = process.env.GT_API_KEY || '';
         var apiKeyType = (_a = envApiKey === null || envApiKey === void 0 ? void 0 : envApiKey.split('-')) === null || _a === void 0 ? void 0 : _a[1];
-        if (apiKeyType === "api") {
+        if (apiKeyType === 'api') {
             apiKey = envApiKey;
         }
-        else if (apiKeyType === "dev") {
+        else if (apiKeyType === 'dev') {
             devApiKey = envApiKey;
         }
         if (!apiKey && !devApiKey)
@@ -50,5 +50,4 @@ function getI18NConfig() {
     }
     return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
 }
-;
 //# sourceMappingURL=getI18NConfig.js.map

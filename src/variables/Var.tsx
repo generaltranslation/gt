@@ -16,36 +16,35 @@
  * @param {any} [value] - The default value to be displayed if `children` is not provided.
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
-function Var({ 
-    children, 
-    name, 
-    value, 
-    ...props 
+function Var({
+  children,
+  name,
+  value,
+  ...props
 }: {
-    children?: any;
-    name?: string;
-    value?: any;
-    'data-_gt'?: any
+  children?: any;
+  name?: string;
+  value?: any;
+  'data-_gt'?: any;
 }): React.JSX.Element {
-    
-    const { "data-_gt": generaltranslation } = props;
-    
-    if (typeof children !== 'undefined' && typeof value === 'undefined') value = children;
+  const { 'data-_gt': generaltranslation } = props;
 
-    return (
-        <span 
-            data-_gt={generaltranslation} 
-            data-_gt-variable-name={name} 
-            data-_gt-variable-type={"variable"}
-            style={{ display: 'contents' }}
-            suppressHydrationWarning
-        >
-            {value}
-        </span>
-    );
+  if (typeof children !== 'undefined' && typeof value === 'undefined')
+    value = children;
 
-};
+  return (
+    <span
+      data-_gt={generaltranslation}
+      data-_gt-variable-name={name}
+      data-_gt-variable-type={'variable'}
+      style={{ display: 'contents' }}
+      suppressHydrationWarning
+    >
+      {value}
+    </span>
+  );
+}
 
-Var.gtTransformation = "variable-variable"; // keep this because Var is imported in other functions
+Var.gtTransformation = 'variable-variable'; // keep this because Var is imported in other functions
 
 export default Var;

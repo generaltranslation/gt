@@ -1,4 +1,4 @@
-import { RenderMethod } from "gt-react/internal";
+import { RenderMethod } from 'gt-react/internal';
 type InitGTProps = {
     remoteCache?: boolean;
     runtimeTranslation?: boolean;

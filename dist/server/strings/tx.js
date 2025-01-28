@@ -103,7 +103,7 @@ function tx(content_1) {
                     // No content to translate
                     if (!content) {
                         // Reject empty strings
-                        if (content === "") {
+                        if (content === '') {
                             console.warn("gt-next warn: Empty string found in tx() ".concat(options.id && "with id: ".concat(options.id)));
                             "";
                         }

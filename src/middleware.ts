@@ -1,4 +1,2 @@
-import createNextMiddleware from "./middleware/createNextMiddleware";
-export {
-    createNextMiddleware
-};
+import createNextMiddleware from './middleware/createNextMiddleware';
+export { createNextMiddleware };

@@ -56,9 +56,7 @@ function getNextLocale() {
         if (defaultLocale === void 0) { defaultLocale = ''; }
         return __generator(this, function (_b) {
             switch (_b.label) {
-                case 0: return [4 /*yield*/, Promise.all([
-                        (0, headers_1.headers)(), (0, headers_2.cookies)()
-                    ])];
+                case 0: return [4 /*yield*/, Promise.all([(0, headers_1.headers)(), (0, headers_2.cookies)()])];
                 case 1:
                     _a = _b.sent(), headersList = _a[0], cookieStore = _a[1];
                     userLocale = (function () {

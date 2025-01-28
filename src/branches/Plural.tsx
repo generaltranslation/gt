@@ -1,5 +1,5 @@
-import { getPluralBranch } from "gt-react/internal";
-import getI18NConfig from "../config/getI18NConfig";
+import { getPluralBranch } from 'gt-react/internal';
+import getI18NConfig from '../config/getI18NConfig';
 
 /**
  * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).
@@ -24,29 +24,33 @@ import getI18NConfig from "../config/getI18NConfig";
  * @throws {Error} If `n` is not provided or not a valid number.
  */
 function Plural({
-    children, n, 
-    locales = [getI18NConfig().getDefaultLocale()], 
-    ...props
+  children,
+  n,
+  locales = [getI18NConfig().getDefaultLocale()],
+  ...props
 }: {
-    children?: any;
-    n?: number;
-    'data-_gt'?: any
-    locales?: string[]
-    [key: string]: any
+  children?: any;
+  n?: number;
+  'data-_gt'?: any;
+  locales?: string[];
+  [key: string]: any;
 }) {
-    const { 'data-_gt': generaltranslation, ...branches } = props;
-    const branch = (typeof n === 'number' ? getPluralBranch(n, locales, branches) : children) || children;
-    return (
-        <span 
-            data-_gt={generaltranslation} 
-            data-_gt-n={n}
-            style={{ display: 'contents' }}
-        >
-            {branch}
-        </span>
-    );
+  const { 'data-_gt': generaltranslation, ...branches } = props;
+  const branch =
+    (typeof n === 'number'
+      ? getPluralBranch(n, locales, branches)
+      : children) || children;
+  return (
+    <span
+      data-_gt={generaltranslation}
+      data-_gt-n={n}
+      style={{ display: 'contents' }}
+    >
+      {branch}
+    </span>
+  );
 }
 
-Plural.gtTransformation = "plural";
+Plural.gtTransformation = 'plural';
 
 export default Plural;

@@ -3,9 +3,13 @@ import fs from 'fs';
 import { NextConfig } from 'next';
 import defaultInitGTProps from './config/props/defaultInitGTProps';
 import InitGTProps from './config/props/InitGTProps';
-import { APIKeyMissingError, createUnsupportedLocalesWarning, projectIdMissingError } from './errors/createErrors';
+import {
+  APIKeyMissingError,
+  createUnsupportedLocalesWarning,
+  projectIdMissingError,
+} from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import { defaultRenderSettings } from "gt-react/internal";
+import { defaultRenderSettings } from 'gt-react/internal';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -68,7 +72,6 @@ export function initGT({
   batchInterval = defaultInitGTProps.batchInterval,
   ...metadata
 }: InitGTProps = defaultInitGTProps) {
-  
   // Load from config file if it's a string and exists
   let loadedConfig: Partial<InitGTProps> = {};
   try {
@@ -104,8 +107,8 @@ export function initGT({
       maxConcurrentRequests,
       maxBatchSize,
       batchInterval,
-      ...metadata
-    }
+      ...metadata,
+    },
   };
 
   // Destructure final config
@@ -155,8 +158,11 @@ export function initGT({
     finalRuntimeUrl === defaultInitGTProps.runtimeUrl ||
     finalCacheUrl === defaultInitGTProps.cacheUrl
   ) {
-    const warningLocales = (finalLocales || defaultInitGTProps.locales).filter(locale => !getSupportedLocale(locale));
-    if (warningLocales.length) console.warn(createUnsupportedLocalesWarning(warningLocales));
+    const warningLocales = (finalLocales || defaultInitGTProps.locales).filter(
+      (locale) => !getSupportedLocale(locale)
+    );
+    if (warningLocales.length)
+      console.warn(createUnsupportedLocalesWarning(warningLocales));
   }
 
   // Store config params in environment variable to allow for global access (in some cases)
