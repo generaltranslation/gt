@@ -193,6 +193,7 @@ function handleJsxElement(rootNode, options, isMeaningful) {
 function wrapWithT(node, options) {
     const TComponentName = options.TComponent || 'T';
     const uniqueId = `${options.idPrefix}.${options.idCount}`;
+    options.modified = true;
     options.idCount++;
     if (!options.usedImports.includes(TComponentName)) {
         options.usedImports.push(TComponentName);
@@ -201,6 +202,7 @@ function wrapWithT(node, options) {
 }
 function wrapWithVar(node, options) {
     const VarComponentName = options.VarComponent || 'Var';
+    options.modified = true;
     if (!options.usedImports.includes(VarComponentName)) {
         options.usedImports.push(VarComponentName);
     }

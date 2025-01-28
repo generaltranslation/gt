@@ -253,7 +253,6 @@ commander_1.program
     .command('wrap')
     .description('Wraps all JSX elements in the src directory with a <T> tag, with unique ids')
     .option('--src <path>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
-    .option('--options <path>', 'Filepath to options JSON file, by default gt.config.json', './gt.config.json')
     .option('--framework <framework>', 'Framework to use for wrapping JSX elements, by default next', 'next')
     .action((options) => __awaiter(void 0, void 0, void 0, function* () {
     (0, console_1.displayAsciiTitle)();

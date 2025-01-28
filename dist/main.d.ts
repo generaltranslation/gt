@@ -22,5 +22,9 @@ export type Options = {
     retranslate: boolean;
     ignoreErrors: boolean;
     dryRun: boolean;
+};
+export type WrapOptions = {
+    jsconfig?: string;
+    src?: string[];
     framework: 'next' | 'react';
 };

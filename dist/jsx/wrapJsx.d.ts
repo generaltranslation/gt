@@ -24,6 +24,7 @@ export declare function wrapJsxElement(node: t.JSXElement | t.JSXExpressionConta
     idPrefix: string;
     idCount: number;
     usedImports: string[];
+    modified: boolean;
 }, isMeaningful: (node: t.Node) => boolean): WrapResult;
 /**
  * Wraps a JSX element with a <T> component and unique id
@@ -38,4 +39,5 @@ export declare function handleJsxElement(rootNode: t.JSXElement | t.JSXExpressio
     VarComponent?: string;
     idPrefix: string;
     idCount: number;
+    modified: boolean;
 }, isMeaningful: (node: t.Node) => boolean): t.JSXElement | t.JSXExpressionContainer;

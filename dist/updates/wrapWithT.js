@@ -60,6 +60,12 @@ function isMeaningful(node) {
     }
     return false;
 }
+const IMPORT_MAP = {
+    T: 'T',
+    Var: 'Var',
+    GTT: 'T',
+    GTVar: 'Var',
+};
 /**
  * Wraps all JSX elements in the src directory with a <T> tag, with unique ids.
  * - Ignores pure strings
@@ -127,38 +133,31 @@ function wrapWithT(options) {
                 continue;
             }
             let modified = false;
-            let needsImport = false;
             let importAlias = { TComponent: 'T', VarComponent: 'Var' };
             // Check existing imports
-            let hasGTImport = false;
-            let hasConflictingImports = false;
+            let initialImports = [];
+            let usedImports = [];
             (0, traverse_1.default)(ast, {
                 ImportDeclaration(path) {
                     const source = path.node.source.value;
                     if (source === 'gt-next' || source === 'gt-react') {
-                        hasGTImport = path.node.specifiers.some((spec) => babel.isImportSpecifier(spec) && spec.local.name === 'T');
+                        initialImports = path.node.specifiers.map((spec) => spec.local.name);
                     }
                     // Check for conflicting imports only if they're not from gt-next/gt-react
                     if (source !== 'gt-next' && source !== 'gt-react') {
                         path.node.specifiers.forEach((spec) => {
                             if (babel.isImportSpecifier(spec)) {
                                 if (spec.local.name === 'T')
-                                    hasConflictingImports = true;
+                                    importAlias.TComponent = 'GTT';
                                 if (spec.local.name === 'Var')
-                                    hasConflictingImports = true;
+                                    importAlias.VarComponent = 'GTVar';
                             }
                         });
                     }
                 },
             });
-            // If we have conflicting imports, use aliases
-            if (hasConflictingImports) {
-                importAlias = { TComponent: 'GTT', VarComponent: 'GTVar' };
-            }
             (0, traverse_1.default)(ast, {
                 JSXElement(path) {
-                    if (modified && !needsImport)
-                        return;
                     // Check if this JSX element has any JSX element ancestors
                     let currentPath = path;
                     while (currentPath.parentPath) {
@@ -169,16 +168,17 @@ function wrapWithT(options) {
                         currentPath = currentPath.parentPath;
                     }
                     // At this point, we're only processing top-level JSX elements
-                    const wrapped = (0, wrapJsx_1.handleJsxElement)(path.node, Object.assign(Object.assign({}, importAlias), { idPrefix: relativePath, idCount: 0, usedImports: [] }), isMeaningful);
+                    const opts = Object.assign(Object.assign({}, importAlias), { idPrefix: relativePath, idCount: 0, usedImports, modified: false });
+                    const wrapped = (0, wrapJsx_1.handleJsxElement)(path.node, opts, isMeaningful);
+                    modified = opts.modified;
                     path.replaceWith(wrapped);
-                    modified = true;
-                    if (!hasGTImport) {
-                        needsImport = true;
-                    }
                     path.skip();
                 },
             });
-            if (modified && needsImport) {
+            if (!modified)
+                continue;
+            let needsImport = usedImports.filter((imp) => !initialImports.includes(imp));
+            if (needsImport.length > 0) {
                 // Check if file uses ESM or CommonJS
                 let isESM = false;
                 (0, traverse_1.default)(ast, {
@@ -195,18 +195,12 @@ function wrapWithT(options) {
                 let importNode;
                 if (isESM) {
                     // ESM import
-                    importNode = babel.importDeclaration([
-                        babel.importSpecifier(babel.identifier(importAlias.TComponent), babel.identifier('T')),
-                        babel.importSpecifier(babel.identifier(importAlias.VarComponent), babel.identifier('Var')),
-                    ], babel.stringLiteral(framework === 'next' ? 'gt-next' : 'gt-react'));
+                    importNode = babel.importDeclaration(needsImport.map((imp) => babel.importSpecifier(babel.identifier(IMPORT_MAP[imp]), babel.identifier(imp))), babel.stringLiteral(framework === 'next' ? 'gt-next' : 'gt-react'));
                 }
                 else {
                     // CommonJS require
                     importNode = babel.variableDeclaration('const', [
-                        babel.variableDeclarator(babel.objectPattern([
-                            babel.objectProperty(babel.identifier('T'), babel.identifier(importAlias.TComponent), false, importAlias.TComponent === 'T'),
-                            babel.objectProperty(babel.identifier('Var'), babel.identifier(importAlias.VarComponent), false, importAlias.VarComponent === 'Var'),
-                        ]), babel.callExpression(babel.identifier('require'), [
+                        babel.variableDeclarator(babel.objectPattern(needsImport.map((imp) => babel.objectProperty(babel.identifier(imp), babel.identifier(IMPORT_MAP[imp]), false, IMPORT_MAP[imp] === imp))), babel.callExpression(babel.identifier('require'), [
                             babel.stringLiteral(framework === 'next' ? 'gt-next' : 'gt-react'),
                         ])),
                     ]);
@@ -228,27 +222,25 @@ function wrapWithT(options) {
                 }
                 ast.program.body.splice(insertIndex, 0, importNode);
             }
-            if (modified) {
-                try {
-                    const output = (0, generator_1.default)(ast, {
-                        retainLines: false,
-                        retainFunctionParens: true,
-                        comments: true,
-                        compact: 'auto',
-                    }, code);
-                    // Post-process the output to fix import spacing
-                    let processedCode = output.code;
-                    if (needsImport) {
-                        // Add newline after the comment only
-                        processedCode = processedCode.replace(/((?:import\s*{\s*(?:GTT|T)\s*,\s*(?:GTVar|Var)\s*}\s*from|const\s*{\s*(?:GTT|T)\s*,\s*(?:GTVar|Var)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)['"];?\s*\/\/\s*Auto-generated by GT-CLI)/, '\n$1\n');
-                    }
-                    // Write the modified code back to the file
-                    fs_1.default.writeFileSync(file, processedCode);
+            try {
+                const output = (0, generator_1.default)(ast, {
+                    retainLines: false,
+                    retainFunctionParens: true,
+                    comments: true,
+                    compact: 'auto',
+                }, code);
+                // Post-process the output to fix import spacing
+                let processedCode = output.code;
+                if (needsImport.length > 0) {
+                    // Add newline after the comment only
+                    processedCode = processedCode.replace(/((?:import\s*{\s*(?:GTT|T)\s*,\s*(?:GTVar|Var)\s*}\s*from|const\s*{\s*(?:GTT|T)\s*,\s*(?:GTVar|Var)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)['"];?\s*\/\/\s*Auto-generated by GT-CLI)/, '\n$1\n');
                 }
-                catch (error) {
-                    console.error(`Error writing file ${file}:`, error);
-                    errors.push(`Failed to write ${file}: ${error}`);
-                }
+                // Write the modified code back to the file
+                fs_1.default.writeFileSync(file, processedCode);
+            }
+            catch (error) {
+                console.error(`Error writing file ${file}:`, error);
+                errors.push(`Failed to write ${file}: ${error}`);
             }
         }
         return { updates, errors };

@@ -21,6 +21,7 @@ function wrapJsxExpression(
     idPrefix: string;
     idCount: number;
     usedImports: string[];
+    modified: boolean;
   },
   isMeaningful: (node: t.Node) => boolean
 ): WrapResult {
@@ -157,6 +158,7 @@ export function wrapJsxElement(
     idPrefix: string;
     idCount: number;
     usedImports: string[];
+    modified: boolean;
   },
   isMeaningful: (node: t.Node) => boolean
 ): WrapResult {
@@ -226,6 +228,7 @@ export function handleJsxElement(
     VarComponent?: string;
     idPrefix: string;
     idCount: number;
+    modified: boolean;
   },
   isMeaningful: (node: t.Node) => boolean
 ): t.JSXElement | t.JSXExpressionContainer {
@@ -247,10 +250,12 @@ function wrapWithT(
     idPrefix: string;
     idCount: number;
     usedImports: string[];
+    modified: boolean;
   }
 ) {
   const TComponentName = options.TComponent || 'T';
   const uniqueId = `${options.idPrefix}.${options.idCount}`;
+  options.modified = true;
   options.idCount++;
   if (!options.usedImports.includes(TComponentName)) {
     options.usedImports.push(TComponentName);
@@ -273,9 +278,11 @@ function wrapWithVar(
     TComponent?: string;
     VarComponent?: string;
     usedImports: string[];
+    modified: boolean;
   }
 ) {
   const VarComponentName = options.VarComponent || 'Var';
+  options.modified = true;
   if (!options.usedImports.includes(VarComponentName)) {
     options.usedImports.push(VarComponentName);
   }

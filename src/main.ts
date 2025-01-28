@@ -51,6 +51,11 @@ export type Options = {
   retranslate: boolean;
   ignoreErrors: boolean;
   dryRun: boolean;
+};
+
+export type WrapOptions = {
+  jsconfig?: string;
+  src?: string[];
   framework: 'next' | 'react';
 };
 
@@ -357,16 +362,11 @@ program
     findFilepaths(['./src', './app', './pages', './components'])
   )
   .option(
-    '--options <path>',
-    'Filepath to options JSON file, by default gt.config.json',
-    './gt.config.json'
-  )
-  .option(
     '--framework <framework>',
     'Framework to use for wrapping JSX elements, by default next',
     'next'
   )
-  .action(async (options: Options) => {
+  .action(async (options: WrapOptions) => {
     displayAsciiTitle();
     displayInitializingText();
 
