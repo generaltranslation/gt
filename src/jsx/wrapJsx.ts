@@ -30,7 +30,14 @@ function wrapJsxExpression(
 
   // Handle JSX Element directly, no need to wrap with Var
   if (t.isJSXElement(expression)) {
-    return wrapJsxElement(expression, options, isMeaningful);
+    const result = wrapJsxElement(expression, options, isMeaningful);
+    // re-wrap the result in a JSXExpressionContainer
+    return {
+      node: t.isJSXElement(result.node)
+        ? t.jsxExpressionContainer(result.node)
+        : result.node,
+      needsWrapping: result.needsWrapping,
+    };
   }
   // Handle conditional expressions (ternary)
   else if (t.isConditionalExpression(expression)) {
@@ -40,10 +47,9 @@ function wrapJsxExpression(
         options,
         isMeaningful
       );
-      if (consequentResult.needsWrapping) {
-        expression.consequent = wrapWithT(consequentResult.node, options);
-        wrappedInT = true;
-      }
+      console.log('consequentResult', consequentResult);
+      expression.consequent = wrapWithT(consequentResult.node, options);
+      wrappedInT = true;
     }
     if (t.isJSXElement(expression.alternate)) {
       const alternateResult = wrapJsxElement(
@@ -51,17 +57,17 @@ function wrapJsxExpression(
         options,
         isMeaningful
       );
-      if (alternateResult.needsWrapping) {
-        expression.alternate = wrapWithT(alternateResult.node, options);
-        wrappedInT = true;
-      }
+      console.log('alternateResult', alternateResult);
+      expression.alternate = wrapWithT(alternateResult.node, options);
+      wrappedInT = true;
     }
   }
   // Handle logical expressions (&& and ||)
   else if (t.isLogicalExpression(expression)) {
     if (t.isJSXElement(expression.left)) {
       const leftResult = wrapJsxElement(expression.left, options, isMeaningful);
-      if (leftResult.needsWrapping && t.isJSXElement(leftResult.node)) {
+      console.log('leftResult', leftResult);
+      if (t.isJSXElement(leftResult.node)) {
         expression.left = wrapWithT(leftResult.node, options);
         wrappedInT = true;
       }
@@ -72,6 +78,7 @@ function wrapJsxExpression(
         options,
         isMeaningful
       );
+      console.log('leftResult', leftResult);
       if (
         t.isJSXExpressionContainer(leftResult.node) &&
         t.isExpression(leftResult.node.expression)
@@ -86,7 +93,8 @@ function wrapJsxExpression(
         options,
         isMeaningful
       );
-      if (rightResult.needsWrapping && t.isJSXElement(rightResult.node)) {
+      console.log('rightResult', rightResult);
+      if (t.isJSXElement(rightResult.node)) {
         expression.right = wrapWithT(rightResult.node, options);
         wrappedInT = true;
       }
@@ -102,27 +110,6 @@ function wrapJsxExpression(
         t.isExpression(rightResult.node.expression)
       ) {
         expression.right = rightResult.node.expression;
-      }
-    }
-  }
-  // Handle binary expressions (+)
-  else if (t.isBinaryExpression(expression)) {
-    if (t.isJSXElement(expression.left)) {
-      const leftResult = wrapJsxElement(expression.left, options, isMeaningful);
-      if (leftResult.needsWrapping && t.isJSXElement(leftResult.node)) {
-        expression.left = wrapWithT(leftResult.node, options);
-        wrappedInT = true;
-      }
-    }
-    if (t.isJSXElement(expression.right)) {
-      const rightResult = wrapJsxElement(
-        expression.right,
-        options,
-        isMeaningful
-      );
-      if (rightResult.needsWrapping && t.isJSXElement(rightResult.node)) {
-        expression.right = wrapWithT(rightResult.node, options);
-        wrappedInT = true;
       }
     }
   }
