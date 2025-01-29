@@ -20,6 +20,7 @@ import { noTranslationsError } from './console/errors';
 import { defaultBaseUrl } from 'generaltranslation/internal';
 import chalk from 'chalk';
 import scanForContent from './updates/scanForContent';
+import { confirm } from '@inquirer/prompts';
 
 dotenv.config({ path: '.env' });
 dotenv.config({ path: '.env.local', override: true });
@@ -370,6 +371,19 @@ program
     displayAsciiTitle();
     displayInitializingText();
 
+    // Ask user for confirmation using inquirer
+    const answer = await confirm({
+      message: chalk.yellow(
+        '⚠️  Warning: This operation will modify your source files!\n   Make sure you have committed or stashed your current changes.\n\n   Do you want to continue?'
+      ),
+      default: true,
+    });
+
+    if (!answer) {
+      console.log(chalk.gray('\nOperation cancelled.'));
+      process.exit(0);
+    }
+
     // Determine if the project is a Next.js project by checking dependencies
     const packageJson = loadJSON('./package.json');
     if (packageJson?.dependencies?.next) {
@@ -379,7 +393,25 @@ program
     }
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    await scanForContent(options);
+    const { errors, filesUpdated } = await scanForContent(options);
+
+    if (errors.length > 0) {
+      console.log(chalk.red('\n✗ Failed to write files:\n'));
+      console.log(errors.join('\n'));
+    }
+
+    console.log(
+      chalk.green(
+        `\n✓ Success! Added <T> tags and updated ${chalk.bold(
+          filesUpdated.length
+        )} files:\n`
+      )
+    );
+    if (filesUpdated.length > 0) {
+      console.log(filesUpdated.join('\n'));
+      console.log();
+      console.log(chalk.green('Please verify the changes before committing.'));
+    }
   });
 
 program.parse();

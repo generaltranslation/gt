@@ -69,6 +69,16 @@ function removeLangAttribute(element: t.JSXOpeningElement): void {
   }
 }
 
+// Add this helper function
+function hasGTProviderChild(children: t.JSXElement['children']): boolean {
+  return children.some(
+    (child) =>
+      t.isJSXElement(child) &&
+      t.isJSXIdentifier(child.openingElement.name) &&
+      child.openingElement.name.name === 'GTProvider'
+  );
+}
+
 /**
  * Wraps all JSX elements in the src directory with a <T> tag, with unique ids.
  * - Ignores pure strings
@@ -78,8 +88,7 @@ function removeLangAttribute(element: t.JSXOpeningElement): void {
  */
 export default async function scanForContent(
   options: WrapOptions
-): Promise<{ updates: Updates; errors: string[] }> {
-  const updates: Updates = [];
+): Promise<{ errors: string[]; filesUpdated: string[] }> {
   const errors: string[] = [];
   const srcDirectory = options.src || ['./'];
 
@@ -118,7 +127,7 @@ export default async function scanForContent(
   }
 
   const files = srcDirectory.flatMap((dir) => getFiles(dir));
-
+  const filesUpdated = [];
   for (const file of files) {
     const code = fs.readFileSync(file, 'utf8');
 
@@ -149,7 +158,6 @@ export default async function scanForContent(
 
     let modified = false;
     let importAlias = { TComponent: 'T', VarComponent: 'Var' };
-    let needsGTProvider = false;
 
     // Check existing imports
     let initialImports: string[] = [];
@@ -184,6 +192,11 @@ export default async function scanForContent(
       JSXElement(path) {
         // Wrap GTProvider around <html> tags in Next.js
         if (framework === 'next' && isHtmlElement(path.node.openingElement)) {
+          // Skip if already has GTProvider
+          if (hasGTProviderChild(path.node.children)) {
+            return;
+          }
+
           // Remove static lang attribute if present
           removeLangAttribute(path.node.openingElement);
 
@@ -321,11 +334,12 @@ export default async function scanForContent(
 
       // Write the modified code back to the file
       fs.writeFileSync(file, processedCode);
+      filesUpdated.push(file);
     } catch (error) {
       console.error(`Error writing file ${file}:`, error);
       errors.push(`Failed to write ${file}: ${error}`);
     }
   }
 
-  return { updates, errors };
+  return { errors, filesUpdated };
 }

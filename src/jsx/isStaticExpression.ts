@@ -70,3 +70,18 @@ export function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
   // Not a static expression
   return { isStatic: false };
 }
+
+export function isStaticValue(
+  expr: t.Expression | t.JSXEmptyExpression
+): boolean {
+  if (t.isStringLiteral(expr)) {
+    return true;
+  }
+  if (t.isNumericLiteral(expr)) {
+    return true;
+  }
+  if (t.isTemplateLiteral(expr)) {
+    return true;
+  }
+  return false;
+}

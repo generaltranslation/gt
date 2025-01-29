@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isStaticExpression = isStaticExpression;
+exports.isStaticValue = isStaticValue;
 const t = __importStar(require("@babel/types"));
 /**
  * Checks if an expression is static (does not contain any variables which could change at runtime).
@@ -89,4 +90,16 @@ function isStaticExpression(expr) {
     }
     // Not a static expression
     return { isStatic: false };
+}
+function isStaticValue(expr) {
+    if (t.isStringLiteral(expr)) {
+        return true;
+    }
+    if (t.isNumericLiteral(expr)) {
+        return true;
+    }
+    if (t.isTemplateLiteral(expr)) {
+        return true;
+    }
+    return false;
 }

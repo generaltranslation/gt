@@ -72,6 +72,7 @@ const errors_1 = require("./console/errors");
 const internal_1 = require("generaltranslation/internal");
 const chalk_1 = __importDefault(require("chalk"));
 const scanForContent_1 = __importDefault(require("./updates/scanForContent"));
+const prompts_1 = require("@inquirer/prompts");
 dotenv_1.default.config({ path: '.env' });
 dotenv_1.default.config({ path: '.env.local', override: true });
 commander_1.program
@@ -258,6 +259,15 @@ commander_1.program
     var _a;
     (0, console_1.displayAsciiTitle)();
     (0, console_1.displayInitializingText)();
+    // Ask user for confirmation using inquirer
+    const answer = yield (0, prompts_1.confirm)({
+        message: chalk_1.default.yellow('⚠️  Warning: This operation will modify your source files!\n   Make sure you have committed or stashed your currentchanges.\n\n   Do you want to continue?'),
+        default: true,
+    });
+    if (!answer) {
+        console.log(chalk_1.default.gray('\nOperation cancelled.'));
+        process.exit(0);
+    }
     // Determine if the project is a Next.js project by checking dependencies
     const packageJson = (0, loadJSON_1.default)('./package.json');
     if ((_a = packageJson === null || packageJson === void 0 ? void 0 : packageJson.dependencies) === null || _a === void 0 ? void 0 : _a.next) {
@@ -267,6 +277,16 @@ commander_1.program
         options.framework = 'react';
     }
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    yield (0, scanForContent_1.default)(options);
+    const { errors, filesUpdated } = yield (0, scanForContent_1.default)(options);
+    if (errors.length > 0) {
+        console.log(chalk_1.default.red('\n✗ Failed to write files:\n'));
+        console.log(errors.join('\n'));
+    }
+    console.log(chalk_1.default.green(`\n✓ Success! Added <T> tags and updated ${chalk_1.default.bold(filesUpdated.length)} files:\n`));
+    if (filesUpdated.length > 0) {
+        console.log(filesUpdated.join('\n'));
+        console.log();
+        console.log(chalk_1.default.green('Please verify the changes before committing.'));
+    }
 }));
 commander_1.program.parse();

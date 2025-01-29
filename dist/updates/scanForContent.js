@@ -103,6 +103,12 @@ function removeLangAttribute(element) {
         element.attributes.splice(langAttrIndex, 1);
     }
 }
+// Add this helper function
+function hasGTProviderChild(children) {
+    return children.some((child) => t.isJSXElement(child) &&
+        t.isJSXIdentifier(child.openingElement.name) &&
+        child.openingElement.name.name === 'GTProvider');
+}
 /**
  * Wraps all JSX elements in the src directory with a <T> tag, with unique ids.
  * - Ignores pure strings
@@ -112,7 +118,6 @@ function removeLangAttribute(element) {
  */
 function scanForContent(options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const updates = [];
         const errors = [];
         const srcDirectory = options.src || ['./'];
         // Define the file extensions to look for
@@ -145,6 +150,7 @@ function scanForContent(options) {
             return files;
         }
         const files = srcDirectory.flatMap((dir) => getFiles(dir));
+        const filesUpdated = [];
         for (const file of files) {
             const code = fs_1.default.readFileSync(file, 'utf8');
             // Create relative path from src directory and remove extension
@@ -171,7 +177,6 @@ function scanForContent(options) {
             }
             let modified = false;
             let importAlias = { TComponent: 'T', VarComponent: 'Var' };
-            let needsGTProvider = false;
             // Check existing imports
             let initialImports = [];
             let usedImports = [];
@@ -206,6 +211,10 @@ function scanForContent(options) {
                 JSXElement(path) {
                     // Wrap GTProvider around <html> tags in Next.js
                     if (framework === 'next' && isHtmlElement(path.node.openingElement)) {
+                        // Skip if already has GTProvider
+                        if (hasGTProviderChild(path.node.children)) {
+                            return;
+                        }
                         // Remove static lang attribute if present
                         removeLangAttribute(path.node.openingElement);
                         const htmlChildren = path.node.children;
@@ -291,12 +300,13 @@ function scanForContent(options) {
                 }
                 // Write the modified code back to the file
                 fs_1.default.writeFileSync(file, processedCode);
+                filesUpdated.push(file);
             }
             catch (error) {
                 console.error(`Error writing file ${file}:`, error);
                 errors.push(`Failed to write ${file}: ${error}`);
             }
         }
-        return { updates, errors };
+        return { errors, filesUpdated };
     });
 }

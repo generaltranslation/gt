@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { isStaticExpression } from './isStaticExpression';
+import { isStaticExpression, isStaticValue } from './isStaticExpression';
 import generate from '@babel/generator';
 /**
  * Recursively wraps a JSX element with a <T> component and unique id
@@ -81,7 +81,10 @@ function wrapJsxExpression(
       } else {
         expression.consequent = wrapped;
       }
-    } else if (t.isConditionalExpression(consequent)) {
+    } else if (
+      t.isConditionalExpression(consequent) ||
+      t.isLogicalExpression(consequent)
+    ) {
       // Recursively handle nested ternary in consequent
       const consequentResult = wrapJsxExpression(
         t.jsxExpressionContainer(consequent),
@@ -101,6 +104,18 @@ function wrapJsxExpression(
           expression.consequent.expression = consequentResult.node.expression;
         } else {
           expression.consequent = consequentResult.node.expression;
+        }
+      }
+    } else {
+      if (isStaticValue(consequent)) {
+        hasMeaningfulContent = true;
+        const wrapped = wrapExpressionWithT(consequent, options, mark);
+        wrappedInT = true;
+        // Re-insert into parenthesized expression if necessary
+        if (t.isParenthesizedExpression(expression.consequent)) {
+          expression.consequent.expression = wrapped;
+        } else {
+          expression.consequent = wrapped;
         }
       }
     }
@@ -127,7 +142,10 @@ function wrapJsxExpression(
       } else {
         expression.alternate = wrapped;
       }
-    } else if (t.isConditionalExpression(alternate)) {
+    } else if (
+      t.isConditionalExpression(alternate) ||
+      t.isLogicalExpression(alternate)
+    ) {
       // Recursively handle nested ternary in alternate
       const alternateResult = wrapJsxExpression(
         t.jsxExpressionContainer(alternate),
@@ -147,6 +165,18 @@ function wrapJsxExpression(
           expression.alternate.expression = alternateResult.node.expression;
         } else {
           expression.alternate = alternateResult.node.expression;
+        }
+      }
+    } else {
+      if (isStaticValue(alternate)) {
+        hasMeaningfulContent = true;
+        const wrapped = wrapExpressionWithT(alternate, options, mark);
+        wrappedInT = true;
+        // Re-insert into parenthesized expression if necessary
+        if (t.isParenthesizedExpression(expression.alternate)) {
+          expression.alternate.expression = wrapped;
+        } else {
+          expression.alternate = wrapped;
         }
       }
     }
@@ -176,7 +206,7 @@ function wrapJsxExpression(
       } else {
         expression.left = wrapped;
       }
-    } else if (t.isLogicalExpression(left)) {
+    } else if (t.isLogicalExpression(left) || t.isConditionalExpression(left)) {
       // Recursively handle nested logical expressions
       const leftResult = wrapJsxExpression(
         t.jsxExpressionContainer(left),
@@ -197,6 +227,18 @@ function wrapJsxExpression(
           expression.left = leftResult.node.expression;
         }
       }
+    } else {
+      if (isStaticValue(left) && expression.operator !== '&&') {
+        hasMeaningfulContent = true;
+        const wrapped = wrapExpressionWithT(left, options, mark);
+        wrappedInT = true;
+        // Re-insert into parenthesized expression if necessary
+        if (t.isParenthesizedExpression(expression.left)) {
+          expression.left.expression = wrapped;
+        } else {
+          expression.left = wrapped;
+        }
+      }
     }
 
     if (t.isJSXElement(right)) {
@@ -215,7 +257,10 @@ function wrapJsxExpression(
       } else {
         expression.right = wrapped;
       }
-    } else if (t.isLogicalExpression(right)) {
+    } else if (
+      t.isLogicalExpression(right) ||
+      t.isConditionalExpression(right)
+    ) {
       // Recursively handle nested logical expressions
       const rightResult = wrapJsxExpression(
         t.jsxExpressionContainer(right),
@@ -234,6 +279,18 @@ function wrapJsxExpression(
           expression.right.expression = rightResult.node.expression;
         } else {
           expression.right = rightResult.node.expression;
+        }
+      }
+    } else {
+      if (isStaticValue(right)) {
+        hasMeaningfulContent = true;
+        const wrapped = wrapExpressionWithT(right, options, mark);
+        wrappedInT = true;
+        // Re-insert into parenthesized expression if necessary
+        if (t.isParenthesizedExpression(expression.right)) {
+          expression.right.expression = wrapped;
+        } else {
+          expression.right = wrapped;
         }
       }
     }
@@ -387,6 +444,40 @@ function wrapWithT(
     ),
     t.jsxClosingElement(t.jsxIdentifier(TComponentName)),
     [node],
+    false
+  );
+}
+
+function wrapExpressionWithT(
+  node: t.Expression,
+  options: {
+    TComponent?: string;
+    VarComponent?: string;
+    idPrefix: string;
+    idCount: number;
+    usedImports: string[];
+    modified: boolean;
+  },
+  mark: boolean
+) {
+  if (mark) {
+    return node;
+  }
+  const TComponentName = options.TComponent || 'T';
+  const uniqueId = `${options.idPrefix}.${options.idCount}`;
+  options.modified = true;
+  options.idCount++;
+  if (!options.usedImports.includes(TComponentName)) {
+    options.usedImports.push(TComponentName);
+  }
+  return t.jsxElement(
+    t.jsxOpeningElement(
+      t.jsxIdentifier(TComponentName),
+      [t.jsxAttribute(t.jsxIdentifier('id'), t.stringLiteral(uniqueId))],
+      false
+    ),
+    t.jsxClosingElement(t.jsxIdentifier(TComponentName)),
+    [t.jsxExpressionContainer(node)],
     false
   );
 }

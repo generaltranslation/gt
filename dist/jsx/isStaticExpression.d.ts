@@ -8,3 +8,4 @@ export declare function isStaticExpression(expr: t.Expression | t.JSXEmptyExpres
     isStatic: boolean;
     value?: string;
 };
+export declare function isStaticValue(expr: t.Expression | t.JSXEmptyExpression): boolean;

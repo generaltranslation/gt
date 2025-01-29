@@ -1,4 +1,4 @@
-import { Updates, WrapOptions } from '../main';
+import { WrapOptions } from '../main';
 /**
  * Wraps all JSX elements in the src directory with a <T> tag, with unique ids.
  * - Ignores pure strings
@@ -7,6 +7,6 @@ import { Updates, WrapOptions } from '../main';
  * @returns An object containing the updates and errors
  */
 export default function scanForContent(options: WrapOptions): Promise<{
-    updates: Updates;
     errors: string[];
+    filesUpdated: string[];
 }>;
