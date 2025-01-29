@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "8.2.21",
+  "version": "8.2.22",
   "description": "A React library for automatic internationalization.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -73,7 +73,7 @@
     "i18n"
   ],
   "dependencies": {
-    "@generaltranslation/supported-locales": "^1.1.2",
+    "@generaltranslation/supported-locales": "^1.1.3",
     "generaltranslation": "^6.1.4"
   }
 }
