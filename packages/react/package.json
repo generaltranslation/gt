@@ -1,9 +1,11 @@
 {
   "name": "gt-react",
-  "version": "8.2.22",
+  "version": "8.2.23",
   "description": "A React library for automatic internationalization.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.cjs.min.cjs",
+  "module": "./dist/index.esm.min.mjs",
+  "types": "./dist/index.d.ts",
+  "type": "module",
   "peerDependencies": {
     "react": ">=16.8.0 <20.0.0",
     "react-dom": ">=16.8.0 <20.0.0"
@@ -11,7 +13,7 @@
   "scripts": {
     "patch": "npm version patch",
     "transpile": "tsc",
-    "build": "rm -r -f dist; npm run transpile",
+    "build": "rollup -c",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -25,28 +27,37 @@
   },
   "homepage": "https://github.com/general-translation/gt-libraries#readme",
   "devDependencies": {
+    "@babel/preset-react": "^7.26.3",
+    "@babel/preset-typescript": "^7.26.0",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@types/node": ">=20.0.0 <23.0.0",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^9.2.1",
     "rollup": "^4.32.1",
     "rollup-plugin-peer-deps-external": "^2.2.4",
     "rollup-plugin-postcss": "^4.0.2",
+    "rollup-preserve-directives": "^1.1.3",
     "typescript": "^5.7.3"
   },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "require": "./dist/index.cjs.min.cjs",
+      "import": "./dist/index.esm.min.mjs",
+      "default": "./dist/index.esm.min.mjs"
     },
     "./internal": {
       "types": "./dist/internal.d.ts",
-      "default": "./dist/internal.js"
+      "require": "./dist/internal.cjs.min.cjs",
+      "import": "./dist/internal.esm.min.mjs"
     },
     "./client": {
       "types": "./dist/client.d.ts",
-      "default": "./dist/client.js"
+      "require": "./dist/client.cjs.min.cjs",
+      "import": "./dist/client.esm.min.mjs"
     }
   },
   "typesVersions": {
@@ -63,10 +74,10 @@
     "baseUrl": ".",
     "paths": {
       "gt-react/client": [
-        "/dist/client"
+        "./dist/client"
       ],
       "gt-react/internal": [
-        "/dist/internal"
+        "./dist/internal"
       ]
     }
   },
@@ -78,7 +89,7 @@
     "i18n"
   ],
   "dependencies": {
-    "@generaltranslation/supported-locales": "^1.1.3",
+    "@generaltranslation/supported-locales": "^1.1.4",
     "generaltranslation": "^6.1.4"
   }
 }

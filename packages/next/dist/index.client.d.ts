@@ -1,4 +1,4 @@
-import { useElement, Var, Num, Currency, DateTime, T, Branch, Plural } from 'gt-react';
+import { useElement, Var, Num, Currency, DateTime, T, Branch, Plural } from 'gt-react/client';
 declare function GTProvider(params: {
     children?: any;
     id?: string;

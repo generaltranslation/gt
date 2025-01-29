@@ -66,7 +66,6 @@ var RemoteTranslationsManager_1 = __importDefault(require("./RemoteTranslationsM
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
 var id_1 = require("generaltranslation/id");
-var types_1 = require("../types/types");
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         var 
@@ -363,7 +362,7 @@ var I18NConfiguration = /** @class */ (function () {
                             var errorMsg = 'Translation failed.';
                             var errorCode = 500;
                             if (!result)
-                                return request.reject(new types_1.GTTranslationError(errorMsg, errorCode));
+                                return request.reject(new internal_1.GTTranslationError(errorMsg, errorCode));
                             var id = request.metadata.id || request.metadata.hash;
                             if (result && typeof result === 'object') {
                                 if ('translation' in result && result.translation) {
@@ -396,7 +395,7 @@ var I18NConfiguration = /** @class */ (function () {
                                     code: result.code || 500,
                                 });
                             }
-                            return request.reject(new types_1.GTTranslationError(errorMsg, errorCode));
+                            return request.reject(new internal_1.GTTranslationError(errorMsg, errorCode));
                         });
                         return [3 /*break*/, 8];
                     case 6:
@@ -407,7 +406,7 @@ var I18NConfiguration = /** @class */ (function () {
                             if (_this._remoteTranslationsManager) {
                                 _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, request.metadata.id || request.metadata.hash, { state: 'error', error: 'Translation failed.', code: 500 });
                             }
-                            return request.reject(new types_1.GTTranslationError('Translation failed.', 500));
+                            return request.reject(new internal_1.GTTranslationError('Translation failed.', 500));
                         });
                         return [3 /*break*/, 8];
                     case 7:

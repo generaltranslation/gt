@@ -1,10 +1,8 @@
 import baseConfig from './rollup.base.config.js';
-import terser from "@rollup/plugin-terser";
-import { dts } from "rollup-plugin-dts";
-
+import terser from '@rollup/plugin-terser';
+import { dts } from 'rollup-plugin-dts';
 
 export default [
-
   /* ---------------------------------------- */
   // Bundling for the main library (index.ts)
   {
@@ -21,25 +19,25 @@ export default [
         format: 'esm',
         exports: 'named', // Named exports for ES modules
         sourcemap: true,
+        // preserveModules: true, // Ensure module structure is kept
       },
     ],
     plugins: [
       ...baseConfig.plugins,
       terser(), // Minification
     ],
-    external: baseConfig.external
+    external: baseConfig.external,
   },
-  
+
   // TypeScript declarations for the main library (index.ts)
   {
     input: './src/index.ts',
     output: {
       file: './dist/index.d.ts',
-      format: 'es',
+      format: 'esm',
     },
     plugins: [dts()],
   },
-
 
   /* ---------------------------------------- */
   // Bundling for the internal library (internal.ts)
@@ -63,15 +61,15 @@ export default [
       ...baseConfig.plugins,
       terser(), // Minification
     ],
-    external: baseConfig.external
+    external: baseConfig.external,
   },
-  
+
   // TypeScript declarations for the internal library (internal.ts)
   {
     input: './src/internal.ts',
     output: {
       file: './dist/internal.d.ts',
-      format: 'es',
+      format: 'esm',
     },
     plugins: [dts()],
   },
@@ -98,15 +96,15 @@ export default [
       ...baseConfig.plugins,
       terser(), // Minification
     ],
-    external: baseConfig.external
+    external: baseConfig.external,
   },
-  
+
   // TypeScript declarations for the client library (client.ts)
   {
     input: './src/client.ts',
     output: {
       file: './dist/client.d.ts',
-      format: 'es',
+      format: 'esm',
     },
     plugins: [dts()],
   },

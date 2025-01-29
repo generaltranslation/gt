@@ -1,5 +1,5 @@
-import { RenderMethod } from "../types/types";
-import React from "react";
+import { RenderMethod } from '../types/types';
+import React from 'react';
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
