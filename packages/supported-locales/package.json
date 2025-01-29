@@ -13,17 +13,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/General-Translation/supported-locales.git"
+    "url": "git+https://github.com/General-Translation/gt-libraries.git"
   },
   "keywords": [
     "internal"
   ],
   "author": "General Translation, Inc.",
-  "license": "UNLICENSED",
+  "license": "FSL-1.1-ALv2",
   "bugs": {
-    "url": "https://github.com/General-Translation/supported-locales/issues"
+    "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
-  "homepage": "https://github.com/General-Translation/supported-locales#readme",
+  "homepage": "https://github.com/General-Translation/gt-libraries#readme",
   "typescript": {
     "definition": "dist/index.d.ts"
   },

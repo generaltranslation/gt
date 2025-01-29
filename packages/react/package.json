@@ -16,14 +16,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/general-translation/gt-react.git"
+    "url": "git+https://github.com/general-translation/gt-libraries.git"
   },
   "author": "General Translation, Inc.",
   "license": "FSL-1.1-ALv2",
   "bugs": {
-    "url": "https://github.com/general-translation/gt-react/issues"
+    "url": "https://github.com/general-translation/gt-libraries/issues"
   },
-  "homepage": "https://github.com/general-translation/gt-react#readme",
+  "homepage": "https://github.com/general-translation/gt-libraries#readme",
   "devDependencies": {
     "@types/node": ">=20.0.0 <23.0.0",
     "@types/react": ">=18.0.0 <20.0.0",
