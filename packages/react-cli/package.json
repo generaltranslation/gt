@@ -1,6 +1,6 @@
 {
   "name": "gt-react-cli",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "main": "dist/main.js",
   "bin": {
     "gt-cli": "dist/main.js",
@@ -11,7 +11,7 @@
     "build-push-publish": "rm -r -f dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;"
   },
   "peerDependencies": {
-    "gt-react": "^8.2.17",
+    "gt-react": "^8.2.22",
     "react": ">=16.8.0 <20.0.0",
     "react-dom": ">=16.8.0 <20.0.0"
   },
@@ -38,7 +38,7 @@
     "@types/node": "^22.5.1",
     "@types/react": "^18.3.4",
     "esm": "^3.2.25",
-    "gt-react": "^8.2.17",
+    "gt-react": "^8.2.22",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4"
   }
