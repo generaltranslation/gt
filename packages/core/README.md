@@ -1,7 +1,15 @@
+<p align="center">
+  <a href="https://generaltranslation.com" target="_blank">
+    <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation" width="100" height="100">
+  </a>
+</p>
+
 # General Translation
 
-<a href='https://www.generaltranslation.com' target="_blank">generaltranslation.com</a>
+This is the core library for General Translation. It is used in `gt-react` and `gt-next`.
 
-A language toolkit for AI developers. Used in `gt-react`.
+See our [docs](https://www.generaltranslation.com/docs) for more information including guides, examples, and API references.
 
-Full documentation: <a href='https://docs.generaltranslation.com'>docs.generaltranslation.com</a>.
+## Contributing
+
+We welcome any contributions to our libraries. Please submit a pull request!

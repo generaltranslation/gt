@@ -1,76 +1,40 @@
-# gt-next: Automatic i18n for Next.js
+<p align="center">
+  <a href="https://generaltranslation.com" target="_blank">
+    <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation" width="100" height="100">
+  </a>
+</p>
 
-gt-next is a powerful internationalization library designed for Next.js applications. It replaces your existing localization library, and integrates with [generaltranslation.com](https://generaltranslation.com) for translations.
+# General Translation Libraries
+
+This monorepo contains the libraries for General Translation, a powerful translation platform for Next.js and React applications.
+
+Get started with General Translation at [generaltranslation.com](https://generaltranslation.com).
+
+Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](https://www.generaltranslation.com/docs).
+
+## Libraries
+
+See the below for links to the relevant libraries:
+
+- [gt-next](packages/next/README.md): Automatic i18n for Next.js
+- [gt-react](packages/react/README.md): Automatic i18n for React
+- [generaltranslation](packages/core/README.md): Core library for General Translation
+- [supported-locales](packages/supported-locales/README.md): Currently supported locales
+- [gt-react-cli](packages/react-cli/README.md): GT CLI tool for React and Next.js apps
 
 ## Installation
 
-Install `gt-next` via npm:
+Any of the libraries can be installed via npm, yarn, pnpm, or bun.
+
+For example, to install `gt-next`:
 
 ```bash
 npm install gt-next
-```
-
-Or with yarn:
-
-```bash
 yarn add gt-next
 ```
 
-## Getting Started
+Usage of the libraries is documented on our [docs](https://www.generaltranslation.com/docs).
 
-### Step 1: Configure Your Environment Variables
+## Contributing
 
-Add the following environment variables to your `.env` file:
-
-```
-GT_API_KEY="your-api-key"
-GT_PROJECT_ID="your-project-id"
-```
-
- * Get your `API Key` and `Project ID` from the [General Translation Dashboard](https://www.generaltranslation.com).
-
-### Step 2: Add the `<GTProvider>`
-
-Add the `<GTProvider>` component to add translations for client-side
-content, and set the <html> `lang` attribute using `getLocale()`.
-
-```jsx
-import { GTProvider } from 'gt-next'
-import { getLocale } from 'gt-next/server'
- 
-export default async function RootLayout({ children }) {
-
-    const lang = await getLocale();
-
-    return (
-        <html lang={lang}>
-            <body>
-                <GTProvider>
-                    { children }
-                </GTProvider>
-            </body>
-        </html>
-    )
-}
-```
-
-### Step 3: Translate Content with `<T>`
-
-The `<T>` component is the simplest way to translate inline JSX content.
-
-```jsx
-import { T } from 'gt-next';
-
-export default function HomePage() {
-    return (
-        <T id="greeting">
-            <p>Hello, world!</p>
-        </T>
-    );
-}
-```
-
-
-## Documentation
-
-Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](www.generaltranslation.com/docs).
+We welcome any contributions to our libraries. Please submit a pull request!

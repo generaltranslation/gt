@@ -5,7 +5,7 @@
   "main": "dist/index.cjs.min.cjs",
   "module": "dist/index.esm.min.mjs",
   "types": "dist/index.d.ts",
-  "files": [ 
+  "files": [
     "dist"
   ],
   "scripts": {
@@ -26,7 +26,7 @@
     "toolkit"
   ],
   "author": "General Translation, Inc.",
-  "license": "ISC",
+  "license": "FSL-1.1-ALv2",
   "bugs": {
     "url": "https://github.com/General-Translation/generaltranslation/issues"
   },
