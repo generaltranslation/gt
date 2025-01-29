@@ -11,7 +11,7 @@
   "scripts": {
     "patch": "npm version patch",
     "transpile": "tsc",
-    "build": "npm run transpile",
+    "build": "rm -r -f dist; npm run transpile",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
