@@ -25,9 +25,14 @@
   },
   "homepage": "https://github.com/general-translation/gt-libraries#readme",
   "devDependencies": {
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-node-resolve": "^16.0.0",
     "@types/node": ">=20.0.0 <23.0.0",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
+    "rollup": "^4.32.1",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
     "typescript": "^5.7.3"
   },
   "exports": {

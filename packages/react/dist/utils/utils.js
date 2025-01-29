@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.isTranslatedContent = isTranslatedContent;
 exports.isValidTaggedElement = isValidTaggedElement;
 exports.isEmptyReactFragment = isEmptyReactFragment;
-var react_1 = __importDefault(require("react"));
+const react_1 = __importDefault(require("react"));
 function isTranslatedContent(target) {
     if (typeof target === "string") {
         return true;
@@ -14,13 +14,13 @@ function isTranslatedContent(target) {
     if (!Array.isArray(target)) {
         return false;
     }
-    return target.every(function (item) {
+    return target.every((item) => {
         if (typeof item === "string") {
             return true;
         }
         if (typeof item === "object" && item !== null) {
-            var hasKey = "key" in item && typeof item.key === "string";
-            var hasValidVariable = item.variable === undefined || typeof item.variable === "string";
+            const hasKey = "key" in item && typeof item.key === "string";
+            const hasValidVariable = item.variable === undefined || typeof item.variable === "string";
             return hasKey && hasValidVariable;
         }
         return false;
@@ -31,7 +31,7 @@ function isValidTaggedElement(target) {
 }
 function isEmptyReactFragment(target) {
     if (react_1.default.isValidElement(target) && target.type === react_1.default.Fragment) {
-        var props = target.props;
+        const props = target.props;
         return !props.children || react_1.default.Children.count(props.children) === 0;
     }
     return false;

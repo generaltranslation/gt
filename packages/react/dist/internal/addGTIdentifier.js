@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -56,24 +45,23 @@ var __rest = (this && this.__rest) || function (s, e) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = addGTIdentifier;
-var jsx_runtime_1 = require("react/jsx-runtime");
-var react_1 = __importStar(require("react"));
-var internal_1 = require("generaltranslation/internal");
-var createMessages_1 = require("../messages/createMessages");
-function addGTIdentifier(children, startingIndex) {
-    if (startingIndex === void 0) { startingIndex = 0; }
+const jsx_runtime_1 = require("react/jsx-runtime");
+const react_1 = __importStar(require("react"));
+const internal_1 = require("generaltranslation/internal");
+const createMessages_1 = require("../messages/createMessages");
+function addGTIdentifier(children, startingIndex = 0) {
     // Object to keep track of the current index for GT IDs
-    var index = startingIndex;
+    let index = startingIndex;
     /**
      * Function to create a GTProp object for a ReactElement
      * @param child - The ReactElement for which the GTProp is created
      * @returns - The GTProp object
      */
-    var createGTProp = function (child) {
-        var type = child.type, props = child.props;
+    const createGTProp = (child) => {
+        const { type, props } = child;
         index += 1;
-        var result = { id: index };
-        var transformation;
+        let result = { id: index };
+        let transformation;
         try {
             transformation =
                 typeof type === "function" ? type.gtTransformation || "" : "";
@@ -82,7 +70,7 @@ function addGTIdentifier(children, startingIndex) {
             transformation = "";
         }
         if (transformation) {
-            var transformationParts = transformation.split("-");
+            const transformationParts = transformation.split("-");
             if (transformationParts[0] === "translate") {
                 throw new Error((0, createMessages_1.createNestedTError)(child));
             }
@@ -90,8 +78,7 @@ function addGTIdentifier(children, startingIndex) {
                 result.variableType = (transformationParts === null || transformationParts === void 0 ? void 0 : transformationParts[1]) || "variable";
             }
             if (transformationParts[0] === "plural") {
-                var pluralBranches = Object.entries(props).reduce(function (acc, _a) {
-                    var branchName = _a[0], branch = _a[1];
+                const pluralBranches = Object.entries(props).reduce((acc, [branchName, branch]) => {
                     if ((0, internal_1.isAcceptedPluralForm)(branchName)) {
                         acc[branchName] = addGTIdentifier(branch, index);
                     }
@@ -101,9 +88,8 @@ function addGTIdentifier(children, startingIndex) {
                     result.branches = pluralBranches;
             }
             if (transformationParts[0] === "branch") {
-                var children_1 = props.children, branch = props.branch, branches = __rest(props, ["children", "branch"]);
-                var resultBranches = Object.entries(branches).reduce(function (acc, _a) {
-                    var branchName = _a[0], branch = _a[1];
+                const { children, branch } = props, branches = __rest(props, ["children", "branch"]);
+                const resultBranches = Object.entries(branches).reduce((acc, [branchName, branch]) => {
                     acc[branchName] = addGTIdentifier(branch, index);
                     return acc;
                 }, {});
@@ -115,17 +101,17 @@ function addGTIdentifier(children, startingIndex) {
         return result;
     };
     function handleSingleChildElement(child) {
-        var props = child.props;
+        const { props } = child;
         if (props["data-_gt"])
             throw new Error((0, createMessages_1.createNestedDataGTError)(child));
         // Create new props for the element, including the GT identifier and a key
-        var generaltranslation = createGTProp(child);
-        var newProps = __assign(__assign({}, props), { "data-_gt": generaltranslation });
+        let generaltranslation = createGTProp(child);
+        let newProps = Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation });
         if (props.children && !generaltranslation.variableType) {
             newProps.children = handleChildren(props.children);
         }
         if (child.type === react_1.default.Fragment) {
-            var fragment = ((0, jsx_runtime_1.jsx)("span", __assign({ style: { all: "unset", display: "contents" } }, newProps)));
+            const fragment = ((0, jsx_runtime_1.jsx)("span", Object.assign({ style: { all: "unset", display: "contents" } }, newProps)));
             return fragment;
         }
         return react_1.default.cloneElement(child, newProps);

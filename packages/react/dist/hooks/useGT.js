@@ -4,8 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = useGT;
-var GTContext_1 = __importDefault(require("../provider/GTContext"));
-var createMessages_1 = require("../messages/createMessages");
+const GTContext_1 = __importDefault(require("../provider/GTContext"));
+const createMessages_1 = require("../messages/createMessages");
 /**
  * Gets the translation function `t` provided by `<GTProvider>`.
  *
@@ -19,14 +19,13 @@ var createMessages_1 = require("../messages/createMessages");
  * const t = useGT();
  * console.log(t('hello')); // Translates item 'hello'
  */
-function useGT(id) {
-    if (id === void 0) { id = ''; }
+function useGT(id = '') {
     // Create a prefix for translation keys if an id is provided
-    var getId = function (suffix) {
-        return id ? "".concat(id, ".").concat(suffix) : suffix;
+    const getId = (suffix) => {
+        return id ? `${id}.${suffix}` : suffix;
     };
     // Get the translation context
-    var translateDictionaryEntry = (0, GTContext_1.default)("useGT('".concat(id, "'): No context provided. You're trying to get the t() function on the client, which can only be done inside a <GTProvider>.")).translateDictionaryEntry;
+    const { translateDictionaryEntry } = (0, GTContext_1.default)(`useGT('${id}'): No context provided. You're trying to get the t() function on the client, which can only be done inside a <GTProvider>.`);
     /**
     * Translates a dictionary item based on its `id` and options.
     *
@@ -35,12 +34,10 @@ function useGT(id) {
     *
     * @returns {React.ReactNode}
     */
-    function t(id, options) {
-        if (id === void 0) { id = ''; }
-        if (options === void 0) { options = {}; }
-        var prefixedId = getId(id);
+    function t(id = '', options = {}) {
+        const prefixedId = getId(id);
         if (translateDictionaryEntry) {
-            var translation = translateDictionaryEntry(prefixedId, options);
+            const translation = translateDictionaryEntry(prefixedId, options);
             if (translation === undefined || translation === null)
                 console.warn((0, createMessages_1.createNoEntryWarning)(id, prefixedId));
             return translation;

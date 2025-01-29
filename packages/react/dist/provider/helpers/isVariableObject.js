@@ -2,11 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = isVariableObject;
 function isVariableObject(obj) {
-    var variableObj = obj;
+    const variableObj = obj;
     if (variableObj &&
         typeof variableObj === "object" &&
         typeof variableObj.key === "string") {
-        var keys = Object.keys(variableObj);
+        const keys = Object.keys(variableObj);
         if (keys.length === 1)
             return true;
         if (keys.length === 2) {

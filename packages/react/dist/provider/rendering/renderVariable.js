@@ -4,13 +4,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = renderVariable;
-var jsx_runtime_1 = require("react/jsx-runtime");
-var Num_1 = __importDefault(require("../../variables/Num"));
-var Var_1 = __importDefault(require("../../variables/Var"));
-var Currency_1 = __importDefault(require("../../variables/Currency"));
-var DateTime_1 = __importDefault(require("../../variables/DateTime"));
-function renderVariable(_a) {
-    var variableType = _a.variableType, variableName = _a.variableName, variableValue = _a.variableValue, variableOptions = _a.variableOptions, locales = _a.locales;
+const jsx_runtime_1 = require("react/jsx-runtime");
+const Num_1 = __importDefault(require("../../variables/Num"));
+const Var_1 = __importDefault(require("../../variables/Var"));
+const Currency_1 = __importDefault(require("../../variables/Currency"));
+const DateTime_1 = __importDefault(require("../../variables/DateTime"));
+function renderVariable({ variableType, variableName, variableValue, variableOptions, locales, }) {
     if (variableType === "number") {
         return ((0, jsx_runtime_1.jsx)(Num_1.default, { name: variableName, value: variableValue, options: variableOptions }));
     }

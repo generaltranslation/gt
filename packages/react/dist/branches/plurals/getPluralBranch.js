@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getPluralBranch;
-var internal_1 = require("generaltranslation/internal");
+const internal_1 = require("generaltranslation/internal");
 /**
  * Main function to get the appropriate branch based on the provided number and branches.
  *
@@ -10,8 +10,8 @@ var internal_1 = require("generaltranslation/internal");
  * @returns {any} The determined branch.
  */
 function getPluralBranch(n, locales, branches) {
-    var branchName = "";
-    var branch = null;
+    let branchName = "";
+    let branch = null;
     if (typeof n === "number" && !branch && branches)
         branchName = (0, internal_1.getPluralForm)(n, Object.keys(branches), locales);
     if (branchName && !branch)
