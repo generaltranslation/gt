@@ -261,7 +261,7 @@ commander_1.program
     (0, console_1.displayInitializingText)();
     // Ask user for confirmation using inquirer
     const answer = yield (0, prompts_1.confirm)({
-        message: chalk_1.default.yellow('⚠️  Warning: This operation will modify your source files!\n   Make sure you have committed or stashed your currentchanges.\n\n   Do you want to continue?'),
+        message: chalk_1.default.yellow('⚠️  Warning: This operation will modify your source files!\n   Make sure you have committed or stashed your current changes.\n\n   Do you want to continue?'),
         default: true,
     });
     if (!answer) {

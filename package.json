@@ -1,6 +1,6 @@
 {
   "name": "gt-react-cli",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "main": "dist/main.js",
   "bin": {
     "gt-cli": "dist/main.js",
@@ -17,7 +17,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "FSL",
   "description": "",
   "dependencies": {
     "@babel/generator": "^7.25.7",
