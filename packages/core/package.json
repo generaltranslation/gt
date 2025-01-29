@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/General-Translation/generaltranslation.git"
+    "url": "git+https://github.com/General-Translation/gt-libraries.git"
   },
   "keywords": [
     "language",
@@ -28,9 +28,9 @@
   "author": "General Translation, Inc.",
   "license": "FSL-1.1-ALv2",
   "bugs": {
-    "url": "https://github.com/General-Translation/generaltranslation/issues"
+    "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
-  "homepage": "https://github.com/General-Translation/generaltranslation#readme",
+  "homepage": "https://github.com/General-Translation/gt-libraries#readme",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-terser": "^0.4.4",
