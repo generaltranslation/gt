@@ -1,0 +1,1 @@
+{"version":3,"file":"extractEntryMetadata.d.ts","sourceRoot":"","sources":["../../../src/provider/helpers/extractEntryMetadata.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,eAAe,EAAE,KAAK,EAAE,QAAQ,EAAE,MAAM,mBAAmB,CAAC;AAErE,MAAM,CAAC,OAAO,UAAU,oBAAoB,CAAC,KAAK,EAAE,eAAe,GAAG;IACpE,KAAK,EAAE,KAAK,CAAC;IACb,QAAQ,CAAC,EAAE,QAAQ,CAAC;CACrB,CAUA"}

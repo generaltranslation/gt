@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "noEmit": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationDir": "./dist",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "removeComments": false,
+    "stripInternal": true, 
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": "./",
+    "lib": ["ES2023"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+  
+}
