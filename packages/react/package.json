@@ -1,0 +1,79 @@
+{
+  "name": "gt-react",
+  "version": "8.2.21",
+  "description": "A React library for automatic internationalization.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "peerDependencies": {
+    "react": ">=16.8.0 <20.0.0",
+    "react-dom": ">=16.8.0 <20.0.0"
+  },
+  "scripts": {
+    "patch": "npm version patch",
+    "transpile": "tsc",
+    "build": "npm run transpile",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/general-translation/gt-react.git"
+  },
+  "author": "General Translation, Inc.",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/general-translation/gt-react/issues"
+  },
+  "homepage": "https://github.com/general-translation/gt-react#readme",
+  "devDependencies": {
+    "@types/node": ">=20.0.0 <23.0.0",
+    "@types/react": ">=18.0.0 <20.0.0",
+    "@types/react-dom": ">=18.0.0 <20.0.0",
+    "typescript": "^5.7.3"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "default": "./dist/internal.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "client": [
+        "./dist/client.d.ts"
+      ],
+      "internal": [
+        "./dist/internal.d.ts"
+      ]
+    }
+  },
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "gt-react/client": [
+        "/dist/client"
+      ],
+      "gt-react/internal": [
+        "/dist/internal"
+      ]
+    }
+  },
+  "keywords": [
+    "react",
+    "translation",
+    "internationalization",
+    "localization",
+    "i18n"
+  ],
+  "dependencies": {
+    "@generaltranslation/supported-locales": "^1.1.2",
+    "generaltranslation": "^6.1.4"
+  }
+}
