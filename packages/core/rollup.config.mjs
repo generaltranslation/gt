@@ -1,7 +1,7 @@
 import typescript from '@rollup/plugin-typescript';
 import commonjs from '@rollup/plugin-commonjs';
-import terser from "@rollup/plugin-terser";
-import { dts } from "rollup-plugin-dts";
+import terser from '@rollup/plugin-terser';
+import { dts } from 'rollup-plugin-dts';
 
 export default [
   // Bundling for the main library (index.ts)
@@ -25,9 +25,9 @@ export default [
       typescript({ tsconfig: './tsconfig.json' }),
       commonjs(), // Handle CommonJS dependencies
       terser(), // Minification
-    ]
+    ],
   },
-  
+
   // TypeScript declarations for the main library
   {
     input: 'src/index.ts',
@@ -60,7 +60,7 @@ export default [
       commonjs(),
       terser(),
     ],
-    external: ['xxhashjs'] // External dependencies not bundled in
+    external: ['crypto-js', 'fast-json-stable-stringify'], // External dependencies not bundled in
   },
 
   // TypeScript declarations for the id module
@@ -70,9 +70,7 @@ export default [
       file: 'dist/id.d.ts',
       format: 'es',
     },
-    plugins: [
-      dts()
-    ]
+    plugins: [dts()],
   },
 
   // Bundling for the internal module
@@ -96,7 +94,7 @@ export default [
       typescript({ tsconfig: './tsconfig.json' }),
       commonjs(),
       terser(),
-    ]
+    ],
   },
 
   // TypeScript declarations for the internal module
@@ -106,8 +104,6 @@ export default [
       file: 'dist/internal.d.ts',
       format: 'es',
     },
-    plugins: [
-      dts()
-    ]
+    plugins: [dts()],
   },
 ];

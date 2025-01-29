@@ -20,7 +20,7 @@ import { noTranslationsError } from './console/errors';
 import { defaultBaseUrl } from 'generaltranslation/internal';
 import chalk from 'chalk';
 import scanForContent from './updates/scanForContent';
-import { confirm } from '@inquirer/prompts';
+import { select } from '@inquirer/prompts';
 
 dotenv.config({ path: '.env' });
 dotenv.config({ path: '.env.local', override: true });
@@ -372,10 +372,14 @@ program
     displayInitializingText();
 
     // Ask user for confirmation using inquirer
-    const answer = await confirm({
+    const answer = await select({
       message: chalk.yellow(
         '⚠️  Warning: This operation will modify your source files!\n   Make sure you have committed or stashed your current changes.\n\n   Do you want to continue?'
       ),
+      choices: [
+        { value: true, name: 'Yes' },
+        { value: false, name: 'No' },
+      ],
       default: true,
     });
 

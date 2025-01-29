@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/supported-locales",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "List of supported locales for General Translation",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -9,7 +9,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "rollup -c"
+    "build:clean": "rm -rf dist; npm run build",
+    "build": "rollup -c",
+    "publish": "npm run build:clean && npm publish"
   },
   "repository": {
     "type": "git",
@@ -36,7 +38,7 @@
     }
   },
   "dependencies": {
-    "generaltranslation": "^6.1.2"
+    "generaltranslation": "^6.1.6"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",

@@ -1,21 +1,23 @@
 {
   "name": "gt-react-cli",
-  "version": "1.2.7",
+  "version": "1.2.9",
   "main": "dist/main.js",
   "bin": {
     "gt-cli": "dist/main.js",
     "gt-react-cli": "dist/main.js"
   },
   "scripts": {
-    "build": "rm -rf dist; tsc",
-    "build-push-publish": "rm -rf dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;"
+    "build": "tsc",
+    "build-push-publish": "rm -rf dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;",
+    "build:clean": "rm -rf dist; npm run build",
+    "publish": "npm run build:clean && npm publish"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/General-Translation/gt-libraries.git"
   },
   "peerDependencies": {
-    "gt-react": "^8.2.22",
+    "gt-react": "^8.2.24",
     "react": ">=16.8.0 <20.0.0",
     "react-dom": ">=16.8.0 <20.0.0"
   },
