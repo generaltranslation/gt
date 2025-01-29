@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "8.2.22",
+  "version": "8.2.23",
   "description": "A React library for automatic internationalization.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,7 +11,9 @@
   "scripts": {
     "patch": "npm version patch",
     "transpile": "tsc",
-    "build": "rm -r -f dist; npm run transpile",
+    "build": "npm run transpile",
+    "clean:build": "rm -rf dist; npm run build",
+    "publish": "npm run clean:build && npm publish",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

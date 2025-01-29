@@ -139,6 +139,7 @@ export default async function scanForContent(
       )
       .replace(/\\/g, '.') // Replace Windows backslashes with dots
       .split(/[./]/) // Split on dots or forward slashes
+      .filter(Boolean) // Remove empty segments that might cause extra dots
       .map((segment) => segment.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()) // Convert each segment to snake case
       .join('.'); // Rejoin with dots
 
