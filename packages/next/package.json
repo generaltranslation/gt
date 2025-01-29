@@ -19,7 +19,7 @@
     "url": "git+https://github.com/general-translation/gt-next.git"
   },
   "author": "General Translation, Inc.",
-  "license": "ISC",
+  "license": "FSL-1.1-ALv2",
   "bugs": {
     "url": "https://github.com/general-translation/gt-next/issues"
   },
