@@ -44,7 +44,30 @@ const IMPORT_MAP = {
   Var: 'Var',
   GTT: 'T',
   GTVar: 'Var',
+  GTProvider: 'GTProvider',
 };
+
+// Add this helper function before scanForContent
+function isHtmlElement(element: t.JSXOpeningElement): boolean {
+  return (
+    t.isJSXIdentifier(element.name) &&
+    element.name.name.toLowerCase() === 'html'
+  );
+}
+
+function removeLangAttribute(element: t.JSXOpeningElement): void {
+  const langAttrIndex = element.attributes.findIndex(
+    (attr) =>
+      t.isJSXAttribute(attr) &&
+      t.isJSXIdentifier(attr.name) &&
+      attr.name.name === 'lang' &&
+      t.isStringLiteral(attr.value)
+  );
+
+  if (langAttrIndex !== -1) {
+    element.attributes.splice(langAttrIndex, 1);
+  }
+}
 
 /**
  * Wraps all JSX elements in the src directory with a <T> tag, with unique ids.
@@ -126,6 +149,7 @@ export default async function scanForContent(
 
     let modified = false;
     let importAlias = { TComponent: 'T', VarComponent: 'Var' };
+    let needsGTProvider = false;
 
     // Check existing imports
     let initialImports: string[] = [];
@@ -158,6 +182,25 @@ export default async function scanForContent(
     let globalId = 0;
     traverse(ast, {
       JSXElement(path) {
+        // Wrap GTProvider around <html> tags in Next.js
+        if (framework === 'next' && isHtmlElement(path.node.openingElement)) {
+          // Remove static lang attribute if present
+          removeLangAttribute(path.node.openingElement);
+
+          const htmlChildren = path.node.children;
+          const gtProviderElement = t.jsxElement(
+            t.jsxOpeningElement(t.jsxIdentifier('GTProvider'), [], false),
+            t.jsxClosingElement(t.jsxIdentifier('GTProvider')),
+            htmlChildren,
+            false
+          );
+          path.node.children = [gtProviderElement];
+          usedImports.push('GTProvider');
+          modified = true;
+          path.skip();
+          return;
+        }
+
         // Check if this JSX element has any JSX element ancestors
         let currentPath: NodePath = path;
         while (currentPath.parentPath) {
@@ -271,7 +314,7 @@ export default async function scanForContent(
       if (needsImport.length > 0) {
         // Add newline after the comment only
         processedCode = processedCode.replace(
-          /((?:import\s*{\s*(?:(?:T(?:\s+as\s+GTT)?)|(?:GTT))\s*,\s*(?:(?:Var(?:\s+as\s+GTVar)?)|(?:GTVar))\s*}\s*from|const\s*{\s*(?:GTT|T)\s*,\s*(?:GTVar|Var)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)['"];?)/,
+          /((?:import\s*{\s*(?:(?:(?:T(?:\s+as\s+GTT)?)|(?:GTT))(?:\s*,\s*(?:(?:Var(?:\s+as\s+GTVar)?)|(?:GTVar)))?(?:\s*,\s*GTProvider)?|GTProvider)\s*}\s*from|const\s*{\s*(?:(?:GTT|T)(?:\s*,\s*(?:GTVar|Var))?(?:\s*,\s*GTProvider)?|GTProvider)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)['"];?)/,
           '\n$1\n'
         );
       }

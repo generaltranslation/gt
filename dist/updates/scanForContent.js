@@ -87,7 +87,22 @@ const IMPORT_MAP = {
     Var: 'Var',
     GTT: 'T',
     GTVar: 'Var',
+    GTProvider: 'GTProvider',
 };
+// Add this helper function before scanForContent
+function isHtmlElement(element) {
+    return (t.isJSXIdentifier(element.name) &&
+        element.name.name.toLowerCase() === 'html');
+}
+function removeLangAttribute(element) {
+    const langAttrIndex = element.attributes.findIndex((attr) => t.isJSXAttribute(attr) &&
+        t.isJSXIdentifier(attr.name) &&
+        attr.name.name === 'lang' &&
+        t.isStringLiteral(attr.value));
+    if (langAttrIndex !== -1) {
+        element.attributes.splice(langAttrIndex, 1);
+    }
+}
 /**
  * Wraps all JSX elements in the src directory with a <T> tag, with unique ids.
  * - Ignores pure strings
@@ -156,6 +171,7 @@ function scanForContent(options) {
             }
             let modified = false;
             let importAlias = { TComponent: 'T', VarComponent: 'Var' };
+            let needsGTProvider = false;
             // Check existing imports
             let initialImports = [];
             let usedImports = [];
@@ -188,6 +204,18 @@ function scanForContent(options) {
             let globalId = 0;
             (0, traverse_1.default)(ast, {
                 JSXElement(path) {
+                    // Wrap GTProvider around <html> tags in Next.js
+                    if (framework === 'next' && isHtmlElement(path.node.openingElement)) {
+                        // Remove static lang attribute if present
+                        removeLangAttribute(path.node.openingElement);
+                        const htmlChildren = path.node.children;
+                        const gtProviderElement = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('GTProvider'), [], false), t.jsxClosingElement(t.jsxIdentifier('GTProvider')), htmlChildren, false);
+                        path.node.children = [gtProviderElement];
+                        usedImports.push('GTProvider');
+                        modified = true;
+                        path.skip();
+                        return;
+                    }
                     // Check if this JSX element has any JSX element ancestors
                     let currentPath = path;
                     while (currentPath.parentPath) {
@@ -259,7 +287,7 @@ function scanForContent(options) {
                 let processedCode = output.code;
                 if (needsImport.length > 0) {
                     // Add newline after the comment only
-                    processedCode = processedCode.replace(/((?:import\s*{\s*(?:(?:T(?:\s+as\s+GTT)?)|(?:GTT))\s*,\s*(?:(?:Var(?:\s+as\s+GTVar)?)|(?:GTVar))\s*}\s*from|const\s*{\s*(?:GTT|T)\s*,\s*(?:GTVar|Var)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)['"];?)/, '\n$1\n');
+                    processedCode = processedCode.replace(/((?:import\s*{\s*(?:(?:(?:T(?:\s+as\s+GTT)?)|(?:GTT))(?:\s*,\s*(?:(?:Var(?:\s+as\s+GTVar)?)|(?:GTVar)))?(?:\s*,\s*GTProvider)?|GTProvider)\s*}\s*from|const\s*{\s*(?:(?:GTT|T)(?:\s*,\s*(?:GTVar|Var))?(?:\s*,\s*GTProvider)?|GTProvider)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)['"];?)/, '\n$1\n');
                 }
                 // Write the modified code back to the file
                 fs_1.default.writeFileSync(file, processedCode);
