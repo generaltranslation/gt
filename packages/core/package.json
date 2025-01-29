@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rm -r -f dist; rollup -c"
+    "build": "rm -rf dist; rollup -c"
   },
   "repository": {
     "type": "git",

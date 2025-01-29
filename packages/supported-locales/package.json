@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rm -r -f dist; rollup -c"
+    "build": "rm -rf dist; rollup -c"
   },
   "repository": {
     "type": "git",
@@ -41,7 +41,7 @@
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.1",
-    "rollup": "^4.24.0",
+    "rollup": "^4.32.1",
     "rollup-plugin-dts": "^6.1.1",
     "tslib": "^2.8.0",
     "typescript": "^5.6.2"
