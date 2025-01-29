@@ -1,5 +1,5 @@
 {
-  "name": "gt-monorepo",
+  "name": "gt-libraries",
   "private": true,
   "workspaces": [
     "packages/*"
