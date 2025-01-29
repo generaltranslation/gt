@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 export type Updates = ({
-    type: "jsx";
+    type: 'jsx';
     source: any;
     metadata: Record<string, any>;
 } | {
-    type: "content";
+    type: 'content';
     source: any;
     metadata: Record<string, any>;
 })[];
@@ -22,4 +22,9 @@ export type Options = {
     retranslate: boolean;
     ignoreErrors: boolean;
     dryRun: boolean;
+};
+export type WrapOptions = {
+    jsconfig?: string;
+    src?: string[];
+    framework: 'next' | 'react';
 };

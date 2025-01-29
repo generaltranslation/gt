@@ -71,33 +71,36 @@ const warnings_1 = require("./console/warnings");
 const errors_1 = require("./console/errors");
 const internal_1 = require("generaltranslation/internal");
 const chalk_1 = __importDefault(require("chalk"));
-dotenv_1.default.config({ path: ".env" });
-dotenv_1.default.config({ path: ".env.local", override: true });
+const scanForContent_1 = __importDefault(require("./updates/scanForContent"));
+const prompts_1 = require("@inquirer/prompts");
+dotenv_1.default.config({ path: '.env' });
+dotenv_1.default.config({ path: '.env.local', override: true });
 commander_1.program
-    .name("translate")
-    .description("Scans the project for a dictionary and/or <T> tags, and updates the General Translation remote dictionary with the latest content.")
-    .option("--options <path>", "Filepath to options JSON file, by default gt.config.json", "./gt.config.json")
-    .option("--api-key <key>", "API key for General Translation cloud service", process.env.GT_API_KEY)
-    .option("--project-id <id>", "Project ID for the translation service", process.env.GT_PROJECT_ID)
-    .option("--tsconfig, --jsconfig <path>", "Path to jsconfig or tsconfig file", (0, findFilepath_1.default)(["./tsconfig.json", "./jsconfig.json"]))
-    .option("--dictionary <path>", "Path to dictionary file", (0, findFilepath_1.default)([
-    "./dictionary.js",
-    "./src/dictionary.js",
-    "./dictionary.json",
-    "./src/dictionary.json",
-    "./dictionary.jsx",
-    "./src/dictionary.jsx",
-    "./dictionary.ts",
-    "./src/dictionary.ts",
-    "./dictionary.tsx",
-    "./src/dictionary.tsx",
+    .name('translate')
+    .description('Scans the project for a dictionary and/or <T> tags, and updates the General Translation remote dictionary with the latest content.')
+    .option('--options <path>', 'Filepath to options JSON file, by default gt.config.json', './gt.config.json')
+    .option('--api-key <key>', 'API key for General Translation cloud service', process.env.GT_API_KEY)
+    .option('--project-id <id>', 'Project ID for the translation service', process.env.GT_PROJECT_ID)
+    .option('--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file', (0, findFilepath_1.default)(['./tsconfig.json', './jsconfig.json']))
+    .option('--dictionary <path>', 'Path to dictionary file', (0, findFilepath_1.default)([
+    './dictionary.js',
+    './src/dictionary.js',
+    './dictionary.json',
+    './src/dictionary.json',
+    './dictionary.jsx',
+    './src/dictionary.jsx',
+    './dictionary.ts',
+    './src/dictionary.ts',
+    './dictionary.tsx',
+    './src/dictionary.tsx',
 ]))
-    .option("--src <path>", "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(["./src", "./app", "./pages", "./components"]))
-    .option("--default-language, --default-locale <locale>", "Default locale (e.g., en)")
-    .option("--languages, --locales <locales...>", "Space-separated list of locales (e.g., en fr es)", [])
-    .option("--inline", "Include inline <T> tags in addition to dictionary file", true)
-    .option("--ignore-errors", "Ignore errors encountered while scanning for <T> tags", false)
-    .option("--dry-run", "Dry run, does not send updates to General Translation API", false)
+    .option('--src <path>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
+    .option('--default-language, --default-locale <locale>', 'Default locale (e.g., en)')
+    .option('--languages, --locales <locales...>', 'Space-separated list of locales (e.g., en fr es)', [])
+    .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
+    .option('--wrap', 'Wraps all JSX elements in the src directory with a <T> tag, with unique ids', false)
+    .option('--ignore-errors', 'Ignore errors encountered while scanning for <T> tags', false)
+    .option('--dry-run', 'Dry run, does not send updates to General Translation API', false)
     .action((options) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     (0, console_1.displayAsciiTitle)();
@@ -113,14 +116,14 @@ commander_1.program
         options.baseUrl = internal_1.defaultBaseUrl;
     // Error if no API key at this point
     if (!options.apiKey)
-        throw new Error("No General Translation API key found. Use the --apiKey flag to provide one.");
+        throw new Error('No General Translation API key found. Use the --api-key flag to provide one.');
     // Warn if apiKey is present in gt.config.json
     if (gtConfig.apiKey) {
         (0, warnings_1.warnApiKeyInConfig)(options.options);
     }
     // Error if no API key at this point
     if (!options.projectId)
-        throw new Error("No General Translation Project ID found. Use the --projectId flag to provide one.");
+        throw new Error('No General Translation Project ID found. Use the --project-id flag to provide one.');
     (0, console_1.displayProjectId)(options.projectId);
     // Check locales
     if (options.defaultLocale && !(0, generaltranslation_1.isValidLocale)(options.defaultLocale))
@@ -193,14 +196,14 @@ commander_1.program
     updates = updates.filter((update) => !duplicateIds.has(update.metadata.id));
     if (errors.length > 0) {
         if (options.ignoreErrors) {
-            console.log(chalk_1.default.red(`CLI Tool encountered errors while scanning for ${chalk_1.default.green("<T>")} tags.\n`));
+            console.log(chalk_1.default.red(`CLI Tool encountered errors while scanning for ${chalk_1.default.green('<T>')} tags.\n`));
             console.log(errors
-                .map((error) => chalk_1.default.yellow("• Warning: ") + error + "\n")
-                .join(""), chalk_1.default.white(`These ${chalk_1.default.green("<T>")} components will not be translated.\n`));
+                .map((error) => chalk_1.default.yellow('• Warning: ') + error + '\n')
+                .join(''), chalk_1.default.white(`These ${chalk_1.default.green('<T>')} components will not be translated.\n`));
         }
         else {
-            console.log(chalk_1.default.red(`CLI Tool encountered errors while scanning for ${chalk_1.default.green("<T>")} tags.\n`));
-            console.log(chalk_1.default.gray("To ignore these errors, re-run with --ignore-errors\n\n"), errors.map((error) => chalk_1.default.red("• Error: ") + error + "\n").join(""));
+            console.log(chalk_1.default.red(`CLI Tool encountered errors while scanning for ${chalk_1.default.green('<T>')} tags.\n`));
+            console.log(chalk_1.default.gray('To ignore these errors, re-run with --ignore-errors\n\n'), errors.map((error) => chalk_1.default.red('• Error: ') + error + '\n').join(''));
             process.exit(1);
         }
     }
@@ -216,7 +219,7 @@ commander_1.program
             locales: options.locales,
             metadata: globalMetadata,
         };
-        const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+        const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
         let i = 0;
         const loadingInterval = setInterval(() => {
             process.stdout.write(`\r${chalk_1.default.blue(frames[i])} Sending updates to General Translation API...`);
@@ -224,27 +227,66 @@ commander_1.program
         }, 80);
         try {
             const response = yield fetch(`${options.baseUrl}/v1/project/translations/update`, {
-                method: "POST",
-                headers: Object.assign({ "Content-Type": "application/json" }, (apiKey && { "x-gt-api-key": apiKey })),
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, (apiKey && { 'x-gt-api-key': apiKey })),
                 body: JSON.stringify(body),
             });
             clearInterval(loadingInterval);
-            process.stdout.write("\n\n"); // New line after loading is done
+            process.stdout.write('\n\n'); // New line after loading is done
             if (!response.ok) {
-                throw new Error(response.status + ". " + (yield response.text()));
+                throw new Error(response.status + '. ' + (yield response.text()));
             }
             const result = yield response.text();
-            console.log(chalk_1.default.green("✓ ") + chalk_1.default.green.bold(result));
+            console.log(chalk_1.default.green('✓ ') + chalk_1.default.green.bold(result));
         }
         catch (error) {
             clearInterval(loadingInterval);
-            process.stdout.write("\n");
-            console.log(chalk_1.default.red("✗ Failed to send updates"));
+            process.stdout.write('\n');
+            console.log(chalk_1.default.red('✗ Failed to send updates'));
             throw error;
         }
     }
     else {
         throw new Error(errors_1.noTranslationsError);
+    }
+}));
+commander_1.program
+    .command('scan')
+    .description('Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids')
+    .option('--src <path>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
+    .option('--framework <framework>', 'Framework to use for wrapping JSX elements, by default next', 'next')
+    .action((options) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    (0, console_1.displayAsciiTitle)();
+    (0, console_1.displayInitializingText)();
+    // Ask user for confirmation using inquirer
+    const answer = yield (0, prompts_1.confirm)({
+        message: chalk_1.default.yellow('⚠️  Warning: This operation will modify your source files!\n   Make sure you have committed or stashed your current changes.\n\n   Do you want to continue?'),
+        default: true,
+    });
+    if (!answer) {
+        console.log(chalk_1.default.gray('\nOperation cancelled.'));
+        process.exit(0);
+    }
+    // Determine if the project is a Next.js project by checking dependencies
+    const packageJson = (0, loadJSON_1.default)('./package.json');
+    if ((_a = packageJson === null || packageJson === void 0 ? void 0 : packageJson.dependencies) === null || _a === void 0 ? void 0 : _a.next) {
+        options.framework = 'next';
+    }
+    else {
+        options.framework = 'react';
+    }
+    // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
+    const { errors, filesUpdated } = yield (0, scanForContent_1.default)(options);
+    if (errors.length > 0) {
+        console.log(chalk_1.default.red('\n✗ Failed to write files:\n'));
+        console.log(errors.join('\n'));
+    }
+    console.log(chalk_1.default.green(`\n✓ Success! Added <T> tags and updated ${chalk_1.default.bold(filesUpdated.length)} files:\n`));
+    if (filesUpdated.length > 0) {
+        console.log(filesUpdated.join('\n'));
+        console.log();
+        console.log(chalk_1.default.green('Please verify the changes before committing.'));
     }
 }));
 commander_1.program.parse();
