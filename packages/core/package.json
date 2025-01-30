@@ -11,7 +11,7 @@
   "scripts": {
     "build:clean": "rm -rf dist; npm run build",
     "build": "rollup -c",
-    "publish": "npm run build:clean && npm publish"
+    "release": "npm run build:clean && npm publish"
   },
   "repository": {
     "type": "git",
