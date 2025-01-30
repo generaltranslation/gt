@@ -108,7 +108,7 @@ function wrapJsxExpression(
       }
     } else {
       if (isStaticValue(consequent)) {
-        hasMeaningfulContent = true;
+        hasMeaningfulContent = hasMeaningfulContent || isMeaningful(consequent);
         const wrapped = wrapExpressionWithT(consequent, options, mark);
         wrappedInT = true;
         // Re-insert into parenthesized expression if necessary
@@ -169,7 +169,7 @@ function wrapJsxExpression(
       }
     } else {
       if (isStaticValue(alternate)) {
-        hasMeaningfulContent = true;
+        hasMeaningfulContent = hasMeaningfulContent || isMeaningful(alternate);
         const wrapped = wrapExpressionWithT(alternate, options, mark);
         wrappedInT = true;
         // Re-insert into parenthesized expression if necessary
@@ -229,7 +229,7 @@ function wrapJsxExpression(
       }
     } else {
       if (isStaticValue(left) && expression.operator !== '&&') {
-        hasMeaningfulContent = true;
+        hasMeaningfulContent = hasMeaningfulContent || isMeaningful(left);
         const wrapped = wrapExpressionWithT(left, options, mark);
         wrappedInT = true;
         // Re-insert into parenthesized expression if necessary
@@ -283,7 +283,7 @@ function wrapJsxExpression(
       }
     } else {
       if (isStaticValue(right)) {
-        hasMeaningfulContent = true;
+        hasMeaningfulContent = hasMeaningfulContent || isMeaningful(right);
         const wrapped = wrapExpressionWithT(right, options, mark);
         wrappedInT = true;
         // Re-insert into parenthesized expression if necessary
@@ -364,14 +364,14 @@ export function wrapJsxElement(
           hasMeaningfulContent || result.hasMeaningfulContent;
         return result.node;
       }
-      if (isMeaningful(child)) {
+      const isMeaningfulVal = isMeaningful(child);
+      if (isMeaningfulVal) {
         hasMeaningfulContent = true;
       }
       return child;
     });
 
     node.children = processedChildren;
-
     return {
       node,
       hasMeaningfulContent: hasMeaningfulContent,

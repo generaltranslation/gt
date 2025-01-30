@@ -101,7 +101,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
         }
         else {
             if ((0, isStaticExpression_1.isStaticValue)(consequent)) {
-                hasMeaningfulContent = true;
+                hasMeaningfulContent = hasMeaningfulContent || isMeaningful(consequent);
                 const wrapped = wrapExpressionWithT(consequent, options, mark);
                 wrappedInT = true;
                 // Re-insert into parenthesized expression if necessary
@@ -148,7 +148,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
         }
         else {
             if ((0, isStaticExpression_1.isStaticValue)(alternate)) {
-                hasMeaningfulContent = true;
+                hasMeaningfulContent = hasMeaningfulContent || isMeaningful(alternate);
                 const wrapped = wrapExpressionWithT(alternate, options, mark);
                 wrappedInT = true;
                 // Re-insert into parenthesized expression if necessary
@@ -201,7 +201,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
         }
         else {
             if ((0, isStaticExpression_1.isStaticValue)(left) && expression.operator !== '&&') {
-                hasMeaningfulContent = true;
+                hasMeaningfulContent = hasMeaningfulContent || isMeaningful(left);
                 const wrapped = wrapExpressionWithT(left, options, mark);
                 wrappedInT = true;
                 // Re-insert into parenthesized expression if necessary
@@ -246,7 +246,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
         }
         else {
             if ((0, isStaticExpression_1.isStaticValue)(right)) {
-                hasMeaningfulContent = true;
+                hasMeaningfulContent = hasMeaningfulContent || isMeaningful(right);
                 const wrapped = wrapExpressionWithT(right, options, mark);
                 wrappedInT = true;
                 // Re-insert into parenthesized expression if necessary
@@ -310,7 +310,8 @@ function wrapJsxElement(node, options, isMeaningful, mark) {
                     hasMeaningfulContent || result.hasMeaningfulContent;
                 return result.node;
             }
-            if (isMeaningful(child)) {
+            const isMeaningfulVal = isMeaningful(child);
+            if (isMeaningfulVal) {
                 hasMeaningfulContent = true;
             }
             return child;
