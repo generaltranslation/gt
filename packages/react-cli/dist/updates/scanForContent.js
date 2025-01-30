@@ -83,31 +83,48 @@ function isMeaningful(node) {
     return false;
 }
 const IMPORT_MAP = {
-    T: 'T',
-    Var: 'Var',
-    GTT: 'T',
-    GTVar: 'Var',
-    GTProvider: 'GTProvider',
+    T: { name: 'T', source: 'gt-{framework}' },
+    Var: { name: 'Var', source: 'gt-{framework}' },
+    GTT: { name: 'T', source: 'gt-{framework}' },
+    GTVar: { name: 'Var', source: 'gt-{framework}' },
+    GTProvider: { name: 'GTProvider', source: 'gt-{framework}' },
+    getLocale: { name: 'getLocale', source: 'gt-{framework}/server' },
 };
 // Add this helper function before scanForContent
 function isHtmlElement(element) {
     return (t.isJSXIdentifier(element.name) &&
         element.name.name.toLowerCase() === 'html');
 }
-function removeLangAttribute(element) {
-    const langAttrIndex = element.attributes.findIndex((attr) => t.isJSXAttribute(attr) &&
-        t.isJSXIdentifier(attr.name) &&
-        attr.name.name === 'lang' &&
-        t.isStringLiteral(attr.value));
-    if (langAttrIndex !== -1) {
-        element.attributes.splice(langAttrIndex, 1);
-    }
-}
 // Add this helper function
 function hasGTProviderChild(children) {
     return children.some((child) => t.isJSXElement(child) &&
         t.isJSXIdentifier(child.openingElement.name) &&
         child.openingElement.name.name === 'GTProvider');
+}
+function addDynamicLangAttribute(element) {
+    // Remove existing lang attribute if present
+    const langAttrIndex = element.attributes.findIndex((attr) => t.isJSXAttribute(attr) &&
+        t.isJSXIdentifier(attr.name) &&
+        attr.name.name === 'lang');
+    if (langAttrIndex !== -1) {
+        element.attributes.splice(langAttrIndex, 1);
+    }
+    // Add lang={await getLocale()} attribute
+    element.attributes.push(t.jsxAttribute(t.jsxIdentifier('lang'), t.jsxExpressionContainer(t.awaitExpression(t.callExpression(t.identifier('getLocale'), [])))));
+}
+function makeParentFunctionAsync(path) {
+    const functionParent = path.getFunctionParent();
+    if (!functionParent)
+        return false;
+    const node = functionParent.node;
+    if ((t.isFunctionDeclaration(node) ||
+        t.isFunctionExpression(node) ||
+        t.isArrowFunctionExpression(node)) &&
+        !node.async) {
+        node.async = true;
+        return true;
+    }
+    return false;
 }
 /**
  * Wraps all JSX elements in the src directory with a <T> tag, with unique ids.
@@ -204,7 +221,7 @@ function scanForContent(options) {
                 },
             });
             // If the file already has a T import, skip processing it
-            if (initialImports.includes(IMPORT_MAP.T)) {
+            if (initialImports.includes(IMPORT_MAP.T.name)) {
                 continue;
             }
             let globalId = 0;
@@ -216,8 +233,18 @@ function scanForContent(options) {
                         if (hasGTProviderChild(path.node.children)) {
                             return;
                         }
-                        // Remove static lang attribute if present
-                        removeLangAttribute(path.node.openingElement);
+                        // Check if there's a static lang attribute
+                        const langAttr = path.node.openingElement.attributes.find((attr) => t.isJSXAttribute(attr) &&
+                            t.isJSXIdentifier(attr.name) &&
+                            t.isStringLiteral(attr.value) &&
+                            attr.name.name === 'lang');
+                        if (langAttr) {
+                            // Make the parent function async
+                            makeParentFunctionAsync(path);
+                            // Add lang={await getLocale()} attribute
+                            addDynamicLangAttribute(path.node.openingElement);
+                            usedImports.push('getLocale');
+                        }
                         const htmlChildren = path.node.children;
                         const gtProviderElement = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('GTProvider'), [], false), t.jsxClosingElement(t.jsxIdentifier('GTProvider')), htmlChildren, false);
                         path.node.children = [gtProviderElement];
@@ -262,20 +289,29 @@ function scanForContent(options) {
                         isESM = true;
                     },
                 });
-                let importNode;
-                if (isESM) {
-                    // ESM import
-                    importNode = babel.importDeclaration(needsImport.map((imp) => babel.importSpecifier(babel.identifier(IMPORT_MAP[imp]), babel.identifier(imp))), babel.stringLiteral(framework === 'next' ? 'gt-next' : 'gt-react'));
-                }
-                else {
-                    // CommonJS require
-                    importNode = babel.variableDeclaration('const', [
-                        babel.variableDeclarator(babel.objectPattern(needsImport.map((imp) => babel.objectProperty(babel.identifier(imp), babel.identifier(IMPORT_MAP[imp]), false, IMPORT_MAP[imp] === imp))), babel.callExpression(babel.identifier('require'), [
-                            babel.stringLiteral(framework === 'next' ? 'gt-next' : 'gt-react'),
-                        ])),
-                    ]);
-                }
-                // Find the best position to insert the import
+                // Group imports by their source
+                const importsBySource = needsImport.reduce((acc, imp) => {
+                    const importInfo = IMPORT_MAP[imp];
+                    const source = importInfo.source.replace('{framework}', framework);
+                    if (!acc[source])
+                        acc[source] = [];
+                    acc[source].push({ local: imp, imported: importInfo.name });
+                    return acc;
+                }, {});
+                // Generate import nodes for each source
+                const importNodes = Object.entries(importsBySource).map(([source, imports]) => {
+                    if (isESM) {
+                        return babel.importDeclaration(imports.map((imp) => babel.importSpecifier(babel.identifier(imp.imported), babel.identifier(imp.local))), babel.stringLiteral(source));
+                    }
+                    else {
+                        return babel.variableDeclaration('const', [
+                            babel.variableDeclarator(babel.objectPattern(imports.map((imp) => babel.objectProperty(babel.identifier(imp.local), babel.identifier(imp.imported), false, imp.local === imp.imported))), babel.callExpression(babel.identifier('require'), [
+                                babel.stringLiteral(source),
+                            ])),
+                        ]);
+                    }
+                });
+                // Find the best position to insert the imports
                 let insertIndex = 0;
                 for (let i = 0; i < ast.program.body.length; i++) {
                     if (!babel.isImportDeclaration(ast.program.body[i])) {
@@ -284,7 +320,8 @@ function scanForContent(options) {
                     }
                     insertIndex = i + 1;
                 }
-                ast.program.body.splice(insertIndex, 0, importNode);
+                // Insert all import nodes
+                ast.program.body.splice(insertIndex, 0, ...importNodes);
             }
             try {
                 const output = (0, generator_1.default)(ast, {
@@ -297,7 +334,7 @@ function scanForContent(options) {
                 let processedCode = output.code;
                 if (needsImport.length > 0) {
                     // Add newline after the comment only
-                    processedCode = processedCode.replace(/((?:import\s*{\s*(?:(?:(?:T(?:\s+as\s+GTT)?)|(?:GTT))(?:\s*,\s*(?:(?:Var(?:\s+as\s+GTVar)?)|(?:GTVar)))?(?:\s*,\s*GTProvider)?|GTProvider)\s*}\s*from|const\s*{\s*(?:(?:GTT|T)(?:\s*,\s*(?:GTVar|Var))?(?:\s*,\s*GTProvider)?|GTProvider)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)['"];?)/, '\n$1\n');
+                    processedCode = processedCode.replace(/((?:import\s*{\s*(?:(?:(?:T(?:\s+as\s+GTT)?)|(?:GTT))(?:\s*,\s*(?:(?:Var(?:\s+as\s+GTVar)?)|(?:GTVar)))?(?:\s*,\s*GTProvider)?(?:\s*,\s*getLocale)?|GTProvider|getLocale)\s*}\s*from|const\s*{\s*(?:(?:GTT|T)(?:\s*,\s*(?:GTVar|Var))?(?:\s*,\s*GTProvider)?(?:\s*,\s*getLocale)?|GTProvider|getLocale)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)(?:\/server)?['"];?)/, '\n$1\n');
                 }
                 // Write the modified code back to the file
                 fs_1.default.writeFileSync(file, processedCode);
