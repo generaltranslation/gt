@@ -251,7 +251,7 @@ commander_1.program
     }
 }));
 commander_1.program
-    .command('scan')
+    .command('setup')
     .description('Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids')
     .option('--src <path>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
     .option('--framework <framework>', 'Framework to use for wrapping JSX elements, by default next', 'next')
@@ -281,10 +281,14 @@ commander_1.program
         options.framework = 'react';
     }
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { errors, filesUpdated } = yield (0, scanForContent_1.default)(options);
+    const { errors, filesUpdated, warnings } = yield (0, scanForContent_1.default)(options);
     if (errors.length > 0) {
         console.log(chalk_1.default.red('\n✗ Failed to write files:\n'));
         console.log(errors.join('\n'));
+    }
+    if (warnings.length > 0) {
+        console.log(chalk_1.default.yellow('\n⚠️  Warnings:\n\n'));
+        console.log(warnings.join('\n'));
     }
     console.log(chalk_1.default.green(`\n✓ Success! Added <T> tags and updated ${chalk_1.default.bold(filesUpdated.length)} files:\n`));
     if (filesUpdated.length > 0) {

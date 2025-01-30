@@ -353,7 +353,7 @@ program
   });
 
 program
-  .command('scan')
+  .command('setup')
   .description(
     'Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids'
   )
@@ -397,11 +397,16 @@ program
     }
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { errors, filesUpdated } = await scanForContent(options);
+    const { errors, filesUpdated, warnings } = await scanForContent(options);
 
     if (errors.length > 0) {
       console.log(chalk.red('\n✗ Failed to write files:\n'));
       console.log(errors.join('\n'));
+    }
+
+    if (warnings.length > 0) {
+      console.log(chalk.yellow('\n⚠️  Warnings:\n\n'));
+      console.log(warnings.join('\n'));
     }
 
     console.log(

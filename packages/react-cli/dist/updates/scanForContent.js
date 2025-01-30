@@ -136,6 +136,7 @@ function makeParentFunctionAsync(path) {
 function scanForContent(options) {
     return __awaiter(this, void 0, void 0, function* () {
         const errors = [];
+        const warnings = [];
         const srcDirectory = options.src || ['./'];
         // Define the file extensions to look for
         const extensions = ['.js', '.jsx', '.tsx'];
@@ -245,6 +246,10 @@ function scanForContent(options) {
                             addDynamicLangAttribute(path.node.openingElement);
                             usedImports.push('getLocale');
                         }
+                        else {
+                            warnings.push(`File ${file} has a <html> tag with a dynamic lang attribute.` +
+                                ` Please manually add \`lang={await getLocale()}\` to the <html> tag.`);
+                        }
                         const htmlChildren = path.node.children;
                         const gtProviderElement = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('GTProvider'), [], false), t.jsxClosingElement(t.jsxIdentifier('GTProvider')), htmlChildren, false);
                         path.node.children = [gtProviderElement];
@@ -345,6 +350,6 @@ function scanForContent(options) {
                 errors.push(`Failed to write ${file}: ${error}`);
             }
         }
-        return { errors, filesUpdated };
+        return { errors, filesUpdated, warnings };
     });
 }
