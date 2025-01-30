@@ -1,4 +1,4 @@
-import { RenderMethod, TranslateChildrenCallback, TranslateContentCallback } from "../../types/types";
+import { RenderMethod, TranslateChildrenCallback, TranslateContentCallback } from '../../types/types';
 export default function useRuntimeTranslation({ targetLocale, projectId, devApiKey, runtimeUrl, defaultLocale, renderSettings, setTranslations, ...metadata }: {
     targetLocale: string;
     projectId?: string;

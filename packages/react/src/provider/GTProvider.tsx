@@ -1,41 +1,35 @@
-import { useMemo } from "react";
+import { useMemo } from 'react';
 import {
   isSameLanguage,
   renderContentToString,
   requiresTranslation,
   splitStringToContent,
-} from "generaltranslation";
-import { useCallback, useEffect, useState } from "react";
-import useBrowserLocale from "../hooks/useBrowserLocale";
-
-import { GTContext } from "./GTContext";
+} from 'generaltranslation';
+import { useCallback, useEffect, useState } from 'react';
+import useBrowserLocale from '../hooks/useBrowserLocale';
+import { GTContext } from './GTContext';
 import {
   DictionaryEntry,
   RenderMethod,
   TranslatedContent,
   TranslationsObject,
-} from "../types/types";
-import getDictionaryEntry from "./helpers/getDictionaryEntry";
-import {
-  flattenDictionary,
-  isEmptyReactFragment,
-  renderDefaultChildren,
-} from "../internal";
-import extractEntryMetadata from "./helpers/extractEntryMetadata";
-
+} from '../types/types';
+import getDictionaryEntry from './helpers/getDictionaryEntry';
+import { flattenDictionary, isEmptyReactFragment } from '../internal';
+import extractEntryMetadata from './helpers/extractEntryMetadata';
 import {
   Content,
   defaultCacheUrl,
   defaultRuntimeApiUrl,
   libraryDefaultLocale,
-} from "generaltranslation/internal";
-import { projectIdMissingError } from "../messages/createMessages";
-import { listSupportedLocales } from "@generaltranslation/supported-locales";
-import useRuntimeTranslation from "./runtime/useRuntimeTranslation";
-import { defaultRenderSettings } from "./rendering/defaultRenderSettings";
-import { hashJsxChildren } from "generaltranslation/id";
-import React from "react";
-import T from "../inline/T";
+} from 'generaltranslation/internal';
+import { projectIdMissingError } from '../messages/createMessages';
+import { listSupportedLocales } from '@generaltranslation/supported-locales';
+import useRuntimeTranslation from './runtime/useRuntimeTranslation';
+import { defaultRenderSettings } from './rendering/defaultRenderSettings';
+import { hashJsxChildren } from 'generaltranslation/id';
+import React from 'react';
+import T from '../inline/T';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -148,7 +142,7 @@ export default function GTProvider({
             translationsAcc[id] = Object.entries(
               hashToTranslation || {}
             ).reduce((idAcc: Record<string, any>, [hash, content]) => {
-              idAcc[hash] = { state: "success", entry: content };
+              idAcc[hash] = { state: 'success', entry: content };
               return idAcc;
             }, {});
             return translationsAcc;
@@ -176,7 +170,7 @@ export default function GTProvider({
     return Object.entries(flattenedDictionary)
       .filter(([id, entryWithMetadata]) => {
         const { entry } = extractEntryMetadata(entryWithMetadata);
-        if (typeof entry === "string") {
+        if (typeof entry === 'string') {
           if (!entry.length) {
             console.warn(
               `gt-react warn: Empty string found in dictionary with id: ${id}`
@@ -209,7 +203,7 @@ export default function GTProvider({
       const unresolvedDictionaryStringsAndHashes = Object.entries(
         stringData
       ).filter(([id, { hash }]) => {
-        if (translations?.[id]?.[hash]?.state === "loading")
+        if (translations?.[id]?.[hash]?.state === 'loading')
           stringIsLoading = true;
         return !translations?.[id]?.[hash];
       });
@@ -261,7 +255,7 @@ export default function GTProvider({
         flattenedDictionary,
         id
       );
-      if (!dictionaryEntry && dictionaryEntry !== "") return undefined; // dictionary entry not found
+      if (!dictionaryEntry && dictionaryEntry !== '') return undefined; // dictionary entry not found
 
       // Parse the dictionary entry
       const { entry, metadata } = extractEntryMetadata(dictionaryEntry);
@@ -270,7 +264,7 @@ export default function GTProvider({
 
       // ----- RENDER STRINGS ----- //
 
-      if (typeof entry === "string") {
+      if (typeof entry === 'string') {
         // render strings
 
         // Reject empty strings
@@ -299,7 +293,7 @@ export default function GTProvider({
         const translationEntry = translations?.[id]?.[hash];
 
         // error behavior
-        if (!translationEntry || translationEntry?.state !== "success") {
+        if (!translationEntry || translationEntry?.state !== 'success') {
           return renderContentToString(
             content,
             locales,

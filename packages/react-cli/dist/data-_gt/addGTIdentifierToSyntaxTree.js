@@ -19,40 +19,40 @@ function addGTIdentifierToSyntaxTree(tree, startingIndex = 0) {
     // Object to keep track of the current index for GT IDs
     let indexObject = { index: startingIndex };
     const handleSingleChild = (child) => {
-        if (child && typeof child === "object") {
+        if (child && typeof child === 'object') {
             const { type, props } = child;
             indexObject.index += 1;
             let generaltranslation = { id: indexObject.index };
-            if (type === "Var") {
+            if (type === 'Var') {
                 return {
-                    variable: "variable",
+                    variable: 'variable',
                     id: indexObject.index,
-                    key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation }), "variable"),
+                    key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { 'data-_gt': generaltranslation }), 'variable'),
                 };
             }
-            else if (type === "Num") {
+            else if (type === 'Num') {
                 return {
-                    variable: "number",
+                    variable: 'number',
                     id: indexObject.index,
-                    key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation }), "number"),
+                    key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { 'data-_gt': generaltranslation }), 'number'),
                 };
             }
-            else if (type === "Currency") {
+            else if (type === 'Currency') {
                 return {
-                    variable: "currency",
+                    variable: 'currency',
                     id: indexObject.index,
-                    key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation }), "currency"),
+                    key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { 'data-_gt': generaltranslation }), 'currency'),
                 };
             }
-            else if (type === "DateTime") {
+            else if (type === 'DateTime') {
                 return {
-                    variable: "datetime",
+                    variable: 'datetime',
                     id: indexObject.index,
-                    key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { "data-_gt": generaltranslation }), "datetime"),
+                    key: (0, internal_1.getVariableName)(Object.assign(Object.assign({}, props), { 'data-_gt': generaltranslation }), 'datetime'),
                 };
             }
-            if (type === "Plural") {
-                generaltranslation.transformation = "plural";
+            if (type === 'Plural') {
+                generaltranslation.transformation = 'plural';
                 const pluralBranches = Object.entries(props).reduce((acc, [branchName, branch]) => {
                     if ((0, internal_2.isAcceptedPluralForm)(branchName)) {
                         acc[branchName] =
@@ -63,8 +63,8 @@ function addGTIdentifierToSyntaxTree(tree, startingIndex = 0) {
                 if (Object.keys(pluralBranches).length)
                     generaltranslation.branches = pluralBranches;
             }
-            else if (type === "Branch") {
-                generaltranslation.transformation = "branch";
+            else if (type === 'Branch') {
+                generaltranslation.transformation = 'branch';
                 const { children, branch } = props, branches = __rest(props, ["children", "branch"]);
                 const resultBranches = Object.entries(branches).reduce((acc, [branchName, branch]) => {
                     acc[branchName] =
@@ -76,7 +76,7 @@ function addGTIdentifierToSyntaxTree(tree, startingIndex = 0) {
             }
             return {
                 type: type || `C${generaltranslation.id}`,
-                props: Object.assign({ "data-_gt": generaltranslation }, (typeof props.children !== "undefined" && {
+                props: Object.assign({ 'data-_gt': generaltranslation }, (typeof props.children !== 'undefined' && {
                     children: handleChildren(props.children),
                 })),
             };

@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
+    "module": "ESNext",
+    "target": "ES6",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -8,7 +9,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "resolveJsonModule": true,
-    "moduleResolution": "node",
+    "moduleResolution": "Node",
     "sourceMap": true,
     "declaration": true,
     "declarationDir": "./dist",

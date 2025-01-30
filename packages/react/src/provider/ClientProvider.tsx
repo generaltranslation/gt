@@ -1,34 +1,35 @@
 'use client';
-
-import { isValidElement, useCallback, useLayoutEffect, useState } from 'react';
-import { GTContext, useRuntimeTranslation } from 'gt-react/client';
-import {
-  RenderMethod,
-  TranslationsObject,
-  TranslatedContent,
-  TranslatedChildren,
-  TranslationError,
-  TranslationSuccess,
-  renderDefaultChildren,
-  renderSkeleton,
-  TaggedChildren,
-  renderVariable,
-  renderTranslatedChildren,
-  isEmptyReactFragment,
-} from 'gt-react/internal';
+import React, {
+  isValidElement,
+  useCallback,
+  useLayoutEffect,
+  useState,
+} from 'react';
 import {
   renderContentToString,
   splitStringToContent,
 } from 'generaltranslation';
-import React from 'react';
 import { listSupportedLocales } from '@generaltranslation/supported-locales';
+import { GTContext } from './GTContext';
 import {
   FlattenedTaggedDictionary,
   GTTranslationError,
+  RenderMethod,
   TaggedDictionary,
   TaggedDictionaryEntry,
+  TranslatedChildren,
+  TranslatedContent,
+  TranslationError,
+  TranslationsObject,
+  TranslationSuccess,
 } from '../types/types';
-import extractTaggedEntryMetadata from '../utils/extractTaggedEntryMetadata';
+import extractEntryMetadata from './helpers/extractEntryMetadata';
+import renderDefaultChildren from './rendering/renderDefaultChildren';
+import renderSkeleton from './rendering/renderSkeleton';
+import renderTranslatedChildren from './rendering/renderTranslatedChildren';
+import { isEmptyReactFragment } from '../utils/utils';
+import renderVariable from './rendering/renderVariable';
+import useRuntimeTranslation from './runtime/useRuntimeTranslation';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -85,7 +86,7 @@ export default function ClientProvider({
       const resolvedTranslations: TranslationsObject = {};
       await Promise.all(
         Object.entries(translationPromises).map(async ([id, promise]) => {
-          const { metadata } = extractTaggedEntryMetadata(dictionary[id]);
+          const { metadata } = extractEntryMetadata(dictionary[id]);
           const hash = metadata?.hash;
           let result: TranslationSuccess | TranslationError;
           try {
@@ -130,7 +131,7 @@ export default function ClientProvider({
       }
 
       // Parse the dictionary entry
-      const { entry, metadata } = extractTaggedEntryMetadata(dictionaryEntry);
+      const { entry, metadata } = extractEntryMetadata(dictionaryEntry);
       const variables = options;
       const variablesOptions = metadata?.variablesOptions;
       const hash = metadata?.hash;

@@ -37,10 +37,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = useElement;
-var jsx_runtime_1 = require("react/jsx-runtime");
-var react_1 = __importStar(require("react"));
-var createMessages_1 = require("../messages/createMessages");
-var GTContext_1 = __importDefault(require("../provider/GTContext"));
+const jsx_runtime_1 = require("react/jsx-runtime");
+const react_1 = __importStar(require("react"));
+const createMessages_1 = require("../messages/createMessages");
+const GTContext_1 = __importDefault(require("../provider/GTContext"));
 /**
  * `useElement()` hook which gets the translation function `t()` provided by `<GTProvider>`.
  *
@@ -56,14 +56,13 @@ var GTContext_1 = __importDefault(require("../provider/GTContext"));
  * const t = useElement();
  * console.log(t('hello')); // Translates item 'hello', returns it as a JSX element
  */
-function useElement(id) {
-    if (id === void 0) { id = ''; }
+function useElement(id = '') {
     // Create a prefix for translation keys if an id is provided
-    var getId = function (suffix) {
-        return id ? "".concat(id, ".").concat(suffix) : suffix;
+    const getId = (suffix) => {
+        return id ? `${id}.${suffix}` : suffix;
     };
     // Get the translation context
-    var translateDictionaryEntry = (0, GTContext_1.default)("useElement('".concat(id, "'): No context provided. You're trying to get the t() function on the client, which can only be done inside a <GTProvider>.")).translateDictionaryEntry;
+    const { translateDictionaryEntry } = (0, GTContext_1.default)(`useElement('${id}'): No context provided. You're trying to get the t() function on the client, which can only be done inside a <GTProvider>.`);
     /**
     * Translates a dictionary item based on its `id` and options.
     * Always returns a React.JSX.Element. Returns a fragment if there is no translation.
@@ -73,12 +72,10 @@ function useElement(id) {
     *
     * @returns {JSX.Element}
     */
-    function t(id, options) {
-        if (id === void 0) { id = ''; }
-        if (options === void 0) { options = {}; }
-        var prefixedId = getId(id);
+    function t(id = '', options = {}) {
+        const prefixedId = getId(id);
         if (translateDictionaryEntry) {
-            var translation = translateDictionaryEntry(prefixedId, options);
+            const translation = translateDictionaryEntry(prefixedId, options);
             if (!translation)
                 console.warn((0, createMessages_1.createNoEntryWarning)(id, prefixedId));
             if (!(0, react_1.isValidElement)(translation))

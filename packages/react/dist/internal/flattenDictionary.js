@@ -4,10 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = flattenDictionary;
-var react_1 = __importDefault(require("react"));
-var createDuplicateKeyError = function (key) {
-    return "Duplicate key found in dictionary: \"".concat(key, "\"");
-};
+const react_1 = __importDefault(require("react"));
+const createDuplicateKeyError = (key) => `Duplicate key found in dictionary: "${key}"`;
 /**
  * Flattens a nested dictionary by concatenating nested keys.
  * Throws an error if two keys result in the same flattened key.
@@ -16,18 +14,17 @@ var createDuplicateKeyError = function (key) {
  * @returns {Record<string, React.ReactNode>} The flattened dictionary object.
  * @throws {Error} If two keys result in the same flattened key.
  */
-function flattenDictionary(dictionary, prefix) {
-    if (prefix === void 0) { prefix = ""; }
-    var flattened = {};
-    for (var key in dictionary) {
+function flattenDictionary(dictionary, prefix = "") {
+    const flattened = {};
+    for (const key in dictionary) {
         if (dictionary.hasOwnProperty(key)) {
-            var newKey = prefix ? "".concat(prefix, ".").concat(key) : key;
+            const newKey = prefix ? `${prefix}.${key}` : key;
             if (typeof dictionary[key] === "object" &&
                 dictionary[key] !== null &&
                 !Array.isArray(dictionary[key]) &&
                 !react_1.default.isValidElement(dictionary[key])) {
-                var nestedFlattened = flattenDictionary(dictionary[key], newKey);
-                for (var flatKey in nestedFlattened) {
+                const nestedFlattened = flattenDictionary(dictionary[key], newKey);
+                for (const flatKey in nestedFlattened) {
                     if (flattened.hasOwnProperty(flatKey)) {
                         throw new Error(createDuplicateKeyError(flatKey));
                     }

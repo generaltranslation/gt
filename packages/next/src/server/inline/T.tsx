@@ -7,7 +7,6 @@ import {
   renderDefaultChildren,
   renderSkeleton,
   renderTranslatedChildren,
-  TranslatedChildren,
 } from 'gt-react/internal';
 import renderVariable from '../rendering/renderVariable';
 import { isSameLanguage } from 'generaltranslation';

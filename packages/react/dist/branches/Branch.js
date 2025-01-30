@@ -11,7 +11,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var jsx_runtime_1 = require("react/jsx-runtime");
+const jsx_runtime_1 = require("react/jsx-runtime");
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
  * It allows for flexible content switching based on the `branch` prop and an object of possible branches (`...branches`).
@@ -33,9 +33,9 @@ var jsx_runtime_1 = require("react/jsx-runtime");
  * @returns {JSX.Element} The rendered branch or fallback content.
  */
 function Branch(_a) {
-    var children = _a.children, _b = _a.name, name = _b === void 0 ? "branch" : _b, branch = _a.branch, props = __rest(_a, ["children", "name", "branch"]);
-    var generaltranslation = props["data-_gt"], branches = __rest(props, ['data-_gt']);
-    var renderedBranch = (branch && typeof branches[branch] !== 'undefined') ? branches[branch] : children;
+    var { children, name = "branch", branch } = _a, props = __rest(_a, ["children", "name", "branch"]);
+    const { 'data-_gt': generaltranslation } = props, branches = __rest(props, ['data-_gt']);
+    const renderedBranch = (branch && typeof branches[branch] !== 'undefined') ? branches[branch] : children;
     return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-branch-name": branch, "data-_gt-name": name || "branch", style: { display: 'contents' }, children: renderedBranch }));
 }
 Branch.gtTransformation = "branch";

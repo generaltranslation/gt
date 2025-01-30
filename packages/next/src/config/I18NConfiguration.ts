@@ -10,6 +10,7 @@ import {
   TranslatedContent,
   Children,
   defaultRenderSettings,
+  GTTranslationError,
 } from 'gt-react/internal';
 import {
   createMismatchingHashWarning,
@@ -18,7 +19,6 @@ import {
 } from '../errors/createErrors';
 import { hashJsxChildren } from 'generaltranslation/id';
 import { Content, JsxChildren } from 'generaltranslation/internal';
-import { GTTranslationError } from '../types/types';
 import { TaggedChildren, TranslationsObject } from 'gt-react/internal';
 type I18NConfigurationParams = {
   remoteCache: boolean;

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 /**
  * Translation component that handles rendering translated content, including plural forms.
  * Used with the required `id` parameter instead of `const t = useGT()`.

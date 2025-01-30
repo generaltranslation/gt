@@ -7,13 +7,13 @@ import {
 import isVariableObject from "../helpers/isVariableObject";
 import getGTProp from "../helpers/getGTProp";
 import getVariableProps from "../../variables/_getVariableProps";
-import { getPluralBranch } from "../../internal";
 import renderDefaultChildren from "./renderDefaultChildren";
 import { libraryDefaultLocale } from "generaltranslation/internal";
 import {
   baseVariablePrefix,
   getFallbackVariableName,
 } from "../../variables/getVariableName";
+import getPluralBranch from "../../branches/plurals/getPluralBranch";
 
 function renderTranslatedElement({
   sourceElement,

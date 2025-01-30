@@ -4,13 +4,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getDictionaryEntry;
-var react_1 = __importDefault(require("react"));
-var createMessages_1 = require("../../messages/createMessages");
+const react_1 = __importDefault(require("react"));
+const createMessages_1 = require("../../messages/createMessages");
 function getDictionaryEntry(dictionary, id) {
-    var current = dictionary;
-    var dictionaryPath = id.split(".");
-    for (var _i = 0, dictionaryPath_1 = dictionaryPath; _i < dictionaryPath_1.length; _i++) {
-        var key = dictionaryPath_1[_i];
+    let current = dictionary;
+    let dictionaryPath = id.split(".");
+    for (const key of dictionaryPath) {
         if (typeof current !== "object" ||
             Array.isArray(current) ||
             react_1.default.isValidElement(current)) {

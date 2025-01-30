@@ -1,9 +1,7 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { determineLocale } from "generaltranslation";
-import { libraryDefaultLocale } from "generaltranslation/internal";
-import { listSupportedLocales } from "@generaltranslation/supported-locales";
+import { useState, useEffect } from 'react';
+import { determineLocale } from 'generaltranslation';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { listSupportedLocales } from '@generaltranslation/supported-locales';
 
 /**
  * Hook to retrieve the browser's default locale, with support for a fallback and locale stored in a cookie.
@@ -29,7 +27,7 @@ export default function useBrowserLocale(
   defaultLocale: string = libraryDefaultLocale,
   locales: string[] = listSupportedLocales()
 ): string {
-  const [locale, setLocale] = useState<string>("");
+  const [locale, setLocale] = useState<string>('');
   useEffect(() => {
     const browserLocales = (() => {
       if (navigator?.languages) return navigator.languages;

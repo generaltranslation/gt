@@ -7,7 +7,7 @@ import {
   T,
   Branch,
   Plural,
-} from 'gt-react';
+} from 'gt-react/client';
 
 function GTProvider(params: {
   children?: any;

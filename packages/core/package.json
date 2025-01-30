@@ -1,6 +1,6 @@
 {
   "name": "generaltranslation",
-  "version": "6.1.5",
+  "version": "6.1.6",
   "description": "A language toolkit for AI developers",
   "main": "dist/index.cjs.min.cjs",
   "module": "dist/index.esm.min.mjs",
@@ -9,9 +9,9 @@
     "dist"
   ],
   "scripts": {
-    "clean:build": "rm -rf dist; npm run build",
+    "build:clean": "rm -rf dist; npm run build",
     "build": "rollup -c",
-    "publish": "npm run clean:build && npm publish"
+    "publish": "npm run build:clean && npm publish"
   },
   "repository": {
     "type": "git",

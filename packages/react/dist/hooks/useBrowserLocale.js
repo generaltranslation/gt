@@ -2,10 +2,10 @@
 "use client";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = useBrowserLocale;
-var react_1 = require("react");
-var generaltranslation_1 = require("generaltranslation");
-var internal_1 = require("generaltranslation/internal");
-var supported_locales_1 = require("@generaltranslation/supported-locales");
+const react_1 = require("react");
+const generaltranslation_1 = require("generaltranslation");
+const internal_1 = require("generaltranslation/internal");
+const supported_locales_1 = require("@generaltranslation/supported-locales");
 /**
  * Hook to retrieve the browser's default locale, with support for a fallback and locale stored in a cookie.
  *
@@ -26,12 +26,10 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  * it will take precedence. If not, it falls back to the `navigator.language` or `navigator.userLanguage`. If none of these are available,
  * the provided `defaultLocale` is used.
  */
-function useBrowserLocale(defaultLocale, locales) {
-    if (defaultLocale === void 0) { defaultLocale = internal_1.libraryDefaultLocale; }
-    if (locales === void 0) { locales = (0, supported_locales_1.listSupportedLocales)(); }
-    var _a = (0, react_1.useState)(""), locale = _a[0], setLocale = _a[1];
-    (0, react_1.useEffect)(function () {
-        var browserLocales = (function () {
+function useBrowserLocale(defaultLocale = internal_1.libraryDefaultLocale, locales = (0, supported_locales_1.listSupportedLocales)()) {
+    const [locale, setLocale] = (0, react_1.useState)("");
+    (0, react_1.useEffect)(() => {
+        const browserLocales = (() => {
             if (navigator === null || navigator === void 0 ? void 0 : navigator.languages)
                 return navigator.languages;
             if (navigator === null || navigator === void 0 ? void 0 : navigator.language)

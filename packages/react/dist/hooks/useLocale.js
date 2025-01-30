@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = useLocale;
-var GTContext_1 = __importDefault(require("../provider/GTContext"));
+const GTContext_1 = __importDefault(require("../provider/GTContext"));
 /**
  * Retrieves the user's locale from the `<GTProvider>` context.
  *

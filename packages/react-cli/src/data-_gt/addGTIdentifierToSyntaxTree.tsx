@@ -1,5 +1,5 @@
-import { getVariableName } from "gt-react/internal";
-import { isAcceptedPluralForm, pluralForms } from "generaltranslation/internal";
+import { getVariableName } from 'gt-react/internal';
+import { isAcceptedPluralForm } from 'generaltranslation/internal';
 
 // recreates addGTIdentifier and writeChildrenAsObjects
 export default function addGTIdentifierToSyntaxTree(
@@ -10,52 +10,52 @@ export default function addGTIdentifierToSyntaxTree(
   let indexObject: { index: number } = { index: startingIndex };
 
   const handleSingleChild = (child: any) => {
-    if (child && typeof child === "object") {
+    if (child && typeof child === 'object') {
       const { type, props } = child;
       indexObject.index += 1;
 
       let generaltranslation: any = { id: indexObject.index };
 
-      if (type === "Var") {
+      if (type === 'Var') {
         return {
-          variable: "variable",
+          variable: 'variable',
           id: indexObject.index,
           key: getVariableName(
-            { ...props, "data-_gt": generaltranslation },
-            "variable"
+            { ...props, 'data-_gt': generaltranslation },
+            'variable'
           ),
         };
-      } else if (type === "Num") {
+      } else if (type === 'Num') {
         return {
-          variable: "number",
+          variable: 'number',
           id: indexObject.index,
           key: getVariableName(
-            { ...props, "data-_gt": generaltranslation },
-            "number"
+            { ...props, 'data-_gt': generaltranslation },
+            'number'
           ),
         };
-      } else if (type === "Currency") {
+      } else if (type === 'Currency') {
         return {
-          variable: "currency",
+          variable: 'currency',
           id: indexObject.index,
           key: getVariableName(
-            { ...props, "data-_gt": generaltranslation },
-            "currency"
+            { ...props, 'data-_gt': generaltranslation },
+            'currency'
           ),
         };
-      } else if (type === "DateTime") {
+      } else if (type === 'DateTime') {
         return {
-          variable: "datetime",
+          variable: 'datetime',
           id: indexObject.index,
           key: getVariableName(
-            { ...props, "data-_gt": generaltranslation },
-            "datetime"
+            { ...props, 'data-_gt': generaltranslation },
+            'datetime'
           ),
         };
       }
 
-      if (type === "Plural") {
-        generaltranslation.transformation = "plural";
+      if (type === 'Plural') {
+        generaltranslation.transformation = 'plural';
         const pluralBranches = Object.entries(props).reduce(
           (acc, [branchName, branch]) => {
             if (isAcceptedPluralForm(branchName)) {
@@ -68,8 +68,8 @@ export default function addGTIdentifierToSyntaxTree(
         );
         if (Object.keys(pluralBranches).length)
           generaltranslation.branches = pluralBranches;
-      } else if (type === "Branch") {
-        generaltranslation.transformation = "branch";
+      } else if (type === 'Branch') {
+        generaltranslation.transformation = 'branch';
         const { children, branch, ...branches } = props;
         const resultBranches = Object.entries(branches).reduce(
           (acc, [branchName, branch]) => {
@@ -86,8 +86,8 @@ export default function addGTIdentifierToSyntaxTree(
       return {
         type: type || `C${generaltranslation.id}`,
         props: {
-          "data-_gt": generaltranslation,
-          ...(typeof props.children !== "undefined" && {
+          'data-_gt': generaltranslation,
+          ...(typeof props.children !== 'undefined' && {
             children: handleChildren(props.children),
           }),
         },

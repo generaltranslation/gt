@@ -1,7 +1,15 @@
-import { DictionaryEntry, Entry, Metadata } from "../../types/types";
+import {
+  DictionaryEntry,
+  Entry,
+  Metadata,
+  TaggedDictionaryEntry,
+  TaggedEntry,
+} from '../../types/types';
 
-export default function extractEntryMetadata(value: DictionaryEntry): {
-  entry: Entry;
+export default function extractEntryMetadata(
+  value: DictionaryEntry | TaggedDictionaryEntry
+): {
+  entry: Entry | TaggedEntry;
   metadata?: Metadata;
 } {
   if (Array.isArray(value)) {
@@ -9,8 +17,8 @@ export default function extractEntryMetadata(value: DictionaryEntry): {
       return { entry: value[0] };
     }
     if (value.length === 2) {
-      return { entry: value[0], metadata: value[1] };
+      return { entry: value[0], metadata: value[1] as Metadata };
     }
   }
-  return { entry: value };
+  return { entry: value as Entry | TaggedEntry };
 }

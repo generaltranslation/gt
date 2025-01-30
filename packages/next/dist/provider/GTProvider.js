@@ -91,8 +91,8 @@ var getLocale_1 = __importDefault(require("../request/getLocale"));
 var getMetadata_1 = __importDefault(require("../request/getMetadata"));
 var generaltranslation_1 = require("generaltranslation");
 var getDictionary_1 = __importStar(require("../dictionary/getDictionary"));
-var ClientProvider_1 = __importDefault(require("./ClientProvider"));
 var createErrors_1 = require("../errors/createErrors");
+var ClientProviderWrapper_1 = __importDefault(require("./ClientProviderWrapper"));
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -255,7 +255,7 @@ function GTProvider(_a) {
                      * We will also be populating the dictionary
                      */
                     _d.sent();
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProvider_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, translationPromises: promises, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings() }, I18NConfig.getClientSideConfig(), { children: children })))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, translationPromises: promises, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings() }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });
     });

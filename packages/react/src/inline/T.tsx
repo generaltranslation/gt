@@ -1,16 +1,20 @@
-import React, { useEffect } from "react";
-import useDefaultLocale from "../hooks/useDefaultLocale";
-import useLocale from "../hooks/useLocale";
-import renderDefaultChildren from "../provider/rendering/renderDefaultChildren";
-import { addGTIdentifier, isEmptyReactFragment, writeChildrenAsObjects } from "../internal";
-import useGTContext from "../provider/GTContext";
-import renderTranslatedChildren from "../provider/rendering/renderTranslatedChildren";
-import { useMemo } from "react";
-import renderVariable from "../provider/rendering/renderVariable";
-import { createClientSideTWithoutIdError } from "../messages/createMessages";
-import { hashJsxChildren } from "generaltranslation/id";
-import renderSkeleton from "../provider/rendering/renderSkeleton";
-import { TranslatedChildren } from "../types/types";
+import React, { useEffect } from 'react';
+import useDefaultLocale from '../hooks/useDefaultLocale';
+import useLocale from '../hooks/useLocale';
+import renderDefaultChildren from '../provider/rendering/renderDefaultChildren';
+import {
+  addGTIdentifier,
+  isEmptyReactFragment,
+  writeChildrenAsObjects,
+} from '../internal';
+import useGTContext from '../provider/GTContext';
+import renderTranslatedChildren from '../provider/rendering/renderTranslatedChildren';
+import { useMemo } from 'react';
+import renderVariable from '../provider/rendering/renderVariable';
+import { createClientSideTWithoutIdError } from '../messages/createMessages';
+import { hashJsxChildren } from 'generaltranslation/id';
+import renderSkeleton from '../provider/rendering/renderSkeleton';
+import { TranslatedChildren } from '../types/types';
 
 /**
  * Translation component that handles rendering translated content, including plural forms.
@@ -44,14 +48,14 @@ import { TranslatedChildren } from "../types/types";
  *
  */
 function T({
-    children,
-    id,
-    ...props
+  children,
+  id,
+  ...props
 }: {
-    children: any;
-    id: string;
-    context?: string;
-    [key: string]: any;
+  children: any;
+  id: string;
+  context?: string;
+  [key: string]: any;
 }): React.JSX.Element | undefined {
   if (!children) return undefined;
 
@@ -66,9 +70,9 @@ function T({
     translationRequired,
     dialectTranslationRequired,
     translateChildren,
-    renderSettings
+    renderSettings,
   } = useGTContext(
-      `<T id="${id}"> used on the client-side outside of <GTProvider>`
+    `<T id="${id}"> used on the client-side outside of <GTProvider>`
   );
 
   const locale = useLocale();
@@ -82,13 +86,15 @@ function T({
   const [childrenAsObjects, hash] = useMemo(() => {
     if (translationRequired) {
       const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-      const hash: string = hashJsxChildren({ source: childrenAsObjects, ...(context && {context}) });
+      const hash: string = hashJsxChildren({
+        source: childrenAsObjects,
+        ...(context && { context }),
+      });
       return [childrenAsObjects, hash];
     } else {
       return [undefined, ''];
     }
-  }, [context, taggedChildren, translationRequired]);
-
+  }, [context, taggedChildren, translationRequired, locale]);
 
   // Do translation if required
   const translationEntry = translations?.[id]?.[hash];
@@ -104,30 +110,40 @@ function T({
       source: childrenAsObjects,
       targetLocale: locale,
       metadata: {
-          id, hash, context
-      }
-    })
-  }, [translations, translationEntry, translationRequired, id, hash, context]);
+        id,
+        hash,
+        context,
+      },
+    });
+  }, [
+    translations,
+    translationEntry,
+    translationRequired,
+    id,
+    hash,
+    context,
+    locale,
+  ]);
 
-  // ----- RENDER METHODS ----- // 
+  // ----- RENDER METHODS ----- //
 
   // for default/fallback rendering
   const renderDefaultLocale = () => {
     return renderDefaultChildren({
-        children: taggedChildren,
-        variables,
-        variablesOptions,
-        defaultLocale,
-        renderVariable
+      children: taggedChildren,
+      variables,
+      variablesOptions,
+      defaultLocale,
+      renderVariable,
     });
-  }
+  };
 
   const renderLoadingDefault = () => {
     if (dialectTranslationRequired) {
-        return renderDefaultLocale();
+      return renderDefaultLocale();
     }
     return renderSkeleton();
-  }
+  };
 
   const renderTranslation = (target: TranslatedChildren) => {
     return renderTranslatedChildren({
@@ -136,25 +152,26 @@ function T({
       variables,
       variablesOptions,
       locales: [locale, defaultLocale],
-      renderVariable
+      renderVariable,
     }) as React.JSX.Element;
-  }
+  };
 
   // ----- RENDER BEHAVIOR ----- //
 
   // fallback to default locale if no tx required
   if (!translationRequired) {
-      return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
+    return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
   }
 
   // loading behavior
-  if (!translationEntry || translationEntry?.state === "loading") {
+  if (!translationEntry || translationEntry?.state === 'loading') {
     let loadingFallback;
-    if (renderSettings.method === "skeleton") {
-        loadingFallback = renderSkeleton();
-    } else if (renderSettings.method === "replace") {
-        loadingFallback = renderDefaultLocale();
-    } else { // default
+    if (renderSettings.method === 'skeleton') {
+      loadingFallback = renderSkeleton();
+    } else if (renderSettings.method === 'replace') {
+      loadingFallback = renderDefaultLocale();
+    } else {
+      // default
       loadingFallback = renderLoadingDefault();
     }
     // The suspense exists here for hydration reasons
@@ -162,15 +179,18 @@ function T({
   }
 
   // error behavior
-  if (translationEntry.state === "error") {
+  if (translationEntry.state === 'error') {
     return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
   }
 
   // render translated content
-  return <React.Fragment>{renderTranslation(translationEntry.target)}</React.Fragment>;
-
+  return (
+    <React.Fragment>
+      {renderTranslation(translationEntry.target)}
+    </React.Fragment>
+  );
 }
 
-T.gtTransformation = "translate-client";
+T.gtTransformation = 'translate-client';
 
 export default T;

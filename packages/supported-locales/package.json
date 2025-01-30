@@ -1,17 +1,17 @@
 {
   "name": "@generaltranslation/supported-locales",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "List of supported locales for General Translation",
-  "main": "dist/index.cjs.min.cjs",
-  "module": "dist/index.esm.min.mjs",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.cjs.min.cjs",
+  "module": "./dist/index.esm.min.mjs",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "clean:build": "rm -rf dist; npm run build",
+    "build:clean": "rm -rf dist; npm run build",
     "build": "rollup -c",
-    "publish": "npm run clean:build && npm publish"
+    "publish": "npm run build:clean && npm publish"
   },
   "repository": {
     "type": "git",
@@ -27,17 +27,18 @@
   },
   "homepage": "https://github.com/General-Translation/gt-libraries#readme",
   "typescript": {
-    "definition": "dist/index.d.ts"
+    "definition": "./dist/index.d.ts"
   },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "require": "./dist/index.cjs.min.cjs",
-      "import": "./dist/index.esm.min.mjs"
+      "import": "./dist/index.esm.min.mjs",
+      "default": "./dist/index.esm.min.mjs"
     }
   },
   "dependencies": {
-    "generaltranslation": "^6.1.2"
+    "generaltranslation": "^6.1.6"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",

@@ -1,18 +1,22 @@
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from 'react';
 import {
   createMismatchingHashWarning,
   createMismatchingIdHashWarning,
   dynamicTranslationError,
   createGenericRuntimeTranslationError,
-} from "../../messages/createMessages";
+} from '../../messages/createMessages';
 import {
   RenderMethod,
   TranslateChildrenCallback,
   TranslateContentCallback,
   TranslationsObject,
-} from "../../types/types";
-import { Content } from "generaltranslation/internal";
-import { maxConcurrentRequests, maxBatchSize, batchInterval } from "../config/defaultProps";
+} from '../../types/types';
+import { Content } from 'generaltranslation/internal';
+import {
+  maxConcurrentRequests,
+  maxBatchSize,
+  batchInterval,
+} from '../config/defaultProps';
 
 export default function useRuntimeTranslation({
   targetLocale,
@@ -42,10 +46,6 @@ export default function useRuntimeTranslation({
 } {
   metadata = { ...metadata, projectId, sourceLocale: defaultLocale };
 
-  const [inflightCount, setInflightCount] = useState(0);
-  const [conccurentRequestCount, setConcurrentRequestCount] = useState(0);
-  const [requestMap, setRequestMap] = useState(new Map<string, any>());
-
   const [activeRequests, setActiveRequests] = useState(0);
 
   const translationEnabled = !!(runtimeUrl && projectId);
@@ -54,19 +54,19 @@ export default function useRuntimeTranslation({
       translationEnabled,
       translateContent: () =>
         Promise.reject(
-          new Error("translateContent() failed because translation is disabled")
+          new Error('translateContent() failed because translation is disabled')
         ),
       translateChildren: () =>
         Promise.reject(
           new Error(
-            "translateChildren() failed because translation is disabled"
+            'translateChildren() failed because translation is disabled'
           )
         ),
     };
 
   // Queue to store requested keys between renders.
   type TranslationRequestQueueItem = {
-    type: "content" | "jsx";
+    type: 'content' | 'jsx';
     source: Content | any;
     metadata: { hash: string; context?: string } & Record<string, any>;
     resolve: any;
@@ -86,7 +86,7 @@ export default function useRuntimeTranslation({
       metadata: { hash: string; context?: string } & Record<string, any>;
     }): Promise<void> => {
       // get the key
-      const id = params.metadata.id ? `${params.metadata.id}-` : "";
+      const id = params.metadata.id ? `${params.metadata.id}-` : '';
       const key = `${id}-${params.metadata.hash}-${params.targetLocale}`;
 
       // return a promise to current request if it exists
@@ -98,7 +98,7 @@ export default function useRuntimeTranslation({
       // promise for hooking into the translation request request to know when complete
       const translationPromise = new Promise<void>((resolve, reject) => {
         requestQueueRef.current.set(key, {
-          type: "content",
+          type: 'content',
           source: params.source,
           metadata: params.metadata,
           resolve,
@@ -127,7 +127,7 @@ export default function useRuntimeTranslation({
       metadata: { hash: string; context?: string } & Record<string, any>;
     }): Promise<void> => {
       // get the key
-      const id = params.metadata.id ? `${params.metadata.id}-` : "";
+      const id = params.metadata.id ? `${params.metadata.id}-` : '';
       const key = `${id}-${params.metadata.hash}-${params.targetLocale}`;
 
       // return a promise to current request if it exists
@@ -139,7 +139,7 @@ export default function useRuntimeTranslation({
       // promise for hooking into the translation request to know when complete
       const translationPromise = new Promise<void>((resolve, reject) => {
         requestQueueRef.current.set(key, {
-          type: "jsx",
+          type: 'jsx',
           source: params.source,
           metadata: params.metadata,
           resolve,
@@ -156,7 +156,6 @@ export default function useRuntimeTranslation({
     },
     []
   );
-  const [count, setCount] = useState(0);
   // Send a request to the runtime server
   const sendBatchRequest = async (
     batchRequests: Map<string, TranslationRequestQueueItem>
@@ -177,7 +176,7 @@ export default function useRuntimeTranslation({
         (acc: TranslationsObject, request) => {
           // loading state for jsx, render loading behavior
           const id = request.metadata.id || request.metadata.hash;
-          acc[id] = { [request.metadata.hash]: { state: "loading" } };
+          acc[id] = { [request.metadata.hash]: { state: 'loading' } };
           return acc;
         },
         {}
@@ -200,22 +199,21 @@ export default function useRuntimeTranslation({
         try {
           return await fetch(url, { ...options, signal: controller.signal });
         } catch (error) {
-          console.error("timeout!");
-          if (error instanceof Error && error.name === "AbortError")
-            throw new Error("Request timed out"); // Handle the timeout case
+          console.error('timeout!');
+          if (error instanceof Error && error.name === 'AbortError')
+            throw new Error('Request timed out'); // Handle the timeout case
           throw error; // Re-throw other errors
         } finally {
           if (timeoutId !== undefined) clearTimeout(timeoutId); // Ensure timeout is cleared
         }
       };
-
       const response = await fetchWithAbort(
         `${runtimeUrl}/v1/runtime/${projectId}/client`,
         {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
-            ...(devApiKey && { "x-gt-dev-api-key": devApiKey }),
+            'Content-Type': 'application/json',
+            ...(devApiKey && { 'x-gt-dev-api-key': devApiKey }),
           },
           body: JSON.stringify({
             requests,
@@ -238,7 +236,7 @@ export default function useRuntimeTranslation({
         const request = requests[index];
 
         // translation received
-        if ("translation" in result && result.translation && result.reference) {
+        if ('translation' in result && result.translation && result.reference) {
           const {
             translation,
             reference: { id, key: hash },
@@ -264,7 +262,7 @@ export default function useRuntimeTranslation({
           newTranslations[request.metadata.id || request.metadata.hash] = {
             // id defaults to hash if none provided
             [request.metadata.hash]: {
-              state: "success",
+              state: 'success',
               target: translation,
             },
           };
@@ -290,7 +288,7 @@ export default function useRuntimeTranslation({
           // set error in translation object
           newTranslations[request.metadata.id || request.metadata.hash] = {
             [request.metadata.hash]: {
-              state: "error",
+              state: 'error',
               error: result.error,
               code: result.code,
             },
@@ -308,8 +306,8 @@ export default function useRuntimeTranslation({
         );
         newTranslations[request.metadata.id || request.metadata.hash] = {
           [request.metadata.hash]: {
-            state: "error",
-            error: "An error occurred.",
+            state: 'error',
+            error: 'An error occurred.',
             code: 500,
           },
         };
@@ -323,8 +321,8 @@ export default function useRuntimeTranslation({
         // id defaults to hash if none provided
         newTranslations[request.metadata.id || request.metadata.hash] = {
           [request.metadata.hash]: {
-            state: "error",
-            error: "An error occurred.",
+            state: 'error',
+            error: 'An error occurred.',
             code: 500,
           },
         };
