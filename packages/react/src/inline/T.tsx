@@ -80,6 +80,7 @@ function T({
   const taggedChildren = useMemo(() => addGTIdentifier(children), [children]);
 
   // ----- FETCH TRANSLATION ----- //
+  // (checking cache is handled by GTProvider)
 
   // Calculate necessary info for fetching tx/generating tx
   const context = props.context;
@@ -94,7 +95,7 @@ function T({
     } else {
       return [undefined, ''];
     }
-  }, [context, taggedChildren, translationRequired, locale]);
+  }, [context, taggedChildren, translationRequired]);
 
   // Do translation if required
   const translationEntry = translations?.[id]?.[hash];
@@ -104,6 +105,9 @@ function T({
 
     // skip if: no fetch if cache hasn't been hit yet or we already have the translation
     if (!translations || translationEntry) return;
+
+    // skip if: locale is not loaded yet
+    if (!locale) return;
 
     // Translate content
     translateChildren({

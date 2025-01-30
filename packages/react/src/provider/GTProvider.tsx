@@ -51,7 +51,7 @@ export default function GTProvider({
   dictionary = {},
   locales = listSupportedLocales(),
   defaultLocale = libraryDefaultLocale,
-  locale = useBrowserLocale(defaultLocale, locales) || defaultLocale,
+  locale = useBrowserLocale(defaultLocale, locales),
   cacheUrl = defaultCacheUrl,
   runtimeUrl = defaultRuntimeApiUrl,
   renderSettings = defaultRenderSettings,
