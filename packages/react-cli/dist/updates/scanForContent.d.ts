@@ -9,4 +9,5 @@ import { WrapOptions } from '../main';
 export default function scanForContent(options: WrapOptions): Promise<{
     errors: string[];
     filesUpdated: string[];
+    warnings: string[];
 }>;

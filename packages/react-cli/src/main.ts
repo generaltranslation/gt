@@ -353,7 +353,7 @@ program
   });
 
 program
-  .command('scan')
+  .command('setup')
   .description(
     'Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids'
   )
@@ -397,7 +397,7 @@ program
     }
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { errors, filesUpdated } = await scanForContent(options);
+    const { errors, filesUpdated, warnings } = await scanForContent(options);
 
     if (errors.length > 0) {
       console.log(chalk.red('\n✗ Failed to write files:\n'));
@@ -412,9 +412,18 @@ program
       )
     );
     if (filesUpdated.length > 0) {
-      console.log(filesUpdated.join('\n'));
+      console.log(
+        filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
+      );
       console.log();
       console.log(chalk.green('Please verify the changes before committing.'));
+    }
+
+    if (warnings.length > 0) {
+      console.log(chalk.yellow('\n⚠️  Warnings encountered:'));
+      console.log(
+        warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')
+      );
     }
   });
 

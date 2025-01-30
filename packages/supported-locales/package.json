@@ -25,7 +25,7 @@
   "bugs": {
     "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
-  "homepage": "https://github.com/General-Translation/gt-libraries#readme",
+  "homepage": "https://www.generaltranslation.com/",
   "typescript": {
     "definition": "./dist/index.d.ts"
   },

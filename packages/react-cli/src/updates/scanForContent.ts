@@ -116,8 +116,9 @@ function makeParentFunctionAsync(path: NodePath): boolean {
  */
 export default async function scanForContent(
   options: WrapOptions
-): Promise<{ errors: string[]; filesUpdated: string[] }> {
+): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
   const errors: string[] = [];
+  const warnings: string[] = [];
   const srcDirectory = options.src || ['./'];
 
   // Define the file extensions to look for
@@ -241,6 +242,11 @@ export default async function scanForContent(
             // Add lang={await getLocale()} attribute
             addDynamicLangAttribute(path.node.openingElement);
             usedImports.push('getLocale');
+          } else {
+            warnings.push(
+              `File ${file} has a <html> tag with a dynamic lang attribute.` +
+                ` Please manually add \`lang={await getLocale()}\` to the <html> tag.`
+            );
           }
 
           const htmlChildren = path.node.children;
@@ -380,7 +386,7 @@ export default async function scanForContent(
       if (needsImport.length > 0) {
         // Add newline after the comment only
         processedCode = processedCode.replace(
-          /((?:import\s*{\s*(?:(?:(?:T(?:\s+as\s+GTT)?)|(?:GTT))(?:\s*,\s*(?:(?:Var(?:\s+as\s+GTVar)?)|(?:GTVar)))?(?:\s*,\s*GTProvider)?(?:\s*,\s*getLocale)?|GTProvider|getLocale)\s*}\s*from|const\s*{\s*(?:(?:GTT|T)(?:\s*,\s*(?:GTVar|Var))?(?:\s*,\s*GTProvider)?(?:\s*,\s*getLocale)?|GTProvider|getLocale)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)(?:\/server)?['"];?)/,
+          /((?:import\s*{\s*(?:T|GTT|Var|GTVar|GTProvider|getLocale)(?:\s*,\s*(?:T|GTT|Var|GTVar|GTProvider|getLocale))*\s*}\s*from|const\s*{\s*(?:T|GTT|Var|GTVar|GTProvider|getLocale)(?:\s*,\s*(?:T|GTT|Var|GTVar|GTProvider|getLocale))*\s*}\s*=\s*require)\s*['"]gt-(?:next|react)(?:\/server)?['"];?)/,
           '\n$1\n'
         );
       }
@@ -394,5 +400,5 @@ export default async function scanForContent(
     }
   }
 
-  return { errors, filesUpdated };
+  return { errors, filesUpdated, warnings };
 }
