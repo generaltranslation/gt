@@ -286,15 +286,15 @@ commander_1.program
         console.log(chalk_1.default.red('\n✗ Failed to write files:\n'));
         console.log(errors.join('\n'));
     }
-    if (warnings.length > 0) {
-        console.log(chalk_1.default.yellow('\n⚠️  Warnings:\n\n'));
-        console.log(warnings.join('\n'));
-    }
     console.log(chalk_1.default.green(`\n✓ Success! Added <T> tags and updated ${chalk_1.default.bold(filesUpdated.length)} files:\n`));
     if (filesUpdated.length > 0) {
-        console.log(filesUpdated.join('\n'));
+        console.log(filesUpdated.map((file) => `${chalk_1.default.green('-')} ${file}`).join('\n'));
         console.log();
         console.log(chalk_1.default.green('Please verify the changes before committing.'));
+    }
+    if (warnings.length > 0) {
+        console.log(chalk_1.default.yellow('\n⚠️  Warnings encountered:'));
+        console.log(warnings.map((warning) => `${chalk_1.default.yellow('-')} ${warning}`).join('\n'));
     }
 }));
 commander_1.program.parse();

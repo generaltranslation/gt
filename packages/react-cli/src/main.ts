@@ -404,11 +404,6 @@ program
       console.log(errors.join('\n'));
     }
 
-    if (warnings.length > 0) {
-      console.log(chalk.yellow('\n⚠️  Warnings:\n\n'));
-      console.log(warnings.join('\n'));
-    }
-
     console.log(
       chalk.green(
         `\n✓ Success! Added <T> tags and updated ${chalk.bold(
@@ -417,9 +412,18 @@ program
       )
     );
     if (filesUpdated.length > 0) {
-      console.log(filesUpdated.join('\n'));
+      console.log(
+        filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
+      );
       console.log();
       console.log(chalk.green('Please verify the changes before committing.'));
+    }
+
+    if (warnings.length > 0) {
+      console.log(chalk.yellow('\n⚠️  Warnings encountered:'));
+      console.log(
+        warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')
+      );
     }
   });
 

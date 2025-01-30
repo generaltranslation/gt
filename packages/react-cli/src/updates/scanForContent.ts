@@ -386,7 +386,7 @@ export default async function scanForContent(
       if (needsImport.length > 0) {
         // Add newline after the comment only
         processedCode = processedCode.replace(
-          /((?:import\s*{\s*(?:(?:(?:T(?:\s+as\s+GTT)?)|(?:GTT))(?:\s*,\s*(?:(?:Var(?:\s+as\s+GTVar)?)|(?:GTVar)))?(?:\s*,\s*GTProvider)?(?:\s*,\s*getLocale)?|GTProvider|getLocale)\s*}\s*from|const\s*{\s*(?:(?:GTT|T)(?:\s*,\s*(?:GTVar|Var))?(?:\s*,\s*GTProvider)?(?:\s*,\s*getLocale)?|GTProvider|getLocale)\s*}\s*=\s*require)\s*['"]gt-(?:next|react)(?:\/server)?['"];?)/,
+          /((?:import\s*{\s*(?:T|GTT|Var|GTVar|GTProvider|getLocale)(?:\s*,\s*(?:T|GTT|Var|GTVar|GTProvider|getLocale))*\s*}\s*from|const\s*{\s*(?:T|GTT|Var|GTVar|GTProvider|getLocale)(?:\s*,\s*(?:T|GTT|Var|GTVar|GTProvider|getLocale))*\s*}\s*=\s*require)\s*['"]gt-(?:next|react)(?:\/server)?['"];?)/,
           '\n$1\n'
         );
       }
