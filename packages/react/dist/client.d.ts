@@ -105,6 +105,28 @@ type GTContextType = {
     projectId?: string;
     translationEnabled?: boolean;
 };
+type ClientProviderProps = {
+    children: any;
+    dictionary: FlattenedTaggedDictionary;
+    initialTranslations: TranslationsObject;
+    translationPromises: Record<string, Promise<TranslatedChildren>>;
+    locale: string;
+    locales: string[];
+    defaultLocale: string;
+    translationRequired: boolean;
+    dialectTranslationRequired: boolean;
+    requiredPrefix: string | undefined;
+    renderSettings: {
+        method: RenderMethod;
+        timeout?: number;
+    };
+    projectId?: string;
+    devApiKey?: string;
+    runtimeUrl?: string;
+    runtimeTranslations?: boolean;
+    onLocaleChange?: () => void;
+    cookieName?: string;
+};
 
 declare const GTContext: React$1.Context<GTContextType | undefined>;
 
@@ -134,26 +156,7 @@ declare function renderVariable({ variableType, variableName, variableValue, var
     locales: string[];
 }): React.JSX.Element;
 
-declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale, defaultLocale, translationRequired, dialectTranslationRequired, locales, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslations, }: {
-    children: any;
-    dictionary: FlattenedTaggedDictionary;
-    initialTranslations: TranslationsObject;
-    translationPromises: Record<string, Promise<TranslatedChildren>>;
-    locale: string;
-    locales: string[];
-    defaultLocale: string;
-    translationRequired: boolean;
-    dialectTranslationRequired: boolean;
-    requiredPrefix: string | undefined;
-    renderSettings: {
-        method: RenderMethod;
-        timeout?: number;
-    };
-    projectId?: string;
-    devApiKey?: string;
-    runtimeUrl?: string;
-    runtimeTranslations?: boolean;
-}): React__default.JSX.Element;
+declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale: _locale, defaultLocale, translationRequired, dialectTranslationRequired, locales, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslations, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -461,4 +464,10 @@ declare namespace Var {
     var gtTransformation: string;
 }
 
-export { Branch, ClientProvider, Currency, DateTime, GTContext, Num, Plural, T, Var, renderVariable, useDefaultLocale, useElement, useGT, useLocale, useRuntimeTranslation };
+/**
+ * A dropdown component that allows users to select a locale.
+ * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
+ */
+declare function LocaleSelector(): React__default.ReactElement | null;
+
+export { Branch, ClientProvider, Currency, DateTime, GTContext, LocaleSelector as GTLocaleDropdown, Num, Plural, T, Var, renderVariable, useDefaultLocale, useElement, useGT, useLocale, useRuntimeTranslation };

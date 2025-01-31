@@ -2,16 +2,19 @@
 import React, {
   isValidElement,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useState,
 } from 'react';
 import {
+  determineLocale,
   renderContentToString,
   splitStringToContent,
 } from 'generaltranslation';
 import { listSupportedLocales } from '@generaltranslation/supported-locales';
 import { GTContext } from './GTContext';
 import {
+  ClientProviderProps,
   FlattenedTaggedDictionary,
   GTTranslationError,
   RenderMethod,
@@ -30,6 +33,7 @@ import renderTranslatedChildren from './rendering/renderTranslatedChildren';
 import { isEmptyReactFragment } from '../utils/utils';
 import renderVariable from './rendering/renderVariable';
 import useRuntimeTranslation from './runtime/useRuntimeTranslation';
+import { localeCookieName } from 'generaltranslation/internal';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -37,7 +41,7 @@ export default function ClientProvider({
   dictionary,
   initialTranslations,
   translationPromises,
-  locale,
+  locale: _locale,
   defaultLocale,
   translationRequired,
   dialectTranslationRequired,
@@ -48,26 +52,11 @@ export default function ClientProvider({
   devApiKey,
   runtimeUrl,
   runtimeTranslations = false,
-}: {
-  children: any;
-  dictionary: FlattenedTaggedDictionary;
-  initialTranslations: TranslationsObject;
-  translationPromises: Record<string, Promise<TranslatedChildren>>;
-  locale: string;
-  locales: string[];
-  defaultLocale: string;
-  translationRequired: boolean;
-  dialectTranslationRequired: boolean;
-  requiredPrefix: string | undefined;
-  renderSettings: {
-    method: RenderMethod;
-    timeout?: number;
-  };
-  projectId?: string;
-  devApiKey?: string;
-  runtimeUrl?: string;
-  runtimeTranslations?: boolean;
-}): React.JSX.Element {
+  onLocaleChange = () => {},
+  cookieName = localeCookieName,
+}: ClientProviderProps): React.JSX.Element {
+  // ----- TRANSLATIONS STATE ----- //
+
   /**
    * (a) Cache has already been checked by server at this point
    * (b) All string dictionary translations have been resolved at this point
@@ -77,6 +66,45 @@ export default function ClientProvider({
   const [translations, setTranslations] = useState<TranslationsObject | null>(
     null
   );
+
+  // ----- LOCALE STATE ----- //
+  // Maintain the locale state
+  const [locale, _setLocale] = useState<string>(
+    _locale ? determineLocale(_locale, locales) || '' : ''
+  );
+
+  // Check for an invalid cookie and correct it
+  const cookieLocale = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith(`${cookieName}=`))
+    ?.split('=')[1];
+  if (
+    locale &&
+    (cookieLocale || cookieLocale === '') &&
+    cookieLocale !== locale
+  ) {
+    document.cookie = `${cookieName}=${locale};path=/`;
+  }
+
+  // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
+  const setLocale = (newLocale: string): void => {
+    // validate locale
+    newLocale = determineLocale(newLocale, locales) || locale || defaultLocale;
+
+    // persist locale
+    _setLocale(newLocale);
+    document.cookie = `${cookieName}=${newLocale};path=/`;
+
+    // re-render server components
+    onLocaleChange();
+  };
+
+  // reset translations on locale change to trigger a reload
+  useEffect(() => {
+    setTranslations(null);
+  }, [locale]);
+
+  // ----- JSX DICTIONARY RESOLUTION ----- //
 
   useLayoutEffect(() => {
     setTranslations((prev) => ({ ...prev, ...initialTranslations }));
@@ -273,7 +301,7 @@ export default function ClientProvider({
         translateDictionaryEntry,
         translateChildren,
         translateContent,
-        setLocale: () => {}, // Unsupported for SSR behavior
+        setLocale, // Unsupported for SSR behavior
         locale,
         locales,
         defaultLocale,

@@ -3,7 +3,7 @@ import React from 'react';
  * A dropdown component that allows users to select a locale.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
-export default function GTLocaleDropdown(): React.ReactElement | null;
+export default function LocaleSelector(): React.ReactElement | null;
 /**
  * A dropdown component that allows users to select a locale.
  * @props {React.PropsWithChildren<React.JSX.IntrinsicElements['select']>} Properties passed to a <select> element.

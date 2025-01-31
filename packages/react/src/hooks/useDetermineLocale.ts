@@ -64,8 +64,8 @@ export default function useDetermineLocale({
       .find((row) => row.startsWith(`${cookieName}=`))
       ?.split('=')[1];
 
-    // update locale
-    _setLocale(
+    // determine locale
+    const newLocale =
       determineLocale(
         [
           ...(_locale ? [_locale] : []), // prefer user passed locale
@@ -73,8 +73,15 @@ export default function useDetermineLocale({
           ...browserLocales, // then prefer browser locale
         ],
         locales
-      ) || defaultLocale
-    );
+      ) || defaultLocale;
+
+    // if cookie not valid, change it back to whatever we use for fallback
+    if (cookieLocale && cookieLocale !== newLocale) {
+      document.cookie = `${cookieName}=${newLocale};path=/`;
+    }
+
+    // update locale
+    _setLocale(newLocale);
   }, [defaultLocale, locales]);
   return [locale, setLocale];
 }

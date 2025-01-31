@@ -12,7 +12,7 @@ import Plural from './branches/plurals/Plural';
 import Branch from './branches/Branch';
 import useLocales from './hooks/useLocales';
 import useSetLocale from './hooks/useSetLocale';
-import GTLocaleDropdown, { GTSelect, GTOption } from './ui/GTLocaleDropdown';
+import LocaleSelector, { GTSelect, GTOption } from './ui/GTLocaleDropdown';
 
 export {
   Var,
@@ -29,7 +29,7 @@ export {
   useLocale,
   useSetLocale,
   useLocales,
-  GTLocaleDropdown,
+  LocaleSelector as GTLocaleDropdown,
   GTSelect,
   GTOption,
 };

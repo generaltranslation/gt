@@ -132,7 +132,10 @@ export default function GTProvider({
   );
 
   // Reset translations if locale changes (null to trigger a new cache fetch)
-  useEffect(() => setTranslations(null), [locale]);
+  useEffect(
+    () => setTranslations(cacheUrl && translationRequired ? null : {}),
+    [locale]
+  );
 
   // ----- CHECK CACHE FOR TX ----- //
 

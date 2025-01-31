@@ -1,10 +1,5 @@
-import { headers } from 'next/headers';
-import { cookies } from 'next/headers';
-import {
-  determineLocale,
-  isValidLocale,
-  standardizeLocale,
-} from 'generaltranslation';
+import { cookies, headers } from 'next/headers';
+import { determineLocale } from 'generaltranslation';
 import {
   localeCookieName,
   localeHeaderName,
