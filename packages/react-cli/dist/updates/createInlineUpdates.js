@@ -24,9 +24,9 @@ function createInlineUpdates(options) {
         const updates = [];
         const errors = [];
         // Use the provided app directory or default to the current directory
-        const srcDirectory = options.src || ["./"];
+        const srcDirectory = options.src || ['./'];
         // Define the file extensions to look for
-        const extensions = [".js", ".jsx", ".tsx"];
+        const extensions = ['.js', '.jsx', '.tsx'];
         /**
          * Recursively scan the directory and collect all files with the specified extensions,
          * excluding files or directories that start with a dot (.)
@@ -38,7 +38,7 @@ function createInlineUpdates(options) {
             const items = fs_1.default.readdirSync(dir);
             for (const item of items) {
                 // Skip hidden files and directories
-                if (item.startsWith("."))
+                if (item.startsWith('.'))
                     continue;
                 const fullPath = path_1.default.join(dir, item);
                 const stat = fs_1.default.statSync(fullPath);
@@ -55,12 +55,12 @@ function createInlineUpdates(options) {
         }
         const files = srcDirectory.flatMap((dir) => getFiles(dir));
         for (const file of files) {
-            const code = fs_1.default.readFileSync(file, "utf8");
+            const code = fs_1.default.readFileSync(file, 'utf8');
             let ast;
             try {
                 ast = (0, parser_1.parse)(code, {
-                    sourceType: "module",
-                    plugins: ["jsx", "typescript"],
+                    sourceType: 'module',
+                    plugins: ['jsx', 'typescript'],
                 });
             }
             catch (error) {
