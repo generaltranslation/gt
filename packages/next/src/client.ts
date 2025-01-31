@@ -2,7 +2,7 @@ import {
   useGT,
   useDefaultLocale,
   useLocale,
-  GTLocaleDropdown,
+  LocaleSelector,
 } from 'gt-react/client';
 
-export { useGT, useDefaultLocale, useLocale, GTLocaleDropdown };
+export { useGT, useDefaultLocale, useLocale, LocaleSelector };

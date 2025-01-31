@@ -470,4 +470,4 @@ declare namespace Var {
  */
 declare function LocaleSelector(): React__default.ReactElement | null;
 
-export { Branch, ClientProvider, Currency, DateTime, GTContext, LocaleSelector as GTLocaleDropdown, Num, Plural, T, Var, renderVariable, useDefaultLocale, useElement, useGT, useLocale, useRuntimeTranslation };
+export { Branch, ClientProvider, Currency, DateTime, GTContext, LocaleSelector, Num, Plural, T, Var, renderVariable, useDefaultLocale, useElement, useGT, useLocale, useRuntimeTranslation };

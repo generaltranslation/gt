@@ -12,6 +12,6 @@ import Plural from './branches/plurals/Plural';
 import Branch from './branches/Branch';
 import useLocales from './hooks/useLocales';
 import useSetLocale from './hooks/useSetLocale';
-import LocaleSelector, { GTSelect, GTOption } from './ui/GTLocaleDropdown';
-export { Var, Num, Currency, DateTime, T, GTProvider, Plural, Branch, useGT, useElement, useDefaultLocale, useLocale, useSetLocale, useLocales, LocaleSelector as GTLocaleDropdown, GTSelect, GTOption, };
+import LocaleSelector from './ui/LocaleSelector';
+export { Var, Num, Currency, DateTime, T, GTProvider, Plural, Branch, useGT, useElement, useDefaultLocale, useLocale, useSetLocale, useLocales, LocaleSelector, };
 //# sourceMappingURL=index.d.ts.map

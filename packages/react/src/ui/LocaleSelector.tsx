@@ -35,51 +35,21 @@ export default function LocaleSelector(): React.ReactElement | null {
   }
 
   return (
-    <GTSelect
+    <select
       // Fallback to an empty string if currentLocale is undefined
       value={locale || ''}
       onChange={(e) => setLocale(e.target.value)}
     >
       {/* Optional fallback for when no locale is set */}
-      {!locale && <GTOption value='' />}
+      {!locale && <option value='' />}
 
       {locales.map((locale) => (
-        <GTOption key={locale} value={locale}>
+        <option key={locale} value={locale}>
           {capitalizeLanguageName(
             getLocaleProperties(locale).nativeNameWithRegionCode
           )}
-        </GTOption>
+        </option>
       ))}
-    </GTSelect>
+    </select>
   );
-}
-
-/**
- * A dropdown component that allows users to select a locale.
- * @props {React.PropsWithChildren<React.JSX.IntrinsicElements['select']>} Properties passed to a <select> element.
- * @children {React.ReactNode} The children of the <select> element.
- * @returns {React.ReactElement} The rendered <select> element.
- */
-export function GTSelect({
-  children,
-  ...props
-}: React.PropsWithChildren<
-  React.JSX.IntrinsicElements['select']
->): React.ReactElement {
-  return <select {...props}>{children}</select>;
-}
-
-/**
- * A dropdown component that allows users to select a locale.
- * @props {React.PropsWithChildren<React.JSX.IntrinsicElements['option']>} Properties passed to an <option> element.
- * @children {React.ReactNode} The children of the <option> element.
- * @returns {React.ReactElement} The rendered <option> element.
- */
-export function GTOption({
-  children,
-  ...props
-}: React.PropsWithChildren<
-  React.JSX.IntrinsicElements['option']
->): React.ReactElement {
-  return <option {...props}>{children}</option>;
 }
