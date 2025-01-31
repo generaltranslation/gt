@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleChildrenWhitespace = void 0;
 exports.trimJsxStringChild = trimJsxStringChild;
+const internal_1 = require("generaltranslation/internal");
 function trimJsxStringChild(child, index, childrenTypes) {
     // Normalize line endings to \n for consistency across platforms
     let result = child.replace(/\r\n|\r/g, '\n');
@@ -40,7 +41,6 @@ function trimJsxStringChild(child, index, childrenTypes) {
  * @returns The processed tree with whitespace handled
  */
 const handleChildrenWhitespace = (currentTree) => {
-    var _a;
     if (Array.isArray(currentTree)) {
         const childrenTypes = currentTree.map((child) => {
             if (typeof child === 'string')
@@ -65,9 +65,25 @@ const handleChildrenWhitespace = (currentTree) => {
         });
         return newChildren.length === 1 ? newChildren[0] : newChildren;
     }
-    else if ((_a = currentTree === null || currentTree === void 0 ? void 0 : currentTree.props) === null || _a === void 0 ? void 0 : _a.children) {
-        const currentTreeChildren = (0, exports.handleChildrenWhitespace)(currentTree.props.children);
-        return Object.assign(Object.assign({}, currentTree), { props: Object.assign(Object.assign({}, currentTree.props), (currentTreeChildren && { children: currentTreeChildren })) });
+    else if (currentTree === null || currentTree === void 0 ? void 0 : currentTree.props) {
+        // Process all props recursively
+        const elementIsPlural = currentTree.type === 'Plural';
+        const elementIsBranch = currentTree.type === 'Branch';
+        const processedProps = Object.fromEntries(Object.entries(currentTree.props).map(([key, value]) => {
+            let shouldProcess = false;
+            if (key === 'children')
+                shouldProcess = true;
+            if (elementIsPlural && (0, internal_1.isAcceptedPluralForm)(key))
+                shouldProcess = true;
+            if (elementIsBranch && key !== 'branch')
+                shouldProcess = true;
+            // Add your validation logic here
+            if (shouldProcess) {
+                return [key, (0, exports.handleChildrenWhitespace)(value)];
+            }
+            return [key, value];
+        }));
+        return Object.assign(Object.assign({}, currentTree), { props: processedProps });
     }
     else if (typeof currentTree === 'object' &&
         'expression' in currentTree === true) {

@@ -1,3 +1,5 @@
+import { isAcceptedPluralForm } from 'generaltranslation/internal';
+
 export function trimJsxStringChild(
   child: string,
   index: number,
@@ -59,16 +61,28 @@ export const handleChildrenWhitespace = (currentTree: any): any => {
       }
     });
     return newChildren.length === 1 ? newChildren[0] : newChildren;
-  } else if (currentTree?.props?.children) {
-    const currentTreeChildren = handleChildrenWhitespace(
-      currentTree.props.children
+  } else if (currentTree?.props) {
+    // Process all props recursively
+    const elementIsPlural = currentTree.type === 'Plural';
+    const elementIsBranch = currentTree.type === 'Branch';
+    const processedProps = Object.fromEntries(
+      Object.entries(currentTree.props).map(([key, value]) => {
+        let shouldProcess = false;
+        if (key === 'children') shouldProcess = true;
+        if (elementIsPlural && isAcceptedPluralForm(key as string))
+          shouldProcess = true;
+        if (elementIsBranch && key !== 'branch') shouldProcess = true;
+        // Add your validation logic here
+        if (shouldProcess) {
+          return [key, handleChildrenWhitespace(value)];
+        }
+        return [key, value];
+      })
     );
+
     return {
       ...currentTree,
-      props: {
-        ...currentTree.props,
-        ...(currentTreeChildren && { children: currentTreeChildren }),
-      },
+      props: processedProps,
     };
   } else if (
     typeof currentTree === 'object' &&
