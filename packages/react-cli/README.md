@@ -22,7 +22,7 @@ npm install gt-react-cli
 
 ```bash
 npx gt-react-cli translate
-npx gt-react-cli scan
+npx gt-react-cli setup
 ```
 
 ## Documentation

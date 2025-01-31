@@ -1,12 +1,12 @@
-import fs from "fs";
-import path from "path";
-import { Options, Updates } from "../main";
+import fs from 'fs';
+import path from 'path';
+import { Options, Updates } from '../main';
 
-import { parse } from "@babel/parser";
-import traverse from "@babel/traverse";
+import { parse } from '@babel/parser';
+import traverse from '@babel/traverse';
 
-import { hashJsxChildren } from "generaltranslation/id";
-import { parseJSXElement } from "../jsx/parseJsx";
+import { hashJsxChildren } from 'generaltranslation/id';
+import { parseJSXElement } from '../jsx/parseJsx';
 
 export default async function createInlineUpdates(
   options: Options
@@ -16,10 +16,10 @@ export default async function createInlineUpdates(
   const errors: string[] = [];
 
   // Use the provided app directory or default to the current directory
-  const srcDirectory = options.src || ["./"];
+  const srcDirectory = options.src || ['./'];
 
   // Define the file extensions to look for
-  const extensions = [".js", ".jsx", ".tsx"];
+  const extensions = ['.js', '.jsx', '.tsx'];
 
   /**
    * Recursively scan the directory and collect all files with the specified extensions,
@@ -33,7 +33,7 @@ export default async function createInlineUpdates(
 
     for (const item of items) {
       // Skip hidden files and directories
-      if (item.startsWith(".")) continue;
+      if (item.startsWith('.')) continue;
 
       const fullPath = path.join(dir, item);
       const stat = fs.statSync(fullPath);
@@ -53,13 +53,13 @@ export default async function createInlineUpdates(
   const files = srcDirectory.flatMap((dir) => getFiles(dir));
 
   for (const file of files) {
-    const code = fs.readFileSync(file, "utf8");
+    const code = fs.readFileSync(file, 'utf8');
 
     let ast;
     try {
       ast = parse(code, {
-        sourceType: "module",
-        plugins: ["jsx", "typescript"],
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
       });
     } catch (error) {
       console.error(`Error parsing file ${file}:`, error);

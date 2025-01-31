@@ -7,14 +7,6 @@ function trimJsxStringChild(child, index, childrenTypes) {
     let result = child.replace(/\r\n|\r/g, '\n');
     // Collapse multiple spaces/tabs into a single space
     result = result.replace(/[\t ]+/g, ' ');
-    // If it's the first child, trim the start
-    if (index === 0) {
-        result = result.trimStart();
-    }
-    // If it's the last child, trim the end
-    if (index === childrenTypes.length - 1) {
-        result = result.trimEnd();
-    }
     let newResult = '';
     let newline = false;
     for (const char of result) {
