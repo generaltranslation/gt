@@ -36,6 +36,7 @@ import {
   TaggedDictionary,
   TaggedDictionaryEntry,
   TaggedEntry,
+  ClientProviderProps,
 } from './types/types';
 import { isEmptyReactFragment } from './utils/utils';
 export {
@@ -76,4 +77,5 @@ export {
   TranslationError,
   TranslationSuccess,
   GTContextType,
+  ClientProviderProps,
 };

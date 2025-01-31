@@ -71,11 +71,12 @@ function T({
     dialectTranslationRequired,
     translateChildren,
     renderSettings,
+    locale,
   } = useGTContext(
     `<T id="${id}"> used on the client-side outside of <GTProvider>`
   );
 
-  const locale = useLocale();
+  // const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const taggedChildren = useMemo(() => addGTIdentifier(children), [children]);
 

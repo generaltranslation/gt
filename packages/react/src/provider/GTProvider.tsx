@@ -6,7 +6,6 @@ import {
   splitStringToContent,
 } from 'generaltranslation';
 import { useCallback, useEffect, useState } from 'react';
-import useBrowserLocale from '../hooks/useBrowserLocale';
 import { GTContext } from './GTContext';
 import {
   DictionaryEntry,
@@ -30,6 +29,7 @@ import { defaultRenderSettings } from './rendering/defaultRenderSettings';
 import { hashJsxChildren } from 'generaltranslation/id';
 import React from 'react';
 import T from '../inline/T';
+import useDetermineLocale from '../hooks/useDetermineLocale';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -51,7 +51,7 @@ export default function GTProvider({
   dictionary = {},
   locales = listSupportedLocales(),
   defaultLocale = libraryDefaultLocale,
-  locale = useBrowserLocale(defaultLocale, locales),
+  locale: _locale,
   cacheUrl = defaultCacheUrl,
   runtimeUrl = defaultRuntimeApiUrl,
   renderSettings = defaultRenderSettings,
@@ -73,6 +73,8 @@ export default function GTProvider({
   };
   [key: string]: any;
 }): React.JSX.Element {
+  // ----- SETUP ----- //
+  // validation
   if (
     !projectId &&
     (cacheUrl === defaultCacheUrl || runtimeUrl === defaultRuntimeApiUrl)
@@ -80,6 +82,14 @@ export default function GTProvider({
     throw new Error(projectIdMissingError);
   }
 
+  // get locale
+  const [locale, setLocale] = useDetermineLocale({
+    defaultLocale,
+    locales,
+    locale: _locale,
+  });
+
+  // set render settings
   if (
     renderSettings.timeout === undefined &&
     defaultRenderSettings.timeout !== undefined
@@ -121,20 +131,28 @@ export default function GTProvider({
     cacheUrl && translationRequired ? null : {}
   );
 
+  // Reset translations if locale changes (null to trigger a new cache fetch)
+  useEffect(
+    () => setTranslations(cacheUrl && translationRequired ? null : {}),
+    [locale]
+  );
+
   // ----- CHECK CACHE FOR TX ----- //
 
   useEffect(() => {
     // check if cache fetch is necessary
     if (translations || !translationRequired) return;
 
+    // flag for storing fetch from cache
+    let storeResults = true;
+
     // fetch translations from cache
     (async () => {
       try {
-        const response = await fetch(`${cacheUrl}/${projectId}/${locale}`);
+        const response = await fetch(`${cacheUrl}/${projectId}/${locale}`); // fetch from cache
         const result = await response.json();
-
-        // convert to translation success and record
         const parsedResult = Object.entries(result).reduce(
+          // parse result
           (
             translationsAcc: Record<string, any>,
             [id, hashToTranslation]: [string, any]
@@ -142,21 +160,30 @@ export default function GTProvider({
             translationsAcc[id] = Object.entries(
               hashToTranslation || {}
             ).reduce((idAcc: Record<string, any>, [hash, content]) => {
-              idAcc[hash] = { state: 'success', entry: content };
+              idAcc[hash] = { state: 'success', target: content };
               return idAcc;
             }, {});
             return translationsAcc;
           },
           {}
         );
-        setTranslations(parsedResult);
+        if (storeResults) {
+          setTranslations(parsedResult); // store results
+        }
       } catch (error) {
-        setTranslations({}); // not classified as a tx error, bc we can still fetch from API
+        if (storeResults) {
+          setTranslations({}); // not classified as a tx error, bc we can still fetch from API
+        }
       }
     })();
+
+    return () => {
+      // cancel fetch if a dep changes
+      storeResults = false;
+    };
   }, [translations, translationRequired, cacheUrl, projectId, locale]);
 
-  // ----- PERFORM DICTIONARY TRANSLATION ----- //
+  // ----- PERFORM STRING DICTIONARY TRANSLATION ----- //
 
   // Flatten dictionaries for processing while waiting for translations
   const flattenedDictionary = useMemo(
@@ -164,11 +191,12 @@ export default function GTProvider({
     [dictionary]
   );
 
-  // Get strings that have changed
-  const stringData = useMemo(() => {
+  // Get strings from dictionary for translation
+  const dictionaryContentEntries = useMemo(() => {
     if (!translationRequired) return {};
     return Object.entries(flattenedDictionary)
       .filter(([id, entryWithMetadata]) => {
+        // filter out any non-string entries
         const { entry } = extractEntryMetadata(entryWithMetadata);
         if (typeof entry === 'string') {
           if (!entry.length) {
@@ -186,6 +214,7 @@ export default function GTProvider({
           acc: Record<string, { hash: string; source: Content }>,
           [id, entryWithMetadata]
         ) => {
+          // Prep entries for translation
           const { entry, metadata } = extractEntryMetadata(entryWithMetadata);
           const context = metadata?.context;
           const source = splitStringToContent(entry as string);
@@ -197,22 +226,25 @@ export default function GTProvider({
       );
   }, [flattenedDictionary, translationRequired]);
 
+  // Get all strings that have not been requested yet
   const [unresolvedDictionaryStringsAndHashes, dictionaryStringsResolved] =
     useMemo(() => {
       let stringIsLoading = false;
       const unresolvedDictionaryStringsAndHashes = Object.entries(
-        stringData
+        dictionaryContentEntries
       ).filter(([id, { hash }]) => {
+        // filter out any translations that are currently loading or already resolved
         if (translations?.[id]?.[hash]?.state === 'loading')
           stringIsLoading = true;
         return !translations?.[id]?.[hash];
       });
       const dictionaryStringsResolved =
         !stringIsLoading && unresolvedDictionaryStringsAndHashes.length === 0;
-      return [unresolvedDictionaryStringsAndHashes, dictionaryStringsResolved];
-    }, [translations, stringData]);
 
-  // do translation strings (API)
+      return [unresolvedDictionaryStringsAndHashes, dictionaryStringsResolved];
+    }, [translations, dictionaryContentEntries, locale]);
+
+  // do translation strings at runtime
   // this useEffect is for translating strings in the dictionary before the page loads
   // page will block until strings are loaded (so errors or translations)
   useEffect(() => {
@@ -242,6 +274,7 @@ export default function GTProvider({
   ]);
 
   // ----- TRANSLATE FUNCTION FOR DICTIONARIES ----- //
+  // useGT(), useElement()
 
   const translateDictionaryEntry = useCallback(
     (
@@ -344,7 +377,7 @@ export default function GTProvider({
 
   const { translateChildren, translateContent, translationEnabled } =
     useRuntimeTranslation({
-      targetLocale: locale,
+      locale: locale,
       projectId,
       defaultLocale,
       devApiKey,
@@ -361,7 +394,9 @@ export default function GTProvider({
         translateDictionaryEntry,
         translateContent,
         translateChildren,
-        locale,
+        locale: locale,
+        locales,
+        setLocale,
         defaultLocale,
         translations,
         translationRequired,

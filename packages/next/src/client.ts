@@ -2,7 +2,7 @@ import {
   useGT,
   useDefaultLocale,
   useLocale,
-  useBrowserLocale,
+  LocaleSelector,
 } from 'gt-react/client';
 
-export { useGT, useDefaultLocale, useLocale, useBrowserLocale };
+export { useGT, useDefaultLocale, useLocale, LocaleSelector };

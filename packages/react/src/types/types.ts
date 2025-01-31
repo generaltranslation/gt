@@ -109,6 +109,8 @@ export type GTContextType = {
   translateContent: TranslateContentCallback;
   translateChildren: TranslateChildrenCallback;
   locale: string;
+  locales: string[];
+  setLocale: (locale: string) => void;
   defaultLocale: string;
   translations: TranslationsObject | null;
   translationRequired: boolean;
@@ -132,3 +134,26 @@ export class GTTranslationError extends Error {
     };
   }
 }
+
+export type ClientProviderProps = {
+  children: any;
+  dictionary: FlattenedTaggedDictionary;
+  initialTranslations: TranslationsObject;
+  translationPromises: Record<string, Promise<TranslatedChildren>>;
+  locale: string;
+  locales: string[];
+  defaultLocale: string;
+  translationRequired: boolean;
+  dialectTranslationRequired: boolean;
+  requiredPrefix: string | undefined;
+  renderSettings: {
+    method: RenderMethod;
+    timeout?: number;
+  };
+  projectId?: string;
+  devApiKey?: string;
+  runtimeUrl?: string;
+  runtimeTranslations?: boolean;
+  onLocaleChange?: () => void;
+  cookieName?: string;
+};
