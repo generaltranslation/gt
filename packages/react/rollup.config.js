@@ -12,11 +12,13 @@ export default [
         file: './dist/index.cjs.min.cjs',
         format: 'cjs',
         exports: 'auto', // 'auto' ensures compatibility with both default and named exports in CommonJS
+        sourcemap: false,
       },
       {
         file: './dist/index.esm.min.mjs',
         format: 'esm',
         exports: 'named', // Named exports for ES modules
+        sourcemap: false,
       },
     ],
     plugins: [
@@ -45,11 +47,13 @@ export default [
         file: './dist/internal.cjs.min.cjs',
         format: 'cjs',
         exports: 'auto', // 'auto' ensures compatibility with both default and named exports in CommonJS
+        sourcemap: false,
       },
       {
         file: './dist/internal.esm.min.mjs',
         format: 'esm',
         exports: 'named', // Named exports for ES modules
+        sourcemap: false,
       },
     ],
     plugins: [
@@ -78,11 +82,13 @@ export default [
         file: './dist/client.cjs.min.cjs',
         format: 'cjs',
         exports: 'auto', // 'auto' ensures compatibility with both default and named exports in CommonJS
+        sourcemap: false,
       },
       {
         file: './dist/client.esm.min.mjs',
         format: 'esm',
         exports: 'named', // Named exports for ES modules
+        sourcemap: false,
       },
     ],
     plugins: [

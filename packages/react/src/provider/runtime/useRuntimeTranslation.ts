@@ -17,21 +17,22 @@ import {
   maxBatchSize,
   batchInterval,
 } from '../config/defaultProps';
+import { request } from 'http';
 
 export default function useRuntimeTranslation({
-  targetLocale,
   projectId,
   devApiKey,
-  runtimeUrl,
+  locale,
   defaultLocale,
+  runtimeUrl,
   renderSettings,
   setTranslations,
   ...metadata
 }: {
-  targetLocale: string;
   projectId?: string;
-  defaultLocale?: string;
   devApiKey?: string;
+  locale: string;
+  defaultLocale?: string;
   runtimeUrl?: string;
   renderSettings: {
     method: RenderMethod;
@@ -72,12 +73,18 @@ export default function useRuntimeTranslation({
     resolve: any;
     reject: any;
   };
-  // Requests waiting to be sent (not yet batched)
+  // Requests waiting to be sent
   const requestQueueRef = useRef<Map<string, TranslationRequestQueueItem>>(
     new Map()
   );
   // Requests that have yet to be resolved
   const pendingRequestQueueRef = useRef<Map<string, Promise<void>>>(new Map());
+
+  useEffect(() => {
+    // remove all pending requests
+    requestQueueRef.current.forEach((item) => item.resolve());
+    requestQueueRef.current.clear();
+  }, [locale]);
 
   const translateContent = useCallback(
     (params: {
@@ -111,9 +118,10 @@ export default function useRuntimeTranslation({
         .finally(() => {
           pendingRequestQueueRef.current.delete(key);
         });
+      pendingRequestQueueRef.current.set(key, translationPromise);
       return translationPromise;
     },
-    [targetLocale]
+    [locale]
   );
 
   /**
@@ -152,209 +160,201 @@ export default function useRuntimeTranslation({
         .finally(() => {
           pendingRequestQueueRef.current.delete(key);
         });
+      pendingRequestQueueRef.current.set(key, translationPromise);
       return translationPromise;
     },
-    [targetLocale]
+    [locale]
   );
   // Send a request to the runtime server
-  const sendBatchRequest = useCallback(
-    async (batchRequests: Map<string, TranslationRequestQueueItem>) => {
-      if (requestQueueRef.current.size === 0) {
-        return;
+  const sendBatchRequest = async (
+    batchRequests: Map<string, TranslationRequestQueueItem>,
+    targetLocale: string
+  ) => {
+    if (requestQueueRef.current.size === 0) {
+      return {};
+    }
+
+    // increment active requests
+    setActiveRequests((prev) => prev + 1);
+
+    const requests = Array.from(batchRequests.values());
+    const newTranslations: TranslationsObject = {};
+
+    try {
+      // ----- TRANSLATION LOADING ----- //
+      const loadingTranslations: TranslationsObject = requests.reduce(
+        (acc: TranslationsObject, request) => {
+          // loading state for jsx, render loading behavior
+          const id = request.metadata.id || request.metadata.hash;
+          acc[id] = { [request.metadata.hash]: { state: 'loading' } };
+          return acc;
+        },
+        {}
+      );
+      setTranslations((prev: any) => {
+        return { ...(prev || {}), ...loadingTranslations };
+      });
+
+      // ----- RUNTIME TRANSLATION ----- //
+      const fetchWithAbort = async (
+        url: string,
+        options: RequestInit | undefined,
+        timeout: number | undefined
+      ) => {
+        const controller = new AbortController();
+        const timeoutId =
+          timeout === undefined
+            ? undefined
+            : setTimeout(() => controller.abort(), timeout);
+        try {
+          return await fetch(url, { ...options, signal: controller.signal });
+        } catch (error) {
+          console.error('timeout!');
+          if (error instanceof Error && error.name === 'AbortError')
+            throw new Error('Request timed out'); // Handle the timeout case
+          throw error; // Re-throw other errors
+        } finally {
+          if (timeoutId !== undefined) clearTimeout(timeoutId); // Ensure timeout is cleared
+        }
+      };
+      const response = await fetchWithAbort(
+        `${runtimeUrl}/v1/runtime/${projectId}/client`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(devApiKey && { 'x-gt-dev-api-key': devApiKey }),
+          },
+          body: JSON.stringify({
+            requests,
+            targetLocale,
+            metadata,
+          }),
+        },
+        renderSettings.timeout
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
       }
 
-      // increment active requests
-      setActiveRequests((prev) => prev + 1);
+      // ----- PARSE RESPONSE ----- //
+      const results = (await response.json()) as any[];
+      // don't send another req if one is already in flight
 
-      const requests = Array.from(batchRequests.values());
-      const newTranslations: TranslationsObject = {};
+      // process each result
+      results.forEach((result, index) => {
+        const request = requests[index];
 
-      try {
-        // ----- TRANSLATION LOADING ----- //
-        const loadingTranslations: TranslationsObject = requests.reduce(
-          (acc: TranslationsObject, request) => {
-            // loading state for jsx, render loading behavior
-            const id = request.metadata.id || request.metadata.hash;
-            acc[id] = { [request.metadata.hash]: { state: 'loading' } };
-            return acc;
-          },
-          {}
-        );
-        setTranslations((prev: any) => {
-          return { ...(prev || {}), ...loadingTranslations };
-        });
-
-        // ----- RUNTIME TRANSLATION ----- //
-        const fetchWithAbort = async (
-          url: string,
-          options: RequestInit | undefined,
-          timeout: number | undefined
-        ) => {
-          const controller = new AbortController();
-          const timeoutId =
-            timeout === undefined
-              ? undefined
-              : setTimeout(() => controller.abort(), timeout);
-          try {
-            return await fetch(url, { ...options, signal: controller.signal });
-          } catch (error) {
-            console.error('timeout!');
-            if (error instanceof Error && error.name === 'AbortError')
-              throw new Error('Request timed out'); // Handle the timeout case
-            throw error; // Re-throw other errors
-          } finally {
-            if (timeoutId !== undefined) clearTimeout(timeoutId); // Ensure timeout is cleared
+        // translation received
+        if ('translation' in result && result.translation && result.reference) {
+          const {
+            translation,
+            reference: { id, key: hash },
+          } = result;
+          // check for mismatching ids or hashes
+          if (id !== request.metadata.id || hash !== request.metadata.hash) {
+            if (!request.metadata.id) {
+              console.warn(
+                createMismatchingHashWarning(request.metadata.hash, hash)
+              );
+            } else {
+              console.warn(
+                createMismatchingIdHashWarning(
+                  request.metadata.id,
+                  request.metadata.hash,
+                  id,
+                  hash
+                )
+              );
+            }
           }
-        };
-        const response = await fetchWithAbort(
-          `${runtimeUrl}/v1/runtime/${projectId}/client`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(devApiKey && { 'x-gt-dev-api-key': devApiKey }),
+          // set translation
+          newTranslations[request.metadata.id || request.metadata.hash] = {
+            // id defaults to hash if none provided
+            [request.metadata.hash]: {
+              state: 'success',
+              target: translation,
             },
-            body: JSON.stringify({
-              requests,
-              targetLocale,
-              metadata,
-            }),
-          },
-          renderSettings.timeout
-        );
-        if (!response.ok) {
-          throw new Error(await response.text());
+          };
+          return;
         }
 
-        // ----- PARSE RESPONSE ----- //
-        const results = (await response.json()) as any[];
-        // don't send another req if one is already in flight
-
-        // process each result
-        results.forEach((result, index) => {
-          const request = requests[index];
-
-          // translation received
-          if (
-            'translation' in result &&
-            result.translation &&
-            result.reference
-          ) {
-            const {
-              translation,
-              reference: { id, key: hash },
-            } = result;
-            // check for mismatching ids or hashes
-            if (id !== request.metadata.id || hash !== request.metadata.hash) {
-              if (!request.metadata.id) {
-                console.warn(
-                  createMismatchingHashWarning(request.metadata.hash, hash)
-                );
-              } else {
-                console.warn(
-                  createMismatchingIdHashWarning(
-                    request.metadata.id,
-                    request.metadata.hash,
-                    id,
-                    hash
-                  )
-                );
-              }
-            }
-            // set translation
-            newTranslations[request.metadata.id || request.metadata.hash] = {
-              // id defaults to hash if none provided
-              [request.metadata.hash]: {
-                state: 'success',
-                target: translation,
-              },
-            };
-            return;
-          }
-
-          // translation failure
-          if (
-            result.error !== undefined &&
-            result.error !== null &&
-            result.code !== undefined &&
-            result.code !== null
-          ) {
-            // 0 and '' are falsey
-            // log error message
-            console.error(
-              createGenericRuntimeTranslationError(
-                request.metadata.id,
-                request.metadata.hash
-              ),
-              result.error
-            );
-            // set error in translation object
-            newTranslations[request.metadata.id || request.metadata.hash] = {
-              [request.metadata.hash]: {
-                state: 'error',
-                error: result.error,
-                code: result.code,
-              },
-            };
-            return;
-          }
-
-          // unknown error
+        // translation failure
+        if (
+          result.error !== undefined &&
+          result.error !== null &&
+          result.code !== undefined &&
+          result.code !== null
+        ) {
+          // 0 and '' are falsey
+          // log error message
           console.error(
             createGenericRuntimeTranslationError(
               request.metadata.id,
               request.metadata.hash
             ),
-            result
+            result.error
           );
+          // set error in translation object
           newTranslations[request.metadata.id || request.metadata.hash] = {
             [request.metadata.hash]: {
               state: 'error',
-              error: 'An error occurred.',
-              code: 500,
+              error: result.error,
+              code: result.code,
             },
           };
-        });
-      } catch (error) {
-        // log error
-        console.error(dynamicTranslationError, error);
+          return;
+        }
 
-        // add error message to all translations from this request
-        requests.forEach((request) => {
-          // id defaults to hash if none provided
-          newTranslations[request.metadata.id || request.metadata.hash] = {
-            [request.metadata.hash]: {
-              state: 'error',
-              error: 'An error occurred.',
-              code: 500,
-            },
-          };
-        });
-      } finally {
-        // update our translations
-        setTranslations((prev: any) => {
-          return { ...(prev || {}), ...newTranslations };
-        });
+        // unknown error
+        console.error(
+          createGenericRuntimeTranslationError(
+            request.metadata.id,
+            request.metadata.hash
+          ),
+          result
+        );
+        newTranslations[request.metadata.id || request.metadata.hash] = {
+          [request.metadata.hash]: {
+            state: 'error',
+            error: 'An error occurred.',
+            code: 500,
+          },
+        };
+      });
+    } catch (error) {
+      // log error
+      console.error(dynamicTranslationError, error);
 
-        // decrement active requests
-        setActiveRequests((prev) => prev - 1);
+      // add error message to all translations from this request
+      requests.forEach((request) => {
+        // id defaults to hash if none provided
+        newTranslations[request.metadata.id || request.metadata.hash] = {
+          [request.metadata.hash]: {
+            state: 'error',
+            error: 'An error occurred.',
+            code: 500,
+          },
+        };
+      });
+    } finally {
+      // decrement active requests
+      setActiveRequests((prev) => prev - 1);
 
-        // resolve all promises
-        requests.forEach((request) => request.resolve());
-      }
-    },
-    [
-      targetLocale,
-      projectId,
-      runtimeUrl,
-      devApiKey,
-      renderSettings,
-      setTranslations,
-    ]
-  );
+      // resolve all promises
+      requests.forEach((request) => request.resolve());
 
-  // Try to send a batch request every `batchInterval` ms
+      // return the new translations
+      return newTranslations;
+    }
+  };
+
   useEffect(() => {
+    // flag for storing fetch from api
+    let storeResults = true;
+
+    // Send a batch request every `batchInterval` ms
     const intervalId = setInterval(() => {
       if (
         requestQueueRef.current.size > 0 &&
@@ -364,16 +364,24 @@ export default function useRuntimeTranslation({
         const batchRequests = new Map(
           Array.from(requestQueueRef.current.entries()).slice(0, batchSize)
         );
-        sendBatchRequest(batchRequests);
+        (async () => {
+          const batchResult = await sendBatchRequest(batchRequests, locale);
+          if (storeResults) {
+            setTranslations((prev: any) => {
+              return { ...(prev || {}), ...batchResult };
+            });
+          }
+        })();
         batchRequests.forEach((_, key) => requestQueueRef.current.delete(key));
       }
     }, batchInterval);
 
     // Cleanup on unmount
     return () => {
-      clearInterval(intervalId);
+      storeResults = false; // Don't store locale changes
+      clearInterval(intervalId); // Clear the interval
     };
-  }, [targetLocale]);
+  }, [locale]);
 
   return { translateContent, translateChildren, translationEnabled };
 }

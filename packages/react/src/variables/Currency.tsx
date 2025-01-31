@@ -1,7 +1,7 @@
-import React from "react";
-import { formatCurrency } from "generaltranslation";
-import useLocale from "../hooks/useLocale";
-import useDefaultLocale from "../hooks/useDefaultLocale";
+import React from 'react';
+import { formatCurrency } from 'generaltranslation';
+import useLocale from '../hooks/useLocale';
+import useDefaultLocale from '../hooks/useDefaultLocale';
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
@@ -28,7 +28,7 @@ function Currency({
   children,
   value,
   name,
-  currency = "USD",
+  currency = 'USD',
   locales,
   options = {},
 }: {
@@ -39,19 +39,20 @@ function Currency({
   locales?: string[];
   options?: Intl.NumberFormatOptions;
 }): React.JSX.Element {
-  const providerLocales = [useLocale(), useDefaultLocale()];
+  const locale = useLocale();
+  const providerLocales = [...(locale && [locale]), useDefaultLocale()];
   locales ||= providerLocales;
 
   let renderedValue =
-    typeof children !== "undefined" && typeof value === "undefined"
+    typeof children !== 'undefined' && typeof value === 'undefined'
       ? children
       : value;
   renderedValue =
-    typeof renderedValue === "string"
+    typeof renderedValue === 'string'
       ? parseFloat(renderedValue)
       : renderedValue;
   // Format the value using Intl.NumberFormat
-  if (typeof renderedValue === "number") {
+  if (typeof renderedValue === 'number') {
     renderedValue = formatCurrency({
       value: renderedValue,
       locales,
@@ -63,13 +64,13 @@ function Currency({
   return (
     <span
       data-_gt-variable-name={name}
-      data-_gt-variable-type={"currency"}
+      data-_gt-variable-type={'currency'}
       data-_gt-variable-options={JSON.stringify({
-        style: "currency",
+        style: 'currency',
         currency,
         ...options,
       })}
-      style={{ display: "contents" }}
+      style={{ display: 'contents' }}
       suppressHydrationWarning
     >
       {renderedValue}
@@ -78,6 +79,6 @@ function Currency({
 }
 
 // Static property to indicate the transformation type
-Currency.gtTransformation = "variable-currency";
+Currency.gtTransformation = 'variable-currency';
 
 export default Currency;

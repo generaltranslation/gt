@@ -99,6 +99,8 @@ export type GTContextType = {
     translateContent: TranslateContentCallback;
     translateChildren: TranslateChildrenCallback;
     locale: string;
+    locales: string[];
+    setLocale: (locale: string) => void;
     defaultLocale: string;
     translations: TranslationsObject | null;
     translationRequired: boolean;

@@ -24,6 +24,7 @@ export default {
     typescript({
       // Compiles TypeScript files
       tsconfig: './tsconfig.json',
+      sourceMap: false,
     }),
     postcss(), // Process CSS files
     preserveDirectives(), // Preserve directives in the output (i.e., "use client")

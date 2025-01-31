@@ -1,8 +1,8 @@
-import React from "react";
-import { getPluralBranch } from "../../internal";
-import useLocale from "../../hooks/useLocale";
-import useDefaultLocale from "../../hooks/useDefaultLocale";
-import { createPluralMissingError } from "../../messages/createMessages";
+import React from 'react';
+import { getPluralBranch } from '../../internal';
+import useLocale from '../../hooks/useLocale';
+import useDefaultLocale from '../../hooks/useDefaultLocale';
+import { createPluralMissingError } from '../../messages/createMessages';
 
 /**
  * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).
@@ -25,29 +25,31 @@ import { createPluralMissingError } from "../../messages/createMessages";
  * @throws {Error} If `n` is not provided or not a valid number.
  */
 function Plural({
-    children, n, ...props
+  children,
+  n,
+  ...props
 }: {
-    children?: any;
-    n?: number;
-    [key: string]: any;
+  children?: any;
+  n?: number;
+  [key: string]: any;
 }) {
-    const { 'data-_gt': generaltranslation, ...branches } = props;
-    const locale = useLocale();
-    const defaultLocale = useDefaultLocale();
-    if (typeof n !== 'number') 
-        throw new Error(createPluralMissingError(children));
-    const branch = getPluralBranch(n, [locale, defaultLocale], branches) || children;
-    return (
-        <span 
-            data-_gt={generaltranslation} 
-            data-_gt-n={n}
-            style={{ display: 'contents' }}
-        >
-            {branch}
-        </span>
-    );
+  const { 'data-_gt': generaltranslation, ...branches } = props;
+  const locale = useLocale();
+  const providerLocales = [...(locale && [locale]), useDefaultLocale()];
+  if (typeof n !== 'number')
+    throw new Error(createPluralMissingError(children));
+  const branch = getPluralBranch(n, providerLocales, branches) || children;
+  return (
+    <span
+      data-_gt={generaltranslation}
+      data-_gt-n={n}
+      style={{ display: 'contents' }}
+    >
+      {branch}
+    </span>
+  );
 }
 
-Plural.gtTransformation = "plural";
+Plural.gtTransformation = 'plural';
 
 export default Plural;

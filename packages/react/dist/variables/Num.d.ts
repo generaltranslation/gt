@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
  * It formats the number according to the current locale and optionally passed formatting options.

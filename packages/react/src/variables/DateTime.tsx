@@ -1,7 +1,7 @@
-import React from "react";
-import { formatDateTime } from "generaltranslation";
-import useLocale from "../hooks/useLocale";
-import useDefaultLocale from "../hooks/useDefaultLocale";
+import React from 'react';
+import { formatDateTime } from 'generaltranslation';
+import useLocale from '../hooks/useLocale';
+import useDefaultLocale from '../hooks/useDefaultLocale';
 
 /**
  * The `<DateTime>` component renders a formatted date or time string, allowing customization of the name, default value, and formatting options.
@@ -36,27 +36,28 @@ function DateTime({
   locales?: string[];
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
 }): React.JSX.Element {
-  const providerLocales = [useLocale(), useDefaultLocale()];
+  const locale = useLocale();
+  const providerLocales = [...(locale && [locale]), useDefaultLocale()];
   locales ||= providerLocales;
 
   let final;
 
   let dateValue: Date | undefined;
   let defaultValue =
-    typeof children !== "undefined" && typeof value === "undefined"
+    typeof children !== 'undefined' && typeof value === 'undefined'
       ? children
       : value;
-  if (typeof defaultValue === "number") {
+  if (typeof defaultValue === 'number') {
     dateValue = new Date(defaultValue);
-  } else if (typeof defaultValue === "string") {
+  } else if (typeof defaultValue === 'string') {
     dateValue = new Date(defaultValue);
   } else if (defaultValue instanceof Date) {
     dateValue = defaultValue;
   }
-  if (typeof dateValue !== "undefined") {
+  if (typeof dateValue !== 'undefined') {
     final = formatDateTime({ value: dateValue, locales, options }).replace(
       /[\u200F\u202B\u202E]/g,
-      ""
+      ''
     );
   }
 
@@ -64,9 +65,9 @@ function DateTime({
   return (
     <span
       data-_gt-variable-name={name}
-      data-_gt-variable-type={"date"}
+      data-_gt-variable-type={'date'}
       data-_gt-variable-options={JSON.stringify(options)}
-      style={{ display: "contents" }}
+      style={{ display: 'contents' }}
       suppressHydrationWarning
     >
       {final}
@@ -75,6 +76,6 @@ function DateTime({
 }
 
 // Static property for transformation type
-DateTime.gtTransformation = "variable-datetime";
+DateTime.gtTransformation = 'variable-datetime';
 
 export default DateTime;

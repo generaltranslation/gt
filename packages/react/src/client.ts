@@ -1,5 +1,4 @@
 import { GTContext } from './provider/GTContext';
-import useBrowserLocale from './hooks/useBrowserLocale';
 import useRuntimeTranslation from './provider/runtime/useRuntimeTranslation';
 import renderVariable from './provider/rendering/renderVariable';
 import ClientProvider from './provider/ClientProvider';
@@ -16,7 +15,6 @@ import Num from './variables/Num';
 import Var from './variables/Var';
 export {
   GTContext,
-  useBrowserLocale,
   useRuntimeTranslation,
   renderVariable,
   ClientProvider,

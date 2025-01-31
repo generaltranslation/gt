@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
  * Must be used inside a `<GTProvider>`.

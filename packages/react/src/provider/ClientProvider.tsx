@@ -258,7 +258,7 @@ export default function ClientProvider({
 
   // For <T> components
   const { translateChildren, translateContent } = useRuntimeTranslation({
-    targetLocale: locale,
+    locale: locale,
     projectId,
     devApiKey,
     runtimeUrl,
@@ -273,7 +273,9 @@ export default function ClientProvider({
         translateDictionaryEntry,
         translateChildren,
         translateContent,
+        setLocale: () => {}, // Unsupported for SSR behavior
         locale,
+        locales,
         defaultLocale,
         translations,
         translationRequired,
