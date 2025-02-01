@@ -57,6 +57,14 @@ function isHtmlElement(element: t.JSXOpeningElement): boolean {
 }
 
 // Add this helper function
+function isBodyElement(element: t.JSXOpeningElement): boolean {
+  return (
+    t.isJSXIdentifier(element.name) &&
+    element.name.name.toLowerCase() === 'body'
+  );
+}
+
+// Add this helper function
 function hasGTProviderChild(children: t.JSXElement['children']): boolean {
   return children.some(
     (child) =>
@@ -222,12 +230,25 @@ export default async function scanForContent(
       JSXElement(path) {
         // Wrap GTProvider around <html> tags in Next.js
         if (framework === 'next' && isHtmlElement(path.node.openingElement)) {
-          // Skip if already has GTProvider
-          if (hasGTProviderChild(path.node.children)) {
+          // Find the body element in the HTML children
+          const bodyElement = path.node.children.find(
+            (child): child is t.JSXElement =>
+              t.isJSXElement(child) && isBodyElement(child.openingElement)
+          );
+
+          if (!bodyElement) {
+            warnings.push(
+              `File ${file} has a <html> tag without a <body> tag. Skipping GTProvider insertion.`
+            );
             return;
           }
 
-          // Check if there's a static lang attribute
+          // Skip if body already has GTProvider
+          if (hasGTProviderChild(bodyElement.children)) {
+            return;
+          }
+
+          // Handle lang attribute for html tag
           const langAttr = path.node.openingElement.attributes.find(
             (attr) =>
               t.isJSXAttribute(attr) &&
@@ -237,26 +258,20 @@ export default async function scanForContent(
           );
 
           if (langAttr) {
-            // Make the parent function async
             makeParentFunctionAsync(path);
-            // Add lang={await getLocale()} attribute
             addDynamicLangAttribute(path.node.openingElement);
             usedImports.push('getLocale');
-          } else {
-            warnings.push(
-              `File ${file} has a <html> tag with a dynamic lang attribute.` +
-                ` Please manually add \`lang={await getLocale()}\` to the <html> tag.`
-            );
           }
 
-          const htmlChildren = path.node.children;
+          // Wrap body children with GTProvider
+          const bodyChildren = bodyElement.children;
           const gtProviderElement = t.jsxElement(
             t.jsxOpeningElement(t.jsxIdentifier('GTProvider'), [], false),
             t.jsxClosingElement(t.jsxIdentifier('GTProvider')),
-            htmlChildren,
+            bodyChildren,
             false
           );
-          path.node.children = [gtProviderElement];
+          bodyElement.children = [gtProviderElement];
           usedImports.push('GTProvider');
           modified = true;
           path.skip();

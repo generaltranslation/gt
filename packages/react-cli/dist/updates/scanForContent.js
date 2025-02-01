@@ -96,6 +96,11 @@ function isHtmlElement(element) {
         element.name.name.toLowerCase() === 'html');
 }
 // Add this helper function
+function isBodyElement(element) {
+    return (t.isJSXIdentifier(element.name) &&
+        element.name.name.toLowerCase() === 'body');
+}
+// Add this helper function
 function hasGTProviderChild(children) {
     return children.some((child) => t.isJSXElement(child) &&
         t.isJSXIdentifier(child.openingElement.name) &&
@@ -230,29 +235,30 @@ function scanForContent(options) {
                 JSXElement(path) {
                     // Wrap GTProvider around <html> tags in Next.js
                     if (framework === 'next' && isHtmlElement(path.node.openingElement)) {
-                        // Skip if already has GTProvider
-                        if (hasGTProviderChild(path.node.children)) {
+                        // Find the body element in the HTML children
+                        const bodyElement = path.node.children.find((child) => t.isJSXElement(child) && isBodyElement(child.openingElement));
+                        if (!bodyElement) {
+                            warnings.push(`File ${file} has a <html> tag without a <body> tag. Skipping GTProvider insertion.`);
                             return;
                         }
-                        // Check if there's a static lang attribute
+                        // Skip if body already has GTProvider
+                        if (hasGTProviderChild(bodyElement.children)) {
+                            return;
+                        }
+                        // Handle lang attribute for html tag
                         const langAttr = path.node.openingElement.attributes.find((attr) => t.isJSXAttribute(attr) &&
                             t.isJSXIdentifier(attr.name) &&
                             t.isStringLiteral(attr.value) &&
                             attr.name.name === 'lang');
                         if (langAttr) {
-                            // Make the parent function async
                             makeParentFunctionAsync(path);
-                            // Add lang={await getLocale()} attribute
                             addDynamicLangAttribute(path.node.openingElement);
                             usedImports.push('getLocale');
                         }
-                        else {
-                            warnings.push(`File ${file} has a <html> tag with a dynamic lang attribute.` +
-                                ` Please manually add \`lang={await getLocale()}\` to the <html> tag.`);
-                        }
-                        const htmlChildren = path.node.children;
-                        const gtProviderElement = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('GTProvider'), [], false), t.jsxClosingElement(t.jsxIdentifier('GTProvider')), htmlChildren, false);
-                        path.node.children = [gtProviderElement];
+                        // Wrap body children with GTProvider
+                        const bodyChildren = bodyElement.children;
+                        const gtProviderElement = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('GTProvider'), [], false), t.jsxClosingElement(t.jsxIdentifier('GTProvider')), bodyChildren, false);
+                        bodyElement.children = [gtProviderElement];
                         usedImports.push('GTProvider');
                         modified = true;
                         path.skip();
