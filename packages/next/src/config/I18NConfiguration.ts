@@ -341,13 +341,13 @@ export default class I18NConfiguration {
     metadata: { hash: string } & Record<string, any>;
   }): Promise<TranslatedChildren> {
     // In memory cache to make sure the same translation isn't requested twice
-    const cacheKey = constructCacheKey(params.targetLocale, params.metadata);
+    const { source, targetLocale, metadata } = params;
+    const cacheKey = constructCacheKey(targetLocale, metadata);
     if (this._translationCache.has(cacheKey)) {
       return this._translationCache.get(cacheKey);
     }
 
     // Add to translation queue
-    const { source, targetLocale, metadata } = params;
     const translationPromise = new Promise<TranslatedChildren>(
       (resolve, reject) => {
         // In memory queue to batch requests

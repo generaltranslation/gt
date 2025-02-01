@@ -263,14 +263,14 @@ var I18NConfiguration = /** @class */ (function () {
      */
     I18NConfiguration.prototype.translateChildren = function (params) {
         return __awaiter(this, void 0, void 0, function () {
-            var cacheKey, source, targetLocale, metadata, translationPromise;
+            var source, targetLocale, metadata, cacheKey, translationPromise;
             var _this = this;
             return __generator(this, function (_a) {
-                cacheKey = constructCacheKey(params.targetLocale, params.metadata);
+                source = params.source, targetLocale = params.targetLocale, metadata = params.metadata;
+                cacheKey = constructCacheKey(targetLocale, metadata);
                 if (this._translationCache.has(cacheKey)) {
                     return [2 /*return*/, this._translationCache.get(cacheKey)];
                 }
-                source = params.source, targetLocale = params.targetLocale, metadata = params.metadata;
                 translationPromise = new Promise(function (resolve, reject) {
                     // In memory queue to batch requests
                     _this._queue.push({

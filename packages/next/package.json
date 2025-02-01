@@ -122,7 +122,7 @@
   ],
   "dependencies": {
     "@generaltranslation/supported-locales": "^1.1.5",
-    "generaltranslation": "^6.1.6",
+    "generaltranslation": "^6.1.7",
     "gt-react": "^8.3.0"
   }
 }

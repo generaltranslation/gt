@@ -194,7 +194,7 @@ async function T({
   }
 
   return (
-    <Suspense fallback={loadingFallback}>
+    <Suspense key={locale} fallback={loadingFallback}>
       <Resolver children={translationPromise} />
     </Suspense>
   );
