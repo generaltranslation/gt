@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 /**
  * Gets the translation function `t` provided by `<GTProvider>`.
  *

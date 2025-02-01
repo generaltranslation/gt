@@ -15,9 +15,7 @@ import { listSupportedLocales } from '@generaltranslation/supported-locales';
 import { GTContext } from './GTContext';
 import {
   ClientProviderProps,
-  FlattenedTaggedDictionary,
   GTTranslationError,
-  RenderMethod,
   TaggedDictionary,
   TaggedDictionaryEntry,
   TranslatedChildren,
@@ -74,17 +72,19 @@ export default function ClientProvider({
   );
 
   // Check for an invalid cookie and correct it
-  const cookieLocale = document.cookie
-    .split('; ')
-    .find((row) => row.startsWith(`${cookieName}=`))
-    ?.split('=')[1];
-  if (
-    locale &&
-    (cookieLocale || cookieLocale === '') &&
-    cookieLocale !== locale
-  ) {
-    document.cookie = `${cookieName}=${locale};path=/`;
-  }
+  useEffect(() => {
+    const cookieLocale = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith(`${cookieName}=`))
+      ?.split('=')[1];
+    if (
+      locale &&
+      (cookieLocale || cookieLocale === '') &&
+      cookieLocale !== locale
+    ) {
+      document.cookie = `${cookieName}=${locale};path=/`;
+    }
+  }, [locale]);
 
   // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
   const setLocale = (newLocale: string): void => {
@@ -99,19 +99,20 @@ export default function ClientProvider({
     onLocaleChange();
   };
 
-  // reset translations on locale change to trigger a reload
+  // ----- TRANSLATION LIFECYCLE ----- //
+
+  // Step 1: Reset translations when locale changes
   useEffect(() => {
     setTranslations(null);
   }, [locale]);
 
-  // ----- JSX DICTIONARY RESOLUTION ----- //
-
+  // Step 2: Fetch additional translations and queue them for merging
   useLayoutEffect(() => {
     setTranslations((prev) => ({ ...prev, ...initialTranslations }));
-
+    let storeResult = true;
+    const resolvedTranslations: TranslationsObject = {};
     (async () => {
-      // resolve all translation promises
-      const resolvedTranslations: TranslationsObject = {};
+      // resolve all translation promises (jsx only)
       await Promise.all(
         Object.entries(translationPromises).map(async ([id, promise]) => {
           const { metadata } = extractEntryMetadata(dictionary[id]);
@@ -132,9 +133,22 @@ export default function ClientProvider({
         })
       );
       // add resolved translations to state
-      setTranslations((prev) => ({ ...prev, ...resolvedTranslations }));
+      if (storeResult) {
+        setTranslations((prev) => ({
+          ...initialTranslations,
+          ...prev,
+          ...resolvedTranslations,
+        }));
+      }
     })();
+
+    return () => {
+      // cleanup
+      storeResult = false;
+    };
   }, [initialTranslations, translationPromises]);
+
+  // ----- TRANSLATION METHODS ----- //
 
   // for dictionaries (strings are actually already resolved, but JSX needs tx still)
   const translateDictionaryEntry = useCallback(
@@ -281,7 +295,7 @@ export default function ClientProvider({
         </React.Fragment>
       );
     },
-    [dictionary, translations]
+    [dictionary, translations, locale]
   );
 
   // For <T> components
@@ -294,7 +308,6 @@ export default function ClientProvider({
     defaultLocale,
     renderSettings,
   });
-
   return (
     <GTContext.Provider
       value={{

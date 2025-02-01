@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "8.3.0",
+  "version": "8.3.1",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -91,6 +91,6 @@
   ],
   "dependencies": {
     "@generaltranslation/supported-locales": "^1.1.5",
-    "generaltranslation": "^6.1.6"
+    "generaltranslation": "^6.1.7"
   }
 }
