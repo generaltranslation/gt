@@ -219,8 +219,6 @@ function T(_a) {
                     else {
                         loadingFallback = renderLoadingDefault();
                     }
-                    console.log('<T> locale', locale);
-                    console.log('<T> locale', JSON.stringify(loadingFallback));
                     return [2 /*return*/, ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: (0, jsx_runtime_1.jsx)(Resolver, { children: translationPromise }) }, locale))];
             }
         });
