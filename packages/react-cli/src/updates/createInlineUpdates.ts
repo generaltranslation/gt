@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { Options, Updates } from '../main';
+import { Options, Updates } from '../index';
 
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';

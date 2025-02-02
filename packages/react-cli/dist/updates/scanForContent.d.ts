@@ -1,4 +1,4 @@
-import { WrapOptions } from '../main';
+import { WrapOptions } from '../index';
 /**
  * Wraps all JSX elements in the src directory with a <T> tag, with unique ids.
  * - Ignores pure strings
@@ -6,7 +6,7 @@ import { WrapOptions } from '../main';
  * @param options - The options object
  * @returns An object containing the updates and errors
  */
-export default function scanForContent(options: WrapOptions): Promise<{
+export default function scanForContent(options: WrapOptions, framework: 'gt-next' | 'gt-react'): Promise<{
     errors: string[];
     filesUpdated: string[];
     warnings: string[];

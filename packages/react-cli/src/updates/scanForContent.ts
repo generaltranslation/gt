@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { Options, Updates, WrapOptions } from '../main';
+import { Options, Updates, WrapOptions } from '../index';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
@@ -40,80 +40,13 @@ function isMeaningful(node: t.Node): boolean {
 }
 
 const IMPORT_MAP = {
-  T: { name: 'T', source: 'gt-{framework}' },
-  Var: { name: 'Var', source: 'gt-{framework}' },
-  GTT: { name: 'T', source: 'gt-{framework}' },
-  GTVar: { name: 'Var', source: 'gt-{framework}' },
-  GTProvider: { name: 'GTProvider', source: 'gt-{framework}' },
-  getLocale: { name: 'getLocale', source: 'gt-{framework}/server' },
+  T: { name: 'T', source: '{framework}' },
+  Var: { name: 'Var', source: '{framework}' },
+  GTT: { name: 'T', source: '{framework}' },
+  GTVar: { name: 'Var', source: '{framework}' },
+  GTProvider: { name: 'GTProvider', source: '{framework}' },
+  getLocale: { name: 'getLocale', source: '{framework}/server' },
 };
-
-// Add this helper function before scanForContent
-function isHtmlElement(element: t.JSXOpeningElement): boolean {
-  return (
-    t.isJSXIdentifier(element.name) &&
-    element.name.name.toLowerCase() === 'html'
-  );
-}
-
-// Add this helper function
-function isBodyElement(element: t.JSXOpeningElement): boolean {
-  return (
-    t.isJSXIdentifier(element.name) &&
-    element.name.name.toLowerCase() === 'body'
-  );
-}
-
-// Add this helper function
-function hasGTProviderChild(children: t.JSXElement['children']): boolean {
-  return children.some(
-    (child) =>
-      t.isJSXElement(child) &&
-      t.isJSXIdentifier(child.openingElement.name) &&
-      child.openingElement.name.name === 'GTProvider'
-  );
-}
-
-function addDynamicLangAttribute(element: t.JSXOpeningElement): void {
-  // Remove existing lang attribute if present
-  const langAttrIndex = element.attributes.findIndex(
-    (attr) =>
-      t.isJSXAttribute(attr) &&
-      t.isJSXIdentifier(attr.name) &&
-      attr.name.name === 'lang'
-  );
-
-  if (langAttrIndex !== -1) {
-    element.attributes.splice(langAttrIndex, 1);
-  }
-
-  // Add lang={await getLocale()} attribute
-  element.attributes.push(
-    t.jsxAttribute(
-      t.jsxIdentifier('lang'),
-      t.jsxExpressionContainer(
-        t.awaitExpression(t.callExpression(t.identifier('getLocale'), []))
-      )
-    )
-  );
-}
-
-function makeParentFunctionAsync(path: NodePath): boolean {
-  const functionParent = path.getFunctionParent();
-  if (!functionParent) return false;
-
-  const node = functionParent.node;
-  if (
-    (t.isFunctionDeclaration(node) ||
-      t.isFunctionExpression(node) ||
-      t.isArrowFunctionExpression(node)) &&
-    !node.async
-  ) {
-    node.async = true;
-    return true;
-  }
-  return false;
-}
 
 /**
  * Wraps all JSX elements in the src directory with a <T> tag, with unique ids.
@@ -123,7 +56,8 @@ function makeParentFunctionAsync(path: NodePath): boolean {
  * @returns An object containing the updates and errors
  */
 export default async function scanForContent(
-  options: WrapOptions
+  options: WrapOptions,
+  framework: 'gt-next' | 'gt-react'
 ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -131,8 +65,6 @@ export default async function scanForContent(
 
   // Define the file extensions to look for
   const extensions = ['.js', '.jsx', '.tsx'];
-
-  const framework = options.framework || 'next';
 
   /**
    * Recursively scan the directory and collect all files with the specified extensions,
@@ -203,14 +135,14 @@ export default async function scanForContent(
     traverse(ast, {
       ImportDeclaration(path) {
         const source = path.node.source.value;
-        if (source === 'gt-next' || source === 'gt-react') {
+        if (source === framework) {
           initialImports = [
             ...initialImports,
             ...path.node.specifiers.map((spec) => spec.local.name),
           ];
         }
         // Check for conflicting imports only if they're not from gt-next/gt-react
-        if (source !== 'gt-next' && source !== 'gt-react') {
+        if (source !== framework) {
           path.node.specifiers.forEach((spec) => {
             if (babel.isImportSpecifier(spec)) {
               if (spec.local.name === 'T') importAlias.TComponent = 'GTT';
@@ -228,56 +160,6 @@ export default async function scanForContent(
     let globalId = 0;
     traverse(ast, {
       JSXElement(path) {
-        // Wrap GTProvider around <html> tags in Next.js
-        if (framework === 'next' && isHtmlElement(path.node.openingElement)) {
-          // Find the body element in the HTML children
-          const bodyElement = path.node.children.find(
-            (child): child is t.JSXElement =>
-              t.isJSXElement(child) && isBodyElement(child.openingElement)
-          );
-
-          if (!bodyElement) {
-            warnings.push(
-              `File ${file} has a <html> tag without a <body> tag. Skipping GTProvider insertion.`
-            );
-            return;
-          }
-
-          // Skip if body already has GTProvider
-          if (hasGTProviderChild(bodyElement.children)) {
-            return;
-          }
-
-          // Handle lang attribute for html tag
-          const langAttr = path.node.openingElement.attributes.find(
-            (attr) =>
-              t.isJSXAttribute(attr) &&
-              t.isJSXIdentifier(attr.name) &&
-              t.isStringLiteral(attr.value) &&
-              attr.name.name === 'lang'
-          );
-
-          if (langAttr) {
-            makeParentFunctionAsync(path);
-            addDynamicLangAttribute(path.node.openingElement);
-            usedImports.push('getLocale');
-          }
-
-          // Wrap body children with GTProvider
-          const bodyChildren = bodyElement.children;
-          const gtProviderElement = t.jsxElement(
-            t.jsxOpeningElement(t.jsxIdentifier('GTProvider'), [], false),
-            t.jsxClosingElement(t.jsxIdentifier('GTProvider')),
-            bodyChildren,
-            false
-          );
-          bodyElement.children = [gtProviderElement];
-          usedImports.push('GTProvider');
-          modified = true;
-          path.skip();
-          return;
-        }
-
         // Check if this JSX element has any JSX element ancestors
         let currentPath: NodePath = path;
         while (currentPath.parentPath) {
