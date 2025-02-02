@@ -1,18 +1,18 @@
-import React from "react";
-import fs from "fs";
-import path from "path";
-import os from "os";
-import { build, BuildOptions } from "esbuild";
-import { Options, Updates } from "../main";
+import React from 'react';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { build, BuildOptions } from 'esbuild';
+import { Options, Updates } from '../index';
 import {
   addGTIdentifier,
   extractEntryMetadata,
   flattenDictionary,
   writeChildrenAsObjects,
-} from "gt-react/internal";
-import { splitStringToContent } from "generaltranslation";
-import loadJSON from "../fs/loadJSON";
-import { hashJsxChildren } from "generaltranslation/id";
+} from 'gt-react/internal';
+import { splitStringToContent } from 'generaltranslation';
+import loadJSON from '../fs/loadJSON';
+import { hashJsxChildren } from 'generaltranslation/id';
 
 export default async function createDictionaryUpdates(
   options: Options & { dictionary: string },
@@ -22,7 +22,7 @@ export default async function createDictionaryUpdates(
 
   // ---- HANDLE JSON STRING DICTIONARY ----- //
 
-  if (options.dictionary.endsWith(".json")) {
+  if (options.dictionary.endsWith('.json')) {
     dictionary = flattenDictionary(loadJSON(options.dictionary) || {});
   }
 
@@ -35,7 +35,7 @@ export default async function createDictionaryUpdates(
     });
 
     const bundledCode = result.outputFiles[0].text;
-    const tempFilePath = path.join(os.tmpdir(), "bundled-dictionary.js");
+    const tempFilePath = path.join(os.tmpdir(), 'bundled-dictionary.js');
     fs.writeFileSync(tempFilePath, bundledCode);
 
     globalThis.React = React;
@@ -89,15 +89,15 @@ export default async function createDictionaryUpdates(
       ),
     };
 
-    if (typeof entry === "string") {
+    if (typeof entry === 'string') {
       updates.push({
-        type: "content",
+        type: 'content',
         source: splitStringToContent(entry),
         metadata,
       });
     } else {
       updates.push({
-        type: "jsx",
+        type: 'jsx',
         source: entryAsObjects,
         metadata,
       });

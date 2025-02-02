@@ -26,14 +26,14 @@ function createDictionaryUpdates(options, esbuildConfig) {
     return __awaiter(this, void 0, void 0, function* () {
         let dictionary;
         // ---- HANDLE JSON STRING DICTIONARY ----- //
-        if (options.dictionary.endsWith(".json")) {
+        if (options.dictionary.endsWith('.json')) {
             dictionary = (0, internal_1.flattenDictionary)((0, loadJSON_1.default)(options.dictionary) || {});
         }
         // ----- HANDLE REACT DICTIONARY ---- //
         else {
             const result = yield (0, esbuild_1.build)(Object.assign(Object.assign({}, esbuildConfig), { entryPoints: [options.dictionary], write: false }));
             const bundledCode = result.outputFiles[0].text;
-            const tempFilePath = path_1.default.join(os_1.default.tmpdir(), "bundled-dictionary.js");
+            const tempFilePath = path_1.default.join(os_1.default.tmpdir(), 'bundled-dictionary.js');
             fs_1.default.writeFileSync(tempFilePath, bundledCode);
             globalThis.React = react_1.default;
             // Load the module using require
@@ -69,16 +69,16 @@ function createDictionaryUpdates(options, esbuildConfig) {
                         context,
                     }
                     : { source: entryAsObjects }) });
-            if (typeof entry === "string") {
+            if (typeof entry === 'string') {
                 updates.push({
-                    type: "content",
+                    type: 'content',
                     source: (0, generaltranslation_1.splitStringToContent)(entry),
                     metadata,
                 });
             }
             else {
                 updates.push({
-                    type: "jsx",
+                    type: 'jsx',
                     source: entryAsObjects,
                     metadata,
                 });

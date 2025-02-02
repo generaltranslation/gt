@@ -1,4 +1,4 @@
-import { Updates } from '../main';
+import { Updates } from '../index';
 import * as t from '@babel/types';
 /**
  * Builds a JSX tree from a given node, recursively handling children.

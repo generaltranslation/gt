@@ -1,4 +1,4 @@
-import { Updates } from '../main';
+import { Updates } from '../index';
 
 import generate from '@babel/generator';
 import * as t from '@babel/types';
