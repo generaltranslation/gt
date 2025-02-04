@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import useDefaultLocale from '../hooks/useDefaultLocale';
-import useLocale from '../hooks/useLocale';
 import renderDefaultChildren from '../provider/rendering/renderDefaultChildren';
 import {
   addGTIdentifier,
@@ -164,12 +163,16 @@ function T({
 
   // ----- RENDER BEHAVIOR ----- //
 
-  // fallback to default locale if no tx required
-  if (!translationRequired) {
+  // fallback if:
+  if (
+    !translationRequired || // no translation required
+    (translations && !translationEntry && !enableDevRuntimeTranslation) || // cache miss and dev runtime translation disabled (production)
+    translationEntry?.state === 'error' // error fetching translation
+  ) {
     return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
   }
 
-  // loading behavior
+  // loading behavior (checking cache or fetching runtime translation)
   if (!translationEntry || translationEntry?.state === 'loading') {
     let loadingFallback;
     if (renderSettings.method === 'skeleton') {
@@ -182,11 +185,6 @@ function T({
     }
     // The suspense exists here for hydration reasons
     return <React.Fragment>{loadingFallback}</React.Fragment>;
-  }
-
-  // error behavior
-  if (translationEntry.state === 'error') {
-    return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
   }
 
   // render translated content
