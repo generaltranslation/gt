@@ -380,6 +380,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
         default: true,
       });
 
+
       if (!answer) {
         console.log(chalk.gray('\nOperation cancelled.'));
         process.exit(0);
