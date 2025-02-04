@@ -2,7 +2,7 @@ import fs from "fs";
 import { displayCreatingNewConfigFile } from "../console/console";
 
 const INCLUDED_KEYS = [
-  "projectId", "defaultLocale"
+  "projectId", "defaultLocale", "_versionId"
 ];
 
 /**
