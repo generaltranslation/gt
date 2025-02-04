@@ -28,7 +28,7 @@ export default class I18NConfiguration {
     devApiKey?: string;
     runtimeUrl: string;
     projectId: string;
-    versionId?: string;
+    _versionId?: string;
     defaultLocale: string;
     locales: string[];
     renderSettings: {
@@ -45,7 +45,7 @@ export default class I18NConfiguration {
     private _translationCache;
     private _taggedDictionary;
     private _template;
-    constructor({ runtimeTranslation, remoteCache, apiKey, devApiKey, projectId, versionId, runtimeUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, ...metadata }: I18NConfigurationParams);
+    constructor({ runtimeTranslation, remoteCache, apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, ...metadata }: I18NConfigurationParams);
     /**
      * Gets config for dynamic translation on the client side.
      */

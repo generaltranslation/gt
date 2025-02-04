@@ -13,7 +13,7 @@ import React from 'react';
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, versionId, ...metadata }: {
+export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, _versionId, ...metadata }: {
     children?: React.ReactNode;
     projectId?: string;
     devApiKey?: string;
@@ -27,7 +27,7 @@ export default function GTProvider({ children, projectId: _projectId, devApiKey:
         method: RenderMethod;
         timeout?: number;
     };
-    versionId?: string;
+    _versionId?: string;
     [key: string]: any;
 }): React.JSX.Element;
 //# sourceMappingURL=GTProvider.d.ts.map
