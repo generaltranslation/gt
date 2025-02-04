@@ -73,14 +73,30 @@ const internal_1 = require("generaltranslation/internal");
 const chalk_1 = __importDefault(require("chalk"));
 const scanForContent_1 = __importDefault(require("./updates/scanForContent"));
 const prompts_1 = require("@inquirer/prompts");
+function resolveProjectId() {
+    const CANDIDATES = [
+        process.env.GT_PROJECT_ID, // any server side, Remix
+        process.env.NEXT_PUBLIC_GT_PROJECT_ID, // Next.js
+        process.env.VITE_GT_PROJECT_ID, // Vite
+        process.env.REACT_APP_GT_PROJECT_ID, // Create React App
+        process.env.REDWOOD_ENV_GT_PROJECT_ID, // RedwoodJS
+        process.env.GATSBY_GT_PROJECT_ID, // Gatsby
+        process.env.EXPO_PUBLIC_GT_PROJECT_ID, // Expo (React Native)
+        process.env.RAZZLE_GT_PROJECT_ID, // Razzle
+        process.env.UMI_GT_PROJECT_ID, // UmiJS
+        process.env.BLITZ_PUBLIC_GT_PROJECT_ID, // Blitz.js
+        process.env.PUBLIC_GT_PROJECT_ID, // WMR, Qwik (general "public" convention)
+    ];
+    return CANDIDATES.find((projectId) => projectId !== undefined);
+}
 function main(framework) {
     // First command: translate
     commander_1.program
         .command('translate')
         .description('Scans the project for a dictionary and/or <T> tags, and updates the General Translation remote dictionary with the latest content.')
         .option('--options <path>', 'Filepath to options JSON file, by default gt.config.json', './gt.config.json')
-        .option('--api-key <key>', 'API key for General Translation cloud service', process.env.GT_API_KEY)
-        .option('--project-id <id>', 'Project ID for the translation service', process.env.GT_PROJECT_ID)
+        .option('--api-key <key>', 'API key for General Translation cloud service')
+        .option('--project-id <id>', 'Project ID for the translation service', resolveProjectId())
         .option('--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file', (0, findFilepath_1.default)(['./tsconfig.json', './jsconfig.json']))
         .option('--dictionary <path>', 'Path to dictionary file', (0, findFilepath_1.default)([
         './dictionary.js',
@@ -113,6 +129,7 @@ function main(framework) {
         // --options filepath || gt.config.json
         const gtConfig = (0, loadJSON_1.default)(options.options) || {};
         options = Object.assign(Object.assign({}, gtConfig), options);
+        options.apiKey = options.apiKey || process.env.GT_API_KEY;
         if (!options.baseUrl)
             options.baseUrl = internal_1.defaultBaseUrl;
         // Error if no API key at this point
@@ -318,7 +335,7 @@ function main(framework) {
         // ----- Create a starter gt.config.json file -----
         // --options filepath || gt.config.json
         const gtConfig = (0, loadJSON_1.default)(options.options) || Object.assign({}, (process.env.GT_PROJECT_ID && {
-            projectId: process.env.GT_PROJECT_ID
+            projectId: process.env.GT_PROJECT_ID,
         }));
         if (options.options)
             (0, updateConfigFile_1.default)(options.options, gtConfig);

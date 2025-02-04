@@ -51,9 +51,26 @@ export type Options = {
 };
 
 export type WrapOptions = {
-  src: string[],
-  options: string
+  src: string[];
+  options: string;
 };
+
+function resolveProjectId(): string | undefined {
+  const CANDIDATES = [
+    process.env.GT_PROJECT_ID, // any server side, Remix
+    process.env.NEXT_PUBLIC_GT_PROJECT_ID, // Next.js
+    process.env.VITE_GT_PROJECT_ID, // Vite
+    process.env.REACT_APP_GT_PROJECT_ID, // Create React App
+    process.env.REDWOOD_ENV_GT_PROJECT_ID, // RedwoodJS
+    process.env.GATSBY_GT_PROJECT_ID, // Gatsby
+    process.env.EXPO_PUBLIC_GT_PROJECT_ID, // Expo (React Native)
+    process.env.RAZZLE_GT_PROJECT_ID, // Razzle
+    process.env.UMI_GT_PROJECT_ID, // UmiJS
+    process.env.BLITZ_PUBLIC_GT_PROJECT_ID, // Blitz.js
+    process.env.PUBLIC_GT_PROJECT_ID, // WMR, Qwik (general "public" convention)
+  ];
+  return CANDIDATES.find((projectId) => projectId !== undefined);
+}
 
 export default function main(framework: 'gt-next' | 'gt-react') {
   // First command: translate
@@ -67,15 +84,11 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       'Filepath to options JSON file, by default gt.config.json',
       './gt.config.json'
     )
-    .option(
-      '--api-key <key>',
-      'API key for General Translation cloud service',
-      process.env.GT_API_KEY
-    )
+    .option('--api-key <key>', 'API key for General Translation cloud service')
     .option(
       '--project-id <id>',
       'Project ID for the translation service',
-      process.env.GT_PROJECT_ID
+      resolveProjectId()
     )
     .option(
       '--tsconfig, --jsconfig <path>',
@@ -151,6 +164,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       const gtConfig = loadJSON(options.options) || {};
 
       options = { ...gtConfig, ...options };
+      options.apiKey = options.apiKey || process.env.GT_API_KEY;
       if (!options.baseUrl) options.baseUrl = defaultBaseUrl;
 
       // Error if no API key at this point
@@ -343,10 +357,10 @@ export default function main(framework: 'gt-next' | 'gt-react') {
           }
 
           const { versionId, message } = await response.json();
-          if (options.options) updateConfigFile(options.options, { _versionId: versionId });
-          
-          console.log(chalk.green('✓ ') + chalk.green.bold(message));
+          if (options.options)
+            updateConfigFile(options.options, { _versionId: versionId });
 
+          console.log(chalk.green('✓ ') + chalk.green.bold(message));
         } catch (error) {
           clearInterval(loadingInterval);
           process.stdout.write('\n');
@@ -448,7 +462,6 @@ export default function main(framework: 'gt-next' | 'gt-react') {
         default: true,
       });
 
-
       if (!answer) {
         console.log(chalk.gray('\nOperation cancelled.'));
         process.exit(0);
@@ -459,8 +472,8 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       // --options filepath || gt.config.json
       const gtConfig = loadJSON(options.options) || {
         ...(process.env.GT_PROJECT_ID && {
-          projectId: process.env.GT_PROJECT_ID
-        })
+          projectId: process.env.GT_PROJECT_ID,
+        }),
       };
       if (options.options) updateConfigFile(options.options, gtConfig);
 
