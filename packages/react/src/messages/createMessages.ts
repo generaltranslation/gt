@@ -1,7 +1,13 @@
 // ---- ERRORS ---- //
 
 export const projectIdMissingError =
-  "gt-react Error: General Translation cloud services require a project ID! Find yours at www.generaltranslation.com/dashboard.";
+  'gt-react Error: General Translation cloud services require a project ID! Find yours at www.generaltranslation.com/dashboard.';
+
+export const devApiKeyProductionError =
+  'gt-react Error: Production environments cannot include a development api key.';
+
+export const createNoAuthError =
+  'gt-react Error: Configuration is missing a projectId and/or devApiKey. Please add these values to your environment or pass them to the <GTProvider> directly.';
 
 export const createPluralMissingError = (children: any) =>
   `<Plural> component with children "${children}" requires "n" option.`;
@@ -11,7 +17,7 @@ export const createClientSideTWithoutIdError = (children: any) =>
 
 export const createStringTranslationError = (content: string, id?: string) =>
   `gt-next string translation error. tx("${content}")${
-    id ? ` with id "${id}"` : ""
+    id ? ` with id "${id}"` : ''
   } failed.`;
 
 export const createClientSideTDictionaryCollisionError = (id: string) =>
@@ -27,9 +33,9 @@ export const createNestedDataGTError = (child: any) =>
 export const createNestedTError = (child: any) =>
   `General Translation: Nested <T> components. The inner <T> has the id: "${child?.props?.id}".`;
 
-export const renderingError = "General Translation: Rendering error.";
+export const renderingError = 'General Translation: Rendering error.';
 
-export const dynamicTranslationError = "Error fetching batched translations:";
+export const dynamicTranslationError = 'Error fetching batched translations:';
 
 export const createGenericRuntimeTranslationError = (
   id: string | undefined,

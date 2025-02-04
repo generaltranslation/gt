@@ -13,16 +13,16 @@ import React from 'react';
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export default function GTProvider({ children, projectId, dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, devApiKey, ...metadata }: {
+export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, ...metadata }: {
     children?: React.ReactNode;
-    projectId: string;
+    projectId?: string;
+    devApiKey?: string;
     dictionary?: any;
     locales?: string[];
     defaultLocale?: string;
     locale?: string;
     cacheUrl?: string;
     runtimeUrl?: string;
-    devApiKey?: string;
     renderSettings?: {
         method: RenderMethod;
         timeout?: number;

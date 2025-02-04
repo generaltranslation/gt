@@ -22,7 +22,10 @@ import {
   defaultRuntimeApiUrl,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
-import { projectIdMissingError } from '../messages/createMessages';
+import {
+  devApiKeyProductionError,
+  projectIdMissingError,
+} from '../messages/createMessages';
 import { listSupportedLocales } from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from './runtime/useRuntimeTranslation';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
@@ -30,6 +33,7 @@ import { hashJsxChildren } from 'generaltranslation/id';
 import React from 'react';
 import T from '../inline/T';
 import useDetermineLocale from '../hooks/useDetermineLocale';
+import { getAuth } from '../utils/utils';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -47,7 +51,8 @@ import useDetermineLocale from '../hooks/useDetermineLocale';
 
 export default function GTProvider({
   children,
-  projectId,
+  projectId: _projectId,
+  devApiKey: _devApiKey,
   dictionary = {},
   locales = listSupportedLocales(),
   defaultLocale = libraryDefaultLocale,
@@ -55,18 +60,17 @@ export default function GTProvider({
   cacheUrl = defaultCacheUrl,
   runtimeUrl = defaultRuntimeApiUrl,
   renderSettings = defaultRenderSettings,
-  devApiKey,
   ...metadata
 }: {
   children?: React.ReactNode;
-  projectId: string;
+  projectId?: string;
+  devApiKey?: string;
   dictionary?: any;
   locales?: string[];
   defaultLocale?: string;
   locale?: string;
   cacheUrl?: string;
   runtimeUrl?: string;
-  devApiKey?: string;
   renderSettings?: {
     method: RenderMethod;
     timeout?: number;
@@ -74,12 +78,20 @@ export default function GTProvider({
   [key: string]: any;
 }): React.JSX.Element {
   // ----- SETUP ----- //
-  // validation
+
+  const { projectId, devApiKey } = getAuth(_projectId, _devApiKey);
+  // validate projectId
   if (
     !projectId &&
     (cacheUrl === defaultCacheUrl || runtimeUrl === defaultRuntimeApiUrl)
   ) {
     throw new Error(projectIdMissingError);
+  }
+
+  // validate dev key + env
+  if (process.env.NODE_ENV === 'production' && devApiKey) {
+    // prod + dev key
+    throw new Error(devApiKeyProductionError);
   }
 
   // get locale
@@ -377,7 +389,7 @@ export default function GTProvider({
 
   const { translateChildren, translateContent, translationEnabled } =
     useRuntimeTranslation({
-      locale: locale,
+      locale,
       projectId,
       defaultLocale,
       devApiKey,
@@ -401,7 +413,7 @@ export default function GTProvider({
         translations,
         translationRequired,
         dialectTranslationRequired,
-        projectId,
+        projectId: projectId,
         translationEnabled,
         renderSettings,
       }}
