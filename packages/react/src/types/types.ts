@@ -83,9 +83,7 @@ export type TranslationLoading = {
 };
 
 export type TranslationsObject = {
-  [id: string]: {
-    [hash: string]: TranslationSuccess | TranslationLoading | TranslationError;
-  };
+  [key: string]: TranslationSuccess | TranslationLoading | TranslationError;
 };
 
 // maps locales to translation objects

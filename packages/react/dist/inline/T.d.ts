@@ -32,7 +32,7 @@ import React from 'react';
  */
 declare function T({ children, id, ...props }: {
     children: any;
-    id: string;
+    id?: string;
     context?: string;
     [key: string]: any;
 }): React.JSX.Element | undefined;

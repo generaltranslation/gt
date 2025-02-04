@@ -66,7 +66,7 @@ async function T({
   variablesOptions,
 }: {
   children: any;
-  id: string;
+  id?: string;
   context?: string;
   [key: string]: any;
 }): Promise<any> {
@@ -123,17 +123,18 @@ async function T({
     translationRequired && I18NConfig.getCachedTranslations(locale);
 
   // Turns tagged children into objects
-  // The key (a hash) is used to identify the translation
-  const [childrenAsObjects, key] = I18NConfig.serializeAndHashChildren(
+  // The hash is used to identify the translation
+  const [childrenAsObjects, hash] = I18NConfig.serializeAndHashChildren(
     taggedChildren,
     context
   );
+  const key = id || hash;
 
   // Block until cache check resolves
   const translations = translationsPromise ? await translationsPromise : {};
 
   // Gets the translation entry
-  const translationEntry = translations?.[id]?.[key];
+  const translationEntry = translations?.[key];
 
   // ----- CHECK CACHED TRANSLATIONS ----- //
 
@@ -161,7 +162,7 @@ async function T({
     targetLocale: locale,
     metadata: {
       ...(id && { id }),
-      hash: key,
+      hash,
       ...(context && { context }),
       ...(await getMetadata()),
       ...(renderSettings.timeout && { timeout: renderSettings.timeout }),

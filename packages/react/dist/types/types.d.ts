@@ -73,9 +73,7 @@ export type TranslationLoading = {
     state: 'loading';
 };
 export type TranslationsObject = {
-    [id: string]: {
-        [hash: string]: TranslationSuccess | TranslationLoading | TranslationError;
-    };
+    [key: string]: TranslationSuccess | TranslationLoading | TranslationError;
 };
 export type LocalesTranslations = {
     [locale: string]: TranslationsObject | null;

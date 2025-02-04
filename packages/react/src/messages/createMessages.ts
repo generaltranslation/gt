@@ -12,9 +12,6 @@ export const createNoAuthError =
 export const createPluralMissingError = (children: any) =>
   `<Plural> component with children "${children}" requires "n" option.`;
 
-export const createClientSideTWithoutIdError = (children: any) =>
-  `Client-side <T> with no provided 'id' prop. Children: "${children}"`;
-
 export const createStringTranslationError = (content: string, id?: string) =>
   `gt-next string translation error. tx("${content}")${
     id ? ` with id "${id}"` : ''

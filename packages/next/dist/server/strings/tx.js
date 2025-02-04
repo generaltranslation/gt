@@ -92,12 +92,11 @@ var createErrors_1 = require("../../errors/createErrors");
  */
 function tx(content_1) {
     return __awaiter(this, arguments, void 0, function (content, options) {
-        var I18NConfig, locale, _a, defaultLocale, translationRequired, contentArray, renderContent, hash, translations, translationResult, error_1, translationPromise, _b, _c, _d, target, error_2;
+        var I18NConfig, locale, _a, defaultLocale, translationRequired, contentArray, renderContent, hash, key, translations, translationResult, error_1, translationPromise, _b, _c, _d, target, error_2;
         var _e;
-        var _f;
         if (options === void 0) { options = {}; }
-        return __generator(this, function (_g) {
-            switch (_g.label) {
+        return __generator(this, function (_f) {
+            switch (_f.label) {
                 case 0:
                     // ----- SET UP ----- //
                     // No content to translate
@@ -114,8 +113,8 @@ function tx(content_1) {
                     if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    _a = (_g.sent());
-                    _g.label = 2;
+                    _a = (_f.sent());
+                    _f.label = 2;
                 case 2:
                     locale = _a;
                     defaultLocale = I18NConfig.getDefaultLocale();
@@ -129,16 +128,17 @@ function tx(content_1) {
                     if (!translationRequired)
                         return [2 /*return*/, renderContent(contentArray, [defaultLocale])];
                     hash = I18NConfig.hashContent(contentArray, options.context);
+                    key = options.id || hash;
                     if (!options.id) return [3 /*break*/, 6];
                     translations = void 0;
-                    _g.label = 3;
+                    _f.label = 3;
                 case 3:
-                    _g.trys.push([3, 5, , 6]);
+                    _f.trys.push([3, 5, , 6]);
                     return [4 /*yield*/, I18NConfig.getCachedTranslations(locale)];
                 case 4:
-                    translations = _g.sent();
-                    if ((_f = translations === null || translations === void 0 ? void 0 : translations[options.id]) === null || _f === void 0 ? void 0 : _f[hash]) {
-                        translationResult = translations[options.id][hash];
+                    translations = _f.sent();
+                    if (translations === null || translations === void 0 ? void 0 : translations[key]) {
+                        translationResult = translations[key];
                         if (translationResult.state !== 'success') {
                             // fallback error
                             return [2 /*return*/, renderContent(content, [locale, defaultLocale])];
@@ -147,7 +147,7 @@ function tx(content_1) {
                     }
                     return [3 /*break*/, 6];
                 case 5:
-                    error_1 = _g.sent();
+                    error_1 = _f.sent();
                     console.error('Error fetching translations from cache:', error_1);
                     // fallback error
                     return [2 /*return*/, renderContent(content, [locale, defaultLocale])];
@@ -160,17 +160,17 @@ function tx(content_1) {
                     _d = [__assign({}, options)];
                     return [4 /*yield*/, (0, getMetadata_1.default)()];
                 case 7:
-                    translationPromise = _c.apply(_b, [(_e.options = __assign.apply(void 0, [__assign.apply(void 0, _d.concat([(_g.sent())])), { hash: hash }]),
+                    translationPromise = _c.apply(_b, [(_e.options = __assign.apply(void 0, [__assign.apply(void 0, _d.concat([(_f.sent())])), { hash: hash }]),
                             _e)]);
-                    _g.label = 8;
+                    _f.label = 8;
                 case 8:
-                    _g.trys.push([8, 10, , 11]);
+                    _f.trys.push([8, 10, , 11]);
                     return [4 /*yield*/, translationPromise];
                 case 9:
-                    target = _g.sent();
+                    target = _f.sent();
                     return [2 /*return*/, renderContent(target, [locale, defaultLocale])];
                 case 10:
-                    error_2 = _g.sent();
+                    error_2 = _f.sent();
                     console.error((0, createErrors_1.createStringTranslationError)(content, options.id), error_2);
                     return [2 /*return*/, renderContent(contentArray, [defaultLocale])];
                 case 11: return [2 /*return*/];

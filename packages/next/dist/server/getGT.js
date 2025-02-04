@@ -141,10 +141,9 @@ function getGT(id) {
                     // Translate all strings in sub dictionary (block until completed)
                     return [4 /*yield*/, Promise.all(Object.entries(flattenedDictionaryEntries !== null && flattenedDictionaryEntries !== void 0 ? flattenedDictionaryEntries : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
                             var _c, entry, metadata, entryId, contentArray, hash, translationEntry, translationPromise, _d, _e, error_1;
-                            var _f;
                             var suffix = _b[0], dictionaryEntry = _b[1];
-                            return __generator(this, function (_g) {
-                                switch (_g.label) {
+                            return __generator(this, function (_f) {
+                                switch (_f.label) {
                                     case 0:
                                         _c = (0, internal_1.extractEntryMetadata)(dictionaryEntry), entry = _c.entry, metadata = _c.metadata;
                                         // only tx strings
@@ -157,7 +156,7 @@ function getGT(id) {
                                         }
                                         contentArray = (0, generaltranslation_1.splitStringToContent)(entry);
                                         hash = I18NConfig.hashContent(contentArray, metadata === null || metadata === void 0 ? void 0 : metadata.context);
-                                        translationEntry = (_f = translations_1[entryId]) === null || _f === void 0 ? void 0 : _f[hash];
+                                        translationEntry = translations_1[entryId];
                                         if (translationEntry) {
                                             // success
                                             if (translationEntry.state === 'success')
@@ -171,17 +170,17 @@ function getGT(id) {
                                             targetLocale: locale,
                                             options: __assign({ id: entryId, hash: hash }, additionalMetadata_1),
                                         });
-                                        _g.label = 1;
+                                        _f.label = 1;
                                     case 1:
-                                        _g.trys.push([1, 3, , 4]);
+                                        _f.trys.push([1, 3, , 4]);
                                         _d = filteredTranslations;
                                         _e = entryId;
                                         return [4 /*yield*/, translationPromise];
                                     case 2:
-                                        _d[_e] = _g.sent();
+                                        _d[_e] = _f.sent();
                                         return [3 /*break*/, 4];
                                     case 3:
-                                        error_1 = _g.sent();
+                                        error_1 = _f.sent();
                                         console.error((0, createErrors_1.createDictionaryStringTranslationError)(entryId), error_1);
                                         return [2 /*return*/];
                                     case 4: return [2 /*return*/];

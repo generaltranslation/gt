@@ -94,7 +94,7 @@ export async function getGT(
           const hash = I18NConfig.hashContent(contentArray, metadata?.context);
 
           // If a translation already exists int our cache from earlier, add it to the translations
-          const translationEntry = translations[entryId]?.[hash];
+          const translationEntry = translations[entryId];
           if (translationEntry) {
             // success
             if (translationEntry.state === 'success')

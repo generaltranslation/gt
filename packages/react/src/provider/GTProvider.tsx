@@ -164,17 +164,11 @@ export default function GTProvider({
         const response = await fetch(`${cacheUrl}/${projectId}/${locale}`); // fetch from cache
         const result = await response.json();
         const parsedResult = Object.entries(result).reduce(
-          // parse result
           (
             translationsAcc: Record<string, any>,
-            [id, hashToTranslation]: [string, any]
+            [key, target]: [string, any]
           ) => {
-            translationsAcc[id] = Object.entries(
-              hashToTranslation || {}
-            ).reduce((idAcc: Record<string, any>, [hash, content]) => {
-              idAcc[hash] = { state: 'success', target: content };
-              return idAcc;
-            }, {});
+            translationsAcc[key] = { state: 'success', target };
             return translationsAcc;
           },
           {}
@@ -244,11 +238,10 @@ export default function GTProvider({
       let stringIsLoading = false;
       const unresolvedDictionaryStringsAndHashes = Object.entries(
         dictionaryContentEntries
-      ).filter(([id, { hash }]) => {
+      ).filter(([id]) => {
         // filter out any translations that are currently loading or already resolved
-        if (translations?.[id]?.[hash]?.state === 'loading')
-          stringIsLoading = true;
-        return !translations?.[id]?.[hash];
+        if (translations?.[id]?.state === 'loading') stringIsLoading = true;
+        return !translations?.[id];
       });
       const dictionaryStringsResolved =
         !stringIsLoading && unresolvedDictionaryStringsAndHashes.length === 0;
@@ -332,10 +325,7 @@ export default function GTProvider({
         }
 
         // get translation entry
-        const context = metadata?.context;
-        const hash =
-          metadata?.hash || hashJsxChildren({ source: content, context });
-        const translationEntry = translations?.[id]?.[hash];
+        const translationEntry = translations?.[id];
 
         // error behavior
         if (!translationEntry || translationEntry?.state !== 'success') {

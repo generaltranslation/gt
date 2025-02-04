@@ -42,7 +42,7 @@
  */
 declare function T({ children, id, context, variables, variablesOptions, }: {
     children: any;
-    id: string;
+    id?: string;
     context?: string;
     [key: string]: any;
 }): Promise<any>;

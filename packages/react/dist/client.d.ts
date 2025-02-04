@@ -66,9 +66,7 @@ type TranslationLoading = {
     state: 'loading';
 };
 type TranslationsObject = {
-    [id: string]: {
-        [hash: string]: TranslationSuccess | TranslationLoading | TranslationError;
-    };
+    [key: string]: TranslationSuccess | TranslationLoading | TranslationError;
 };
 type RenderMethod = 'skeleton' | 'replace' | 'default';
 type TranslateContentCallback = (params: {
@@ -306,7 +304,7 @@ declare function useLocale(): string;
  */
 declare function T({ children, id, ...props }: {
     children: any;
-    id: string;
+    id?: string;
     context?: string;
     [key: string]: any;
 }): React__default.JSX.Element | undefined;

@@ -120,8 +120,8 @@ export default function ClientProvider({
     (async () => {
       // resolve all translation promises (jsx only)
       await Promise.all(
-        Object.entries(translationPromises).map(async ([id, promise]) => {
-          const { metadata } = extractEntryMetadata(dictionary[id]);
+        Object.entries(translationPromises).map(async ([key, promise]) => {
+          const { metadata } = extractEntryMetadata(dictionary[key]);
           const hash = metadata?.hash;
           let result: TranslationSuccess | TranslationError;
           try {
@@ -135,7 +135,7 @@ export default function ClientProvider({
               result = { state: 'error', error: 'An error occured', code: 500 };
             }
           }
-          resolvedTranslations[id] = { [hash]: result };
+          resolvedTranslations[key] = result;
         })
       );
       // add resolved translations to state
@@ -159,7 +159,7 @@ export default function ClientProvider({
   // for dictionaries (strings are actually already resolved, but JSX needs tx still)
   const translateDictionaryEntry = useCallback(
     (
-      id: string,
+      key: string,
       options: Record<string, any> = {}
     ): React.ReactNode | string | undefined => {
       // ----- SETUP ----- //
@@ -168,7 +168,7 @@ export default function ClientProvider({
       const dictionaryEntry:
         | TaggedDictionary
         | TaggedDictionaryEntry
-        | undefined = dictionary[id]; // this is a flattened dictionary
+        | undefined = dictionary[key]; // this is a flattened dictionary
       if (
         (!dictionaryEntry && dictionaryEntry !== '') || // entry not found
         (typeof dictionaryEntry === 'object' &&
@@ -182,8 +182,7 @@ export default function ClientProvider({
       const { entry, metadata } = extractEntryMetadata(dictionaryEntry);
       const variables = options;
       const variablesOptions = metadata?.variablesOptions;
-      const hash = metadata?.hash;
-      const translationEntry = translations?.[id]?.[hash];
+      const translationEntry = translations?.[key];
 
       // ----- RENDER STRINGS ----- //
 
@@ -193,7 +192,7 @@ export default function ClientProvider({
         // Reject empty strings
         if (!entry.length) {
           console.warn(
-            `gt-next warn: Empty string found in dictionary with id: ${id}`
+            `gt-next warn: Empty string found in dictionary with key: ${key}`
           );
           return entry;
         }
@@ -287,7 +286,7 @@ export default function ClientProvider({
         // Reject empty fragments
         if (isEmptyReactFragment(entry)) {
           console.warn(
-            `gt-next warn: Empty fragment found in dictionary with id: ${id}`
+            `gt-next warn: Empty fragment found in dictionary with id: ${key}`
           );
           return entry;
         }

@@ -74,22 +74,16 @@ export class RemoteTranslationsManager {
         this.lastFetchTime.set(reference, Date.now());
 
         // Parse response
-        const parsedResult = Object.entries(result).reduce(
+        const parsedResult: TranslationsObject = Object.entries(result).reduce(
           (
-            translationsAcc: Record<string, any>,
-            [id, hashToTranslation]: [string, any]
+            translationsAcc: TranslationsObject,
+            [key, target]: [string, any]
           ) => {
-            translationsAcc[id] = Object.entries(
-              hashToTranslation || {}
-            ).reduce((idAcc: Record<string, any>, [hash, content]) => {
-              idAcc[hash] = { state: 'success', target: content };
-              return idAcc;
-            }, {});
+            translationsAcc[key] = { state: 'success', target };
             return translationsAcc;
           },
           {}
         );
-
         return parsedResult;
       }
     } catch (error) {
@@ -151,26 +145,23 @@ export class RemoteTranslationsManager {
   /**
    * Sets a new translation entry.
    * @param {string} locale - The locale code.
-   * @param {string} key - The key for the new entry.
-   * @param {string} [id=key] - The id for the new entry, defaults to key if not provided.
+   * @param {string} hash - The key for the new entry.
+   * @param {string} [id=hash] - The id for the new entry, defaults to key if not provided.
    * @param {any} translation - The translation value.
    * @returns {boolean} True if the entry was set successfully, false otherwise.
    */
   setTranslations(
     locale: string,
-    key: string,
-    id: string = key,
+    hash: string,
+    id: string = hash,
     translation: TranslationSuccess | TranslationLoading | TranslationError
   ): boolean {
-    if (!(locale && key && id && translation)) return false;
+    if (!(locale && hash && translation)) return false;
     const reference = standardizeLocale(locale);
     const currentTranslations = this.translationsMap.get(reference) || {};
     this.translationsMap.set(reference, {
       ...currentTranslations,
-      [id]: {
-        ...(currentTranslations[id] || {}),
-        [key]: translation,
-      },
+      [id]: translation,
     });
     // Reset the fetch time since we just manually updated the translation
     this.lastFetchTime.set(reference, Date.now());

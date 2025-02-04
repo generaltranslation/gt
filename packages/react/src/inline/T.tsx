@@ -11,7 +11,6 @@ import useGTContext from '../provider/GTContext';
 import renderTranslatedChildren from '../provider/rendering/renderTranslatedChildren';
 import { useMemo } from 'react';
 import renderVariable from '../provider/rendering/renderVariable';
-import { createClientSideTWithoutIdError } from '../messages/createMessages';
 import { hashJsxChildren } from 'generaltranslation/id';
 import renderSkeleton from '../provider/rendering/renderSkeleton';
 import { TranslatedChildren } from '../types/types';
@@ -53,15 +52,13 @@ function T({
   ...props
 }: {
   children: any;
-  id: string;
+  id?: string;
   context?: string;
   [key: string]: any;
 }): React.JSX.Element | undefined {
   if (!children) return undefined;
 
   if (isEmptyReactFragment(children)) return <React.Fragment />;
-
-  if (!id) throw new Error(createClientSideTWithoutIdError(children));
 
   const { variables, variablesOptions } = props;
 
@@ -72,9 +69,7 @@ function T({
     translateChildren,
     renderSettings,
     locale,
-  } = useGTContext(
-    `<T id="${id}"> used on the client-side outside of <GTProvider>`
-  );
+  } = useGTContext(`<T> used on the client-side outside of <GTProvider>`);
 
   // const locale = useLocale();
   const defaultLocale = useDefaultLocale();
@@ -98,8 +93,11 @@ function T({
     }
   }, [context, taggedChildren, translationRequired]);
 
+  // key
+  const key = id || hash;
+
   // Do translation if required
-  const translationEntry = translations?.[id]?.[hash];
+  const translationEntry = translations?.[key];
   useEffect(() => {
     // skip if: no translation required
     if (!translationRequired) return;

@@ -101,7 +101,7 @@ export default async function GTProvider({
           if (!translationRequired) return;
 
           // Check if the translation already exists
-          const translationEntry = translations?.[entryId]?.[hash];
+          const translationEntry = translations?.[entryId];
 
           // If the translation already exists, then do not translate on demand
           // or runtime translation disabled
@@ -113,11 +113,9 @@ export default async function GTProvider({
           // Reject empty fragments
           if (isEmptyReactFragment(entry)) {
             translations[entryId] = {
-              [hash]: {
-                state: 'error',
-                error: 'Empty fragments are not allowed for translation.',
-                code: 400,
-              },
+              state: 'error',
+              error: 'Empty fragments are not allowed for translation.',
+              code: 400,
             };
             return;
           }
@@ -134,7 +132,7 @@ export default async function GTProvider({
           });
 
           // record translations as loading and record the promises to use on client-side
-          translations[entryId] = { [hash]: { state: 'loading' } };
+          translations[entryId] = { state: 'loading' };
           promises[entryId] = translationPromise;
           return;
         }
@@ -152,7 +150,7 @@ export default async function GTProvider({
         if (!translationRequired) return;
 
         // Check if the translation already exists
-        const translationEntry = translations?.[entryId]?.[hash];
+        const translationEntry = translations?.[entryId];
 
         // If the translation already exists, then do not translate on demand
         if (translationEntry) return;
@@ -160,11 +158,9 @@ export default async function GTProvider({
         // Reject empty strings
         if (!entry.length) {
           translations[entryId] = {
-            [hash]: {
-              state: 'error',
-              error: 'Empty strings are not allowed for translation.',
-              code: 400,
-            },
+            state: 'error',
+            error: 'Empty strings are not allowed for translation.',
+            code: 400,
           };
           return;
         }
@@ -186,7 +182,8 @@ export default async function GTProvider({
 
           // overwriting any old translations, this is most recent on demand, so should be most accurate
           translations[entryId] = {
-            [hash]: { state: 'success', target: translation },
+            state: 'success',
+            target: translation,
           };
         } catch (error) {
           console.error(error);
