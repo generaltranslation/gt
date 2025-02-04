@@ -45,6 +45,11 @@ import { getAuth } from '../utils/utils';
  * @param {string} [defaultLocale=libraryDefaultLocale] - The default locale to use if no other locale is found.
  * @param {string} [locale] - The current locale, if already set.
  * @param {string} [cacheUrl='https://cache.gtx.dev'] - The URL of the cache service for fetching translations.
+ * @param {string} [runtimeUrl='https://runtime.gtx.dev'] - The URL of the runtime service for fetching translations.
+ * @param {RenderSettings} [renderSettings=defaultRenderSettings] - The settings for rendering translations.
+ * @param {string} [_versionId] - The version ID for fetching translations.
+ * @param {string} [devApiKey] - The API key for development environments.
+ * @param {object} [metadata] - Additional metadata to pass to the context.
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
