@@ -1,129 +1,127 @@
 const supportedLocales = {
-    "af": {}, // Afrikaans
-    "am": {}, // Amharic
-    "ar": { // Arabic
-        "ar-AE": true, // United Arab Emirates
-        "ar-EG": true, // Egypt
-        "ar-LB": true, // Lebanon
-        "ar-MA": true, // Morocco
-        "ar-SA": true, // Saudi Arabia
-    },
-    "bg": {}, // Bulgarian
-    "bn": { // Bengali
-        "bn-BD": true, // Bangladesh
-        "bn-IN": true, // India
-    },
-    "bs": {}, // Bosnian
-    "ca": {}, // Catalan
-    "cs": {}, // Czech
-    "cy": {}, // Welsh
-    "da": {}, // Danish
-    "de": { // German
-        "de-AT": true, // Austria
-        "de-CH": true, // Switzerland
-        "de-DE": true, // Germany
-    },
-    "el": { // Greek
-        "el-CY": true, // Cyprus
-        "el-GR": true, // Greece
-    },
-    "en": { // English
-        "en-AU": true, // Australia
-        "en-CA": true, // Canada
-        "en-GB": true, // United Kingdom
-        "en-NZ": true, // New Zealand
-        "en-US": true, // United States
-    },
-    "es": { // Spanish
-        "es-419": true, // Latin America
-        "es-AR": true, // Argentina
-        "es-CL": true, // Chile
-        "es-CO": true, // Colombia
-        "es-ES": true, // Spain
-        "es-MX": true, // Mexico
-        "es-PE": true, // Peru
-        "es-US": true, // United States
-        "es-VE": true, // Venezuela
-    },
-    "et": {}, // Estonian
-    "fa": {}, // Persian
-    "fi": {}, // Finnish
-    "fil": {}, // Filipino
-    "fr": { // French
-        "fr-BE": true, // Belgium
-        "fr-CM": true, // Cameroon
-        "fr-CA": true, // Canada
-        "fr-CH": true, // Switzerland
-        "fr-FR": true, // France
-        "fr-SN": true, // Senegal
-    },
-    "gu": {}, // Gujarati
-    "hi": {}, // Hindi
-    "he": {}, // Hebrew
-    "hr": {}, // Croatian
-    "hu": {}, // Hungarian
-    "hy": {}, // Armenian
-    "id": {}, // Indonesian
-    "is": {}, // Icelandic
-    "it": { // Italian
-        "it-CH": true, // Switzerland
-        "it-IT": true, // Italy
-    },
-    "ja": {}, // Japanese
-    "ka": {}, // Georgian
-    "kk": {}, // Kazakh
-    "kn": {}, // Kannada
-    "ko": {}, // Korean
-    "la": {}, // Latin
-    "lt": {}, // Lithuanian
-    "lv": {}, // Latvian
-    "mk": {}, // Macedonian
-    "ml": {}, // Malayalam
-    "mn": {}, // Mongolian
-    "mr": {}, // Marathi
-    "ms": {}, // Malay
-    "my": {}, // Burmese
-    "nl": { // Dutch
-        "nl-BE": true, // Belgium
-        "nl-NL": true, // Netherlands
-    },
-    "no": {}, // Norwegian
-    "pa": {}, // Punjabi
-    "pl": {}, // Polish
-    "pt": { // Portuguese
-        "pt-BR": true, // Brazil
-        "pt-PT": true, // Portugal
-    },
-    "ro": {}, // Romanian
-    "ru": {}, // Russian
-    "sk": {}, // Slovak
-    "sl": {}, // Slovenian
-    "so": {}, // Somali
-    "sq": {}, // Albanian
-    "sr": {}, // Serbian
-    "sv": {}, // Swedish
-    "sw": { // Swahili
-        "sw-KE": true, // Kenya
-        "sw-TZ": true, // Tanzania
-    },
-    "ta": {}, // Tamil
-    "te": {}, // Telugu
-    "th": {}, // Thai
-    "tl": {}, // Tagalog
-    "tr": {}, // Turkish
-    "uk": {}, // Ukrainian
-    "ur": {}, // Urdu
-    "vi": {}, // Vietnamese
-    "zh": { // Chinese
-        "zh-CN": true, // China
-        "zh-HK": true, // Hong Kong
-        "zh-SG": true, // Singapore
-        "zh-TW": true, // Taiwan
-    }
+    "af": ["af"], // Afrikaans
+    "am": ["am"], // Amharic
+    "ar": [ // Arabic
+        "ar-AE", // United Arab Emirates
+        "ar-EG", // Egypt
+        "ar-LB", // Lebanon
+        "ar-MA", // Morocco
+        "ar-SA" // Saudi Arabia
+    ],
+    "bg": ["bg"], // Bulgarian
+    "bn": [ // Bengali
+        "bn-BD", // Bangladesh
+        "bn-IN" // India
+    ],
+    "bs": ["bs"], // Bosnian
+    "ca": ["ca"], // Catalan
+    "cs": ["cs"], // Czech
+    "cy": ["cy"], // Welsh
+    "da": ["da"], // Danish
+    "de": [ // German
+        "de",
+        "de-AT", // Austria
+        "de-CH", // Switzerland
+    ],
+    "el": [ // Greek
+        "el",
+        "el-CY", // Cyprus
+    ],
+    "en": [ // English
+        "en-AU", // Australia
+        "en-CA", // Canada
+        "en-GB", // United Kingdom
+        "en-NZ", // New Zealand
+        "en-US", // United States
+    ],
+    "es": [ // Spanish
+        "es", // Spain
+        "es-419", // Latin America
+        "es-AR", // Argentina
+        "es-CL", // Chile
+        "es-CO", // Colombia
+        "es-MX", // Mexico
+        "es-PE", // Peru
+        "es-US", // United States
+        "es-VE", // Venezuela
+    ],
+    "et": ["et"], // Estonian
+    "fa": ["fa"], // Persian
+    "fi": ["fi"], // Finnish
+    "fil": ["fil"], // Filipino
+    "fr": [ // French
+        "fr", // France
+        "fr-BE", // Belgium
+        "fr-CM", // Cameroon
+        "fr-CA", // Canada
+        "fr-CH", // Switzerland
+        "fr-SN", // Senegal
+    ],
+    "gu": ["gu"], // Gujarati
+    "hi": ["hi"], // Hindi
+    "he": ["he"], // Hebrew
+    "hr": ["hr"], // Croatian
+    "hu": ["hu"], // Hungarian
+    "hy": ["hy"], // Armenian
+    "id": ["id"], // Indonesian
+    "is": ["is"], // Icelandic
+    "it": [ // Italian
+        "it-CH", // Switzerland
+        "it-IT", // Italy
+    ],
+    "ja": ["ja"], // Japanese
+    "ka": ["ka"], // Georgian
+    "kk": ["kk"], // Kazakh
+    "kn": ["kn"], // Kannada
+    "ko": ["ko"], // Korean
+    "la": ["la"], // Latin
+    "lt": ["lt"], // Lithuanian
+    "lv": ["lv"], // Latvian
+    "mk": ["mk"], // Macedonian
+    "ml": ["ml"], // Malayalam
+    "mn": ["mn"], // Mongolian
+    "mr": ["mr"], // Marathi
+    "ms": ["ms"], // Malay
+    "my": ["my"], // Burmese
+    "nl": [ // Dutch
+        "nl", // Netherlands
+        "nl-BE", // Belgium
+    ],
+    "no": ["no"], // Norwegian
+    "pa": ["pa"], // Punjabi
+    "pl": ["pl"], // Polish
+    "pt": [ // Portuguese
+        "pt-BR", // Brazil
+        "pt-PT", // Portugal
+    ],
+    "ro": ["ro"], // Romanian
+    "ru": ["ru"], // Russian
+    "sk": ["sk"], // Slovak
+    "sl": ["sl"], // Slovenian
+    "so": ["so"], // Somali
+    "sq": ["sq"], // Albanian
+    "sr": ["sr"], // Serbian
+    "sv": ["sv"], // Swedish
+    "sw": [ // Swahili
+        "sw-KE", // Kenya
+        "sw-TZ", // Tanzania
+    ],
+    "ta": ["ta"], // Tamil
+    "te": ["te"], // Telugu
+    "th": ["th"], // Thai
+    "tl": ["tl"], // Tagalog
+    "tr": ["tr"], // Turkish
+    "uk": ["uk"], // Ukrainian
+    "ur": ["ur"], // Urdu
+    "vi": ["vi"], // Vietnamese
+    "zh": [ // Chinese
+        "zh", // China
+        "zh-HK", // Hong Kong
+        "zh-SG", // Singapore
+        "zh-TW", // Taiwan
+    ]
 } as {
-    [language: string]: {
-        [locale: string]: true
-    }
+    [language: string]: string[]
 };
 
 export default supportedLocales;
