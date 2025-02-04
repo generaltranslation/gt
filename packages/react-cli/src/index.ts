@@ -340,8 +340,12 @@ export default function main(framework: 'gt-next' | 'gt-react') {
           if (!response.ok) {
             throw new Error(response.status + '. ' + (await response.text()));
           }
-          const result = await response.text();
-          console.log(chalk.green('✓ ') + chalk.green.bold(result));
+
+          const { versionId, message } = await response.json();
+          if (options.options) updateConfigFile(options.options, { _versionId: versionId });
+          
+          console.log(chalk.green('✓ ') + chalk.green.bold(message));
+
         } catch (error) {
           clearInterval(loadingInterval);
           process.stdout.write('\n');
