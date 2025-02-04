@@ -91,6 +91,7 @@ function main(framework) {
         .option('--wrap', 'Wraps all JSX elements in the src directory with a <T> tag, with unique ids', false)
         .option('--ignore-errors', 'Ignore errors encountered while scanning for <T> tags', false)
         .option('--dry-run', 'Dry run, does not send updates to General Translation API', false)
+        .option('--wait', 'Wait for the updates to be deployed to the CDN before exiting', true)
         .action((options) => __awaiter(this, void 0, void 0, function* () {
         var _a;
         (0, console_1.displayAsciiTitle)();
@@ -110,6 +111,7 @@ function main(framework) {
         // Warn if apiKey is present in gt.config.json
         if (gtConfig.apiKey) {
             (0, warnings_1.warnApiKeyInConfig)(options.options);
+            process.exit(1);
         }
         // Error if no API key at this point
         if (!options.projectId)
@@ -211,12 +213,7 @@ function main(framework) {
                 locales: options.locales,
                 metadata: globalMetadata,
             };
-            const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-            let i = 0;
-            const loadingInterval = setInterval(() => {
-                process.stdout.write(`\r${chalk_1.default.blue(frames[i])} Sending updates to General Translation API...`);
-                i = (i + 1) % frames.length;
-            }, 80);
+            const loadingInterval = (0, console_1.displayLoadingAnimation)('Sending updates to General Translation API...');
             try {
                 const response = yield fetch(`${options.baseUrl}/v1/project/translations/update`, {
                     method: 'POST',
@@ -236,6 +233,48 @@ function main(framework) {
                 process.stdout.write('\n');
                 console.log(chalk_1.default.red('✗ Failed to send updates'));
                 throw error;
+            }
+            // TODO: add a check to see if the updates were successful by checking the CDN
+            if (options.wait && options.locales && options.locales.length > 0) {
+                console.log();
+                const loadingInterval = (0, console_1.displayLoadingAnimation)('Waiting for updates to be deployed to the CDN...');
+                let attempts = 0;
+                const maxAttempts = 60; // 5 minutes total (60 * 5000ms)
+                const checkDeployment = () => __awaiter(this, void 0, void 0, function* () {
+                    if (!options.locales)
+                        return false;
+                    try {
+                        const promises = options.locales.map((locale) => fetch(`https://cdn.gtx.dev/${projectId}/${locale}`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        }));
+                        const responses = yield Promise.all(promises);
+                        const jsonResponses = yield Promise.all(responses.map((response) => response.ok && response.json()));
+                        return (responses.every((r) => r.ok) &&
+                            jsonResponses.every((data) => Object.keys(data || {}).length > 0));
+                    }
+                    catch (error) {
+                        return false;
+                    }
+                });
+                let intervalCheck;
+                intervalCheck = setInterval(() => __awaiter(this, void 0, void 0, function* () {
+                    attempts++;
+                    const isDeployed = yield checkDeployment();
+                    if (isDeployed || attempts >= maxAttempts) {
+                        clearInterval(loadingInterval);
+                        clearInterval(intervalCheck);
+                        console.log('\n');
+                        if (isDeployed) {
+                            console.log(chalk_1.default.green('✓ All translations are live!'));
+                        }
+                        else {
+                            console.log(chalk_1.default.yellow('⚠️  Timed out waiting for CDN deployment'));
+                        }
+                    }
+                }), 5000);
             }
         }
         else {

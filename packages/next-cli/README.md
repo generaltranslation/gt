@@ -4,9 +4,9 @@
   </a>
 </p>
 
-# gt-react-cli: Command-line tool for gt-react and gt-next
+# gt-next-cli: Command-line tool for gt-next
 
-gt-react-cli is a command-line tool used to push `gt-react` and `gt-next` dictionaries to be translated.
+gt-next-cli is a command-line tool used to push `gt-next` dictionaries to be translated.
 
 Additionally, it can scan your project for all content that needs to be translated, and automatically wrap them in `<T>` and `<Var>` components.
 
@@ -15,14 +15,14 @@ See our [docs](https://www.generaltranslation.com/docs) for more information inc
 ## Installation
 
 ```bash
-npm install gt-react-cli
+npm install gt-next-cli
 ```
 
 ## Usage
 
 ```bash
-npx gt-react-cli translate
-npx gt-react-cli setup
+npx gt-next-cli translate
+npx gt-next-cli setup
 ```
 
 ## Documentation
