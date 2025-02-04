@@ -120,6 +120,10 @@ function initGT(_a) {
     else if (apiKeyType === 'dev') {
         resolvedDevApiKey = envApiKey;
     }
+    var environment = process.env.NODE_ENV;
+    if (environment === 'production' && devApiKey) {
+        throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
+    }
     if (finalRuntimeTranslation && !resolvedApiKey && !resolvedDevApiKey) {
         console.error(createErrors_1.APIKeyMissingError);
     }

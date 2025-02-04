@@ -21,34 +21,32 @@ export function getSupportedLocale(locale: string): string | null {
     if (!isValidLocale(locale)) return null;
     locale = standardizeLocale(locale);
 
-    // Check if the exact locale is directly supported
-    if (supportedLocales[locale]) return locale;
-
     // Check if there's support for the general language code
     const { 
-        languageCode, minimizedCode,
+        languageCode, 
+        minimizedCode, maximizedCode,
         regionCode, scriptCode
     } = getLocaleProperties(locale);
     if (supportedLocales[languageCode]) {
         const exactSupportedLocales = supportedLocales[languageCode];
 
         // If the full locale is supported under this language category
-        if (exactSupportedLocales[locale]) return locale;
+        if (exactSupportedLocales.includes(locale)) return locale;
 
-        // If a minimized variant of this locale is supported (e.g., "en" for "en-US")
-        if (exactSupportedLocales[minimizedCode]) return minimizedCode;
+        // If a minimized variant of this locale is supported
+        if (exactSupportedLocales.includes(minimizedCode)) return minimizedCode;
+
+        // If only the language code is supported
+        if (exactSupportedLocales.includes(languageCode)) return languageCode;
 
         // Attempt to match parts
-        const parts = locale.split('-');
+        const parts = maximizedCode.split('-');
         if (parts.length > 2) {
             const languageWithRegion = `${languageCode}-${regionCode}`;
-            if (exactSupportedLocales[languageWithRegion]) return languageWithRegion;
+            if (exactSupportedLocales.includes(languageWithRegion)) return languageWithRegion;
             const languageWithScript = `${languageCode}-${scriptCode}`;
-            if (exactSupportedLocales[languageWithScript]) return languageWithScript;
+            if (exactSupportedLocales.includes(languageWithScript)) return languageWithScript;
         }
-
-        // No exact or minimized match; fallback to the language code
-        return languageCode;
     }
 
     // No match found; return null
@@ -60,10 +58,9 @@ export function getSupportedLocale(locale: string): string | null {
  * @returns {string[]} A sorted array containing the supported base languages and their specific locales.
  */
 export function listSupportedLocales(): string[] {
-    const list = [];
-    for (const [language, locales] of Object.entries(supportedLocales)) {
-        list.push(language); // Add the base language
-        list.push(...Object.keys(locales)); // Add each specific locale
+    const list: string[] = [];
+    for (const localeList of Object.values(supportedLocales)) {
+        list.push(...localeList); // Add each locale in the list
     }
     return list.sort();
 }

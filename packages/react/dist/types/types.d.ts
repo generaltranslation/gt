@@ -77,6 +77,9 @@ export type TranslationsObject = {
         [hash: string]: TranslationSuccess | TranslationLoading | TranslationError;
     };
 };
+export type LocalesTranslations = {
+    [locale: string]: TranslationsObject | null;
+};
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 export type TranslateContentCallback = (params: {
     source: any;

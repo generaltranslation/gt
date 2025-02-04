@@ -1,4 +1,6 @@
 export declare const projectIdMissingError = "gt-react Error: General Translation cloud services require a project ID! Find yours at www.generaltranslation.com/dashboard.";
+export declare const devApiKeyProductionError = "gt-react Error: Production environments cannot include a development api key.";
+export declare const createNoAuthError = "gt-react Error: Configuration is missing a projectId and/or devApiKey. Please add these values to your environment or pass them to the <GTProvider> directly.";
 export declare const createPluralMissingError: (children: any) => string;
 export declare const createClientSideTWithoutIdError: (children: any) => string;
 export declare const createStringTranslationError: (content: string, id?: string) => string;

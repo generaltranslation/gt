@@ -44,8 +44,7 @@ export type Options = {
   defaultLocale?: string;
   locales?: string[];
   baseUrl: string;
-  inline: boolean;
-  retranslate: boolean;
+  inline?: boolean;
   ignoreErrors: boolean;
   dryRun: boolean;
   wait: boolean;

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 export default function ClientProvider(
   props: Omit<ClientProviderProps, 'onLocaleChange'>
 ) {
-  // locale change on client, trigger refresh
+  // locale change on client, trigger page reload
   const router = useRouter();
   const onLocaleChange = () => router.refresh();
   return <_ClientProvider onLocaleChange={onLocaleChange} {...props} />;

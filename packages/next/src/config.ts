@@ -6,6 +6,7 @@ import InitGTProps from './config/props/InitGTProps';
 import {
   APIKeyMissingError,
   createUnsupportedLocalesWarning,
+  devApiKeyIncludedInProductionError,
   projectIdMissingError,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
@@ -148,6 +149,11 @@ export function initGT({
     resolvedApiKey = envApiKey;
   } else if (apiKeyType === 'dev') {
     resolvedDevApiKey = envApiKey;
+  }
+
+  const environment = process.env.NODE_ENV;
+  if (environment === 'production' && devApiKey) {
+    throw new Error(devApiKeyIncludedInProductionError);
   }
 
   if (finalRuntimeTranslation && !resolvedApiKey && !resolvedDevApiKey) {
