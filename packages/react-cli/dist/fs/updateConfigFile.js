@@ -7,7 +7,7 @@ exports.default = updateConfigFile;
 const fs_1 = __importDefault(require("fs"));
 const console_1 = require("../console/console");
 const INCLUDED_KEYS = [
-    "projectId", "defaultLocale"
+    "projectId", "defaultLocale", "_versionId"
 ];
 /**
  * Checks if the config file exists. If not, creates a new JSON file at the given filepath and writes the provided config object to it.

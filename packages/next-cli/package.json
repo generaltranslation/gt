@@ -1,6 +1,6 @@
 {
   "name": "gt-next-cli",
-  "version": "1.0.1",
+  "version": "2.0.0-alpha.1",
   "main": "dist/main.js",
   "bin": {
     "gt-next-cli": "dist/main.js"
