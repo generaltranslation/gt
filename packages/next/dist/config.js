@@ -10,17 +10,6 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
         if (ar || !(i in from)) {
@@ -81,64 +70,78 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  *
  */
-function initGT(_a) {
-    var _b, _c;
-    if (_a === void 0) { _a = defaultInitGTProps_1.default; }
-    var config = _a.config, i18n = _a.i18n, dictionary = _a.dictionary, devApiKey = _a.devApiKey, runtimeTranslation = _a.runtimeTranslation, remoteCache = _a.remoteCache, apiKey = _a.apiKey, projectId = _a.projectId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, locales = _a.locales, defaultLocale = _a.defaultLocale, renderSettings = _a.renderSettings, maxConcurrentRequests = _a.maxConcurrentRequests, maxBatchSize = _a.maxBatchSize, batchInterval = _a.batchInterval, metadata = __rest(_a, ["config", "i18n", "dictionary", "devApiKey", "runtimeTranslation", "remoteCache", "apiKey", "projectId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "locales", "defaultLocale", "renderSettings", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
-    // Load from config file if it's a string and exists
+function initGT(props) {
+    var _a, _b;
+    // ---------- LOAD GT CONFIG FILE ---------- //
     var loadedConfig = {};
     try {
+        var config = props.config || defaultInitGTProps_1.default.config;
+        var locales = props.locales || defaultInitGTProps_1.default.locales;
         if (typeof config === 'string' && fs_1.default.existsSync(config)) {
             var fileContent = fs_1.default.readFileSync(config, 'utf-8');
             loadedConfig = JSON.parse(fileContent);
         }
-        if (((_b = loadedConfig.locales) === null || _b === void 0 ? void 0 : _b.length) === 0) {
+        if (((_a = loadedConfig.locales) === null || _a === void 0 ? void 0 : _a.length) === 0) {
             loadedConfig.locales = locales;
         }
     }
     catch (error) {
         console.error('Error reading GT config file:', error);
     }
-    // Merge loaded file config, default props, and function args
-    var mergedConfig = __assign(__assign(__assign({}, defaultInitGTProps_1.default), loadedConfig), __assign({ i18n: i18n, dictionary: dictionary, runtimeTranslation: runtimeTranslation, remoteCache: remoteCache, apiKey: apiKey, devApiKey: devApiKey, projectId: projectId, runtimeUrl: runtimeUrl, cacheUrl: cacheUrl, cacheExpiryTime: cacheExpiryTime, locales: locales, defaultLocale: defaultLocale, renderSettings: renderSettings, maxConcurrentRequests: maxConcurrentRequests, maxBatchSize: maxBatchSize, batchInterval: batchInterval }, metadata));
-    // Destructure final config
-    var finalI18n = mergedConfig.i18n, finalDictionary = mergedConfig.dictionary, finalGTConfig = mergedConfig.gtConfig, finalRuntimeTranslation = mergedConfig.runtimeTranslation, finalRemoteCache = mergedConfig.remoteCache, finalApiKey = mergedConfig.apiKey, finalDevApiKey = mergedConfig.devApiKey, finalProjectId = mergedConfig.projectId, finalRuntimeUrl = mergedConfig.runtimeUrl, finalCacheUrl = mergedConfig.cacheUrl, finalCacheExpiryTime = mergedConfig.cacheExpiryTime, finalLocales = mergedConfig.locales, finalDefaultLocale = mergedConfig.defaultLocale, finalRenderSettings = mergedConfig.renderSettings, finalMaxConcurrentRequests = mergedConfig.maxConcurrentRequests, finalMaxBatchSize = mergedConfig.maxBatchSize, finalBatchInterval = mergedConfig.batchInterval, restMetadata = __rest(mergedConfig, ["i18n", "dictionary", "gtConfig", "runtimeTranslation", "remoteCache", "apiKey", "devApiKey", "projectId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "locales", "defaultLocale", "renderSettings", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
-    // ----- ERROR CHECKS ----- //
-    if (finalRuntimeTranslation || finalRemoteCache) {
-        if (!finalProjectId) {
-            console.error(createErrors_1.projectIdMissingError);
+    // ---------- LOAD ENVIRONMENT VARIABLES ---------- //
+    // resolve project ID
+    var projectId = process.env.GT_PROJECT_ID;
+    // resolve API keys
+    var envApiKey = process.env.GT_API_KEY;
+    var apiKey, devApiKey;
+    if (envApiKey) {
+        var apiKeyType = (_b = envApiKey === null || envApiKey === void 0 ? void 0 : envApiKey.split('-')) === null || _b === void 0 ? void 0 : _b[1];
+        if (apiKeyType === 'api') {
+            apiKey = envApiKey;
+        }
+        else if (apiKeyType === 'dev') {
+            devApiKey = envApiKey;
         }
     }
-    var envApiKey = process.env.GT_API_KEY || '';
-    var apiKeyType = (_c = envApiKey.split('-')) === null || _c === void 0 ? void 0 : _c[1];
-    var resolvedApiKey = finalApiKey;
-    var resolvedDevApiKey = finalDevApiKey;
-    if (apiKeyType === 'api') {
-        resolvedApiKey = envApiKey;
+    // conditionally add environment variables to config
+    var envConfig = __assign(__assign(__assign({}, (projectId ? { projectId: projectId } : {})), (apiKey ? { apiKey: apiKey } : {})), (devApiKey ? { devApiKey: devApiKey } : {}));
+    // ---------- MERGE CONFIGS ---------- //
+    // precedence: input > env > config file > defaults
+    var mergedConfig = __assign(__assign(__assign(__assign({}, defaultInitGTProps_1.default), loadedConfig), envConfig), props);
+    // ---------- ERROR CHECKS ---------- //
+    // Check: must have projectId if using CDN or API
+    if ((mergedConfig.runtimeTranslation || mergedConfig.remoteCache) &&
+        !mergedConfig.projectId) {
+        console.error(createErrors_1.projectIdMissingError);
     }
-    else if (apiKeyType === 'dev') {
-        resolvedDevApiKey = envApiKey;
-    }
-    var environment = process.env.NODE_ENV;
-    if (environment === 'production' && devApiKey) {
+    // Check: dev API key should not be included in production
+    if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
         throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
     }
-    if (finalRuntimeTranslation && !resolvedApiKey && !resolvedDevApiKey) {
+    // Check: An API key is required for runtime translation
+    if (mergedConfig.runtimeTranslation &&
+        mergedConfig.apiKey &&
+        mergedConfig.devApiKey) {
         console.error(createErrors_1.APIKeyMissingError);
     }
-    if (finalRuntimeUrl === defaultInitGTProps_1.default.runtimeUrl ||
-        finalCacheUrl === defaultInitGTProps_1.default.cacheUrl) {
-        var warningLocales = (finalLocales || defaultInitGTProps_1.default.locales).filter(function (locale) { return !(0, supported_locales_1.getSupportedLocale)(locale); });
-        if (warningLocales.length)
+    // Check: if using GT infrastructure, warn about unsupported locales
+    if (mergedConfig.runtimeUrl === defaultInitGTProps_1.default.runtimeUrl ||
+        mergedConfig.cacheUrl === defaultInitGTProps_1.default.cacheUrl) {
+        var warningLocales = (mergedConfig.locales || defaultInitGTProps_1.default.locales).filter(function (locale) { return !(0, supported_locales_1.getSupportedLocale)(locale); });
+        if (warningLocales.length) {
             console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));
+        }
     }
-    // Store config params in environment variable to allow for global access (in some cases)
-    var I18NConfigParams = JSON.stringify(__assign({ remoteCache: finalRemoteCache, runtimeTranslation: finalRuntimeTranslation, apiKey: resolvedApiKey, devApiKey: resolvedDevApiKey, projectId: finalProjectId, runtimeUrl: finalRuntimeUrl, cacheUrl: finalCacheUrl, cacheExpiryTime: finalCacheExpiryTime, locales: finalLocales, defaultLocale: finalDefaultLocale, renderSettings: finalRenderSettings, maxConcurrentRequests: finalMaxConcurrentRequests, maxBatchSize: finalMaxBatchSize, batchInterval: finalBatchInterval }, restMetadata));
+    // ---------- STORE CONFIGURATIONS ---------- //
     // Resolve gt.config.json i18n and dictionary paths
-    var resolvedI18NFilePath = typeof finalI18n === 'string' ? finalI18n : resolveConfigFilepath('i18n');
-    var resolvedDictionaryFilePath = typeof finalDictionary === 'string'
-        ? finalDictionary
+    var resolvedI18NFilePath = typeof mergedConfig.i18n === 'string'
+        ? mergedConfig.i18n
+        : resolveConfigFilepath('i18n');
+    var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
+        ? mergedConfig.dictionary
         : resolveConfigFilepath('dictionary');
+    // Store the resolved paths in the environment
+    var I18NConfigParams = JSON.stringify(mergedConfig);
     return function (nextConfig) {
         if (nextConfig === void 0) { nextConfig = {}; }
         return __assign(__assign({}, nextConfig), { env: __assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), webpack: function webpack() {

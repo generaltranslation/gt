@@ -52,29 +52,12 @@ import { getSupportedLocale } from '@generaltranslation/supported-locales';
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  *
  */
-export function initGT({
-  config,
-  i18n,
-  dictionary,
-  devApiKey,
-  runtimeTranslation,
-  remoteCache,
-  apiKey,
-  projectId,
-  runtimeUrl,
-  cacheUrl,
-  cacheExpiryTime,
-  locales,
-  defaultLocale,
-  renderSettings,
-  maxConcurrentRequests,
-  maxBatchSize,
-  batchInterval,
-  ...metadata
-}: InitGTProps = defaultInitGTProps) {
-  // Load from config file if it's a string and exists
+export function initGT(props: InitGTProps) {
+  // ---------- LOAD GT CONFIG FILE ---------- //
   let loadedConfig: Partial<InitGTProps> = {};
   try {
+    const config = props.config || defaultInitGTProps.config;
+    const locales = props.locales || defaultInitGTProps.locales;
     if (typeof config === 'string' && fs.existsSync(config)) {
       const fileContent = fs.readFileSync(config, 'utf-8');
       loadedConfig = JSON.parse(fileContent);
@@ -86,118 +69,91 @@ export function initGT({
     console.error('Error reading GT config file:', error);
   }
 
-  // Merge loaded file config, default props, and function args
-  const mergedConfig: InitGTProps = {
-    ...defaultInitGTProps,
-    ...loadedConfig,
-    ...{
-      i18n,
-      dictionary,
-      runtimeTranslation,
-      remoteCache,
-      apiKey,
-      devApiKey,
-      projectId,
-      runtimeUrl,
-      cacheUrl,
-      cacheExpiryTime,
-      locales,
-      defaultLocale,
-      renderSettings,
-      maxConcurrentRequests,
-      maxBatchSize,
-      batchInterval,
-      ...metadata,
-    },
-  };
+  // ---------- LOAD ENVIRONMENT VARIABLES ---------- //
 
-  // Destructure final config
-  const {
-    i18n: finalI18n,
-    dictionary: finalDictionary,
-    gtConfig: finalGTConfig,
-    runtimeTranslation: finalRuntimeTranslation,
-    remoteCache: finalRemoteCache,
-    apiKey: finalApiKey,
-    devApiKey: finalDevApiKey,
-    projectId: finalProjectId,
-    runtimeUrl: finalRuntimeUrl,
-    cacheUrl: finalCacheUrl,
-    cacheExpiryTime: finalCacheExpiryTime,
-    locales: finalLocales,
-    defaultLocale: finalDefaultLocale,
-    renderSettings: finalRenderSettings,
-    maxConcurrentRequests: finalMaxConcurrentRequests,
-    maxBatchSize: finalMaxBatchSize,
-    batchInterval: finalBatchInterval,
-    ...restMetadata
-  } = mergedConfig;
+  // resolve project ID
+  const projectId: string | undefined = process.env.GT_PROJECT_ID;
 
-  // ----- ERROR CHECKS ----- //
-  if (finalRuntimeTranslation || finalRemoteCache) {
-    if (!finalProjectId) {
-      console.error(projectIdMissingError);
+  // resolve API keys
+  const envApiKey: string | undefined = process.env.GT_API_KEY;
+  let apiKey, devApiKey;
+  if (envApiKey) {
+    const apiKeyType = envApiKey?.split('-')?.[1];
+    if (apiKeyType === 'api') {
+      apiKey = envApiKey;
+    } else if (apiKeyType === 'dev') {
+      devApiKey = envApiKey;
     }
   }
 
-  const envApiKey = process.env.GT_API_KEY || '';
-  const apiKeyType = envApiKey.split('-')?.[1];
-  let resolvedApiKey = finalApiKey;
-  let resolvedDevApiKey = finalDevApiKey;
+  // conditionally add environment variables to config
+  const envConfig: Partial<InitGTProps> = {
+    ...(projectId ? { projectId } : {}),
+    ...(apiKey ? { apiKey } : {}),
+    ...(devApiKey ? { devApiKey } : {}),
+  };
 
-  if (apiKeyType === 'api') {
-    resolvedApiKey = envApiKey;
-  } else if (apiKeyType === 'dev') {
-    resolvedDevApiKey = envApiKey;
+  // ---------- MERGE CONFIGS ---------- //
+
+  // precedence: input > env > config file > defaults
+  const mergedConfig: InitGTProps = {
+    ...defaultInitGTProps,
+    ...loadedConfig,
+    ...envConfig,
+    ...props,
+  };
+
+  // ---------- ERROR CHECKS ---------- //
+
+  // Check: must have projectId if using CDN or API
+  if (
+    (mergedConfig.runtimeTranslation || mergedConfig.remoteCache) &&
+    !mergedConfig.projectId
+  ) {
+    console.error(projectIdMissingError);
   }
 
-  const environment = process.env.NODE_ENV;
-  if (environment === 'production' && devApiKey) {
+  // Check: dev API key should not be included in production
+  if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
     throw new Error(devApiKeyIncludedInProductionError);
   }
 
-  if (finalRuntimeTranslation && !resolvedApiKey && !resolvedDevApiKey) {
+  // Check: An API key is required for runtime translation
+  if (
+    mergedConfig.runtimeTranslation &&
+    mergedConfig.apiKey &&
+    mergedConfig.devApiKey
+  ) {
     console.error(APIKeyMissingError);
   }
 
+  // Check: if using GT infrastructure, warn about unsupported locales
   if (
-    finalRuntimeUrl === defaultInitGTProps.runtimeUrl ||
-    finalCacheUrl === defaultInitGTProps.cacheUrl
+    mergedConfig.runtimeUrl === defaultInitGTProps.runtimeUrl ||
+    mergedConfig.cacheUrl === defaultInitGTProps.cacheUrl
   ) {
-    const warningLocales = (finalLocales || defaultInitGTProps.locales).filter(
-      (locale) => !getSupportedLocale(locale)
-    );
-    if (warningLocales.length)
+    const warningLocales = (
+      mergedConfig.locales || defaultInitGTProps.locales
+    ).filter((locale) => !getSupportedLocale(locale));
+    if (warningLocales.length) {
       console.warn(createUnsupportedLocalesWarning(warningLocales));
+    }
   }
 
-  // Store config params in environment variable to allow for global access (in some cases)
-  const I18NConfigParams = JSON.stringify({
-    remoteCache: finalRemoteCache,
-    runtimeTranslation: finalRuntimeTranslation,
-    apiKey: resolvedApiKey,
-    devApiKey: resolvedDevApiKey,
-    projectId: finalProjectId,
-    runtimeUrl: finalRuntimeUrl,
-    cacheUrl: finalCacheUrl,
-    cacheExpiryTime: finalCacheExpiryTime,
-    locales: finalLocales,
-    defaultLocale: finalDefaultLocale,
-    renderSettings: finalRenderSettings,
-    maxConcurrentRequests: finalMaxConcurrentRequests,
-    maxBatchSize: finalMaxBatchSize,
-    batchInterval: finalBatchInterval,
-    ...restMetadata,
-  });
+  // ---------- STORE CONFIGURATIONS ---------- //
 
   // Resolve gt.config.json i18n and dictionary paths
   const resolvedI18NFilePath =
-    typeof finalI18n === 'string' ? finalI18n : resolveConfigFilepath('i18n');
+    typeof mergedConfig.i18n === 'string'
+      ? mergedConfig.i18n
+      : resolveConfigFilepath('i18n');
   const resolvedDictionaryFilePath =
-    typeof finalDictionary === 'string'
-      ? finalDictionary
+    typeof mergedConfig.dictionary === 'string'
+      ? mergedConfig.dictionary
       : resolveConfigFilepath('dictionary');
 
+  // Store the resolved paths in the environment
+  const I18NConfigParams = JSON.stringify(mergedConfig);
   return (nextConfig: any = {}): any => {
     return {
       ...nextConfig,

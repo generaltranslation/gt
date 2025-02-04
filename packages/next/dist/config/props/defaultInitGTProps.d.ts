@@ -2,9 +2,6 @@ declare const defaultInitGTProps: {
     readonly config: "./gt.config.json";
     readonly remoteCache: true;
     readonly runtimeTranslation: true;
-    readonly apiKey: string;
-    readonly devApiKey: "";
-    readonly projectId: string;
     readonly runtimeUrl: "https://runtime.gtx.dev";
     readonly cacheUrl: "https://cdn.gtx.dev";
     readonly cacheExpiryTime: 60000;

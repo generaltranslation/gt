@@ -35,21 +35,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 var internal_1 = require("generaltranslation/internal");
-var getDefaultFromEnv_1 = __importDefault(require("../../utils/getDefaultFromEnv"));
 var supported_locales_1 = require("@generaltranslation/supported-locales");
 var internal_2 = require("gt-react/internal");
 var defaultInitGTProps = {
     config: './gt.config.json',
     remoteCache: true,
     runtimeTranslation: true,
-    apiKey: (0, getDefaultFromEnv_1.default)('GT_API_KEY'),
-    devApiKey: '',
-    projectId: (0, getDefaultFromEnv_1.default)('GT_PROJECT_ID'),
     runtimeUrl: internal_1.defaultRuntimeApiUrl,
     cacheUrl: internal_1.defaultCacheUrl,
     cacheExpiryTime: 60000,

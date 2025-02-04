@@ -60,7 +60,7 @@ export default function GTProvider({
   cacheUrl = defaultCacheUrl,
   runtimeUrl = defaultRuntimeApiUrl,
   renderSettings = defaultRenderSettings,
-  _versionId, // TODO: get this from config
+  _versionId,
   ...metadata
 }: {
   children?: React.ReactNode;
