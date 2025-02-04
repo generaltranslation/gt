@@ -397,7 +397,7 @@ export default function GTProvider({
   const { translateChildren, translateContent, translationEnabled } =
     useRuntimeTranslation({
       locale,
-      _versionId,
+      versionId: _versionId,
       projectId,
       defaultLocale,
       devApiKey,

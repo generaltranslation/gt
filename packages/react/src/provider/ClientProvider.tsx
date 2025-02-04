@@ -299,6 +299,7 @@ export default function ClientProvider({
   // For <T> components
   const { translateChildren, translateContent } = useRuntimeTranslation({
     locale: locale,
+    versionId: _versionId,
     projectId,
     devApiKey,
     runtimeUrl,

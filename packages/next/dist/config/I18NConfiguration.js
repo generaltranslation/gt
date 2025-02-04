@@ -356,7 +356,7 @@ var I18NConfiguration = /** @class */ (function () {
                                     }),
                                     targetLocale: batch[0].targetLocale,
                                     metadata: this.metadata,
-                                    version: this._versionId,
+                                    versionId: this._versionId,
                                 }),
                             }, this.renderSettings.timeout // Pass the timeout duration in milliseconds
                             )];

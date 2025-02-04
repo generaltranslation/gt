@@ -130,11 +130,11 @@ type ClientProviderProps = {
 
 declare const GTContext: React$1.Context<GTContextType | undefined>;
 
-declare function useRuntimeTranslation({ projectId, devApiKey, locale, _versionId, defaultLocale, runtimeUrl, renderSettings, setTranslations, ...metadata }: {
+declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId, defaultLocale, runtimeUrl, renderSettings, setTranslations, ...metadata }: {
     projectId?: string;
     devApiKey?: string;
     locale: string;
-    _versionId?: string;
+    versionId?: string;
     defaultLocale?: string;
     runtimeUrl?: string;
     renderSettings: {
