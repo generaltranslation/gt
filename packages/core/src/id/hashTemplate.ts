@@ -4,7 +4,7 @@ import stringify from "fast-json-stable-stringify";
 
 export default function hashTemplate(
     template: {
-        [key: string]: { source: JsxChildren, [metadata: string]: any }
+        [key: string]: { source: JsxChildren, [prop: string]: any }
     }
 ): string {
     return hashString(
