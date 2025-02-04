@@ -1,14 +1,14 @@
-import React from "react";
+import React from 'react';
 import {
   TaggedElement,
   TaggedElementProps,
   TranslatedContent,
-} from "../types/types";
-
+} from '../types/types';
+import { createNoAuthError } from '../messages/createMessages';
 export function isTranslatedContent(
   target: unknown
 ): target is TranslatedContent {
-  if (typeof target === "string") {
+  if (typeof target === 'string') {
     return true;
   }
 
@@ -17,14 +17,14 @@ export function isTranslatedContent(
   }
 
   return target.every((item) => {
-    if (typeof item === "string") {
+    if (typeof item === 'string') {
       return true;
     }
 
-    if (typeof item === "object" && item !== null) {
-      const hasKey = "key" in item && typeof item.key === "string";
+    if (typeof item === 'object' && item !== null) {
+      const hasKey = 'key' in item && typeof item.key === 'string';
       const hasValidVariable =
-        item.variable === undefined || typeof item.variable === "string";
+        item.variable === undefined || typeof item.variable === 'string';
       return hasKey && hasValidVariable;
     }
 
@@ -44,4 +44,41 @@ export function isEmptyReactFragment(
     return !props.children || React.Children.count(props.children) === 0;
   }
   return false;
+}
+
+export function getAuth(
+  projectId?: string,
+  devApiKey?: string
+): {
+  projectId?: string;
+  devApiKey?: string;
+} {
+  // vite
+  try {
+    if (`VITE_GT_PROJECT_ID` in import.meta.env) {
+      return {
+        projectId: projectId || import.meta.env.VITE_GT_PROJECT_ID,
+        devApiKey: devApiKey || import.meta.env.VITE_GT_API_KEY,
+      };
+    }
+  } catch {}
+  // everything else
+  try {
+    return {
+      projectId:
+        projectId ||
+        process.env.REACT_APP_GT_PROJECT_ID ||
+        process.env.NEXT_PUBLIC_GT_PROJECT_ID ||
+        process.env.GATSBY_GT_PROJECT_ID,
+      devApiKey:
+        devApiKey ||
+        process.env.REACT_APP_GT_API_KEY ||
+        process.env.NEXT_PUBLIC_GT_API_KEY ||
+        process.env.GATSBY_GT_API_KEY,
+    };
+  } catch (e) {
+    console.error(e);
+  }
+
+  throw new Error(createNoAuthError);
 }
