@@ -356,6 +356,12 @@ export default function main(framework: 'gt-next' | 'gt-react') {
             throw new Error(response.status + '. ' + (await response.text()));
           }
 
+          if (response.status === 204) {
+            console.log(
+              chalk.green('✓ ') + chalk.green.bold(await response.text())
+            );
+          }
+
           const { versionId, message } = await response.json();
           if (options.options)
             updateConfigFile(options.options, { _versionId: versionId });
