@@ -110,6 +110,7 @@ export type GTContextType = {
         method: RenderMethod;
         timeout?: number;
     };
+    enableDevRuntimeTranslation: boolean;
     projectId?: string;
     translationEnabled?: boolean;
 };
@@ -130,6 +131,7 @@ export type ClientProviderProps = {
     translationRequired: boolean;
     dialectTranslationRequired: boolean;
     requiredPrefix: string | undefined;
+    enableDevRuntimeTranslation: boolean;
     renderSettings: {
         method: RenderMethod;
         timeout?: number;
@@ -137,7 +139,6 @@ export type ClientProviderProps = {
     projectId?: string;
     devApiKey?: string;
     runtimeUrl?: string;
-    runtimeTranslations?: boolean;
     onLocaleChange?: () => void;
     cookieName?: string;
 };

@@ -136,7 +136,7 @@ async function T({
   // Gets the translation entry
   const translationEntry = translations?.[key];
 
-  // ----- CHECK CACHED TRANSLATIONS ----- //
+  // ----- RENDER CACHED TRANSLATIONS ----- //
 
   // if we have a cached translation, render it
   if (translationEntry?.state === 'success') {
@@ -148,11 +148,15 @@ async function T({
       locales: [locale, defaultLocale],
       renderVariable,
     });
-  } else if (translationEntry?.state === 'error') {
+  } else if (
+    translationEntry?.state === 'error' || // fallback to default if error
+    !I18NConfig.isDevRuntimeTranslationEnabled() // fallback to default if runtime translation is disabled
+  ) {
     return renderDefaultLocale();
   }
 
   // ----- TRANSLATE ON DEMAND ----- //
+  // dev only (with api key)
 
   // On-demand translation request sent
   // (no entry has been found, this means that the translation is either (1) loading or (2) missing)

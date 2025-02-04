@@ -69,6 +69,7 @@ function T({
     translateChildren,
     renderSettings,
     locale,
+    enableDevRuntimeTranslation,
   } = useGTContext(`<T> used on the client-side outside of <GTProvider>`);
 
   const defaultLocale = useDefaultLocale();
@@ -98,14 +99,16 @@ function T({
   // Do translation if required
   const translationEntry = translations?.[key];
   useEffect(() => {
-    // skip if: no translation required
-    if (!translationRequired) return;
-
-    // skip if: no fetch if cache hasn't been hit yet or we already have the translation
-    if (!translations || translationEntry) return;
-
-    // skip if: locale is not loaded yet
-    if (!locale) return;
+    // skip if:
+    if (
+      !enableDevRuntimeTranslation || // runtime translation disabled
+      !translationRequired || // no translation required
+      !translations || // cache not checked yet
+      translationEntry || // already have translation
+      !locale // locale not loaded
+    ) {
+      return;
+    }
 
     // Translate content
     translateChildren({
@@ -118,6 +121,7 @@ function T({
       },
     });
   }, [
+    enableDevRuntimeTranslation,
     translations,
     translationEntry,
     translationRequired,

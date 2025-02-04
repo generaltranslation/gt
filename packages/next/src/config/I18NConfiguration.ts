@@ -196,8 +196,20 @@ export default class I18NConfiguration {
     };
   }
 
-  getRuntimeTranslationEnabled() {
+  /**
+   *
+   * @returns {boolean} A boolean indicating whether the runtime translation is enabled
+   */
+  getRuntimeTranslationEnabled(): boolean {
     return this.runtimeTranslation;
+  }
+
+  /**
+   * Runtime translation is enabled only in development with a devApiKey for <TX> components
+   * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
+   */
+  isDevRuntimeTranslationEnabled(): boolean {
+    return process.env.NODE_ENV === 'development' && !!this.devApiKey;
   }
 
   /**

@@ -50,7 +50,7 @@ export default function ClientProvider({
   projectId,
   devApiKey,
   runtimeUrl,
-  runtimeTranslations = false,
+  enableDevRuntimeTranslation: enableRuntimeTranslation,
   onLocaleChange = () => {},
   cookieName = localeCookieName,
 }: ClientProviderProps): React.JSX.Element {
@@ -109,7 +109,7 @@ export default function ClientProvider({
 
   // Step 1: Reset translations when locale changes
   useEffect(() => {
-    setTranslations(null);
+    setTranslations(null); // this prevents old translations from being displayed
   }, [locale]);
 
   // Step 2: Fetch additional translations and queue them for merging
@@ -195,19 +195,13 @@ export default function ClientProvider({
           return entry;
         }
 
-        // no translation required
+        // Handle fallback cases
         const content = splitStringToContent(entry);
-        if (!translationRequired) {
-          return renderContentToString(
-            content,
-            locales,
-            variables,
-            variablesOptions
-          );
-        }
-
-        // error behavior (strings shouldn't be in a loading state here)
-        if (translationEntry?.state !== 'success') {
+        if (
+          !translationRequired || // no translation required
+          !translationEntry || // error behavior: no translation found
+          translationEntry?.state !== 'success' // error behavior: translation did not resolve
+        ) {
           return renderContentToString(
             content,
             locales,
@@ -264,7 +258,7 @@ export default function ClientProvider({
         return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
       }
 
-      // loading behavior
+      // loading behavior: no translation found or translation is loading
       if (!translationEntry || translationEntry?.state === 'loading') {
         let loadingFallback;
         if (renderSettings.method === 'skeleton') {
@@ -311,13 +305,14 @@ export default function ClientProvider({
     defaultLocale,
     renderSettings,
   });
+
   return (
     <GTContext.Provider
       value={{
         translateDictionaryEntry,
         translateChildren,
         translateContent,
-        setLocale, // Unsupported for SSR behavior
+        setLocale,
         locale,
         locales,
         defaultLocale,
@@ -325,6 +320,7 @@ export default function ClientProvider({
         translationRequired,
         dialectTranslationRequired,
         renderSettings,
+        enableDevRuntimeTranslation: enableRuntimeTranslation,
       }}
     >
       {(!translationRequired || translations) && children}

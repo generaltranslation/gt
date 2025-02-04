@@ -55,7 +55,16 @@ export default class I18NConfiguration {
         runtimeUrl: string;
         runtimeTranslations: boolean;
     };
+    /**
+     *
+     * @returns {boolean} A boolean indicating whether the runtime translation is enabled
+     */
     getRuntimeTranslationEnabled(): boolean;
+    /**
+     * Runtime translation is enabled only in development with a devApiKey for <TX> components
+     * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
+     */
+    isDevRuntimeTranslationEnabled(): boolean;
     /**
      * Gets the application's default locale
      * @returns {string} A BCP-47 locale tag

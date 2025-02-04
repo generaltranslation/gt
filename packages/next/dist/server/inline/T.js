@@ -169,7 +169,7 @@ function T(_a) {
                 case 4:
                     translations = _d;
                     translationEntry = translations === null || translations === void 0 ? void 0 : translations[key];
-                    // ----- CHECK CACHED TRANSLATIONS ----- //
+                    // ----- RENDER CACHED TRANSLATIONS ----- //
                     // if we have a cached translation, render it
                     if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success') {
                         return [2 /*return*/, (0, internal_1.renderTranslatedChildren)({
@@ -181,7 +181,9 @@ function T(_a) {
                                 renderVariable: renderVariable_1.default,
                             })];
                     }
-                    else if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error') {
+                    else if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error' || // fallback to default if error
+                        !I18NConfig.isDevRuntimeTranslationEnabled() // fallback to default if runtime translation is disabled
+                    ) {
                         return [2 /*return*/, renderDefaultLocale()];
                     }
                     _f = (_e = I18NConfig).translateChildren;

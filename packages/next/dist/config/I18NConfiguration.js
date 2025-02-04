@@ -141,8 +141,19 @@ var I18NConfiguration = /** @class */ (function () {
             runtimeTranslations: this.runtimeTranslation,
         };
     };
+    /**
+     *
+     * @returns {boolean} A boolean indicating whether the runtime translation is enabled
+     */
     I18NConfiguration.prototype.getRuntimeTranslationEnabled = function () {
         return this.runtimeTranslation;
+    };
+    /**
+     * Runtime translation is enabled only in development with a devApiKey for <TX> components
+     * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
+     */
+    I18NConfiguration.prototype.isDevRuntimeTranslationEnabled = function () {
+        return process.env.NODE_ENV === 'development' && !!this.devApiKey;
     };
     /**
      * Gets the application's default locale
