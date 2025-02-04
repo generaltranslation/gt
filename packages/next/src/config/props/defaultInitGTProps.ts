@@ -5,8 +5,10 @@ import {
 } from 'generaltranslation/internal';
 import getDefaultFromEnv from '../../utils/getDefaultFromEnv';
 import { listSupportedLocales } from '@generaltranslation/supported-locales';
+import { defaultRenderSettings } from 'gt-react/internal';
 
 const defaultInitGTProps = {
+  config: './gt.config.json',
   remoteCache: true,
   runtimeTranslation: true,
   apiKey: getDefaultFromEnv('GT_API_KEY'),
@@ -22,6 +24,7 @@ const defaultInitGTProps = {
   maxConcurrentRequests: 100,
   maxBatchSize: 25,
   batchInterval: 50,
+  renderSettings: defaultRenderSettings,
 } as const;
 
 export default defaultInitGTProps;

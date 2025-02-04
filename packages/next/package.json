@@ -80,7 +80,7 @@
         "./dist/_request.d.ts"
       ],
       "_dictionary": [
-        "./dist/_request.d.ts"
+        "./dist/_dictionary.d.ts"
       ]
     }
   },

@@ -42,7 +42,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var internal_1 = require("generaltranslation/internal");
 var getDefaultFromEnv_1 = __importDefault(require("../../utils/getDefaultFromEnv"));
 var supported_locales_1 = require("@generaltranslation/supported-locales");
+var internal_2 = require("gt-react/internal");
 var defaultInitGTProps = {
+    config: './gt.config.json',
     remoteCache: true,
     runtimeTranslation: true,
     apiKey: (0, getDefaultFromEnv_1.default)('GT_API_KEY'),
@@ -62,6 +64,7 @@ var defaultInitGTProps = {
     maxConcurrentRequests: 100,
     maxBatchSize: 25,
     batchInterval: 50,
+    renderSettings: internal_2.defaultRenderSettings,
 };
 exports.default = defaultInitGTProps;
 //# sourceMappingURL=defaultInitGTProps.js.map

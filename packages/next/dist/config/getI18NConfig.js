@@ -22,9 +22,11 @@ var internal_1 = require("gt-react/internal");
 function getI18NConfig() {
     var _a;
     var globalObj = globalThis;
+    // Return the instance if it already exists (singleton)
     if (globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE) {
         return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
     }
+    // Get config from environment
     var I18NConfigParams = process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
     if (I18NConfigParams) {
         globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), JSON.parse(I18NConfigParams)));
@@ -34,8 +36,7 @@ function getI18NConfig() {
         var projectId = process.env.GT_PROJECT_ID || '';
         if (!projectId)
             console.error(createErrors_1.projectIdMissingError);
-        var apiKey = void 0;
-        var devApiKey = void 0;
+        var apiKey = void 0, devApiKey = void 0;
         var envApiKey = process.env.GT_API_KEY || '';
         var apiKeyType = (_a = envApiKey === null || envApiKey === void 0 ? void 0 : envApiKey.split('-')) === null || _a === void 0 ? void 0 : _a[1];
         if (apiKeyType === 'api') {

@@ -10,7 +10,6 @@ import {
   projectIdMissingError,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import { defaultRenderSettings } from 'gt-react/internal';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -54,23 +53,23 @@ import { defaultRenderSettings } from 'gt-react/internal';
  *
  */
 export function initGT({
-  config = './gt.config.json',
+  config,
   i18n,
   dictionary,
-  runtimeTranslation = defaultInitGTProps.runtimeTranslation,
-  remoteCache = defaultInitGTProps.remoteCache,
-  apiKey = defaultInitGTProps.apiKey,
   devApiKey,
-  projectId = defaultInitGTProps.projectId,
-  runtimeUrl = defaultInitGTProps.runtimeUrl,
-  cacheUrl = defaultInitGTProps.cacheUrl,
-  cacheExpiryTime = defaultInitGTProps.cacheExpiryTime,
-  locales = defaultInitGTProps.locales,
-  defaultLocale = defaultInitGTProps.defaultLocale,
-  renderSettings = defaultRenderSettings,
-  maxConcurrentRequests = defaultInitGTProps.maxConcurrentRequests,
-  maxBatchSize = defaultInitGTProps.maxBatchSize,
-  batchInterval = defaultInitGTProps.batchInterval,
+  runtimeTranslation,
+  remoteCache,
+  apiKey,
+  projectId,
+  runtimeUrl,
+  cacheUrl,
+  cacheExpiryTime,
+  locales,
+  defaultLocale,
+  renderSettings,
+  maxConcurrentRequests,
+  maxBatchSize,
+  batchInterval,
   ...metadata
 }: InitGTProps = defaultInitGTProps) {
   // Load from config file if it's a string and exists
@@ -116,6 +115,7 @@ export function initGT({
   const {
     i18n: finalI18n,
     dictionary: finalDictionary,
+    gtConfig: finalGTConfig,
     runtimeTranslation: finalRuntimeTranslation,
     remoteCache: finalRemoteCache,
     apiKey: finalApiKey,
@@ -190,7 +190,7 @@ export function initGT({
     ...restMetadata,
   });
 
-  // Resolve i18n and dictionary paths
+  // Resolve gt.config.json i18n and dictionary paths
   const resolvedI18NFilePath =
     typeof finalI18n === 'string' ? finalI18n : resolveConfigFilepath('i18n');
   const resolvedDictionaryFilePath =

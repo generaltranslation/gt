@@ -1,4 +1,5 @@
 declare const defaultInitGTProps: {
+    readonly config: "./gt.config.json";
     readonly remoteCache: true;
     readonly runtimeTranslation: true;
     readonly apiKey: string;
@@ -14,6 +15,10 @@ declare const defaultInitGTProps: {
     readonly maxConcurrentRequests: 100;
     readonly maxBatchSize: 25;
     readonly batchInterval: 50;
+    readonly renderSettings: {
+        method: import("gt-react/internal").RenderMethod;
+        timeout?: number;
+    };
 };
 export default defaultInitGTProps;
 //# sourceMappingURL=defaultInitGTProps.d.ts.map
