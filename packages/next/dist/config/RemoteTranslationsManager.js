@@ -68,6 +68,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
             cacheUrl: internal_1.defaultCacheUrl,
             projectId: '',
             cacheExpiryTime: defaultInitGTProps_1.default.cacheExpiryTime, // default to 60 seconds
+            versionId: undefined,
         };
         this.translationsMap = new Map();
         this.fetchPromises = new Map();
@@ -93,7 +94,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 3, , 4]);
-                        return [4 /*yield*/, fetch("".concat(this.config.cacheUrl, "/").concat(this.config.projectId, "/").concat(reference))];
+                        return [4 /*yield*/, fetch("".concat(this.config.cacheUrl, "/").concat(this.config.projectId, "/").concat(reference).concat(this.config.versionId ? "/".concat(this.config.versionId) : ''))];
                     case 1:
                         response = _a.sent();
                         return [4 /*yield*/, response.json()];

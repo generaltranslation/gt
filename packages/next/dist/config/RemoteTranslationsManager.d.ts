@@ -10,6 +10,7 @@ type RemoteTranslationsConfig = {
     cacheUrl: string;
     projectId: string;
     cacheExpiryTime?: number;
+    versionId?: string;
 };
 /**
  * Manages remote translations.

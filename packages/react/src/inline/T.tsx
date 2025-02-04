@@ -71,7 +71,6 @@ function T({
     locale,
   } = useGTContext(`<T> used on the client-side outside of <GTProvider>`);
 
-  // const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const taggedChildren = useMemo(() => addGTIdentifier(children), [children]);
 

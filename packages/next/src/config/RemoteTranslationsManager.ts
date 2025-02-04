@@ -20,6 +20,7 @@ type RemoteTranslationsConfig = {
   cacheUrl: string;
   projectId: string;
   cacheExpiryTime?: number;
+  versionId?: string;
 };
 
 /**
@@ -41,6 +42,7 @@ export class RemoteTranslationsManager {
       cacheUrl: defaultCacheUrl,
       projectId: '',
       cacheExpiryTime: defaultInitGTProps.cacheExpiryTime, // default to 60 seconds
+      versionId: undefined,
     };
     this.translationsMap = new Map();
     this.fetchPromises = new Map();
@@ -66,7 +68,9 @@ export class RemoteTranslationsManager {
   ): Promise<TranslationsObject | undefined> {
     try {
       const response = await fetch(
-        `${this.config.cacheUrl}/${this.config.projectId}/${reference}`
+        `${this.config.cacheUrl}/${this.config.projectId}/${reference}${
+          this.config.versionId ? `/${this.config.versionId}` : ''
+        }`
       );
       const result = await response.json();
       if (Object.keys(result).length) {

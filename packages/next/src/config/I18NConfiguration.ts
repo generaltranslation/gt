@@ -72,6 +72,7 @@ export default class I18NConfiguration {
   devApiKey?: string;
   runtimeUrl: string;
   projectId: string;
+  versionId?: string;
   // Locale info
   defaultLocale: string;
   locales: string[];
@@ -103,6 +104,7 @@ export default class I18NConfiguration {
     apiKey,
     devApiKey,
     projectId,
+    versionId,
     runtimeUrl,
     cacheUrl,
     cacheExpiryTime,
@@ -128,6 +130,7 @@ export default class I18NConfiguration {
     this.devApiKey = devApiKey;
     this.projectId = projectId;
     this.runtimeUrl = runtimeUrl;
+    this.versionId = undefined; // version id for the dictionary
     // Locales
     this.defaultLocale = defaultLocale;
     this.locales = locales;
@@ -165,6 +168,7 @@ export default class I18NConfiguration {
         cacheUrl,
         projectId,
         cacheExpiryTime,
+        versionId,
       });
     }
     // Cache of hashes to speed up <GTProvider>

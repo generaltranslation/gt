@@ -70,7 +70,7 @@ var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         var 
         // Cloud integration
-        runtimeTranslation = _a.runtimeTranslation, remoteCache = _a.remoteCache, apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
+        runtimeTranslation = _a.runtimeTranslation, remoteCache = _a.remoteCache, apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, versionId = _a.versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
         // Locale info
         defaultLocale = _a.defaultLocale, locales = _a.locales, 
         // Render method
@@ -80,7 +80,7 @@ var I18NConfiguration = /** @class */ (function () {
         // Batching config
         maxConcurrentRequests = _a.maxConcurrentRequests, maxBatchSize = _a.maxBatchSize, batchInterval = _a.batchInterval, 
         // Other metadata
-        metadata = __rest(_a, ["runtimeTranslation", "remoteCache", "apiKey", "devApiKey", "projectId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
+        metadata = __rest(_a, ["runtimeTranslation", "remoteCache", "apiKey", "devApiKey", "projectId", "versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
         // Feature flags
         this.runtimeTranslation = runtimeTranslation;
         this.remoteCache = remoteCache;
@@ -89,6 +89,7 @@ var I18NConfiguration = /** @class */ (function () {
         this.devApiKey = devApiKey;
         this.projectId = projectId;
         this.runtimeUrl = runtimeUrl;
+        this.versionId = undefined; // version id for the dictionary
         // Locales
         this.defaultLocale = defaultLocale;
         this.locales = locales;
@@ -114,6 +115,7 @@ var I18NConfiguration = /** @class */ (function () {
                 cacheUrl: cacheUrl,
                 projectId: projectId,
                 cacheExpiryTime: cacheExpiryTime,
+                versionId: versionId,
             });
         }
         // Cache of hashes to speed up <GTProvider>

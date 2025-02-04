@@ -17,7 +17,6 @@ import {
   maxBatchSize,
   batchInterval,
 } from '../config/defaultProps';
-import { request } from 'http';
 
 export default function useRuntimeTranslation({
   projectId,

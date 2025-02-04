@@ -121,8 +121,6 @@ export default function ClientProvider({
       // resolve all translation promises (jsx only)
       await Promise.all(
         Object.entries(translationPromises).map(async ([key, promise]) => {
-          const { metadata } = extractEntryMetadata(dictionary[key]);
-          const hash = metadata?.hash;
           let result: TranslationSuccess | TranslationError;
           try {
             result = { state: 'success', target: await promise };

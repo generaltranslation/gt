@@ -60,6 +60,7 @@ export default function GTProvider({
   cacheUrl = defaultCacheUrl,
   runtimeUrl = defaultRuntimeApiUrl,
   renderSettings = defaultRenderSettings,
+  versionId,
   ...metadata
 }: {
   children?: React.ReactNode;
@@ -75,6 +76,7 @@ export default function GTProvider({
     method: RenderMethod;
     timeout?: number;
   };
+  versionId?: string;
   [key: string]: any;
 }): React.JSX.Element {
   // ----- SETUP ----- //
@@ -161,7 +163,11 @@ export default function GTProvider({
     // fetch translations from cache
     (async () => {
       try {
-        const response = await fetch(`${cacheUrl}/${projectId}/${locale}`); // fetch from cache
+        const response = await fetch(
+          versionId
+            ? `${cacheUrl}/${projectId}/${locale}/${versionId}`
+            : `${cacheUrl}/${projectId}/${locale}`
+        ); // fetch from cache
         const result = await response.json();
         const parsedResult = Object.entries(result).reduce(
           (
