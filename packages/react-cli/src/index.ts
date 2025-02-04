@@ -360,6 +360,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
             console.log(
               chalk.green('✓ ') + chalk.green.bold(await response.text())
             );
+            return;
           }
 
           const { versionId, message } = await response.json();
