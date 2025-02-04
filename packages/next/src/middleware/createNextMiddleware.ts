@@ -97,7 +97,6 @@ export default function createNextMiddleware(
         if (approvedLocale) {
           userLocale = standardizeLocale(approvedLocale);
           res.headers.set(localeHeaderName, userLocale);
-          res.cookies.set(localeCookieName, userLocale);
           return res;
         }
       }
@@ -122,12 +121,11 @@ export default function createNextMiddleware(
     }
 
     userLocale = (() => {
-      /* Removed until preloading can be accurately detected
-            const cookieLocale = req.cookies.get(localeCookieName);
-            if (cookieLocale?.value) {
-                if (isValidLocale(cookieLocale.value))
-                    return standardizeLocale(cookieLocale.value)
-            }*/
+      const cookieLocale = req.cookies.get(localeCookieName);
+      if (cookieLocale?.value) {
+          if (isValidLocale(cookieLocale.value))
+              return standardizeLocale(cookieLocale.value)
+      }
       const acceptedLocales = headerList
         .get('accept-language')
         ?.split(',')
@@ -145,7 +143,6 @@ export default function createNextMiddleware(
       return userLocale;
     })();
 
-    res.cookies.set(localeCookieName, userLocale);
     res.headers.set(localeHeaderName, userLocale);
 
     if (localeRouting) {
@@ -156,7 +153,6 @@ export default function createNextMiddleware(
       newUrl.search = originalUrl.search; // keep the query parameters
       if (!prefixDefaultLocale && isSameDialect(userLocale, defaultLocale)) {
         const rewrittenRes = NextResponse.rewrite(newUrl, req.nextUrl);
-        rewrittenRes.cookies.set(localeCookieName, userLocale);
         rewrittenRes.headers.set(localeHeaderName, userLocale);
         return rewrittenRes;
       } else {
