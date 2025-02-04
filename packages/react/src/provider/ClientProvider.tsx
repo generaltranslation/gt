@@ -41,6 +41,7 @@ export default function ClientProvider({
   initialTranslations,
   translationPromises,
   locale: _locale,
+  _versionId,
   defaultLocale,
   translationRequired,
   dialectTranslationRequired,
@@ -50,7 +51,7 @@ export default function ClientProvider({
   projectId,
   devApiKey,
   runtimeUrl,
-  enableDevRuntimeTranslation: enableRuntimeTranslation,
+  enableDevRuntimeTranslation,
   onLocaleChange = () => {},
   cookieName = localeCookieName,
 }: ClientProviderProps): React.JSX.Element {
@@ -320,7 +321,7 @@ export default function ClientProvider({
         translationRequired,
         dialectTranslationRequired,
         renderSettings,
-        enableDevRuntimeTranslation: enableRuntimeTranslation,
+        enableDevRuntimeTranslation,
       }}
     >
       {(!translationRequired || translations) && children}

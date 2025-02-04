@@ -60,7 +60,7 @@ export default function GTProvider({
   cacheUrl = defaultCacheUrl,
   runtimeUrl = defaultRuntimeApiUrl,
   renderSettings = defaultRenderSettings,
-  _versionId,
+  _versionId, // TODO: get this from config
   ...metadata
 }: {
   children?: React.ReactNode;
@@ -397,6 +397,7 @@ export default function GTProvider({
   const { translateChildren, translateContent, translationEnabled } =
     useRuntimeTranslation({
       locale,
+      _versionId,
       projectId,
       defaultLocale,
       devApiKey,

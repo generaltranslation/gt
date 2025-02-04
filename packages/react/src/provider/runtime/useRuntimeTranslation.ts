@@ -22,6 +22,7 @@ export default function useRuntimeTranslation({
   projectId,
   devApiKey,
   locale,
+  _versionId,
   defaultLocale,
   runtimeUrl,
   renderSettings,
@@ -31,6 +32,7 @@ export default function useRuntimeTranslation({
   projectId?: string;
   devApiKey?: string;
   locale: string;
+  _versionId?: string;
   defaultLocale?: string;
   runtimeUrl?: string;
   renderSettings: {
@@ -228,6 +230,7 @@ export default function useRuntimeTranslation({
             requests,
             targetLocale,
             metadata,
+            version: _versionId,
           }),
         },
         renderSettings.timeout

@@ -146,6 +146,7 @@ export type ClientProviderProps = {
   translationPromises: Record<string, Promise<TranslatedChildren>>;
   locale: string;
   locales: string[];
+  _versionId?: string;
   defaultLocale: string;
   translationRequired: boolean;
   dialectTranslationRequired: boolean;

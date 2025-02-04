@@ -1,8 +1,9 @@
 import { RenderMethod, TranslateChildrenCallback, TranslateContentCallback } from '../../types/types';
-export default function useRuntimeTranslation({ projectId, devApiKey, locale, defaultLocale, runtimeUrl, renderSettings, setTranslations, ...metadata }: {
+export default function useRuntimeTranslation({ projectId, devApiKey, locale, _versionId, defaultLocale, runtimeUrl, renderSettings, setTranslations, ...metadata }: {
     projectId?: string;
     devApiKey?: string;
     locale: string;
+    _versionId?: string;
     defaultLocale?: string;
     runtimeUrl?: string;
     renderSettings: {
