@@ -21,9 +21,10 @@ export type Options = {
     inline?: boolean;
     ignoreErrors: boolean;
     dryRun: boolean;
+    wait: boolean;
 };
 export type WrapOptions = {
-    jsconfig?: string;
-    src?: string[];
+    src: string[];
+    options: string;
 };
 export default function main(framework: 'gt-next' | 'gt-react'): void;
