@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -92,11 +93,16 @@ export default function ClientProvider({
     newLocale = determineLocale(newLocale, locales) || locale || defaultLocale;
 
     // persist locale
-    _setLocale(newLocale);
     document.cookie = `${cookieName}=${newLocale};path=/`;
+
+    // set locale
+    _setLocale(newLocale);
 
     // re-render server components
     onLocaleChange();
+
+    // re-render client components
+    window.location.reload();
   };
 
   // ----- TRANSLATION LIFECYCLE ----- //
@@ -324,7 +330,7 @@ export default function ClientProvider({
         renderSettings,
       }}
     >
-      {translations && children}
+      {(!translationRequired || translations) && children}
     </GTContext.Provider>
   );
 }
