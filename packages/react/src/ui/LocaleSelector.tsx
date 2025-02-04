@@ -44,7 +44,7 @@ export default function LocaleSelector(): React.ReactElement | null {
       {!locale && <option value='' />}
 
       {locales.map((locale) => (
-        <option key={locale} value={locale}>
+        <option key={locale} value={locale} suppressHydrationWarning>
           {capitalizeLanguageName(
             getLocaleProperties(locale).nativeNameWithRegionCode
           )}

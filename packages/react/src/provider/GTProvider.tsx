@@ -418,7 +418,8 @@ export default function GTProvider({
         renderSettings,
       }}
     >
-      {dictionaryStringsResolved && translations && children}
+      {(!translationRequired || (dictionaryStringsResolved && translations)) &&
+        children}
     </GTContext.Provider>
   );
 }
