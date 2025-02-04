@@ -23,7 +23,7 @@ export type Options = {
     dryRun: boolean;
 };
 export type WrapOptions = {
-    jsconfig?: string;
-    src?: string[];
+    src: string[];
+    options: string;
 };
 export default function main(framework: 'gt-next' | 'gt-react'): void;

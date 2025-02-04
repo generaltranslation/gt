@@ -49,7 +49,7 @@ export type Options = {
 };
 
 export type WrapOptions = {
-  src: string,
+  src: string[],
   options: string
 };
 
