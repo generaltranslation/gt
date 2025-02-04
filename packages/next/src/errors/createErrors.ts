@@ -11,8 +11,6 @@ export const APIKeyMissingError =
 export const remoteTranslationsError =
   'General Translation: Error fetching remote translation.';
 
-export const renderingError = 'General Translation: Rendering error.';
-
 export const createStringTranslationError = (content: string, id?: string) =>
   `gt-next string translation error. tx("${content}")${
     id ? ` with id "${id}"` : ''
@@ -24,7 +22,7 @@ export const createDictionaryStringTranslationError = (id: string) =>
 export const createRequiredPrefixError = (id: string, requiredPrefix: string) =>
   `You are using <GTProvider> with a provided prefix id: "${requiredPrefix}", but one of the children of <GTProvider> has the id "${id}". Change the <GTProvider> id prop or your dictionary structure to proceed.`;
 
-export const devApiKeyIncludedInProductionError = `General Translation: You are attempting a production build of your app with a developer API key (beginning "gtx-dev-"). Replace this API key with a production API key (beginning "gtx-api-") when you build your app for production.`;
+export const devApiKeyIncludedInProductionError = `General Translation: You are attempting a production using a development API key. Replace this API key with a production API key when you build your app for production.`;
 
 export const createDictionarySubsetError = (id: string, functionName: string) =>
   `General Translation: ${functionName} with id: "${id}". Invalid dictionary entry detected. Make sure you are navigating to the correct subroute of the dictionary with the ID you provide.`;

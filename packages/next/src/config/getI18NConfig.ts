@@ -2,6 +2,7 @@ import I18NConfiguration from './I18NConfiguration';
 import defaultInitGTProps from './props/defaultInitGTProps';
 import {
   APIKeyMissingError,
+  devApiKeyIncludedInProductionError,
   projectIdMissingError,
   usingDefaultsWarning,
 } from '../errors/createErrors';
@@ -36,6 +37,12 @@ export default function getI18NConfig(): I18NConfiguration {
     } else if (apiKeyType === 'dev') {
       devApiKey = envApiKey;
     }
+
+    const environment = process.env.NODE_ENV;
+    if (environment === 'production' && devApiKey) {
+      throw new Error(devApiKeyIncludedInProductionError);
+    }
+
     if (!apiKey && !devApiKey) console.error(APIKeyMissingError);
 
     globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration({
