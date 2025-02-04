@@ -69,7 +69,6 @@ function createNextMiddleware(_a) {
                 if (approvedLocale) {
                     userLocale = (0, generaltranslation_1.standardizeLocale)(approvedLocale);
                     res.headers.set(internal_1.localeHeaderName, userLocale);
-                    res.cookies.set(internal_1.localeCookieName, userLocale);
                     return res;
                 }
             }
@@ -89,12 +88,11 @@ function createNextMiddleware(_a) {
         }
         userLocale = (function () {
             var _a, _b;
-            /* Removed until preloading can be accurately detected
-                  const cookieLocale = req.cookies.get(localeCookieName);
-                  if (cookieLocale?.value) {
-                      if (isValidLocale(cookieLocale.value))
-                          return standardizeLocale(cookieLocale.value)
-                  }*/
+            var cookieLocale = req.cookies.get(internal_1.localeCookieName);
+            if (cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value) {
+                if ((0, generaltranslation_1.isValidLocale)(cookieLocale.value))
+                    return (0, generaltranslation_1.standardizeLocale)(cookieLocale.value);
+            }
             var acceptedLocales = (_b = (_a = headerList
                 .get('accept-language')) === null || _a === void 0 ? void 0 : _a.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); })) === null || _b === void 0 ? void 0 : _b.filter(function (code) { return (0, generaltranslation_1.isValidLocale)(code); });
             if (acceptedLocales && acceptedLocales.length > 0) {
@@ -105,7 +103,6 @@ function createNextMiddleware(_a) {
             }
             return userLocale;
         })();
-        res.cookies.set(internal_1.localeCookieName, userLocale);
         res.headers.set(internal_1.localeHeaderName, userLocale);
         if (localeRouting) {
             var pathname = req.nextUrl.pathname;
@@ -115,7 +112,6 @@ function createNextMiddleware(_a) {
             newUrl.search = originalUrl.search; // keep the query parameters
             if (!prefixDefaultLocale && (0, generaltranslation_1.isSameDialect)(userLocale, defaultLocale)) {
                 var rewrittenRes = server_1.NextResponse.rewrite(newUrl, req.nextUrl);
-                rewrittenRes.cookies.set(internal_1.localeCookieName, userLocale);
                 rewrittenRes.headers.set(internal_1.localeHeaderName, userLocale);
                 return rewrittenRes;
             }
