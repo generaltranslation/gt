@@ -88,6 +88,11 @@ export type TranslationsObject = {
   };
 };
 
+// maps locales to translation objects
+export type LocalesTranslations = {
+  [locale: string]: TranslationsObject | null;
+};
+
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 
 export type TranslateContentCallback = (params: {

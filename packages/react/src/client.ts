@@ -14,8 +14,10 @@ import DateTime from './variables/DateTime';
 import Num from './variables/Num';
 import Var from './variables/Var';
 import LocaleSelector from './ui/LocaleSelector';
+import GTProvider from './provider/GTProvider';
 export {
   GTContext,
+  GTProvider,
   useRuntimeTranslation,
   renderVariable,
   ClientProvider,
