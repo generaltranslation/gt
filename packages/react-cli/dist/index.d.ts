@@ -22,6 +22,7 @@ export type Options = {
     retranslate: boolean;
     ignoreErrors: boolean;
     dryRun: boolean;
+    wait: boolean;
 };
 export type WrapOptions = {
     jsconfig?: string;

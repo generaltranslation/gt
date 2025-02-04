@@ -53,3 +53,13 @@ export const displayCreatingNewConfigFile = (configFilepath: string) => {
     chalk.blue(`Creating new config file as ${chalk.green(configFilepath)}\n`)
   );
 };
+
+export const displayLoadingAnimation = (message: string) => {
+  const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+  let i = 0;
+  const loadingInterval = setInterval(() => {
+    process.stdout.write(`\r${chalk.blue(frames[i])} ${message}`);
+    i = (i + 1) % frames.length;
+  }, 80);
+  return loadingInterval;
+};
