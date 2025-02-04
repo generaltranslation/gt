@@ -17,7 +17,7 @@ var jsx_runtime_1 = require("react/jsx-runtime");
 var client_1 = require("gt-react/client");
 var navigation_1 = require("next/navigation");
 function ClientProvider(props) {
-    // locale change on client, trigger refresh
+    // locale change on client, trigger page reload
     var router = (0, navigation_1.useRouter)();
     var onLocaleChange = function () { return router.refresh(); };
     return (0, jsx_runtime_1.jsx)(client_1.ClientProvider, __assign({ onLocaleChange: onLocaleChange }, props));
