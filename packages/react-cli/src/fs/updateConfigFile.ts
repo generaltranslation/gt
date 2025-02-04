@@ -1,7 +1,10 @@
 import fs from "fs";
 import { displayCreatingNewConfigFile } from "../console/console";
 
-const EXCLUDED_KEYS = ["src", "locales", "dryRun", "ignoreErrors"];
+const INCLUDED_KEYS = [
+  "projectId", "defaultLocale"
+];
+
 /**
  * Checks if the config file exists. If not, creates a new JSON file at the given filepath and writes the provided config object to it.
  * @param {string} configFilepath - The path to the config file.
@@ -17,7 +20,7 @@ export default function updateConfigFile(
       // Filter out empty string values from the config object
       const filteredConfigObject = Object.fromEntries(
         Object.entries(configObject).filter(
-          ([key, value]) => !EXCLUDED_KEYS.includes(key) && value !== ""
+          ([key, value]) => INCLUDED_KEYS.includes(key) && value !== ""
         )
       );
       // Convert the config object to a JSON string

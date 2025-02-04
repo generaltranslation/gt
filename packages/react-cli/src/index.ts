@@ -49,8 +49,8 @@ export type Options = {
 };
 
 export type WrapOptions = {
-  jsconfig?: string;
-  src?: string[];
+  src: string,
+  options: string
 };
 
 export default function main(framework: 'gt-next' | 'gt-react') {
@@ -364,6 +364,11 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
       findFilepaths(['./src', './app', './pages', './components'])
     )
+    .option(
+      '--options <path>',
+      'Filepath to options JSON file, by default gt.config.json',
+      './gt.config.json'
+    )
     .action(async (options: WrapOptions) => {
       displayAsciiTitle();
       displayInitializingText();
@@ -385,6 +390,18 @@ export default function main(framework: 'gt-next' | 'gt-react') {
         console.log(chalk.gray('\nOperation cancelled.'));
         process.exit(0);
       }
+
+      // ----- Create a starter gt.config.json file -----
+
+      // --options filepath || gt.config.json
+      const gtConfig = loadJSON(options.options) || {
+        ...(process.env.GT_PROJECT_ID && {
+          projectId: process.env.GT_PROJECT_ID
+        })
+      };
+      if (options.options) updateConfigFile(options.options, gtConfig);
+
+      // ----- //
 
       // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
       const { errors, filesUpdated, warnings } = await scanForContent(

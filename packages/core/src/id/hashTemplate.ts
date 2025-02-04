@@ -1,5 +1,4 @@
-import { JsxChildren } from "../types";
-import { hashJsxChildren, hashString } from "./hashJsxChildren";
+import { hashString } from "./hashJsxChildren";
 import stringify from "fast-json-stable-stringify";
 
 export default function hashTemplate(
