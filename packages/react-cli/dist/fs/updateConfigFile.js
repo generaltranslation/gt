@@ -6,7 +6,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = updateConfigFile;
 const fs_1 = __importDefault(require("fs"));
 const console_1 = require("../console/console");
-const INCLUDED_KEYS = ['projectId', 'defaultLocale', '_versionId'];
+const INCLUDED_KEYS = [
+    'projectId',
+    'defaultLocale',
+    '_versionId',
+    'enableTimeout',
+    'timeout',
+];
 /**
  * Checks if the config file exists. If not, creates a new JSON file at the given filepath and writes the provided config object to it.
  * If it does exist, add the version id
@@ -15,9 +21,16 @@ const INCLUDED_KEYS = ['projectId', 'defaultLocale', '_versionId'];
  */
 function updateConfigFile(configFilepath, configObject) {
     // Filter out empty string values from the config object
-    const filteredConfigObject = Object.fromEntries(Object.entries(configObject).filter(([key, value]) => INCLUDED_KEYS.includes(key) && value !== ''));
+    const filteredConfigObject = Object.fromEntries(Object.entries(configObject)
+        .filter(([key, value]) => INCLUDED_KEYS.includes(key) && value !== '')
+        .map(([key, value]) => {
+        if (key === 'timeout') {
+            return [key, parseInt(value, 10)];
+        }
+        return [key, value];
+    }));
     try {
-        // Check if the file exists
+        // if file does not exist
         if (!fs_1.default.existsSync(configFilepath)) {
             // Convert the config object to a JSON string
             const jsonContent = JSON.stringify(filteredConfigObject, null, 2);
@@ -27,6 +40,7 @@ function updateConfigFile(configFilepath, configObject) {
             (0, console_1.displayCreatingNewConfigFile)(configFilepath);
         }
         else {
+            // if the file exists
             const oldContent = JSON.parse(fs_1.default.readFileSync(configFilepath, 'utf-8'));
             const newJsonContent = Object.assign(Object.assign({}, oldContent), filteredConfigObject);
             // Convert the config object to a JSON string

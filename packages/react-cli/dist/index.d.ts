@@ -21,7 +21,8 @@ export type Options = {
     inline?: boolean;
     ignoreErrors: boolean;
     dryRun: boolean;
-    wait: boolean;
+    enableTimeout: boolean;
+    timeout?: string;
 };
 export type WrapOptions = {
     src: string[];

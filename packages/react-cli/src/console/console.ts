@@ -48,9 +48,9 @@ export const displayFoundTMessage = (file: string, id: string) => {
   );
 };
 
-export const displayCreatingNewConfigFile = (configFilepath: string) => {
+export const displayUpdatedConfigFile = (configFilepath: string) => {
   console.log(
-    chalk.blue(`Creating new config file as ${chalk.green(configFilepath)}\n`)
+    chalk.blue(`Updating config file ${chalk.green(configFilepath)}\n`)
   );
 };
 

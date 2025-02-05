@@ -65,7 +65,6 @@ const createESBuildConfig_1 = __importDefault(require("./config/createESBuildCon
 const createDictionaryUpdates_1 = __importDefault(require("./updates/createDictionaryUpdates"));
 const createInlineUpdates_1 = __importDefault(require("./updates/createInlineUpdates"));
 const generaltranslation_1 = require("generaltranslation");
-const updateConfigFile_1 = __importDefault(require("./fs/updateConfigFile"));
 const console_1 = require("./console/console");
 const warnings_1 = require("./console/warnings");
 const errors_1 = require("./console/errors");
@@ -74,6 +73,8 @@ const chalk_1 = __importDefault(require("chalk"));
 const scanForContent_1 = __importDefault(require("./updates/scanForContent"));
 const prompts_1 = require("@inquirer/prompts");
 const waitForUpdates_1 = require("./api/waitForUpdates");
+const updateConfigVersionId_1 = __importDefault(require("./fs/config/updateConfigVersionId"));
+const setupConfig_1 = __importDefault(require("./fs/config/setupConfig"));
 function resolveProjectId() {
     const CANDIDATES = [
         process.env.GT_PROJECT_ID, // any server side, Remix
@@ -118,7 +119,8 @@ function main(framework) {
         .option('--wrap', 'Wraps all JSX elements in the src directory with a <T> tag, with unique ids', false)
         .option('--ignore-errors', 'Ignore errors encountered while scanning for <T> tags', false)
         .option('--dry-run', 'Dry run, does not send updates to General Translation API', false)
-        .option('--wait', 'Wait for the updates to be deployed to the CDN before exiting', true)
+        .option('--enable-timeout', 'When set to false, will wait for the updates to be deployed to the CDN before exiting', true)
+        .option('--timeout <seconds>', 'Timeout in seconds for waiting for updates to be deployed to the CDN', '300')
         .action((options) => __awaiter(this, void 0, void 0, function* () {
         var _a;
         (0, console_1.displayAsciiTitle)();
@@ -155,6 +157,18 @@ function main(framework) {
                 }
             }
         }
+        // validate timeout
+        if (options.timeout) {
+            const timeout = parseInt(options.timeout);
+            if (isNaN(timeout) || timeout < 0) {
+                throw new Error(`Invalid timeout: ${options.timeout}. Must be a positive integer.`);
+            }
+            options.timeout = timeout.toString();
+        }
+        // if timeout is disabled, do not include it in config file
+        if (!options.enableTimeout) {
+            delete options.timeout;
+        }
         // // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
         // // not foolproof but can't hurt
         // const nextConfigFilepath = findFilepath([
@@ -167,9 +181,9 @@ function main(framework) {
         //   options = { ...parseNextConfig(nextConfigFilepath), ...options };
         // if there's no existing config file, creates one
         // does not include the API key to avoid exposing it
-        const { apiKey } = options, rest = __rest(options, ["apiKey"]);
+        const { apiKey, projectId, defaultLocale } = options, rest = __rest(options, ["apiKey", "projectId", "defaultLocale"]);
         if (options.options)
-            (0, updateConfigFile_1.default)(rest.options, rest);
+            (0, setupConfig_1.default)(rest.options, projectId, defaultLocale);
         // ---- CREATING UPDATES ---- //
         let updates = [];
         let errors = [];
@@ -260,9 +274,9 @@ function main(framework) {
                 }
                 const { versionId, message, locales } = yield response.json();
                 if (options.options)
-                    (0, updateConfigFile_1.default)(options.options, { _versionId: versionId });
+                    (0, updateConfigVersionId_1.default)(options.options, projectId, versionId);
                 console.log(chalk_1.default.green('✓ ') + chalk_1.default.green.bold(message));
-                if (options.wait && locales) {
+                if (options.enableTimeout && locales) {
                     console.log();
                     yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, locales, startTime);
                 }
@@ -301,12 +315,8 @@ function main(framework) {
             process.exit(0);
         }
         // ----- Create a starter gt.config.json file -----
-        // --options filepath || gt.config.json
-        const gtConfig = (0, loadJSON_1.default)(options.options) || Object.assign({}, (process.env.GT_PROJECT_ID && {
-            projectId: process.env.GT_PROJECT_ID,
-        }));
         if (options.options)
-            (0, updateConfigFile_1.default)(options.options, gtConfig);
+            (0, setupConfig_1.default)(options.options, process.env.GT_PROJECT_ID, '');
         // ----- //
         // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
         const { errors, filesUpdated, warnings } = yield (0, scanForContent_1.default)(options, framework);

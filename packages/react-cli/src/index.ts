@@ -7,7 +7,6 @@ import createESBuildConfig from './config/createESBuildConfig';
 import createDictionaryUpdates from './updates/createDictionaryUpdates';
 import createInlineUpdates from './updates/createInlineUpdates';
 import { isValidLocale } from 'generaltranslation';
-import updateConfigFile from './fs/updateConfigFile';
 import {
   displayAsciiTitle,
   displayInitializingText,
@@ -21,6 +20,8 @@ import chalk from 'chalk';
 import scanForContent from './updates/scanForContent';
 import { select } from '@inquirer/prompts';
 import { waitForUpdates } from './api/waitForUpdates';
+import updateConfigVersionId from './fs/config/updateConfigVersionId';
+import setupConfig from './fs/config/setupConfig';
 export type Updates = (
   | {
       type: 'jsx';
@@ -236,8 +237,8 @@ export default function main(framework: 'gt-next' | 'gt-react') {
 
       // if there's no existing config file, creates one
       // does not include the API key to avoid exposing it
-      const { apiKey, ...rest } = options;
-      if (options.options) updateConfigFile(rest.options, rest);
+      const { apiKey, projectId, defaultLocale, ...rest } = options;
+      if (options.options) setupConfig(rest.options, projectId, defaultLocale);
 
       // ---- CREATING UPDATES ---- //
 
@@ -388,7 +389,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
 
           const { versionId, message, locales } = await response.json();
           if (options.options)
-            updateConfigFile(options.options, { _versionId: versionId });
+            updateConfigVersionId(options.options, projectId, versionId);
 
           console.log(chalk.green('✓ ') + chalk.green.bold(message));
 
@@ -452,13 +453,8 @@ export default function main(framework: 'gt-next' | 'gt-react') {
 
       // ----- Create a starter gt.config.json file -----
 
-      // --options filepath || gt.config.json
-      const gtConfig = loadJSON(options.options) || {
-        ...(process.env.GT_PROJECT_ID && {
-          projectId: process.env.GT_PROJECT_ID,
-        }),
-      };
-      if (options.options) updateConfigFile(options.options, gtConfig);
+      if (options.options)
+        setupConfig(options.options, process.env.GT_PROJECT_ID, '');
 
       // ----- //
 
