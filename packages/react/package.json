@@ -50,8 +50,7 @@
     ".": {
       "types": "./dist/index.d.ts",
       "require": "./dist/index.cjs.min.cjs",
-      "import": "./dist/index.esm.min.mjs",
-      "default": "./dist/index.esm.min.mjs"
+      "import": "./dist/index.esm.min.mjs"
     },
     "./internal": {
       "types": "./dist/internal.d.ts",
