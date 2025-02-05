@@ -1,7 +1,13 @@
 import fs from 'fs';
 import { displayCreatingNewConfigFile } from '../console/console';
 
-const INCLUDED_KEYS = ['projectId', 'defaultLocale', '_versionId'];
+const INCLUDED_KEYS = [
+  'projectId',
+  'defaultLocale',
+  '_versionId',
+  'enableTimeout',
+  'timeout',
+];
 
 /**
  * Checks if the config file exists. If not, creates a new JSON file at the given filepath and writes the provided config object to it.
@@ -15,12 +21,17 @@ export default function updateConfigFile(
 ): void {
   // Filter out empty string values from the config object
   const filteredConfigObject = Object.fromEntries(
-    Object.entries(configObject).filter(
-      ([key, value]) => INCLUDED_KEYS.includes(key) && value !== ''
-    )
+    Object.entries(configObject)
+      .filter(([key, value]) => INCLUDED_KEYS.includes(key) && value !== '')
+      .map(([key, value]) => {
+        if (key === 'timeout') {
+          return [key, parseInt(value, 10)];
+        }
+        return [key, value];
+      })
   );
   try {
-    // Check if the file exists
+    // if file does not exist
     if (!fs.existsSync(configFilepath)) {
       // Convert the config object to a JSON string
       const jsonContent = JSON.stringify(filteredConfigObject, null, 2);
@@ -29,6 +40,7 @@ export default function updateConfigFile(
       // console.log
       displayCreatingNewConfigFile(configFilepath);
     } else {
+      // if the file exists
       const oldContent = JSON.parse(fs.readFileSync(configFilepath, 'utf-8'));
       const newJsonContent = {
         ...oldContent,

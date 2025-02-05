@@ -47,7 +47,8 @@ export type Options = {
   inline?: boolean;
   ignoreErrors: boolean;
   dryRun: boolean;
-  wait: boolean;
+  enableTimeout: boolean;
+  timeout?: string;
 };
 
 export type WrapOptions = {
@@ -146,9 +147,14 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       false
     )
     .option(
-      '--wait',
-      'Wait for the updates to be deployed to the CDN before exiting',
+      '--enable-timeout',
+      'When set to false, will wait for the updates to be deployed to the CDN before exiting',
       true
+    )
+    .option(
+      '--timeout <seconds>',
+      'Timeout in seconds for waiting for updates to be deployed to the CDN',
+      '300'
     )
     .action(async (options: Options) => {
       displayAsciiTitle();
@@ -199,6 +205,22 @@ export default function main(framework: 'gt-next' | 'gt-react') {
             );
           }
         }
+      }
+
+      // validate timeout
+      if (options.timeout) {
+        const timeout = parseInt(options.timeout);
+        if (isNaN(timeout) || timeout < 0) {
+          throw new Error(
+            `Invalid timeout: ${options.timeout}. Must be a positive integer.`
+          );
+        }
+        options.timeout = timeout.toString();
+      }
+
+      // if timeout is disabled, do not include it in config file
+      if (!options.enableTimeout) {
+        delete options.timeout;
       }
 
       // // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
@@ -370,7 +392,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
 
           console.log(chalk.green('✓ ') + chalk.green.bold(message));
 
-          if (options.wait && locales) {
+          if (options.enableTimeout && locales) {
             console.log();
             await waitForUpdates(
               apiKey,
