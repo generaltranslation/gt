@@ -100,9 +100,9 @@ type GTContextType = {
         method: RenderMethod;
         timeout?: number;
     };
-    enableDevRuntimeTranslation: boolean;
     projectId?: string;
-    translationEnabled?: boolean;
+    translationEnabled: boolean;
+    runtimeTranslationEnabled: boolean;
 };
 type ClientProviderProps = {
     children: any;
@@ -116,11 +116,12 @@ type ClientProviderProps = {
     translationRequired: boolean;
     dialectTranslationRequired: boolean;
     requiredPrefix: string | undefined;
-    enableDevRuntimeTranslation: boolean;
     renderSettings: {
         method: RenderMethod;
         timeout?: number;
     };
+    translationEnabled: boolean;
+    runtimeTranslationEnabled: boolean;
     projectId?: string;
     devApiKey?: string;
     runtimeUrl?: string;
@@ -130,13 +131,14 @@ type ClientProviderProps = {
 
 declare const GTContext: React$1.Context<GTContextType | undefined>;
 
-declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId, defaultLocale, runtimeUrl, renderSettings, setTranslations, ...metadata }: {
+declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId, defaultLocale, runtimeUrl, renderSettings, setTranslations, runtimeTranslationEnabled, ...metadata }: {
     projectId?: string;
     devApiKey?: string;
     locale: string;
     versionId?: string;
     defaultLocale?: string;
     runtimeUrl?: string;
+    runtimeTranslationEnabled: boolean;
     renderSettings: {
         method: RenderMethod;
         timeout?: number;
@@ -144,7 +146,6 @@ declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId
     setTranslations: React.Dispatch<React.SetStateAction<any>>;
     [key: string]: any;
 }): {
-    translationEnabled: boolean;
     translateContent: TranslateContentCallback;
     translateChildren: TranslateChildrenCallback;
 };
@@ -157,7 +158,7 @@ declare function renderVariable({ variableType, variableName, variableValue, var
     locales: string[];
 }): React.JSX.Element;
 
-declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl, enableDevRuntimeTranslation, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
+declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl, translationEnabled, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.

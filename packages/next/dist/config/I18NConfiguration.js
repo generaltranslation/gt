@@ -142,18 +142,11 @@ var I18NConfiguration = /** @class */ (function () {
         };
     };
     /**
-     *
-     * @returns {boolean} A boolean indicating whether the runtime translation is enabled
-     */
-    I18NConfiguration.prototype.getRuntimeTranslationEnabled = function () {
-        return this.runtimeTranslation;
-    };
-    /**
      * Runtime translation is enabled only in development with a devApiKey for <TX> components
      * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
      */
-    I18NConfiguration.prototype.isDevRuntimeTranslationEnabled = function () {
-        return process.env.NODE_ENV === 'development' && !!this.devApiKey;
+    I18NConfiguration.prototype.isRuntimeTranslationEnabled = function () {
+        return this.translationEnabled() && !!this.devApiKey;
     };
     /**
      * Gets the application's default locale
@@ -377,21 +370,21 @@ var I18NConfiguration = /** @class */ (function () {
                             var errorCode = 500;
                             if (!result)
                                 return request.reject(new internal_1.GTTranslationError(errorMsg, errorCode));
-                            var id = request.metadata.id || request.metadata.hash;
+                            var key = request.metadata.id || request.metadata.hash;
                             if (result && typeof result === 'object') {
                                 if ('translation' in result && result.translation) {
                                     // record translations
                                     if (_this._remoteTranslationsManager) {
-                                        _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, id, { state: 'success', target: result.translation });
+                                        _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, key, { state: 'success', target: result.translation });
                                     }
                                     // check for mismatching ids or hashes
-                                    if (((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) !== id ||
+                                    if (((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) !== key ||
                                         ((_b = result === null || result === void 0 ? void 0 : result.reference) === null || _b === void 0 ? void 0 : _b.key) !== ((_c = request.metadata) === null || _c === void 0 ? void 0 : _c.hash)) {
                                         if (!request.metadata.id) {
                                             console.warn((0, createErrors_1.createMismatchingHashWarning)(request.metadata.hash, (_d = result.reference) === null || _d === void 0 ? void 0 : _d.key));
                                         }
                                         else {
-                                            console.warn((0, createErrors_1.createMismatchingIdHashWarning)(id, request.metadata.hash, (_e = result === null || result === void 0 ? void 0 : result.reference) === null || _e === void 0 ? void 0 : _e.id, (_f = result.reference) === null || _f === void 0 ? void 0 : _f.key));
+                                            console.warn((0, createErrors_1.createMismatchingIdHashWarning)(key, request.metadata.hash, (_e = result === null || result === void 0 ? void 0 : result.reference) === null || _e === void 0 ? void 0 : _e.id, (_f = result.reference) === null || _f === void 0 ? void 0 : _f.key));
                                         }
                                     }
                                     return request.resolve(result.translation);
@@ -403,7 +396,7 @@ var I18NConfiguration = /** @class */ (function () {
                             }
                             // record translation error
                             if (_this._remoteTranslationsManager) {
-                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, id, {
+                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, key, {
                                     state: 'error',
                                     error: result.error || 'Translation failed.',
                                     code: result.code || 500,

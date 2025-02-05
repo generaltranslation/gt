@@ -103,7 +103,7 @@ var ClientProviderWrapper_1 = __importDefault(require("./ClientProviderWrapper")
  */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var getId, I18NConfig, locale, additionalMetadata, defaultLocale, translationRequired, dialectTranslationRequired, enableDevRuntimeTranslation, translationsPromise, dictionarySubset, flattenedDictionarySubset, translations, _c, dictionary, promises;
+        var getId, I18NConfig, locale, additionalMetadata, defaultLocale, translationRequired, dialectTranslationRequired, runtimeTranslationEnabled, translationsPromise, dictionarySubset, flattenedDictionarySubset, translations, _c, dictionary, promises;
         var _this = this;
         var children = _b.children, id = _b.id;
         return __generator(this, function (_d) {
@@ -122,7 +122,7 @@ function GTProvider(_a) {
                     defaultLocale = I18NConfig.getDefaultLocale();
                     translationRequired = I18NConfig.requiresTranslation(locale);
                     dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, defaultLocale);
-                    enableDevRuntimeTranslation = I18NConfig.isDevRuntimeTranslationEnabled();
+                    runtimeTranslationEnabled = I18NConfig.isRuntimeTranslationEnabled();
                     translationsPromise = translationRequired && I18NConfig.getCachedTranslations(locale);
                     dictionarySubset = (id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)()) || {};
                     if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
@@ -172,7 +172,7 @@ function GTProvider(_a) {
                                             // ----- TRANSLATE JSX ON DEMAND ----- //
                                             // dev only (with api key) skip if:
                                             if (!translationRequired || // no translation required
-                                                !enableDevRuntimeTranslation // dev runtime translation disabled
+                                                !runtimeTranslationEnabled // dev runtime translation disabled
                                             ) {
                                                 return [2 /*return*/];
                                             }
@@ -206,7 +206,7 @@ function GTProvider(_a) {
                                         // ----- TRANSLATE STRINGS ON DEMAND ----- //
                                         // dev only (with api key) skip if:
                                         if (!translationRequired || // no translation required
-                                            !enableDevRuntimeTranslation // dev runtime translation disabled
+                                            !runtimeTranslationEnabled // dev runtime translation disabled
                                         ) {
                                             return [2 /*return*/];
                                         }
@@ -257,7 +257,7 @@ function GTProvider(_a) {
                      *
                      */
                     _d.sent();
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, translationPromises: promises, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings(), enableDevRuntimeTranslation: enableDevRuntimeTranslation }, I18NConfig.getClientSideConfig(), { children: children })))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, translationPromises: promises, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings(), translationEnabled: I18NConfig.translationEnabled(), runtimeTranslationEnabled: runtimeTranslationEnabled }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });
     });

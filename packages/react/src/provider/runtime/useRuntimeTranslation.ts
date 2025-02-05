@@ -27,6 +27,7 @@ export default function useRuntimeTranslation({
   runtimeUrl,
   renderSettings,
   setTranslations,
+  runtimeTranslationEnabled,
   ...metadata
 }: {
   projectId?: string;
@@ -35,6 +36,7 @@ export default function useRuntimeTranslation({
   versionId?: string;
   defaultLocale?: string;
   runtimeUrl?: string;
+  runtimeTranslationEnabled: boolean;
   renderSettings: {
     method: RenderMethod;
     timeout?: number;
@@ -42,7 +44,6 @@ export default function useRuntimeTranslation({
   setTranslations: React.Dispatch<React.SetStateAction<any>>;
   [key: string]: any;
 }): {
-  translationEnabled: boolean;
   translateContent: TranslateContentCallback;
   translateChildren: TranslateChildrenCallback;
 } {
@@ -50,10 +51,8 @@ export default function useRuntimeTranslation({
 
   const [activeRequests, setActiveRequests] = useState(0);
 
-  const translationEnabled = !!(runtimeUrl && projectId);
-  if (!translationEnabled)
+  if (!runtimeTranslationEnabled)
     return {
-      translationEnabled,
       translateContent: () =>
         Promise.reject(
           new Error('translateContent() failed because translation is disabled')
@@ -376,5 +375,5 @@ export default function useRuntimeTranslation({
     };
   }, [locale]);
 
-  return { translateContent, translateChildren, translationEnabled };
+  return { translateContent, translateChildren };
 }

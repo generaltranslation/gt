@@ -1,7 +1,9 @@
 import { RenderMethod } from '../../types/types';
 
 function shouldApplyTimeout() {
-  return process.env.NODE_ENV !== 'development';
+  return (
+    typeof process !== 'undefined' && process.env.NODE_ENV !== 'development'
+  );
 }
 
 // Apply an 8 second timeout for non dev/testign environments

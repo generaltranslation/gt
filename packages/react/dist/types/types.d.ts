@@ -110,9 +110,9 @@ export type GTContextType = {
         method: RenderMethod;
         timeout?: number;
     };
-    enableDevRuntimeTranslation: boolean;
     projectId?: string;
-    translationEnabled?: boolean;
+    translationEnabled: boolean;
+    runtimeTranslationEnabled: boolean;
 };
 export declare class GTTranslationError extends Error {
     error: string;
@@ -132,11 +132,12 @@ export type ClientProviderProps = {
     translationRequired: boolean;
     dialectTranslationRequired: boolean;
     requiredPrefix: string | undefined;
-    enableDevRuntimeTranslation: boolean;
     renderSettings: {
         method: RenderMethod;
         timeout?: number;
     };
+    translationEnabled: boolean;
+    runtimeTranslationEnabled: boolean;
     projectId?: string;
     devApiKey?: string;
     runtimeUrl?: string;

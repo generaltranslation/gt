@@ -47,8 +47,7 @@ export async function getGT(
   const defaultLocale = I18NConfig.getDefaultLocale();
   const locale = await getLocale();
   const translationRequired = I18NConfig.requiresTranslation(locale);
-  const enableDevRuntimeTranslation =
-    I18NConfig.isDevRuntimeTranslationEnabled();
+  const enableDevRuntimeTranslation = I18NConfig.isRuntimeTranslationEnabled();
   let filteredTranslations: Record<string, TranslatedContent> = {};
 
   if (translationRequired) {

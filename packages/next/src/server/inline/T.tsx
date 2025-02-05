@@ -150,7 +150,7 @@ async function T({
     });
   } else if (
     translationEntry?.state === 'error' || // fallback to default if error
-    !I18NConfig.isDevRuntimeTranslationEnabled() // fallback to default if runtime translation is disabled (loading should never happen here)
+    !I18NConfig.isRuntimeTranslationEnabled() // fallback to default if runtime translation is disabled (loading should never happen here)
   ) {
     return renderDefaultLocale();
   }

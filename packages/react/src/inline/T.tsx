@@ -68,7 +68,8 @@ function T({
     translateChildren,
     renderSettings,
     locale,
-    enableDevRuntimeTranslation,
+    translationEnabled,
+    runtimeTranslationEnabled,
   } = useGTContext(`<T> used on the client-side outside of <GTProvider>`);
 
   const defaultLocale = useDefaultLocale();
@@ -100,7 +101,7 @@ function T({
   useEffect(() => {
     // skip if:
     if (
-      !enableDevRuntimeTranslation || // runtime translation disabled
+      !runtimeTranslationEnabled || // runtime translation disabled
       !translationRequired || // no translation required
       !translations || // cache not checked yet
       translationEntry || // already have translation
@@ -120,7 +121,7 @@ function T({
       },
     });
   }, [
-    enableDevRuntimeTranslation,
+    runtimeTranslationEnabled,
     translations,
     translationEntry,
     translationRequired,
@@ -166,7 +167,8 @@ function T({
   // fallback if:
   if (
     !translationRequired || // no translation required
-    (translations && !translationEntry && !enableDevRuntimeTranslation) || // cache miss and dev runtime translation disabled (production)
+    !translationEnabled || // error behavior: translation not enabled
+    (translations && !translationEntry && !runtimeTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
     translationEntry?.state === 'error' // error fetching translation
   ) {
     return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;

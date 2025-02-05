@@ -123,7 +123,7 @@ function getGT(id) {
                 case 1:
                     locale = _a.sent();
                     translationRequired = I18NConfig.requiresTranslation(locale);
-                    enableDevRuntimeTranslation = I18NConfig.isDevRuntimeTranslationEnabled();
+                    enableDevRuntimeTranslation = I18NConfig.isRuntimeTranslationEnabled();
                     filteredTranslations = {};
                     if (!translationRequired) return [3 /*break*/, 5];
                     translationsPromise = I18NConfig.getCachedTranslations(locale);

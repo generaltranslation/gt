@@ -1,12 +1,5 @@
 'use client';
-import React, {
-  isValidElement,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { isValidElement, useCallback, useEffect, useState } from 'react';
 import {
   determineLocale,
   renderContentToString,
@@ -51,7 +44,8 @@ export default function ClientProvider({
   projectId,
   devApiKey,
   runtimeUrl,
-  enableDevRuntimeTranslation,
+  translationEnabled,
+  runtimeTranslationEnabled,
   onLocaleChange = () => {},
   cookieName = localeCookieName,
 }: ClientProviderProps): React.JSX.Element {
@@ -64,7 +58,7 @@ export default function ClientProvider({
    *     They will NOT be loading at this point.
    */
   const [translations, setTranslations] = useState<TranslationsObject | null>(
-    null
+    devApiKey ? null : initialTranslations
   );
 
   // ----- LOCALE STATE ----- //
@@ -108,13 +102,13 @@ export default function ClientProvider({
 
   // ----- TRANSLATION LIFECYCLE ----- //
 
-  // Step 1: Reset translations when locale changes
-  useEffect(() => {
-    setTranslations(null); // this prevents old translations from being displayed
-  }, [locale]);
+  // // Step 1: Reset translations when locale changes
+  // useEffect(() => {
+  //   setTranslations(null); // this prevents old translations from being displayed
+  // }, [locale]);
 
-  // Step 2: Fetch additional translations and queue them for merging
-  useLayoutEffect(() => {
+  // Fetch additional translations and queue them for merging
+  useEffect(() => {
     setTranslations((prev) => ({ ...prev, ...initialTranslations }));
     let storeResult = true;
     const resolvedTranslations: TranslationsObject = {};
@@ -254,8 +248,11 @@ export default function ClientProvider({
 
       // ----- RENDER JSX ----- //
 
-      // fallback to default locale if no tx required
-      if (!translationRequired) {
+      // fallback if:
+      if (
+        !translationRequired || // no translation required
+        (translations && !translationEntry && !runtimeTranslationEnabled) // cache miss and dev runtime translation disabled (production)
+      ) {
         return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
       }
 
@@ -306,6 +303,7 @@ export default function ClientProvider({
     setTranslations,
     defaultLocale,
     renderSettings,
+    runtimeTranslationEnabled,
   });
 
   return (
@@ -322,10 +320,12 @@ export default function ClientProvider({
         translationRequired,
         dialectTranslationRequired,
         renderSettings,
-        enableDevRuntimeTranslation,
+        translationEnabled,
+        runtimeTranslationEnabled,
       }}
     >
-      {(!translationRequired || translations) && children}
+      {(!translationRequired || !translationEnabled || translations) &&
+        children}
     </GTContext.Provider>
   );
 }
