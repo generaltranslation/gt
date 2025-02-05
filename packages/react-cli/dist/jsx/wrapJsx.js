@@ -355,7 +355,10 @@ function wrapWithT(node, options, mark) {
     if (!options.usedImports.includes(TComponentName)) {
         options.usedImports.push(TComponentName);
     }
-    return t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier(TComponentName), [t.jsxAttribute(t.jsxIdentifier('id'), t.stringLiteral(uniqueId))], false), t.jsxClosingElement(t.jsxIdentifier(TComponentName)), [node], false);
+    if (options.createIds) {
+        return t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier(TComponentName), [t.jsxAttribute(t.jsxIdentifier('id'), t.stringLiteral(uniqueId))], false), t.jsxClosingElement(t.jsxIdentifier(TComponentName)), [node], false);
+    }
+    return t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier(TComponentName), [], false), t.jsxClosingElement(t.jsxIdentifier(TComponentName)), [node], false);
 }
 function wrapExpressionWithT(node, options, mark) {
     if (mark) {
@@ -368,7 +371,10 @@ function wrapExpressionWithT(node, options, mark) {
     if (!options.usedImports.includes(TComponentName)) {
         options.usedImports.push(TComponentName);
     }
-    return t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier(TComponentName), [t.jsxAttribute(t.jsxIdentifier('id'), t.stringLiteral(uniqueId))], false), t.jsxClosingElement(t.jsxIdentifier(TComponentName)), [t.jsxExpressionContainer(node)], false);
+    if (options.createIds) {
+        return t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier(TComponentName), [t.jsxAttribute(t.jsxIdentifier('id'), t.stringLiteral(uniqueId))], false), t.jsxClosingElement(t.jsxIdentifier(TComponentName)), [t.jsxExpressionContainer(node)], false);
+    }
+    return t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier(TComponentName), [], false), t.jsxClosingElement(t.jsxIdentifier(TComponentName)), [t.jsxExpressionContainer(node)], false);
 }
 function wrapWithVar(node, options, mark) {
     if (mark) {

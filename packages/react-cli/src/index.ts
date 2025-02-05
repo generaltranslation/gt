@@ -55,6 +55,7 @@ export type Options = {
 export type WrapOptions = {
   src: string[];
   options: string;
+  disableIds: boolean;
 };
 
 function resolveProjectId(): string | undefined {
@@ -117,7 +118,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       ])
     )
     .option(
-      '--src <path>',
+      '--src <paths...>',
       "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
       findFilepaths(['./src', './app', './pages', './components'])
     )
@@ -420,7 +421,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       'Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids'
     )
     .option(
-      '--src <path>',
+      '--src <paths...>',
       "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
       findFilepaths(['./src', './app', './pages', './components'])
     )
@@ -429,6 +430,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       'Filepath to options JSON file, by default gt.config.json',
       './gt.config.json'
     )
+    .option('--disable-ids', 'Disable id generation for the <T> tags', false)
     .action(async (options: WrapOptions) => {
       displayAsciiTitle();
       displayInitializingText();

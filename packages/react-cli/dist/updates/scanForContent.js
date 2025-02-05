@@ -201,7 +201,7 @@ function scanForContent(options, framework) {
                         currentPath = currentPath.parentPath;
                     }
                     // At this point, we're only processing top-level JSX elements
-                    const opts = Object.assign(Object.assign({}, importAlias), { idPrefix: relativePath, idCount: globalId, usedImports, modified: false });
+                    const opts = Object.assign(Object.assign({}, importAlias), { idPrefix: relativePath, idCount: globalId, usedImports, modified: false, createIds: !options.disableIds });
                     const wrapped = (0, wrapJsx_1.handleJsxElement)(path.node, opts, isMeaningful);
                     path.replaceWith(wrapped);
                     path.skip();

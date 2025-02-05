@@ -19,6 +19,7 @@ export interface WrapResult {
  * @returns The wrapped JSX element
  */
 export declare function wrapJsxElement(node: t.JSXElement, options: {
+    createIds: boolean;
     TComponent?: string;
     VarComponent?: string;
     idPrefix: string;
@@ -34,6 +35,7 @@ export declare function wrapJsxElement(node: t.JSXElement, options: {
  * @returns The wrapped JSX element
  */
 export declare function handleJsxElement(rootNode: t.JSXElement, options: {
+    createIds: boolean;
     usedImports: string[];
     TComponent?: string;
     VarComponent?: string;

@@ -177,6 +177,7 @@ export default async function scanForContent(
           idCount: globalId,
           usedImports,
           modified: false,
+          createIds: !options.disableIds,
         };
         const wrapped = handleJsxElement(path.node, opts, isMeaningful);
         path.replaceWith(wrapped);

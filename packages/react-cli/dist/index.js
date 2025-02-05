@@ -114,7 +114,7 @@ function main(framework) {
         './dictionary.tsx',
         './src/dictionary.tsx',
     ]))
-        .option('--src <path>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
+        .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
         .option('--default-language, --default-locale <locale>', 'Default locale (e.g., en)')
         .option('--languages, --locales <locales...>', 'Space-separated list of locales (e.g., en fr es)', [])
         .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
@@ -294,8 +294,9 @@ function main(framework) {
     commander_1.program
         .command('setup')
         .description('Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids')
-        .option('--src <path>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
+        .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
         .option('--options <path>', 'Filepath to options JSON file, by default gt.config.json', './gt.config.json')
+        .option('--disable-ids', 'Disable id generation for the <T> tags', false)
         .action((options) => __awaiter(this, void 0, void 0, function* () {
         (0, console_1.displayAsciiTitle)();
         (0, console_1.displayInitializingText)();
