@@ -15,6 +15,9 @@
     "build": "rollup -c",
     "build:clean": "rm -rf dist; npm run build",
     "release": "npm run build:clean && npm publish",
+    "release:alpha": "npm run build:clean && npm publish --tag alpha",
+    "release:beta": "npm run build:clean && npm publish --tag beta",
+    "release:latest": "npm run build:clean && npm publish --tag latest",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

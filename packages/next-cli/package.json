@@ -9,7 +9,10 @@
     "build": "tsc",
     "build-push-publish": "rm -rf dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;",
     "build:clean": "rm -rf dist; npm run build",
-    "release": "npm run build:clean && npm publish"
+    "release": "npm run build:clean && npm publish",
+    "release:alpha": "npm run build:clean && npm publish --tag alpha",
+    "release:beta": "npm run build:clean && npm publish --tag beta",
+    "release:latest": "npm run build:clean && npm publish --tag latest"
   },
   "repository": {
     "type": "git",
