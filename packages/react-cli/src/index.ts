@@ -375,11 +375,11 @@ export default function main(framework: 'gt-next' | 'gt-react') {
           throw error;
         }
 
-        // TODO: add a check to see if the updates were successful by checking the CDN
+        // TODO: add a check to see if the updates were successful by pinging the API
         if (options.wait && options.locales && options.locales.length > 0) {
           console.log();
           const loadingInterval = displayLoadingAnimation(
-            'Waiting for updates to be deployed to the CDN...'
+            'Waiting for translations to be completed...'
           );
 
           let attempts = 0;
@@ -388,25 +388,26 @@ export default function main(framework: 'gt-next' | 'gt-react') {
           const checkDeployment = async () => {
             if (!options.locales) return false;
             try {
-              const promises = options.locales.map((locale) =>
-                fetch(`https://cdn.gtx.dev/${projectId}/${locale}`, {
+              const response = await fetch(
+                `${options.baseUrl}/v1/project/translations/status`,
+                {
                   method: 'GET',
                   headers: {
                     'Content-Type': 'application/json',
+                    ...(apiKey && { 'x-gt-api-key': apiKey }),
                   },
-                })
+                }
               );
-
-              const responses = await Promise.all(promises);
-              const jsonResponses = await Promise.all(
-                responses.map((response) => response.ok && response.json())
-              );
-              return (
-                responses.every((r) => r.ok) &&
-                jsonResponses.every(
-                  (data) => Object.keys(data || {}).length > 0
-                )
-              );
+              if (response.status === 200) {
+                const data = await response.json();
+                if (
+                  options.locales.length > 0 &&
+                  data.count >= options.locales.length
+                ) {
+                  return true;
+                }
+              }
+              return false;
             } catch (error) {
               return false;
             }
@@ -426,7 +427,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
                 console.log(chalk.green('✓ All translations are live!'));
               } else {
                 console.log(
-                  chalk.yellow('⚠️  Timed out waiting for CDN deployment')
+                  chalk.yellow('⚠️  Timed out waiting for translations')
                 );
               }
             }
