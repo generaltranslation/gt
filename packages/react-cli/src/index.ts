@@ -393,7 +393,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
           if (options.enableTimeout && locales) {
             console.log();
             // timeout was validated earlier
-            const timeout = parseInt(options.timeout);
+            const timeout = parseInt(options.timeout) * 1000;
             await waitForUpdates(
               apiKey,
               options.baseUrl,

@@ -275,7 +275,7 @@ function main(framework) {
                 if (options.enableTimeout && locales) {
                     console.log();
                     // timeout was validated earlier
-                    const timeout = parseInt(options.timeout);
+                    const timeout = parseInt(options.timeout) * 1000;
                     yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, locales, startTime, timeout);
                 }
             }
