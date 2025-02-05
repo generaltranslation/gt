@@ -1,3 +1,4 @@
+import { hashString } from './hashJsxChildren';
 export default function hashTemplate(template: {
     [key: string]: string;
-}): string;
+}, hashFunction?: typeof hashString): string;
