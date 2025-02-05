@@ -73,6 +73,7 @@ const internal_1 = require("generaltranslation/internal");
 const chalk_1 = __importDefault(require("chalk"));
 const scanForContent_1 = __importDefault(require("./updates/scanForContent"));
 const prompts_1 = require("@inquirer/prompts");
+const waitForUpdates_1 = require("./api/waitForUpdates");
 function resolveProjectId() {
     const CANDIDATES = [
         process.env.GT_PROJECT_ID, // any server side, Remix
@@ -260,54 +261,16 @@ function main(framework) {
                 if (options.options)
                     (0, updateConfigFile_1.default)(options.options, { _versionId: versionId });
                 console.log(chalk_1.default.green('✓ ') + chalk_1.default.green.bold(message));
+                if (options.wait && options.locales && options.locales.length > 0) {
+                    console.log();
+                    yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, options.locales);
+                }
             }
             catch (error) {
                 clearInterval(loadingInterval);
                 process.stdout.write('\n');
                 console.log(chalk_1.default.red('✗ Failed to send updates'));
                 throw error;
-            }
-            // TODO: add a check to see if the updates were successful by checking the CDN
-            if (options.wait && options.locales && options.locales.length > 0) {
-                console.log();
-                const loadingInterval = (0, console_1.displayLoadingAnimation)('Waiting for updates to be deployed to the CDN...');
-                let attempts = 0;
-                const maxAttempts = 60; // 5 minutes total (60 * 5000ms)
-                const checkDeployment = () => __awaiter(this, void 0, void 0, function* () {
-                    if (!options.locales)
-                        return false;
-                    try {
-                        const promises = options.locales.map((locale) => fetch(`https://cdn.gtx.dev/${projectId}/${locale}`, {
-                            method: 'GET',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                        }));
-                        const responses = yield Promise.all(promises);
-                        const jsonResponses = yield Promise.all(responses.map((response) => response.ok && response.json()));
-                        return (responses.every((r) => r.ok) &&
-                            jsonResponses.every((data) => Object.keys(data || {}).length > 0));
-                    }
-                    catch (error) {
-                        return false;
-                    }
-                });
-                let intervalCheck;
-                intervalCheck = setInterval(() => __awaiter(this, void 0, void 0, function* () {
-                    attempts++;
-                    const isDeployed = yield checkDeployment();
-                    if (isDeployed || attempts >= maxAttempts) {
-                        clearInterval(loadingInterval);
-                        clearInterval(intervalCheck);
-                        console.log('\n');
-                        if (isDeployed) {
-                            console.log(chalk_1.default.green('✓ All translations are live!'));
-                        }
-                        else {
-                            console.log(chalk_1.default.yellow('⚠️  Timed out waiting for CDN deployment'));
-                        }
-                    }
-                }), 5000);
             }
         }
         else {
