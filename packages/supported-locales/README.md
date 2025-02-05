@@ -8,7 +8,7 @@
 
 List of supported locales for General Translation. We update this list frequently, and will release a new version of this library when we do.
 
-See our [docs](https://www.generaltranslation.com/docs) for more information including guides, examples, and API references.
+See our [docs](https://generaltranslation.com/docs) for more information including guides, examples, and API references.
 
 ## Contributing
 

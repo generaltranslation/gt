@@ -25,7 +25,7 @@
   "bugs": {
     "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
-  "homepage": "https://www.generaltranslation.com/",
+  "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@types/node": ">=20.0.0 <23.0.0",
     "@types/react": ">=18.0.0 <20.0.0",

@@ -3,8 +3,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createMismatchingIdHashWarning = exports.createMismatchingHashWarning = exports.createUnsupportedLocalesWarning = exports.createNoEntryWarning = exports.usingDefaultsWarning = exports.createDictionarySubsetError = exports.devApiKeyIncludedInProductionError = exports.createRequiredPrefixError = exports.createDictionaryStringTranslationError = exports.createStringTranslationError = exports.remoteTranslationsError = exports.APIKeyMissingError = exports.projectIdMissingError = void 0;
 var generaltranslation_1 = require("generaltranslation");
-exports.projectIdMissingError = 'General Translation: Project ID missing! Set projectId as GT_PROJECT_ID in the environment or by passing the projectId parameter to initGT(). Find your project ID: www.generaltranslation.com/dashboard.';
-exports.APIKeyMissingError = 'General Translation: API key is required for runtime translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off runtime translation by setting runtimeUrl to an empty string.)';
+exports.projectIdMissingError = 'General Translation: Project ID missing! Set projectId as GT_PROJECT_ID in the environment or by passing the projectId parameter to initGT(). Find your project ID: generaltranslation.com/dashboard.';
+exports.APIKeyMissingError = 'General Translation: API key is required for runtime translation! Create an API key: generaltranslation.com/dashboard/api-keys. (Or, turn off runtime translation by setting runtimeUrl to an empty string.)';
 exports.remoteTranslationsError = 'General Translation: Error fetching remote translation.';
 var createStringTranslationError = function (content, id) {
     return "gt-next string translation error. tx(\"".concat(content, "\")").concat(id ? " with id \"".concat(id, "\"") : '', " failed.");
@@ -39,11 +39,11 @@ var createUnsupportedLocalesWarning = function (locales) {
 };
 exports.createUnsupportedLocalesWarning = createUnsupportedLocalesWarning;
 var createMismatchingHashWarning = function (expectedHash, receivedHash) {
-    return "gt-next: Mismatching hashes! Expected hash: ".concat(expectedHash, ", but got hash: ").concat(receivedHash, ". We will still render your translation, but make sure to update to the newest version: www.generaltranslation.com/docs");
+    return "gt-next: Mismatching hashes! Expected hash: ".concat(expectedHash, ", but got hash: ").concat(receivedHash, ". We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs");
 };
 exports.createMismatchingHashWarning = createMismatchingHashWarning;
 var createMismatchingIdHashWarning = function (expectedId, expectedHash, receivedId, receivedHash) {
-    return "gt-next: Mismatching ids or hashes! Expected id: ".concat(expectedId, ", hash: ").concat(expectedHash, ", but got id: ").concat(receivedId, ", hash: ").concat(receivedHash, ". We will still render your translation, but make sure to update to the newest version: www.generaltranslation.com/docs");
+    return "gt-next: Mismatching ids or hashes! Expected id: ".concat(expectedId, ", hash: ").concat(expectedHash, ", but got id: ").concat(receivedId, ", hash: ").concat(receivedHash, ". We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs");
 };
 exports.createMismatchingIdHashWarning = createMismatchingIdHashWarning;
 //# sourceMappingURL=createErrors.js.map

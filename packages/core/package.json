@@ -32,7 +32,7 @@
   "bugs": {
     "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
-  "homepage": "https://www.generaltranslation.com/",
+  "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-terser": "^0.4.4",

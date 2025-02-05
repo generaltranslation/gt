@@ -10,7 +10,7 @@ This monorepo contains the libraries for General Translation, a powerful transla
 
 Get started with General Translation at [generaltranslation.com](https://generaltranslation.com).
 
-Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](https://www.generaltranslation.com/docs).
+Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](https://generaltranslation.com/docs).
 
 ## Libraries
 
@@ -33,7 +33,7 @@ npm install gt-next
 yarn add gt-next
 ```
 
-Usage of the libraries is documented on our [docs](https://www.generaltranslation.com/docs).
+Usage of the libraries is documented on our [docs](https://generaltranslation.com/docs).
 
 ## Contributing
 

@@ -10,7 +10,7 @@ gt-next-cli is a command-line tool used to push `gt-next` dictionaries to be tra
 
 Additionally, it can scan your project for all content that needs to be translated, and automatically wrap them in `<T>` and `<Var>` components.
 
-See our [docs](https://www.generaltranslation.com/docs) for more information including guides, examples, and API references.
+See our [docs](https://generaltranslation.com/docs) for more information including guides, examples, and API references.
 
 ## Installation
 
@@ -27,7 +27,7 @@ npx gt-next-cli setup
 
 ## Documentation
 
-Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](www.generaltranslation.com/docs).
+Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](generaltranslation.com/docs).
 
 ## Contributing
 

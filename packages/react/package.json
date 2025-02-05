@@ -26,7 +26,7 @@
   "bugs": {
     "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
-  "homepage": "https://www.generaltranslation.com/",
+  "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@babel/preset-react": "^7.26.3",
     "@babel/preset-typescript": "^7.26.0",

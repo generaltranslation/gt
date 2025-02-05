@@ -8,7 +8,7 @@
 
 This is the core library for General Translation. It is used in `gt-react` and `gt-next`.
 
-See our [docs](https://www.generaltranslation.com/docs) for more information including guides, examples, and API references.
+See our [docs](https://generaltranslation.com/docs) for more information including guides, examples, and API references.
 
 ## Contributing
 
