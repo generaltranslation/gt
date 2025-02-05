@@ -38,13 +38,13 @@ export function getSupportedLocale(locale: string): string | null {
         }) => {
             // If the full locale is supported under this language category
             if (exactSupportedLocales.includes(locale)) return locale;
-            // If a minimized variant of this locale is supported
-            if (exactSupportedLocales.includes(minimizedCode)) return minimizedCode;
             // Attempt to match parts
             const languageWithRegion = `${languageCode}-${regionCode}`;
             if (exactSupportedLocales.includes(languageWithRegion)) return languageWithRegion;
             const languageWithScript = `${languageCode}-${scriptCode}`;
             if (exactSupportedLocales.includes(languageWithScript)) return languageWithScript;
+            // If a minimized variant of this locale is supported
+            if (exactSupportedLocales.includes(minimizedCode)) return minimizedCode;
             // If nothing can be found, return null
             return null;
         }
