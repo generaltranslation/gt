@@ -19,7 +19,7 @@
     "url": "git+https://github.com/General-Translation/gt-libraries.git"
   },
   "peerDependencies": {
-    "gt-react": "^8.2.24",
+    "gt-react": "^9.0.0",
     "next": ">=13.0.0 <16.0.0",
     "react": ">=16.8.0 <20.0.0",
     "react-dom": ">=16.8.0 <20.0.0"
@@ -42,7 +42,7 @@
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
-    "gt-react-cli": "^2.0.0"
+    "gt-react-cli": "^2.1.0"
   },
   "devDependencies": {
     "@types/babel__generator": "^7.6.8",
