@@ -24,29 +24,39 @@ export function getSupportedLocale(locale: string): string | null {
     // Check if there's support for the general language code
     const { 
         languageCode, 
-        minimizedCode, maximizedCode,
-        regionCode, scriptCode
+        ...codes
     } = getLocaleProperties(locale);
-    if (supportedLocales[languageCode]) {
+
+    if (supportedLocales[languageCode]?.length) {
+        
         const exactSupportedLocales = supportedLocales[languageCode];
 
-        // If the full locale is supported under this language category
-        if (exactSupportedLocales.includes(locale)) return locale;
-
-        // If a minimized variant of this locale is supported
-        if (exactSupportedLocales.includes(minimizedCode)) return minimizedCode;
-
-        // If only the language code is supported
-        if (exactSupportedLocales.includes(languageCode)) return languageCode;
-
-        // Attempt to match parts
-        const parts = maximizedCode.split('-');
-        if (parts.length > 2) {
+        const getMatchingCode = ({
+            languageCode, minimizedCode, regionCode, scriptCode
+        }: {
+            [code: string]: string
+        }) => {
+            // If the full locale is supported under this language category
+            if (exactSupportedLocales.includes(locale)) return locale;
+            // If a minimized variant of this locale is supported
+            if (exactSupportedLocales.includes(minimizedCode)) return minimizedCode;
+            // Attempt to match parts
             const languageWithRegion = `${languageCode}-${regionCode}`;
             if (exactSupportedLocales.includes(languageWithRegion)) return languageWithRegion;
             const languageWithScript = `${languageCode}-${scriptCode}`;
             if (exactSupportedLocales.includes(languageWithScript)) return languageWithScript;
+            // If nothing can be found, return null
+            return null;
         }
+
+        const matchingCode = 
+            getMatchingCode({ languageCode, ...codes }) || 
+            getMatchingCode(
+                getLocaleProperties(languageCode)
+            );
+        ;
+
+        return matchingCode;
     }
 
     // No match found; return null
