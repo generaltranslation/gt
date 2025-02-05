@@ -337,6 +337,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
         );
 
         try {
+          const startTime = Date.now();
           const response = await fetch(
             `${options.baseUrl}/v1/project/translations/update`,
             {
@@ -350,7 +351,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
           );
 
           clearInterval(loadingInterval);
-          process.stdout.write('\n\n'); // New line after loading is done
+          process.stdout.write('\n\n');
 
           if (!response.ok) {
             throw new Error(response.status + '. ' + (await response.text()));
@@ -363,19 +364,20 @@ export default function main(framework: 'gt-next' | 'gt-react') {
             return;
           }
 
-          const { versionId, message } = await response.json();
+          const { versionId, message, locales } = await response.json();
           if (options.options)
             updateConfigFile(options.options, { _versionId: versionId });
 
           console.log(chalk.green('✓ ') + chalk.green.bold(message));
 
-          if (options.wait && options.locales && options.locales.length > 0) {
+          if (options.wait && locales) {
             console.log();
             await waitForUpdates(
               apiKey,
               options.baseUrl,
               versionId,
-              options.locales
+              locales,
+              startTime
             );
           }
         } catch (error) {

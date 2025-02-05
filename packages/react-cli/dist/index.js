@@ -243,13 +243,14 @@ function main(framework) {
             };
             const loadingInterval = (0, console_1.displayLoadingAnimation)('Sending updates to General Translation API...');
             try {
+                const startTime = Date.now();
                 const response = yield fetch(`${options.baseUrl}/v1/project/translations/update`, {
                     method: 'POST',
                     headers: Object.assign({ 'Content-Type': 'application/json' }, (apiKey && { 'x-gt-api-key': apiKey })),
                     body: JSON.stringify(body),
                 });
                 clearInterval(loadingInterval);
-                process.stdout.write('\n\n'); // New line after loading is done
+                process.stdout.write('\n\n');
                 if (!response.ok) {
                     throw new Error(response.status + '. ' + (yield response.text()));
                 }
@@ -257,13 +258,13 @@ function main(framework) {
                     console.log(chalk_1.default.green('✓ ') + chalk_1.default.green.bold(yield response.text()));
                     return;
                 }
-                const { versionId, message } = yield response.json();
+                const { versionId, message, locales } = yield response.json();
                 if (options.options)
                     (0, updateConfigFile_1.default)(options.options, { _versionId: versionId });
                 console.log(chalk_1.default.green('✓ ') + chalk_1.default.green.bold(message));
-                if (options.wait && options.locales && options.locales.length > 0) {
+                if (options.wait && locales) {
                     console.log();
-                    yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, options.locales);
+                    yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, locales, startTime);
                 }
             }
             catch (error) {

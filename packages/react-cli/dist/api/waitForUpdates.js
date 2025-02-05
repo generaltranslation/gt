@@ -15,22 +15,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.waitForUpdates = void 0;
 const chalk_1 = __importDefault(require("chalk"));
 const console_1 = require("../console/console");
-const waitForUpdates = (apiKey, baseUrl, versionId, locales) => __awaiter(void 0, void 0, void 0, function* () {
+const waitForUpdates = (apiKey, baseUrl, versionId, locales, startTime) => __awaiter(void 0, void 0, void 0, function* () {
     const loadingInterval = (0, console_1.displayLoadingAnimation)('Waiting for translations to be completed...');
-    let attempts = 0;
-    const maxAttempts = 60; // 5 minutes total (60 * 5000ms)
+    const timeoutDuration = 5 * 60 * 1000; // 5 minutes in milliseconds
     const checkDeployment = () => __awaiter(void 0, void 0, void 0, function* () {
-        if (!locales)
-            return false;
         try {
-            const response = yield fetch(`${baseUrl}/v1/project/translations/status`, {
+            const response = yield fetch(`${baseUrl}/v1/project/translations/status/${encodeURIComponent(versionId)}`, {
                 method: 'GET',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, (apiKey && { 'x-gt-api-key': apiKey })),
-                body: JSON.stringify({
-                    versionId: versionId,
-                }),
             });
-            if (response.status === 200) {
+            if (response.ok) {
                 const data = yield response.json();
                 if (data.count >= locales.length) {
                     return true;
@@ -42,21 +36,34 @@ const waitForUpdates = (apiKey, baseUrl, versionId, locales) => __awaiter(void 0
             return false;
         }
     });
+    // Calculate time until next 5-second interval since startTime
+    const msUntilNextInterval = Math.max(0, 5000 - ((Date.now() - startTime) % 5000));
+    // Do first check immediately
+    const initialCheck = yield checkDeployment();
+    if (initialCheck) {
+        clearInterval(loadingInterval);
+        console.log('\n');
+        console.log(chalk_1.default.green('✓ All translations are live!'));
+        return;
+    }
     let intervalCheck;
-    intervalCheck = setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
-        attempts++;
-        const isDeployed = yield checkDeployment();
-        if (isDeployed || attempts >= maxAttempts) {
-            clearInterval(loadingInterval);
-            clearInterval(intervalCheck);
-            console.log('\n');
-            if (isDeployed) {
-                console.log(chalk_1.default.green('✓ All translations are live!'));
+    // Start the interval aligned with the original request time
+    setTimeout(() => {
+        intervalCheck = setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
+            const isDeployed = yield checkDeployment();
+            const elapsed = Date.now() - startTime;
+            if (isDeployed || elapsed >= timeoutDuration) {
+                clearInterval(loadingInterval);
+                clearInterval(intervalCheck);
+                console.log('\n');
+                if (isDeployed) {
+                    console.log(chalk_1.default.green('✓ All translations are live!'));
+                }
+                else {
+                    console.log(chalk_1.default.yellow('⚠️  Timed out waiting for translations'));
+                }
             }
-            else {
-                console.log(chalk_1.default.yellow('⚠️  Timed out waiting for translations'));
-            }
-        }
-    }), 5000);
+        }), 5000);
+    }, msUntilNextInterval);
 });
 exports.waitForUpdates = waitForUpdates;
