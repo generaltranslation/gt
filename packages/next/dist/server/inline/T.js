@@ -182,7 +182,7 @@ function T(_a) {
                             })];
                     }
                     else if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error' || // fallback to default if error
-                        !I18NConfig.isDevRuntimeTranslationEnabled() // fallback to default if runtime translation is disabled
+                        !I18NConfig.isDevRuntimeTranslationEnabled() // fallback to default if runtime translation is disabled (loading should never happen here)
                     ) {
                         return [2 /*return*/, renderDefaultLocale()];
                     }

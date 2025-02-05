@@ -252,6 +252,10 @@ function main(framework) {
                 if (!response.ok) {
                     throw new Error(response.status + '. ' + (yield response.text()));
                 }
+                if (response.status === 204) {
+                    console.log(chalk_1.default.green('✓ ') + chalk_1.default.green.bold(yield response.text()));
+                    return;
+                }
                 const { versionId, message } = yield response.json();
                 if (options.options)
                     (0, updateConfigFile_1.default)(options.options, { _versionId: versionId });
