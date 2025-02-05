@@ -15,9 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.waitForUpdates = void 0;
 const chalk_1 = __importDefault(require("chalk"));
 const console_1 = require("../console/console");
-const waitForUpdates = (apiKey, baseUrl, versionId, locales, startTime) => __awaiter(void 0, void 0, void 0, function* () {
+const waitForUpdates = (apiKey, baseUrl, versionId, locales, startTime, timeoutDuration) => __awaiter(void 0, void 0, void 0, function* () {
     const loadingInterval = (0, console_1.displayLoadingAnimation)('Waiting for translations to be completed...');
-    const timeoutDuration = 5 * 60 * 1000; // 5 minutes in milliseconds
     const checkDeployment = () => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const response = yield fetch(`${baseUrl}/v1/project/translations/status/${encodeURIComponent(versionId)}`, {

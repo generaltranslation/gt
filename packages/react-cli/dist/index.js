@@ -91,6 +91,8 @@ function resolveProjectId() {
     ];
     return CANDIDATES.find((projectId) => projectId !== undefined);
 }
+// 5 min
+const DEFAULT_TIMEOUT = 300;
 function main(framework) {
     // First command: translate
     commander_1.program
@@ -120,7 +122,7 @@ function main(framework) {
         .option('--ignore-errors', 'Ignore errors encountered while scanning for <T> tags', false)
         .option('--dry-run', 'Dry run, does not send updates to General Translation API', false)
         .option('--enable-timeout', 'When set to false, will wait for the updates to be deployed to the CDN before exiting', true)
-        .option('--timeout <seconds>', 'Timeout in seconds for waiting for updates to be deployed to the CDN', '300')
+        .option('--timeout <seconds>', 'Timeout in seconds for waiting for updates to be deployed to the CDN', DEFAULT_TIMEOUT.toString())
         .action((options) => __awaiter(this, void 0, void 0, function* () {
         var _a;
         (0, console_1.displayAsciiTitle)();
@@ -158,17 +160,11 @@ function main(framework) {
             }
         }
         // validate timeout
-        if (options.timeout) {
-            const timeout = parseInt(options.timeout);
-            if (isNaN(timeout) || timeout < 0) {
-                throw new Error(`Invalid timeout: ${options.timeout}. Must be a positive integer.`);
-            }
-            options.timeout = timeout.toString();
+        const timeout = parseInt(options.timeout);
+        if (isNaN(timeout) || timeout < 0) {
+            throw new Error(`Invalid timeout: ${options.timeout}. Must be a positive integer.`);
         }
-        // if timeout is disabled, do not include it in config file
-        if (!options.enableTimeout) {
-            delete options.timeout;
-        }
+        options.timeout = timeout.toString();
         // // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
         // // not foolproof but can't hurt
         // const nextConfigFilepath = findFilepath([
@@ -278,7 +274,9 @@ function main(framework) {
                 console.log(chalk_1.default.green('✓ ') + chalk_1.default.green.bold(message));
                 if (options.enableTimeout && locales) {
                     console.log();
-                    yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, locales, startTime);
+                    // timeout was validated earlier
+                    const timeout = parseInt(options.timeout);
+                    yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, locales, startTime, timeout);
                 }
             }
             catch (error) {

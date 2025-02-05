@@ -5,13 +5,12 @@ export const waitForUpdates = async (
   baseUrl: string,
   versionId: string,
   locales: string[],
-  startTime: number
+  startTime: number,
+  timeoutDuration: number
 ) => {
   const loadingInterval = displayLoadingAnimation(
     'Waiting for translations to be completed...'
   );
-
-  const timeoutDuration = 5 * 60 * 1000; // 5 minutes in milliseconds
 
   const checkDeployment = async () => {
     try {

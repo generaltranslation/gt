@@ -49,7 +49,7 @@ export type Options = {
   ignoreErrors: boolean;
   dryRun: boolean;
   enableTimeout: boolean;
-  timeout?: string;
+  timeout: string;
 };
 
 export type WrapOptions = {
@@ -73,6 +73,9 @@ function resolveProjectId(): string | undefined {
   ];
   return CANDIDATES.find((projectId) => projectId !== undefined);
 }
+
+// 5 min
+const DEFAULT_TIMEOUT = 300;
 
 export default function main(framework: 'gt-next' | 'gt-react') {
   // First command: translate
@@ -155,7 +158,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
     .option(
       '--timeout <seconds>',
       'Timeout in seconds for waiting for updates to be deployed to the CDN',
-      '300'
+      DEFAULT_TIMEOUT.toString()
     )
     .action(async (options: Options) => {
       displayAsciiTitle();
@@ -209,20 +212,13 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       }
 
       // validate timeout
-      if (options.timeout) {
-        const timeout = parseInt(options.timeout);
-        if (isNaN(timeout) || timeout < 0) {
-          throw new Error(
-            `Invalid timeout: ${options.timeout}. Must be a positive integer.`
-          );
-        }
-        options.timeout = timeout.toString();
+      const timeout = parseInt(options.timeout);
+      if (isNaN(timeout) || timeout < 0) {
+        throw new Error(
+          `Invalid timeout: ${options.timeout}. Must be a positive integer.`
+        );
       }
-
-      // if timeout is disabled, do not include it in config file
-      if (!options.enableTimeout) {
-        delete options.timeout;
-      }
+      options.timeout = timeout.toString();
 
       // // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
       // // not foolproof but can't hurt
@@ -395,12 +391,15 @@ export default function main(framework: 'gt-next' | 'gt-react') {
 
           if (options.enableTimeout && locales) {
             console.log();
+            // timeout was validated earlier
+            const timeout = parseInt(options.timeout);
             await waitForUpdates(
               apiKey,
               options.baseUrl,
               versionId,
               locales,
-              startTime
+              startTime,
+              timeout
             );
           }
         } catch (error) {

@@ -22,7 +22,7 @@ export type Options = {
     ignoreErrors: boolean;
     dryRun: boolean;
     enableTimeout: boolean;
-    timeout?: string;
+    timeout: string;
 };
 export type WrapOptions = {
     src: string[];
