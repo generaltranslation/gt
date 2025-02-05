@@ -55,30 +55,29 @@ export function getAuth(
 } {
   // vite
   try {
-    if (`VITE_GT_PROJECT_ID` in import.meta.env) {
-      return {
-        projectId: projectId || import.meta.env.VITE_GT_PROJECT_ID,
-        devApiKey: devApiKey || import.meta.env.VITE_GT_API_KEY,
-      };
-    }
+    return {
+      projectId: projectId || import.meta.env.VITE_GT_PROJECT_ID,
+      devApiKey: devApiKey || import.meta.env.VITE_GT_API_KEY,
+    };
   } catch {}
   // everything else
   try {
-    return {
-      projectId:
-        projectId ||
-        process.env.REACT_APP_GT_PROJECT_ID ||
-        process.env.NEXT_PUBLIC_GT_PROJECT_ID ||
-        process.env.GATSBY_GT_PROJECT_ID,
-      devApiKey:
-        devApiKey ||
-        process.env.REACT_APP_GT_API_KEY ||
-        process.env.NEXT_PUBLIC_GT_API_KEY ||
-        process.env.GATSBY_GT_API_KEY,
-    };
+    if (typeof process !== 'undefined')
+      return {
+        projectId:
+          projectId ||
+          process.env.REACT_APP_GT_PROJECT_ID ||
+          process.env.NEXT_PUBLIC_GT_PROJECT_ID ||
+          process.env.GATSBY_GT_PROJECT_ID,
+        devApiKey:
+          devApiKey ||
+          process.env.REACT_APP_GT_API_KEY ||
+          process.env.NEXT_PUBLIC_GT_API_KEY ||
+          process.env.GATSBY_GT_API_KEY,
+      };
   } catch (e) {
     console.error(e);
   }
 
-  throw new Error(createNoAuthError);
+  return { projectId: '', devApiKey: '' };
 }

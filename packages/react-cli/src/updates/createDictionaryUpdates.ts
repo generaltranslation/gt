@@ -76,26 +76,30 @@ export default async function createDictionaryUpdates(
 
     const entryAsObjects = writeChildrenAsObjects(taggedEntry);
     const context = props?.context;
-    const metadata: Record<string, any> = {
-      id,
-      ...(context && { context }),
-      hash: hashJsxChildren(
-        context
-          ? {
-              source: entryAsObjects,
-              context,
-            }
-          : { source: entryAsObjects }
-      ),
-    };
 
     if (typeof entry === 'string') {
+      const metadata: Record<string, any> = {
+        id,
+        ...(context && { context }),
+        hash: hashJsxChildren({
+          source: splitStringToContent(entry),
+          ...(context && { context }),
+        }),
+      };
       updates.push({
         type: 'content',
         source: splitStringToContent(entry),
         metadata,
       });
     } else {
+      const metadata: Record<string, any> = {
+        id,
+        ...(context && { context }),
+        hash: hashJsxChildren({
+          source: entryAsObjects,
+          ...(context && { context }),
+        }),
+      };
       updates.push({
         type: 'jsx',
         source: entryAsObjects,

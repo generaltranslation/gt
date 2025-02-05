@@ -28,6 +28,7 @@ export default class I18NConfiguration {
     devApiKey?: string;
     runtimeUrl: string;
     projectId: string;
+    _versionId?: string;
     defaultLocale: string;
     locales: string[];
     renderSettings: {
@@ -44,7 +45,7 @@ export default class I18NConfiguration {
     private _translationCache;
     private _taggedDictionary;
     private _template;
-    constructor({ runtimeTranslation, remoteCache, apiKey, devApiKey, projectId, runtimeUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, ...metadata }: I18NConfigurationParams);
+    constructor({ runtimeTranslation, remoteCache, apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, ...metadata }: I18NConfigurationParams);
     /**
      * Gets config for dynamic translation on the client side.
      */
@@ -54,7 +55,11 @@ export default class I18NConfiguration {
         runtimeUrl: string;
         runtimeTranslations: boolean;
     };
-    getRuntimeTranslationEnabled(): boolean;
+    /**
+     * Runtime translation is enabled only in development with a devApiKey for <TX> components
+     * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
+     */
+    isRuntimeTranslationEnabled(): boolean;
     /**
      * Gets the application's default locale
      * @returns {string} A BCP-47 locale tag

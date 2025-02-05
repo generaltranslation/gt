@@ -63,13 +63,8 @@ function createDictionaryUpdates(options, esbuildConfig) {
             const taggedEntry = (0, internal_1.addGTIdentifier)(entry);
             const entryAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedEntry);
             const context = props === null || props === void 0 ? void 0 : props.context;
-            const metadata = Object.assign(Object.assign({ id }, (context && { context })), { hash: (0, id_1.hashJsxChildren)(context
-                    ? {
-                        source: entryAsObjects,
-                        context,
-                    }
-                    : { source: entryAsObjects }) });
             if (typeof entry === 'string') {
+                const metadata = Object.assign(Object.assign({ id }, (context && { context })), { hash: (0, id_1.hashJsxChildren)(Object.assign({ source: (0, generaltranslation_1.splitStringToContent)(entry) }, (context && { context }))) });
                 updates.push({
                     type: 'content',
                     source: (0, generaltranslation_1.splitStringToContent)(entry),
@@ -77,6 +72,7 @@ function createDictionaryUpdates(options, esbuildConfig) {
                 });
             }
             else {
+                const metadata = Object.assign(Object.assign({ id }, (context && { context })), { hash: (0, id_1.hashJsxChildren)(Object.assign({ source: entryAsObjects }, (context && { context }))) });
                 updates.push({
                     type: 'jsx',
                     source: entryAsObjects,

@@ -10,6 +10,7 @@ type RemoteTranslationsConfig = {
     cacheUrl: string;
     projectId: string;
     cacheExpiryTime?: number;
+    _versionId?: string;
 };
 /**
  * Manages remote translations.
@@ -51,12 +52,12 @@ export declare class RemoteTranslationsManager {
     /**
      * Sets a new translation entry.
      * @param {string} locale - The locale code.
-     * @param {string} key - The key for the new entry.
-     * @param {string} [id=key] - The id for the new entry, defaults to key if not provided.
+     * @param {string} hash - The key for the new entry.
+     * @param {string} [id=hash] - The id for the new entry, defaults to key if not provided.
      * @param {any} translation - The translation value.
      * @returns {boolean} True if the entry was set successfully, false otherwise.
      */
-    setTranslations(locale: string, key: string, id: string | undefined, translation: TranslationSuccess | TranslationLoading | TranslationError): boolean;
+    setTranslations(locale: string, hash: string, id: string | undefined, translation: TranslationSuccess | TranslationLoading | TranslationError): boolean;
     /**
      * Marks translations as requested for a given locale.
      * @param {string} locale - The locale code.

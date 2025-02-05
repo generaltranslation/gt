@@ -1,6 +1,6 @@
 {
   "name": "gt-next-cli",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "main": "dist/main.js",
   "bin": {
     "gt-next-cli": "dist/main.js"
@@ -9,7 +9,10 @@
     "build": "tsc",
     "build-push-publish": "rm -rf dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;",
     "build:clean": "rm -rf dist; npm run build",
-    "release": "npm run build:clean && npm publish"
+    "release": "npm run build:clean && npm publish",
+    "release:alpha": "npm run build:clean && npm publish --tag alpha",
+    "release:beta": "npm run build:clean && npm publish --tag beta",
+    "release:latest": "npm run build:clean && npm publish --tag latest"
   },
   "repository": {
     "type": "git",
@@ -27,7 +30,7 @@
   "bugs": {
     "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
-  "homepage": "https://www.generaltranslation.com/",
+  "homepage": "https://generaltranslation.com/",
   "description": "",
   "dependencies": {
     "@babel/generator": "^7.25.7",
@@ -39,7 +42,7 @@
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
-    "generaltranslation": "^6.1.7"
+    "gt-react-cli": "^2.0.0"
   },
   "devDependencies": {
     "@types/babel__generator": "^7.6.8",
@@ -49,7 +52,7 @@
     "@types/node": "^22.5.1",
     "@types/react": "^18.3.4",
     "esm": "^3.2.25",
-    "gt-react": "^8.2.22",
+    "gt-react": "^9.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4"
   }

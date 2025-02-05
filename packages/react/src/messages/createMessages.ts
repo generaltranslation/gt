@@ -1,7 +1,7 @@
 // ---- ERRORS ---- //
 
 export const projectIdMissingError =
-  'gt-react Error: General Translation cloud services require a project ID! Find yours at www.generaltranslation.com/dashboard.';
+  'gt-react Error: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
 
 export const devApiKeyProductionError =
   'gt-react Error: Production environments cannot include a development api key.';
@@ -11,9 +11,6 @@ export const createNoAuthError =
 
 export const createPluralMissingError = (children: any) =>
   `<Plural> component with children "${children}" requires "n" option.`;
-
-export const createClientSideTWithoutIdError = (children: any) =>
-  `Client-side <T> with no provided 'id' prop. Children: "${children}"`;
 
 export const createStringTranslationError = (content: string, id?: string) =>
   `gt-next string translation error. tx("${content}")${
@@ -66,7 +63,7 @@ export const createMismatchingHashWarning = (
   expectedHash: string,
   receivedHash: string
 ) =>
-  `Mismatching hashes! Expected hash: ${expectedHash}, but got hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: www.generaltranslation.com/docs`;
+  `Mismatching hashes! Expected hash: ${expectedHash}, but got hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;
 
 export const createMismatchingIdHashWarning = (
   expectedId: string,
@@ -74,4 +71,4 @@ export const createMismatchingIdHashWarning = (
   receivedId: string,
   receivedHash: string
 ) =>
-  `Mismatching ids or hashes! Expected id: ${expectedId}, hash: ${expectedHash}, but got id: ${receivedId}, hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: www.generaltranslation.com/docs`;
+  `Mismatching ids or hashes! Expected id: ${expectedId}, hash: ${expectedHash}, but got id: ${receivedId}, hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;

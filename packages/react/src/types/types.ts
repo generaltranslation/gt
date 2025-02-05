@@ -83,9 +83,7 @@ export type TranslationLoading = {
 };
 
 export type TranslationsObject = {
-  [id: string]: {
-    [hash: string]: TranslationSuccess | TranslationLoading | TranslationError;
-  };
+  [key: string]: TranslationSuccess | TranslationLoading | TranslationError;
 };
 
 // maps locales to translation objects
@@ -122,7 +120,8 @@ export type GTContextType = {
   dialectTranslationRequired: boolean;
   renderSettings: { method: RenderMethod; timeout?: number };
   projectId?: string;
-  translationEnabled?: boolean;
+  translationEnabled: boolean;
+  runtimeTranslationEnabled: boolean;
 };
 
 export class GTTranslationError extends Error {
@@ -147,6 +146,7 @@ export type ClientProviderProps = {
   translationPromises: Record<string, Promise<TranslatedChildren>>;
   locale: string;
   locales: string[];
+  _versionId?: string;
   defaultLocale: string;
   translationRequired: boolean;
   dialectTranslationRequired: boolean;
@@ -155,10 +155,11 @@ export type ClientProviderProps = {
     method: RenderMethod;
     timeout?: number;
   };
+  translationEnabled: boolean;
+  runtimeTranslationEnabled: boolean;
   projectId?: string;
   devApiKey?: string;
   runtimeUrl?: string;
-  runtimeTranslations?: boolean;
   onLocaleChange?: () => void;
   cookieName?: string;
 };

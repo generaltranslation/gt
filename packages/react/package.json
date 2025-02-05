@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "8.3.3",
+  "version": "9.0.0",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -15,6 +15,9 @@
     "build": "rollup -c",
     "build:clean": "rm -rf dist; npm run build",
     "release": "npm run build:clean && npm publish",
+    "release:alpha": "npm run build:clean && npm publish --tag alpha",
+    "release:beta": "npm run build:clean && npm publish --tag beta",
+    "release:latest": "npm run build:clean && npm publish --tag latest",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -26,7 +29,7 @@
   "bugs": {
     "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
-  "homepage": "https://www.generaltranslation.com/",
+  "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@babel/preset-react": "^7.26.3",
     "@babel/preset-typescript": "^7.26.0",
@@ -47,8 +50,7 @@
     ".": {
       "types": "./dist/index.d.ts",
       "require": "./dist/index.cjs.min.cjs",
-      "import": "./dist/index.esm.min.mjs",
-      "default": "./dist/index.esm.min.mjs"
+      "import": "./dist/index.esm.min.mjs"
     },
     "./internal": {
       "types": "./dist/internal.d.ts",
@@ -90,7 +92,7 @@
     "i18n"
   ],
   "dependencies": {
-    "@generaltranslation/supported-locales": "^1.1.5",
-    "generaltranslation": "^6.1.7"
+    "@generaltranslation/supported-locales": "^2.0.0",
+    "generaltranslation": "^6.1.8"
   }
 }

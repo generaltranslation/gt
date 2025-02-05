@@ -7,7 +7,6 @@ import createESBuildConfig from './config/createESBuildConfig';
 import createDictionaryUpdates from './updates/createDictionaryUpdates';
 import createInlineUpdates from './updates/createInlineUpdates';
 import { isValidLocale } from 'generaltranslation';
-import updateConfigFile from './fs/updateConfigFile';
 import {
   displayAsciiTitle,
   displayInitializingText,
@@ -20,7 +19,9 @@ import { defaultBaseUrl } from 'generaltranslation/internal';
 import chalk from 'chalk';
 import scanForContent from './updates/scanForContent';
 import { select } from '@inquirer/prompts';
-
+import { waitForUpdates } from './api/waitForUpdates';
+import updateConfig from './fs/config/updateConfig';
+import setupConfig from './fs/config/setupConfig';
 export type Updates = (
   | {
       type: 'jsx';
@@ -47,13 +48,35 @@ export type Options = {
   inline?: boolean;
   ignoreErrors: boolean;
   dryRun: boolean;
-  wait: boolean;
+  enableTimeout: boolean;
+  timeout: string;
 };
 
 export type WrapOptions = {
-  src: string[],
-  options: string
+  src: string[];
+  options: string;
+  disableIds: boolean;
 };
+
+function resolveProjectId(): string | undefined {
+  const CANDIDATES = [
+    process.env.GT_PROJECT_ID, // any server side, Remix
+    process.env.NEXT_PUBLIC_GT_PROJECT_ID, // Next.js
+    process.env.VITE_GT_PROJECT_ID, // Vite
+    process.env.REACT_APP_GT_PROJECT_ID, // Create React App
+    process.env.REDWOOD_ENV_GT_PROJECT_ID, // RedwoodJS
+    process.env.GATSBY_GT_PROJECT_ID, // Gatsby
+    process.env.EXPO_PUBLIC_GT_PROJECT_ID, // Expo (React Native)
+    process.env.RAZZLE_GT_PROJECT_ID, // Razzle
+    process.env.UMI_GT_PROJECT_ID, // UmiJS
+    process.env.BLITZ_PUBLIC_GT_PROJECT_ID, // Blitz.js
+    process.env.PUBLIC_GT_PROJECT_ID, // WMR, Qwik (general "public" convention)
+  ];
+  return CANDIDATES.find((projectId) => projectId !== undefined);
+}
+
+// 5 min
+const DEFAULT_TIMEOUT = 300;
 
 export default function main(framework: 'gt-next' | 'gt-react') {
   // First command: translate
@@ -67,15 +90,11 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       'Filepath to options JSON file, by default gt.config.json',
       './gt.config.json'
     )
-    .option(
-      '--api-key <key>',
-      'API key for General Translation cloud service',
-      process.env.GT_API_KEY
-    )
+    .option('--api-key <key>', 'API key for General Translation cloud service')
     .option(
       '--project-id <id>',
       'Project ID for the translation service',
-      process.env.GT_PROJECT_ID
+      resolveProjectId()
     )
     .option(
       '--tsconfig, --jsconfig <path>',
@@ -99,7 +118,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       ])
     )
     .option(
-      '--src <path>',
+      '--src <paths...>',
       "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
       findFilepaths(['./src', './app', './pages', './components'])
     )
@@ -133,9 +152,14 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       false
     )
     .option(
-      '--wait',
-      'Wait for the updates to be deployed to the CDN before exiting',
+      '--enable-timeout',
+      'When set to false, will wait for the updates to be deployed to the CDN before exiting',
       true
+    )
+    .option(
+      '--timeout <seconds>',
+      'Timeout in seconds for waiting for updates to be deployed to the CDN',
+      DEFAULT_TIMEOUT.toString()
     )
     .action(async (options: Options) => {
       displayAsciiTitle();
@@ -151,6 +175,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       const gtConfig = loadJSON(options.options) || {};
 
       options = { ...gtConfig, ...options };
+      options.apiKey = options.apiKey || process.env.GT_API_KEY;
       if (!options.baseUrl) options.baseUrl = defaultBaseUrl;
 
       // Error if no API key at this point
@@ -187,6 +212,15 @@ export default function main(framework: 'gt-next' | 'gt-react') {
         }
       }
 
+      // validate timeout
+      const timeout = parseInt(options.timeout);
+      if (isNaN(timeout) || timeout < 0) {
+        throw new Error(
+          `Invalid timeout: ${options.timeout}. Must be a positive integer.`
+        );
+      }
+      options.timeout = timeout.toString();
+
       // // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
       // // not foolproof but can't hurt
       // const nextConfigFilepath = findFilepath([
@@ -200,8 +234,8 @@ export default function main(framework: 'gt-next' | 'gt-react') {
 
       // if there's no existing config file, creates one
       // does not include the API key to avoid exposing it
-      const { apiKey, ...rest } = options;
-      if (options.options) updateConfigFile(rest.options, rest);
+      const { apiKey, projectId, defaultLocale, ...rest } = options;
+      if (options.options) setupConfig(rest.options, projectId, defaultLocale);
 
       // ---- CREATING UPDATES ---- //
 
@@ -323,6 +357,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
         );
 
         try {
+          const startTime = Date.now();
           const response = await fetch(
             `${options.baseUrl}/v1/project/translations/update`,
             {
@@ -336,80 +371,43 @@ export default function main(framework: 'gt-next' | 'gt-react') {
           );
 
           clearInterval(loadingInterval);
-          process.stdout.write('\n\n'); // New line after loading is done
+          process.stdout.write('\n\n');
 
           if (!response.ok) {
             throw new Error(response.status + '. ' + (await response.text()));
           }
 
-          const { versionId, message } = await response.json();
-          if (options.options) updateConfigFile(options.options, { _versionId: versionId });
-          
+          if (response.status === 204) {
+            console.log(
+              chalk.green('✓ ') + chalk.green.bold(await response.text())
+            );
+            return;
+          }
+
+          const { versionId, message, locales } = await response.json();
+          if (options.options)
+            updateConfig(options.options, projectId, versionId, locales);
+
           console.log(chalk.green('✓ ') + chalk.green.bold(message));
 
+          if (options.enableTimeout && locales) {
+            console.log();
+            // timeout was validated earlier
+            const timeout = parseInt(options.timeout) * 1000;
+            await waitForUpdates(
+              apiKey,
+              options.baseUrl,
+              versionId,
+              locales,
+              startTime,
+              timeout
+            );
+          }
         } catch (error) {
           clearInterval(loadingInterval);
           process.stdout.write('\n');
           console.log(chalk.red('✗ Failed to send updates'));
           throw error;
-        }
-
-        // TODO: add a check to see if the updates were successful by checking the CDN
-        if (options.wait && options.locales && options.locales.length > 0) {
-          console.log();
-          const loadingInterval = displayLoadingAnimation(
-            'Waiting for updates to be deployed to the CDN...'
-          );
-
-          let attempts = 0;
-          const maxAttempts = 60; // 5 minutes total (60 * 5000ms)
-
-          const checkDeployment = async () => {
-            if (!options.locales) return false;
-            try {
-              const promises = options.locales.map((locale) =>
-                fetch(`https://cdn.gtx.dev/${projectId}/${locale}`, {
-                  method: 'GET',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                })
-              );
-
-              const responses = await Promise.all(promises);
-              const jsonResponses = await Promise.all(
-                responses.map((response) => response.ok && response.json())
-              );
-              return (
-                responses.every((r) => r.ok) &&
-                jsonResponses.every(
-                  (data) => Object.keys(data || {}).length > 0
-                )
-              );
-            } catch (error) {
-              return false;
-            }
-          };
-
-          let intervalCheck: NodeJS.Timeout;
-          intervalCheck = setInterval(async () => {
-            attempts++;
-            const isDeployed = await checkDeployment();
-
-            if (isDeployed || attempts >= maxAttempts) {
-              clearInterval(loadingInterval);
-              clearInterval(intervalCheck);
-              console.log('\n');
-
-              if (isDeployed) {
-                console.log(chalk.green('✓ All translations are live!'));
-              } else {
-                console.log(
-                  chalk.yellow('⚠️  Timed out waiting for CDN deployment')
-                );
-              }
-            }
-          }, 5000);
         }
       } else {
         throw new Error(noTranslationsError);
@@ -423,7 +421,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       'Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids'
     )
     .option(
-      '--src <path>',
+      '--src <paths...>',
       "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
       findFilepaths(['./src', './app', './pages', './components'])
     )
@@ -432,6 +430,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
       'Filepath to options JSON file, by default gt.config.json',
       './gt.config.json'
     )
+    .option('--disable-ids', 'Disable id generation for the <T> tags', false)
     .action(async (options: WrapOptions) => {
       displayAsciiTitle();
       displayInitializingText();
@@ -448,7 +447,6 @@ export default function main(framework: 'gt-next' | 'gt-react') {
         default: true,
       });
 
-
       if (!answer) {
         console.log(chalk.gray('\nOperation cancelled.'));
         process.exit(0);
@@ -456,13 +454,8 @@ export default function main(framework: 'gt-next' | 'gt-react') {
 
       // ----- Create a starter gt.config.json file -----
 
-      // --options filepath || gt.config.json
-      const gtConfig = loadJSON(options.options) || {
-        ...(process.env.GT_PROJECT_ID && {
-          projectId: process.env.GT_PROJECT_ID
-        })
-      };
-      if (options.options) updateConfigFile(options.options, gtConfig);
+      if (options.options)
+        setupConfig(options.options, process.env.GT_PROJECT_ID, '');
 
       // ----- //
 

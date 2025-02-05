@@ -8,7 +8,7 @@
 
 gt-react is a powerful internationalization library designed for React applications. It replaces your existing localization library, and integrates with [generaltranslation.com](https://generaltranslation.com) for translations.
 
-See our [docs](https://www.generaltranslation.com/docs) for more information including guides, examples, and API references.
+See our [docs](https://generaltranslation.com/docs) for more information including guides, examples, and API references.
 
 ## Installation
 
@@ -35,7 +35,7 @@ GT_API_KEY="your-api-key"
 GT_PROJECT_ID="your-project-id"
 ```
 
-- Get your `API Key` and `Project ID` from the [General Translation Dashboard](https://www.generaltranslation.com).
+- Get your `API Key` and `Project ID` from the [General Translation Dashboard](https://generaltranslation.com).
 
 ### Step 2: Add the `<GTProvider>`
 
@@ -81,7 +81,7 @@ This will scan your project for all the text content that needs to be translated
 
 ## Documentation
 
-Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](www.generaltranslation.com/docs).
+Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](generaltranslation.com/docs).
 
 ## Contributing
 

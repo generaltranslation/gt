@@ -9,7 +9,7 @@
     "test": "npm run test --workspaces --if-present",
     "transpile": "npm run transpile --workspaces --if-present",
     "release": "npm run release --workspaces --if-present",
-    "clean:build": "npm run clean:build --workspaces --if-present"
+    "build:clean": "npm run build:clean --workspaces --if-present"
   },
   "repository": {
     "type": "git",
@@ -20,7 +20,7 @@
   "bugs": {
     "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
-  "homepage": "https://www.generaltranslation.com/",
+  "homepage": "https://generaltranslation.com/",
   "keywords": [
     "react",
     "translation",

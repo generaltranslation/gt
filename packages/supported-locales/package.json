@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/supported-locales",
-  "version": "2.0.0-alpha.1",
+  "version": "2.0.0",
   "description": "List of supported locales for General Translation",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -11,7 +11,10 @@
   "scripts": {
     "build:clean": "rm -rf dist; npm run build",
     "build": "rollup -c",
-    "release": "npm run build:clean && npm publish"
+    "release": "npm run build:clean && npm publish",
+    "release:alpha": "npm run build:clean && npm publish --tag alpha",
+    "release:beta": "npm run build:clean && npm publish --tag beta",
+    "release:latest": "npm run build:clean && npm publish --tag latest"
   },
   "repository": {
     "type": "git",
@@ -25,7 +28,7 @@
   "bugs": {
     "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
-  "homepage": "https://www.generaltranslation.com/",
+  "homepage": "https://generaltranslation.com/",
   "typescript": {
     "definition": "./dist/index.d.ts"
   },
@@ -38,7 +41,7 @@
     }
   },
   "dependencies": {
-    "generaltranslation": "^6.1.7"
+    "generaltranslation": "^6.1.8"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",

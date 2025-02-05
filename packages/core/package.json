@@ -1,6 +1,6 @@
 {
   "name": "generaltranslation",
-  "version": "6.1.8-alpha.1",
+  "version": "6.1.8",
   "description": "A language toolkit for AI developers",
   "main": "dist/index.cjs.min.cjs",
   "module": "dist/index.esm.min.mjs",
@@ -11,7 +11,10 @@
   "scripts": {
     "build:clean": "rm -rf dist; npm run build",
     "build": "rollup -c",
-    "release": "npm run build:clean && npm publish"
+    "release": "npm run build:clean && npm publish",
+    "release:alpha": "npm run build:clean && npm publish --tag alpha",
+    "release:beta": "npm run build:clean && npm publish --tag beta",
+    "release:latest": "npm run build:clean && npm publish --tag latest"
   },
   "repository": {
     "type": "git",
@@ -32,7 +35,7 @@
   "bugs": {
     "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
-  "homepage": "https://www.generaltranslation.com/",
+  "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-terser": "^0.4.4",

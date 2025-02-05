@@ -7,6 +7,7 @@ type InitGTProps = {
   // Request scoped filepath
   dictionary?: string;
   i18n?: string;
+  config?: string;
   // Cloud integration
   apiKey?: string;
   projectId?: string;

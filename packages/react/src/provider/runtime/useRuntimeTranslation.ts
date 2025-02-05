@@ -17,23 +17,26 @@ import {
   maxBatchSize,
   batchInterval,
 } from '../config/defaultProps';
-import { request } from 'http';
 
 export default function useRuntimeTranslation({
   projectId,
   devApiKey,
   locale,
+  versionId,
   defaultLocale,
   runtimeUrl,
   renderSettings,
   setTranslations,
+  runtimeTranslationEnabled,
   ...metadata
 }: {
   projectId?: string;
   devApiKey?: string;
   locale: string;
+  versionId?: string;
   defaultLocale?: string;
   runtimeUrl?: string;
+  runtimeTranslationEnabled: boolean;
   renderSettings: {
     method: RenderMethod;
     timeout?: number;
@@ -41,7 +44,6 @@ export default function useRuntimeTranslation({
   setTranslations: React.Dispatch<React.SetStateAction<any>>;
   [key: string]: any;
 }): {
-  translationEnabled: boolean;
   translateContent: TranslateContentCallback;
   translateChildren: TranslateChildrenCallback;
 } {
@@ -49,10 +51,8 @@ export default function useRuntimeTranslation({
 
   const [activeRequests, setActiveRequests] = useState(0);
 
-  const translationEnabled = !!(runtimeUrl && projectId);
-  if (!translationEnabled)
+  if (!runtimeTranslationEnabled)
     return {
-      translationEnabled,
       translateContent: () =>
         Promise.reject(
           new Error('translateContent() failed because translation is disabled')
@@ -185,8 +185,8 @@ export default function useRuntimeTranslation({
       const loadingTranslations: TranslationsObject = requests.reduce(
         (acc: TranslationsObject, request) => {
           // loading state for jsx, render loading behavior
-          const id = request.metadata.id || request.metadata.hash;
-          acc[id] = { [request.metadata.hash]: { state: 'loading' } };
+          const key = request.metadata.id || request.metadata.hash;
+          acc[key] = { state: 'loading' };
           return acc;
         },
         {}
@@ -229,6 +229,7 @@ export default function useRuntimeTranslation({
             requests,
             targetLocale,
             metadata,
+            versionId,
           }),
         },
         renderSettings.timeout
@@ -271,11 +272,8 @@ export default function useRuntimeTranslation({
           }
           // set translation
           newTranslations[request.metadata.id || request.metadata.hash] = {
-            // id defaults to hash if none provided
-            [request.metadata.hash]: {
-              state: 'success',
-              target: translation,
-            },
+            state: 'success',
+            target: translation,
           };
           return;
         }
@@ -298,11 +296,9 @@ export default function useRuntimeTranslation({
           );
           // set error in translation object
           newTranslations[request.metadata.id || request.metadata.hash] = {
-            [request.metadata.hash]: {
-              state: 'error',
-              error: result.error,
-              code: result.code,
-            },
+            state: 'error',
+            error: result.error,
+            code: result.code,
           };
           return;
         }
@@ -316,11 +312,9 @@ export default function useRuntimeTranslation({
           result
         );
         newTranslations[request.metadata.id || request.metadata.hash] = {
-          [request.metadata.hash]: {
-            state: 'error',
-            error: 'An error occurred.',
-            code: 500,
-          },
+          state: 'error',
+          error: 'An error occurred.',
+          code: 500,
         };
       });
     } catch (error) {
@@ -331,11 +325,9 @@ export default function useRuntimeTranslation({
       requests.forEach((request) => {
         // id defaults to hash if none provided
         newTranslations[request.metadata.id || request.metadata.hash] = {
-          [request.metadata.hash]: {
-            state: 'error',
-            error: 'An error occurred.',
-            code: 500,
-          },
+          state: 'error',
+          error: 'An error occurred.',
+          code: 500,
         };
       });
     } finally {
@@ -383,5 +375,5 @@ export default function useRuntimeTranslation({
     };
   }, [locale]);
 
-  return { translateContent, translateChildren, translationEnabled };
+  return { translateContent, translateChildren };
 }

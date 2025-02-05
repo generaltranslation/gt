@@ -68,6 +68,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
             cacheUrl: internal_1.defaultCacheUrl,
             projectId: '',
             cacheExpiryTime: defaultInitGTProps_1.default.cacheExpiryTime, // default to 60 seconds
+            _versionId: undefined,
         };
         this.translationsMap = new Map();
         this.fetchPromises = new Map();
@@ -93,7 +94,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 3, , 4]);
-                        return [4 /*yield*/, fetch("".concat(this.config.cacheUrl, "/").concat(this.config.projectId, "/").concat(reference))];
+                        return [4 /*yield*/, fetch("".concat(this.config.cacheUrl, "/").concat(this.config.projectId, "/").concat(reference).concat(this.config._versionId ? "/".concat(this.config._versionId) : ''))];
                     case 1:
                         response = _a.sent();
                         return [4 /*yield*/, response.json()];
@@ -103,12 +104,8 @@ var RemoteTranslationsManager = /** @class */ (function () {
                             // Record our fetch time
                             this.lastFetchTime.set(reference, Date.now());
                             parsedResult = Object.entries(result).reduce(function (translationsAcc, _a) {
-                                var id = _a[0], hashToTranslation = _a[1];
-                                translationsAcc[id] = Object.entries(hashToTranslation || {}).reduce(function (idAcc, _a) {
-                                    var hash = _a[0], content = _a[1];
-                                    idAcc[hash] = { state: 'success', target: content };
-                                    return idAcc;
-                                }, {});
+                                var key = _a[0], target = _a[1];
+                                translationsAcc[key] = { state: 'success', target: target };
                                 return translationsAcc;
                             }, {});
                             return [2 /*return*/, parsedResult];
@@ -175,19 +172,19 @@ var RemoteTranslationsManager = /** @class */ (function () {
     /**
      * Sets a new translation entry.
      * @param {string} locale - The locale code.
-     * @param {string} key - The key for the new entry.
-     * @param {string} [id=key] - The id for the new entry, defaults to key if not provided.
+     * @param {string} hash - The key for the new entry.
+     * @param {string} [id=hash] - The id for the new entry, defaults to key if not provided.
      * @param {any} translation - The translation value.
      * @returns {boolean} True if the entry was set successfully, false otherwise.
      */
-    RemoteTranslationsManager.prototype.setTranslations = function (locale, key, id, translation) {
-        var _a, _b;
-        if (id === void 0) { id = key; }
-        if (!(locale && key && id && translation))
+    RemoteTranslationsManager.prototype.setTranslations = function (locale, hash, id, translation) {
+        var _a;
+        if (id === void 0) { id = hash; }
+        if (!(locale && hash && translation))
             return false;
         var reference = (0, generaltranslation_1.standardizeLocale)(locale);
         var currentTranslations = this.translationsMap.get(reference) || {};
-        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[id] = __assign(__assign({}, (currentTranslations[id] || {})), (_b = {}, _b[key] = translation, _b)), _a)));
+        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[id] = translation, _a)));
         // Reset the fetch time since we just manually updated the translation
         this.lastFetchTime.set(reference, Date.now());
         return true;

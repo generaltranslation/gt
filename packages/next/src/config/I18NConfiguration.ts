@@ -72,6 +72,7 @@ export default class I18NConfiguration {
   devApiKey?: string;
   runtimeUrl: string;
   projectId: string;
+  _versionId?: string;
   // Locale info
   defaultLocale: string;
   locales: string[];
@@ -103,6 +104,7 @@ export default class I18NConfiguration {
     apiKey,
     devApiKey,
     projectId,
+    _versionId,
     runtimeUrl,
     cacheUrl,
     cacheExpiryTime,
@@ -128,6 +130,7 @@ export default class I18NConfiguration {
     this.devApiKey = devApiKey;
     this.projectId = projectId;
     this.runtimeUrl = runtimeUrl;
+    this._versionId = _versionId; // version id for the dictionary
     // Locales
     this.defaultLocale = defaultLocale;
     this.locales = locales;
@@ -165,6 +168,7 @@ export default class I18NConfiguration {
         cacheUrl,
         projectId,
         cacheExpiryTime,
+        _versionId,
       });
     }
     // Cache of hashes to speed up <GTProvider>
@@ -192,8 +196,12 @@ export default class I18NConfiguration {
     };
   }
 
-  getRuntimeTranslationEnabled() {
-    return this.runtimeTranslation;
+  /**
+   * Runtime translation is enabled only in development with a devApiKey for <TX> components
+   * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
+   */
+  isRuntimeTranslationEnabled(): boolean {
+    return this.translationEnabled() && !!this.devApiKey;
   }
 
   /**
@@ -414,6 +422,7 @@ export default class I18NConfiguration {
             }),
             targetLocale: batch[0].targetLocale,
             metadata: this.metadata,
+            versionId: this._versionId,
           }),
         },
         this.renderSettings.timeout // Pass the timeout duration in milliseconds
@@ -434,7 +443,7 @@ export default class I18NConfiguration {
         if (!result)
           return request.reject(new GTTranslationError(errorMsg, errorCode));
 
-        const id = request.metadata.id || request.metadata.hash;
+        const key = request.metadata.id || request.metadata.hash;
         if (result && typeof result === 'object') {
           if ('translation' in result && result.translation) {
             // record translations
@@ -442,13 +451,13 @@ export default class I18NConfiguration {
               this._remoteTranslationsManager.setTranslations(
                 request.targetLocale,
                 request.metadata.hash,
-                id,
+                key,
                 { state: 'success', target: result.translation }
               );
             }
             // check for mismatching ids or hashes
             if (
-              result?.reference?.id !== id ||
+              result?.reference?.id !== key ||
               result?.reference?.key !== request.metadata?.hash
             ) {
               if (!request.metadata.id) {
@@ -461,7 +470,7 @@ export default class I18NConfiguration {
               } else {
                 console.warn(
                   createMismatchingIdHashWarning(
-                    id,
+                    key,
                     request.metadata.hash,
                     result?.reference?.id,
                     result.reference?.key
@@ -480,7 +489,7 @@ export default class I18NConfiguration {
           this._remoteTranslationsManager.setTranslations(
             request.targetLocale,
             request.metadata.hash,
-            id,
+            key,
             {
               state: 'error',
               error: result.error || 'Translation failed.',

@@ -1,5 +1,5 @@
-export declare const projectIdMissingError = "General Translation: Project ID missing! Set projectId as GT_PROJECT_ID in the environment or by passing the projectId parameter to initGT(). Find your project ID: www.generaltranslation.com/dashboard.";
-export declare const APIKeyMissingError = "General Translation: API key is required for runtime translation! Create an API key: www.generaltranslation.com/dashboard/api-keys. (Or, turn off runtime translation by setting runtimeUrl to an empty string.)";
+export declare const projectIdMissingError = "General Translation: Project ID missing! Set projectId as GT_PROJECT_ID in the environment or by passing the projectId parameter to initGT(). Find your project ID: generaltranslation.com/dashboard.";
+export declare const APIKeyMissingError = "General Translation: API key is required for runtime translation! Create an API key: generaltranslation.com/dashboard/api-keys. (Or, turn off runtime translation by setting runtimeUrl to an empty string.)";
 export declare const remoteTranslationsError = "General Translation: Error fetching remote translation.";
 export declare const createStringTranslationError: (content: string, id?: string) => string;
 export declare const createDictionaryStringTranslationError: (id: string) => string;

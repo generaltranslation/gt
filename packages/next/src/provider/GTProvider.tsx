@@ -43,6 +43,7 @@ export default async function GTProvider({
   const translationRequired = I18NConfig.requiresTranslation(locale);
   const dialectTranslationRequired =
     translationRequired && isSameLanguage(locale, defaultLocale);
+  const runtimeTranslationEnabled = I18NConfig.isRuntimeTranslationEnabled(); // runtime translation enabled in dev
 
   // Start fetching translations from cache
   const translationsPromise =
@@ -65,26 +66,27 @@ export default async function GTProvider({
   const dictionary: FlattenedTaggedDictionary = {};
   const promises: Record<string, Promise<TranslatedChildren>> = {};
 
-  // ---- TRANSLATE DICTIONARY STRINGS ---- //
+  // ---- POPULATE DICTONARY + TRANSLATE DICTIONARY ON DEMAND ---- //
   /**
+   * Populate dictionaries
+   *
+   * On demand tx (dev only):
    * Strings Entries: hang until translation resolves
    * JSX Entries: pass directly to client (translation will be performed on demand)
    *
-   * We will also be populating the dictionary
    */
 
   await Promise.all(
     Object.entries(flattenedDictionarySubset ?? {}).map(
       async ([suffix, dictionaryEntry]) => {
-        // reject bad dictionary entries (we want to do a custom warning for empty strings later)
+        // reject bad dictionary entries (we handle empty strings later)
         if (!dictionaryEntry && dictionaryEntry !== '') return;
 
         // Get the entry from the dictionary
         const entryId = getId(suffix);
-
         let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
 
-        // jsx tx
+        // ---- POPULATE DICTIONARY JSX ---- //
         if (typeof entry !== 'string') {
           // Populating the dictionary that we will pass to the client
           const taggedChildren = I18NConfig.addGTIdentifier(entry);
@@ -97,27 +99,28 @@ export default async function GTProvider({
             { ...metadata, hash },
           ];
 
-          // if no tx required, we are done
-          if (!translationRequired) return;
+          // ----- TRANSLATE JSX ON DEMAND ----- //
 
-          // Check if the translation already exists
-          const translationEntry = translations?.[entryId]?.[hash];
+          // dev only (with api key) skip if:
+          if (
+            !translationRequired || // no translation required
+            !runtimeTranslationEnabled // dev runtime translation disabled
+          ) {
+            return;
+          }
 
-          // If the translation already exists, then do not translate on demand
-          // or runtime translation disabled
-          if (translationEntry) {
-            // if it is loading, we can just hook into the promise by calling translateChildren
-            if (translationEntry.state !== 'loading') return;
+          // If the translation already resolved (success or error), then do not translate on demand
+          const translationEntry = translations?.[entryId];
+          if (translationEntry && translationEntry.state !== 'loading') {
+            return;
           }
 
           // Reject empty fragments
           if (isEmptyReactFragment(entry)) {
             translations[entryId] = {
-              [hash]: {
-                state: 'error',
-                error: 'Empty fragments are not allowed for translation.',
-                code: 400,
-              },
+              state: 'error',
+              error: 'Empty fragments are not allowed for translation.',
+              code: 400,
             };
             return;
           }
@@ -134,37 +137,41 @@ export default async function GTProvider({
           });
 
           // record translations as loading and record the promises to use on client-side
-          translations[entryId] = { [hash]: { state: 'loading' } };
+          translations[entryId] = { state: 'loading' };
           promises[entryId] = translationPromise;
           return;
         }
 
+        // ---- POPULATE DICTIONARY STRINGS ---- //
+
         // Get serialize and hash string entry
-        const contentArray = splitStringToContent(entry);
+        const content = splitStringToContent(entry);
         const hash =
-          metadata?.hash ||
-          I18NConfig.hashContent(contentArray, metadata?.context);
+          metadata?.hash || I18NConfig.hashContent(content, metadata?.context);
 
         // Add to client dictionary
         dictionary[entryId] = [entry, { ...metadata, hash }];
 
-        // if no tx required, we are done
-        if (!translationRequired) return;
+        // ----- TRANSLATE STRINGS ON DEMAND ----- //
 
-        // Check if the translation already exists
-        const translationEntry = translations?.[entryId]?.[hash];
+        // dev only (with api key) skip if:
+        if (
+          !translationRequired || // no translation required
+          !runtimeTranslationEnabled // dev runtime translation disabled
+        ) {
+          return;
+        }
 
         // If the translation already exists, then do not translate on demand
+        const translationEntry = translations?.[entryId];
         if (translationEntry) return;
 
         // Reject empty strings
         if (!entry.length) {
           translations[entryId] = {
-            [hash]: {
-              state: 'error',
-              error: 'Empty strings are not allowed for translation.',
-              code: 400,
-            },
+            state: 'error',
+            error: 'Empty strings are not allowed for translation.',
+            code: 400,
           };
           return;
         }
@@ -174,7 +181,7 @@ export default async function GTProvider({
           // wait for the translation to resolve, we cannot pass our translations to
           // the client until all string translations are resolved
           const translation = await I18NConfig.translateContent({
-            source: contentArray,
+            source: content,
             targetLocale: locale,
             options: {
               id: entryId,
@@ -186,7 +193,8 @@ export default async function GTProvider({
 
           // overwriting any old translations, this is most recent on demand, so should be most accurate
           translations[entryId] = {
-            [hash]: { state: 'success', target: translation },
+            state: 'success',
+            target: translation,
           };
         } catch (error) {
           console.error(error);
@@ -207,6 +215,8 @@ export default async function GTProvider({
       dialectTranslationRequired={dialectTranslationRequired}
       requiredPrefix={id}
       renderSettings={I18NConfig.getRenderSettings()}
+      translationEnabled={I18NConfig.translationEnabled()}
+      runtimeTranslationEnabled={runtimeTranslationEnabled}
       {...I18NConfig.getClientSideConfig()}
     >
       {children}

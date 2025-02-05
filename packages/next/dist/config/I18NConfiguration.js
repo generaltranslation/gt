@@ -70,7 +70,7 @@ var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         var 
         // Cloud integration
-        runtimeTranslation = _a.runtimeTranslation, remoteCache = _a.remoteCache, apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
+        runtimeTranslation = _a.runtimeTranslation, remoteCache = _a.remoteCache, apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
         // Locale info
         defaultLocale = _a.defaultLocale, locales = _a.locales, 
         // Render method
@@ -80,7 +80,7 @@ var I18NConfiguration = /** @class */ (function () {
         // Batching config
         maxConcurrentRequests = _a.maxConcurrentRequests, maxBatchSize = _a.maxBatchSize, batchInterval = _a.batchInterval, 
         // Other metadata
-        metadata = __rest(_a, ["runtimeTranslation", "remoteCache", "apiKey", "devApiKey", "projectId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
+        metadata = __rest(_a, ["runtimeTranslation", "remoteCache", "apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
         // Feature flags
         this.runtimeTranslation = runtimeTranslation;
         this.remoteCache = remoteCache;
@@ -89,6 +89,7 @@ var I18NConfiguration = /** @class */ (function () {
         this.devApiKey = devApiKey;
         this.projectId = projectId;
         this.runtimeUrl = runtimeUrl;
+        this._versionId = _versionId; // version id for the dictionary
         // Locales
         this.defaultLocale = defaultLocale;
         this.locales = locales;
@@ -114,6 +115,7 @@ var I18NConfiguration = /** @class */ (function () {
                 cacheUrl: cacheUrl,
                 projectId: projectId,
                 cacheExpiryTime: cacheExpiryTime,
+                _versionId: _versionId,
             });
         }
         // Cache of hashes to speed up <GTProvider>
@@ -139,8 +141,12 @@ var I18NConfiguration = /** @class */ (function () {
             runtimeTranslations: this.runtimeTranslation,
         };
     };
-    I18NConfiguration.prototype.getRuntimeTranslationEnabled = function () {
-        return this.runtimeTranslation;
+    /**
+     * Runtime translation is enabled only in development with a devApiKey for <TX> components
+     * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
+     */
+    I18NConfiguration.prototype.isRuntimeTranslationEnabled = function () {
+        return this.translationEnabled() && !!this.devApiKey;
     };
     /**
      * Gets the application's default locale
@@ -343,6 +349,7 @@ var I18NConfiguration = /** @class */ (function () {
                                     }),
                                     targetLocale: batch[0].targetLocale,
                                     metadata: this.metadata,
+                                    versionId: this._versionId,
                                 }),
                             }, this.renderSettings.timeout // Pass the timeout duration in milliseconds
                             )];
@@ -363,21 +370,21 @@ var I18NConfiguration = /** @class */ (function () {
                             var errorCode = 500;
                             if (!result)
                                 return request.reject(new internal_1.GTTranslationError(errorMsg, errorCode));
-                            var id = request.metadata.id || request.metadata.hash;
+                            var key = request.metadata.id || request.metadata.hash;
                             if (result && typeof result === 'object') {
                                 if ('translation' in result && result.translation) {
                                     // record translations
                                     if (_this._remoteTranslationsManager) {
-                                        _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, id, { state: 'success', target: result.translation });
+                                        _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, key, { state: 'success', target: result.translation });
                                     }
                                     // check for mismatching ids or hashes
-                                    if (((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) !== id ||
+                                    if (((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) !== key ||
                                         ((_b = result === null || result === void 0 ? void 0 : result.reference) === null || _b === void 0 ? void 0 : _b.key) !== ((_c = request.metadata) === null || _c === void 0 ? void 0 : _c.hash)) {
                                         if (!request.metadata.id) {
                                             console.warn((0, createErrors_1.createMismatchingHashWarning)(request.metadata.hash, (_d = result.reference) === null || _d === void 0 ? void 0 : _d.key));
                                         }
                                         else {
-                                            console.warn((0, createErrors_1.createMismatchingIdHashWarning)(id, request.metadata.hash, (_e = result === null || result === void 0 ? void 0 : result.reference) === null || _e === void 0 ? void 0 : _e.id, (_f = result.reference) === null || _f === void 0 ? void 0 : _f.key));
+                                            console.warn((0, createErrors_1.createMismatchingIdHashWarning)(key, request.metadata.hash, (_e = result === null || result === void 0 ? void 0 : result.reference) === null || _e === void 0 ? void 0 : _e.id, (_f = result.reference) === null || _f === void 0 ? void 0 : _f.key));
                                         }
                                     }
                                     return request.resolve(result.translation);
@@ -389,7 +396,7 @@ var I18NConfiguration = /** @class */ (function () {
                             }
                             // record translation error
                             if (_this._remoteTranslationsManager) {
-                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, id, {
+                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, key, {
                                     state: 'error',
                                     error: result.error || 'Translation failed.',
                                     code: result.code || 500,

@@ -66,7 +66,7 @@ async function T({
   variablesOptions,
 }: {
   children: any;
-  id: string;
+  id?: string;
   context?: string;
   [key: string]: any;
 }): Promise<any> {
@@ -123,19 +123,20 @@ async function T({
     translationRequired && I18NConfig.getCachedTranslations(locale);
 
   // Turns tagged children into objects
-  // The key (a hash) is used to identify the translation
-  const [childrenAsObjects, key] = I18NConfig.serializeAndHashChildren(
+  // The hash is used to identify the translation
+  const [childrenAsObjects, hash] = I18NConfig.serializeAndHashChildren(
     taggedChildren,
     context
   );
+  const key = id || hash;
 
   // Block until cache check resolves
   const translations = translationsPromise ? await translationsPromise : {};
 
   // Gets the translation entry
-  const translationEntry = translations?.[id]?.[key];
+  const translationEntry = translations?.[key];
 
-  // ----- CHECK CACHED TRANSLATIONS ----- //
+  // ----- RENDER CACHED TRANSLATIONS ----- //
 
   // if we have a cached translation, render it
   if (translationEntry?.state === 'success') {
@@ -147,11 +148,15 @@ async function T({
       locales: [locale, defaultLocale],
       renderVariable,
     });
-  } else if (translationEntry?.state === 'error') {
+  } else if (
+    translationEntry?.state === 'error' || // fallback to default if error
+    !I18NConfig.isRuntimeTranslationEnabled() // fallback to default if runtime translation is disabled (loading should never happen here)
+  ) {
     return renderDefaultLocale();
   }
 
   // ----- TRANSLATE ON DEMAND ----- //
+  // dev only (with api key)
 
   // On-demand translation request sent
   // (no entry has been found, this means that the translation is either (1) loading or (2) missing)
@@ -161,7 +166,7 @@ async function T({
     targetLocale: locale,
     metadata: {
       ...(id && { id }),
-      hash: key,
+      hash,
       ...(context && { context }),
       ...(await getMetadata()),
       ...(renderSettings.timeout && { timeout: renderSettings.timeout }),

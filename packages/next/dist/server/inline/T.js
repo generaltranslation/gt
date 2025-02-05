@@ -114,12 +114,11 @@ function Resolver(_a) {
  */
 function T(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, renderSettings, translationRequired, dialectTranslationRequired, taggedChildren, renderDefaultLocale, renderLoadingDefault, translationsPromise, _c, childrenAsObjects, key, translations, _d, translationEntry, translationPromise, _e, _f, _g, loadingFallback;
+        var I18NConfig, locale, defaultLocale, renderSettings, translationRequired, dialectTranslationRequired, taggedChildren, renderDefaultLocale, renderLoadingDefault, translationsPromise, _c, childrenAsObjects, hash, key, translations, _d, translationEntry, translationPromise, _e, _f, _g, loadingFallback;
         var _h;
-        var _j;
         var children = _b.children, id = _b.id, context = _b.context, variables = _b.variables, variablesOptions = _b.variablesOptions;
-        return __generator(this, function (_k) {
-            switch (_k.label) {
+        return __generator(this, function (_j) {
+            switch (_j.label) {
                 case 0:
                     if (!children) {
                         return [2 /*return*/];
@@ -129,7 +128,7 @@ function T(_a) {
                     I18NConfig = (0, getI18NConfig_1.default)();
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    locale = _k.sent();
+                    locale = _j.sent();
                     defaultLocale = I18NConfig.getDefaultLocale();
                     renderSettings = I18NConfig.getRenderSettings();
                     translationRequired = I18NConfig.requiresTranslation(locale);
@@ -157,19 +156,20 @@ function T(_a) {
                         return [2 /*return*/, renderDefaultLocale()];
                     }
                     translationsPromise = translationRequired && I18NConfig.getCachedTranslations(locale);
-                    _c = I18NConfig.serializeAndHashChildren(taggedChildren, context), childrenAsObjects = _c[0], key = _c[1];
+                    _c = I18NConfig.serializeAndHashChildren(taggedChildren, context), childrenAsObjects = _c[0], hash = _c[1];
+                    key = id || hash;
                     if (!translationsPromise) return [3 /*break*/, 3];
                     return [4 /*yield*/, translationsPromise];
                 case 2:
-                    _d = _k.sent();
+                    _d = _j.sent();
                     return [3 /*break*/, 4];
                 case 3:
                     _d = {};
-                    _k.label = 4;
+                    _j.label = 4;
                 case 4:
                     translations = _d;
-                    translationEntry = (_j = translations === null || translations === void 0 ? void 0 : translations[id]) === null || _j === void 0 ? void 0 : _j[key];
-                    // ----- CHECK CACHED TRANSLATIONS ----- //
+                    translationEntry = translations === null || translations === void 0 ? void 0 : translations[key];
+                    // ----- RENDER CACHED TRANSLATIONS ----- //
                     // if we have a cached translation, render it
                     if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success') {
                         return [2 /*return*/, (0, internal_1.renderTranslatedChildren)({
@@ -181,7 +181,9 @@ function T(_a) {
                                 renderVariable: renderVariable_1.default,
                             })];
                     }
-                    else if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error') {
+                    else if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error' || // fallback to default if error
+                        !I18NConfig.isRuntimeTranslationEnabled() // fallback to default if runtime translation is disabled (loading should never happen here)
+                    ) {
                         return [2 /*return*/, renderDefaultLocale()];
                     }
                     _f = (_e = I18NConfig).translateChildren;
@@ -190,10 +192,10 @@ function T(_a) {
                         source: childrenAsObjects,
                         targetLocale: locale
                     };
-                    _g = [__assign(__assign(__assign({}, (id && { id: id })), { hash: key }), (context && { context: context }))];
+                    _g = [__assign(__assign(__assign({}, (id && { id: id })), { hash: hash }), (context && { context: context }))];
                     return [4 /*yield*/, (0, getMetadata_1.default)()];
                 case 5:
-                    translationPromise = _f.apply(_e, [(_h.metadata = __assign.apply(void 0, [__assign.apply(void 0, _g.concat([(_k.sent())])), (renderSettings.timeout && { timeout: renderSettings.timeout })]),
+                    translationPromise = _f.apply(_e, [(_h.metadata = __assign.apply(void 0, [__assign.apply(void 0, _g.concat([(_j.sent())])), (renderSettings.timeout && { timeout: renderSettings.timeout })]),
                             _h)])
                         .then(function (translation) {
                         // render the translation

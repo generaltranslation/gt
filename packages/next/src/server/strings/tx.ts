@@ -97,14 +97,15 @@ export default async function tx(
 
   // get hash
   const hash = I18NConfig.hashContent(contentArray, options.context);
+  const key = options.id || hash;
 
   // Check cache for translation (if there is no id, then we don't cache)
   if (options.id) {
     let translations;
     try {
       translations = await I18NConfig.getCachedTranslations(locale);
-      if (translations?.[options.id]?.[hash]) {
-        const translationResult = translations[options.id][hash];
+      if (translations?.[key]) {
+        const translationResult = translations[key];
         if (translationResult.state !== 'success') {
           // fallback error
           return renderContent(content, [locale, defaultLocale]);

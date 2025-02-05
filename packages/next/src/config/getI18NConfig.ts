@@ -11,10 +11,12 @@ import { defaultRenderSettings } from 'gt-react/internal';
 export default function getI18NConfig(): I18NConfiguration {
   const globalObj = globalThis as any;
 
+  // Return the instance if it already exists (singleton)
   if (globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE) {
     return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
   }
 
+  // Get config from environment
   const I18NConfigParams = process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
 
   if (I18NConfigParams) {
@@ -28,8 +30,7 @@ export default function getI18NConfig(): I18NConfiguration {
     const projectId = process.env.GT_PROJECT_ID || '';
     if (!projectId) console.error(projectIdMissingError);
 
-    let apiKey;
-    let devApiKey;
+    let apiKey, devApiKey;
     const envApiKey = process.env.GT_API_KEY || '';
     const apiKeyType = envApiKey?.split('-')?.[1];
     if (apiKeyType === 'api') {

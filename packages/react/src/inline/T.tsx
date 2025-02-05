@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import useDefaultLocale from '../hooks/useDefaultLocale';
-import useLocale from '../hooks/useLocale';
 import renderDefaultChildren from '../provider/rendering/renderDefaultChildren';
 import {
   addGTIdentifier,
@@ -11,7 +10,6 @@ import useGTContext from '../provider/GTContext';
 import renderTranslatedChildren from '../provider/rendering/renderTranslatedChildren';
 import { useMemo } from 'react';
 import renderVariable from '../provider/rendering/renderVariable';
-import { createClientSideTWithoutIdError } from '../messages/createMessages';
 import { hashJsxChildren } from 'generaltranslation/id';
 import renderSkeleton from '../provider/rendering/renderSkeleton';
 import { TranslatedChildren } from '../types/types';
@@ -53,15 +51,13 @@ function T({
   ...props
 }: {
   children: any;
-  id: string;
+  id?: string;
   context?: string;
   [key: string]: any;
 }): React.JSX.Element | undefined {
   if (!children) return undefined;
 
   if (isEmptyReactFragment(children)) return <React.Fragment />;
-
-  if (!id) throw new Error(createClientSideTWithoutIdError(children));
 
   const { variables, variablesOptions } = props;
 
@@ -72,11 +68,10 @@ function T({
     translateChildren,
     renderSettings,
     locale,
-  } = useGTContext(
-    `<T id="${id}"> used on the client-side outside of <GTProvider>`
-  );
+    translationEnabled,
+    runtimeTranslationEnabled,
+  } = useGTContext(`<T> used on the client-side outside of <GTProvider>`);
 
-  // const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const taggedChildren = useMemo(() => addGTIdentifier(children), [children]);
 
@@ -98,17 +93,22 @@ function T({
     }
   }, [context, taggedChildren, translationRequired]);
 
+  // key
+  const key = id || hash;
+
   // Do translation if required
-  const translationEntry = translations?.[id]?.[hash];
+  const translationEntry = translations?.[key];
   useEffect(() => {
-    // skip if: no translation required
-    if (!translationRequired) return;
-
-    // skip if: no fetch if cache hasn't been hit yet or we already have the translation
-    if (!translations || translationEntry) return;
-
-    // skip if: locale is not loaded yet
-    if (!locale) return;
+    // skip if:
+    if (
+      !runtimeTranslationEnabled || // runtime translation disabled
+      !translationRequired || // no translation required
+      !translations || // cache not checked yet
+      translationEntry || // already have translation
+      !locale // locale not loaded
+    ) {
+      return;
+    }
 
     // Translate content
     translateChildren({
@@ -121,6 +121,7 @@ function T({
       },
     });
   }, [
+    runtimeTranslationEnabled,
     translations,
     translationEntry,
     translationRequired,
@@ -163,12 +164,17 @@ function T({
 
   // ----- RENDER BEHAVIOR ----- //
 
-  // fallback to default locale if no tx required
-  if (!translationRequired) {
+  // fallback if:
+  if (
+    !translationRequired || // no translation required
+    !translationEnabled || // error behavior: translation not enabled
+    (translations && !translationEntry && !runtimeTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
+    translationEntry?.state === 'error' // error fetching translation
+  ) {
     return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
   }
 
-  // loading behavior
+  // loading behavior (checking cache or fetching runtime translation)
   if (!translationEntry || translationEntry?.state === 'loading') {
     let loadingFallback;
     if (renderSettings.method === 'skeleton') {
@@ -181,11 +187,6 @@ function T({
     }
     // The suspense exists here for hydration reasons
     return <React.Fragment>{loadingFallback}</React.Fragment>;
-  }
-
-  // error behavior
-  if (translationEntry.state === 'error') {
-    return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
   }
 
   // render translated content

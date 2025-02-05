@@ -17,6 +17,7 @@ export interface WrapResult {
 function wrapJsxExpression(
   node: t.JSXExpressionContainer,
   options: {
+    createIds: boolean;
     TComponent?: string;
     VarComponent?: string;
     idPrefix: string;
@@ -322,6 +323,7 @@ function wrapJsxExpression(
 export function wrapJsxElement(
   node: t.JSXElement,
   options: {
+    createIds: boolean;
     TComponent?: string;
     VarComponent?: string;
     idPrefix: string;
@@ -394,6 +396,7 @@ export function wrapJsxElement(
 export function handleJsxElement(
   rootNode: t.JSXElement,
   options: {
+    createIds: boolean;
     usedImports: string[];
     TComponent?: string;
     VarComponent?: string;
@@ -417,6 +420,7 @@ export function handleJsxElement(
 function wrapWithT(
   node: t.JSXElement,
   options: {
+    createIds: boolean;
     TComponent?: string;
     VarComponent?: string;
     idPrefix: string;
@@ -436,12 +440,20 @@ function wrapWithT(
   if (!options.usedImports.includes(TComponentName)) {
     options.usedImports.push(TComponentName);
   }
-  return t.jsxElement(
-    t.jsxOpeningElement(
-      t.jsxIdentifier(TComponentName),
-      [t.jsxAttribute(t.jsxIdentifier('id'), t.stringLiteral(uniqueId))],
+  if (options.createIds) {
+    return t.jsxElement(
+      t.jsxOpeningElement(
+        t.jsxIdentifier(TComponentName),
+        [t.jsxAttribute(t.jsxIdentifier('id'), t.stringLiteral(uniqueId))],
+        false
+      ),
+      t.jsxClosingElement(t.jsxIdentifier(TComponentName)),
+      [node],
       false
-    ),
+    );
+  }
+  return t.jsxElement(
+    t.jsxOpeningElement(t.jsxIdentifier(TComponentName), [], false),
     t.jsxClosingElement(t.jsxIdentifier(TComponentName)),
     [node],
     false
@@ -451,6 +463,7 @@ function wrapWithT(
 function wrapExpressionWithT(
   node: t.Expression,
   options: {
+    createIds: boolean;
     TComponent?: string;
     VarComponent?: string;
     idPrefix: string;
@@ -470,12 +483,20 @@ function wrapExpressionWithT(
   if (!options.usedImports.includes(TComponentName)) {
     options.usedImports.push(TComponentName);
   }
-  return t.jsxElement(
-    t.jsxOpeningElement(
-      t.jsxIdentifier(TComponentName),
-      [t.jsxAttribute(t.jsxIdentifier('id'), t.stringLiteral(uniqueId))],
+  if (options.createIds) {
+    return t.jsxElement(
+      t.jsxOpeningElement(
+        t.jsxIdentifier(TComponentName),
+        [t.jsxAttribute(t.jsxIdentifier('id'), t.stringLiteral(uniqueId))],
+        false
+      ),
+      t.jsxClosingElement(t.jsxIdentifier(TComponentName)),
+      [t.jsxExpressionContainer(node)],
       false
-    ),
+    );
+  }
+  return t.jsxElement(
+    t.jsxOpeningElement(t.jsxIdentifier(TComponentName), [], false),
     t.jsxClosingElement(t.jsxIdentifier(TComponentName)),
     [t.jsxExpressionContainer(node)],
     false

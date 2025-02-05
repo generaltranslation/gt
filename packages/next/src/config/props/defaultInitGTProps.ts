@@ -3,15 +3,13 @@ import {
   defaultCacheUrl,
   defaultRuntimeApiUrl,
 } from 'generaltranslation/internal';
-import getDefaultFromEnv from '../../utils/getDefaultFromEnv';
 import { listSupportedLocales } from '@generaltranslation/supported-locales';
+import { defaultRenderSettings } from 'gt-react/internal';
 
 const defaultInitGTProps = {
+  config: './gt.config.json',
   remoteCache: true,
   runtimeTranslation: true,
-  apiKey: getDefaultFromEnv('GT_API_KEY'),
-  devApiKey: '',
-  projectId: getDefaultFromEnv('GT_PROJECT_ID'),
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
   cacheExpiryTime: 60000,
@@ -22,6 +20,7 @@ const defaultInitGTProps = {
   maxConcurrentRequests: 100,
   maxBatchSize: 25,
   batchInterval: 50,
+  renderSettings: defaultRenderSettings,
 } as const;
 
 export default defaultInitGTProps;

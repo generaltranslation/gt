@@ -103,7 +103,7 @@ var ClientProviderWrapper_1 = __importDefault(require("./ClientProviderWrapper")
  */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var getId, I18NConfig, locale, additionalMetadata, defaultLocale, translationRequired, dialectTranslationRequired, translationsPromise, dictionarySubset, flattenedDictionarySubset, translations, _c, dictionary, promises;
+        var getId, I18NConfig, locale, additionalMetadata, defaultLocale, translationRequired, dialectTranslationRequired, runtimeTranslationEnabled, translationsPromise, dictionarySubset, flattenedDictionarySubset, translations, _c, dictionary, promises;
         var _this = this;
         var children = _b.children, id = _b.id;
         return __generator(this, function (_d) {
@@ -122,6 +122,7 @@ function GTProvider(_a) {
                     defaultLocale = I18NConfig.getDefaultLocale();
                     translationRequired = I18NConfig.requiresTranslation(locale);
                     dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, defaultLocale);
+                    runtimeTranslationEnabled = I18NConfig.isRuntimeTranslationEnabled();
                     translationsPromise = translationRequired && I18NConfig.getCachedTranslations(locale);
                     dictionarySubset = (id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)()) || {};
                     if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
@@ -140,27 +141,27 @@ function GTProvider(_a) {
                     translations = _c;
                     dictionary = {};
                     promises = {};
-                    // ---- TRANSLATE DICTIONARY STRINGS ---- //
+                    // ---- POPULATE DICTONARY + TRANSLATE DICTIONARY ON DEMAND ---- //
                     /**
+                     * Populate dictionaries
+                     *
+                     * On demand tx (dev only):
                      * Strings Entries: hang until translation resolves
                      * JSX Entries: pass directly to client (translation will be performed on demand)
                      *
-                     * We will also be populating the dictionary
                      */
                     return [4 /*yield*/, Promise.all(Object.entries(flattenedDictionarySubset !== null && flattenedDictionarySubset !== void 0 ? flattenedDictionarySubset : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var entryId, _c, entry, metadata, taggedChildren, _d, childrenAsObjects, hash_1, translationEntry_1, translationPromise, contentArray, hash, translationEntry, translation, error_1;
-                            var _e, _f, _g, _h;
-                            var _j, _k;
+                            var entryId, _c, entry, metadata, taggedChildren, _d, childrenAsObjects, hash_1, translationEntry_1, translationPromise, content, hash, translationEntry, translation, error_1;
                             var suffix = _b[0], dictionaryEntry = _b[1];
-                            return __generator(this, function (_l) {
-                                switch (_l.label) {
+                            return __generator(this, function (_e) {
+                                switch (_e.label) {
                                     case 0:
-                                        // reject bad dictionary entries (we want to do a custom warning for empty strings later)
+                                        // reject bad dictionary entries (we handle empty strings later)
                                         if (!dictionaryEntry && dictionaryEntry !== '')
                                             return [2 /*return*/];
                                         entryId = getId(suffix);
                                         _c = (0, internal_1.extractEntryMetadata)(dictionaryEntry), entry = _c.entry, metadata = _c.metadata;
-                                        // jsx tx
+                                        // ---- POPULATE DICTIONARY JSX ---- //
                                         if (typeof entry !== 'string') {
                                             taggedChildren = I18NConfig.addGTIdentifier(entry);
                                             _d = I18NConfig.serializeAndHashChildren(taggedChildren, metadata === null || metadata === void 0 ? void 0 : metadata.context), childrenAsObjects = _d[0], hash_1 = _d[1];
@@ -168,26 +169,24 @@ function GTProvider(_a) {
                                                 taggedChildren,
                                                 __assign(__assign({}, metadata), { hash: hash_1 }),
                                             ];
-                                            // if no tx required, we are done
-                                            if (!translationRequired)
+                                            // ----- TRANSLATE JSX ON DEMAND ----- //
+                                            // dev only (with api key) skip if:
+                                            if (!translationRequired || // no translation required
+                                                !runtimeTranslationEnabled // dev runtime translation disabled
+                                            ) {
                                                 return [2 /*return*/];
-                                            translationEntry_1 = (_j = translations === null || translations === void 0 ? void 0 : translations[entryId]) === null || _j === void 0 ? void 0 : _j[hash_1];
-                                            // If the translation already exists, then do not translate on demand
-                                            // or runtime translation disabled
-                                            if (translationEntry_1) {
-                                                // if it is loading, we can just hook into the promise by calling translateChildren
-                                                if (translationEntry_1.state !== 'loading')
-                                                    return [2 /*return*/];
+                                            }
+                                            translationEntry_1 = translations === null || translations === void 0 ? void 0 : translations[entryId];
+                                            if (translationEntry_1 && translationEntry_1.state !== 'loading') {
+                                                return [2 /*return*/];
                                             }
                                             // Reject empty fragments
                                             if ((0, internal_1.isEmptyReactFragment)(entry)) {
-                                                translations[entryId] = (_e = {},
-                                                    _e[hash_1] = {
-                                                        state: 'error',
-                                                        error: 'Empty fragments are not allowed for translation.',
-                                                        code: 400,
-                                                    },
-                                                    _e);
+                                                translations[entryId] = {
+                                                    state: 'error',
+                                                    error: 'Empty fragments are not allowed for translation.',
+                                                    code: 400,
+                                                };
                                                 return [2 /*return*/];
                                             }
                                             translationPromise = I18NConfig.translateChildren({
@@ -196,50 +195,51 @@ function GTProvider(_a) {
                                                 metadata: __assign(__assign({}, metadata), { id: entryId, hash: hash_1 }),
                                             });
                                             // record translations as loading and record the promises to use on client-side
-                                            translations[entryId] = (_f = {}, _f[hash_1] = { state: 'loading' }, _f);
+                                            translations[entryId] = { state: 'loading' };
                                             promises[entryId] = translationPromise;
                                             return [2 /*return*/];
                                         }
-                                        contentArray = (0, generaltranslation_1.splitStringToContent)(entry);
-                                        hash = (metadata === null || metadata === void 0 ? void 0 : metadata.hash) ||
-                                            I18NConfig.hashContent(contentArray, metadata === null || metadata === void 0 ? void 0 : metadata.context);
+                                        content = (0, generaltranslation_1.splitStringToContent)(entry);
+                                        hash = (metadata === null || metadata === void 0 ? void 0 : metadata.hash) || I18NConfig.hashContent(content, metadata === null || metadata === void 0 ? void 0 : metadata.context);
                                         // Add to client dictionary
                                         dictionary[entryId] = [entry, __assign(__assign({}, metadata), { hash: hash })];
-                                        // if no tx required, we are done
-                                        if (!translationRequired)
+                                        // ----- TRANSLATE STRINGS ON DEMAND ----- //
+                                        // dev only (with api key) skip if:
+                                        if (!translationRequired || // no translation required
+                                            !runtimeTranslationEnabled // dev runtime translation disabled
+                                        ) {
                                             return [2 /*return*/];
-                                        translationEntry = (_k = translations === null || translations === void 0 ? void 0 : translations[entryId]) === null || _k === void 0 ? void 0 : _k[hash];
-                                        // If the translation already exists, then do not translate on demand
+                                        }
+                                        translationEntry = translations === null || translations === void 0 ? void 0 : translations[entryId];
                                         if (translationEntry)
                                             return [2 /*return*/];
                                         // Reject empty strings
                                         if (!entry.length) {
-                                            translations[entryId] = (_g = {},
-                                                _g[hash] = {
-                                                    state: 'error',
-                                                    error: 'Empty strings are not allowed for translation.',
-                                                    code: 400,
-                                                },
-                                                _g);
+                                            translations[entryId] = {
+                                                state: 'error',
+                                                error: 'Empty strings are not allowed for translation.',
+                                                code: 400,
+                                            };
                                             return [2 /*return*/];
                                         }
-                                        _l.label = 1;
+                                        _e.label = 1;
                                     case 1:
-                                        _l.trys.push([1, 3, , 4]);
+                                        _e.trys.push([1, 3, , 4]);
                                         return [4 /*yield*/, I18NConfig.translateContent({
-                                                source: contentArray,
+                                                source: content,
                                                 targetLocale: locale,
                                                 options: __assign(__assign({ id: entryId, hash: hash }, additionalMetadata), { context: metadata === null || metadata === void 0 ? void 0 : metadata.context }),
                                             })];
                                     case 2:
-                                        translation = _l.sent();
+                                        translation = _e.sent();
                                         // overwriting any old translations, this is most recent on demand, so should be most accurate
-                                        translations[entryId] = (_h = {},
-                                            _h[hash] = { state: 'success', target: translation },
-                                            _h);
+                                        translations[entryId] = {
+                                            state: 'success',
+                                            target: translation,
+                                        };
                                         return [3 /*break*/, 4];
                                     case 3:
-                                        error_1 = _l.sent();
+                                        error_1 = _e.sent();
                                         console.error(error_1);
                                         return [3 /*break*/, 4];
                                     case 4: return [2 /*return*/];
@@ -247,15 +247,17 @@ function GTProvider(_a) {
                             });
                         }); }))];
                 case 6:
-                    // ---- TRANSLATE DICTIONARY STRINGS ---- //
+                    // ---- POPULATE DICTONARY + TRANSLATE DICTIONARY ON DEMAND ---- //
                     /**
+                     * Populate dictionaries
+                     *
+                     * On demand tx (dev only):
                      * Strings Entries: hang until translation resolves
                      * JSX Entries: pass directly to client (translation will be performed on demand)
                      *
-                     * We will also be populating the dictionary
                      */
                     _d.sent();
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, translationPromises: promises, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings() }, I18NConfig.getClientSideConfig(), { children: children })))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, translationPromises: promises, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings(), translationEnabled: I18NConfig.translationEnabled(), runtimeTranslationEnabled: runtimeTranslationEnabled }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });
     });

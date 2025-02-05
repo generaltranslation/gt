@@ -1,12 +1,5 @@
 'use client';
-import React, {
-  isValidElement,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { isValidElement, useCallback, useEffect, useState } from 'react';
 import {
   determineLocale,
   renderContentToString,
@@ -41,6 +34,7 @@ export default function ClientProvider({
   initialTranslations,
   translationPromises,
   locale: _locale,
+  _versionId,
   defaultLocale,
   translationRequired,
   dialectTranslationRequired,
@@ -50,7 +44,8 @@ export default function ClientProvider({
   projectId,
   devApiKey,
   runtimeUrl,
-  runtimeTranslations = false,
+  translationEnabled,
+  runtimeTranslationEnabled,
   onLocaleChange = () => {},
   cookieName = localeCookieName,
 }: ClientProviderProps): React.JSX.Element {
@@ -63,7 +58,7 @@ export default function ClientProvider({
    *     They will NOT be loading at this point.
    */
   const [translations, setTranslations] = useState<TranslationsObject | null>(
-    null
+    devApiKey ? null : initialTranslations
   );
 
   // ----- LOCALE STATE ----- //
@@ -107,22 +102,20 @@ export default function ClientProvider({
 
   // ----- TRANSLATION LIFECYCLE ----- //
 
-  // Step 1: Reset translations when locale changes
-  useEffect(() => {
-    setTranslations(null);
-  }, [locale]);
+  // // Step 1: Reset translations when locale changes
+  // useEffect(() => {
+  //   setTranslations(null); // this prevents old translations from being displayed
+  // }, [locale]);
 
-  // Step 2: Fetch additional translations and queue them for merging
-  useLayoutEffect(() => {
+  // Fetch additional translations and queue them for merging
+  useEffect(() => {
     setTranslations((prev) => ({ ...prev, ...initialTranslations }));
     let storeResult = true;
     const resolvedTranslations: TranslationsObject = {};
     (async () => {
       // resolve all translation promises (jsx only)
       await Promise.all(
-        Object.entries(translationPromises).map(async ([id, promise]) => {
-          const { metadata } = extractEntryMetadata(dictionary[id]);
-          const hash = metadata?.hash;
+        Object.entries(translationPromises).map(async ([key, promise]) => {
           let result: TranslationSuccess | TranslationError;
           try {
             result = { state: 'success', target: await promise };
@@ -135,7 +128,7 @@ export default function ClientProvider({
               result = { state: 'error', error: 'An error occured', code: 500 };
             }
           }
-          resolvedTranslations[id] = { [hash]: result };
+          resolvedTranslations[key] = result;
         })
       );
       // add resolved translations to state
@@ -159,7 +152,7 @@ export default function ClientProvider({
   // for dictionaries (strings are actually already resolved, but JSX needs tx still)
   const translateDictionaryEntry = useCallback(
     (
-      id: string,
+      key: string,
       options: Record<string, any> = {}
     ): React.ReactNode | string | undefined => {
       // ----- SETUP ----- //
@@ -168,7 +161,7 @@ export default function ClientProvider({
       const dictionaryEntry:
         | TaggedDictionary
         | TaggedDictionaryEntry
-        | undefined = dictionary[id]; // this is a flattened dictionary
+        | undefined = dictionary[key]; // this is a flattened dictionary
       if (
         (!dictionaryEntry && dictionaryEntry !== '') || // entry not found
         (typeof dictionaryEntry === 'object' &&
@@ -182,8 +175,7 @@ export default function ClientProvider({
       const { entry, metadata } = extractEntryMetadata(dictionaryEntry);
       const variables = options;
       const variablesOptions = metadata?.variablesOptions;
-      const hash = metadata?.hash;
-      const translationEntry = translations?.[id]?.[hash];
+      const translationEntry = translations?.[key];
 
       // ----- RENDER STRINGS ----- //
 
@@ -193,24 +185,18 @@ export default function ClientProvider({
         // Reject empty strings
         if (!entry.length) {
           console.warn(
-            `gt-next warn: Empty string found in dictionary with id: ${id}`
+            `gt-next warn: Empty string found in dictionary with key: ${key}`
           );
           return entry;
         }
 
-        // no translation required
+        // Handle fallback cases
         const content = splitStringToContent(entry);
-        if (!translationRequired) {
-          return renderContentToString(
-            content,
-            locales,
-            variables,
-            variablesOptions
-          );
-        }
-
-        // error behavior (strings shouldn't be in a loading state here)
-        if (translationEntry?.state !== 'success') {
+        if (
+          !translationRequired || // no translation required
+          !translationEntry || // error behavior: no translation found
+          translationEntry?.state !== 'success' // error behavior: translation did not resolve
+        ) {
           return renderContentToString(
             content,
             locales,
@@ -262,12 +248,15 @@ export default function ClientProvider({
 
       // ----- RENDER JSX ----- //
 
-      // fallback to default locale if no tx required
-      if (!translationRequired) {
+      // fallback if:
+      if (
+        !translationRequired || // no translation required
+        (translations && !translationEntry && !runtimeTranslationEnabled) // cache miss and dev runtime translation disabled (production)
+      ) {
         return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
       }
 
-      // loading behavior
+      // loading behavior: no translation found or translation is loading
       if (!translationEntry || translationEntry?.state === 'loading') {
         let loadingFallback;
         if (renderSettings.method === 'skeleton') {
@@ -287,7 +276,7 @@ export default function ClientProvider({
         // Reject empty fragments
         if (isEmptyReactFragment(entry)) {
           console.warn(
-            `gt-next warn: Empty fragment found in dictionary with id: ${id}`
+            `gt-next warn: Empty fragment found in dictionary with id: ${key}`
           );
           return entry;
         }
@@ -307,20 +296,23 @@ export default function ClientProvider({
   // For <T> components
   const { translateChildren, translateContent } = useRuntimeTranslation({
     locale: locale,
+    versionId: _versionId,
     projectId,
     devApiKey,
     runtimeUrl,
     setTranslations,
     defaultLocale,
     renderSettings,
+    runtimeTranslationEnabled,
   });
+
   return (
     <GTContext.Provider
       value={{
         translateDictionaryEntry,
         translateChildren,
         translateContent,
-        setLocale, // Unsupported for SSR behavior
+        setLocale,
         locale,
         locales,
         defaultLocale,
@@ -328,9 +320,12 @@ export default function ClientProvider({
         translationRequired,
         dialectTranslationRequired,
         renderSettings,
+        translationEnabled,
+        runtimeTranslationEnabled,
       }}
     >
-      {(!translationRequired || translations) && children}
+      {(!translationRequired || !translationEnabled || translations) &&
+        children}
     </GTContext.Provider>
   );
 }
