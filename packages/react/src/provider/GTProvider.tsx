@@ -426,7 +426,7 @@ export default function GTProvider({
         translations,
         translationRequired,
         dialectTranslationRequired,
-        projectId: projectId,
+        projectId,
         translationEnabled,
         renderSettings,
         enableDevRuntimeTranslation,
