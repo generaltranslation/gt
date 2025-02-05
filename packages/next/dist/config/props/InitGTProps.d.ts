@@ -4,6 +4,7 @@ type InitGTProps = {
     runtimeTranslation?: boolean;
     dictionary?: string;
     i18n?: string;
+    config?: string;
     apiKey?: string;
     projectId?: string;
     runtimeUrl?: string;

@@ -47,7 +47,7 @@ export async function getGT(
   const defaultLocale = I18NConfig.getDefaultLocale();
   const locale = await getLocale();
   const translationRequired = I18NConfig.requiresTranslation(locale);
-  const enableDevRuntimeTranslation = I18NConfig.isRuntimeTranslationEnabled();
+  const runtimeTranslationEnabled = I18NConfig.isRuntimeTranslationEnabled();
   let filteredTranslations: Record<string, TranslatedContent> = {};
 
   if (translationRequired) {
@@ -111,7 +111,7 @@ export async function getGT(
           // dev only (with api key)
 
           // Skip if dev runtime translation is disabled
-          if (!enableDevRuntimeTranslation) return;
+          if (!runtimeTranslationEnabled) return;
 
           // Send a request to cache for translations
           const translationPromise = I18NConfig.translateContent({

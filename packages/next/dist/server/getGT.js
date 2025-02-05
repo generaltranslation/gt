@@ -109,7 +109,7 @@ var react_1 = require("react");
  */
 function getGT(id) {
     return __awaiter(this, void 0, void 0, function () {
-        var getId, I18NConfig, defaultLocale, locale, translationRequired, enableDevRuntimeTranslation, filteredTranslations, translationsPromise, additionalMetadata_1, dictionarySubset, flattenedDictionaryEntries, translations_1;
+        var getId, I18NConfig, defaultLocale, locale, translationRequired, runtimeTranslationEnabled, filteredTranslations, translationsPromise, additionalMetadata_1, dictionarySubset, flattenedDictionaryEntries, translations_1;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -123,7 +123,7 @@ function getGT(id) {
                 case 1:
                     locale = _a.sent();
                     translationRequired = I18NConfig.requiresTranslation(locale);
-                    enableDevRuntimeTranslation = I18NConfig.isRuntimeTranslationEnabled();
+                    runtimeTranslationEnabled = I18NConfig.isRuntimeTranslationEnabled();
                     filteredTranslations = {};
                     if (!translationRequired) return [3 /*break*/, 5];
                     translationsPromise = I18NConfig.getCachedTranslations(locale);
@@ -169,7 +169,7 @@ function getGT(id) {
                                         // ----- ON DEMAND TRANSLATE STRING ----- //
                                         // dev only (with api key)
                                         // Skip if dev runtime translation is disabled
-                                        if (!enableDevRuntimeTranslation)
+                                        if (!runtimeTranslationEnabled)
                                             return [2 /*return*/];
                                         translationPromise = I18NConfig.translateContent({
                                             source: contentArray,
