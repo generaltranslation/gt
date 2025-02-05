@@ -20,7 +20,7 @@ import { defaultBaseUrl } from 'generaltranslation/internal';
 import chalk from 'chalk';
 import scanForContent from './updates/scanForContent';
 import { select } from '@inquirer/prompts';
-
+import { waitForUpdates } from './api/waitForUpdates';
 export type Updates = (
   | {
       type: 'jsx';
@@ -368,70 +368,21 @@ export default function main(framework: 'gt-next' | 'gt-react') {
             updateConfigFile(options.options, { _versionId: versionId });
 
           console.log(chalk.green('✓ ') + chalk.green.bold(message));
+
+          if (options.wait && options.locales && options.locales.length > 0) {
+            console.log();
+            await waitForUpdates(
+              apiKey,
+              options.baseUrl,
+              versionId,
+              options.locales
+            );
+          }
         } catch (error) {
           clearInterval(loadingInterval);
           process.stdout.write('\n');
           console.log(chalk.red('✗ Failed to send updates'));
           throw error;
-        }
-
-        // TODO: add a check to see if the updates were successful by pinging the API
-        if (options.wait && options.locales && options.locales.length > 0) {
-          console.log();
-          const loadingInterval = displayLoadingAnimation(
-            'Waiting for translations to be completed...'
-          );
-
-          let attempts = 0;
-          const maxAttempts = 60; // 5 minutes total (60 * 5000ms)
-
-          const checkDeployment = async () => {
-            if (!options.locales) return false;
-            try {
-              const response = await fetch(
-                `${options.baseUrl}/v1/project/translations/status`,
-                {
-                  method: 'GET',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    ...(apiKey && { 'x-gt-api-key': apiKey }),
-                  },
-                }
-              );
-              if (response.status === 200) {
-                const data = await response.json();
-                if (
-                  options.locales.length > 0 &&
-                  data.count >= options.locales.length
-                ) {
-                  return true;
-                }
-              }
-              return false;
-            } catch (error) {
-              return false;
-            }
-          };
-
-          let intervalCheck: NodeJS.Timeout;
-          intervalCheck = setInterval(async () => {
-            attempts++;
-            const isDeployed = await checkDeployment();
-
-            if (isDeployed || attempts >= maxAttempts) {
-              clearInterval(loadingInterval);
-              clearInterval(intervalCheck);
-              console.log('\n');
-
-              if (isDeployed) {
-                console.log(chalk.green('✓ All translations are live!'));
-              } else {
-                console.log(
-                  chalk.yellow('⚠️  Timed out waiting for translations')
-                );
-              }
-            }
-          }, 5000);
         }
       } else {
         throw new Error(noTranslationsError);
