@@ -20,7 +20,7 @@ import chalk from 'chalk';
 import scanForContent from './updates/scanForContent';
 import { select } from '@inquirer/prompts';
 import { waitForUpdates } from './api/waitForUpdates';
-import updateConfigVersionId from './fs/config/updateConfigVersionId';
+import updateConfig from './fs/config/updateConfig';
 import setupConfig from './fs/config/setupConfig';
 export type Updates = (
   | {
@@ -386,7 +386,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
 
           const { versionId, message, locales } = await response.json();
           if (options.options)
-            updateConfigVersionId(options.options, projectId, versionId);
+            updateConfig(options.options, projectId, versionId, locales);
 
           console.log(chalk.green('✓ ') + chalk.green.bold(message));
 

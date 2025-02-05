@@ -73,7 +73,7 @@ const chalk_1 = __importDefault(require("chalk"));
 const scanForContent_1 = __importDefault(require("./updates/scanForContent"));
 const prompts_1 = require("@inquirer/prompts");
 const waitForUpdates_1 = require("./api/waitForUpdates");
-const updateConfigVersionId_1 = __importDefault(require("./fs/config/updateConfigVersionId"));
+const updateConfig_1 = __importDefault(require("./fs/config/updateConfig"));
 const setupConfig_1 = __importDefault(require("./fs/config/setupConfig"));
 function resolveProjectId() {
     const CANDIDATES = [
@@ -270,7 +270,7 @@ function main(framework) {
                 }
                 const { versionId, message, locales } = yield response.json();
                 if (options.options)
-                    (0, updateConfigVersionId_1.default)(options.options, projectId, versionId);
+                    (0, updateConfig_1.default)(options.options, projectId, versionId, locales);
                 console.log(chalk_1.default.green('✓ ') + chalk_1.default.green.bold(message));
                 if (options.enableTimeout && locales) {
                     console.log();

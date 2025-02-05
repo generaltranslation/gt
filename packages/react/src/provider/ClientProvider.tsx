@@ -67,6 +67,8 @@ export default function ClientProvider({
     null
   );
 
+  console.log(locales);
+
   // ----- LOCALE STATE ----- //
   // Maintain the locale state
   const [locale, _setLocale] = useState<string>(
