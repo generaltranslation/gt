@@ -2,9 +2,7 @@
   "compilerOptions": {
     "target": "ES6",
     "module": "NodeNext",
-    "paths": {
-      "@generaltranslation/core-cli/*": ["../core-cli/src/*"]
-    },
+    "moduleResolution": "NodeNext",
     "declaration": true,
     "outDir": "dist",
     "rootDir": "src",
@@ -14,7 +12,6 @@
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx"
   },
-  "include": ["src/**/*", "../core-cli/src/**/*"],
-  "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../core-cli" }]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -3,15 +3,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BaseCLI = exports.ReactCLI = void 0;
+exports.BaseCLI = exports.NextCLI = void 0;
 exports.default = main;
-const BaseCLI_1 = require("./BaseCLI");
-Object.defineProperty(exports, "BaseCLI", { enumerable: true, get: function () { return BaseCLI_1.BaseCLI; } });
-const scanForContent_1 = __importDefault(require("./updates/scanForContent"));
-const createDictionaryUpdates_1 = __importDefault(require("./updates/createDictionaryUpdates"));
-const createInlineUpdates_1 = __importDefault(require("./updates/createInlineUpdates"));
-const framework = 'gt-react';
-class ReactCLI extends BaseCLI_1.BaseCLI {
+const gt_react_cli_1 = require("gt-react-cli");
+Object.defineProperty(exports, "BaseCLI", { enumerable: true, get: function () { return gt_react_cli_1.BaseCLI; } });
+const scanForContent_1 = __importDefault(require("gt-react-cli/updates/scanForContent"));
+const createDictionaryUpdates_1 = __importDefault(require("gt-react-cli/updates/createDictionaryUpdates"));
+const createInlineUpdates_1 = __importDefault(require("gt-react-cli/updates/createInlineUpdates"));
+const framework = 'gt-next';
+class NextCLI extends gt_react_cli_1.BaseCLI {
     constructor() {
         super(framework);
     }
@@ -25,8 +25,8 @@ class ReactCLI extends BaseCLI_1.BaseCLI {
         return (0, createInlineUpdates_1.default)(options);
     }
 }
-exports.ReactCLI = ReactCLI;
+exports.NextCLI = NextCLI;
 function main() {
-    const cli = new ReactCLI();
+    const cli = new NextCLI();
     cli.initialize();
 }

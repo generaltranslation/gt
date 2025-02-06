@@ -63,14 +63,11 @@ const console_1 = require("./console/console");
 const loadJSON_1 = __importDefault(require("./fs/loadJSON"));
 const findFilepath_1 = __importStar(require("./fs/findFilepath"));
 const createESBuildConfig_1 = __importDefault(require("./config/createESBuildConfig"));
-const createDictionaryUpdates_1 = __importDefault(require("./updates/createDictionaryUpdates"));
-const createInlineUpdates_1 = __importDefault(require("./updates/createInlineUpdates"));
 const generaltranslation_1 = require("generaltranslation");
 const warnings_1 = require("./console/warnings");
 const errors_1 = require("./console/errors");
 const internal_1 = require("generaltranslation/internal");
 const chalk_1 = __importDefault(require("chalk"));
-const scanForContent_1 = __importDefault(require("./updates/scanForContent"));
 const prompts_1 = require("@inquirer/prompts");
 const waitForUpdates_1 = require("./api/waitForUpdates");
 const updateConfig_1 = __importDefault(require("./fs/config/updateConfig"));
@@ -96,17 +93,6 @@ class BaseCLI {
     constructor(framework) {
         this.framework = framework;
     }
-    // Abstract method that subclasses must implement
-    // protected abstract scanForContent(
-    //   options: WrapOptions
-    // ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }>;
-    // protected abstract createDictionaryUpdates(
-    //   options: Options,
-    //   esbuildConfig: any
-    // ): Promise<Updates>;
-    // protected abstract createInlineUpdates(
-    //   options: Options
-    // ): Promise<{ updates: Updates; errors: string[] }>;
     initialize() {
         this.setupTranslateCommand();
         this.setupSetupCommand();
@@ -174,7 +160,7 @@ class BaseCLI {
                 (0, setupConfig_1.default)(options.options, process.env.GT_PROJECT_ID, '');
             // ----- //
             // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-            const { errors, filesUpdated, warnings } = yield (0, scanForContent_1.default)(options, this.framework);
+            const { errors, filesUpdated, warnings } = yield this.scanForContent(options);
             if (errors.length > 0) {
                 console.log(chalk_1.default.red('\n✗ Failed to write files:\n'));
                 console.log(errors.join('\n'));
@@ -266,12 +252,12 @@ class BaseCLI {
                 }
                 updates = [
                     ...updates,
-                    ...(yield (0, createDictionaryUpdates_1.default)(options, esbuildConfig)),
+                    ...(yield this.createDictionaryUpdates(options, esbuildConfig)),
                 ];
             }
             // Scan through project for <T> tags
             if (options.inline) {
-                const { updates: newUpdates, errors: newErrors } = yield (0, createInlineUpdates_1.default)(options);
+                const { updates: newUpdates, errors: newErrors } = yield this.createInlineUpdates(options);
                 errors = [...errors, ...newErrors];
                 updates = [...updates, ...newUpdates];
             }

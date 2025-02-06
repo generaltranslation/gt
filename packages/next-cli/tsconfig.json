@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ES6",
     "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "declaration": true,
     "outDir": "./dist",
     "strict": true,
@@ -11,6 +12,5 @@
     "jsx": "react-jsx"
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../core-cli" }]
+  "exclude": ["node_modules", "dist"]
 }

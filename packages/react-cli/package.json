@@ -15,7 +15,15 @@
     "release:latest": "npm run build:clean && npm publish --tag latest"
   },
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./types": "./dist/types.js",
+    "./updates/*": "./dist/updates/*.js",
+    "./jsx/*": "./dist/jsx/*.js",
+    "./fs/*": "./dist/fs/*.js",
+    "./console/*": "./dist/console/*.js",
+    "./config/*": "./dist/config/*.js",
+    "./api/*": "./dist/api/*.js",
+    "./*": "./dist/*.js"
   },
   "repository": {
     "type": "git",

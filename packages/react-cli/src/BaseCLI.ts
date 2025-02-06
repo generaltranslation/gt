@@ -16,14 +16,11 @@ import {
 import loadJSON from './fs/loadJSON';
 import findFilepath, { findFilepaths } from './fs/findFilepath';
 import createESBuildConfig from './config/createESBuildConfig';
-import createDictionaryUpdates from './updates/createDictionaryUpdates';
-import createInlineUpdates from './updates/createInlineUpdates';
 import { isValidLocale } from 'generaltranslation';
 import { warnApiKeyInConfig } from './console/warnings';
 import { noTranslationsError } from './console/errors';
 import { defaultBaseUrl } from 'generaltranslation/internal';
 import chalk from 'chalk';
-import scanForContent from './updates/scanForContent';
 import { select } from '@inquirer/prompts';
 import { waitForUpdates } from './api/waitForUpdates';
 import updateConfig from './fs/config/updateConfig';
@@ -54,18 +51,18 @@ export abstract class BaseCLI {
   }
 
   // Abstract method that subclasses must implement
-  // protected abstract scanForContent(
-  //   options: WrapOptions
-  // ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }>;
+  protected abstract scanForContent(
+    options: WrapOptions
+  ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }>;
 
-  // protected abstract createDictionaryUpdates(
-  //   options: Options,
-  //   esbuildConfig: any
-  // ): Promise<Updates>;
+  protected abstract createDictionaryUpdates(
+    options: Options,
+    esbuildConfig: any
+  ): Promise<Updates>;
 
-  // protected abstract createInlineUpdates(
-  //   options: Options
-  // ): Promise<{ updates: Updates; errors: string[] }>;
+  protected abstract createInlineUpdates(
+    options: Options
+  ): Promise<{ updates: Updates; errors: string[] }>;
 
   public initialize(): void {
     this.setupTranslateCommand();
@@ -209,9 +206,8 @@ export abstract class BaseCLI {
     // ----- //
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { errors, filesUpdated, warnings } = await scanForContent(
-      options,
-      this.framework
+    const { errors, filesUpdated, warnings } = await this.scanForContent(
+      options
     );
 
     if (errors.length > 0) {
@@ -338,14 +334,14 @@ export abstract class BaseCLI {
       }
       updates = [
         ...updates,
-        ...(await createDictionaryUpdates(options as any, esbuildConfig)),
+        ...(await this.createDictionaryUpdates(options as any, esbuildConfig)),
       ];
     }
 
     // Scan through project for <T> tags
     if (options.inline) {
       const { updates: newUpdates, errors: newErrors } =
-        await createInlineUpdates(options);
+        await this.createInlineUpdates(options);
       errors = [...errors, ...newErrors];
       updates = [...updates, ...newUpdates];
     }

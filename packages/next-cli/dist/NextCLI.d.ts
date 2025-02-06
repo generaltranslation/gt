@@ -1,6 +1,6 @@
-import { BaseCLI } from './BaseCLI';
-import { WrapOptions, Options, Updates } from './types';
-export declare class ReactCLI extends BaseCLI {
+import { BaseCLI } from 'gt-react-cli';
+import { WrapOptions, Options, Updates } from 'gt-react-cli/types';
+export declare class NextCLI extends BaseCLI {
     constructor();
     protected scanForContent(options: WrapOptions): Promise<{
         errors: string[];
