@@ -8,4 +8,4 @@ const _1 = __importDefault(require("."));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config({ path: '.env' });
 dotenv_1.default.config({ path: '.env.local', override: true });
-(0, _1.default)('gt-react');
+(0, _1.default)();
