@@ -32,28 +32,29 @@ export function getSupportedLocale(locale: string): string | null {
         const exactSupportedLocales = supportedLocales[languageCode];
 
         const getMatchingCode = ({
-            languageCode, minimizedCode, regionCode, scriptCode
+            locale, languageCode, minimizedCode, regionCode, scriptCode
         }: {
-            [code: string]: string
+            locale: string, languageCode: string,
+            minimizedCode: string, regionCode: string, scriptCode: string
         }) => {
-            // If the full locale is supported under this language category
-            if (exactSupportedLocales.includes(locale)) return locale;
-            // Attempt to match parts
-            const languageWithRegion = `${languageCode}-${regionCode}`;
-            if (exactSupportedLocales.includes(languageWithRegion)) return languageWithRegion;
-            const languageWithScript = `${languageCode}-${scriptCode}`;
-            if (exactSupportedLocales.includes(languageWithScript)) return languageWithScript;
-            // If a minimized variant of this locale is supported
-            if (exactSupportedLocales.includes(minimizedCode)) return minimizedCode;
-            // If nothing can be found, return null
+            const locales = [
+                locale, // If the full locale is supported under this language category
+                `${languageCode}-${regionCode}`, // Attempt to match parts
+                `${languageCode}-${scriptCode}`, 
+                minimizedCode // If a minimized variant of this locale is supported
+            ];
+            for (const l of locales) {
+                if (exactSupportedLocales.includes(l)) return l;
+            }
             return null;
         }
 
         const matchingCode = 
-            getMatchingCode({ languageCode, ...codes }) || 
-            getMatchingCode(
-                getLocaleProperties(languageCode)
-            );
+            getMatchingCode({ locale, languageCode, ...codes }) || 
+            getMatchingCode({
+                locale: languageCode,
+                ...getLocaleProperties(languageCode)
+            });
         ;
 
         return matchingCode;
