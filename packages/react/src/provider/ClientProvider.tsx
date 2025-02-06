@@ -282,7 +282,6 @@ export default function ClientProvider({
         }
         return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
       }
-
       // render translated content
       return (
         <React.Fragment>

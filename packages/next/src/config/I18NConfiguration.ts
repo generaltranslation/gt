@@ -452,7 +452,11 @@ export default class I18NConfiguration {
                 request.targetLocale,
                 request.metadata.hash,
                 key,
-                { state: 'success', target: result.translation }
+                {
+                  state: 'success',
+                  target: result.translation,
+                  hash: result.reference.key,
+                }
               );
             }
             // check for mismatching ids or hashes

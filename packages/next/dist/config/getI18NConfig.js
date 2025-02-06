@@ -34,8 +34,14 @@ function getI18NConfig() {
     else {
         console.warn(createErrors_1.usingDefaultsWarning);
         var projectId = process.env.GT_PROJECT_ID || '';
-        if (!projectId)
-            console.error(createErrors_1.projectIdMissingError);
+        if (!projectId) {
+            if (process.env.NODE_ENV === 'development') {
+                throw new Error(createErrors_1.projectIdMissingError);
+            }
+            else {
+                console.warn(createErrors_1.projectIdMissingError);
+            }
+        }
         var apiKey = void 0, devApiKey = void 0;
         var envApiKey = process.env.GT_API_KEY || '';
         var apiKeyType = (_a = envApiKey === null || envApiKey === void 0 ? void 0 : envApiKey.split('-')) === null || _a === void 0 ? void 0 : _a[1];

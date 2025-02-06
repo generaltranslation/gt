@@ -6,6 +6,7 @@ import {
   TranslatedChildren,
   isEmptyReactFragment,
   FlattenedTaggedDictionary,
+  GTTranslationError,
 } from 'gt-react/internal';
 import { ReactNode } from 'react';
 import getI18NConfig from '../config/getI18NConfig';
@@ -109,9 +110,25 @@ export default async function GTProvider({
             return;
           }
 
-          // If the translation already resolved (success or error), then do not translate on demand
+          // Issue: every dev cache request with id is a cache miss
+          // because cache now stores ids over hashes, when we come
+          // across a tx from the cache w/o a hash (so it has an id instead)
+          // we will always trigger an on-demand translation because
+          // we cannot verify that the content has been changed.
+          // for now, this will only be an issue in dev, and for
+          // tx() which do translation on-demand.
+          // It shouldn't result in extra token charge because we
+          // will just grab the translation from the database instead,
+          // but it is definitely causes slower perfomance in dev and
+          // any other on-demand translations where id has replaced hash
+
+          // skip if:
           const translationEntry = translations?.[entryId];
-          if (translationEntry && translationEntry.state !== 'loading') {
+          if (
+            translationEntry && // already have translation
+            (translationEntry.state !== 'success' || // not a success
+              translationEntry.hash === hash) // hash matches
+          ) {
             return;
           }
 
@@ -126,6 +143,7 @@ export default async function GTProvider({
           }
 
           // Perform on-demand translation
+          translations[entryId] = { state: 'loading' };
           const translationPromise = I18NConfig.translateChildren({
             source: childrenAsObjects,
             targetLocale: locale,
@@ -134,10 +152,28 @@ export default async function GTProvider({
               id: entryId,
               hash,
             },
-          });
+          })
+            .then((result) => {
+              translations[entryId] = {
+                state: 'success',
+                target: result,
+              };
+              return result;
+            })
+            .catch((error) => {
+              if (error instanceof GTTranslationError) {
+                error = error.toTranslationError();
+              } else {
+                error = {
+                  state: 'error',
+                  error: 'An error occured',
+                  code: 500,
+                };
+              }
+              return error;
+            });
 
           // record translations as loading and record the promises to use on client-side
-          translations[entryId] = { state: 'loading' };
           promises[entryId] = translationPromise;
           return;
         }
@@ -164,7 +200,13 @@ export default async function GTProvider({
 
         // If the translation already exists, then do not translate on demand
         const translationEntry = translations?.[entryId];
-        if (translationEntry) return;
+        if (
+          translationEntry && // already have translation
+          (translationEntry.state !== 'success' || // not a success
+            translationEntry.hash === hash) // hash matches
+        ) {
+          return;
+        }
 
         // Reject empty strings
         if (!entry.length) {

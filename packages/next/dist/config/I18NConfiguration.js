@@ -375,7 +375,11 @@ var I18NConfiguration = /** @class */ (function () {
                                 if ('translation' in result && result.translation) {
                                     // record translations
                                     if (_this._remoteTranslationsManager) {
-                                        _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, key, { state: 'success', target: result.translation });
+                                        _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, key, {
+                                            state: 'success',
+                                            target: result.translation,
+                                            hash: result.reference.key,
+                                        });
                                     }
                                     // check for mismatching ids or hashes
                                     if (((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) !== key ||

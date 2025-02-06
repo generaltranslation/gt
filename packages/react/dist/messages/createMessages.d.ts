@@ -10,6 +10,7 @@ export declare const createNestedTError: (child: any) => string;
 export declare const renderingError = "General Translation: Rendering error.";
 export declare const dynamicTranslationError = "Error fetching batched translations:";
 export declare const createGenericRuntimeTranslationError: (id: string | undefined, hash: string) => string;
+export declare const projectIdMissingWarning = "gt-react warn: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.";
 export declare const createLibraryNoEntryWarning: (id: string) => string;
 export declare const createNoEntryWarning: (id: string, prefixedId: string) => string;
 export declare const createInvalidElementEntryWarning: (id: string, prefixedId: string) => string;
