@@ -386,7 +386,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
 
           const { versionId, message, locales } = await response.json();
           if (options.options)
-            updateConfig(options.options, projectId, versionId, locales);
+            updateConfig(options.options, projectId, versionId);
 
           console.log(chalk.green('✓ ') + chalk.green.bold(message));
 

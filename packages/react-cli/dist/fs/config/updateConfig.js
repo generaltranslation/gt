@@ -10,9 +10,9 @@ const console_1 = require("../../console/console");
  * Update the config file version id, locales, and projectId (if necessary)
  * @param {Record<string, any>} configObject - The config object to write if the file does not exist.
  */
-function updateConfig(configFilepath, projectId, _versionId, locales) {
+function updateConfig(configFilepath, projectId, _versionId) {
     // Filter out empty string values from the config object
-    const newContent = Object.assign(Object.assign(Object.assign({}, (locales && { locales })), (projectId && { projectId })), (_versionId && { _versionId }));
+    const newContent = Object.assign(Object.assign({}, (projectId && { projectId })), (_versionId && { _versionId }));
     try {
         // if file exists
         let oldContent = {};

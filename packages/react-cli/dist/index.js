@@ -270,7 +270,7 @@ function main(framework) {
                 }
                 const { versionId, message, locales } = yield response.json();
                 if (options.options)
-                    (0, updateConfig_1.default)(options.options, projectId, versionId, locales);
+                    (0, updateConfig_1.default)(options.options, projectId, versionId);
                 console.log(chalk_1.default.green('✓ ') + chalk_1.default.green.bold(message));
                 if (options.enableTimeout && locales) {
                     console.log();

@@ -8,12 +8,10 @@ import { displayUpdatedConfigFile } from '../../console/console';
 export default function updateConfig(
   configFilepath: string,
   projectId?: string,
-  _versionId?: string,
-  locales?: string[]
+  _versionId?: string
 ): void {
   // Filter out empty string values from the config object
   const newContent = {
-    ...(locales && { locales }),
     ...(projectId && { projectId }),
     ...(_versionId && { _versionId }),
   };
