@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "5.0.3",
+  "version": "5.0.4",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -126,6 +126,6 @@
   "dependencies": {
     "@generaltranslation/supported-locales": "^2.0.2",
     "generaltranslation": "^6.1.10",
-    "gt-react": "^9.0.3"
+    "gt-react": "^9.0.4"
   }
 }
