@@ -42,7 +42,7 @@
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
-    "gt-react-cli": "^2.0.1"
+    "gt-react-cli": "^2.1.1"
   },
   "devDependencies": {
     "@types/babel__generator": "^7.6.8",
