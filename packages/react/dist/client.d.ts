@@ -468,9 +468,12 @@ declare namespace Var {
 
 /**
  * A dropdown component that allows users to select a locale.
+ * @param {string[]} locales - The list of supported locales. By default this is the user's list of supported locales from the `<GTProvider>` context.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
-declare function LocaleSelector(): React__default.ReactElement | null;
+declare function LocaleSelector({ locales, }: {
+    locales?: string[];
+}): React__default.ReactElement | null;
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
