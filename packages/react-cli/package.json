@@ -1,6 +1,6 @@
 {
   "name": "gt-react-cli",
-  "version": "2.1.6-alpha.1",
+  "version": "2.1.7-alpha.1",
   "main": "dist/index.js",
   "bin": {
     "gt-react-cli": "dist/main.js"
@@ -13,6 +13,9 @@
     "release:alpha": "npm run build:clean && npm publish --tag alpha",
     "release:beta": "npm run build:clean && npm publish --tag beta",
     "release:latest": "npm run build:clean && npm publish --tag latest"
+  },
+  "exports": {
+    ".": "./dist/index.js"
   },
   "repository": {
     "type": "git",

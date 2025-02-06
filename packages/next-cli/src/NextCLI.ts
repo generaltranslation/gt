@@ -1,4 +1,4 @@
-import { BaseCLI } from '@generaltranslation/core-cli/BaseCLI.js';
+import { BaseCLI } from 'gt-react-cli';
 
 export class NextCLI extends BaseCLI {
   constructor() {

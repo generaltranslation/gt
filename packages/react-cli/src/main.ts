@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import main from '.';
+import main from './index';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env' });
