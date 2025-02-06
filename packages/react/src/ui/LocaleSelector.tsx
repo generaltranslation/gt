@@ -1,5 +1,4 @@
 import React from 'react';
-import T from '../inline/T';
 import useSetLocale from '../hooks/useSetLocale';
 import useLocale from '../hooks/useLocale';
 import useLocales from '../hooks/useLocales';
@@ -21,13 +20,17 @@ function capitalizeLanguageName(language: string): string {
 
 /**
  * A dropdown component that allows users to select a locale.
+ * @param {string[]} locales - The list of supported locales. By default this is the user's list of supported locales from the `<GTProvider>` context.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
-export default function LocaleSelector(): React.ReactElement | null {
+export default function LocaleSelector({
+  locales = useLocales().sort(),
+}: {
+  locales?: string[];
+}): React.ReactElement | null {
   // Retrieve the locale, locales, and setLocale function
   const locale = useLocale();
   const setLocale = useSetLocale();
-  const locales = useLocales();
 
   // If no locales are returned, just render nothing or handle gracefully
   if (!locales || locales.length === 0 || !setLocale) {

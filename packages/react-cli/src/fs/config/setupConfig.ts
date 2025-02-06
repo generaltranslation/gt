@@ -26,11 +26,6 @@ export default function setupConfig(
       oldContent = JSON.parse(fs.readFileSync(configFilepath, 'utf-8'));
     }
 
-    // add a default locale if not present
-    if (!oldContent.defaultLocale && !newContent.defaultLocale) {
-      newContent.defaultLocale = libraryDefaultLocale;
-    }
-
     // merge old and new content
     const mergedContent = {
       ...oldContent,

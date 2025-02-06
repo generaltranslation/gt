@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = setupConfig;
 const fs_1 = __importDefault(require("fs"));
 const console_1 = require("../../console/console");
-const internal_1 = require("generaltranslation/internal");
 /**
  * Checks if the config file exists.
  * If yes, make sure make sure projectId is correct
@@ -22,10 +21,6 @@ function setupConfig(configFilepath, projectId, defaultLocale) {
         let oldContent = {};
         if (fs_1.default.existsSync(configFilepath)) {
             oldContent = JSON.parse(fs_1.default.readFileSync(configFilepath, 'utf-8'));
-        }
-        // add a default locale if not present
-        if (!oldContent.defaultLocale && !newContent.defaultLocale) {
-            newContent.defaultLocale = internal_1.libraryDefaultLocale;
         }
         // merge old and new content
         const mergedContent = Object.assign(Object.assign({}, oldContent), newContent);

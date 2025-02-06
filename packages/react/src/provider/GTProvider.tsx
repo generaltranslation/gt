@@ -59,7 +59,7 @@ export default function GTProvider({
   projectId: _projectId,
   devApiKey: _devApiKey,
   dictionary = {},
-  locales = listSupportedLocales(),
+  locales = [],
   defaultLocale = libraryDefaultLocale,
   locale: _locale,
   cacheUrl = defaultCacheUrl,
@@ -101,13 +101,17 @@ export default function GTProvider({
     throw new Error(projectIdMissingError);
   }
 
+  // if no locales, then all locales
+  if (!locales.length) {
+    locales = listSupportedLocales();
+  }
+
   // get locale
   const [locale, setLocale] = useDetermineLocale({
     defaultLocale,
     locales,
     locale: _locale,
   });
-
   // set render settings
   if (
     renderSettings.timeout === undefined &&
