@@ -102,11 +102,6 @@ export default function ClientProvider({
 
   // ----- TRANSLATION LIFECYCLE ----- //
 
-  // // Step 1: Reset translations when locale changes
-  // useEffect(() => {
-  //   setTranslations(null); // this prevents old translations from being displayed
-  // }, [locale]);
-
   // Fetch additional translations and queue them for merging
   useEffect(() => {
     setTranslations((prev) => ({ ...prev, ...initialTranslations }));
@@ -152,7 +147,7 @@ export default function ClientProvider({
   // for dictionaries (strings are actually already resolved, but JSX needs tx still)
   const translateDictionaryEntry = useCallback(
     (
-      key: string,
+      id: string,
       options: Record<string, any> = {}
     ): React.ReactNode | string | undefined => {
       // ----- SETUP ----- //
@@ -161,7 +156,7 @@ export default function ClientProvider({
       const dictionaryEntry:
         | TaggedDictionary
         | TaggedDictionaryEntry
-        | undefined = dictionary[key]; // this is a flattened dictionary
+        | undefined = dictionary[id]; // this is a flattened dictionary
       if (
         (!dictionaryEntry && dictionaryEntry !== '') || // entry not found
         (typeof dictionaryEntry === 'object' &&
@@ -175,17 +170,19 @@ export default function ClientProvider({
       const { entry, metadata } = extractEntryMetadata(dictionaryEntry);
       const variables = options;
       const variablesOptions = metadata?.variablesOptions;
+
+      // Get the translation entry
+      let key = // use hash in dev mode
+        process.env.NODE_ENV === 'development' ? metadata?.hash || id : id;
       const translationEntry = translations?.[key];
 
       // ----- RENDER STRINGS ----- //
 
       if (typeof entry === 'string') {
-        // render strings
-
         // Reject empty strings
         if (!entry.length) {
           console.warn(
-            `gt-next warn: Empty string found in dictionary with key: ${key}`
+            `gt-next warn: Empty string found in dictionary with key: ${id}`
           );
           return entry;
         }
@@ -276,7 +273,7 @@ export default function ClientProvider({
         // Reject empty fragments
         if (isEmptyReactFragment(entry)) {
           console.warn(
-            `gt-next warn: Empty fragment found in dictionary with id: ${key}`
+            `gt-next warn: Empty fragment found in dictionary with id: ${id}`
           );
           return entry;
         }

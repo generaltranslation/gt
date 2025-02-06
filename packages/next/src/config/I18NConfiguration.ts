@@ -14,7 +14,6 @@ import {
 } from 'gt-react/internal';
 import {
   createMismatchingHashWarning,
-  createMismatchingIdHashWarning,
   devApiKeyIncludedInProductionError,
 } from '../errors/createErrors';
 import { hashJsxChildren } from 'generaltranslation/id';
@@ -460,27 +459,13 @@ export default class I18NConfiguration {
               );
             }
             // check for mismatching ids or hashes
-            if (
-              result?.reference?.id !== key ||
-              result?.reference?.key !== request.metadata?.hash
-            ) {
-              if (!request.metadata.id) {
-                console.warn(
-                  createMismatchingHashWarning(
-                    request.metadata.hash,
-                    result.reference?.key
-                  )
-                );
-              } else {
-                console.warn(
-                  createMismatchingIdHashWarning(
-                    key,
-                    request.metadata.hash,
-                    result?.reference?.id,
-                    result.reference?.key
-                  )
-                );
-              }
+            if (result.reference.key !== request.metadata.hash) {
+              console.warn(
+                createMismatchingHashWarning(
+                  request.metadata.hash,
+                  result.reference.key
+                )
+              );
             }
             return request.resolve(result.translation);
           } else if ('error' in result && result.error) {

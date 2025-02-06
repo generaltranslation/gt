@@ -48,11 +48,3 @@ export const createMismatchingHashWarning = (
   receivedHash: string
 ) =>
   `gt-next: Mismatching hashes! Expected hash: ${expectedHash}, but got hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;
-
-export const createMismatchingIdHashWarning = (
-  expectedId: string,
-  expectedHash: string,
-  receivedId: string,
-  receivedHash: string
-) =>
-  `gt-next: Mismatching ids or hashes! Expected id: ${expectedId}, hash: ${expectedHash}, but got id: ${receivedId}, hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;

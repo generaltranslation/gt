@@ -163,9 +163,10 @@ export class RemoteTranslationsManager {
     if (!(locale && hash && translation)) return false;
     const reference = standardizeLocale(locale);
     const currentTranslations = this.translationsMap.get(reference) || {};
+    const key = process.env.NODE_ENV === 'development' ? hash : id;
     this.translationsMap.set(reference, {
       ...currentTranslations,
-      [id]: translation,
+      [key]: translation,
     });
     // Reset the fetch time since we just manually updated the translation
     this.lastFetchTime.set(reference, Date.now());

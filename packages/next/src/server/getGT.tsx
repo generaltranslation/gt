@@ -80,8 +80,10 @@ export async function getGT(
           // only tx strings
           if (typeof entry !== 'string') return;
 
-          // Reject empty strings
+          // Get identifier
           const entryId = getId(suffix);
+
+          // Skip empty strings
           if (!entry.length) {
             console.warn(
               `gt-next warn: Empty string found in dictionary with id: ${entryId}`
@@ -96,7 +98,8 @@ export async function getGT(
           // ----- CHECK CACHE ----- //
 
           // If a translation already exists int our cache from earlier, add it to the translations
-          const translationEntry = translations[entryId];
+          const key = process.env.NODE_ENV === 'development' ? hash : entryId;
+          const translationEntry = translations[key];
           if (translationEntry) {
             // success
             if (translationEntry.state === 'success') {

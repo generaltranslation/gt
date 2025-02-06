@@ -128,7 +128,7 @@ function tx(content_1) {
                     if (!translationRequired)
                         return [2 /*return*/, renderContent(contentArray, [defaultLocale])];
                     hash = I18NConfig.hashContent(contentArray, options.context);
-                    key = options.id || hash;
+                    key = process.env.NODE_ENV === 'development' ? hash : options.id || hash;
                     if (!options.id) return [3 /*break*/, 6];
                     translations = void 0;
                     _f.label = 3;

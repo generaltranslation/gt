@@ -97,7 +97,8 @@ export default async function tx(
 
   // get hash
   const hash = I18NConfig.hashContent(contentArray, options.context);
-  const key = options.id || hash;
+  const key =
+    process.env.NODE_ENV === 'development' ? hash : options.id || hash;
 
   // Check cache for translation (if there is no id, then we don't cache)
   if (options.id) {
