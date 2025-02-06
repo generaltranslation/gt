@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   createMismatchingHashWarning,
-  createMismatchingIdHashWarning,
   dynamicTranslationError,
   createGenericRuntimeTranslationError,
 } from '../../messages/createMessages';
@@ -185,7 +184,10 @@ export default function useRuntimeTranslation({
       const loadingTranslations: TranslationsObject = requests.reduce(
         (acc: TranslationsObject, request) => {
           // loading state for jsx, render loading behavior
-          const key = request.metadata.id || request.metadata.hash;
+          const key =
+            process.env.NODE_ENV === 'development'
+              ? request.metadata.hash
+              : request.metadata.id || request.metadata.hash;
           acc[key] = { state: 'loading' };
           return acc;
         },
@@ -246,6 +248,10 @@ export default function useRuntimeTranslation({
       // process each result
       results.forEach((result, index) => {
         const request = requests[index];
+        const key =
+          process.env.NODE_ENV === 'development'
+            ? request.metadata.hash
+            : request.metadata.id || request.metadata.hash;
 
         // translation received
         if ('translation' in result && result.translation && result.reference) {
@@ -254,24 +260,13 @@ export default function useRuntimeTranslation({
             reference: { id, key: hash },
           } = result;
           // check for mismatching ids or hashes
-          if (id !== request.metadata.id || hash !== request.metadata.hash) {
-            if (!request.metadata.id) {
-              console.warn(
-                createMismatchingHashWarning(request.metadata.hash, hash)
-              );
-            } else {
-              console.warn(
-                createMismatchingIdHashWarning(
-                  request.metadata.id,
-                  request.metadata.hash,
-                  id,
-                  hash
-                )
-              );
-            }
+          if (hash !== request.metadata.hash) {
+            console.warn(
+              createMismatchingHashWarning(request.metadata.hash, hash)
+            );
           }
           // set translation
-          newTranslations[request.metadata.id || request.metadata.hash] = {
+          newTranslations[key] = {
             state: 'success',
             target: translation,
             ...(request?.metadata?.hash && { hash: request.metadata.hash }),
@@ -296,7 +291,7 @@ export default function useRuntimeTranslation({
             result.error
           );
           // set error in translation object
-          newTranslations[request.metadata.id || request.metadata.hash] = {
+          newTranslations[key] = {
             state: 'error',
             error: result.error,
             code: result.code,
@@ -312,7 +307,7 @@ export default function useRuntimeTranslation({
           ),
           result
         );
-        newTranslations[request.metadata.id || request.metadata.hash] = {
+        newTranslations[key] = {
           state: 'error',
           error: 'An error occurred.',
           code: 500,
@@ -324,8 +319,12 @@ export default function useRuntimeTranslation({
 
       // add error message to all translations from this request
       requests.forEach((request) => {
+        const key =
+          process.env.NODE_ENV === 'development'
+            ? request.metadata.hash
+            : request.metadata.id || request.metadata.hash;
         // id defaults to hash if none provided
-        newTranslations[request.metadata.id || request.metadata.hash] = {
+        newTranslations[key] = {
           state: 'error',
           error: 'An error occurred.',
           code: 500,

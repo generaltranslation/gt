@@ -1,4 +1,4 @@
-import { cache, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   isSameLanguage,
   renderContentToString,
@@ -282,18 +282,19 @@ export default function GTProvider({
       const unresolvedDictionaryStringsAndHashes = Object.entries(
         dictionaryContentEntries
       ).filter(([id, { hash }]) => {
+        const key = process.env.NODE_ENV === 'development' ? hash : id || hash;
         // filter out any translations that are currently loading or already resolved
-        if (translations?.[id]?.state === 'loading') stringIsLoading = true;
+        if (translations?.[key]?.state === 'loading') stringIsLoading = true;
 
         // do tx if hash has changed
         if (
-          translations?.[id]?.state === 'success' &&
-          translations?.[id]?.hash !== hash
+          translations?.[key]?.state === 'success' &&
+          translations?.[key]?.hash !== hash
         )
           return true;
 
         // dont tx if translation already exists
-        return !translations?.[id];
+        return !translations?.[key];
       });
       const dictionaryStringsResolved =
         !stringIsLoading && unresolvedDictionaryStringsAndHashes.length === 0;
@@ -375,7 +376,11 @@ export default function GTProvider({
 
         // Handle fallback cases
         const content = splitStringToContent(entry);
-        const translationEntry = translations?.[id];
+        const key = // use hash in dev mode, id in prod mode
+          process.env.NODE_ENV === 'development'
+            ? dictionaryContentEntries[id]?.hash || id
+            : id;
+        const translationEntry = translations?.[key];
         if (
           !translationRequired || // no translation required
           !translationEntry || // error behavior: no translation found

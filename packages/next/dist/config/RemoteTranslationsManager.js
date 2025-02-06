@@ -184,7 +184,8 @@ var RemoteTranslationsManager = /** @class */ (function () {
             return false;
         var reference = (0, generaltranslation_1.standardizeLocale)(locale);
         var currentTranslations = this.translationsMap.get(reference) || {};
-        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[id] = translation, _a)));
+        var key = process.env.NODE_ENV === 'development' ? hash : id;
+        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[key] = translation, _a)));
         // Reset the fetch time since we just manually updated the translation
         this.lastFetchTime.set(reference, Date.now());
         return true;

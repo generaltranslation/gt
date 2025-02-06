@@ -122,8 +122,11 @@ export default async function GTProvider({
           // but it is definitely causes slower perfomance in dev and
           // any other on-demand translations where id has replaced hash
 
+          // get tx entry
+          const key = process.env.NODE_ENV === 'development' ? hash : entryId;
+          const translationEntry = translations?.[key];
+
           // skip if:
-          const translationEntry = translations?.[entryId];
           if (
             translationEntry && // already have translation
             (translationEntry.state !== 'success' || // not a success
@@ -134,7 +137,7 @@ export default async function GTProvider({
 
           // Reject empty fragments
           if (isEmptyReactFragment(entry)) {
-            translations[entryId] = {
+            translations[key] = {
               state: 'error',
               error: 'Empty fragments are not allowed for translation.',
               code: 400,
@@ -143,7 +146,7 @@ export default async function GTProvider({
           }
 
           // Perform on-demand translation
-          translations[entryId] = { state: 'loading' };
+          translations[key] = { state: 'loading' };
           const translationPromise = I18NConfig.translateChildren({
             source: childrenAsObjects,
             targetLocale: locale,
@@ -154,7 +157,7 @@ export default async function GTProvider({
             },
           })
             .then((result) => {
-              translations[entryId] = {
+              translations[key] = {
                 state: 'success',
                 target: result,
               };
@@ -174,7 +177,7 @@ export default async function GTProvider({
             });
 
           // record translations as loading and record the promises to use on client-side
-          promises[entryId] = translationPromise;
+          promises[key] = translationPromise;
           return;
         }
 
@@ -199,7 +202,8 @@ export default async function GTProvider({
         }
 
         // If the translation already exists, then do not translate on demand
-        const translationEntry = translations?.[entryId];
+        const key = process.env.NODE_ENV === 'development' ? hash : entryId;
+        const translationEntry = translations?.[key];
         if (
           translationEntry && // already have translation
           (translationEntry.state !== 'success' || // not a success
@@ -210,7 +214,7 @@ export default async function GTProvider({
 
         // Reject empty strings
         if (!entry.length) {
-          translations[entryId] = {
+          translations[key] = {
             state: 'error',
             error: 'Empty strings are not allowed for translation.',
             code: 400,
@@ -234,7 +238,7 @@ export default async function GTProvider({
           });
 
           // overwriting any old translations, this is most recent on demand, so should be most accurate
-          translations[entryId] = {
+          translations[key] = {
             state: 'success',
             target: translation,
           };
