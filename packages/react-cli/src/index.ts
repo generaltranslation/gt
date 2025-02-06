@@ -128,8 +128,7 @@ export default function main(framework: 'gt-next' | 'gt-react') {
     )
     .option(
       '--languages, --locales <locales...>',
-      'Space-separated list of locales (e.g., en fr es)',
-      []
+      'Space-separated list of locales (e.g., en fr es)'
     )
     .option(
       '--inline',
