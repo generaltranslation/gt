@@ -18,7 +18,7 @@ export default function _determineLocale(
     approvedLocales = approvedLocales.filter(_isValidLocale);
     for (const locale of locales) {
         const candidates = approvedLocales.filter(
-            approvedLocale => _isSameLanguage(approvedLocale)
+            approvedLocale => _isSameLanguage(locale, approvedLocale)
         );
         const getMatchingCode = ({
             locale, languageCode, minimizedCode, regionCode, scriptCode
