@@ -1,6 +1,7 @@
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 import _isSameLanguage from './isSameLanguage';
 import _isSameDialect from './isSameDialect';
+import _getLocaleProperties from './getLocaleProperties';
 
 /**
  * Given a list of locales and a list of approved locales, sorted in preference order
@@ -8,27 +9,43 @@ import _isSameDialect from './isSameDialect';
 * @internal
 */
 export default function _determineLocale(
-    locales: string | string[], approvedLocales: string[]
+    locales: string | string[], 
+    approvedLocales: string[]
 ): string | undefined {
     if (typeof locales === 'string')
         locales = [locales];
     locales = locales.filter(_isValidLocale);
     approvedLocales = approvedLocales.filter(_isValidLocale);
-    if (!approvedLocales) return locales[0];
     for (const locale of locales) {
-        if (!_isValidLocale(locale)) continue;
-        const currentLocale = _standardizeLocale(locale)
-        const candidates: string[] = [];
-        for (const approvedLocale of approvedLocales) {
-            const currentApprovedLocale = _standardizeLocale(approvedLocale);
-            if (currentLocale === currentApprovedLocale) 
-                return currentApprovedLocale; // instant match! return
-            if (_isSameLanguage(currentLocale, currentApprovedLocale)) 
-                candidates.push(currentApprovedLocale); // covers same dialect as well
+        const candidates = approvedLocales.filter(
+            approvedLocale => _isSameLanguage(locale, approvedLocale)
+        );
+        const getMatchingCode = ({
+            locale, languageCode, minimizedCode, regionCode, scriptCode
+        }: {
+            locale: string, languageCode: string,
+            minimizedCode: string, regionCode: string, scriptCode: string
+        }) => {
+            const locales = [
+                locale, // If the full locale is supported under this language category
+                `${languageCode}-${regionCode}`, // Attempt to match parts
+                `${languageCode}-${scriptCode}`, 
+                minimizedCode // If a minimized variant of this locale is supported
+            ];
+            for (const l of locales) {
+                if (candidates.includes(l)) return l;
+            }
+            return null;
         }
-        if (candidates.length) 
-            return candidates.find(candidate => _isSameDialect(currentLocale, candidate)) || 
-                candidates[0];
+        const { languageCode, ...codes } = _getLocaleProperties(locale);
+        const matchingCode = 
+            getMatchingCode({ locale, languageCode, ...codes }) || 
+            getMatchingCode({
+                locale: languageCode,
+                ..._getLocaleProperties(languageCode)
+            });
+        ;
+        if (matchingCode) return matchingCode;
     }
     return undefined;
 }
