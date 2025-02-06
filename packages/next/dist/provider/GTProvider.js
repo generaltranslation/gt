@@ -177,7 +177,10 @@ function GTProvider(_a) {
                                                 return [2 /*return*/];
                                             }
                                             translationEntry_1 = translations === null || translations === void 0 ? void 0 : translations[entryId];
-                                            if (translationEntry_1 && translationEntry_1.state !== 'loading') {
+                                            if (translationEntry_1 && // already have translation
+                                                (translationEntry_1.state !== 'success' || // not a success
+                                                    translationEntry_1.hash === hash_1) // hash matches
+                                            ) {
                                                 return [2 /*return*/];
                                             }
                                             // Reject empty fragments
@@ -189,13 +192,34 @@ function GTProvider(_a) {
                                                 };
                                                 return [2 /*return*/];
                                             }
+                                            // Perform on-demand translation
+                                            translations[entryId] = { state: 'loading' };
                                             translationPromise = I18NConfig.translateChildren({
                                                 source: childrenAsObjects,
                                                 targetLocale: locale,
                                                 metadata: __assign(__assign({}, metadata), { id: entryId, hash: hash_1 }),
+                                            })
+                                                .then(function (result) {
+                                                translations[entryId] = {
+                                                    state: 'success',
+                                                    target: result,
+                                                };
+                                                return result;
+                                            })
+                                                .catch(function (error) {
+                                                if (error instanceof internal_1.GTTranslationError) {
+                                                    error = error.toTranslationError();
+                                                }
+                                                else {
+                                                    error = {
+                                                        state: 'error',
+                                                        error: 'An error occured',
+                                                        code: 500,
+                                                    };
+                                                }
+                                                return error;
                                             });
                                             // record translations as loading and record the promises to use on client-side
-                                            translations[entryId] = { state: 'loading' };
                                             promises[entryId] = translationPromise;
                                             return [2 /*return*/];
                                         }
@@ -211,8 +235,12 @@ function GTProvider(_a) {
                                             return [2 /*return*/];
                                         }
                                         translationEntry = translations === null || translations === void 0 ? void 0 : translations[entryId];
-                                        if (translationEntry)
+                                        if (translationEntry && // already have translation
+                                            (translationEntry.state !== 'success' || // not a success
+                                                translationEntry.hash === hash) // hash matches
+                                        ) {
                                             return [2 /*return*/];
+                                        }
                                         // Reject empty strings
                                         if (!entry.length) {
                                             translations[entryId] = {

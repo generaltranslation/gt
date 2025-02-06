@@ -274,6 +274,7 @@ export default function useRuntimeTranslation({
           newTranslations[request.metadata.id || request.metadata.hash] = {
             state: 'success',
             target: translation,
+            ...(request?.metadata?.hash && { hash: request.metadata.hash }),
           };
           return;
         }

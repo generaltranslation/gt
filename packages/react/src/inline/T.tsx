@@ -91,7 +91,7 @@ function T({
     } else {
       return [undefined, ''];
     }
-  }, [context, taggedChildren, translationRequired]);
+  }, [context, taggedChildren, translationRequired, children]);
 
   // key
   const key = id || hash;
@@ -104,8 +104,15 @@ function T({
       !runtimeTranslationEnabled || // runtime translation disabled
       !translationRequired || // no translation required
       !translations || // cache not checked yet
-      translationEntry || // already have translation
       !locale // locale not loaded
+    ) {
+      return;
+    }
+
+    // skip if: already have translation and hash matches
+    if (
+      translationEntry && // already have translation
+      (translationEntry.state !== 'success' || translationEntry.hash === hash) // hash matches
     ) {
       return;
     }
@@ -129,6 +136,7 @@ function T({
     hash,
     context,
     locale,
+    children,
   ]);
 
   // ----- RENDER METHODS ----- //

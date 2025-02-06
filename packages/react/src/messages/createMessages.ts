@@ -47,6 +47,9 @@ export const createGenericRuntimeTranslationError = (
 
 // ---- WARNINGS ---- //
 
+export const projectIdMissingWarning =
+  'gt-react warn: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
+
 export const createLibraryNoEntryWarning = (id: string) =>
   `gt-react: No dictionary entry found for id: "${id}"`;
 
