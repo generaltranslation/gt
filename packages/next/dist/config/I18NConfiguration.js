@@ -70,7 +70,9 @@ var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         var 
         // Cloud integration
-        runtimeTranslation = _a.runtimeTranslation, remoteCache = _a.remoteCache, apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
+        _b = _a.runtimeTranslation, 
+        // Cloud integration
+        runtimeTranslation = _b === void 0 ? true : _b, _c = _a.remoteCache, remoteCache = _c === void 0 ? true : _c, apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
         // Locale info
         defaultLocale = _a.defaultLocale, locales = _a.locales, 
         // Render method
@@ -81,15 +83,24 @@ var I18NConfiguration = /** @class */ (function () {
         maxConcurrentRequests = _a.maxConcurrentRequests, maxBatchSize = _a.maxBatchSize, batchInterval = _a.batchInterval, 
         // Other metadata
         metadata = __rest(_a, ["runtimeTranslation", "remoteCache", "apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
-        // Feature flags
-        this.runtimeTranslation = runtimeTranslation;
-        this.remoteCache = remoteCache;
         // Cloud integration
         this.apiKey = apiKey;
         this.devApiKey = devApiKey;
         this.projectId = projectId;
         this.runtimeUrl = runtimeUrl;
         this._versionId = _versionId; // version id for the dictionary
+        // Feature flags
+        var _runtimeTranslation = !!(runtimeTranslation &&
+            this.projectId &&
+            this.runtimeUrl &&
+            ((this.apiKey && process.env.NODE_ENV === 'production') ||
+                (this.devApiKey && process.env.NODE_ENV === 'development')));
+        var _remoteCache = remoteCache && !!this.projectId;
+        this.translationEnabled = !!(_remoteCache || _runtimeTranslation);
+        // When we add <TX>, there will not be discrepancy between server and client
+        this.serverRuntimeTranslationEnabled = _runtimeTranslation;
+        this.clientRuntimeTranslationEnabled =
+            _runtimeTranslation && !!this.devApiKey;
         // Locales
         this.defaultLocale = defaultLocale;
         this.locales = locales;
@@ -138,15 +149,9 @@ var I18NConfiguration = /** @class */ (function () {
             projectId: this.projectId,
             devApiKey: this.devApiKey,
             runtimeUrl: this.runtimeUrl,
-            runtimeTranslations: this.runtimeTranslation,
+            translationEnabled: this.translationEnabled,
+            runtimeTranslationEnabled: this.clientRuntimeTranslationEnabled,
         };
-    };
-    /**
-     * Runtime translation is enabled only in development with a devApiKey for <TX> components
-     * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
-     */
-    I18NConfiguration.prototype.isRuntimeTranslationEnabled = function () {
-        return this.translationEnabled() && !!this.devApiKey;
     };
     /**
      * Gets the application's default locale
@@ -165,10 +170,22 @@ var I18NConfiguration = /** @class */ (function () {
     /**
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
      */
-    I18NConfiguration.prototype.translationEnabled = function () {
-        return this.projectId && this.runtimeUrl && (this.apiKey || this.devApiKey)
-            ? true
-            : false;
+    I18NConfiguration.prototype.isTranslationEnabled = function () {
+        return this.translationEnabled;
+    };
+    /**
+     * Runtime translation is enabled on server side
+     * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
+     */
+    I18NConfiguration.prototype.isServerRuntimeTranslationEnabled = function () {
+        return this.serverRuntimeTranslationEnabled;
+    };
+    /**
+     * Runtime translation for clientside
+     * @returns {boolean} A boolean indicating whether the client runtime translation is enabled
+     */
+    I18NConfiguration.prototype.isClientRuntimeTranslationEnabled = function () {
+        return this.clientRuntimeTranslationEnabled;
     };
     /**
      * Get the rendering instructions
@@ -185,7 +202,7 @@ var I18NConfiguration = /** @class */ (function () {
      * @returns True if translation is required, otherwise false
      */
     I18NConfiguration.prototype.requiresTranslation = function (locale) {
-        return (this.translationEnabled() &&
+        return (this.isTranslationEnabled() &&
             (0, generaltranslation_1.requiresTranslation)(this.defaultLocale, locale, this.locales));
     };
     I18NConfiguration.prototype.addGTIdentifier = function (children) {

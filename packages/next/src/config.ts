@@ -7,7 +7,7 @@ import {
   APIKeyMissingError,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
-  projectIdMissingError,
+  projectIdMissingWarn,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 
@@ -105,12 +105,13 @@ export function initGT(props: InitGTProps) {
 
   // ---------- ERROR CHECKS ---------- //
 
-  // Check: must have projectId if using CDN or API
+  // Check: projectId is not required, but warn if missing for dev, nothing for prod
   if (
     (mergedConfig.runtimeTranslation || mergedConfig.remoteCache) &&
-    !mergedConfig.projectId
+    !mergedConfig.projectId &&
+    process.env.NODE_ENV === 'development'
   ) {
-    console.error(projectIdMissingError);
+    console.warn(projectIdMissingWarn);
   }
 
   // Check: dev API key should not be included in production

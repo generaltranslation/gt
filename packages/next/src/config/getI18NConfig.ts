@@ -3,7 +3,7 @@ import defaultInitGTProps from './props/defaultInitGTProps';
 import {
   APIKeyMissingError,
   devApiKeyIncludedInProductionError,
-  projectIdMissingError,
+  projectIdMissingWarn,
   usingDefaultsWarning,
 } from '../errors/createErrors';
 import { defaultRenderSettings } from 'gt-react/internal';
@@ -27,15 +27,13 @@ export default function getI18NConfig(): I18NConfiguration {
   } else {
     console.warn(usingDefaultsWarning);
 
+    // Check: projectId is not required, but warn if missing for dev, nothing for prod
     const projectId = process.env.GT_PROJECT_ID || '';
-    if (!projectId) {
-      if (process.env.NODE_ENV === 'development') {
-        throw new Error(projectIdMissingError);
-      } else {
-        console.warn(projectIdMissingError);
-      }
+    if (!projectId && process.env.NODE_ENV === 'development') {
+      console.warn(projectIdMissingWarn);
     }
 
+    // Parse API keys
     let apiKey, devApiKey;
     const envApiKey = process.env.GT_API_KEY || '';
     const apiKeyType = envApiKey?.split('-')?.[1];
@@ -44,9 +42,7 @@ export default function getI18NConfig(): I18NConfiguration {
     } else if (apiKeyType === 'dev') {
       devApiKey = envApiKey;
     }
-
-    const environment = process.env.NODE_ENV;
-    if (environment === 'production' && devApiKey) {
+    if (process.env.NODE_ENV === 'production' && devApiKey) {
       throw new Error(devApiKeyIncludedInProductionError);
     }
 

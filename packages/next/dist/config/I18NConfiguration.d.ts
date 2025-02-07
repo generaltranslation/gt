@@ -6,7 +6,7 @@ type I18NConfigurationParams = {
     runtimeTranslation: boolean;
     apiKey?: string;
     devApiKey?: string;
-    projectId: string;
+    projectId?: string;
     cacheUrl: string;
     runtimeUrl: string;
     cacheExpiryTime?: number;
@@ -22,12 +22,13 @@ type I18NConfigurationParams = {
     [key: string]: any;
 };
 export default class I18NConfiguration {
-    runtimeTranslation: boolean;
-    remoteCache: boolean;
+    translationEnabled: boolean;
+    serverRuntimeTranslationEnabled: boolean;
+    clientRuntimeTranslationEnabled: boolean;
     apiKey?: string;
     devApiKey?: string;
     runtimeUrl: string;
-    projectId: string;
+    projectId?: string;
     _versionId?: string;
     defaultLocale: string;
     locales: string[];
@@ -50,16 +51,12 @@ export default class I18NConfiguration {
      * Gets config for dynamic translation on the client side.
      */
     getClientSideConfig(): {
-        projectId: string;
+        projectId: string | undefined;
         devApiKey: string | undefined;
         runtimeUrl: string;
-        runtimeTranslations: boolean;
+        translationEnabled: boolean;
+        runtimeTranslationEnabled: boolean;
     };
-    /**
-     * Runtime translation is enabled only in development with a devApiKey for <TX> components
-     * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
-     */
-    isRuntimeTranslationEnabled(): boolean;
     /**
      * Gets the application's default locale
      * @returns {string} A BCP-47 locale tag
@@ -73,7 +70,17 @@ export default class I18NConfiguration {
     /**
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
      */
-    translationEnabled(): boolean;
+    isTranslationEnabled(): boolean;
+    /**
+     * Runtime translation is enabled on server side
+     * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
+     */
+    isServerRuntimeTranslationEnabled(): boolean;
+    /**
+     * Runtime translation for clientside
+     * @returns {boolean} A boolean indicating whether the client runtime translation is enabled
+     */
+    isClientRuntimeTranslationEnabled(): boolean;
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.

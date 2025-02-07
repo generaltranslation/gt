@@ -129,8 +129,11 @@ export default function GTProvider({
     translationEnabled,
     runtimeTranslationEnabled,
   ] = useMemo(() => {
-    const translationEnabled = !!projectId && (!!cacheUrl || !!runtimeUrl);
-    const runtimeTranslationEnabled = translationEnabled && !!devApiKey;
+    const runtimeTranslationEnabled = !!(projectId && runtimeUrl && devApiKey);
+    const translationEnabled = !!(
+      (projectId && cacheUrl) ||
+      runtimeTranslationEnabled
+    );
     const translationRequired = requiresTranslation(
       defaultLocale,
       locale,

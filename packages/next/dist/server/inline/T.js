@@ -182,7 +182,8 @@ function T(_a) {
                             })];
                     }
                     else if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error' || // fallback to default if error
-                        !I18NConfig.isRuntimeTranslationEnabled() // fallback to default if runtime translation is disabled (loading should never happen here)
+                        !I18NConfig.isServerRuntimeTranslationEnabled() || // fallback to default if runtime translation is disabled (loading should never happen here)
+                        process.env.NODE_ENV === 'production' // no on demand translation in production environments
                     ) {
                         return [2 /*return*/, renderDefaultLocale()];
                     }

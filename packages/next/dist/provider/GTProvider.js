@@ -26,13 +26,23 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -93,7 +103,7 @@ var ClientProviderWrapper_1 = __importDefault(require("./ClientProviderWrapper")
  */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var getId, I18NConfig, locale, additionalMetadata, defaultLocale, translationRequired, dialectTranslationRequired, runtimeTranslationEnabled, translationsPromise, dictionarySubset, flattenedDictionarySubset, translations, _c, dictionary, promises;
+        var getId, I18NConfig, locale, additionalMetadata, defaultLocale, translationRequired, dialectTranslationRequired, clientRuntimeTranslationEnabled, translationsPromise, dictionarySubset, flattenedDictionarySubset, translations, _c, dictionary, promises;
         var _this = this;
         var children = _b.children, id = _b.id;
         return __generator(this, function (_d) {
@@ -112,7 +122,7 @@ function GTProvider(_a) {
                     defaultLocale = I18NConfig.getDefaultLocale();
                     translationRequired = I18NConfig.requiresTranslation(locale);
                     dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, defaultLocale);
-                    runtimeTranslationEnabled = I18NConfig.isRuntimeTranslationEnabled();
+                    clientRuntimeTranslationEnabled = I18NConfig.isClientRuntimeTranslationEnabled();
                     translationsPromise = translationRequired && I18NConfig.getCachedTranslations(locale);
                     dictionarySubset = (id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)()) || {};
                     if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
@@ -162,7 +172,7 @@ function GTProvider(_a) {
                                             // ----- TRANSLATE JSX ON DEMAND ----- //
                                             // dev only (with api key) skip if:
                                             if (!translationRequired || // no translation required
-                                                !runtimeTranslationEnabled // dev runtime translation disabled
+                                                !clientRuntimeTranslationEnabled // dev runtime translation disabled
                                             ) {
                                                 return [2 /*return*/];
                                             }
@@ -222,7 +232,7 @@ function GTProvider(_a) {
                                         // ----- TRANSLATE STRINGS ON DEMAND ----- //
                                         // dev only (with api key) skip if:
                                         if (!translationRequired || // no translation required
-                                            !runtimeTranslationEnabled // dev runtime translation disabled
+                                            !clientRuntimeTranslationEnabled // dev runtime translation disabled
                                         ) {
                                             return [2 /*return*/];
                                         }
@@ -278,7 +288,7 @@ function GTProvider(_a) {
                      *
                      */
                     _d.sent();
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, translationPromises: promises, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings(), translationEnabled: I18NConfig.translationEnabled(), runtimeTranslationEnabled: runtimeTranslationEnabled }, I18NConfig.getClientSideConfig(), { children: children })))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, translationPromises: promises, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings() }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });
     });
