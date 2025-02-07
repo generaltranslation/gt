@@ -1,7 +1,7 @@
 import { BaseCLI } from 'gt-react-cli';
 import { WrapOptions, Options, Updates } from 'gt-react-cli/types';
 
-import scanForContent from 'gt-react-cli/updates/scanForContent';
+import scanForContent from './next/nextScanForContent';
 import createDictionaryUpdates from 'gt-react-cli/updates/createDictionaryUpdates';
 import createInlineUpdates from 'gt-react-cli/updates/createInlineUpdates';
 

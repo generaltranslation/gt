@@ -15,8 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.waitForUpdates = void 0;
 const chalk_1 = __importDefault(require("chalk"));
 const console_1 = require("../console/console");
+const generaltranslation_1 = require("generaltranslation");
 const waitForUpdates = (apiKey, baseUrl, versionId, locales, startTime, timeoutDuration) => __awaiter(void 0, void 0, void 0, function* () {
-    const loadingInterval = (0, console_1.displayLoadingAnimation)('Waiting for translations to be completed...');
+    const spinner = yield (0, console_1.displayLoadingAnimation)('Waiting for translations to be completed...');
+    const availableLocales = [];
     const checkDeployment = () => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const response = yield fetch(`${baseUrl}/v1/project/translations/status/${encodeURIComponent(versionId)}`, {
@@ -25,6 +27,23 @@ const waitForUpdates = (apiKey, baseUrl, versionId, locales, startTime, timeoutD
             });
             if (response.ok) {
                 const data = yield response.json();
+                if (data.availableLocales) {
+                    data.availableLocales.forEach((locale) => {
+                        if (!availableLocales.includes(locale)) {
+                            availableLocales.push(locale);
+                        }
+                    });
+                    const newSuffixText = [
+                        `\n\n` +
+                            chalk_1.default.green(`${availableLocales.length}/${locales.length}`) +
+                            ` translations completed`,
+                        ...availableLocales.map((locale) => {
+                            const localeProperties = (0, generaltranslation_1.getLocaleProperties)(locale);
+                            return `Translation completed for ${chalk_1.default.green(localeProperties.name)} (${chalk_1.default.green(localeProperties.code)})`;
+                        }),
+                    ];
+                    spinner.suffixText = newSuffixText.join('\n');
+                }
                 if (data.count >= locales.length) {
                     return true;
                 }
@@ -40,9 +59,7 @@ const waitForUpdates = (apiKey, baseUrl, versionId, locales, startTime, timeoutD
     // Do first check immediately
     const initialCheck = yield checkDeployment();
     if (initialCheck) {
-        clearInterval(loadingInterval);
-        console.log('\n');
-        console.log(chalk_1.default.green('✓ All translations are live!'));
+        spinner.succeed(chalk_1.default.green('All translations are live!'));
         return;
     }
     let intervalCheck;
@@ -52,15 +69,15 @@ const waitForUpdates = (apiKey, baseUrl, versionId, locales, startTime, timeoutD
             const isDeployed = yield checkDeployment();
             const elapsed = Date.now() - startTime;
             if (isDeployed || elapsed >= timeoutDuration) {
-                clearInterval(loadingInterval);
+                process.stdout.write('\n');
                 clearInterval(intervalCheck);
-                console.log('\n');
                 if (isDeployed) {
-                    console.log(chalk_1.default.green('✓ All translations are live!'));
+                    spinner.succeed(chalk_1.default.green('All translations are live!'));
                 }
                 else {
-                    console.log(chalk_1.default.yellow('⚠️  Timed out waiting for translations'));
+                    spinner.fail(chalk_1.default.red('Timed out waiting for translations'));
                 }
+                return;
             }
         }), 5000);
     }, msUntilNextInterval);

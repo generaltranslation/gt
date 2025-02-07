@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { displayLoadingAnimation } from '../console/console';
+import { getLocaleProperties } from 'generaltranslation';
 export const waitForUpdates = async (
   apiKey: string,
   baseUrl: string,
@@ -8,10 +9,10 @@ export const waitForUpdates = async (
   startTime: number,
   timeoutDuration: number
 ) => {
-  const loadingInterval = displayLoadingAnimation(
+  const spinner = await displayLoadingAnimation(
     'Waiting for translations to be completed...'
   );
-
+  const availableLocales: string[] = [];
   const checkDeployment = async () => {
     try {
       const response = await fetch(
@@ -28,6 +29,25 @@ export const waitForUpdates = async (
       );
       if (response.ok) {
         const data = await response.json();
+        if (data.availableLocales) {
+          data.availableLocales.forEach((locale: string) => {
+            if (!availableLocales.includes(locale)) {
+              availableLocales.push(locale);
+            }
+          });
+          const newSuffixText = [
+            `\n\n` +
+              chalk.green(`${availableLocales.length}/${locales.length}`) +
+              ` translations completed`,
+            ...availableLocales.map((locale: string) => {
+              const localeProperties = getLocaleProperties(locale);
+              return `Translation completed for ${chalk.green(
+                localeProperties.name
+              )} (${chalk.green(localeProperties.code)})`;
+            }),
+          ];
+          spinner.suffixText = newSuffixText.join('\n');
+        }
         if (data.count >= locales.length) {
           return true;
         }
@@ -47,9 +67,7 @@ export const waitForUpdates = async (
   // Do first check immediately
   const initialCheck = await checkDeployment();
   if (initialCheck) {
-    clearInterval(loadingInterval);
-    console.log('\n');
-    console.log(chalk.green('✓ All translations are live!'));
+    spinner.succeed(chalk.green('All translations are live!'));
     return;
   }
 
@@ -61,15 +79,15 @@ export const waitForUpdates = async (
       const elapsed = Date.now() - startTime;
 
       if (isDeployed || elapsed >= timeoutDuration) {
-        clearInterval(loadingInterval);
+        process.stdout.write('\n');
         clearInterval(intervalCheck);
-        console.log('\n');
 
         if (isDeployed) {
-          console.log(chalk.green('✓ All translations are live!'));
+          spinner.succeed(chalk.green('All translations are live!'));
         } else {
-          console.log(chalk.yellow('⚠️  Timed out waiting for translations'));
+          spinner.fail(chalk.red('Timed out waiting for translations'));
         }
+        return;
       }
     }, 5000);
   }, msUntilNextInterval);

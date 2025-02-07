@@ -52,7 +52,8 @@
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
-    "generaltranslation": "^6.1.10"
+    "generaltranslation": "^6.1.10",
+    "ora": "^8.2.0"
   },
   "devDependencies": {
     "@types/babel__generator": "^7.6.8",

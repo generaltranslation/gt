@@ -304,7 +304,7 @@ class BaseCLI {
                     locales: options.locales,
                     metadata: globalMetadata,
                 };
-                const loadingInterval = (0, console_1.displayLoadingAnimation)('Sending updates to General Translation API...');
+                const spinner = yield (0, console_1.displayLoadingAnimation)('Sending updates to General Translation API...');
                 try {
                     const startTime = Date.now();
                     const response = yield fetch(`${options.baseUrl}/v1/project/translations/update`, {
@@ -312,19 +312,18 @@ class BaseCLI {
                         headers: Object.assign({ 'Content-Type': 'application/json' }, (apiKey && { 'x-gt-api-key': apiKey })),
                         body: JSON.stringify(body),
                     });
-                    clearInterval(loadingInterval);
                     process.stdout.write('\n\n');
                     if (!response.ok) {
                         throw new Error(response.status + '. ' + (yield response.text()));
                     }
                     if (response.status === 204) {
-                        console.log(chalk_1.default.green('✓ ') + chalk_1.default.green.bold(yield response.text()));
+                        spinner.succeed(yield response.text());
                         return;
                     }
                     const { versionId, message, locales } = yield response.json();
+                    spinner.succeed(chalk_1.default.green(message));
                     if (options.options)
                         (0, updateConfig_1.default)(options.options, projectId, versionId, locales);
-                    console.log(chalk_1.default.green('✓ ') + chalk_1.default.green.bold(message));
                     if (options.enableTimeout && locales) {
                         console.log();
                         // timeout was validated earlier
@@ -333,9 +332,7 @@ class BaseCLI {
                     }
                 }
                 catch (error) {
-                    clearInterval(loadingInterval);
-                    process.stdout.write('\n');
-                    console.log(chalk_1.default.red('✗ Failed to send updates'));
+                    spinner.fail(chalk_1.default.red('Failed to send updates'));
                     throw error;
                 }
             }

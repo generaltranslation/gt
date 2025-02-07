@@ -423,7 +423,7 @@ export abstract class BaseCLI {
         metadata: globalMetadata,
       };
 
-      const loadingInterval = displayLoadingAnimation(
+      const spinner = await displayLoadingAnimation(
         'Sending updates to General Translation API...'
       );
 
@@ -441,7 +441,6 @@ export abstract class BaseCLI {
           }
         );
 
-        clearInterval(loadingInterval);
         process.stdout.write('\n\n');
 
         if (!response.ok) {
@@ -449,17 +448,14 @@ export abstract class BaseCLI {
         }
 
         if (response.status === 204) {
-          console.log(
-            chalk.green('✓ ') + chalk.green.bold(await response.text())
-          );
+          spinner.succeed(await response.text());
           return;
         }
 
         const { versionId, message, locales } = await response.json();
+        spinner.succeed(chalk.green(message));
         if (options.options)
           updateConfig(options.options, projectId, versionId, locales);
-
-        console.log(chalk.green('✓ ') + chalk.green.bold(message));
 
         if (options.enableTimeout && locales) {
           console.log();
@@ -475,9 +471,7 @@ export abstract class BaseCLI {
           );
         }
       } catch (error) {
-        clearInterval(loadingInterval);
-        process.stdout.write('\n');
-        console.log(chalk.red('✗ Failed to send updates'));
+        spinner.fail(chalk.red('Failed to send updates'));
         throw error;
       }
     } else {
