@@ -281,13 +281,13 @@ class BaseCLI {
             updates = updates.filter((update) => !duplicateIds.has(update.metadata.id));
             if (errors.length > 0) {
                 if (options.ignoreErrors) {
-                    console.log(chalk_1.default.red(`CLI Tool encountered errors while scanning for ${chalk_1.default.green('<T>')} tags.\n`));
+                    console.log(chalk_1.default.red(`CLI tool encountered errors while scanning for ${chalk_1.default.green('<T>')} tags.\n`));
                     console.log(errors
                         .map((error) => chalk_1.default.yellow('• Warning: ') + error + '\n')
                         .join(''), chalk_1.default.white(`These ${chalk_1.default.green('<T>')} components will not be translated.\n`));
                 }
                 else {
-                    console.log(chalk_1.default.red(`CLI Tool encountered errors while scanning for ${chalk_1.default.green('<T>')} tags.\n`));
+                    console.log(chalk_1.default.red(`CLI tool encountered errors while scanning for ${chalk_1.default.green('<T>')} tags.\n`));
                     console.log(chalk_1.default.gray('To ignore these errors, re-run with --ignore-errors\n\n'), errors.map((error) => chalk_1.default.red('• Error: ') + error + '\n').join(''));
                     process.exit(1);
                 }
@@ -323,7 +323,7 @@ class BaseCLI {
                     const { versionId, message, locales } = yield response.json();
                     spinner.succeed(chalk_1.default.green(message));
                     if (options.options)
-                        (0, updateConfig_1.default)(options.options, projectId, versionId, locales);
+                        (0, updateConfig_1.default)(options.options, versionId);
                     if (options.enableTimeout && locales) {
                         console.log();
                         // timeout was validated earlier

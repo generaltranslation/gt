@@ -9,9 +9,7 @@ export const waitForUpdates = async (
   startTime: number,
   timeoutDuration: number
 ) => {
-  const spinner = await displayLoadingAnimation(
-    'Waiting for translations to be completed...'
-  );
+  const spinner = await displayLoadingAnimation('Waiting for translation...');
   const availableLocales: string[] = [];
   const checkDeployment = async () => {
     try {
