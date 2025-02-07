@@ -40,21 +40,29 @@ function extractLocale(pathname: string): string | null {
  */
 export default function createNextMiddleware(
   {
-    defaultLocale = libraryDefaultLocale,
-    locales = listSupportedLocales(),
     localeRouting = true,
     prefixDefaultLocale = false,
   }: {
-    defaultLocale?: string;
-    locales?: string[];
     localeRouting?: boolean;
     prefixDefaultLocale?: boolean;
   } = {
-    defaultLocale: libraryDefaultLocale,
     localeRouting: true,
-    prefixDefaultLocale: false,
+    prefixDefaultLocale: false
   }
 ) {
+
+  let envParams;
+  if (process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS) {
+    try {
+      envParams = JSON.parse(process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS)
+    } catch (error) {
+      console.error(`gt-next middleware:`, error)
+    }
+  }
+
+  const defaultLocale: string = envParams?.defaultLocale || libraryDefaultLocale;
+  const locales: string[] = envParams?.locales || listSupportedLocales();
+
   if (!isValidLocale(defaultLocale))
     throw new Error(
       `gt-next middleware: defaultLocale "${defaultLocale}" is not a valid locale.`
