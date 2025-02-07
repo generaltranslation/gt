@@ -24,7 +24,7 @@ type I18NConfigurationParams = {
   runtimeTranslation: boolean;
   apiKey?: string;
   devApiKey?: string;
-  projectId: string;
+  projectId?: string;
   cacheUrl: string;
   runtimeUrl: string;
   cacheExpiryTime?: number;
@@ -64,13 +64,14 @@ type QueueEntry =
 
 export default class I18NConfiguration {
   // Feature flags
-  runtimeTranslation: boolean;
-  remoteCache: boolean;
+  translationEnabled: boolean;
+  serverRuntimeTranslationEnabled: boolean;
+  clientRuntimeTranslationEnabled: boolean;
   // Cloud integration
   apiKey?: string;
   devApiKey?: string;
   runtimeUrl: string;
-  projectId: string;
+  projectId?: string;
   _versionId?: string;
   // Locale info
   defaultLocale: string;
@@ -98,8 +99,8 @@ export default class I18NConfiguration {
 
   constructor({
     // Cloud integration
-    runtimeTranslation,
-    remoteCache,
+    runtimeTranslation = true,
+    remoteCache = true,
     apiKey,
     devApiKey,
     projectId,
@@ -121,15 +122,26 @@ export default class I18NConfiguration {
     // Other metadata
     ...metadata
   }: I18NConfigurationParams) {
-    // Feature flags
-    this.runtimeTranslation = runtimeTranslation;
-    this.remoteCache = remoteCache;
     // Cloud integration
     this.apiKey = apiKey;
     this.devApiKey = devApiKey;
     this.projectId = projectId;
     this.runtimeUrl = runtimeUrl;
     this._versionId = _versionId; // version id for the dictionary
+    // Feature flags
+    const _runtimeTranslation = !!(
+      runtimeTranslation &&
+      this.projectId &&
+      this.runtimeUrl &&
+      ((this.apiKey && process.env.NODE_ENV === 'production') ||
+        (this.devApiKey && process.env.NODE_ENV === 'development'))
+    );
+    const _remoteCache = remoteCache && !!this.projectId;
+    this.translationEnabled = !!(_remoteCache || _runtimeTranslation);
+    // When we add <TX>, there will not be discrepancy between server and client
+    this.serverRuntimeTranslationEnabled = _runtimeTranslation;
+    this.clientRuntimeTranslationEnabled =
+      _runtimeTranslation && !!this.devApiKey;
     // Locales
     this.defaultLocale = defaultLocale;
     this.locales = locales;
@@ -191,16 +203,9 @@ export default class I18NConfiguration {
       projectId: this.projectId,
       devApiKey: this.devApiKey,
       runtimeUrl: this.runtimeUrl,
-      runtimeTranslations: this.runtimeTranslation,
+      translationEnabled: this.translationEnabled,
+      runtimeTranslationEnabled: this.clientRuntimeTranslationEnabled,
     };
-  }
-
-  /**
-   * Runtime translation is enabled only in development with a devApiKey for <TX> components
-   * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
-   */
-  isRuntimeTranslationEnabled(): boolean {
-    return this.translationEnabled() && !!this.devApiKey;
   }
 
   /**
@@ -222,10 +227,24 @@ export default class I18NConfiguration {
   /**
    * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
    */
-  translationEnabled(): boolean {
-    return this.projectId && this.runtimeUrl && (this.apiKey || this.devApiKey)
-      ? true
-      : false;
+  isTranslationEnabled(): boolean {
+    return this.translationEnabled;
+  }
+
+  /**
+   * Runtime translation is enabled on server side
+   * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
+   */
+  isServerRuntimeTranslationEnabled(): boolean {
+    return this.serverRuntimeTranslationEnabled;
+  }
+
+  /**
+   * Runtime translation for clientside
+   * @returns {boolean} A boolean indicating whether the client runtime translation is enabled
+   */
+  isClientRuntimeTranslationEnabled(): boolean {
+    return this.clientRuntimeTranslationEnabled;
   }
 
   /**
@@ -248,7 +267,7 @@ export default class I18NConfiguration {
    */
   requiresTranslation(locale: string): boolean {
     return (
-      this.translationEnabled() &&
+      this.isTranslationEnabled() &&
       requiresTranslation(this.defaultLocale, locale, this.locales)
     );
   }

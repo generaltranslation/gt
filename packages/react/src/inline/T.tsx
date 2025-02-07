@@ -64,12 +64,12 @@ function T({
   const {
     translations,
     translationRequired,
+    translationEnabled,
+    runtimeTranslationEnabled,
     dialectTranslationRequired,
     translateChildren,
     renderSettings,
     locale,
-    translationEnabled,
-    runtimeTranslationEnabled,
   } = useGTContext(`<T> used on the client-side outside of <GTProvider>`);
 
   const defaultLocale = useDefaultLocale();
@@ -176,7 +176,7 @@ function T({
   // fallback if:
   if (
     !translationRequired || // no translation required
-    !translationEnabled || // error behavior: translation not enabled
+    !translationEnabled || // translation not enabled
     (translations && !translationEntry && !runtimeTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
     translationEntry?.state === 'error' // error fetching translation
   ) {

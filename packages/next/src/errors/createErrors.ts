@@ -2,9 +2,6 @@
 
 import { getLocaleProperties } from 'generaltranslation';
 
-export const projectIdMissingError =
-  'General Translation: Project ID missing! Set projectId as GT_PROJECT_ID in the environment or by passing the projectId parameter to initGT(). Find your project ID: generaltranslation.com/dashboard.';
-
 export const APIKeyMissingError =
   'General Translation: API key is required for runtime translation! Create an API key: generaltranslation.com/dashboard/api-keys. (Or, turn off runtime translation by setting runtimeUrl to an empty string.)';
 
@@ -48,3 +45,6 @@ export const createMismatchingHashWarning = (
   receivedHash: string
 ) =>
   `gt-next: Mismatching hashes! Expected hash: ${expectedHash}, but got hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;
+
+export const projectIdMissingWarn =
+  'General Translation: Project ID missing! Set projectId as GT_PROJECT_ID in the environment or by passing the projectId parameter to initGT(). Find your project ID: generaltranslation.com/dashboard.';

@@ -33,15 +33,12 @@ function getI18NConfig() {
     }
     else {
         console.warn(createErrors_1.usingDefaultsWarning);
+        // Check: projectId is not required, but warn if missing for dev, nothing for prod
         var projectId = process.env.GT_PROJECT_ID || '';
-        if (!projectId) {
-            if (process.env.NODE_ENV === 'development') {
-                throw new Error(createErrors_1.projectIdMissingError);
-            }
-            else {
-                console.warn(createErrors_1.projectIdMissingError);
-            }
+        if (!projectId && process.env.NODE_ENV === 'development') {
+            console.warn(createErrors_1.projectIdMissingWarn);
         }
+        // Parse API keys
         var apiKey = void 0, devApiKey = void 0;
         var envApiKey = process.env.GT_API_KEY || '';
         var apiKeyType = (_a = envApiKey === null || envApiKey === void 0 ? void 0 : envApiKey.split('-')) === null || _a === void 0 ? void 0 : _a[1];
@@ -51,8 +48,7 @@ function getI18NConfig() {
         else if (apiKeyType === 'dev') {
             devApiKey = envApiKey;
         }
-        var environment = process.env.NODE_ENV;
-        if (environment === 'production' && devApiKey) {
+        if (process.env.NODE_ENV === 'production' && devApiKey) {
             throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
         }
         if (!apiKey && !devApiKey)

@@ -44,7 +44,8 @@ export default async function GTProvider({
   const translationRequired = I18NConfig.requiresTranslation(locale);
   const dialectTranslationRequired =
     translationRequired && isSameLanguage(locale, defaultLocale);
-  const runtimeTranslationEnabled = I18NConfig.isRuntimeTranslationEnabled(); // runtime translation enabled in dev
+  const clientRuntimeTranslationEnabled =
+    I18NConfig.isClientRuntimeTranslationEnabled(); // runtime translation enabled in dev
 
   // Start fetching translations from cache
   const translationsPromise =
@@ -105,7 +106,7 @@ export default async function GTProvider({
           // dev only (with api key) skip if:
           if (
             !translationRequired || // no translation required
-            !runtimeTranslationEnabled // dev runtime translation disabled
+            !clientRuntimeTranslationEnabled // dev runtime translation disabled
           ) {
             return;
           }
@@ -196,7 +197,7 @@ export default async function GTProvider({
         // dev only (with api key) skip if:
         if (
           !translationRequired || // no translation required
-          !runtimeTranslationEnabled // dev runtime translation disabled
+          !clientRuntimeTranslationEnabled // dev runtime translation disabled
         ) {
           return;
         }
@@ -261,8 +262,6 @@ export default async function GTProvider({
       dialectTranslationRequired={dialectTranslationRequired}
       requiredPrefix={id}
       renderSettings={I18NConfig.getRenderSettings()}
-      translationEnabled={I18NConfig.translationEnabled()}
-      runtimeTranslationEnabled={runtimeTranslationEnabled}
       {...I18NConfig.getClientSideConfig()}
     >
       {children}

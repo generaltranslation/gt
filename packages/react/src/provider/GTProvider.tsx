@@ -97,13 +97,10 @@ export default function GTProvider({
   // validate projectId
   if (
     !projectId &&
-    (cacheUrl === defaultCacheUrl || runtimeUrl === defaultRuntimeApiUrl)
+    (cacheUrl === defaultCacheUrl || runtimeUrl === defaultRuntimeApiUrl) &&
+    process.env.NODE_ENV === 'development'
   ) {
-    if (process.env.NODE_ENV === 'development') {
-      throw new Error(projectIdMissingError);
-    } else {
-      console.warn(projectIdMissingWarning);
-    }
+    console.warn(projectIdMissingWarning);
   }
   // locale standardization
   locales = useMemo(() => {
@@ -132,8 +129,11 @@ export default function GTProvider({
     translationEnabled,
     runtimeTranslationEnabled,
   ] = useMemo(() => {
-    const translationEnabled = !!projectId && (!!cacheUrl || !!runtimeUrl);
-    const runtimeTranslationEnabled = translationEnabled && !!devApiKey;
+    const runtimeTranslationEnabled = !!(projectId && runtimeUrl && devApiKey);
+    const translationEnabled = !!(
+      (projectId && cacheUrl) ||
+      runtimeTranslationEnabled
+    );
     const translationRequired = requiresTranslation(
       defaultLocale,
       locale,
@@ -149,6 +149,24 @@ export default function GTProvider({
     ];
   }, [defaultLocale, locale, locales]);
 
+  // ---------- TRANSLATION STATE ---------- //
+  /** Key for translation tracking:
+   * Cache Loading            -> translations = null
+   * Cache Fail (for locale)  -> translations = {}
+   * Cache Fail (for id)      -> translations[id] = undefined
+   * Cache Fail (for hash)    -> translations[hash] = undefined
+   *
+   * API Loading              -> translations[key] = TranslationLoading
+   * API Fail (for batch)     -> translations[key] = TranslationError
+   * API Fail (for hash)      -> translations[key] = TranslationError
+   *
+   * Success (Cache/API)      -> translations[key] = TranslationSuccess
+   *
+   * Possible scenarios:
+   * Cache Loading -> Success
+   * Cache Loading -> Cache Fail -> API Loading -> Success
+   * Cache Loading -> Cache Fail -> API Loading -> API Fail
+   */
   const [translations, setTranslations] = useState<TranslationsObject | null>(
     cacheUrl && translationRequired ? null : {}
   );

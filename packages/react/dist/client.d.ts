@@ -208,12 +208,16 @@ declare namespace Branch {
  *
  * @param {any} [children] - Fallback content to render if no matching plural branch is found.
  * @param {number} [n] - The number used to determine the plural form. This is required for pluralization to work.
+ * @param {string} [locale] - Optional parameter, the locale to use for pluralization format. If not provided and wrapped
+ *  in <GTProvider> will automatically populate this value as user's current locale. If not provided and not wrapped in
+ *  <GTProvider>, will use the library default locale (en-US).
  * @returns {JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
  * @throws {Error} If `n` is not provided or not a valid number.
  */
-declare function Plural({ children, n, ...props }: {
+declare function Plural({ children, n, locale, ...props }: {
     children?: any;
     n?: number;
+    locale?: string;
     [key: string]: any;
 }): react_jsx_runtime.JSX.Element;
 declare namespace Plural {
@@ -335,6 +339,7 @@ declare namespace T {
  * @param {string} [name] - Optional name for the currency field.
  * @param {any} [value] - The default value to be used.
  * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
+ * @param {string[]} [locales] - Optional locales to use for currency formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {JSX.Element} The formatted currency component.
  */
@@ -367,6 +372,7 @@ declare namespace Currency {
  * @param {any} [children] - Optional content (typically a date) to render inside the component.
  * @param {string} [name="date"] - Optional name for the date field, used for metadata purposes.
  * @param {string|number|Date} [value] - The default value for the date. Can be a string, number (timestamp), or `Date` object.
+ * @param {string[]} [locales] - Optional locales to use for date formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {JSX.Element} The formatted date or time component.
  */

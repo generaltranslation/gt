@@ -17,6 +17,7 @@ import React from 'react';
  * @param {string} [name] - Optional name for the currency field.
  * @param {any} [value] - The default value to be used.
  * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
+ * @param {string[]} [locales] - Optional locales to use for currency formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {JSX.Element} The formatted currency component.
  */

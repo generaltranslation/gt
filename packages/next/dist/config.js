@@ -110,10 +110,11 @@ function initGT(props) {
     }
     mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
     // ---------- ERROR CHECKS ---------- //
-    // Check: must have projectId if using CDN or API
+    // Check: projectId is not required, but warn if missing for dev, nothing for prod
     if ((mergedConfig.runtimeTranslation || mergedConfig.remoteCache) &&
-        !mergedConfig.projectId) {
-        console.error(createErrors_1.projectIdMissingError);
+        !mergedConfig.projectId &&
+        process.env.NODE_ENV === 'development') {
+        console.warn(createErrors_1.projectIdMissingWarn);
     }
     // Check: dev API key should not be included in production
     if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {

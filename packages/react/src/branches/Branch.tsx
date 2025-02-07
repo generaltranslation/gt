@@ -30,6 +30,7 @@ function Branch({
   [key: string]: any;
 }) {
   const { 'data-_gt': generaltranslation, ...branches } = props;
+  branch = branch?.toString();
   const renderedBranch =
     branch && typeof branches[branch] !== 'undefined'
       ? branches[branch]

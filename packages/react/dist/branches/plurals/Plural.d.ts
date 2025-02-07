@@ -15,12 +15,16 @@
  *
  * @param {any} [children] - Fallback content to render if no matching plural branch is found.
  * @param {number} [n] - The number used to determine the plural form. This is required for pluralization to work.
+ * @param {string} [locale] - Optional parameter, the locale to use for pluralization format. If not provided and wrapped
+ *  in <GTProvider> will automatically populate this value as user's current locale. If not provided and not wrapped in
+ *  <GTProvider>, will use the library default locale (en-US).
  * @returns {JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
  * @throws {Error} If `n` is not provided or not a valid number.
  */
-declare function Plural({ children, n, ...props }: {
+declare function Plural({ children, n, locale, ...props }: {
     children?: any;
     n?: number;
+    locale?: string;
     [key: string]: any;
 }): import("react/jsx-runtime").JSX.Element;
 declare namespace Plural {
