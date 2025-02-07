@@ -39,6 +39,7 @@ var jsx_runtime_1 = require("react/jsx-runtime");
 function Branch(_a) {
     var children = _a.children, _b = _a.name, name = _b === void 0 ? 'branch' : _b, branch = _a.branch, props = __rest(_a, ["children", "name", "branch"]);
     var generaltranslation = props["data-_gt"], branches = __rest(props, ['data-_gt']);
+    branch = branch === null || branch === void 0 ? void 0 : branch.toString();
     var renderedBranch = branch && typeof branches[branch] !== 'undefined'
         ? branches[branch]
         : children;
