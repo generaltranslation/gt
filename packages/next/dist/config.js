@@ -71,18 +71,14 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  *
  */
 function initGT(props) {
-    var _a, _b;
+    var _a;
     // ---------- LOAD GT CONFIG FILE ---------- //
     var loadedConfig = {};
     try {
         var config = props.config || defaultInitGTProps_1.default.config;
-        var locales = props.locales || defaultInitGTProps_1.default.locales;
         if (typeof config === 'string' && fs_1.default.existsSync(config)) {
             var fileContent = fs_1.default.readFileSync(config, 'utf-8');
             loadedConfig = JSON.parse(fileContent);
-        }
-        if (((_a = loadedConfig.locales) === null || _a === void 0 ? void 0 : _a.length) === 0) {
-            loadedConfig.locales = locales;
         }
     }
     catch (error) {
@@ -95,7 +91,7 @@ function initGT(props) {
     var envApiKey = process.env.GT_API_KEY;
     var apiKey, devApiKey;
     if (envApiKey) {
-        var apiKeyType = (_b = envApiKey === null || envApiKey === void 0 ? void 0 : envApiKey.split('-')) === null || _b === void 0 ? void 0 : _b[1];
+        var apiKeyType = (_a = envApiKey === null || envApiKey === void 0 ? void 0 : envApiKey.split('-')) === null || _a === void 0 ? void 0 : _a[1];
         if (apiKeyType === 'api') {
             apiKey = envApiKey;
         }
@@ -108,6 +104,11 @@ function initGT(props) {
     // ---------- MERGE CONFIGS ---------- //
     // precedence: input > env > config file > defaults
     var mergedConfig = __assign(__assign(__assign(__assign({}, defaultInitGTProps_1.default), loadedConfig), envConfig), props);
+    // ----------- LOCALE STANDARDIZATION ----------- //
+    if (mergedConfig.locales && mergedConfig.defaultLocale) {
+        mergedConfig.locales.unshift(mergedConfig.defaultLocale);
+    }
+    mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
     // ---------- ERROR CHECKS ---------- //
     // Check: must have projectId if using CDN or API
     if ((mergedConfig.runtimeTranslation || mergedConfig.remoteCache) &&
