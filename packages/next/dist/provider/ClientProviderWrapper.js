@@ -19,7 +19,10 @@ var navigation_1 = require("next/navigation");
 function ClientProvider(props) {
     // locale change on client, trigger page reload
     var router = (0, navigation_1.useRouter)();
-    var onLocaleChange = function () { return router.refresh(); };
+    var onLocaleChange = function () {
+        document.cookie = "generaltranslation.locale.reset=true;path=/";
+        router.refresh();
+    };
     return (0, jsx_runtime_1.jsx)(client_1.ClientProvider, __assign({ onLocaleChange: onLocaleChange }, props));
 }
 //# sourceMappingURL=ClientProviderWrapper.js.map
