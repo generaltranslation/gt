@@ -120,7 +120,7 @@ class BaseCLI {
         ]))
             .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
             .option('--default-language, --default-locale <locale>', 'Default locale (e.g., en)')
-            .option('--languages, --locales <locales...>', 'Space-separated list of locales (e.g., en fr es)')
+            .option('--new, --locales <locales...>', 'Space-separated list of locales (e.g., en fr es)')
             .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
             .option('--wrap', 'Wraps all JSX elements in the src directory with a <T> tag, with unique ids', false)
             .option('--ignore-errors', 'Ignore errors encountered while scanning for <T> tags', false)
@@ -177,7 +177,7 @@ class BaseCLI {
             }
         });
     }
-    handleTranslateCommand(options) {
+    handleTranslateCommand(initOptions) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             (0, console_1.displayAsciiTitle)();
@@ -187,11 +187,21 @@ class BaseCLI {
             // options given in command || --options filepath || ./gt.config.json || parsing next.config.js
             // it's alright for any of the options to be undefined at this point
             // --options filepath || gt.config.json
-            const gtConfig = (0, loadJSON_1.default)(options.options) || {};
-            options = Object.assign(Object.assign({}, gtConfig), options);
+            const gtConfig = (0, loadJSON_1.default)(initOptions.options) || {};
+            // merge options
+            const options = Object.assign(Object.assign({}, gtConfig), initOptions);
             options.apiKey = options.apiKey || process.env.GT_API_KEY;
             if (!options.baseUrl)
                 options.baseUrl = internal_1.defaultBaseUrl;
+            // Distinguish between new locales and existing locales
+            let additionalLocales = undefined;
+            if (!gtConfig.locales) {
+                additionalLocales = initOptions.locales;
+                options.locales = undefined;
+            }
+            else {
+                options.locales = Array.from(new Set([...gtConfig.locales, ...(initOptions.locales || [])]));
+            }
             // Error if no API key at this point
             if (!options.apiKey)
                 throw new Error('No General Translation API key found. Use the --api-key flag to provide one.');
@@ -211,6 +221,13 @@ class BaseCLI {
                 for (const locale of options.locales) {
                     if (!(0, generaltranslation_1.isValidLocale)(locale)) {
                         throw new Error(`locales: "${(_a = options === null || options === void 0 ? void 0 : options.locales) === null || _a === void 0 ? void 0 : _a.join()}", ${locale} is not a valid locale!`);
+                    }
+                }
+            }
+            if (additionalLocales) {
+                for (const locale of additionalLocales) {
+                    if (!(0, generaltranslation_1.isValidLocale)(locale)) {
+                        throw new Error(`locales: "${additionalLocales === null || additionalLocales === void 0 ? void 0 : additionalLocales.join()}", ${locale} is not a valid locale!`);
                     }
                 }
             }
@@ -299,11 +316,10 @@ class BaseCLI {
             if (updates.length) {
                 const { projectId, defaultLocale } = options;
                 const globalMetadata = Object.assign(Object.assign({}, (projectId && { projectId })), (defaultLocale && { sourceLocale: defaultLocale }));
-                const body = {
-                    updates,
-                    locales: options.locales,
-                    metadata: globalMetadata,
-                };
+                // If additionalLocales is provided, additionalLocales + project.current_locales will be translated
+                // If not, then options.locales will be translated
+                // If neither, then project.current_locales will be translated
+                const body = Object.assign(Object.assign(Object.assign({ updates }, (options.locales && { locales: options.locales })), (additionalLocales && { additionalLocales })), { metadata: globalMetadata });
                 const spinner = yield (0, console_1.displayLoadingAnimation)('Sending updates to General Translation API...');
                 try {
                     const startTime = Date.now();
@@ -314,7 +330,8 @@ class BaseCLI {
                     });
                     process.stdout.write('\n\n');
                     if (!response.ok) {
-                        throw new Error(response.status + '. ' + (yield response.text()));
+                        spinner.fail(yield response.text());
+                        process.exit(1);
                     }
                     if (response.status === 204) {
                         spinner.succeed(yield response.text());
@@ -323,7 +340,7 @@ class BaseCLI {
                     const { versionId, message, locales } = yield response.json();
                     spinner.succeed(chalk_1.default.green(message));
                     if (options.options)
-                        (0, updateConfig_1.default)(options.options, versionId);
+                        (0, updateConfig_1.default)(Object.assign({ configFilepath: options.options, _versionId: versionId }, (options.locales && { locales: options.locales })));
                     if (options.enableTimeout && locales) {
                         console.log();
                         // timeout was validated earlier
