@@ -20,7 +20,8 @@ See the below for links to the relevant libraries:
 - [gt-react](packages/react/README.md): Automatic i18n for React
 - [generaltranslation](packages/core/README.md): Core library for General Translation
 - [supported-locales](packages/supported-locales/README.md): Currently supported locales
-- [gt-react-cli](packages/react-cli/README.md): GT CLI tool for React and Next.js apps
+- [gt-react-cli](packages/react-cli/README.md): CLI tool for React apps
+- [gt-next-cli](packages/next-cli/README.md): CLI tool for Next.js apps
 
 ## Installation
 
