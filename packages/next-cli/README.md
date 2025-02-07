@@ -6,7 +6,7 @@
 
 # gt-next-cli: Command-line tool for gt-next
 
-gt-next-cli is a command-line tool used to push `gt-next` dictionaries to be translated.
+gt-next-cli is a command-line tool used to push `gt-next` dictionaries and `<T>` components to be translated.
 
 Additionally, it can scan your project for all content that needs to be translated, and automatically wrap them in `<T>` and `<Var>` components.
 

@@ -1,6 +1,6 @@
 {
   "name": "gt-next-cli",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "main": "dist/main.js",
   "bin": {
     "gt-next-cli": "dist/main.js"
@@ -31,7 +31,7 @@
     "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
   "homepage": "https://generaltranslation.com/",
-  "description": "",
+  "description": "CLI tool for i18n with gt-next",
   "dependencies": {
     "@babel/generator": "^7.25.7",
     "@babel/parser": "^7.25.7",
@@ -42,7 +42,7 @@
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
-    "gt-react-cli": "^2.1.7-alpha.1"
+    "gt-react-cli": "^2.1.8"
   },
   "devDependencies": {
     "@types/babel__generator": "^7.6.8",

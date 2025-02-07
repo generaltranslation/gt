@@ -47,7 +47,7 @@ const displayFoundTMessage = (file, id) => {
 };
 exports.displayFoundTMessage = displayFoundTMessage;
 const displayUpdatedConfigFile = (configFilepath) => {
-    console.log(chalk_1.default.blue(`Updating config file ${chalk_1.default.green(configFilepath)}\n`));
+    console.log(chalk_1.default.blue(`\nUpdating config file ${chalk_1.default.green(configFilepath)}\n`));
 };
 exports.displayUpdatedConfigFile = displayUpdatedConfigFile;
 const displayLoadingAnimation = (message) => __awaiter(void 0, void 0, void 0, function* () {

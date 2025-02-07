@@ -50,7 +50,7 @@ export const displayFoundTMessage = (file: string, id: string) => {
 
 export const displayUpdatedConfigFile = (configFilepath: string) => {
   console.log(
-    chalk.blue(`Updating config file ${chalk.green(configFilepath)}\n`)
+    chalk.blue(`\nUpdating config file ${chalk.green(configFilepath)}\n`)
   );
 };
 
