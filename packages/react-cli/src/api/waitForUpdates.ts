@@ -29,7 +29,10 @@ export const waitForUpdates = async (
         const data = await response.json();
         if (data.availableLocales) {
           data.availableLocales.forEach((locale: string) => {
-            if (!availableLocales.includes(locale)) {
+            if (
+              !availableLocales.includes(locale) &&
+              locales.includes(locale)
+            ) {
               availableLocales.push(locale);
             }
           });
@@ -46,7 +49,7 @@ export const waitForUpdates = async (
           ];
           spinner.suffixText = newSuffixText.join('\n');
         }
-        if (data.count >= locales.length) {
+        if (locales.every((locale) => availableLocales.includes(locale))) {
           return true;
         }
       }

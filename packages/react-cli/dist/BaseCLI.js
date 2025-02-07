@@ -330,7 +330,8 @@ class BaseCLI {
                     });
                     process.stdout.write('\n\n');
                     if (!response.ok) {
-                        throw new Error(response.status + '. ' + (yield response.text()));
+                        spinner.fail(yield response.text());
+                        process.exit(1);
                     }
                     if (response.status === 204) {
                         spinner.succeed(yield response.text());

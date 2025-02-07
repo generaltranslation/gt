@@ -29,7 +29,8 @@ const waitForUpdates = (apiKey, baseUrl, versionId, locales, startTime, timeoutD
                 const data = yield response.json();
                 if (data.availableLocales) {
                     data.availableLocales.forEach((locale) => {
-                        if (!availableLocales.includes(locale)) {
+                        if (!availableLocales.includes(locale) &&
+                            locales.includes(locale)) {
                             availableLocales.push(locale);
                         }
                     });
@@ -44,7 +45,7 @@ const waitForUpdates = (apiKey, baseUrl, versionId, locales, startTime, timeoutD
                     ];
                     spinner.suffixText = newSuffixText.join('\n');
                 }
-                if (data.count >= locales.length) {
+                if (locales.every((locale) => availableLocales.includes(locale))) {
                     return true;
                 }
             }
