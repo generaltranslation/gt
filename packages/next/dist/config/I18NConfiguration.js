@@ -363,7 +363,6 @@ var I18NConfiguration = /** @class */ (function () {
                     case 5:
                         results_1 = _b.sent();
                         batch.forEach(function (request, index) {
-                            var _a, _b, _c, _d, _e, _f;
                             // check if entry is missing
                             var result = results_1[index];
                             var errorMsg = 'Translation failed.';
@@ -375,17 +374,15 @@ var I18NConfiguration = /** @class */ (function () {
                                 if ('translation' in result && result.translation) {
                                     // record translations
                                     if (_this._remoteTranslationsManager) {
-                                        _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, key, { state: 'success', target: result.translation });
+                                        _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, key, {
+                                            state: 'success',
+                                            target: result.translation,
+                                            hash: result.reference.key,
+                                        });
                                     }
                                     // check for mismatching ids or hashes
-                                    if (((_a = result === null || result === void 0 ? void 0 : result.reference) === null || _a === void 0 ? void 0 : _a.id) !== key ||
-                                        ((_b = result === null || result === void 0 ? void 0 : result.reference) === null || _b === void 0 ? void 0 : _b.key) !== ((_c = request.metadata) === null || _c === void 0 ? void 0 : _c.hash)) {
-                                        if (!request.metadata.id) {
-                                            console.warn((0, createErrors_1.createMismatchingHashWarning)(request.metadata.hash, (_d = result.reference) === null || _d === void 0 ? void 0 : _d.key));
-                                        }
-                                        else {
-                                            console.warn((0, createErrors_1.createMismatchingIdHashWarning)(key, request.metadata.hash, (_e = result === null || result === void 0 ? void 0 : result.reference) === null || _e === void 0 ? void 0 : _e.id, (_f = result.reference) === null || _f === void 0 ? void 0 : _f.key));
-                                        }
+                                    if (result.reference.key !== request.metadata.hash) {
+                                        console.warn((0, createErrors_1.createMismatchingHashWarning)(request.metadata.hash, result.reference.key));
                                     }
                                     return request.resolve(result.translation);
                                 }

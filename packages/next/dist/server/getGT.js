@@ -140,7 +140,7 @@ function getGT(id) {
                     translations_1 = _a.sent();
                     // Translate all strings in sub dictionary (block until completed)
                     return [4 /*yield*/, Promise.all(Object.entries(flattenedDictionaryEntries !== null && flattenedDictionaryEntries !== void 0 ? flattenedDictionaryEntries : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var _c, entry, metadata, entryId, contentArray, hash, translationEntry, translationPromise, _d, _e, error_1;
+                            var _c, entry, metadata, entryId, contentArray, hash, key, translationEntry, translationPromise, _d, _e, error_1;
                             var suffix = _b[0], dictionaryEntry = _b[1];
                             return __generator(this, function (_f) {
                                 switch (_f.label) {
@@ -150,13 +150,15 @@ function getGT(id) {
                                         if (typeof entry !== 'string')
                                             return [2 /*return*/];
                                         entryId = getId(suffix);
+                                        // Skip empty strings
                                         if (!entry.length) {
                                             console.warn("gt-next warn: Empty string found in dictionary with id: ".concat(entryId));
                                             return [2 /*return*/];
                                         }
                                         contentArray = (0, generaltranslation_1.splitStringToContent)(entry);
                                         hash = I18NConfig.hashContent(contentArray, metadata === null || metadata === void 0 ? void 0 : metadata.context);
-                                        translationEntry = translations_1[entryId];
+                                        key = process.env.NODE_ENV === 'development' ? hash : entryId;
+                                        translationEntry = translations_1[key];
                                         if (translationEntry) {
                                             // success
                                             if (translationEntry.state === 'success') {

@@ -47,6 +47,9 @@ export const createGenericRuntimeTranslationError = (
 
 // ---- WARNINGS ---- //
 
+export const projectIdMissingWarning =
+  'gt-react warn: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
+
 export const createLibraryNoEntryWarning = (id: string) =>
   `gt-react: No dictionary entry found for id: "${id}"`;
 
@@ -64,11 +67,3 @@ export const createMismatchingHashWarning = (
   receivedHash: string
 ) =>
   `Mismatching hashes! Expected hash: ${expectedHash}, but got hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;
-
-export const createMismatchingIdHashWarning = (
-  expectedId: string,
-  expectedHash: string,
-  receivedId: string,
-  receivedHash: string
-) =>
-  `Mismatching ids or hashes! Expected id: ${expectedId}, hash: ${expectedHash}, but got id: ${receivedId}, hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;

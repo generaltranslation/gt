@@ -30,7 +30,7 @@
     "url": "git+https://github.com/General-Translation/gt-libraries.git"
   },
   "peerDependencies": {
-    "gt-react": "^9.0.3",
+    "gt-react": "^9.0.5",
     "react": ">=16.8.0 <20.0.0",
     "react-dom": ">=16.8.0 <20.0.0"
   },
@@ -63,7 +63,7 @@
     "@types/node": "^22.5.1",
     "@types/react": "^18.3.4",
     "esm": "^3.2.25",
-    "gt-react": "^9.0.3",
+    "gt-react": "^9.0.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4"
   }

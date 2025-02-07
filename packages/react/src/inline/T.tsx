@@ -91,10 +91,11 @@ function T({
     } else {
       return [undefined, ''];
     }
-  }, [context, taggedChildren, translationRequired]);
+  }, [context, taggedChildren, translationRequired, children]);
 
-  // key
-  const key = id || hash;
+  // key is identifier for tx
+  // in development, only use hash (this nullifies cache in dev, but the dev cache will be hashes only in future anyways)
+  const key = process.env.NODE_ENV === 'development' ? hash : id || hash;
 
   // Do translation if required
   const translationEntry = translations?.[key];
@@ -104,8 +105,15 @@ function T({
       !runtimeTranslationEnabled || // runtime translation disabled
       !translationRequired || // no translation required
       !translations || // cache not checked yet
-      translationEntry || // already have translation
       !locale // locale not loaded
+    ) {
+      return;
+    }
+
+    // skip if: already have translation and hash matches
+    if (
+      translationEntry && // already have translation
+      (translationEntry.state !== 'success' || translationEntry.hash === hash) // hash matches
     ) {
       return;
     }
@@ -129,6 +137,7 @@ function T({
     hash,
     context,
     locale,
+    children,
   ]);
 
   // ----- RENDER METHODS ----- //

@@ -128,7 +128,7 @@ async function T({
     taggedChildren,
     context
   );
-  const key = id || hash;
+  const key = process.env.NODE_ENV === 'development' ? hash : id || hash;
 
   // Block until cache check resolves
   const translations = translationsPromise ? await translationsPromise : {};

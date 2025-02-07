@@ -151,7 +151,7 @@ function GTProvider(_a) {
                      *
                      */
                     return [4 /*yield*/, Promise.all(Object.entries(flattenedDictionarySubset !== null && flattenedDictionarySubset !== void 0 ? flattenedDictionarySubset : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var entryId, _c, entry, metadata, taggedChildren, _d, childrenAsObjects, hash_1, translationEntry_1, translationPromise, content, hash, translationEntry, translation, error_1;
+                            var entryId, _c, entry, metadata, taggedChildren, _d, childrenAsObjects, hash_1, key_1, translationEntry_1, translationPromise, content, hash, key, translationEntry, translation, error_1;
                             var suffix = _b[0], dictionaryEntry = _b[1];
                             return __generator(this, function (_e) {
                                 switch (_e.label) {
@@ -176,27 +176,53 @@ function GTProvider(_a) {
                                             ) {
                                                 return [2 /*return*/];
                                             }
-                                            translationEntry_1 = translations === null || translations === void 0 ? void 0 : translations[entryId];
-                                            if (translationEntry_1 && translationEntry_1.state !== 'loading') {
+                                            key_1 = process.env.NODE_ENV === 'development' ? hash_1 : entryId;
+                                            translationEntry_1 = translations === null || translations === void 0 ? void 0 : translations[key_1];
+                                            // skip if:
+                                            if (translationEntry_1 && // already have translation
+                                                (translationEntry_1.state !== 'success' || // not a success
+                                                    translationEntry_1.hash === hash_1) // hash matches
+                                            ) {
                                                 return [2 /*return*/];
                                             }
                                             // Reject empty fragments
                                             if ((0, internal_1.isEmptyReactFragment)(entry)) {
-                                                translations[entryId] = {
+                                                translations[key_1] = {
                                                     state: 'error',
                                                     error: 'Empty fragments are not allowed for translation.',
                                                     code: 400,
                                                 };
                                                 return [2 /*return*/];
                                             }
+                                            // Perform on-demand translation
+                                            translations[key_1] = { state: 'loading' };
                                             translationPromise = I18NConfig.translateChildren({
                                                 source: childrenAsObjects,
                                                 targetLocale: locale,
                                                 metadata: __assign(__assign({}, metadata), { id: entryId, hash: hash_1 }),
+                                            })
+                                                .then(function (result) {
+                                                translations[key_1] = {
+                                                    state: 'success',
+                                                    target: result,
+                                                };
+                                                return result;
+                                            })
+                                                .catch(function (error) {
+                                                if (error instanceof internal_1.GTTranslationError) {
+                                                    error = error.toTranslationError();
+                                                }
+                                                else {
+                                                    error = {
+                                                        state: 'error',
+                                                        error: 'An error occured',
+                                                        code: 500,
+                                                    };
+                                                }
+                                                return error;
                                             });
                                             // record translations as loading and record the promises to use on client-side
-                                            translations[entryId] = { state: 'loading' };
-                                            promises[entryId] = translationPromise;
+                                            promises[key_1] = translationPromise;
                                             return [2 /*return*/];
                                         }
                                         content = (0, generaltranslation_1.splitStringToContent)(entry);
@@ -210,12 +236,17 @@ function GTProvider(_a) {
                                         ) {
                                             return [2 /*return*/];
                                         }
-                                        translationEntry = translations === null || translations === void 0 ? void 0 : translations[entryId];
-                                        if (translationEntry)
+                                        key = process.env.NODE_ENV === 'development' ? hash : entryId;
+                                        translationEntry = translations === null || translations === void 0 ? void 0 : translations[key];
+                                        if (translationEntry && // already have translation
+                                            (translationEntry.state !== 'success' || // not a success
+                                                translationEntry.hash === hash) // hash matches
+                                        ) {
                                             return [2 /*return*/];
+                                        }
                                         // Reject empty strings
                                         if (!entry.length) {
-                                            translations[entryId] = {
+                                            translations[key] = {
                                                 state: 'error',
                                                 error: 'Empty strings are not allowed for translation.',
                                                 code: 400,
@@ -233,7 +264,7 @@ function GTProvider(_a) {
                                     case 2:
                                         translation = _e.sent();
                                         // overwriting any old translations, this is most recent on demand, so should be most accurate
-                                        translations[entryId] = {
+                                        translations[key] = {
                                             state: 'success',
                                             target: translation,
                                         };

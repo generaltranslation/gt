@@ -28,7 +28,13 @@ export default function getI18NConfig(): I18NConfiguration {
     console.warn(usingDefaultsWarning);
 
     const projectId = process.env.GT_PROJECT_ID || '';
-    if (!projectId) console.error(projectIdMissingError);
+    if (!projectId) {
+      if (process.env.NODE_ENV === 'development') {
+        throw new Error(projectIdMissingError);
+      } else {
+        console.warn(projectIdMissingError);
+      }
+    }
 
     let apiKey, devApiKey;
     const envApiKey = process.env.GT_API_KEY || '';

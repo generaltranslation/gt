@@ -1,4 +1,4 @@
-import { cache, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   isSameLanguage,
   renderContentToString,
@@ -25,6 +25,7 @@ import {
 import {
   devApiKeyProductionError,
   projectIdMissingError,
+  projectIdMissingWarning,
 } from '../messages/createMessages';
 import { listSupportedLocales } from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from './runtime/useRuntimeTranslation';
@@ -98,7 +99,11 @@ export default function GTProvider({
     !projectId &&
     (cacheUrl === defaultCacheUrl || runtimeUrl === defaultRuntimeApiUrl)
   ) {
-    throw new Error(projectIdMissingError);
+    if (process.env.NODE_ENV === 'development') {
+      throw new Error(projectIdMissingError);
+    } else {
+      console.warn(projectIdMissingWarning);
+    }
   }
 
   // if no locales, then all locales
@@ -276,10 +281,20 @@ export default function GTProvider({
       let stringIsLoading = false;
       const unresolvedDictionaryStringsAndHashes = Object.entries(
         dictionaryContentEntries
-      ).filter(([id]) => {
+      ).filter(([id, { hash }]) => {
+        const key = process.env.NODE_ENV === 'development' ? hash : id || hash;
         // filter out any translations that are currently loading or already resolved
-        if (translations?.[id]?.state === 'loading') stringIsLoading = true;
-        return !translations?.[id];
+        if (translations?.[key]?.state === 'loading') stringIsLoading = true;
+
+        // do tx if hash has changed
+        if (
+          translations?.[key]?.state === 'success' &&
+          translations?.[key]?.hash !== hash
+        )
+          return true;
+
+        // dont tx if translation already exists
+        return !translations?.[key];
       });
       const dictionaryStringsResolved =
         !stringIsLoading && unresolvedDictionaryStringsAndHashes.length === 0;
@@ -361,7 +376,11 @@ export default function GTProvider({
 
         // Handle fallback cases
         const content = splitStringToContent(entry);
-        const translationEntry = translations?.[id];
+        const key = // use hash in dev mode, id in prod mode
+          process.env.NODE_ENV === 'development'
+            ? dictionaryContentEntries[id]?.hash || id
+            : id;
+        const translationEntry = translations?.[key];
         if (
           !translationRequired || // no translation required
           !translationEntry || // error behavior: no translation found

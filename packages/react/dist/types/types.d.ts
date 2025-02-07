@@ -68,6 +68,7 @@ export type TranslationError = {
 export type TranslationSuccess = {
     state: 'success';
     target: TranslatedChildren | TranslatedContent;
+    hash?: string;
 };
 export type TranslationLoading = {
     state: 'loading';

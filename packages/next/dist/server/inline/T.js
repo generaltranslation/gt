@@ -157,7 +157,7 @@ function T(_a) {
                     }
                     translationsPromise = translationRequired && I18NConfig.getCachedTranslations(locale);
                     _c = I18NConfig.serializeAndHashChildren(taggedChildren, context), childrenAsObjects = _c[0], hash = _c[1];
-                    key = id || hash;
+                    key = process.env.NODE_ENV === 'development' ? hash : id || hash;
                     if (!translationsPromise) return [3 /*break*/, 3];
                     return [4 /*yield*/, translationsPromise];
                 case 2:
