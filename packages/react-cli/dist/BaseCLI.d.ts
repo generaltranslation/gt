@@ -16,5 +16,5 @@ export declare abstract class BaseCLI {
     private setupTranslateCommand;
     private setupSetupCommand;
     protected handleSetupCommand(options: WrapOptions): Promise<void>;
-    protected handleTranslateCommand(options: Options): Promise<void>;
+    protected handleTranslateCommand(initOptions: Options): Promise<void>;
 }

@@ -121,7 +121,7 @@ export abstract class BaseCLI {
         'Default locale (e.g., en)'
       )
       .option(
-        '--languages, --locales <locales...>',
+        '--languages, --locales, --new <locales...>',
         'Space-separated list of locales (e.g., en fr es)'
       )
       .option(
@@ -238,7 +238,7 @@ export abstract class BaseCLI {
     }
   }
 
-  protected async handleTranslateCommand(options: Options): Promise<void> {
+  protected async handleTranslateCommand(initOptions: Options): Promise<void> {
     displayAsciiTitle();
     displayInitializingText();
 
@@ -249,11 +249,21 @@ export abstract class BaseCLI {
     // it's alright for any of the options to be undefined at this point
 
     // --options filepath || gt.config.json
-    const gtConfig = loadJSON(options.options) || {};
+    const gtConfig = loadJSON(initOptions.options) || {};
 
-    options = { ...gtConfig, ...options };
+    // merge options
+    const options = { ...gtConfig, ...initOptions };
     options.apiKey = options.apiKey || process.env.GT_API_KEY;
     if (!options.baseUrl) options.baseUrl = defaultBaseUrl;
+
+    // Distinguish between new locales and existing locales
+    let additionalLocales: string[] | undefined = undefined;
+    if (!gtConfig.locales) {
+      additionalLocales = initOptions.locales;
+      options.locales = undefined;
+    } else {
+      options.locales = [...gtConfig.locales, ...(initOptions.locales || [])];
+    }
 
     // Error if no API key at this point
     if (!options.apiKey)
@@ -284,6 +294,15 @@ export abstract class BaseCLI {
         if (!isValidLocale(locale)) {
           throw new Error(
             `locales: "${options?.locales?.join()}", ${locale} is not a valid locale!`
+          );
+        }
+      }
+    }
+    if (additionalLocales) {
+      for (const locale of additionalLocales) {
+        if (!isValidLocale(locale)) {
+          throw new Error(
+            `locales: "${additionalLocales?.join()}", ${locale} is not a valid locale!`
           );
         }
       }
@@ -417,9 +436,13 @@ export abstract class BaseCLI {
         ...(defaultLocale && { sourceLocale: defaultLocale }),
       };
 
+      // If additionalLocales is provided, additionalLocales + project.current_locales will be translated
+      // If not, then options.locales will be translated
+      // If neither, then project.current_locales will be translated
       const body = {
         updates,
-        locales: options.locales,
+        ...(options.locales && { locales: options.locales }),
+        ...(additionalLocales && { additionalLocales }),
         metadata: globalMetadata,
       };
 
@@ -454,7 +477,13 @@ export abstract class BaseCLI {
 
         const { versionId, message, locales } = await response.json();
         spinner.succeed(chalk.green(message));
-        if (options.options) updateConfig(options.options, versionId);
+        if (options.options)
+          updateConfig({
+            configFilepath: options.options,
+            _versionId: versionId,
+            ...(options.locales && { locales: options.locales }),
+            // only save if locales was previously in options
+          });
 
         if (options.enableTimeout && locales) {
           console.log();
