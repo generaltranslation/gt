@@ -121,7 +121,7 @@ export abstract class BaseCLI {
         'Default locale (e.g., en)'
       )
       .option(
-        '--languages, --locales, --new <locales...>',
+        '--new, --locales <locales...>',
         'Space-separated list of locales (e.g., en fr es)'
       )
       .option(
@@ -262,7 +262,9 @@ export abstract class BaseCLI {
       additionalLocales = initOptions.locales;
       options.locales = undefined;
     } else {
-      options.locales = [...gtConfig.locales, ...(initOptions.locales || [])];
+      options.locales = Array.from(
+        new Set([...gtConfig.locales, ...(initOptions.locales || [])])
+      );
     }
 
     // Error if no API key at this point

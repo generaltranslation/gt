@@ -120,7 +120,7 @@ class BaseCLI {
         ]))
             .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
             .option('--default-language, --default-locale <locale>', 'Default locale (e.g., en)')
-            .option('--languages, --locales, --new <locales...>', 'Space-separated list of locales (e.g., en fr es)')
+            .option('--new, --locales <locales...>', 'Space-separated list of locales (e.g., en fr es)')
             .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
             .option('--wrap', 'Wraps all JSX elements in the src directory with a <T> tag, with unique ids', false)
             .option('--ignore-errors', 'Ignore errors encountered while scanning for <T> tags', false)
@@ -200,7 +200,7 @@ class BaseCLI {
                 options.locales = undefined;
             }
             else {
-                options.locales = [...gtConfig.locales, ...(initOptions.locales || [])];
+                options.locales = Array.from(new Set([...gtConfig.locales, ...(initOptions.locales || [])]));
             }
             // Error if no API key at this point
             if (!options.apiKey)
