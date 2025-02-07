@@ -84,70 +84,70 @@ export default function createNextMiddleware(
 
     const res = NextResponse.next();
 
-    let userLocale = standardizeLocale(defaultLocale);
+    const candidates = [];
 
+    // Check pathname locales
+    let pathnameLocale;
     if (localeRouting) {
       // Check if there is any supported locale in the pathname
       const { pathname } = req.nextUrl;
+      pathnameLocale = standardizeLocale(extractLocale(pathname) || '');
+      if (isValidLocale(pathnameLocale || '')) candidates.push(pathnameLocale);
+    }
 
-      const locale = extractLocale(pathname);
-
-      if (locale && isValidLocale(locale)) {
-        const approvedLocale = determineLocale(locale, approvedLocales);
-        if (approvedLocale) {
-          userLocale = standardizeLocale(approvedLocale);
-          res.headers.set(localeHeaderName, userLocale);
-          return res;
-        }
-      }
-
-      // If there's no locale, try to get one from the referer
-      const referer = headerList.get('referer');
-
-      if (referer && typeof referer === 'string') {
-        const refererLocale = extractLocale(new URL(referer)?.pathname);
-        if (refererLocale) {
-          const approvedLocale = determineLocale(
-            refererLocale,
-            approvedLocales
-          );
-          if (approvedLocale) {
-            userLocale = standardizeLocale(approvedLocale);
-            req.nextUrl.pathname = `/${userLocale}/${pathname}`;
-            return NextResponse.redirect(req.nextUrl);
-          }
-        }
+    // Check cookie locale
+    const cookieLocale = req.cookies.get(localeCookieName);
+    
+    if (isValidLocale(cookieLocale?.value)) {
+      const resetCookieName = 'generaltranslation.locale.reset';
+      const resetCookie = req.cookies.get(resetCookieName);
+      if (resetCookie?.value) {
+        res.cookies.delete(resetCookieName)
+        candidates.unshift(cookieLocale.value);
+      } else {
+        candidates.push(cookieLocale.value)
       }
     }
 
-    userLocale = (() => {
-      const cookieLocale = req.cookies.get(localeCookieName);
-      if (cookieLocale?.value) {
-          if (isValidLocale(cookieLocale.value))
-              return standardizeLocale(cookieLocale.value)
+    if (localeRouting) {
+      // If there's no locale, try to get one from the referer
+      const referer = headerList.get('referer');
+      if (referer && typeof referer === 'string') {
+        const refererLocale = extractLocale(new URL(referer)?.pathname);
+        if (isValidLocale(refererLocale || '')) candidates.push(refererLocale || '');
       }
-      const acceptedLocales = headerList
+    }
+
+    // Get locales from accept-language header
+    const acceptedLocales = headerList
         .get('accept-language')
         ?.split(',')
-        .map((item) => item.split(';')?.[0].trim())
-        ?.filter((code) => isValidLocale(code));
-      if (acceptedLocales && acceptedLocales.length > 0) {
-        const approvedLocale = determineLocale(
-          acceptedLocales,
-          approvedLocales
-        );
-        if (approvedLocale) {
-          userLocale = standardizeLocale(approvedLocale);
-        }
-      }
-      return userLocale;
-    })();
+        .map((item) => item.split(';')?.[0].trim()) || [];
+    candidates.push(...acceptedLocales);
+
+    // Get default locale
+    candidates.push(defaultLocale);
+
+    // determine userLocale
+    const userLocale = 
+      standardizeLocale(
+        determineLocale(
+          candidates.filter(isValidLocale), approvedLocales
+        ) || defaultLocale
+      )
+    ;
 
     res.headers.set(localeHeaderName, userLocale);
 
     if (localeRouting) {
       const { pathname } = req.nextUrl;
       const originalUrl = req.nextUrl;
+      if (pathnameLocale) {
+        if (pathnameLocale === userLocale) return res;
+        req.nextUrl.pathname = 
+          pathname.replace(pathnameLocale, userLocale); // replaces first instance
+        return NextResponse.redirect(req.nextUrl);
+      }
       // Construct new URL with original search parameters
       const newUrl = new URL(`/${userLocale}${pathname}`, originalUrl);
       newUrl.search = originalUrl.search; // keep the query parameters
@@ -160,6 +160,7 @@ export default function createNextMiddleware(
         return NextResponse.redirect(newUrl);
       }
     }
+
     return res;
   }
 

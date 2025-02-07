@@ -8,6 +8,9 @@ export default function ClientProvider(
 ) {
   // locale change on client, trigger page reload
   const router = useRouter();
-  const onLocaleChange = () => router.refresh();
+  const onLocaleChange = () => {
+    document.cookie = `generaltranslation.locale.reset=true;path=/`;
+    router.refresh();
+  };
   return <_ClientProvider onLocaleChange={onLocaleChange} {...props} />;
 }
