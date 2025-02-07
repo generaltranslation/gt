@@ -97,13 +97,10 @@ export default function GTProvider({
   // validate projectId
   if (
     !projectId &&
-    (cacheUrl === defaultCacheUrl || runtimeUrl === defaultRuntimeApiUrl)
+    (cacheUrl === defaultCacheUrl || runtimeUrl === defaultRuntimeApiUrl) &&
+    process.env.NODE_ENV === 'development'
   ) {
-    if (process.env.NODE_ENV === 'development') {
-      throw new Error(projectIdMissingError);
-    } else {
-      console.warn(projectIdMissingWarning);
-    }
+    console.warn(projectIdMissingWarning);
   }
 
   // if no locales, then all locales
@@ -154,11 +151,11 @@ export default function GTProvider({
    * Cache Loading            -> translations = null
    * Cache Fail (for locale)  -> translations = {}
    * Cache Fail (for id)      -> translations[id] = undefined
-   * Cache Fail (for hash)    -> translations[id][hash] = undefined
+   * Cache Fail (for hash)    -> translations[hash] = undefined
    *
-   * API Loading              -> translations[id][hash] = TranslationLoading
-   * API Fail (for batch)     -> translations[id][hash] = TranslationError
-   * API Fail (for hash)      -> translations[id][hash] = TranslationError
+   * API Loading              -> translations[key] = TranslationLoading
+   * API Fail (for batch)     -> translations[key] = TranslationError
+   * API Fail (for hash)      -> translations[key] = TranslationError
    *
    * Success (Cache/API)      -> translations[id][hash] = TranslationSuccess
    *
