@@ -57,13 +57,9 @@ export function initGT(props: InitGTProps) {
   let loadedConfig: Partial<InitGTProps> = {};
   try {
     const config = props.config || defaultInitGTProps.config;
-    const locales = props.locales || defaultInitGTProps.locales;
     if (typeof config === 'string' && fs.existsSync(config)) {
       const fileContent = fs.readFileSync(config, 'utf-8');
       loadedConfig = JSON.parse(fileContent);
-    }
-    if (loadedConfig.locales?.length === 0) {
-      loadedConfig.locales = locales;
     }
   } catch (error) {
     console.error('Error reading GT config file:', error);
@@ -102,6 +98,12 @@ export function initGT(props: InitGTProps) {
     ...envConfig,
     ...props,
   };
+
+  // ----------- LOCALE STANDARDIZATION ----------- //
+  if (mergedConfig.locales && mergedConfig.defaultLocale) {
+    mergedConfig.locales.unshift(mergedConfig.defaultLocale);
+  }
+  mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
 
   // ---------- ERROR CHECKS ---------- //
 

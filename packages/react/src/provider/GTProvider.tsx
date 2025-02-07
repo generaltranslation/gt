@@ -60,7 +60,7 @@ export default function GTProvider({
   projectId: _projectId,
   devApiKey: _devApiKey,
   dictionary = {},
-  locales = [],
+  locales = listSupportedLocales(),
   defaultLocale = libraryDefaultLocale,
   locale: _locale,
   cacheUrl = defaultCacheUrl,
@@ -105,11 +105,11 @@ export default function GTProvider({
       console.warn(projectIdMissingWarning);
     }
   }
-
-  // if no locales, then all locales
-  if (!locales.length) {
-    locales = listSupportedLocales();
-  }
+  // locale standardization
+  locales = useMemo(() => {
+    locales.unshift(defaultLocale);
+    return Array.from(new Set(locales));
+  }, [defaultLocale, locales]);
 
   // get locale
   const [locale, setLocale] = useDetermineLocale({
@@ -149,24 +149,6 @@ export default function GTProvider({
     ];
   }, [defaultLocale, locale, locales]);
 
-  // ---------- TRANSLATION STATE ---------- //
-  /** Key for translation tracking:
-   * Cache Loading            -> translations = null
-   * Cache Fail (for locale)  -> translations = {}
-   * Cache Fail (for id)      -> translations[id] = undefined
-   * Cache Fail (for hash)    -> translations[id][hash] = undefined
-   *
-   * API Loading              -> translations[id][hash] = TranslationLoading
-   * API Fail (for batch)     -> translations[id][hash] = TranslationError
-   * API Fail (for hash)      -> translations[id][hash] = TranslationError
-   *
-   * Success (Cache/API)      -> translations[id][hash] = TranslationSuccess
-   *
-   * Possible scenarios:
-   * Cache Loading -> Success
-   * Cache Loading -> Cache Fail -> API Loading -> Success
-   * Cache Loading -> Cache Fail -> API Loading -> API Fail
-   */
   const [translations, setTranslations] = useState<TranslationsObject | null>(
     cacheUrl && translationRequired ? null : {}
   );
