@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { formatNum } from 'generaltranslation';
 import useLocale from '../hooks/useLocale';
 import useDefaultLocale from '../hooks/useDefaultLocale';
+import { GTContext } from '../provider/GTContext';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
@@ -37,9 +39,15 @@ function Num({
   locales?: string[];
   options?: Intl.NumberFormatOptions; // Optional options for the number formatting
 }): React.JSX.Element {
-  const locale = useLocale();
-  const providerLocales = [...(locale && [locale]), useDefaultLocale()];
-  locales ||= providerLocales;
+  const context = useContext(GTContext);
+  if (context) {
+    locales ||= [
+      ...(context.locale && [context.locale]),
+      context.defaultLocale,
+    ];
+  } else {
+    locales ||= [libraryDefaultLocale];
+  }
 
   let renderedValue = typeof children !== 'undefined' ? children : value;
   renderedValue =
