@@ -32,10 +32,20 @@ function extractLocale(pathname) {
  */
 function createNextMiddleware(_a) {
     var _b = _a === void 0 ? {
-        defaultLocale: internal_1.libraryDefaultLocale,
         localeRouting: true,
-        prefixDefaultLocale: false,
-    } : _a, _c = _b.defaultLocale, defaultLocale = _c === void 0 ? internal_1.libraryDefaultLocale : _c, _d = _b.locales, locales = _d === void 0 ? (0, supported_locales_1.listSupportedLocales)() : _d, _e = _b.localeRouting, localeRouting = _e === void 0 ? true : _e, _f = _b.prefixDefaultLocale, prefixDefaultLocale = _f === void 0 ? false : _f;
+        prefixDefaultLocale: false
+    } : _a, _c = _b.localeRouting, localeRouting = _c === void 0 ? true : _c, _d = _b.prefixDefaultLocale, prefixDefaultLocale = _d === void 0 ? false : _d;
+    var envParams;
+    if (process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS) {
+        try {
+            envParams = JSON.parse(process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS);
+        }
+        catch (error) {
+            console.error("gt-next middleware:", error);
+        }
+    }
+    var defaultLocale = (envParams === null || envParams === void 0 ? void 0 : envParams.defaultLocale) || internal_1.libraryDefaultLocale;
+    var locales = (envParams === null || envParams === void 0 ? void 0 : envParams.locales) || (0, supported_locales_1.listSupportedLocales)();
     if (!(0, generaltranslation_1.isValidLocale)(defaultLocale))
         throw new Error("gt-next middleware: defaultLocale \"".concat(defaultLocale, "\" is not a valid locale."));
     var warningLocales = locales.filter(function (locale) { return !(0, generaltranslation_1.isValidLocale)(locale); });

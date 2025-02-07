@@ -13,9 +13,7 @@ import { NextResponse } from 'next/server';
  * @param {boolean} [config.localeRouting=true] - Flag to enable or disable automatic locale-based routing.
  * @returns {function} - A middleware function that processes the request and response.
  */
-export default function createNextMiddleware({ defaultLocale, locales, localeRouting, prefixDefaultLocale, }?: {
-    defaultLocale?: string;
-    locales?: string[];
+export default function createNextMiddleware({ localeRouting, prefixDefaultLocale, }?: {
     localeRouting?: boolean;
     prefixDefaultLocale?: boolean;
 }): (req: any) => NextResponse<unknown>;
