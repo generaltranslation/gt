@@ -376,7 +376,7 @@ export abstract class BaseCLI {
       if (options.ignoreErrors) {
         console.log(
           chalk.red(
-            `CLI Tool encountered errors while scanning for ${chalk.green(
+            `CLI tool encountered errors while scanning for ${chalk.green(
               '<T>'
             )} tags.\n`
           )
@@ -392,7 +392,7 @@ export abstract class BaseCLI {
       } else {
         console.log(
           chalk.red(
-            `CLI Tool encountered errors while scanning for ${chalk.green(
+            `CLI tool encountered errors while scanning for ${chalk.green(
               '<T>'
             )} tags.\n`
           )
@@ -454,8 +454,7 @@ export abstract class BaseCLI {
 
         const { versionId, message, locales } = await response.json();
         spinner.succeed(chalk.green(message));
-        if (options.options)
-          updateConfig(options.options, projectId, versionId, locales);
+        if (options.options) updateConfig(options.options, versionId);
 
         if (options.enableTimeout && locales) {
           console.log();

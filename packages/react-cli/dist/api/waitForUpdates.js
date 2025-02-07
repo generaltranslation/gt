@@ -17,7 +17,7 @@ const chalk_1 = __importDefault(require("chalk"));
 const console_1 = require("../console/console");
 const generaltranslation_1 = require("generaltranslation");
 const waitForUpdates = (apiKey, baseUrl, versionId, locales, startTime, timeoutDuration) => __awaiter(void 0, void 0, void 0, function* () {
-    const spinner = yield (0, console_1.displayLoadingAnimation)('Waiting for translations to be completed...');
+    const spinner = yield (0, console_1.displayLoadingAnimation)('Waiting for translation...');
     const availableLocales = [];
     const checkDeployment = () => __awaiter(void 0, void 0, void 0, function* () {
         try {

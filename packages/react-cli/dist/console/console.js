@@ -31,7 +31,7 @@ const displayInitializingText = () => {
 };
 exports.displayInitializingText = displayInitializingText;
 const displayProjectId = (projectId) => {
-    console.log(chalk_1.default.yellow(`Project ID: ${chalk_1.default.bold(projectId)}\n`));
+    console.log(chalk_1.default.yellow(`Project ID: ${chalk_1.default.bold(projectId)}`));
 };
 exports.displayProjectId = displayProjectId;
 const displayResolvedPaths = (resolvedPaths) => {

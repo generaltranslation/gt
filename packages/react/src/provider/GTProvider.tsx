@@ -60,7 +60,7 @@ export default function GTProvider({
   projectId: _projectId,
   devApiKey: _devApiKey,
   dictionary = {},
-  locales = [],
+  locales = listSupportedLocales(),
   defaultLocale = libraryDefaultLocale,
   locale: _locale,
   cacheUrl = defaultCacheUrl,
@@ -102,11 +102,11 @@ export default function GTProvider({
   ) {
     console.warn(projectIdMissingWarning);
   }
-
-  // if no locales, then all locales
-  if (!locales.length) {
-    locales = listSupportedLocales();
-  }
+  // locale standardization
+  locales = useMemo(() => {
+    locales.unshift(defaultLocale);
+    return Array.from(new Set(locales));
+  }, [defaultLocale, locales]);
 
   // get locale
   const [locale, setLocale] = useDetermineLocale({
@@ -160,7 +160,7 @@ export default function GTProvider({
    * API Fail (for batch)     -> translations[key] = TranslationError
    * API Fail (for hash)      -> translations[key] = TranslationError
    *
-   * Success (Cache/API)      -> translations[id][hash] = TranslationSuccess
+   * Success (Cache/API)      -> translations[key] = TranslationSuccess
    *
    * Possible scenarios:
    * Cache Loading -> Success

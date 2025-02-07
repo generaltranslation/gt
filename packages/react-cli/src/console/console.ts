@@ -25,7 +25,7 @@ export const displayInitializingText = () => {
 };
 
 export const displayProjectId = (projectId: string) => {
-  console.log(chalk.yellow(`Project ID: ${chalk.bold(projectId)}\n`));
+  console.log(chalk.yellow(`Project ID: ${chalk.bold(projectId)}`));
 };
 
 export const displayResolvedPaths = (resolvedPaths: [string, string][]) => {
