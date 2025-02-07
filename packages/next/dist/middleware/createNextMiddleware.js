@@ -56,57 +56,60 @@ function createNextMiddleware(_a) {
      * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
      */
     function nextMiddleware(req) {
-        var _a;
+        var _a, _b;
         var headerList = new Headers(req.headers);
         var res = server_1.NextResponse.next();
-        var userLocale = (0, generaltranslation_1.standardizeLocale)(defaultLocale);
+        var candidates = [];
+        // Check pathname locales
+        var pathnameLocale;
         if (localeRouting) {
             // Check if there is any supported locale in the pathname
             var pathname = req.nextUrl.pathname;
-            var locale = extractLocale(pathname);
-            if (locale && (0, generaltranslation_1.isValidLocale)(locale)) {
-                var approvedLocale = (0, generaltranslation_1.determineLocale)(locale, approvedLocales);
-                if (approvedLocale) {
-                    userLocale = (0, generaltranslation_1.standardizeLocale)(approvedLocale);
-                    res.headers.set(internal_1.localeHeaderName, userLocale);
-                    return res;
-                }
+            pathnameLocale = (0, generaltranslation_1.standardizeLocale)(extractLocale(pathname) || '');
+            if ((0, generaltranslation_1.isValidLocale)(pathnameLocale || ''))
+                candidates.push(pathnameLocale);
+        }
+        // Check cookie locale
+        var cookieLocale = req.cookies.get(internal_1.localeCookieName);
+        if ((0, generaltranslation_1.isValidLocale)(cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value)) {
+            var resetCookieName = 'generaltranslation.locale.reset';
+            var resetCookie = req.cookies.get(resetCookieName);
+            if (resetCookie === null || resetCookie === void 0 ? void 0 : resetCookie.value) {
+                res.cookies.delete(resetCookieName);
+                candidates.unshift(cookieLocale.value);
             }
+            else {
+                candidates.push(cookieLocale.value);
+            }
+        }
+        if (localeRouting) {
             // If there's no locale, try to get one from the referer
             var referer = headerList.get('referer');
             if (referer && typeof referer === 'string') {
                 var refererLocale = extractLocale((_a = new URL(referer)) === null || _a === void 0 ? void 0 : _a.pathname);
-                if (refererLocale) {
-                    var approvedLocale = (0, generaltranslation_1.determineLocale)(refererLocale, approvedLocales);
-                    if (approvedLocale) {
-                        userLocale = (0, generaltranslation_1.standardizeLocale)(approvedLocale);
-                        req.nextUrl.pathname = "/".concat(userLocale, "/").concat(pathname);
-                        return server_1.NextResponse.redirect(req.nextUrl);
-                    }
-                }
+                if ((0, generaltranslation_1.isValidLocale)(refererLocale || ''))
+                    candidates.push(refererLocale || '');
             }
         }
-        userLocale = (function () {
-            var _a, _b;
-            var cookieLocale = req.cookies.get(internal_1.localeCookieName);
-            if (cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value) {
-                if ((0, generaltranslation_1.isValidLocale)(cookieLocale.value))
-                    return (0, generaltranslation_1.standardizeLocale)(cookieLocale.value);
-            }
-            var acceptedLocales = (_b = (_a = headerList
-                .get('accept-language')) === null || _a === void 0 ? void 0 : _a.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); })) === null || _b === void 0 ? void 0 : _b.filter(function (code) { return (0, generaltranslation_1.isValidLocale)(code); });
-            if (acceptedLocales && acceptedLocales.length > 0) {
-                var approvedLocale = (0, generaltranslation_1.determineLocale)(acceptedLocales, approvedLocales);
-                if (approvedLocale) {
-                    userLocale = (0, generaltranslation_1.standardizeLocale)(approvedLocale);
-                }
-            }
-            return userLocale;
-        })();
+        // Get locales from accept-language header
+        var acceptedLocales = ((_b = headerList
+            .get('accept-language')) === null || _b === void 0 ? void 0 : _b.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); })) || [];
+        candidates.push.apply(candidates, acceptedLocales);
+        // Get default locale
+        candidates.push(defaultLocale);
+        // determine userLocale
+        var userLocale = (0, generaltranslation_1.standardizeLocale)((0, generaltranslation_1.determineLocale)(candidates.filter(generaltranslation_1.isValidLocale), approvedLocales) || defaultLocale);
         res.headers.set(internal_1.localeHeaderName, userLocale);
         if (localeRouting) {
             var pathname = req.nextUrl.pathname;
             var originalUrl = req.nextUrl;
+            if (pathnameLocale) {
+                if (pathnameLocale === userLocale)
+                    return res;
+                req.nextUrl.pathname =
+                    pathname.replace(pathnameLocale, userLocale); // replaces first instance
+                return server_1.NextResponse.redirect(req.nextUrl);
+            }
             // Construct new URL with original search parameters
             var newUrl = new URL("/".concat(userLocale).concat(pathname), originalUrl);
             newUrl.search = originalUrl.search; // keep the query parameters
