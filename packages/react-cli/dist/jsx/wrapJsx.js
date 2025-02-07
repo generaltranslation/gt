@@ -36,7 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.wrapJsxElement = wrapJsxElement;
 exports.handleJsxElement = handleJsxElement;
 const t = __importStar(require("@babel/types"));
-const isStaticExpression_1 = require("./isStaticExpression");
+const evaluateJsx_1 = require("./evaluateJsx");
 function wrapJsxExpression(node, options, isMeaningful, mark) {
     const expression = t.isParenthesizedExpression(node.expression)
         ? node.expression.expression
@@ -100,7 +100,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
             }
         }
         else {
-            if ((0, isStaticExpression_1.isStaticValue)(consequent)) {
+            if ((0, evaluateJsx_1.isStaticValue)(consequent)) {
                 hasMeaningfulContent = hasMeaningfulContent || isMeaningful(consequent);
                 const wrapped = wrapExpressionWithT(consequent, options, mark);
                 wrappedInT = true;
@@ -147,7 +147,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
             }
         }
         else {
-            if ((0, isStaticExpression_1.isStaticValue)(alternate)) {
+            if ((0, evaluateJsx_1.isStaticValue)(alternate)) {
                 hasMeaningfulContent = hasMeaningfulContent || isMeaningful(alternate);
                 const wrapped = wrapExpressionWithT(alternate, options, mark);
                 wrappedInT = true;
@@ -200,7 +200,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
             }
         }
         else {
-            if ((0, isStaticExpression_1.isStaticValue)(left) && expression.operator !== '&&') {
+            if ((0, evaluateJsx_1.isStaticValue)(left) && expression.operator !== '&&') {
                 hasMeaningfulContent = hasMeaningfulContent || isMeaningful(left);
                 const wrapped = wrapExpressionWithT(left, options, mark);
                 wrappedInT = true;
@@ -245,7 +245,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
             }
         }
         else {
-            if ((0, isStaticExpression_1.isStaticValue)(right)) {
+            if ((0, evaluateJsx_1.isStaticValue)(right)) {
                 hasMeaningfulContent = hasMeaningfulContent || isMeaningful(right);
                 const wrapped = wrapExpressionWithT(right, options, mark);
                 wrappedInT = true;
@@ -259,7 +259,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
             }
         }
     }
-    const staticCheck = (0, isStaticExpression_1.isStaticExpression)(expression);
+    const staticCheck = (0, evaluateJsx_1.isStaticExpression)(expression);
     // If the expression is not static or if it's already wrapped in T,
     // wrap with Var
     if (!staticCheck.isStatic || wrappedInT) {

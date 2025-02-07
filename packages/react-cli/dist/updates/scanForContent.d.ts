@@ -1,4 +1,4 @@
-import { WrapOptions } from '../index';
+import { WrapOptions } from '../types';
 /**
  * Wraps all JSX elements in the src directory with a <T> tag, with unique ids.
  * - Ignores pure strings

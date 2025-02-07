@@ -1,51 +1,28 @@
 import fs from 'fs';
 import path from 'path';
-import { Options, Updates, WrapOptions } from '../index';
+import { Options, Updates, WrapOptions } from '../types';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import generate from '@babel/generator';
 import * as babel from '@babel/types';
-
+import { getFiles } from '../fs/findJsxFilepath';
+import { isMeaningful } from '../jsx/evaluateJsx';
 import { handleJsxElement } from '../jsx/wrapJsx';
-import { isStaticExpression } from '../jsx/isStaticExpression';
-
-const MEANINGFUL_REGEX = /[\p{L}\p{N}]/u;
-
-/**
- * Checks if a node is meaningful. Does not recurse into children.
- * @param node - The node to check
- * @returns Whether the node is meaningful
- */
-function isMeaningful(node: t.Node): boolean {
-  if (t.isStringLiteral(node) || t.isJSXText(node)) {
-    return MEANINGFUL_REGEX.test(node.value);
-  }
-  // Handle template literals without expressions
-  if (t.isTemplateLiteral(node) && node.expressions.length === 0) {
-    return MEANINGFUL_REGEX.test(node.quasis[0].value.raw);
-  }
-  if (t.isJSXExpressionContainer(node)) {
-    const value = isStaticExpression(node.expression);
-    if (value.isStatic && value.value) {
-      return MEANINGFUL_REGEX.test(value.value);
-    }
-  }
-  if (t.isBinaryExpression(node)) {
-    if (node.operator === '+') {
-      return isMeaningful(node.left) || isMeaningful(node.right);
-    }
-  }
-  return false;
-}
+import { getRelativePath } from '../fs/findFilepath';
+import {
+  determineModuleType,
+  generateImportMap,
+  createImports,
+} from '../jsx/parse/parseAst';
 
 const IMPORT_MAP = {
-  T: { name: 'T', source: '{framework}' },
-  Var: { name: 'Var', source: '{framework}' },
-  GTT: { name: 'T', source: '{framework}' },
-  GTVar: { name: 'Var', source: '{framework}' },
-  GTProvider: { name: 'GTProvider', source: '{framework}' },
-  getLocale: { name: 'getLocale', source: '{framework}/server' },
+  T: { name: 'T', source: 'gt-react' },
+  Var: { name: 'Var', source: 'gt-react' },
+  GTT: { name: 'T', source: 'gt-react' },
+  GTVar: { name: 'Var', source: 'gt-react' },
+  GTProvider: { name: 'GTProvider', source: 'gt-react' },
+  // getLocale: { name: 'getLocale', source: 'gt-react/server' },
 };
 
 /**
@@ -63,54 +40,14 @@ export default async function scanForContent(
   const warnings: string[] = [];
   const srcDirectory = options.src || ['./'];
 
-  // Define the file extensions to look for
-  const extensions = ['.js', '.jsx', '.tsx'];
-
-  /**
-   * Recursively scan the directory and collect all files with the specified extensions,
-   * excluding files or directories that start with a dot (.)
-   * @param dir - The directory to scan
-   * @returns An array of file paths
-   */
-  function getFiles(dir: string): string[] {
-    let files: string[] = [];
-    const items = fs.readdirSync(dir);
-
-    for (const item of items) {
-      // Skip hidden files and directories
-      if (item.startsWith('.')) continue;
-
-      const fullPath = path.join(dir, item);
-      const stat = fs.statSync(fullPath);
-
-      if (stat.isDirectory()) {
-        // Recursively scan subdirectories
-        files = files.concat(getFiles(fullPath));
-      } else if (extensions.includes(path.extname(item))) {
-        // Add files with the specified extensions
-        files.push(fullPath);
-      }
-    }
-
-    return files;
-  }
-
   const files = srcDirectory.flatMap((dir) => getFiles(dir));
   const filesUpdated = [];
+
   for (const file of files) {
     const code = fs.readFileSync(file, 'utf8');
 
     // Create relative path from src directory and remove extension
-    const relativePath = path
-      .relative(
-        srcDirectory[0],
-        file.replace(/\.[^/.]+$/, '') // Remove file extension
-      )
-      .replace(/\\/g, '.') // Replace Windows backslashes with dots
-      .split(/[./]/) // Split on dots or forward slashes
-      .filter(Boolean) // Remove empty segments that might cause extra dots
-      .map((segment) => segment.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()) // Convert each segment to snake case
-      .join('.'); // Rejoin with dots
+    const relativePath = getRelativePath(file, srcDirectory[0]);
 
     let ast;
     try {
@@ -127,36 +64,15 @@ export default async function scanForContent(
     }
 
     let modified = false;
-    let importAlias = { TComponent: 'T', VarComponent: 'Var' };
-
-    // Check existing imports
-    let initialImports: string[] = [];
     let usedImports: string[] = [];
-    traverse(ast, {
-      ImportDeclaration(path) {
-        const source = path.node.source.value;
-        if (source === framework) {
-          initialImports = [
-            ...initialImports,
-            ...path.node.specifiers.map((spec) => spec.local.name),
-          ];
-        }
-        // Check for conflicting imports only if they're not from gt-next/gt-react
-        if (source !== framework) {
-          path.node.specifiers.forEach((spec) => {
-            if (babel.isImportSpecifier(spec)) {
-              if (spec.local.name === 'T') importAlias.TComponent = 'GTT';
-              if (spec.local.name === 'Var') importAlias.VarComponent = 'GTVar';
-            }
-          });
-        }
-      },
-    });
+
+    let { importAlias, initialImports } = generateImportMap(ast, framework);
 
     // If the file already has a T import, skip processing it
     if (initialImports.includes(IMPORT_MAP.T.name)) {
       continue;
     }
+
     let globalId = 0;
     traverse(ast, {
       JSXElement(path) {
@@ -195,76 +111,7 @@ export default async function scanForContent(
     );
 
     if (needsImport.length > 0) {
-      // Check if file uses ESM or CommonJS
-      let isESM = false;
-      traverse(ast, {
-        ImportDeclaration() {
-          isESM = true;
-        },
-        ExportDefaultDeclaration() {
-          isESM = true;
-        },
-        ExportNamedDeclaration() {
-          isESM = true;
-        },
-      });
-
-      // Group imports by their source
-      const importsBySource = needsImport.reduce((acc, imp) => {
-        const importInfo = IMPORT_MAP[imp as keyof typeof IMPORT_MAP];
-        const source = importInfo.source.replace('{framework}', framework);
-        if (!acc[source]) acc[source] = [];
-        acc[source].push({ local: imp, imported: importInfo.name });
-        return acc;
-      }, {} as Record<string, { local: string; imported: string }[]>);
-
-      // Generate import nodes for each source
-      const importNodes = Object.entries(importsBySource).map(
-        ([source, imports]) => {
-          if (isESM) {
-            return babel.importDeclaration(
-              imports.map((imp) =>
-                babel.importSpecifier(
-                  babel.identifier(imp.imported),
-                  babel.identifier(imp.local)
-                )
-              ),
-              babel.stringLiteral(source)
-            );
-          } else {
-            return babel.variableDeclaration('const', [
-              babel.variableDeclarator(
-                babel.objectPattern(
-                  imports.map((imp) =>
-                    babel.objectProperty(
-                      babel.identifier(imp.local),
-                      babel.identifier(imp.imported),
-                      false,
-                      imp.local === imp.imported
-                    )
-                  )
-                ),
-                babel.callExpression(babel.identifier('require'), [
-                  babel.stringLiteral(source),
-                ])
-              ),
-            ]);
-          }
-        }
-      );
-
-      // Find the best position to insert the imports
-      let insertIndex = 0;
-      for (let i = 0; i < ast.program.body.length; i++) {
-        if (!babel.isImportDeclaration(ast.program.body[i])) {
-          insertIndex = i;
-          break;
-        }
-        insertIndex = i + 1;
-      }
-
-      // Insert all import nodes
-      ast.program.body.splice(insertIndex, 0, ...importNodes);
+      createImports(ast, needsImport, IMPORT_MAP);
     }
 
     try {

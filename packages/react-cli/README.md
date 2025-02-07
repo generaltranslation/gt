@@ -4,9 +4,9 @@
   </a>
 </p>
 
-# gt-react-cli: Command-line tool for gt-react and gt-next
+# gt-react-cli: Command-line tool for gt-react
 
-gt-react-cli is a command-line tool used to push `gt-react` and `gt-next` dictionaries to be translated.
+gt-react-cli is a command-line tool used to push `gt-react` dictionaries and `<T>` components to be translated.
 
 Additionally, it can scan your project for all content that needs to be translated, and automatically wrap them in `<T>` and `<Var>` components.
 

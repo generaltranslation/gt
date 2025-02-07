@@ -1,4 +1,4 @@
-import { Updates } from '../index';
+import { Updates } from '../types';
 
 import generate from '@babel/generator';
 import * as t from '@babel/types';
@@ -13,7 +13,7 @@ import {
   handleChildrenWhitespace,
   trimJsxStringChild,
 } from './trimJsxStringChildren';
-import { isStaticExpression } from './isStaticExpression';
+import { isStaticExpression } from './evaluateJsx';
 
 // Valid variable components
 const VARIABLE_COMPONENTS = ['Var', 'DateTime', 'Currency', 'Num'];

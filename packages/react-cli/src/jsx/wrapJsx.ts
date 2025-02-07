@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { isStaticExpression, isStaticValue } from './isStaticExpression';
+import { isStaticExpression, isStaticValue } from './evaluateJsx';
 import generate from '@babel/generator';
 /**
  * Recursively wraps a JSX element with a <T> component and unique id

@@ -47,48 +47,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = scanForContent;
 const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
 const t = __importStar(require("@babel/types"));
 const parser_1 = require("@babel/parser");
 const traverse_1 = __importDefault(require("@babel/traverse"));
 const generator_1 = __importDefault(require("@babel/generator"));
-const babel = __importStar(require("@babel/types"));
+const findJsxFilepath_1 = require("../fs/findJsxFilepath");
+const evaluateJsx_1 = require("../jsx/evaluateJsx");
 const wrapJsx_1 = require("../jsx/wrapJsx");
-const isStaticExpression_1 = require("../jsx/isStaticExpression");
-const MEANINGFUL_REGEX = /[\p{L}\p{N}]/u;
-/**
- * Checks if a node is meaningful. Does not recurse into children.
- * @param node - The node to check
- * @returns Whether the node is meaningful
- */
-function isMeaningful(node) {
-    if (t.isStringLiteral(node) || t.isJSXText(node)) {
-        return MEANINGFUL_REGEX.test(node.value);
-    }
-    // Handle template literals without expressions
-    if (t.isTemplateLiteral(node) && node.expressions.length === 0) {
-        return MEANINGFUL_REGEX.test(node.quasis[0].value.raw);
-    }
-    if (t.isJSXExpressionContainer(node)) {
-        const value = (0, isStaticExpression_1.isStaticExpression)(node.expression);
-        if (value.isStatic && value.value) {
-            return MEANINGFUL_REGEX.test(value.value);
-        }
-    }
-    if (t.isBinaryExpression(node)) {
-        if (node.operator === '+') {
-            return isMeaningful(node.left) || isMeaningful(node.right);
-        }
-    }
-    return false;
-}
+const findFilepath_1 = require("../fs/findFilepath");
+const parseAst_1 = require("../jsx/parse/parseAst");
 const IMPORT_MAP = {
-    T: { name: 'T', source: '{framework}' },
-    Var: { name: 'Var', source: '{framework}' },
-    GTT: { name: 'T', source: '{framework}' },
-    GTVar: { name: 'Var', source: '{framework}' },
-    GTProvider: { name: 'GTProvider', source: '{framework}' },
-    getLocale: { name: 'getLocale', source: '{framework}/server' },
+    T: { name: 'T', source: 'gt-react' },
+    Var: { name: 'Var', source: 'gt-react' },
+    GTT: { name: 'T', source: 'gt-react' },
+    GTVar: { name: 'Var', source: 'gt-react' },
+    GTProvider: { name: 'GTProvider', source: 'gt-react' },
+    // getLocale: { name: 'getLocale', source: 'gt-react/server' },
 };
 /**
  * Wraps all JSX elements in the src directory with a <T> tag, with unique ids.
@@ -102,47 +76,12 @@ function scanForContent(options, framework) {
         const errors = [];
         const warnings = [];
         const srcDirectory = options.src || ['./'];
-        // Define the file extensions to look for
-        const extensions = ['.js', '.jsx', '.tsx'];
-        /**
-         * Recursively scan the directory and collect all files with the specified extensions,
-         * excluding files or directories that start with a dot (.)
-         * @param dir - The directory to scan
-         * @returns An array of file paths
-         */
-        function getFiles(dir) {
-            let files = [];
-            const items = fs_1.default.readdirSync(dir);
-            for (const item of items) {
-                // Skip hidden files and directories
-                if (item.startsWith('.'))
-                    continue;
-                const fullPath = path_1.default.join(dir, item);
-                const stat = fs_1.default.statSync(fullPath);
-                if (stat.isDirectory()) {
-                    // Recursively scan subdirectories
-                    files = files.concat(getFiles(fullPath));
-                }
-                else if (extensions.includes(path_1.default.extname(item))) {
-                    // Add files with the specified extensions
-                    files.push(fullPath);
-                }
-            }
-            return files;
-        }
-        const files = srcDirectory.flatMap((dir) => getFiles(dir));
+        const files = srcDirectory.flatMap((dir) => (0, findJsxFilepath_1.getFiles)(dir));
         const filesUpdated = [];
         for (const file of files) {
             const code = fs_1.default.readFileSync(file, 'utf8');
             // Create relative path from src directory and remove extension
-            const relativePath = path_1.default
-                .relative(srcDirectory[0], file.replace(/\.[^/.]+$/, '') // Remove file extension
-            )
-                .replace(/\\/g, '.') // Replace Windows backslashes with dots
-                .split(/[./]/) // Split on dots or forward slashes
-                .filter(Boolean) // Remove empty segments that might cause extra dots
-                .map((segment) => segment.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()) // Convert each segment to snake case
-                .join('.'); // Rejoin with dots
+            const relativePath = (0, findFilepath_1.getRelativePath)(file, srcDirectory[0]);
             let ast;
             try {
                 ast = (0, parser_1.parse)(code, {
@@ -158,32 +97,8 @@ function scanForContent(options, framework) {
                 continue;
             }
             let modified = false;
-            let importAlias = { TComponent: 'T', VarComponent: 'Var' };
-            // Check existing imports
-            let initialImports = [];
             let usedImports = [];
-            (0, traverse_1.default)(ast, {
-                ImportDeclaration(path) {
-                    const source = path.node.source.value;
-                    if (source === framework) {
-                        initialImports = [
-                            ...initialImports,
-                            ...path.node.specifiers.map((spec) => spec.local.name),
-                        ];
-                    }
-                    // Check for conflicting imports only if they're not from gt-next/gt-react
-                    if (source !== framework) {
-                        path.node.specifiers.forEach((spec) => {
-                            if (babel.isImportSpecifier(spec)) {
-                                if (spec.local.name === 'T')
-                                    importAlias.TComponent = 'GTT';
-                                if (spec.local.name === 'Var')
-                                    importAlias.VarComponent = 'GTVar';
-                            }
-                        });
-                    }
-                },
-            });
+            let { importAlias, initialImports } = (0, parseAst_1.generateImportMap)(ast, framework);
             // If the file already has a T import, skip processing it
             if (initialImports.includes(IMPORT_MAP.T.name)) {
                 continue;
@@ -202,7 +117,7 @@ function scanForContent(options, framework) {
                     }
                     // At this point, we're only processing top-level JSX elements
                     const opts = Object.assign(Object.assign({}, importAlias), { idPrefix: relativePath, idCount: globalId, usedImports, modified: false, createIds: !options.disableIds });
-                    const wrapped = (0, wrapJsx_1.handleJsxElement)(path.node, opts, isMeaningful);
+                    const wrapped = (0, wrapJsx_1.handleJsxElement)(path.node, opts, evaluateJsx_1.isMeaningful);
                     path.replaceWith(wrapped);
                     path.skip();
                     // Update global counters
@@ -214,52 +129,7 @@ function scanForContent(options, framework) {
                 continue;
             let needsImport = usedImports.filter((imp) => !initialImports.includes(imp));
             if (needsImport.length > 0) {
-                // Check if file uses ESM or CommonJS
-                let isESM = false;
-                (0, traverse_1.default)(ast, {
-                    ImportDeclaration() {
-                        isESM = true;
-                    },
-                    ExportDefaultDeclaration() {
-                        isESM = true;
-                    },
-                    ExportNamedDeclaration() {
-                        isESM = true;
-                    },
-                });
-                // Group imports by their source
-                const importsBySource = needsImport.reduce((acc, imp) => {
-                    const importInfo = IMPORT_MAP[imp];
-                    const source = importInfo.source.replace('{framework}', framework);
-                    if (!acc[source])
-                        acc[source] = [];
-                    acc[source].push({ local: imp, imported: importInfo.name });
-                    return acc;
-                }, {});
-                // Generate import nodes for each source
-                const importNodes = Object.entries(importsBySource).map(([source, imports]) => {
-                    if (isESM) {
-                        return babel.importDeclaration(imports.map((imp) => babel.importSpecifier(babel.identifier(imp.imported), babel.identifier(imp.local))), babel.stringLiteral(source));
-                    }
-                    else {
-                        return babel.variableDeclaration('const', [
-                            babel.variableDeclarator(babel.objectPattern(imports.map((imp) => babel.objectProperty(babel.identifier(imp.local), babel.identifier(imp.imported), false, imp.local === imp.imported))), babel.callExpression(babel.identifier('require'), [
-                                babel.stringLiteral(source),
-                            ])),
-                        ]);
-                    }
-                });
-                // Find the best position to insert the imports
-                let insertIndex = 0;
-                for (let i = 0; i < ast.program.body.length; i++) {
-                    if (!babel.isImportDeclaration(ast.program.body[i])) {
-                        insertIndex = i;
-                        break;
-                    }
-                    insertIndex = i + 1;
-                }
-                // Insert all import nodes
-                ast.program.body.splice(insertIndex, 0, ...importNodes);
+                (0, parseAst_1.createImports)(ast, needsImport, IMPORT_MAP);
             }
             try {
                 const output = (0, generator_1.default)(ast, {

@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { build, BuildOptions } from 'esbuild';
-import { Options, Updates } from '../index';
+import { Options, Updates } from '../types';
 import {
   addGTIdentifier,
   extractEntryMetadata,

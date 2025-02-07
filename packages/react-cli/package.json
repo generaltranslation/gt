@@ -1,6 +1,6 @@
 {
   "name": "gt-react-cli",
-  "version": "2.1.7",
+  "version": "2.1.8",
   "main": "dist/index.js",
   "bin": {
     "gt-react-cli": "dist/main.js"
@@ -13,6 +13,17 @@
     "release:alpha": "npm run build:clean && npm publish --tag alpha",
     "release:beta": "npm run build:clean && npm publish --tag beta",
     "release:latest": "npm run build:clean && npm publish --tag latest"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./types": "./dist/types.js",
+    "./updates/*": "./dist/updates/*.js",
+    "./jsx/*": "./dist/jsx/*.js",
+    "./fs/*": "./dist/fs/*.js",
+    "./console/*": "./dist/console/*.js",
+    "./config/*": "./dist/config/*.js",
+    "./api/*": "./dist/api/*.js",
+    "./*": "./dist/*.js"
   },
   "repository": {
     "type": "git",
@@ -30,7 +41,7 @@
     "url": "https://github.com/General-Translation/gt-libraries/issues"
   },
   "homepage": "https://generaltranslation.com/",
-  "description": "",
+  "description": "CLI tool for i18n with gt-react",
   "dependencies": {
     "@babel/generator": "^7.25.7",
     "@babel/parser": "^7.25.7",
@@ -41,7 +52,8 @@
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
-    "generaltranslation": "^6.1.10"
+    "generaltranslation": "^6.1.10",
+    "ora": "^8.2.0"
   },
   "devDependencies": {
     "@types/babel__generator": "^7.6.8",

@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -38,16 +47,15 @@ const displayFoundTMessage = (file, id) => {
 };
 exports.displayFoundTMessage = displayFoundTMessage;
 const displayUpdatedConfigFile = (configFilepath) => {
-    console.log(chalk_1.default.blue(`Updating config file ${chalk_1.default.green(configFilepath)}\n`));
+    console.log(chalk_1.default.blue(`\nUpdating config file ${chalk_1.default.green(configFilepath)}\n`));
 };
 exports.displayUpdatedConfigFile = displayUpdatedConfigFile;
-const displayLoadingAnimation = (message) => {
-    const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-    let i = 0;
-    const loadingInterval = setInterval(() => {
-        process.stdout.write(`\r${chalk_1.default.blue(frames[i])} ${message}`);
-        i = (i + 1) % frames.length;
-    }, 80);
-    return loadingInterval;
-};
+const displayLoadingAnimation = (message) => __awaiter(void 0, void 0, void 0, function* () {
+    const { default: ora } = yield import('ora');
+    const spinner = ora({
+        text: message,
+        color: 'blue',
+    }).start();
+    return spinner;
+});
 exports.displayLoadingAnimation = displayLoadingAnimation;

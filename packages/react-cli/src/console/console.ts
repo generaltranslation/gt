@@ -50,16 +50,16 @@ export const displayFoundTMessage = (file: string, id: string) => {
 
 export const displayUpdatedConfigFile = (configFilepath: string) => {
   console.log(
-    chalk.blue(`Updating config file ${chalk.green(configFilepath)}\n`)
+    chalk.blue(`\nUpdating config file ${chalk.green(configFilepath)}\n`)
   );
 };
 
-export const displayLoadingAnimation = (message: string) => {
-  const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-  let i = 0;
-  const loadingInterval = setInterval(() => {
-    process.stdout.write(`\r${chalk.blue(frames[i])} ${message}`);
-    i = (i + 1) % frames.length;
-  }, 80);
-  return loadingInterval;
+export const displayLoadingAnimation = async (message: string) => {
+  const { default: ora } = await import('ora');
+  const spinner = ora({
+    text: message,
+    color: 'blue',
+  }).start();
+
+  return spinner;
 };

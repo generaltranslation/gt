@@ -1,32 +1,19 @@
-#!/usr/bin/env node
-export type Updates = ({
-    type: 'jsx';
-    source: any;
-    metadata: Record<string, any>;
-} | {
-    type: 'content';
-    source: any;
-    metadata: Record<string, any>;
-})[];
-export type Options = {
-    options: string;
-    apiKey?: string;
-    projectId?: string;
-    jsconfig?: string;
-    dictionary?: string;
-    src?: string[];
-    defaultLocale?: string;
-    locales?: string[];
-    baseUrl: string;
-    inline?: boolean;
-    ignoreErrors: boolean;
-    dryRun: boolean;
-    enableTimeout: boolean;
-    timeout: string;
-};
-export type WrapOptions = {
-    src: string[];
-    options: string;
-    disableIds: boolean;
-};
-export default function main(framework: 'gt-next' | 'gt-react'): void;
+import { BaseCLI } from './BaseCLI';
+import { WrapOptions, Options, Updates } from './types';
+export declare class ReactCLI extends BaseCLI {
+    constructor();
+    protected scanForContent(options: WrapOptions): Promise<{
+        errors: string[];
+        filesUpdated: string[];
+        warnings: string[];
+    }>;
+    protected createDictionaryUpdates(options: Options & {
+        dictionary: string;
+    }, esbuildConfig: any): Promise<Updates>;
+    protected createInlineUpdates(options: Options): Promise<{
+        updates: Updates;
+        errors: string[];
+    }>;
+}
+export default function main(): void;
+export { BaseCLI };

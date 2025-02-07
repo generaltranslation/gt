@@ -1,5 +1,34 @@
 import * as t from '@babel/types';
 
+const MEANINGFUL_REGEX = /[\p{L}\p{N}]/u;
+
+/**
+ * Checks if a node is meaningful. Does not recurse into children.
+ * @param node - The node to check
+ * @returns Whether the node is meaningful
+ */
+export function isMeaningful(node: t.Node): boolean {
+  if (t.isStringLiteral(node) || t.isJSXText(node)) {
+    return MEANINGFUL_REGEX.test(node.value);
+  }
+  // Handle template literals without expressions
+  if (t.isTemplateLiteral(node) && node.expressions.length === 0) {
+    return MEANINGFUL_REGEX.test(node.quasis[0].value.raw);
+  }
+  if (t.isJSXExpressionContainer(node)) {
+    const value = isStaticExpression(node.expression);
+    if (value.isStatic && value.value) {
+      return MEANINGFUL_REGEX.test(value.value);
+    }
+  }
+  if (t.isBinaryExpression(node)) {
+    if (node.operator === '+') {
+      return isMeaningful(node.left) || isMeaningful(node.right);
+    }
+  }
+  return false;
+}
+
 /**
  * Checks if an expression is static (does not contain any variables which could change at runtime).
  * @param expr - The expression to check

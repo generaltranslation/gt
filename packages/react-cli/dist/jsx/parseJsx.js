@@ -44,7 +44,7 @@ const addGTIdentifierToSyntaxTree_1 = __importDefault(require("../data-_gt/addGT
 const warnings_1 = require("../console/warnings");
 const internal_1 = require("generaltranslation/internal");
 const trimJsxStringChildren_1 = require("./trimJsxStringChildren");
-const isStaticExpression_1 = require("./isStaticExpression");
+const evaluateJsx_1 = require("./evaluateJsx");
 // Valid variable components
 const VARIABLE_COMPONENTS = ['Var', 'DateTime', 'Currency', 'Num'];
 /**
@@ -59,7 +59,7 @@ const VARIABLE_COMPONENTS = ['Var', 'DateTime', 'Currency', 'Num'];
 function buildJSXTree(node, unwrappedExpressions, updates, errors, file) {
     if (t.isJSXExpressionContainer(node)) {
         const expr = node.expression;
-        const staticAnalysis = (0, isStaticExpression_1.isStaticExpression)(expr);
+        const staticAnalysis = (0, evaluateJsx_1.isStaticExpression)(expr);
         if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
             // Preserve the exact whitespace for static string expressions
             return {
@@ -109,7 +109,7 @@ function buildJSXTree(node, unwrappedExpressions, updates, errors, file) {
                             (elementIsBranch && attrName !== 'branch')) {
                             // Make sure that variable strings like {`I have ${count} book`} are invalid!
                             if (t.isTemplateLiteral(attr.value.expression) &&
-                                !(0, isStaticExpression_1.isStaticExpression)(attr.value.expression).isStatic) {
+                                !(0, evaluateJsx_1.isStaticExpression)(attr.value.expression).isStatic) {
                                 unwrappedExpressions.push((0, generator_1.default)(attr.value).code);
                             }
                         }
@@ -195,7 +195,7 @@ function parseJSXElement(node, updates, errors, file) {
                     const code = (0, generator_1.default)(expr).code;
                     // Only check for static expressions on id and context props
                     if (attrName === 'id' || attrName === 'context') {
-                        const staticAnalysis = (0, isStaticExpression_1.isStaticExpression)(expr);
+                        const staticAnalysis = (0, evaluateJsx_1.isStaticExpression)(expr);
                         if (!staticAnalysis.isStatic) {
                             errors.push((0, warnings_1.warnVariableProp)(file, attrName, code));
                         }

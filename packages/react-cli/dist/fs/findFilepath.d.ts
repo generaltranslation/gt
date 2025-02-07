@@ -12,3 +12,4 @@ export default function findFilepath(paths: string[], errorMessage?: string): st
  * @returns {string[]} - The resolved file paths.
  */
 export declare function findFilepaths(paths: string[], errorMessage?: string): string[];
+export declare function getRelativePath(file: string, srcDirectory: string): string;
