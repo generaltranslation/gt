@@ -10,12 +10,8 @@ export declare function isMeaningful(node: t.Node): boolean;
  * @param expr - The expression to check
  * @returns An object containing the result of the static check
  */
-export declare function isStaticExpression(
-  expr: t.Expression | t.JSXEmptyExpression
-): {
-  isStatic: boolean;
-  value?: string;
+export declare function isStaticExpression(expr: t.Expression | t.JSXEmptyExpression): {
+    isStatic: boolean;
+    value?: string;
 };
-export declare function isStaticValue(
-  expr: t.Expression | t.JSXEmptyExpression
-): boolean;
+export declare function isStaticValue(expr: t.Expression | t.JSXEmptyExpression): boolean;

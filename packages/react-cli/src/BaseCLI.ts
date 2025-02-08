@@ -176,6 +176,11 @@ export abstract class BaseCLI {
         './gt.config.json'
       )
       .option('--disable-ids', 'Disable id generation for the <T> tags', false)
+      .option(
+        '--disable-formatting',
+        'Disable formatting of edited files',
+        false
+      )
       .action((options: WrapOptions) => this.handleSetupCommand(options));
   }
 
@@ -217,7 +222,7 @@ export abstract class BaseCLI {
     }
 
     // Format updated files if formatters are available
-    await formatFiles(filesUpdated);
+    if (!options.disableFormatting) await formatFiles(filesUpdated);
 
     console.log(
       chalk.green(
