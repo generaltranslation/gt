@@ -7,5 +7,8 @@
  * @returns {Promise<string | null>} A promise that resolves to the primary language from the
  * 'accept-language' header, or null if not available.
  */
-export declare function getNextLocale(defaultLocale: string | undefined, locales: string[]): Promise<string>;
+export declare function getNextLocale(
+  defaultLocale: string | undefined,
+  locales: string[]
+): Promise<string>;
 //# sourceMappingURL=getNextLocale.d.ts.map

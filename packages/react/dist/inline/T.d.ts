@@ -30,14 +30,18 @@ import React from 'react';
  * ```
  *
  */
-declare function T({ children, id, ...props }: {
-    children: any;
-    id?: string;
-    context?: string;
-    [key: string]: any;
+declare function T({
+  children,
+  id,
+  ...props
+}: {
+  children: any;
+  id?: string;
+  context?: string;
+  [key: string]: any;
 }): React.JSX.Element | undefined;
 declare namespace T {
-    var gtTransformation: string;
+  var gtTransformation: string;
 }
 export default T;
 //# sourceMappingURL=T.d.ts.map

@@ -1,46 +1,46 @@
-import esbuild from "esbuild";
-import fs from "fs";
-import path from "path";
-import { displayResolvedPaths } from "../console/console";
+import esbuild from 'esbuild';
+import fs from 'fs';
+import path from 'path';
+import { displayResolvedPaths } from '../console/console';
 
 export default function createESBuildConfig(config: Record<string, any> = {}) {
   const esbuildOptions: esbuild.BuildOptions = {
     bundle: true,
-    format: "cjs",
-    platform: "node",
-    target: "es2021",
+    format: 'cjs',
+    platform: 'node',
+    target: 'es2021',
     loader: {
-      ".js": "jsx",
-      ".jsx": "jsx",
-      ".ts": "ts",
-      ".tsx": "tsx",
-      ".css": "css", // Add CSS loader
+      '.js': 'jsx',
+      '.jsx': 'jsx',
+      '.ts': 'ts',
+      '.tsx': 'tsx',
+      '.css': 'css', // Add CSS loader
     },
-    sourcemap: "inline",
-    external: ["server-only"],
+    sourcemap: 'inline',
+    external: ['server-only'],
     define: {
-      React: "global.React",
+      React: 'global.React',
     },
     plugins: [],
   };
 
   // Add the custom plugin to handle 'server-only' imports
   (esbuildOptions.plugins as any).push({
-    name: "ignore-server-only",
+    name: 'ignore-server-only',
     setup(build: any) {
       build.onResolve({ filter: /^server-only$/ }, () => {
         return {
-          path: "server-only",
-          namespace: "ignore-server-only",
+          path: 'server-only',
+          namespace: 'ignore-server-only',
         };
       });
 
       build.onLoad(
-        { filter: /^server-only$/, namespace: "ignore-server-only" },
+        { filter: /^server-only$/, namespace: 'ignore-server-only' },
         () => {
           return {
-            contents: "module.exports = {};",
-            loader: "js",
+            contents: 'module.exports = {};',
+            loader: 'js',
           };
         }
       );
@@ -49,25 +49,25 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
 
   // Add a plugin to handle CSS imports
   (esbuildOptions.plugins as any).push({
-    name: "css-module",
+    name: 'css-module',
     setup(build: any) {
       build.onResolve({ filter: /\.css$/ }, (args: any) => {
         return {
           path: path.resolve(args.resolveDir, args.path),
-          namespace: "css-module",
+          namespace: 'css-module',
         };
       });
 
       build.onLoad(
-        { filter: /\.css$/, namespace: "css-module" },
+        { filter: /\.css$/, namespace: 'css-module' },
         async (args: any) => {
-          const css = await fs.promises.readFile(args.path, "utf8");
+          const css = await fs.promises.readFile(args.path, 'utf8');
           const contents = `
                     const style = document.createElement('style');
                     style.textContent = ${JSON.stringify(css)};
                     document.head.appendChild(style);
                 `;
-          return { contents, loader: "js" };
+          return { contents, loader: 'js' };
         }
       );
     },
@@ -79,12 +79,12 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
 
       const resolvedPaths: [string, string][] = [];
       for (const [key, value] of Object.entries(config.compilerOptions.paths)) {
-        if (Array.isArray(value) && typeof value[0] === "string") {
+        if (Array.isArray(value) && typeof value[0] === 'string') {
           const resolvedPath = path.resolve(
             process.cwd(),
-            value[0].replace("/*", "")
+            value[0].replace('/*', '')
           );
-          aliases[key.replace("/*", "")] = resolvedPath;
+          aliases[key.replace('/*', '')] = resolvedPath;
           resolvedPaths.push([key, resolvedPath]);
         }
       }
@@ -95,7 +95,7 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
       esbuildOptions.plugins = esbuildOptions.plugins || [];
 
       esbuildOptions.plugins.push({
-        name: "alias",
+        name: 'alias',
         setup(build) {
           build.onResolve({ filter: /.*/ }, (args) => {
             for (const [aliasKey, aliasPath] of Object.entries(aliases)) {
@@ -105,7 +105,7 @@ export default function createESBuildConfig(config: Record<string, any> = {}) {
                   args.path.slice(aliasKey.length + 1)
                 );
 
-                const extensions = [".js", ".jsx", ".ts", ".tsx", ".css"]; // Add .css to extensions
+                const extensions = ['.js', '.jsx', '.ts', '.tsx', '.css']; // Add .css to extensions
 
                 function resolveWithExtensions(
                   basePath: string

@@ -1,12 +1,12 @@
-import getVariableName from "../variables/getVariableName";
+import getVariableName from '../variables/getVariableName';
 import {
   GTProp,
   TaggedChild,
   TaggedChildren,
   TaggedElement,
-} from "../types/types";
-import { isValidTaggedElement } from "../utils/utils";
-import { JsxChild, JsxChildren, JsxElement } from "generaltranslation/internal";
+} from '../types/types';
+import { isValidTaggedElement } from '../utils/utils';
+import { JsxChild, JsxChildren, JsxElement } from 'generaltranslation/internal';
 
 /**
  * Gets the tag name of a React element.
@@ -14,22 +14,22 @@ import { JsxChild, JsxChildren, JsxElement } from "generaltranslation/internal";
  * @returns {string} - The tag name of the React element.
  */
 const getTagName = (child: TaggedElement): string => {
-  if (!child) return "";
+  if (!child) return '';
   const { type, props } = child;
-  if (type && typeof type === "function") {
+  if (type && typeof type === 'function') {
     if (
-      "displayName" in type &&
-      typeof type.displayName === "string" &&
+      'displayName' in type &&
+      typeof type.displayName === 'string' &&
       type.displayName
     )
       return type.displayName;
-    if ("name" in type && typeof type.name === "string" && type.name)
+    if ('name' in type && typeof type.name === 'string' && type.name)
       return type.name;
   }
-  if (type && typeof type === "string") return type;
-  if (props.href) return "a";
-  if (props["data-_gt"]?.id) return `C${props["data-_gt"].id}`;
-  return "function";
+  if (type && typeof type === 'string') return type;
+  if (props.href) return 'a';
+  if (props['data-_gt']?.id) return `C${props['data-_gt'].id}`;
+  return 'function';
 };
 
 const handleSingleChildElement = (child: TaggedElement): JsxChild => {
@@ -38,15 +38,15 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
     type: getTagName(child),
     props: {},
   };
-  if (props["data-_gt"]) {
-    const generaltranslation = props["data-_gt"];
+  if (props['data-_gt']) {
+    const generaltranslation = props['data-_gt'];
     let newGTProp: GTProp = {
       ...generaltranslation,
     };
 
     const transformation = generaltranslation.transformation;
-    if (transformation === "variable") {
-      const variableType = generaltranslation.variableType || "variable";
+    if (transformation === 'variable') {
+      const variableType = generaltranslation.variableType || 'variable';
       const variableName = getVariableName(props, variableType);
       return {
         variable: variableType,
@@ -54,8 +54,8 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
         id: generaltranslation.id,
       };
     }
-    if (transformation === "plural" && generaltranslation.branches) {
-      objectElement.type = "Plural";
+    if (transformation === 'plural' && generaltranslation.branches) {
+      objectElement.type = 'Plural';
       let newBranches: Record<string, any> = {};
       Object.entries(generaltranslation.branches).forEach(
         ([key, value]: any) => {
@@ -64,8 +64,8 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
       );
       newGTProp = { ...newGTProp, branches: newBranches };
     }
-    if (transformation === "branch" && generaltranslation.branches) {
-      objectElement.type = "Branch";
+    if (transformation === 'branch' && generaltranslation.branches) {
+      objectElement.type = 'Branch';
       let newBranches: Record<string, any> = {};
       Object.entries(generaltranslation.branches).forEach(
         ([key, value]: any) => {
@@ -75,7 +75,7 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
       newGTProp = { ...newGTProp, branches: newBranches };
     }
 
-    objectElement.props["data-_gt"] = newGTProp;
+    objectElement.props['data-_gt'] = newGTProp;
   }
   if (props.children) {
     objectElement.props.children = writeChildrenAsObjects(props.children);
@@ -87,7 +87,7 @@ const handleSingleChild = (child: TaggedChild): JsxChild => {
   if (isValidTaggedElement(child)) {
     return handleSingleChildElement(child);
   }
-  if (typeof child === "number") return child.toString();
+  if (typeof child === 'number') return child.toString();
   return child as JsxChild;
 };
 

@@ -1,22 +1,30 @@
-"use strict";
-var __rest = (this && this.__rest) || function (s, e) {
+'use strict';
+var __rest =
+  (this && this.__rest) ||
+  function (s, e) {
     var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+    for (var p in s)
+      if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
         t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
+    if (s != null && typeof Object.getOwnPropertySymbols === 'function')
+      for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+        if (
+          e.indexOf(p[i]) < 0 &&
+          Object.prototype.propertyIsEnumerable.call(s, p[i])
+        )
+          t[p[i]] = s[p[i]];
+      }
     return t;
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-var jsx_runtime_1 = require("react/jsx-runtime");
-var internal_1 = require("gt-react/internal");
-var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
+  };
+var __importDefault =
+  (this && this.__importDefault) ||
+  function (mod) {
+    return mod && mod.__esModule ? mod : { default: mod };
+  };
+Object.defineProperty(exports, '__esModule', { value: true });
+var jsx_runtime_1 = require('react/jsx-runtime');
+var internal_1 = require('gt-react/internal');
+var getI18NConfig_1 = __importDefault(require('../config/getI18NConfig'));
 /**
  * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).
  * It determines which content to display by matching the value of `n` to the appropriate pluralization branch,
@@ -40,12 +48,24 @@ var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
  * @throws {Error} If `n` is not provided or not a valid number.
  */
 function Plural(_a) {
-    var children = _a.children, n = _a.n, _b = _a.locales, locales = _b === void 0 ? [(0, getI18NConfig_1.default)().getDefaultLocale()] : _b, props = __rest(_a, ["children", "n", "locales"]);
-    var generaltranslation = props["data-_gt"], branches = __rest(props, ['data-_gt']);
-    var branch = (typeof n === 'number'
-        ? (0, internal_1.getPluralBranch)(n, locales, branches)
-        : children) || children;
-    return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-n": n, style: { display: 'contents' }, children: branch }));
+  var children = _a.children,
+    n = _a.n,
+    _b = _a.locales,
+    locales =
+      _b === void 0 ? [(0, getI18NConfig_1.default)().getDefaultLocale()] : _b,
+    props = __rest(_a, ['children', 'n', 'locales']);
+  var generaltranslation = props['data-_gt'],
+    branches = __rest(props, ['data-_gt']);
+  var branch =
+    (typeof n === 'number'
+      ? (0, internal_1.getPluralBranch)(n, locales, branches)
+      : children) || children;
+  return (0, jsx_runtime_1.jsx)('span', {
+    'data-_gt': generaltranslation,
+    'data-_gt-n': n,
+    style: { display: 'contents' },
+    children: branch,
+  });
 }
 Plural.gtTransformation = 'plural';
 exports.default = Plural;

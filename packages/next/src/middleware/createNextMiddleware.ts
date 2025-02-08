@@ -47,20 +47,22 @@ export default function createNextMiddleware(
     prefixDefaultLocale?: boolean;
   } = {
     localeRouting: true,
-    prefixDefaultLocale: false
+    prefixDefaultLocale: false,
   }
 ) {
-
   let envParams;
   if (process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS) {
     try {
-      envParams = JSON.parse(process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS)
+      envParams = JSON.parse(
+        process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS
+      );
     } catch (error) {
-      console.error(`gt-next middleware:`, error)
+      console.error(`gt-next middleware:`, error);
     }
   }
 
-  const defaultLocale: string = envParams?.defaultLocale || libraryDefaultLocale;
+  const defaultLocale: string =
+    envParams?.defaultLocale || libraryDefaultLocale;
   const locales: string[] = envParams?.locales || listSupportedLocales();
 
   if (!isValidLocale(defaultLocale))
@@ -108,15 +110,15 @@ export default function createNextMiddleware(
 
     // Check cookie locale
     const cookieLocale = req.cookies.get(localeCookieName);
-    
+
     if (isValidLocale(cookieLocale?.value)) {
       const resetCookieName = 'generaltranslation.locale.reset';
       const resetCookie = req.cookies.get(resetCookieName);
       if (resetCookie?.value) {
-        res.cookies.delete(resetCookieName)
+        res.cookies.delete(resetCookieName);
         candidates.unshift(cookieLocale.value);
       } else {
-        candidates.push(cookieLocale.value)
+        candidates.push(cookieLocale.value);
       }
     }
 
@@ -125,12 +127,14 @@ export default function createNextMiddleware(
       const referer = headerList.get('referer');
       if (referer && typeof referer === 'string') {
         const refererLocale = extractLocale(new URL(referer)?.pathname);
-        if (isValidLocale(refererLocale || '')) candidates.push(refererLocale || '');
+        if (isValidLocale(refererLocale || ''))
+          candidates.push(refererLocale || '');
       }
     }
 
     // Get locales from accept-language header
-    const acceptedLocales = headerList
+    const acceptedLocales =
+      headerList
         .get('accept-language')
         ?.split(',')
         .map((item) => item.split(';')?.[0].trim()) || [];
@@ -140,14 +144,10 @@ export default function createNextMiddleware(
     candidates.push(defaultLocale);
 
     // determine userLocale
-    const userLocale = 
-      standardizeLocale(
-        determineLocale(
-          candidates.filter(isValidLocale), approvedLocales
-        ) || defaultLocale
-      )
-    ;
-
+    const userLocale = standardizeLocale(
+      determineLocale(candidates.filter(isValidLocale), approvedLocales) ||
+        defaultLocale
+    );
     res.headers.set(localeHeaderName, userLocale);
 
     if (localeRouting) {
@@ -155,8 +155,7 @@ export default function createNextMiddleware(
       const originalUrl = req.nextUrl;
       if (pathnameLocale) {
         if (pathnameLocale === userLocale) return res;
-        req.nextUrl.pathname = 
-          pathname.replace(pathnameLocale, userLocale); // replaces first instance
+        req.nextUrl.pathname = pathname.replace(pathnameLocale, userLocale); // replaces first instance
         return NextResponse.redirect(req.nextUrl);
       }
       // Construct new URL with original search parameters

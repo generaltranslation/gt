@@ -1,75 +1,79 @@
 export type Variable = {
-    variable?: string;
-    id?: string | number;
-    key: string;
+  variable?: string;
+  id?: string | number;
+  key: string;
 };
 export type Content = string | Array<string | Variable>;
 export type JsxElement = {
-    type: string;
-    props: {
-        "data-_gt"?: {
-            id: number;
-            transformation?: string;
-            branches?: Record<string, JsxChildren>;
-        };
-        children?: JsxChildren;
+  type: string;
+  props: {
+    'data-_gt'?: {
+      id: number;
+      transformation?: string;
+      branches?: Record<string, JsxChildren>;
     };
+    children?: JsxChildren;
+  };
 };
 export type JsxChild = string | JsxElement | Variable;
 export type JsxChildren = JsxChild | JsxChild[];
 type Metadata = {
-    [key: string]: any;
+  [key: string]: any;
 };
-export type Update = {
-    type: "content";
-    data: {
+export type Update =
+  | {
+      type: 'content';
+      data: {
         source: Content;
         metadata: Metadata;
-    };
-} | {
-    type: "jsx";
-    data: {
+      };
+    }
+  | {
+      type: 'jsx';
+      data: {
         source: JsxChildren;
         metadata: Metadata;
+      };
     };
-};
-export type Request = {
-    type: "content";
-    data: {
+export type Request =
+  | {
+      type: 'content';
+      data: {
         source: Content;
         targetLocale: string;
         metadata: Metadata;
-    };
-} | {
-    type: "jsx";
-    data: {
+      };
+    }
+  | {
+      type: 'jsx';
+      data: {
         source: JsxChildren;
         targetLocale: string;
         metadata: Metadata;
+      };
     };
-};
 export type ContentTranslationResult = {
-    translation: Content;
-    locale: string;
-    reference?: {
-        id: string;
-        key: string;
-    };
+  translation: Content;
+  locale: string;
+  reference?: {
+    id: string;
+    key: string;
+  };
 };
 export type JsxTranslationResult = {
-    translation: JsxChildren;
-    locale: string;
-    reference?: {
-        id: string;
-        key: string;
-    };
+  translation: JsxChildren;
+  locale: string;
+  reference?: {
+    id: string;
+    key: string;
+  };
 };
 export type TranslationError = {
-    error: string;
-    code: number;
-    reference?: {
-        id: string;
-        key: string;
-    };
+  error: string;
+  code: number;
+  reference?: {
+    id: string;
+    key: string;
+  };
 };
 export {};

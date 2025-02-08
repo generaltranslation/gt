@@ -25,6 +25,8 @@ import { select } from '@inquirer/prompts';
 import { waitForUpdates } from './api/waitForUpdates';
 import updateConfig from './fs/config/updateConfig';
 import setupConfig from './fs/config/setupConfig';
+import fs from 'fs';
+import { formatFiles } from './hooks/postProcess';
 
 function resolveProjectId(): string | undefined {
   const CANDIDATES = [
@@ -174,6 +176,11 @@ export abstract class BaseCLI {
         './gt.config.json'
       )
       .option('--disable-ids', 'Disable id generation for the <T> tags', false)
+      .option(
+        '--disable-formatting',
+        'Disable formatting of edited files',
+        false
+      )
       .action((options: WrapOptions) => this.handleSetupCommand(options));
   }
 
@@ -206,14 +213,16 @@ export abstract class BaseCLI {
     // ----- //
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { errors, filesUpdated, warnings } = await this.scanForContent(
-      options
-    );
+    const { errors, filesUpdated, warnings } =
+      await this.scanForContent(options);
 
     if (errors.length > 0) {
       console.log(chalk.red('\n✗ Failed to write files:\n'));
       console.log(errors.join('\n'));
     }
+
+    // Format updated files if formatters are available
+    if (!options.disableFormatting) await formatFiles(filesUpdated);
 
     console.log(
       chalk.green(

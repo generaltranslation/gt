@@ -1,5 +1,5 @@
-import React from "react";
-import { Dictionary, FlattenedDictionary } from "../types/types";
+import React from 'react';
+import { Dictionary, FlattenedDictionary } from '../types/types';
 
 const createDuplicateKeyError = (key: string) =>
   `Duplicate key found in dictionary: "${key}"`;
@@ -14,14 +14,14 @@ const createDuplicateKeyError = (key: string) =>
  */
 export default function flattenDictionary(
   dictionary: Dictionary,
-  prefix: string = ""
+  prefix: string = ''
 ): FlattenedDictionary {
   const flattened: FlattenedDictionary = {};
   for (const key in dictionary) {
     if (dictionary.hasOwnProperty(key)) {
       const newKey = prefix ? `${prefix}.${key}` : key;
       if (
-        typeof dictionary[key] === "object" &&
+        typeof dictionary[key] === 'object' &&
         dictionary[key] !== null &&
         !Array.isArray(dictionary[key]) &&
         !React.isValidElement(dictionary[key])

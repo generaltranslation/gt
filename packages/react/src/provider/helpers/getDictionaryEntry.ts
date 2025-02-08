@@ -1,13 +1,13 @@
-import React from "react";
+import React from 'react';
 import {
   Dictionary,
   DictionaryEntry,
   FlattenedDictionary,
-} from "../../types/types";
-import { createLibraryNoEntryWarning } from "../../messages/createMessages";
+} from '../../types/types';
+import { createLibraryNoEntryWarning } from '../../messages/createMessages';
 
 export default function getDictionaryEntry<
-  T extends Dictionary | FlattenedDictionary
+  T extends Dictionary | FlattenedDictionary,
 >(
   dictionary: T,
   id: string
@@ -15,10 +15,10 @@ export default function getDictionaryEntry<
   ? DictionaryEntry | undefined
   : Dictionary | DictionaryEntry | undefined {
   let current: Dictionary | DictionaryEntry = dictionary;
-  let dictionaryPath = id.split(".");
+  let dictionaryPath = id.split('.');
   for (const key of dictionaryPath) {
     if (
-      typeof current !== "object" ||
+      typeof current !== 'object' ||
       Array.isArray(current) ||
       React.isValidElement(current)
     ) {

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 /**
  * The `<Var>` component renders a variable value, which can either be passed as `children` or a `value`.
@@ -54,19 +54,19 @@ function Var({
   name?: string;
   value?: any;
 }): React.JSX.Element {
-  let final = typeof children !== "undefined" ? children : value;
+  let final = typeof children !== 'undefined' ? children : value;
 
   return (
     <span
       data-_gt-variable-name={name}
-      data-_gt-variable-type={"variable"}
-      style={{ display: "contents" }}
+      data-_gt-variable-type={'variable'}
+      style={{ display: 'contents' }}
     >
       {final}
     </span>
   );
 }
 
-Var.gtTransformation = "variable-variable";
+Var.gtTransformation = 'variable-variable';
 
 export default Var;

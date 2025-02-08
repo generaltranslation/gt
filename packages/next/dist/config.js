@@ -1,34 +1,45 @@
-"use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
+'use strict';
+var __assign =
+  (this && this.__assign) ||
+  function () {
+    __assign =
+      Object.assign ||
+      function (t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
+          s = arguments[i];
+          for (var p in s)
+            if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
         }
         return t;
-    };
+      };
     return __assign.apply(this, arguments);
-};
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+  };
+var __spreadArray =
+  (this && this.__spreadArray) ||
+  function (to, from, pack) {
+    if (pack || arguments.length === 2)
+      for (var i = 0, l = from.length, ar; i < l; i++) {
         if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
+          if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+          ar[i] = from[i];
         }
-    }
+      }
     return to.concat(ar || Array.prototype.slice.call(from));
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
+  };
+var __importDefault =
+  (this && this.__importDefault) ||
+  function (mod) {
+    return mod && mod.__esModule ? mod : { default: mod };
+  };
+Object.defineProperty(exports, '__esModule', { value: true });
 exports.initGT = initGT;
-var path_1 = __importDefault(require("path"));
-var fs_1 = __importDefault(require("fs"));
-var defaultInitGTProps_1 = __importDefault(require("./config/props/defaultInitGTProps"));
-var createErrors_1 = require("./errors/createErrors");
-var supported_locales_1 = require("@generaltranslation/supported-locales");
+var path_1 = __importDefault(require('path'));
+var fs_1 = __importDefault(require('fs'));
+var defaultInitGTProps_1 = __importDefault(
+  require('./config/props/defaultInitGTProps')
+);
+var createErrors_1 = require('./errors/createErrors');
+var supported_locales_1 = require('@generaltranslation/supported-locales');
 /**
  * Initializes General Translation settings for a Next.js application.
  *
@@ -71,99 +82,146 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  *
  */
 function initGT(props) {
-    var _a;
-    // ---------- LOAD GT CONFIG FILE ---------- //
-    var loadedConfig = {};
-    try {
-        var config = props.config || defaultInitGTProps_1.default.config;
-        if (typeof config === 'string' && fs_1.default.existsSync(config)) {
-            var fileContent = fs_1.default.readFileSync(config, 'utf-8');
-            loadedConfig = JSON.parse(fileContent);
+  var _a;
+  // ---------- LOAD GT CONFIG FILE ---------- //
+  var loadedConfig = {};
+  try {
+    var config = props.config || defaultInitGTProps_1.default.config;
+    if (typeof config === 'string' && fs_1.default.existsSync(config)) {
+      var fileContent = fs_1.default.readFileSync(config, 'utf-8');
+      loadedConfig = JSON.parse(fileContent);
+    }
+  } catch (error) {
+    console.error('Error reading GT config file:', error);
+  }
+  // ---------- LOAD ENVIRONMENT VARIABLES ---------- //
+  // resolve project ID
+  var projectId = process.env.GT_PROJECT_ID;
+  // resolve API keys
+  var envApiKey = process.env.GT_API_KEY;
+  var apiKey, devApiKey;
+  if (envApiKey) {
+    var apiKeyType =
+      (_a =
+        envApiKey === null || envApiKey === void 0
+          ? void 0
+          : envApiKey.split('-')) === null || _a === void 0
+        ? void 0
+        : _a[1];
+    if (apiKeyType === 'api') {
+      apiKey = envApiKey;
+    } else if (apiKeyType === 'dev') {
+      devApiKey = envApiKey;
+    }
+  }
+  // conditionally add environment variables to config
+  var envConfig = __assign(
+    __assign(
+      __assign({}, projectId ? { projectId: projectId } : {}),
+      apiKey ? { apiKey: apiKey } : {}
+    ),
+    devApiKey ? { devApiKey: devApiKey } : {}
+  );
+  // ---------- MERGE CONFIGS ---------- //
+  // precedence: input > env > config file > defaults
+  var mergedConfig = __assign(
+    __assign(
+      __assign(__assign({}, defaultInitGTProps_1.default), loadedConfig),
+      envConfig
+    ),
+    props
+  );
+  // ----------- LOCALE STANDARDIZATION ----------- //
+  if (mergedConfig.locales && mergedConfig.defaultLocale) {
+    mergedConfig.locales.unshift(mergedConfig.defaultLocale);
+  }
+  mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
+  // ---------- ERROR CHECKS ---------- //
+  // Check: projectId is not required, but warn if missing for dev, nothing for prod
+  if (
+    (mergedConfig.runtimeTranslation || mergedConfig.remoteCache) &&
+    !mergedConfig.projectId &&
+    process.env.NODE_ENV === 'development'
+  ) {
+    console.warn(createErrors_1.projectIdMissingWarn);
+  }
+  // Check: dev API key should not be included in production
+  if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
+    throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
+  }
+  // Check: An API key is required for runtime translation
+  if (
+    mergedConfig.runtimeTranslation &&
+    mergedConfig.apiKey &&
+    mergedConfig.devApiKey
+  ) {
+    console.error(createErrors_1.APIKeyMissingError);
+  }
+  // Check: if using GT infrastructure, warn about unsupported locales
+  if (
+    mergedConfig.runtimeUrl === defaultInitGTProps_1.default.runtimeUrl ||
+    mergedConfig.cacheUrl === defaultInitGTProps_1.default.cacheUrl
+  ) {
+    var warningLocales = (
+      mergedConfig.locales || defaultInitGTProps_1.default.locales
+    ).filter(function (locale) {
+      return !(0, supported_locales_1.getSupportedLocale)(locale);
+    });
+    if (warningLocales.length) {
+      console.warn(
+        (0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales)
+      );
+    }
+  }
+  // ---------- STORE CONFIGURATIONS ---------- //
+  // Resolve gt.config.json i18n and dictionary paths
+  var resolvedI18NFilePath =
+    typeof mergedConfig.i18n === 'string'
+      ? mergedConfig.i18n
+      : resolveConfigFilepath('i18n');
+  var resolvedDictionaryFilePath =
+    typeof mergedConfig.dictionary === 'string'
+      ? mergedConfig.dictionary
+      : resolveConfigFilepath('dictionary');
+  // Store the resolved paths in the environment
+  var I18NConfigParams = JSON.stringify(mergedConfig);
+  return function (nextConfig) {
+    if (nextConfig === void 0) {
+      nextConfig = {};
+    }
+    return __assign(__assign({}, nextConfig), {
+      env: __assign(__assign({}, nextConfig.env), {
+        _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
+      }),
+      webpack: function webpack() {
+        var _a = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+          _a[_i] = arguments[_i];
         }
-    }
-    catch (error) {
-        console.error('Error reading GT config file:', error);
-    }
-    // ---------- LOAD ENVIRONMENT VARIABLES ---------- //
-    // resolve project ID
-    var projectId = process.env.GT_PROJECT_ID;
-    // resolve API keys
-    var envApiKey = process.env.GT_API_KEY;
-    var apiKey, devApiKey;
-    if (envApiKey) {
-        var apiKeyType = (_a = envApiKey === null || envApiKey === void 0 ? void 0 : envApiKey.split('-')) === null || _a === void 0 ? void 0 : _a[1];
-        if (apiKeyType === 'api') {
-            apiKey = envApiKey;
+        var webpackConfig = _a[0],
+          options = _a[1];
+        if (resolvedI18NFilePath) {
+          webpackConfig.resolve.alias['gt-next/_request'] =
+            path_1.default.resolve(webpackConfig.context, resolvedI18NFilePath);
         }
-        else if (apiKeyType === 'dev') {
-            devApiKey = envApiKey;
+        if (resolvedDictionaryFilePath) {
+          webpackConfig.resolve.alias['gt-next/_dictionary'] =
+            path_1.default.resolve(
+              webpackConfig.context,
+              resolvedDictionaryFilePath
+            );
         }
-    }
-    // conditionally add environment variables to config
-    var envConfig = __assign(__assign(__assign({}, (projectId ? { projectId: projectId } : {})), (apiKey ? { apiKey: apiKey } : {})), (devApiKey ? { devApiKey: devApiKey } : {}));
-    // ---------- MERGE CONFIGS ---------- //
-    // precedence: input > env > config file > defaults
-    var mergedConfig = __assign(__assign(__assign(__assign({}, defaultInitGTProps_1.default), loadedConfig), envConfig), props);
-    // ----------- LOCALE STANDARDIZATION ----------- //
-    if (mergedConfig.locales && mergedConfig.defaultLocale) {
-        mergedConfig.locales.unshift(mergedConfig.defaultLocale);
-    }
-    mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
-    // ---------- ERROR CHECKS ---------- //
-    // Check: projectId is not required, but warn if missing for dev, nothing for prod
-    if ((mergedConfig.runtimeTranslation || mergedConfig.remoteCache) &&
-        !mergedConfig.projectId &&
-        process.env.NODE_ENV === 'development') {
-        console.warn(createErrors_1.projectIdMissingWarn);
-    }
-    // Check: dev API key should not be included in production
-    if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
-        throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
-    }
-    // Check: An API key is required for runtime translation
-    if (mergedConfig.runtimeTranslation &&
-        mergedConfig.apiKey &&
-        mergedConfig.devApiKey) {
-        console.error(createErrors_1.APIKeyMissingError);
-    }
-    // Check: if using GT infrastructure, warn about unsupported locales
-    if (mergedConfig.runtimeUrl === defaultInitGTProps_1.default.runtimeUrl ||
-        mergedConfig.cacheUrl === defaultInitGTProps_1.default.cacheUrl) {
-        var warningLocales = (mergedConfig.locales || defaultInitGTProps_1.default.locales).filter(function (locale) { return !(0, supported_locales_1.getSupportedLocale)(locale); });
-        if (warningLocales.length) {
-            console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));
+        if (
+          typeof (nextConfig === null || nextConfig === void 0
+            ? void 0
+            : nextConfig.webpack) === 'function'
+        ) {
+          return nextConfig.webpack(webpackConfig, options);
         }
-    }
-    // ---------- STORE CONFIGURATIONS ---------- //
-    // Resolve gt.config.json i18n and dictionary paths
-    var resolvedI18NFilePath = typeof mergedConfig.i18n === 'string'
-        ? mergedConfig.i18n
-        : resolveConfigFilepath('i18n');
-    var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
-        ? mergedConfig.dictionary
-        : resolveConfigFilepath('dictionary');
-    // Store the resolved paths in the environment
-    var I18NConfigParams = JSON.stringify(mergedConfig);
-    return function (nextConfig) {
-        if (nextConfig === void 0) { nextConfig = {}; }
-        return __assign(__assign({}, nextConfig), { env: __assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), webpack: function webpack() {
-                var _a = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    _a[_i] = arguments[_i];
-                }
-                var webpackConfig = _a[0], options = _a[1];
-                if (resolvedI18NFilePath) {
-                    webpackConfig.resolve.alias['gt-next/_request'] = path_1.default.resolve(webpackConfig.context, resolvedI18NFilePath);
-                }
-                if (resolvedDictionaryFilePath) {
-                    webpackConfig.resolve.alias['gt-next/_dictionary'] = path_1.default.resolve(webpackConfig.context, resolvedDictionaryFilePath);
-                }
-                if (typeof (nextConfig === null || nextConfig === void 0 ? void 0 : nextConfig.webpack) === 'function') {
-                    return nextConfig.webpack(webpackConfig, options);
-                }
-                return webpackConfig;
-            } });
-    };
+        return webpackConfig;
+      },
+    });
+  };
 }
 /**
  * Resolves a configuration filepath for i18n or dictionary files.
@@ -173,25 +231,33 @@ function initGT(props) {
  * @returns {string|undefined} - The path if found; otherwise undefined.
  */
 function resolveConfigFilepath(fileName, cwd) {
-    function resolvePath(pathname) {
-        var parts = [];
-        if (cwd)
-            parts.push(cwd);
-        parts.push(pathname);
-        return path_1.default.resolve.apply(path_1.default, parts);
+  function resolvePath(pathname) {
+    var parts = [];
+    if (cwd) parts.push(cwd);
+    parts.push(pathname);
+    return path_1.default.resolve.apply(path_1.default, parts);
+  }
+  function pathExists(pathname) {
+    return fs_1.default.existsSync(resolvePath(pathname));
+  }
+  // Check for file existence in the root and src directories with supported extensions
+  for (
+    var _i = 0,
+      _a = __spreadArray(
+        __spreadArray([], withExtensions('./'.concat(fileName)), true),
+        withExtensions('./src/'.concat(fileName)),
+        true
+      );
+    _i < _a.length;
+    _i++
+  ) {
+    var candidate = _a[_i];
+    if (pathExists(candidate)) {
+      return candidate;
     }
-    function pathExists(pathname) {
-        return fs_1.default.existsSync(resolvePath(pathname));
-    }
-    // Check for file existence in the root and src directories with supported extensions
-    for (var _i = 0, _a = __spreadArray(__spreadArray([], withExtensions("./".concat(fileName)), true), withExtensions("./src/".concat(fileName)), true); _i < _a.length; _i++) {
-        var candidate = _a[_i];
-        if (pathExists(candidate)) {
-            return candidate;
-        }
-    }
-    // Return undefined if no file is found
-    return undefined;
+  }
+  // Return undefined if no file is found
+  return undefined;
 }
 /**
  * Helper function to handle multiple extensions.
@@ -200,11 +266,11 @@ function resolveConfigFilepath(fileName, cwd) {
  * @returns {string[]} - Array of possible paths with supported TypeScript/JavaScript extensions.
  */
 function withExtensions(localPath) {
-    return [
-        "".concat(localPath, ".ts"),
-        "".concat(localPath, ".tsx"),
-        "".concat(localPath, ".js"),
-        "".concat(localPath, ".jsx"),
-    ];
+  return [
+    ''.concat(localPath, '.ts'),
+    ''.concat(localPath, '.tsx'),
+    ''.concat(localPath, '.js'),
+    ''.concat(localPath, '.jsx'),
+  ];
 }
 //# sourceMappingURL=config.js.map

@@ -9,7 +9,7 @@ export type Content = string | Array<string | Variable>;
 export type JsxElement = {
   type: string;
   props: {
-    "data-_gt"?: {
+    'data-_gt'?: {
       id: number;
       transformation?: string;
       branches?: Record<string, JsxChildren>;
@@ -27,14 +27,14 @@ type Metadata = {
 
 export type Update =
   | {
-      type: "content";
+      type: 'content';
       data: {
         source: Content;
         metadata: Metadata;
       };
     }
   | {
-      type: "jsx";
+      type: 'jsx';
       data: {
         source: JsxChildren;
         metadata: Metadata;
@@ -43,7 +43,7 @@ export type Update =
 
 export type Request =
   | {
-      type: "content";
+      type: 'content';
       data: {
         source: Content;
         targetLocale: string;
@@ -51,7 +51,7 @@ export type Request =
       };
     }
   | {
-      type: "jsx";
+      type: 'jsx';
       data: {
         source: JsxChildren;
         targetLocale: string;

@@ -1,5 +1,5 @@
-import fs from "fs";
-import path from "path";
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Loads a JSON file from a given filepath, returning null if the file is not found or the JSON doesn't parse.
@@ -8,7 +8,7 @@ import path from "path";
  */
 export default function loadJSON(filepath: string): Record<string, any> | null {
   try {
-    const data = fs.readFileSync(path.resolve(filepath), "utf-8");
+    const data = fs.readFileSync(path.resolve(filepath), 'utf-8');
     return JSON.parse(data);
   } catch (error) {
     // Return null if the file is not found or JSON parsing fails

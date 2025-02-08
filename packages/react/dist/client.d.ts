@@ -5,161 +5,204 @@ import * as react_jsx_runtime from 'react/jsx-runtime';
 type Child = React__default.ReactNode;
 type Children = Child[] | Child;
 type GTProp = {
-    id: number;
-    transformation?: string;
-    children?: Children;
+  id: number;
+  transformation?: string;
+  children?: Children;
 } & Record<string, any>;
 type TaggedChild = React__default.ReactNode | TaggedElement;
 type TaggedChildren = TaggedChild[] | TaggedChild;
 type TaggedElementProps = Record<string, any> & {
-    'data-_gt': GTProp;
+  'data-_gt': GTProp;
 };
 type TaggedElement = React__default.ReactElement<TaggedElementProps>;
 type TaggedEntry = string | TaggedChildren;
-type TaggedDictionaryEntry = TaggedEntry | [TaggedEntry] | [TaggedEntry, Metadata];
+type TaggedDictionaryEntry =
+  | TaggedEntry
+  | [TaggedEntry]
+  | [TaggedEntry, Metadata];
 type FlattenedTaggedDictionary = {
-    [key: string]: TaggedDictionaryEntry;
+  [key: string]: TaggedDictionaryEntry;
 };
 type Entry = string | ReactElement;
 type Metadata = {
-    singular?: Entry;
-    plural?: Entry;
-    zero?: Entry;
-    dual?: Entry;
-    one?: Entry;
-    two?: Entry;
-    few?: Entry;
-    many?: Entry;
-    other?: Entry;
-    context?: string;
-    variablesOptions?: Record<string, any>;
-    [key: string]: any;
+  singular?: Entry;
+  plural?: Entry;
+  zero?: Entry;
+  dual?: Entry;
+  one?: Entry;
+  two?: Entry;
+  few?: Entry;
+  many?: Entry;
+  other?: Entry;
+  context?: string;
+  variablesOptions?: Record<string, any>;
+  [key: string]: any;
 };
 type Variable = {
-    key: string;
-    id?: number;
-    variable?: 'variable' | 'number' | 'datetime' | 'currency';
+  key: string;
+  id?: number;
+  variable?: 'variable' | 'number' | 'datetime' | 'currency';
 };
 type TranslatedElement = {
-    type: string;
-    props: {
-        'data-_gt': {
-            id: number;
-            [key: string]: any;
-        };
-        children?: TranslatedChildren;
+  type: string;
+  props: {
+    'data-_gt': {
+      id: number;
+      [key: string]: any;
     };
+    children?: TranslatedChildren;
+  };
 };
 type TranslatedChild = TranslatedElement | string | Variable;
 type TranslatedChildren = TranslatedChild | TranslatedChild[];
 type TranslatedContent = string | (string | Variable)[];
 type TranslationError = {
-    state: 'error';
-    error: string;
-    code?: number;
+  state: 'error';
+  error: string;
+  code?: number;
 };
 type TranslationSuccess = {
-    state: 'success';
-    target: TranslatedChildren | TranslatedContent;
-    hash?: string;
+  state: 'success';
+  target: TranslatedChildren | TranslatedContent;
+  hash?: string;
 };
 type TranslationLoading = {
-    state: 'loading';
+  state: 'loading';
 };
 type TranslationsObject = {
-    [key: string]: TranslationSuccess | TranslationLoading | TranslationError;
+  [key: string]: TranslationSuccess | TranslationLoading | TranslationError;
 };
 type RenderMethod = 'skeleton' | 'replace' | 'default';
 type TranslateContentCallback = (params: {
-    source: any;
-    targetLocale: string;
-    metadata: {
-        hash: string;
-        context?: string;
-    } & Record<string, any>;
+  source: any;
+  targetLocale: string;
+  metadata: {
+    hash: string;
+    context?: string;
+  } & Record<string, any>;
 }) => Promise<void>;
 type TranslateChildrenCallback = (params: {
-    source: any;
-    targetLocale: string;
-    metadata: {
-        hash: string;
-        context?: string;
-    } & Record<string, any>;
+  source: any;
+  targetLocale: string;
+  metadata: {
+    hash: string;
+    context?: string;
+  } & Record<string, any>;
 }) => Promise<void>;
 type GTContextType = {
-    translateDictionaryEntry: (id: string, options?: Record<string, any>) => React__default.ReactNode;
-    translateContent: TranslateContentCallback;
-    translateChildren: TranslateChildrenCallback;
-    locale: string;
-    locales: string[];
-    setLocale: (locale: string) => void;
-    defaultLocale: string;
-    translations: TranslationsObject | null;
-    translationRequired: boolean;
-    dialectTranslationRequired: boolean;
-    renderSettings: {
-        method: RenderMethod;
-        timeout?: number;
-    };
-    projectId?: string;
-    translationEnabled: boolean;
-    runtimeTranslationEnabled: boolean;
+  translateDictionaryEntry: (
+    id: string,
+    options?: Record<string, any>
+  ) => React__default.ReactNode;
+  translateContent: TranslateContentCallback;
+  translateChildren: TranslateChildrenCallback;
+  locale: string;
+  locales: string[];
+  setLocale: (locale: string) => void;
+  defaultLocale: string;
+  translations: TranslationsObject | null;
+  translationRequired: boolean;
+  dialectTranslationRequired: boolean;
+  renderSettings: {
+    method: RenderMethod;
+    timeout?: number;
+  };
+  projectId?: string;
+  translationEnabled: boolean;
+  runtimeTranslationEnabled: boolean;
 };
 type ClientProviderProps = {
-    children: any;
-    dictionary: FlattenedTaggedDictionary;
-    initialTranslations: TranslationsObject;
-    translationPromises: Record<string, Promise<TranslatedChildren>>;
-    locale: string;
-    locales: string[];
-    _versionId?: string;
-    defaultLocale: string;
-    translationRequired: boolean;
-    dialectTranslationRequired: boolean;
-    requiredPrefix: string | undefined;
-    renderSettings: {
-        method: RenderMethod;
-        timeout?: number;
-    };
-    translationEnabled: boolean;
-    runtimeTranslationEnabled: boolean;
-    projectId?: string;
-    devApiKey?: string;
-    runtimeUrl?: string;
-    onLocaleChange?: () => void;
-    cookieName?: string;
+  children: any;
+  dictionary: FlattenedTaggedDictionary;
+  initialTranslations: TranslationsObject;
+  translationPromises: Record<string, Promise<TranslatedChildren>>;
+  locale: string;
+  locales: string[];
+  _versionId?: string;
+  defaultLocale: string;
+  translationRequired: boolean;
+  dialectTranslationRequired: boolean;
+  requiredPrefix: string | undefined;
+  renderSettings: {
+    method: RenderMethod;
+    timeout?: number;
+  };
+  translationEnabled: boolean;
+  runtimeTranslationEnabled: boolean;
+  projectId?: string;
+  devApiKey?: string;
+  runtimeUrl?: string;
+  onLocaleChange?: () => void;
+  cookieName?: string;
 };
 
 declare const GTContext: React$1.Context<GTContextType | undefined>;
 
-declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId, defaultLocale, runtimeUrl, renderSettings, setTranslations, runtimeTranslationEnabled, ...metadata }: {
-    projectId?: string;
-    devApiKey?: string;
-    locale: string;
-    versionId?: string;
-    defaultLocale?: string;
-    runtimeUrl?: string;
-    runtimeTranslationEnabled: boolean;
-    renderSettings: {
-        method: RenderMethod;
-        timeout?: number;
-    };
-    setTranslations: React.Dispatch<React.SetStateAction<any>>;
-    [key: string]: any;
+declare function useRuntimeTranslation({
+  projectId,
+  devApiKey,
+  locale,
+  versionId,
+  defaultLocale,
+  runtimeUrl,
+  renderSettings,
+  setTranslations,
+  runtimeTranslationEnabled,
+  ...metadata
+}: {
+  projectId?: string;
+  devApiKey?: string;
+  locale: string;
+  versionId?: string;
+  defaultLocale?: string;
+  runtimeUrl?: string;
+  runtimeTranslationEnabled: boolean;
+  renderSettings: {
+    method: RenderMethod;
+    timeout?: number;
+  };
+  setTranslations: React.Dispatch<React.SetStateAction<any>>;
+  [key: string]: any;
 }): {
-    translateContent: TranslateContentCallback;
-    translateChildren: TranslateChildrenCallback;
+  translateContent: TranslateContentCallback;
+  translateChildren: TranslateChildrenCallback;
 };
 
-declare function renderVariable({ variableType, variableName, variableValue, variableOptions, locales, }: {
-    variableType: "variable" | "number" | "datetime" | "currency";
-    variableName: string;
-    variableValue: any;
-    variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
-    locales: string[];
+declare function renderVariable({
+  variableType,
+  variableName,
+  variableValue,
+  variableOptions,
+  locales,
+}: {
+  variableType: 'variable' | 'number' | 'datetime' | 'currency';
+  variableName: string;
+  variableValue: any;
+  variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
+  locales: string[];
 }): React.JSX.Element;
 
-declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl, translationEnabled, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
+declare function ClientProvider({
+  children,
+  dictionary,
+  initialTranslations,
+  translationPromises,
+  locale: _locale,
+  _versionId,
+  defaultLocale,
+  translationRequired,
+  dialectTranslationRequired,
+  locales,
+  requiredPrefix,
+  renderSettings,
+  projectId,
+  devApiKey,
+  runtimeUrl,
+  translationEnabled,
+  runtimeTranslationEnabled,
+  onLocaleChange,
+  cookieName,
+}: ClientProviderProps): React__default.JSX.Element;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -181,14 +224,19 @@ declare function ClientProvider({ children, dictionary, initialTranslations, tra
  * @param {object} [branches] - An object containing possible branches as keys and their corresponding content as values.
  * @returns {JSX.Element} The rendered branch or fallback content.
  */
-declare function Branch({ children, name, branch, ...props }: {
-    children?: any;
-    name?: string;
-    branch?: string;
-    [key: string]: any;
+declare function Branch({
+  children,
+  name,
+  branch,
+  ...props
+}: {
+  children?: any;
+  name?: string;
+  branch?: string;
+  [key: string]: any;
 }): react_jsx_runtime.JSX.Element;
 declare namespace Branch {
-    var gtTransformation: string;
+  var gtTransformation: string;
 }
 
 /**
@@ -214,14 +262,19 @@ declare namespace Branch {
  * @returns {JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
  * @throws {Error} If `n` is not provided or not a valid number.
  */
-declare function Plural({ children, n, locale, ...props }: {
-    children?: any;
-    n?: number;
-    locale?: string;
-    [key: string]: any;
+declare function Plural({
+  children,
+  n,
+  locale,
+  ...props
+}: {
+  children?: any;
+  n?: number;
+  locale?: string;
+  [key: string]: any;
 }): react_jsx_runtime.JSX.Element;
 declare namespace Plural {
-    var gtTransformation: string;
+  var gtTransformation: string;
 }
 
 /**
@@ -252,7 +305,9 @@ declare function useDefaultLocale(): string;
  * const t = useElement();
  * console.log(t('hello')); // Translates item 'hello', returns it as a JSX element
  */
-declare function useElement(id?: string): (id: string, options?: Record<string, any>) => React__default.JSX.Element;
+declare function useElement(
+  id?: string
+): (id: string, options?: Record<string, any>) => React__default.JSX.Element;
 
 /**
  * Gets the translation function `t` provided by `<GTProvider>`.
@@ -267,7 +322,9 @@ declare function useElement(id?: string): (id: string, options?: Record<string, 
  * const t = useGT();
  * console.log(t('hello')); // Translates item 'hello'
  */
-declare function useGT(id?: string): (id: string, options?: Record<string, any>) => React__default.ReactNode;
+declare function useGT(
+  id?: string
+): (id: string, options?: Record<string, any>) => React__default.ReactNode;
 
 /**
  * Retrieves the user's locale from the `<GTProvider>` context.
@@ -311,14 +368,18 @@ declare function useLocale(): string;
  * ```
  *
  */
-declare function T({ children, id, ...props }: {
-    children: any;
-    id?: string;
-    context?: string;
-    [key: string]: any;
+declare function T({
+  children,
+  id,
+  ...props
+}: {
+  children: any;
+  id?: string;
+  context?: string;
+  [key: string]: any;
 }): React__default.JSX.Element | undefined;
 declare namespace T {
-    var gtTransformation: string;
+  var gtTransformation: string;
 }
 
 /**
@@ -343,16 +404,23 @@ declare namespace T {
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {JSX.Element} The formatted currency component.
  */
-declare function Currency({ children, value, name, currency, locales, options, }: {
-    children?: any;
-    name?: string;
-    value?: any;
-    currency?: string;
-    locales?: string[];
-    options?: Intl.NumberFormatOptions;
+declare function Currency({
+  children,
+  value,
+  name,
+  currency,
+  locales,
+  options,
+}: {
+  children?: any;
+  name?: string;
+  value?: any;
+  currency?: string;
+  locales?: string[];
+  options?: Intl.NumberFormatOptions;
 }): React__default.JSX.Element;
 declare namespace Currency {
-    var gtTransformation: string;
+  var gtTransformation: string;
 }
 
 /**
@@ -376,15 +444,21 @@ declare namespace Currency {
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {JSX.Element} The formatted date or time component.
  */
-declare function DateTime({ children, value, name, locales, options, }: {
-    children?: any;
-    name?: string;
-    value?: any;
-    locales?: string[];
-    options?: Intl.DateTimeFormatOptions;
+declare function DateTime({
+  children,
+  value,
+  name,
+  locales,
+  options,
+}: {
+  children?: any;
+  name?: string;
+  value?: any;
+  locales?: string[];
+  options?: Intl.DateTimeFormatOptions;
 }): React__default.JSX.Element;
 declare namespace DateTime {
-    var gtTransformation: string;
+  var gtTransformation: string;
 }
 
 /**
@@ -408,15 +482,21 @@ declare namespace DateTime {
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {JSX.Element} The formatted number component.
  */
-declare function Num({ children, value, name, locales, options, }: {
-    children?: any;
-    name?: string;
-    value?: any;
-    locales?: string[];
-    options?: Intl.NumberFormatOptions;
+declare function Num({
+  children,
+  value,
+  name,
+  locales,
+  options,
+}: {
+  children?: any;
+  name?: string;
+  value?: any;
+  locales?: string[];
+  options?: Intl.NumberFormatOptions;
 }): React__default.JSX.Element;
 declare namespace Num {
-    var gtTransformation: string;
+  var gtTransformation: string;
 }
 
 /**
@@ -464,13 +544,17 @@ declare namespace Num {
  * @param {any} [value] - The default value to be displayed if `children` is not provided.
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
-declare function Var({ children, name, value, }: {
-    children?: any;
-    name?: string;
-    value?: any;
+declare function Var({
+  children,
+  name,
+  value,
+}: {
+  children?: any;
+  name?: string;
+  value?: any;
 }): React__default.JSX.Element;
 declare namespace Var {
-    var gtTransformation: string;
+  var gtTransformation: string;
 }
 
 /**
@@ -478,8 +562,10 @@ declare namespace Var {
  * @param {string[]} locales - The list of supported locales. By default this is the user's list of supported locales from the `<GTProvider>` context.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
-declare function LocaleSelector({ locales, }: {
-    locales?: string[];
+declare function LocaleSelector({
+  locales,
+}: {
+  locales?: string[];
 }): React__default.ReactElement | null;
 
 /**
@@ -500,22 +586,53 @@ declare function LocaleSelector({ locales, }: {
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-declare function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, _versionId, ...metadata }: {
-    children?: React__default.ReactNode;
-    projectId?: string;
-    devApiKey?: string;
-    dictionary?: any;
-    locales?: string[];
-    defaultLocale?: string;
-    locale?: string;
-    cacheUrl?: string;
-    runtimeUrl?: string;
-    renderSettings?: {
-        method: RenderMethod;
-        timeout?: number;
-    };
-    _versionId?: string;
-    [key: string]: any;
+declare function GTProvider({
+  children,
+  projectId: _projectId,
+  devApiKey: _devApiKey,
+  dictionary,
+  locales,
+  defaultLocale,
+  locale: _locale,
+  cacheUrl,
+  runtimeUrl,
+  renderSettings,
+  _versionId,
+  ...metadata
+}: {
+  children?: React__default.ReactNode;
+  projectId?: string;
+  devApiKey?: string;
+  dictionary?: any;
+  locales?: string[];
+  defaultLocale?: string;
+  locale?: string;
+  cacheUrl?: string;
+  runtimeUrl?: string;
+  renderSettings?: {
+    method: RenderMethod;
+    timeout?: number;
+  };
+  _versionId?: string;
+  [key: string]: any;
 }): React__default.JSX.Element;
 
-export { Branch, ClientProvider, Currency, DateTime, GTContext, GTProvider, LocaleSelector, Num, Plural, T, Var, renderVariable, useDefaultLocale, useElement, useGT, useLocale, useRuntimeTranslation };
+export {
+  Branch,
+  ClientProvider,
+  Currency,
+  DateTime,
+  GTContext,
+  GTProvider,
+  LocaleSelector,
+  Num,
+  Plural,
+  T,
+  Var,
+  renderVariable,
+  useDefaultLocale,
+  useElement,
+  useGT,
+  useLocale,
+  useRuntimeTranslation,
+};

@@ -68,8 +68,8 @@ export default function renderDefaultChildren({
         typeof variables.n === 'number'
           ? variables.n
           : typeof child.props.n === 'number'
-          ? child.props.n
-          : child.props['data-_gt-n'];
+            ? child.props.n
+            : child.props['data-_gt-n'];
       if (typeof n === 'number' && typeof variables.n === 'undefined')
         variables.n = n;
       const branches = generaltranslation.branches || {};

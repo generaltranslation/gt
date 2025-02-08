@@ -1,4 +1,4 @@
-import { Dictionary, FlattenedDictionary } from "../types/types";
+import { Dictionary, FlattenedDictionary } from '../types/types';
 /**
  * Flattens a nested dictionary by concatenating nested keys.
  * Throws an error if two keys result in the same flattened key.
@@ -7,5 +7,8 @@ import { Dictionary, FlattenedDictionary } from "../types/types";
  * @returns {Record<string, React.ReactNode>} The flattened dictionary object.
  * @throws {Error} If two keys result in the same flattened key.
  */
-export default function flattenDictionary(dictionary: Dictionary, prefix?: string): FlattenedDictionary;
+export default function flattenDictionary(
+  dictionary: Dictionary,
+  prefix?: string
+): FlattenedDictionary;
 //# sourceMappingURL=flattenDictionary.d.ts.map

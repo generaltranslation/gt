@@ -17,16 +17,23 @@
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {Promise<JSX.Element>} The formatted date or time component.
  */
-declare function DateTime({ children, name, value, options, locales, ...props }: {
-    children?: any;
-    name?: string;
-    value?: any;
-    options?: Intl.DateTimeFormatOptions;
-    locales?: string[];
-    'data-_gt'?: any;
+declare function DateTime({
+  children,
+  name,
+  value,
+  options,
+  locales,
+  ...props
+}: {
+  children?: any;
+  name?: string;
+  value?: any;
+  options?: Intl.DateTimeFormatOptions;
+  locales?: string[];
+  'data-_gt'?: any;
 }): React.JSX.Element;
 declare namespace DateTime {
-    var gtTransformation: string;
+  var gtTransformation: string;
 }
 export default DateTime;
 //# sourceMappingURL=DateTime.d.ts.map

@@ -40,14 +40,20 @@
  *
  * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
-declare function T({ children, id, context, variables, variablesOptions, }: {
-    children: any;
-    id?: string;
-    context?: string;
-    [key: string]: any;
+declare function T({
+  children,
+  id,
+  context,
+  variables,
+  variablesOptions,
+}: {
+  children: any;
+  id?: string;
+  context?: string;
+  [key: string]: any;
 }): Promise<any>;
 declare namespace T {
-    var gtTransformation: string;
+  var gtTransformation: string;
 }
 export default T;
 //# sourceMappingURL=T.d.ts.map

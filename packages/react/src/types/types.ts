@@ -126,7 +126,10 @@ export type GTContextType = {
 };
 
 export class GTTranslationError extends Error {
-  constructor(public error: string, public code: number) {
+  constructor(
+    public error: string,
+    public code: number
+  ) {
     super(error);
     this.code = code;
   }

@@ -1,7 +1,7 @@
-import Num from "../../variables/Num";
-import Var from "../../variables/Var";
-import Currency from "../../variables/Currency";
-import DateTime from "../../variables/DateTime";
+import Num from '../../variables/Num';
+import Var from '../../variables/Var';
+import Currency from '../../variables/Currency';
+import DateTime from '../../variables/DateTime';
 
 export default function renderVariable({
   variableType,
@@ -10,13 +10,13 @@ export default function renderVariable({
   variableOptions,
   locales,
 }: {
-  variableType: "variable" | "number" | "datetime" | "currency";
+  variableType: 'variable' | 'number' | 'datetime' | 'currency';
   variableName: string;
   variableValue: any;
   variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
   locales: string[];
 }): React.JSX.Element {
-  if (variableType === "number") {
+  if (variableType === 'number') {
     return (
       <Num
         name={variableName}
@@ -24,7 +24,7 @@ export default function renderVariable({
         options={variableOptions}
       />
     );
-  } else if (variableType === "datetime") {
+  } else if (variableType === 'datetime') {
     return (
       <DateTime
         name={variableName}
@@ -32,7 +32,7 @@ export default function renderVariable({
         options={variableOptions}
       />
     );
-  } else if (variableType === "currency") {
+  } else if (variableType === 'currency') {
     return (
       <Currency
         name={variableName}

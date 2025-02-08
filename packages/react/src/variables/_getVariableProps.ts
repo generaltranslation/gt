@@ -1,14 +1,14 @@
-import getVariableName from "./getVariableName";
+import getVariableName from './getVariableName';
 
 export default function getVariableProps(props: {
-  "data-_gt"?: {
-    transformation: "variable";
+  'data-_gt'?: {
+    transformation: 'variable';
     [key: string]: any;
   };
   [key: string]: any;
 }) {
-  const variableType: "variable" | "number" | "datetime" | "currency" =
-    props["data-_gt"]?.variableType || "variable";
+  const variableType: 'variable' | 'number' | 'datetime' | 'currency' =
+    props['data-_gt']?.variableType || 'variable';
 
   const result: {
     variableName: string;
@@ -19,10 +19,10 @@ export default function getVariableProps(props: {
     variableType,
     variableName: getVariableName(props, variableType),
     variableValue: (() => {
-      if (typeof props.value !== "undefined") return props.value;
-      if (typeof props["data-_gt-unformatted-value"] !== "undefined")
-        return props["data-_gt-unformatted-value"];
-      if (typeof props.children !== "undefined") return props.children;
+      if (typeof props.value !== 'undefined') return props.value;
+      if (typeof props['data-_gt-unformatted-value'] !== 'undefined')
+        return props['data-_gt-unformatted-value'];
+      if (typeof props.children !== 'undefined') return props.children;
       return undefined;
     })(),
     variableOptions: (() => {
@@ -31,9 +31,9 @@ export default function getVariableProps(props: {
         ...(props.options && { ...props.options }),
       };
       if (Object.keys(variableOptions).length) return variableOptions;
-      if (typeof props["data-_gt-variable-options"] === "string")
-        return JSON.parse(props["data-_gt-variable-options"]);
-      return props["data-_gt-variable-options"] || undefined;
+      if (typeof props['data-_gt-variable-options'] === 'string')
+        return JSON.parse(props['data-_gt-variable-options']);
+      return props['data-_gt-variable-options'] || undefined;
     })(),
   };
 

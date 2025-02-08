@@ -27,6 +27,7 @@ export type WrapOptions = {
     src: string[];
     options: string;
     disableIds: boolean;
+    disableFormatting: boolean;
 };
 export type Framework = 'gt-next' | 'gt-react';
 export interface ContentScanner {

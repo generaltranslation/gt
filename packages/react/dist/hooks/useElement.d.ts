@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 /**
  * `useElement()` hook which gets the translation function `t()` provided by `<GTProvider>`.
  *
@@ -14,5 +14,7 @@ import React from "react";
  * const t = useElement();
  * console.log(t('hello')); // Translates item 'hello', returns it as a JSX element
  */
-export default function useElement(id?: string): (id: string, options?: Record<string, any>) => React.JSX.Element;
+export default function useElement(
+  id?: string
+): (id: string, options?: Record<string, any>) => React.JSX.Element;
 //# sourceMappingURL=useElement.d.ts.map
