@@ -20,15 +20,21 @@ import React from 'react';
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {JSX.Element} The formatted number component.
  */
-declare function Num({ children, value, name, locales, options, }: {
-    children?: any;
-    name?: string;
-    value?: any;
-    locales?: string[];
-    options?: Intl.NumberFormatOptions;
+declare function Num({
+  children,
+  value,
+  name,
+  locales,
+  options,
+}: {
+  children?: any;
+  name?: string;
+  value?: any;
+  locales?: string[];
+  options?: Intl.NumberFormatOptions;
 }): React.JSX.Element;
 declare namespace Num {
-    var gtTransformation: string;
+  var gtTransformation: string;
 }
 export default Num;
 //# sourceMappingURL=Num.d.ts.map

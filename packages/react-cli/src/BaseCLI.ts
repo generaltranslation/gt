@@ -208,9 +208,8 @@ export abstract class BaseCLI {
     // ----- //
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { errors, filesUpdated, warnings } = await this.scanForContent(
-      options
-    );
+    const { errors, filesUpdated, warnings } =
+      await this.scanForContent(options);
 
     if (errors.length > 0) {
       console.log(chalk.red('\n✗ Failed to write files:\n'));

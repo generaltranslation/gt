@@ -1,13 +1,6 @@
-import { libraryDefaultLocale } from "../internal";
+import { libraryDefaultLocale } from '../internal';
 
-const scriptExceptions = [
-    "Cham",
-    "Jamo",
-    "Kawi",
-    "Lisu",
-    "Toto",
-    "Thai"
-];
+const scriptExceptions = ['Cham', 'Jamo', 'Kawi', 'Lisu', 'Toto', 'Thai'];
 
 /**
  * Checks if a given BCP 47 language code is valid.
@@ -16,28 +9,42 @@ const scriptExceptions = [
  * @internal
  */
 export const _isValidLocale = (locale: string): boolean => {
-    try {
-        const { language, region, script } = new Intl.Locale(locale);
-        if (locale.split('-').length !== (() => {
-            let partCount = 1;
-            if (region) partCount += 1;
-            if (script) partCount += 1;
-            return partCount;  
-        })()) return false;
-        const displayLanguageNames = new Intl.DisplayNames([libraryDefaultLocale], { type: 'language' });
-        if (displayLanguageNames.of(language) === language) return false;
-        if (region) {
-            const displayRegionNames = new Intl.DisplayNames([libraryDefaultLocale], { type: 'region' });
-            if (displayRegionNames.of(region) === region) return false;
-        }
-        if (script) {
-            const displayScriptNames = new Intl.DisplayNames([libraryDefaultLocale], { type: 'script' });
-            if (displayScriptNames.of(script) === script && !scriptExceptions.includes(script)) return false;
-        }
-        return true;
-    } catch {
+  try {
+    const { language, region, script } = new Intl.Locale(locale);
+    if (
+      locale.split('-').length !==
+      (() => {
+        let partCount = 1;
+        if (region) partCount += 1;
+        if (script) partCount += 1;
+        return partCount;
+      })()
+    )
+      return false;
+    const displayLanguageNames = new Intl.DisplayNames([libraryDefaultLocale], {
+      type: 'language',
+    });
+    if (displayLanguageNames.of(language) === language) return false;
+    if (region) {
+      const displayRegionNames = new Intl.DisplayNames([libraryDefaultLocale], {
+        type: 'region',
+      });
+      if (displayRegionNames.of(region) === region) return false;
+    }
+    if (script) {
+      const displayScriptNames = new Intl.DisplayNames([libraryDefaultLocale], {
+        type: 'script',
+      });
+      if (
+        displayScriptNames.of(script) === script &&
+        !scriptExceptions.includes(script)
+      )
         return false;
     }
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 /**
@@ -47,9 +54,9 @@ export const _isValidLocale = (locale: string): boolean => {
  * @internal
  */
 export const _standardizeLocale = (locale: string): string => {
-    try {
-        return Intl.getCanonicalLocales(locale)[0];
-    } catch {
-        return locale;
-    }
+  try {
+    return Intl.getCanonicalLocales(locale)[0];
+  } catch {
+    return locale;
+  }
 };

@@ -9,7 +9,8 @@
     "test": "npm run test --workspaces --if-present",
     "transpile": "npm run transpile --workspaces --if-present",
     "release": "npm run release --workspaces --if-present",
-    "build:clean": "npm run build:clean --workspaces --if-present"
+    "build:clean": "npm run build:clean --workspaces --if-present",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,yml,yaml}\""
   },
   "repository": {
     "type": "git",

@@ -14,5 +14,7 @@ import React from 'react';
  * const t = useElement();
  * console.log(t('hello')); // Translates item 'hello', returns as JSX
  */
-export declare function useElement(id?: string): (id: string, options?: Record<string, any>) => React.JSX.Element;
+export declare function useElement(
+  id?: string
+): (id: string, options?: Record<string, any>) => React.JSX.Element;
 //# sourceMappingURL=useElement.d.ts.map

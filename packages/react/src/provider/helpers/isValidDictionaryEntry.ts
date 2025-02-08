@@ -1,4 +1,4 @@
-import React, { ReactNode, ReactElement } from "react";
+import React, { ReactNode, ReactElement } from 'react';
 
 export type Entry = string | ReactElement | ((params: any) => ReactNode);
 export type Metadata = {

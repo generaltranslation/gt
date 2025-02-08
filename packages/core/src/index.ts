@@ -10,9 +10,26 @@ import _translateJsx from './api/jsx/translateJsx';
 import _updateProjectTranslations from './projects/updateProjectTranslations';
 import _getProjectLocales from './projects/getProjectLocales';
 import _determineLocale from './locales/determineLocale';
-import { _formatNum, _formatCurrency, _formatList, _formatRelativeTime, _formatDateTime } from './formatting/format';
-import { _splitStringToContent, _renderContentToString } from './formatting/string_content'
-import { Content, Update, Request, JsxChildren, JsxTranslationResult, ContentTranslationResult, TranslationError } from './types'
+import {
+  _formatNum,
+  _formatCurrency,
+  _formatList,
+  _formatRelativeTime,
+  _formatDateTime,
+} from './formatting/format';
+import {
+  _splitStringToContent,
+  _renderContentToString,
+} from './formatting/string_content';
+import {
+  Content,
+  Update,
+  Request,
+  JsxChildren,
+  JsxTranslationResult,
+  ContentTranslationResult,
+  TranslationError,
+} from './types';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties from './locales/getLocaleProperties';
 import _getLocaleEmoji from './locales/getLocaleEmoji';
@@ -25,123 +42,127 @@ import _isSameDialect from './locales/isSameDialect';
 // ----- HELPER FUNCTIONS ----- //
 
 const getDefaultFromEnv = (VARIABLE: string): string => {
-    if (typeof process !== 'undefined' && process.env) {
-        return process.env[VARIABLE] || '';
-    }
-    return '';
-}
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[VARIABLE] || '';
+  }
+  return '';
+};
 
-// ----- CORE CLASS ----- // 
-
-
+// ----- CORE CLASS ----- //
 
 /**
  * Type representing the constructor parameters for the GT class.
  */
 type GTConstructorParams = {
-    apiKey?: string;
-    devApiKey?: string;
-    sourceLocale?: string;
-    projectId?: string;
-    baseUrl?: string;
+  apiKey?: string;
+  devApiKey?: string;
+  sourceLocale?: string;
+  projectId?: string;
+  baseUrl?: string;
 };
 
 /**
  * GT is the core driver for the General Translation library.
  */
 class GT {
-    apiKey: string;
-    devApiKey: string;
-    sourceLocale: string;
-    projectId: string;
-    baseUrl: string;
+  apiKey: string;
+  devApiKey: string;
+  sourceLocale: string;
+  projectId: string;
+  baseUrl: string;
 
-    /**
-     * Constructs an instance of the GT class.
-     * 
-     * @param {GTConstructorParams} [params] - The parameters for initializing the GT instance.
-     * @param {string} [params.apiKey=''] - The API key for accessing the translation service.
-     * @param {string} [params.sourceLocale='en-US'] - The default locale for translations.
-     * @param {string} [params.projectId=''] - The project ID for the translation service.
-     * @param {string} [params.baseUrl='https://api.gtx.dev'] - The base URL for the translation service.
-     */
-    constructor({
-        apiKey = '',
-        devApiKey = '',
-        sourceLocale = '',
-        projectId = '',
-        baseUrl = defaultBaseUrl
-    }: GTConstructorParams = {}) {
-        this.apiKey = apiKey || getDefaultFromEnv('GT_API_KEY');
-        this.devApiKey = devApiKey || getDefaultFromEnv('GT_DEV_API_KEY');
-        this.projectId = projectId || getDefaultFromEnv('GT_PROJECT_ID');
-        this.sourceLocale = _standardizeLocale(sourceLocale) || '';
-        this.baseUrl = baseUrl;
-    }
+  /**
+   * Constructs an instance of the GT class.
+   *
+   * @param {GTConstructorParams} [params] - The parameters for initializing the GT instance.
+   * @param {string} [params.apiKey=''] - The API key for accessing the translation service.
+   * @param {string} [params.sourceLocale='en-US'] - The default locale for translations.
+   * @param {string} [params.projectId=''] - The project ID for the translation service.
+   * @param {string} [params.baseUrl='https://api.gtx.dev'] - The base URL for the translation service.
+   */
+  constructor({
+    apiKey = '',
+    devApiKey = '',
+    sourceLocale = '',
+    projectId = '',
+    baseUrl = defaultBaseUrl,
+  }: GTConstructorParams = {}) {
+    this.apiKey = apiKey || getDefaultFromEnv('GT_API_KEY');
+    this.devApiKey = devApiKey || getDefaultFromEnv('GT_DEV_API_KEY');
+    this.projectId = projectId || getDefaultFromEnv('GT_PROJECT_ID');
+    this.sourceLocale = _standardizeLocale(sourceLocale) || '';
+    this.baseUrl = baseUrl;
+  }
 
-    /**
-     * Translates a string or an array of strings/variables into a target locale.
-     * If `metadata.save` is provided, the translation is cached for use in a public project.
-     * 
-     * @param {Content} source - The string or array of strings/variables to be translated.
-     * @param {string} locale - The target locale code (e.g., 'en-US', 'fr') for the translation.
-     * @param {{ context?: string, [key: string]: any }} [metadata] - Additional metadata for the translation request.
-     * @param {string} [metadata.context] - Contextual information to assist with the translation.
-     * 
-     * @returns {Promise<ContentTranslationResult | TranslationError>} A promise that resolves to the translated content, or an error if the translation fails.
-     */
-    async translate(
-        source: Content, 
-        locale: string, 
-        metadata?: { 
-            context?: string,
-            id?: string,
-            publish?: boolean,
-            fast?: boolean,
-            sourceLocale?: string,
-            [key: string]: any
-        }
-    ): Promise<ContentTranslationResult | TranslationError> {
-        return await _translate(this, source, locale, { sourceLocale: this.sourceLocale, ...metadata })
+  /**
+   * Translates a string or an array of strings/variables into a target locale.
+   * If `metadata.save` is provided, the translation is cached for use in a public project.
+   *
+   * @param {Content} source - The string or array of strings/variables to be translated.
+   * @param {string} locale - The target locale code (e.g., 'en-US', 'fr') for the translation.
+   * @param {{ context?: string, [key: string]: any }} [metadata] - Additional metadata for the translation request.
+   * @param {string} [metadata.context] - Contextual information to assist with the translation.
+   *
+   * @returns {Promise<ContentTranslationResult | TranslationError>} A promise that resolves to the translated content, or an error if the translation fails.
+   */
+  async translate(
+    source: Content,
+    locale: string,
+    metadata?: {
+      context?: string;
+      id?: string;
+      publish?: boolean;
+      fast?: boolean;
+      sourceLocale?: string;
+      [key: string]: any;
     }
+  ): Promise<ContentTranslationResult | TranslationError> {
+    return await _translate(this, source, locale, {
+      sourceLocale: this.sourceLocale,
+      ...metadata,
+    });
+  }
 
-    /**
-    * Translates JSX elements into a given locale.
-    * 
-    * @param {Object} params - The parameters for the translation.
-    * @param {JsxChildren} params.source - The JSX children content to be translated.
-    * @param {string} params.locale - The target locale for the translation.
-    * @param {Object} params.metadata - Additional metadata for the translation process.
-    * 
-    * @returns {Promise<JsxTranslationResult | TranslationError>} - A promise that resolves to the translated content.
-    */
-    async translateJsx(
-        source: JsxChildren, 
-        locale: string, 
-        metadata?: { 
-            context?: string,
-            id?: string,
-            publish?: boolean,
-            fast?: boolean,
-            sourceLocale?: string,
-            [key: string]: any
-        }
-    ): Promise<JsxTranslationResult | TranslationError> {
-        return await _translateJsx(this, source, locale, { sourceLocale: this.sourceLocale, ...metadata });
+  /**
+   * Translates JSX elements into a given locale.
+   *
+   * @param {Object} params - The parameters for the translation.
+   * @param {JsxChildren} params.source - The JSX children content to be translated.
+   * @param {string} params.locale - The target locale for the translation.
+   * @param {Object} params.metadata - Additional metadata for the translation process.
+   *
+   * @returns {Promise<JsxTranslationResult | TranslationError>} - A promise that resolves to the translated content.
+   */
+  async translateJsx(
+    source: JsxChildren,
+    locale: string,
+    metadata?: {
+      context?: string;
+      id?: string;
+      publish?: boolean;
+      fast?: boolean;
+      sourceLocale?: string;
+      [key: string]: any;
     }
+  ): Promise<JsxTranslationResult | TranslationError> {
+    return await _translateJsx(this, source, locale, {
+      sourceLocale: this.sourceLocale,
+      ...metadata,
+    });
+  }
 }
 
 // ----- EXPORTS ----- //
 
 /**
  * Get the text direction for a given locale code using the Intl.Locale API.
- * 
+ *
  * @param {string} locale - The locale code to check.
  * @returns {string} - 'rtl' if the locale is right-to-left, otherwise 'ltr'.
  */
-export function getLocaleDirection(locale: string): 'ltr' | 'rtl'  {
-    return _getLocaleDirection(locale);
-};
+export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
+  return _getLocaleDirection(locale);
+}
 
 /**
  * Retrieves the display name of locale code using Intl.DisplayNames.
@@ -150,9 +171,12 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl'  {
  * @param {string} [defaultLocale = 'en-US'] - The locale for display names.
  * @returns {string} The display name corresponding to the code.
  */
-export function getLocaleName(locale: string, defaultLocale : string = libraryDefaultLocale): string {
-    return _getLocaleName(locale, defaultLocale);
-};
+export function getLocaleName(
+  locale: string,
+  defaultLocale: string = libraryDefaultLocale
+): string {
+  return _getLocaleName(locale, defaultLocale);
+}
 
 /**
  * Generates linguistic details for a given locale code.
@@ -186,50 +210,55 @@ export function getLocaleName(locale: string, defaultLocale : string = libraryDe
  * @property {string} minimizedName - Minimized language name in the default language, e.g., "Austrian German".
  * @property {string} nativeMinimizedName - Minimized language name in the native language, e.g., "Österreichisches Deutsch".
  * @property {string} emoji - The emoji associated with the locale's region, if applicable.
-*/
-export function getLocaleProperties(locale: string, defaultLocale?: string): {
-    // assume code = "de-AT", defaultLocale = "en-US"
-    code: string; // "de-AT"
-    name: string; // "Austrian German"
-    nativeName: string; // "Österreichisches Deutsch"
-    languageCode: string; // "de"
-    languageName: string; // "German"
-    nativeLanguageName: string; // "Deutsch"
-    // note that maximize() is NOT called here!
-    nameWithRegionCode: string // "German (AT)"
-    nativeNameWithRegionCode: string // "Deutsch (AT)"
-    // for most likely script and region, maximize() is called
-    regionCode: string // "AT"
-    regionName: string // "Austria"
-    nativeRegionName: string // Österreich
-    scriptCode: string; // "Latn"
-    scriptName: string; // "Latin"
-    nativeScriptName: string; // "Lateinisch"
-    maximizedCode: string // "de-Latn-AT"
-    maximizedName: string // "Austrian German (Latin)"
-    nativeMaximizedName: string; // Österreichisches Deutsch (Lateinisch)
-    minimizedCode: string; // "de-AT", but for "de-DE" it would just be "de"
-    minimizedName: string; // ""Austrian German";
-    nativeMinimizedName: string; // "Österreichisches Deutsch"
-    // Emoji depending on region code
-    // In order not to accidentally spark international conflict, some emojis are hard-coded
-    emoji: string; 
+ */
+export function getLocaleProperties(
+  locale: string,
+  defaultLocale?: string
+): {
+  // assume code = "de-AT", defaultLocale = "en-US"
+  code: string; // "de-AT"
+  name: string; // "Austrian German"
+  nativeName: string; // "Österreichisches Deutsch"
+  languageCode: string; // "de"
+  languageName: string; // "German"
+  nativeLanguageName: string; // "Deutsch"
+  // note that maximize() is NOT called here!
+  nameWithRegionCode: string; // "German (AT)"
+  nativeNameWithRegionCode: string; // "Deutsch (AT)"
+  // for most likely script and region, maximize() is called
+  regionCode: string; // "AT"
+  regionName: string; // "Austria"
+  nativeRegionName: string; // Österreich
+  scriptCode: string; // "Latn"
+  scriptName: string; // "Latin"
+  nativeScriptName: string; // "Lateinisch"
+  maximizedCode: string; // "de-Latn-AT"
+  maximizedName: string; // "Austrian German (Latin)"
+  nativeMaximizedName: string; // Österreichisches Deutsch (Lateinisch)
+  minimizedCode: string; // "de-AT", but for "de-DE" it would just be "de"
+  minimizedName: string; // ""Austrian German";
+  nativeMinimizedName: string; // "Österreichisches Deutsch"
+  // Emoji depending on region code
+  // In order not to accidentally spark international conflict, some emojis are hard-coded
+  emoji: string;
 } {
-    return _getLocaleProperties(locale, defaultLocale)
-};
+  return _getLocaleProperties(locale, defaultLocale);
+}
 
 /**
  * Retrieves an emoji based on a given locale code, taking into account region, language, and specific exceptions.
  * This function uses the locale's region (if present) to select an emoji or falls back on default emojis for certain languages.
- * 
+ *
  * @param code - A string representing the locale code (e.g., 'en-US', 'fr-CA').
  * @param custom - An optional custom mapping of locale codes to emojis.
  * @returns The emoji representing the locale or its region, or a default emoji if no specific match is found.
-*/
-export function getLocaleEmoji(locale: string, custom?: Record<string, string>) {
-    return _getLocaleEmoji(locale, custom);
+ */
+export function getLocaleEmoji(
+  locale: string,
+  custom?: Record<string, string>
+) {
+  return _getLocaleEmoji(locale, custom);
 }
-
 
 /**
  * Checks if a given BCP 47 locale code is valid.
@@ -237,8 +266,8 @@ export function getLocaleEmoji(locale: string, custom?: Record<string, string>) 
  * @returns {boolean} True if the BCP 47 code is valid, false otherwise.
  */
 export function isValidLocale(locale: string): boolean {
-    return _isValidLocale(locale);
-};
+  return _isValidLocale(locale);
+}
 
 /**
  * Standardizes a BCP 47 locale code to ensure correct formatting.
@@ -246,40 +275,40 @@ export function isValidLocale(locale: string): boolean {
  * @returns {string} The standardized BCP 47 locale code or an empty string if it is an invalid code.
  */
 export function standardizeLocale(locale: string): string {
-    return _standardizeLocale(locale);
-};
+  return _standardizeLocale(locale);
+}
 
 /**
  * Checks if multiple BCP 47 locale codes represent the same dialect.
- * 
+ *
  * For example, `"en-US"` and `"en-GB"` are the same language, but different dialects.
  * `isSameDialect("en-US", "en-GB")` would return `false`.
- * 
+ *
  * For checking if two locale codes represent the same language, see `isSameLanguage()`.
- * 
+ *
  * Note that `isSameDialect("en", "en-US")` and `isSameDialect("en", "en-GB")` would both return true.
- * 
+ *
  * @param {string[]} locales - The BCP 47 locale codes to compare.
  * @returns {boolean} True if all BCP 47 codes represent the same dialect, false otherwise.
  */
 export function isSameDialect(...locales: (string | string[])[]): boolean {
-    return _isSameDialect(...locales)
-};
+  return _isSameDialect(...locales);
+}
 
 /**
  * Checks if multiple BCP 47 locale codes represent the same language.
- * 
+ *
  * For example, `"en-US"` and `"en-GB"` are the same language, English.
  * `isSameDialect("en-US", "en-GB")` would return `true`.
- * 
+ *
  * For checking if two codes represent the exact same dialect, see `isSameDialect()`.
- * 
+ *
  * @param {string[]} locales - The BCP 47 locale codes to compare.
  * @returns {boolean} True if all BCP 47 codes represent the same locale, false otherwise.
-*/
+ */
 export function isSameLanguage(...locales: (string | string[])[]): boolean {
-    return _isSameLanguage(...locales)
-};
+  return _isSameLanguage(...locales);
+}
 
 /**
  * Formats a number according to the specified locales and options.
@@ -289,9 +318,13 @@ export function isSameLanguage(...locales: (string | string[])[]): boolean {
  * @param {Intl.NumberFormatOptions} [params.options={}] - Additional options for number formatting.
  * @returns {string} The formatted number.
  */
-export function formatNum(params: { value: number; locales?: string | string[]; options?: Intl.NumberFormatOptions }): string {
-    return _formatNum(params);
-};
+export function formatNum(params: {
+  value: number;
+  locales?: string | string[];
+  options?: Intl.NumberFormatOptions;
+}): string {
+  return _formatNum(params);
+}
 
 /**
  * Formats a date according to the specified languages and options.
@@ -301,9 +334,13 @@ export function formatNum(params: { value: number; locales?: string | string[]; 
  * @param {Intl.DateTimeFormatOptions} [params.options={}] - Additional options for date formatting.
  * @returns {string} The formatted date.
  */
-export function formatDateTime(params: { value: Date; locales?: string | string[]; options?: Intl.DateTimeFormatOptions }): string {
-    return _formatDateTime(params);
-};
+export function formatDateTime(params: {
+  value: Date;
+  locales?: string | string[];
+  options?: Intl.DateTimeFormatOptions;
+}): string {
+  return _formatDateTime(params);
+}
 
 /**
  * Formats a currency value according to the specified languages, currency, and options.
@@ -314,9 +351,14 @@ export function formatDateTime(params: { value: Date; locales?: string | string[
  * @param {Intl.NumberFormatOptions} [params.options={}] - Additional options for currency formatting.
  * @returns {string} The formatted currency value.
  */
-export function formatCurrency(params: { value: number; currency: string; locales?: string | string[]; options?: Intl.NumberFormatOptions }): string {
-    return _formatCurrency(params);
-};
+export function formatCurrency(params: {
+  value: number;
+  currency: string;
+  locales?: string | string[];
+  options?: Intl.NumberFormatOptions;
+}): string {
+  return _formatCurrency(params);
+}
 
 /**
  * Formats a list of items according to the specified locales and options.
@@ -326,9 +368,13 @@ export function formatCurrency(params: { value: number; currency: string; locale
  * @param {Intl.ListFormatOptions} [params.options={}] - Additional options for list formatting.
  * @returns {string} The formatted list.
  */
-export function formatList(params: { value: Array<string | number>; locales?: string | string[]; options?: Intl.ListFormatOptions }) {
-    return _formatList(params);
-};
+export function formatList(params: {
+  value: Array<string | number>;
+  locales?: string | string[];
+  options?: Intl.ListFormatOptions;
+}) {
+  return _formatList(params);
+}
 
 /**
  * Formats a relative time value according to the specified locales and options.
@@ -339,9 +385,14 @@ export function formatList(params: { value: Array<string | number>; locales?: st
  * @param {Intl.RelativeTimeFormatOptions} [params.options={}] - Additional options for relative time formatting.
  * @returns {string} The formatted relative time string.
  */
-export function formatRelativeTime(params: { value: number; unit: Intl.RelativeTimeFormatUnit; locales?: string | string[]; options?: Intl.RelativeTimeFormatOptions }): string {
-    return _formatRelativeTime(params);
-};
+export function formatRelativeTime(params: {
+  value: number;
+  unit: Intl.RelativeTimeFormatUnit;
+  locales?: string | string[];
+  options?: Intl.RelativeTimeFormatOptions;
+}): string {
+  return _formatRelativeTime(params);
+}
 
 /**
  * Splits a string into an array of text and variable objects.
@@ -349,8 +400,8 @@ export function formatRelativeTime(params: { value: number; unit: Intl.RelativeT
  * @returns {Content} - An array containing strings and variables.
  */
 export function splitStringToContent(string: string): Content {
-    return _splitStringToContent(string);
-};
+  return _splitStringToContent(string);
+}
 
 /**
  * Renders content to a string by replacing variables with their formatted values.
@@ -360,9 +411,14 @@ export function splitStringToContent(string: string): Content {
  * @param {Record<string, any>} [variableOptions={}] - An object containing options for formatting variables.
  * @returns {string} - The rendered string with variables replaced by their formatted values.
  */
-export function renderContentToString(content: Content, locales?: string | string[], variables?: Record<string, any>, variableOptions?: Record<string, any>): string {
-    return _renderContentToString(content, locales, variables, variableOptions)
-};
+export function renderContentToString(
+  content: Content,
+  locales?: string | string[],
+  variables?: Record<string, any>,
+  variableOptions?: Record<string, any>
+): string {
+  return _renderContentToString(content, locales, variables, variableOptions);
+}
 
 /**
  * Determines the best matching locale from the provided approved locales list.
@@ -370,27 +426,34 @@ export function renderContentToString(content: Content, locales?: string | strin
  * @param {string[]} approvedLocales - An array of approved locales, also sorted by preference.
  * @returns {string | undefined} - The best matching locale from the approvedLocales list, or undefined if no match is found.
  */
-export function determineLocale(locales: string | string[], approvedLocales: string[]): string | undefined {
-    return _determineLocale(locales, approvedLocales);
-};
+export function determineLocale(
+  locales: string | string[],
+  approvedLocales: string[]
+): string | undefined {
+  return _determineLocale(locales, approvedLocales);
+}
 
 /**
  * Determines whether a translation is required based on the source and target locales.
- * 
+ *
  * - If the target locale is not specified, the function returns `false`, as translation is not needed.
  * - If the source and target locale are the same, returns `false`, indicating that no translation is necessary.
  * - If the `approvedLocales` array is provided, and the target locale is not within that array, the function also returns `false`.
  * - Otherwise, it returns `true`, meaning that a translation is required.
- * 
+ *
  * @param {string} sourceLocale - The locale code for the original content (BCP 47 locale code).
  * @param {string} targetLocale - The locale code of the language to translate the content into (BCP 47 locale code).
  * @param {string[]} [approvedLocale] - An optional array of approved target locales.
- * 
+ *
  * @returns {boolean} - Returns `true` if translation is required, otherwise `false`.
  */
-export function requiresTranslation(sourceLocale: string, targetLocale: string, approvedLocales?: string[]): boolean {
-    return _requiresTranslation(sourceLocale, targetLocale, approvedLocales);
-};
+export function requiresTranslation(
+  sourceLocale: string,
+  targetLocale: string,
+  approvedLocales?: string[]
+): boolean {
+  return _requiresTranslation(sourceLocale, targetLocale, approvedLocales);
+}
 
 // DEFAULT EXPORT
 

@@ -1,6 +1,6 @@
-import fs from "fs";
-import { isValidLocale } from "generaltranslation";
-import path from "path";
+import fs from 'fs';
+import { isValidLocale } from 'generaltranslation';
+import path from 'path';
 
 /**
  * Extracts projectId, defaultLocale, and locales from a next.config.js file.
@@ -21,7 +21,7 @@ export function parseNextConfig(filePath: string): {
   }
 
   // Read the file content
-  const fileContent = fs.readFileSync(absoluteFilePath, "utf8");
+  const fileContent = fs.readFileSync(absoluteFilePath, 'utf8');
 
   // Regular expressions to extract the values
   const defaultLocaleRegex = /defaultLocale:\s*['"]([^'"]+)['"]/;
@@ -34,18 +34,18 @@ export function parseNextConfig(filePath: string): {
   const localesMatch = fileContent.match(localesRegex);
 
   const defaultLocale =
-    defaultLocaleMatch && typeof defaultLocaleMatch[1] === "string"
+    defaultLocaleMatch && typeof defaultLocaleMatch[1] === 'string'
       ? defaultLocaleMatch[1]
       : undefined;
   const projectId =
-    projectIdMatch && typeof projectIdMatch[1] === "string"
+    projectIdMatch && typeof projectIdMatch[1] === 'string'
       ? projectIdMatch[1]
       : undefined;
   const locales = localesMatch
     ? localesMatch[1]
-        .split(",")
-        .map((locale) => locale.trim().replace(/['"]/g, ""))
-        .filter((locale) => typeof locale === "string")
+        .split(',')
+        .map((locale) => locale.trim().replace(/['"]/g, ''))
+        .filter((locale) => typeof locale === 'string')
     : undefined;
 
   // Ensure approvedLocales is an array of strings

@@ -1,4 +1,8 @@
-export declare function trimJsxStringChild(child: string, index: number, childrenTypes: ('expression' | 'text' | 'element')[]): string;
+export declare function trimJsxStringChild(
+  child: string,
+  index: number,
+  childrenTypes: ('expression' | 'text' | 'element')[]
+): string;
 /**
  * Handles whitespace in children of a JSX element.
  * @param currentTree - The current tree to handle

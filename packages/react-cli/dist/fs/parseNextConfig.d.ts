@@ -4,7 +4,7 @@
  * @returns {object|null} - An object containing the extracted values or null if none found or incorrect types.
  */
 export declare function parseNextConfig(filePath: string): {
-    projectId?: string;
-    defaultLocale?: string;
-    locales?: string[];
+  projectId?: string;
+  defaultLocale?: string;
+  locales?: string[];
 };

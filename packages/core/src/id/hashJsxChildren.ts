@@ -1,8 +1,8 @@
 // Functions provided to other GT libraries
 
-import { JsxChild, JsxChildren, Variable } from "../types";
-import stringify from "fast-json-stable-stringify";
-import CryptoJS from "crypto-js";
+import { JsxChild, JsxChildren, Variable } from '../types';
+import stringify from 'fast-json-stable-stringify';
+import CryptoJS from 'crypto-js';
 
 // ----- FUNCTIONS ----- //
 /**
@@ -39,7 +39,7 @@ export function hashJsxChildren({
   return hashFunction(unhashedKey);
 }
 
-type SanitizedVariable = Omit<Variable, "id">;
+type SanitizedVariable = Omit<Variable, 'id'>;
 
 type SanitizedElement = {
   branches?: {
@@ -52,10 +52,10 @@ type SanitizedChild = SanitizedElement | SanitizedVariable | string;
 type SanitizedChildren = SanitizedChild | SanitizedChild[];
 
 const sanitizeChild = (child: JsxChild): SanitizedChild => {
-  if (child && typeof child === "object") {
-    if ("props" in child) {
+  if (child && typeof child === 'object') {
+    if ('props' in child) {
       const newChild: SanitizedChild = {};
-      const dataGt = child?.props?.["data-_gt"];
+      const dataGt = child?.props?.['data-_gt'];
       if (dataGt?.branches) {
         // The only thing that prevents sanitizeJsx from being stable is
         // the order of the keys in the branches object.
@@ -70,12 +70,12 @@ const sanitizeChild = (child: JsxChild): SanitizedChild => {
       if (child?.props?.children) {
         newChild.children = sanitizeJsxChildren(child.props.children);
       }
-      if (child?.props?.["data-_gt"]?.transformation) {
-        newChild.transformation = child.props["data-_gt"].transformation;
+      if (child?.props?.['data-_gt']?.transformation) {
+        newChild.transformation = child.props['data-_gt'].transformation;
       }
       return newChild;
     }
-    if ("key" in child) {
+    if ('key' in child) {
       return {
         key: child.key,
         ...(child.variable && {

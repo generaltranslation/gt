@@ -1,19 +1,19 @@
-import React, { ReactElement, ReactNode } from "react";
+import React, { ReactElement, ReactNode } from 'react';
 import {
   TranslatedChildren,
   TranslatedElement,
   Variable,
-} from "../../types/types";
-import isVariableObject from "../helpers/isVariableObject";
-import getGTProp from "../helpers/getGTProp";
-import getVariableProps from "../../variables/_getVariableProps";
-import renderDefaultChildren from "./renderDefaultChildren";
-import { libraryDefaultLocale } from "generaltranslation/internal";
+} from '../../types/types';
+import isVariableObject from '../helpers/isVariableObject';
+import getGTProp from '../helpers/getGTProp';
+import getVariableProps from '../../variables/_getVariableProps';
+import renderDefaultChildren from './renderDefaultChildren';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import {
   baseVariablePrefix,
   getFallbackVariableName,
-} from "../../variables/getVariableName";
-import getPluralBranch from "../../branches/plurals/getPluralBranch";
+} from '../../variables/getVariableName';
+import getPluralBranch from '../../branches/plurals/getPluralBranch';
 
 function renderTranslatedElement({
   sourceElement,
@@ -34,7 +34,7 @@ function renderTranslatedElement({
     variableValue,
     variableOptions,
   }: {
-    variableType: "variable" | "number" | "datetime" | "currency";
+    variableType: 'variable' | 'number' | 'datetime' | 'currency';
     variableName: string;
     variableValue: any;
     variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
@@ -43,25 +43,25 @@ function renderTranslatedElement({
 }): React.ReactNode {
   const { props } = sourceElement;
 
-  const generaltranslation = props["data-_gt"];
-  const transformation = generaltranslation?.["transformation"];
+  const generaltranslation = props['data-_gt'];
+  const transformation = generaltranslation?.['transformation'];
 
-  if (transformation === "plural") {
+  if (transformation === 'plural') {
     const n =
-      typeof variables.n === "number"
+      typeof variables.n === 'number'
         ? variables.n
-        : typeof sourceElement.props.n === "number"
-        ? sourceElement.props.n
-        : sourceElement.props["data-_gt-n"];
+        : typeof sourceElement.props.n === 'number'
+          ? sourceElement.props.n
+          : sourceElement.props['data-_gt-n'];
     const sourceBranches = generaltranslation.branches || {};
     const sourceBranch =
       getPluralBranch(n, locales, sourceBranches) ||
       sourceElement.props.children;
-    const targetBranches = targetElement.props["data-_gt"].branches || {};
+    const targetBranches = targetElement.props['data-_gt'].branches || {};
     const targetBranch =
       getPluralBranch(n, locales, targetBranches) ||
       targetElement.props.children;
-    if (typeof n === "number" && typeof variables.n === "undefined")
+    if (typeof n === 'number' && typeof variables.n === 'undefined')
       variables.n = n;
     return renderTranslatedChildren({
       source: sourceBranch,
@@ -73,15 +73,15 @@ function renderTranslatedElement({
     });
   }
 
-  if (transformation === "branch") {
+  if (transformation === 'branch') {
     let { name, branch, children } = props;
-    name = name || sourceElement.props["data-_gt-name"] || "branch";
+    name = name || sourceElement.props['data-_gt-name'] || 'branch';
     branch =
-      variables[name] || branch || sourceElement.props["data-_gt-branch-name"];
+      variables[name] || branch || sourceElement.props['data-_gt-branch-name'];
     const sourceBranch =
       (generaltranslation.branches || {})[branch] || children;
     const targetBranch =
-      (targetElement.props["data-_gt"].branches || {})[branch] ||
+      (targetElement.props['data-_gt'].branches || {})[branch] ||
       targetElement.props.children;
     return renderTranslatedChildren({
       source: sourceBranch,
@@ -96,7 +96,7 @@ function renderTranslatedElement({
   if (props?.children && targetElement.props?.children) {
     return React.cloneElement(sourceElement, {
       ...props,
-      "data-_gt": undefined,
+      'data-_gt': undefined,
       children: renderTranslatedChildren({
         source: props.children,
         target: targetElement.props.children,
@@ -136,7 +136,7 @@ export default function renderTranslatedChildren({
     variableValue,
     variableOptions,
   }: {
-    variableType: "variable" | "number" | "datetime" | "currency";
+    variableType: 'variable' | 'number' | 'datetime' | 'currency';
     variableName: string;
     variableValue: any;
     variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
@@ -144,7 +144,7 @@ export default function renderTranslatedChildren({
   }) => React.JSX.Element;
 }): ReactNode {
   // Most straightforward case, return a valid React node
-  if ((target === null || typeof target === "undefined") && source)
+  if ((target === null || typeof target === 'undefined') && source)
     return renderDefaultChildren({
       children: source,
       variables,
@@ -152,7 +152,7 @@ export default function renderTranslatedChildren({
       defaultLocale: locales[0],
       renderVariable,
     });
-  if (typeof target === "string") return target;
+  if (typeof target === 'string') return target;
 
   // Convert source to an array in case target has multiple children where source only has one
   if (Array.isArray(target) && !Array.isArray(source) && source)
@@ -163,14 +163,14 @@ export default function renderTranslatedChildren({
       if (React.isValidElement(sourceChild)) {
         const generaltranslation = getGTProp(sourceChild);
         getVariableProps(sourceChild.props as any);
-        if (generaltranslation?.transformation === "variable") {
+        if (generaltranslation?.transformation === 'variable') {
           let { variableName, variableValue, variableOptions, variableType } =
             getVariableProps(sourceChild.props as any);
-          if (typeof variables[variableName] === "undefined") {
+          if (typeof variables[variableName] === 'undefined') {
             variables[variableName] = variableValue;
           }
           const fallback = getFallbackVariableName(variableType);
-          if (typeof variables[fallback] === "undefined")
+          if (typeof variables[fallback] === 'undefined')
             variables[fallback] = variableValue;
           variablesOptions[variableName] = {
             ...variablesOptions[variableName],
@@ -187,9 +187,9 @@ export default function renderTranslatedChildren({
     ): ReactElement | undefined => {
       return sourceElements.find((sourceChild) => {
         const generaltranslation = getGTProp(sourceChild);
-        if (typeof generaltranslation?.id !== "undefined") {
+        if (typeof generaltranslation?.id !== 'undefined') {
           const sourceId = generaltranslation.id;
-          const targetId = targetElement?.props?.["data-_gt"]?.id;
+          const targetId = targetElement?.props?.['data-_gt']?.id;
           return sourceId === targetId;
         }
         return false;
@@ -197,21 +197,21 @@ export default function renderTranslatedChildren({
     };
 
     return target.map((targetChild, index) => {
-      if (typeof targetChild === "string")
+      if (typeof targetChild === 'string')
         return (
           <React.Fragment key={`string_${index}`}>{targetChild}</React.Fragment>
         );
       if (isVariableObject(targetChild)) {
         const variableName = targetChild.key;
-        const variableType = targetChild.variable || "variable";
+        const variableType = targetChild.variable || 'variable';
         const variableValue = (() => {
-          if (typeof variables[targetChild.key] !== "undefined")
+          if (typeof variables[targetChild.key] !== 'undefined')
             return variables[targetChild.key];
 
           if (variableName.startsWith(baseVariablePrefix)) {
             // pain point: somewhat breakable logic
             const fallbackVariableName = getFallbackVariableName(variableType);
-            if (typeof variables[fallbackVariableName] !== "undefined") {
+            if (typeof variables[fallbackVariableName] !== 'undefined') {
               return variables[fallbackVariableName];
             }
           }
@@ -246,13 +246,13 @@ export default function renderTranslatedChildren({
     });
   }
 
-  if (target && typeof target === "object" && !Array.isArray(target)) {
-    const targetType: "variable" | "element" = isVariableObject(target)
-      ? "variable"
-      : "element";
+  if (target && typeof target === 'object' && !Array.isArray(target)) {
+    const targetType: 'variable' | 'element' = isVariableObject(target)
+      ? 'variable'
+      : 'element';
 
     if (React.isValidElement(source)) {
-      if (targetType === "element") {
+      if (targetType === 'element') {
         return renderTranslatedElement({
           sourceElement: source,
           targetElement: target as TranslatedElement,
@@ -264,11 +264,11 @@ export default function renderTranslatedChildren({
       }
 
       const generaltranslation = getGTProp(source);
-      if (generaltranslation?.transformation === "variable") {
+      if (generaltranslation?.transformation === 'variable') {
         let { variableName, variableValue, variableOptions } = getVariableProps(
           source.props as any
         );
-        if (typeof variables[variableName] === "undefined") {
+        if (typeof variables[variableName] === 'undefined') {
           variables[variableName] = variableValue;
         }
         variablesOptions[variableName] = {
@@ -278,17 +278,17 @@ export default function renderTranslatedChildren({
       }
     }
 
-    if (targetType === "variable") {
+    if (targetType === 'variable') {
       const targetVariable = target as Variable;
       const variableName = targetVariable.key;
-      const variableType = targetVariable.variable || "variable";
+      const variableType = targetVariable.variable || 'variable';
       const variableValue = (() => {
-        if (typeof variables[targetVariable.key] !== "undefined")
+        if (typeof variables[targetVariable.key] !== 'undefined')
           return variables[targetVariable.key];
         if (variableName.startsWith(baseVariablePrefix)) {
           // pain point: somewhat breakable logic
           const fallbackVariableName = getFallbackVariableName(variableType);
-          if (typeof variables[fallbackVariableName] !== "undefined") {
+          if (typeof variables[fallbackVariableName] !== 'undefined') {
             return variables[fallbackVariableName];
           }
         }

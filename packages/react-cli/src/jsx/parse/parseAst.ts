@@ -25,13 +25,16 @@ export function generateImports(
   importMap: Record<string, { name: string; source: string }>
 ) {
   // Group imports by their source
-  const importsBySource = needsImport.reduce((acc, imp) => {
-    const importInfo = importMap[imp as keyof typeof importMap];
-    const source = importInfo.source;
-    if (!acc[source]) acc[source] = [];
-    acc[source].push({ local: imp, imported: importInfo.name });
-    return acc;
-  }, {} as Record<string, { local: string; imported: string }[]>);
+  const importsBySource = needsImport.reduce(
+    (acc, imp) => {
+      const importInfo = importMap[imp as keyof typeof importMap];
+      const source = importInfo.source;
+      if (!acc[source]) acc[source] = [];
+      acc[source].push({ local: imp, imported: importInfo.name });
+      return acc;
+    },
+    {} as Record<string, { local: string; imported: string }[]>
+  );
 
   // Generate import nodes for each source
   const importNodes = Object.entries(importsBySource).map(

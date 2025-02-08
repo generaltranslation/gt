@@ -18,21 +18,34 @@ import React from 'react';
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, _versionId, ...metadata }: {
-    children?: React.ReactNode;
-    projectId?: string;
-    devApiKey?: string;
-    dictionary?: any;
-    locales?: string[];
-    defaultLocale?: string;
-    locale?: string;
-    cacheUrl?: string;
-    runtimeUrl?: string;
-    renderSettings?: {
-        method: RenderMethod;
-        timeout?: number;
-    };
-    _versionId?: string;
-    [key: string]: any;
+export default function GTProvider({
+  children,
+  projectId: _projectId,
+  devApiKey: _devApiKey,
+  dictionary,
+  locales,
+  defaultLocale,
+  locale: _locale,
+  cacheUrl,
+  runtimeUrl,
+  renderSettings,
+  _versionId,
+  ...metadata
+}: {
+  children?: React.ReactNode;
+  projectId?: string;
+  devApiKey?: string;
+  dictionary?: any;
+  locales?: string[];
+  defaultLocale?: string;
+  locale?: string;
+  cacheUrl?: string;
+  runtimeUrl?: string;
+  renderSettings?: {
+    method: RenderMethod;
+    timeout?: number;
+  };
+  _versionId?: string;
+  [key: string]: any;
 }): React.JSX.Element;
 //# sourceMappingURL=GTProvider.d.ts.map

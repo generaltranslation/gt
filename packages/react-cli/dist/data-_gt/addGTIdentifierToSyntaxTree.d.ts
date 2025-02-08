@@ -1,1 +1,4 @@
-export default function addGTIdentifierToSyntaxTree(tree: any, startingIndex?: number): any;
+export default function addGTIdentifierToSyntaxTree(
+  tree: any,
+  startingIndex?: number
+): any;

@@ -12,5 +12,7 @@ import React from 'react';
  * const t = await getGT();
  * console.log(t('hello')); // Translates item 'hello'
  */
-export declare function getGT(id?: string): Promise<(id: string, options?: Record<string, any>) => React.ReactNode>;
+export declare function getGT(
+  id?: string
+): Promise<(id: string, options?: Record<string, any>) => React.ReactNode>;
 //# sourceMappingURL=getGT.d.ts.map

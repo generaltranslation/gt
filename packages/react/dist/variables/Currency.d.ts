@@ -21,16 +21,23 @@ import React from 'react';
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {JSX.Element} The formatted currency component.
  */
-declare function Currency({ children, value, name, currency, locales, options, }: {
-    children?: any;
-    name?: string;
-    value?: any;
-    currency?: string;
-    locales?: string[];
-    options?: Intl.NumberFormatOptions;
+declare function Currency({
+  children,
+  value,
+  name,
+  currency,
+  locales,
+  options,
+}: {
+  children?: any;
+  name?: string;
+  value?: any;
+  currency?: string;
+  locales?: string[];
+  options?: Intl.NumberFormatOptions;
 }): React.JSX.Element;
 declare namespace Currency {
-    var gtTransformation: string;
+  var gtTransformation: string;
 }
 export default Currency;
 //# sourceMappingURL=Currency.d.ts.map

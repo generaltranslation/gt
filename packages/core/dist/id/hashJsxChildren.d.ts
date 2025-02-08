@@ -1,4 +1,4 @@
-import { JsxChildren } from "../types";
+import { JsxChildren } from '../types';
 /**
  * Calculates a unique hash for a given string using sha256.
  *
@@ -14,8 +14,12 @@ export declare function hashString(string: string): string;
  * @param {function} hashFunction custom hash function
  * @returns {string} - The unique has of the children.
  */
-export declare function hashJsxChildren({ source, context, hashFunction, }: {
-    source: JsxChildren;
-    context?: string;
-    hashFunction?: (string: string) => string;
+export declare function hashJsxChildren({
+  source,
+  context,
+  hashFunction,
+}: {
+  source: JsxChildren;
+  context?: string;
+  hashFunction?: (string: string) => string;
 }): string;

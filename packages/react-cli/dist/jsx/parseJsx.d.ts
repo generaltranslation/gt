@@ -9,5 +9,16 @@ import * as t from '@babel/types';
  * @param file - The file name
  * @returns The built JSX tree
  */
-export declare function buildJSXTree(node: any, unwrappedExpressions: string[], updates: Updates, errors: string[], file: string): any;
-export declare function parseJSXElement(node: t.JSXElement, updates: Updates, errors: string[], file: string): void;
+export declare function buildJSXTree(
+  node: any,
+  unwrappedExpressions: string[],
+  updates: Updates,
+  errors: string[],
+  file: string
+): any;
+export declare function parseJSXElement(
+  node: t.JSXElement,
+  updates: Updates,
+  errors: string[],
+  file: string
+): void;
