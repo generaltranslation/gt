@@ -72,6 +72,7 @@ const prompts_1 = require("@inquirer/prompts");
 const waitForUpdates_1 = require("./api/waitForUpdates");
 const updateConfig_1 = __importDefault(require("./fs/config/updateConfig"));
 const setupConfig_1 = __importDefault(require("./fs/config/setupConfig"));
+const postProcess_1 = require("./hooks/postProcess");
 function resolveProjectId() {
     const CANDIDATES = [
         process.env.GT_PROJECT_ID, // any server side, Remix
@@ -165,6 +166,8 @@ class BaseCLI {
                 console.log(chalk_1.default.red('\n✗ Failed to write files:\n'));
                 console.log(errors.join('\n'));
             }
+            // Format updated files if formatters are available
+            yield (0, postProcess_1.formatFiles)(filesUpdated);
             console.log(chalk_1.default.green(`\n✓ Success! Added <T> tags and updated ${chalk_1.default.bold(filesUpdated.length)} files:\n`));
             if (filesUpdated.length > 0) {
                 console.log(filesUpdated.map((file) => `${chalk_1.default.green('-')} ${file}`).join('\n'));

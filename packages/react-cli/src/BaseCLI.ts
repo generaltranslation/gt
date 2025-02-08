@@ -25,6 +25,8 @@ import { select } from '@inquirer/prompts';
 import { waitForUpdates } from './api/waitForUpdates';
 import updateConfig from './fs/config/updateConfig';
 import setupConfig from './fs/config/setupConfig';
+import fs from 'fs';
+import { formatFiles } from './hooks/postProcess';
 
 function resolveProjectId(): string | undefined {
   const CANDIDATES = [
@@ -214,6 +216,9 @@ export abstract class BaseCLI {
       console.log(chalk.red('\n✗ Failed to write files:\n'));
       console.log(errors.join('\n'));
     }
+
+    // Format updated files if formatters are available
+    await formatFiles(filesUpdated);
 
     console.log(
       chalk.green(
