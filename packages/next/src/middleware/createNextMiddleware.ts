@@ -99,8 +99,11 @@ export default function createNextMiddleware(
     if (localeRouting) {
       // Check if there is any supported locale in the pathname
       const { pathname } = req.nextUrl;
-      pathnameLocale = standardizeLocale(extractLocale(pathname) || '');
-      if (isValidLocale(pathnameLocale || '')) candidates.push(pathnameLocale);
+      const extractedLocale = standardizeLocale(extractLocale(pathname) || '');
+      if (isValidLocale(extractedLocale)) {
+        pathnameLocale = extractedLocale;
+        candidates.push(pathnameLocale);
+      }
     }
 
     // Check cookie locale

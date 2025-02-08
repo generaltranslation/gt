@@ -75,9 +75,11 @@ function createNextMiddleware(_a) {
         if (localeRouting) {
             // Check if there is any supported locale in the pathname
             var pathname = req.nextUrl.pathname;
-            pathnameLocale = (0, generaltranslation_1.standardizeLocale)(extractLocale(pathname) || '');
-            if ((0, generaltranslation_1.isValidLocale)(pathnameLocale || ''))
+            var extractedLocale = (0, generaltranslation_1.standardizeLocale)(extractLocale(pathname) || '');
+            if ((0, generaltranslation_1.isValidLocale)(extractedLocale)) {
+                pathnameLocale = extractedLocale;
                 candidates.push(pathnameLocale);
+            }
         }
         // Check cookie locale
         var cookieLocale = req.cookies.get(internal_1.localeCookieName);
