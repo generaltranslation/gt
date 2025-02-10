@@ -24,7 +24,6 @@ import {
 } from 'generaltranslation/internal';
 import {
   devApiKeyProductionError,
-  projectIdMissingError,
   projectIdMissingWarning,
 } from '../messages/createMessages';
 import { listSupportedLocales } from '@generaltranslation/supported-locales';
@@ -82,6 +81,7 @@ export default function GTProvider({
     method: RenderMethod;
     timeout?: number;
   };
+  enableCache?: boolean;
   _versionId?: string;
   [key: string]: any;
 }): React.JSX.Element {
@@ -281,20 +281,12 @@ export default function GTProvider({
       let stringIsLoading = false;
       const unresolvedDictionaryStringsAndHashes = Object.entries(
         dictionaryContentEntries
-      ).filter(([id, { hash }]) => {
-        const key = process.env.NODE_ENV === 'development' ? hash : id || hash;
+      ).filter(([_, { hash }]) => { // key will always be hash here, bc this only happens for runtime tx
         // filter out any translations that are currently loading or already resolved
-        if (translations?.[key]?.state === 'loading') stringIsLoading = true;
-
-        // do tx if hash has changed
-        if (
-          translations?.[key]?.state === 'success' &&
-          translations?.[key]?.hash !== hash
-        )
-          return true;
+        if (translations?.[hash]?.state === 'loading') stringIsLoading = true;
 
         // dont tx if translation already exists
-        return !translations?.[key];
+        return !translations?.[hash];
       });
       const dictionaryStringsResolved =
         !stringIsLoading && unresolvedDictionaryStringsAndHashes.length === 0;
@@ -374,13 +366,13 @@ export default function GTProvider({
           return entry;
         }
 
-        // Handle fallback cases
+        // Get content
         const content = splitStringToContent(entry);
-        const key = // use hash in dev mode, id in prod mode
-          process.env.NODE_ENV === 'development'
-            ? dictionaryContentEntries[id]?.hash || id
-            : id;
-        const translationEntry = translations?.[key];
+
+        // Get translation entry
+        const translationEntry = translations?.[dictionaryContentEntries[id]?.hash || ''] || translations?.[id];
+
+        // Skip if:
         if (
           !translationRequired || // no translation required
           !translationEntry || // error behavior: no translation found
@@ -433,6 +425,7 @@ export default function GTProvider({
       flattenedDictionary,
       dictionaryStringsResolved,
       dictionaryContentEntries,
+      runtimeTranslationEnabled,
     ]
   );
 

@@ -18,19 +18,14 @@
  * @param {object} [branches] - An object containing possible branches as keys and their corresponding content as values.
  * @returns {JSX.Element} The rendered branch or fallback content.
  */
-declare function Branch({
-  children,
-  name,
-  branch,
-  ...props
-}: {
-  children?: any;
-  name?: string;
-  branch?: string;
-  [key: string]: any;
-}): import('react/jsx-runtime').JSX.Element;
+declare function Branch({ children, name, branch, ...props }: {
+    children?: any;
+    name?: string;
+    branch?: string;
+    [key: string]: any;
+}): import("react/jsx-runtime").JSX.Element;
 declare namespace Branch {
-  var gtTransformation: string;
+    var gtTransformation: string;
 }
 export default Branch;
 //# sourceMappingURL=Branch.d.ts.map

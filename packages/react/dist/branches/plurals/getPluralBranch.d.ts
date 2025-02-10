@@ -5,9 +5,5 @@
  * @param {any} branches - The object containing possible branches.
  * @returns {any} The determined branch.
  */
-export default function getPluralBranch(
-  n: number,
-  locales: string[],
-  branches: Record<string, any>
-): any;
+export default function getPluralBranch(n: number, locales: string[], branches: Record<string, any>): any;
 //# sourceMappingURL=getPluralBranch.d.ts.map

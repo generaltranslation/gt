@@ -1,21 +1,24 @@
-'use strict';
-Object.defineProperty(exports, '__esModule', { value: true });
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getDictionary;
 exports.getDictionaryEntry = getDictionaryEntry;
-var internal_1 = require('gt-react/internal');
+var internal_1 = require("gt-react/internal");
 var dictionary = undefined;
 function getDictionary() {
-  if (dictionary) return dictionary;
-  try {
-    dictionary = require('gt-next/_dictionary').default;
-  } catch (error) {
-    dictionary = {};
-  }
-  return dictionary;
+    if (dictionary)
+        return dictionary;
+    try {
+        dictionary = require('gt-next/_dictionary').default;
+    }
+    catch (error) {
+        dictionary = {};
+    }
+    return dictionary;
 }
 function getDictionaryEntry(id) {
-  var obj = getDictionary();
-  if (!obj) return undefined;
-  return (0, internal_1.getDictionaryEntry)(obj, id);
+    var obj = getDictionary();
+    if (!obj)
+        return undefined;
+    return (0, internal_1.getDictionaryEntry)(obj, id);
 }
 //# sourceMappingURL=getDictionary.js.map

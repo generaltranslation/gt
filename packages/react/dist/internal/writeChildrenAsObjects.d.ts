@@ -5,7 +5,5 @@ import { JsxChildren } from 'generaltranslation/internal';
  * @param {Children} children - The children to process.
  * @returns {object} The processed children as objects.
  */
-export default function writeChildrenAsObjects(
-  children: TaggedChildren
-): JsxChildren;
+export default function writeChildrenAsObjects(children: TaggedChildren): JsxChildren;
 //# sourceMappingURL=writeChildrenAsObjects.d.ts.map

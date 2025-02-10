@@ -172,9 +172,7 @@ export default function ClientProvider({
       const variablesOptions = metadata?.variablesOptions;
 
       // Get the translation entry
-      let key = // use hash in dev mode
-        process.env.NODE_ENV === 'development' ? metadata?.hash || id : id;
-      const translationEntry = translations?.[key];
+      const translationEntry = translations?.[metadata?.hash || ''] || translations?.[id];
 
       // ----- RENDER STRINGS ----- //
 
@@ -192,7 +190,7 @@ export default function ClientProvider({
         if (
           !translationRequired || // no translation required
           !translationEntry || // error behavior: no translation found
-          translationEntry?.state !== 'success' // error behavior: translation did not resolve
+          translationEntry?.state !== 'success' // error behavior: translation did not resolve (loading state wont happen here)
         ) {
           return renderContentToString(
             content,

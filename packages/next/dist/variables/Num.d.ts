@@ -18,23 +18,16 @@
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {Promise<JSX.Element>} The formatted number component.
  */
-declare function Num({
-  children,
-  name,
-  value,
-  options,
-  locales,
-  ...props
-}: {
-  children?: any;
-  name?: string;
-  value?: any;
-  options?: Intl.NumberFormatOptions;
-  locales?: string[];
-  'data-_gt'?: any;
+declare function Num({ children, name, value, options, locales, ...props }: {
+    children?: any;
+    name?: string;
+    value?: any;
+    options?: Intl.NumberFormatOptions;
+    locales?: string[];
+    'data-_gt'?: any;
 }): React.JSX.Element;
 declare namespace Num {
-  var gtTransformation: string;
+    var gtTransformation: string;
 }
 export default Num;
 //# sourceMappingURL=Num.d.ts.map

@@ -20,20 +20,15 @@
  * @returns {Promise<JSX.Element>} The rendered content corresponding to the plural form of `n`, or the fallback content.
  * @throws {Error} If `n` is not provided or not a valid number.
  */
-declare function Plural({
-  children,
-  n,
-  locales,
-  ...props
-}: {
-  children?: any;
-  n?: number;
-  'data-_gt'?: any;
-  locales?: string[];
-  [key: string]: any;
-}): import('react/jsx-runtime').JSX.Element;
+declare function Plural({ children, n, locales, ...props }: {
+    children?: any;
+    n?: number;
+    'data-_gt'?: any;
+    locales?: string[];
+    [key: string]: any;
+}): import("react/jsx-runtime").JSX.Element;
 declare namespace Plural {
-  var gtTransformation: string;
+    var gtTransformation: string;
 }
 export default Plural;
 //# sourceMappingURL=Plural.d.ts.map

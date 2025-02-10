@@ -47,9 +47,8 @@ export async function getGT(
   const defaultLocale = I18NConfig.getDefaultLocale();
   const locale = await getLocale();
   const translationRequired = I18NConfig.requiresTranslation(locale);
-  const runtimeTranslationEnabled =
-    I18NConfig.isServerRuntimeTranslationEnabled() && // need proper credentials
-    process.env.NODE_ENV === 'development'; // only in dev mode
+  const serverRuntimeTranslationEnabled =
+    I18NConfig.isServerRuntimeTranslationEnabled() && process.env.NODE_ENV === 'development'; // need proper credentials
   let filteredTranslations: Record<string, TranslatedContent> = {};
 
   if (translationRequired) {
@@ -100,8 +99,7 @@ export async function getGT(
           // ----- CHECK CACHE ----- //
 
           // If a translation already exists int our cache from earlier, add it to the translations
-          const key = process.env.NODE_ENV === 'development' ? hash : entryId;
-          const translationEntry = translations[key];
+          const translationEntry = translations[hash] || translations[entryId]; // translation could be stored under hash or id depending on where it came from at this point so check both
           if (translationEntry) {
             // success
             if (translationEntry.state === 'success') {
@@ -116,7 +114,7 @@ export async function getGT(
           // dev only (with api key)
 
           // Skip if dev runtime translation is disabled
-          if (!runtimeTranslationEnabled) return;
+          if (!serverRuntimeTranslationEnabled) return;
 
           // Send a request to cache for translations
           const translationPromise = I18NConfig.translateContent({

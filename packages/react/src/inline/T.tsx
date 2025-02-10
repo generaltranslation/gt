@@ -93,27 +93,18 @@ function T({
     }
   }, [context, taggedChildren, translationRequired, children]);
 
-  // key is identifier for tx
-  // in development, only use hash (this nullifies cache in dev, but the dev cache will be hashes only in future anyways)
-  const key = process.env.NODE_ENV === 'development' ? hash : id || hash;
+  // get tx entry
+  const translationEntry = translations?.[hash] || translations?.[id || ''];
 
   // Do translation if required
-  const translationEntry = translations?.[key];
   useEffect(() => {
     // skip if:
     if (
       !runtimeTranslationEnabled || // runtime translation disabled
       !translationRequired || // no translation required
       !translations || // cache not checked yet
-      !locale // locale not loaded
-    ) {
-      return;
-    }
-
-    // skip if: already have translation and hash matches
-    if (
-      translationEntry && // already have translation
-      (translationEntry.state !== 'success' || translationEntry.hash === hash) // hash matches
+      !locale || // locale not loaded
+      translationEntry // translation exists
     ) {
       return;
     }

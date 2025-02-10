@@ -152,18 +152,20 @@ export class RemoteTranslationsManager {
    * @param {string} hash - The key for the new entry.
    * @param {string} [id=hash] - The id for the new entry, defaults to key if not provided.
    * @param {any} translation - The translation value.
+   * @param {boolean} [isRuntimeTranslation=true] - Whether the translation was a runtime translation.
    * @returns {boolean} True if the entry was set successfully, false otherwise.
    */
   setTranslations(
     locale: string,
     hash: string,
     id: string = hash,
-    translation: TranslationSuccess | TranslationLoading | TranslationError
+    translation: TranslationSuccess | TranslationLoading | TranslationError,
+    isRuntimeTranslation: boolean = true,
   ): boolean {
     if (!(locale && hash && translation)) return false;
     const reference = standardizeLocale(locale);
     const currentTranslations = this.translationsMap.get(reference) || {};
-    const key = process.env.NODE_ENV === 'development' ? hash : id;
+    const key = isRuntimeTranslation ? hash : id;
     this.translationsMap.set(reference, {
       ...currentTranslations,
       [key]: translation,

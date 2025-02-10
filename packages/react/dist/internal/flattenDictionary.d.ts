@@ -7,8 +7,5 @@ import { Dictionary, FlattenedDictionary } from '../types/types';
  * @returns {Record<string, React.ReactNode>} The flattened dictionary object.
  * @throws {Error} If two keys result in the same flattened key.
  */
-export default function flattenDictionary(
-  dictionary: Dictionary,
-  prefix?: string
-): FlattenedDictionary;
+export default function flattenDictionary(dictionary: Dictionary, prefix?: string): FlattenedDictionary;
 //# sourceMappingURL=flattenDictionary.d.ts.map
