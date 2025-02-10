@@ -1,8 +1,8 @@
-'use strict';
-Object.defineProperty(exports, '__esModule', { value: true });
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = main;
-const NextCLI_1 = require('./NextCLI');
+const NextCLI_1 = require("./NextCLI");
 function main() {
-  const cli = new NextCLI_1.NextCLI();
-  cli.initialize();
+    const cli = new NextCLI_1.NextCLI();
+    cli.initialize();
 }
