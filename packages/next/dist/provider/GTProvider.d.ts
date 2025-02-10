@@ -7,11 +7,8 @@ import { ReactNode } from 'react';
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export default function GTProvider({
-  children,
-  id,
-}: {
-  children?: ReactNode;
-  id?: string;
-}): Promise<import('react/jsx-runtime').JSX.Element>;
+export default function GTProvider({ children, id, }: {
+    children?: ReactNode;
+    id?: string;
+}): Promise<import("react/jsx-runtime").JSX.Element>;
 //# sourceMappingURL=GTProvider.d.ts.map

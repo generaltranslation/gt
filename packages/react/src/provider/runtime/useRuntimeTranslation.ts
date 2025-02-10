@@ -184,11 +184,7 @@ export default function useRuntimeTranslation({
       const loadingTranslations: TranslationsObject = requests.reduce(
         (acc: TranslationsObject, request) => {
           // loading state for jsx, render loading behavior
-          const key =
-            process.env.NODE_ENV === 'development'
-              ? request.metadata.hash
-              : request.metadata.id || request.metadata.hash;
-          acc[key] = { state: 'loading' };
+          acc[request.metadata.hash] = { state: 'loading' };
           return acc;
         },
         {}
@@ -248,16 +244,13 @@ export default function useRuntimeTranslation({
       // process each result
       results.forEach((result, index) => {
         const request = requests[index];
-        const key =
-          process.env.NODE_ENV === 'development'
-            ? request.metadata.hash
-            : request.metadata.id || request.metadata.hash;
+        const key = request.metadata.hash;
 
         // translation received
         if ('translation' in result && result.translation && result.reference) {
           const {
             translation,
-            reference: { id, key: hash },
+            reference: { key: hash },
           } = result;
           // check for mismatching ids or hashes
           if (hash !== request.metadata.hash) {
@@ -269,7 +262,6 @@ export default function useRuntimeTranslation({
           newTranslations[key] = {
             state: 'success',
             target: translation,
-            ...(request?.metadata?.hash && { hash: request.metadata.hash }),
           };
           return;
         }
@@ -319,12 +311,8 @@ export default function useRuntimeTranslation({
 
       // add error message to all translations from this request
       requests.forEach((request) => {
-        const key =
-          process.env.NODE_ENV === 'development'
-            ? request.metadata.hash
-            : request.metadata.id || request.metadata.hash;
         // id defaults to hash if none provided
-        newTranslations[key] = {
+        newTranslations[request.metadata.hash] = {
           state: 'error',
           error: 'An error occurred.',
           code: 500,

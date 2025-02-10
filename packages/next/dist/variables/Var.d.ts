@@ -16,19 +16,14 @@
  * @param {any} [value] - The default value to be displayed if `children` is not provided.
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
-declare function Var({
-  children,
-  name,
-  value,
-  ...props
-}: {
-  children?: any;
-  name?: string;
-  value?: any;
-  'data-_gt'?: any;
+declare function Var({ children, name, value, ...props }: {
+    children?: any;
+    name?: string;
+    value?: any;
+    'data-_gt'?: any;
 }): React.JSX.Element;
 declare namespace Var {
-  var gtTransformation: string;
+    var gtTransformation: string;
 }
 export default Var;
 //# sourceMappingURL=Var.d.ts.map

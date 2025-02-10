@@ -20,21 +20,15 @@ import React from 'react';
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {JSX.Element} The formatted date or time component.
  */
-declare function DateTime({
-  children,
-  value,
-  name,
-  locales,
-  options,
-}: {
-  children?: any;
-  name?: string;
-  value?: any;
-  locales?: string[];
-  options?: Intl.DateTimeFormatOptions;
+declare function DateTime({ children, value, name, locales, options, }: {
+    children?: any;
+    name?: string;
+    value?: any;
+    locales?: string[];
+    options?: Intl.DateTimeFormatOptions;
 }): React.JSX.Element;
 declare namespace DateTime {
-  var gtTransformation: string;
+    var gtTransformation: string;
 }
 export default DateTime;
 //# sourceMappingURL=DateTime.d.ts.map

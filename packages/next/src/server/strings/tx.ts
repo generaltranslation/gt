@@ -78,6 +78,7 @@ export default async function tx(
   const defaultLocale = I18NConfig.getDefaultLocale();
   const translationRequired = I18NConfig.requiresTranslation(locale);
   const contentArray = splitStringToContent(content); // parse content
+  const serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled(); // allowed in prod
 
   // ----- RENDER METHOD ----- //
 
@@ -97,16 +98,15 @@ export default async function tx(
 
   // get hash
   const hash = I18NConfig.hashContent(contentArray, options.context);
-  const key =
-    process.env.NODE_ENV === 'development' ? hash : options.id || hash;
-
+  
   // Check cache for translation (if there is no id, then we don't cache)
   if (options.id) {
     let translations;
     try {
       translations = await I18NConfig.getCachedTranslations(locale);
-      if (translations?.[key]) {
-        const translationResult = translations[key];
+      const translationEntry = translations?.[hash] || translations?.[options.id || ''];
+      if (translationEntry) {
+        const translationResult = translationEntry;
         if (translationResult.state !== 'success') {
           // fallback error
           return renderContent(content, [locale, defaultLocale]);
@@ -118,6 +118,11 @@ export default async function tx(
       // fallback error
       return renderContent(content, [locale, defaultLocale]);
     }
+  }
+
+  // If tx not enabled (and nothing in cache), return default
+  if (!serverRuntimeTranslationEnabled) {
+    return renderContent(content, [locale, defaultLocale]);
   }
 
   // New translation required
