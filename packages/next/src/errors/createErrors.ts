@@ -8,6 +8,9 @@ export const APIKeyMissingError =
 export const remoteTranslationsError =
   'General Translation: Error fetching remote translation.';
 
+export const localTranslationsError =
+  'General Translation: Error fetching locally stored translation.';
+
 export const createStringTranslationError = (content: string, id?: string) =>
   `gt-next string translation error. tx("${content}")${
     id ? ` with id "${id}"` : ''

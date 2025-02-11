@@ -1,4 +1,4 @@
-import getI18NConfig from '../config/getI18NConfig';
+import getI18NConfig from '../config-dir/getI18NConfig';
 import { getNextLocale } from '../next/getNextLocale';
 
 let getLocaleFunction: () => Promise<string>;

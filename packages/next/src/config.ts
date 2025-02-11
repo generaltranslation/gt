@@ -1,8 +1,8 @@
 import path from 'path';
 import fs from 'fs';
 import { NextConfig } from 'next';
-import defaultInitGTProps from './config/props/defaultInitGTProps';
-import InitGTProps from './config/props/InitGTProps';
+import defaultInitGTProps from './config-dir/props/defaultInitGTProps';
+import InitGTProps from './config-dir/props/InitGTProps';
 import {
   APIKeyMissingError,
   createUnsupportedLocalesWarning,
@@ -112,11 +112,7 @@ export function initGT(props: InitGTProps = {}) {
   // If using SaaS infrastructure
   if (mergedConfig.remoteCache || mergedConfig.runtimeTranslation) {
     // Check: projectId is not required, but warn if missing for dev, nothing for prod
-    if (
-      (mergedConfig.runtimeTranslation || mergedConfig.remoteCache) &&
-      !mergedConfig.projectId &&
-      process.env.NODE_ENV === 'development'
-    ) {
+    if (!mergedConfig.projectId && process.env.NODE_ENV === 'development') {
       console.warn(projectIdMissingWarn);
     }
 
@@ -145,11 +141,6 @@ export function initGT(props: InitGTProps = {}) {
       if (warningLocales.length) {
         console.warn(createUnsupportedLocalesWarning(warningLocales));
       }
-    }
-  } else {
-    // Check: srcDir must be provided if remoteCache is disabled
-    if (!mergedConfig.srcDir) {
-      throw new Error('srcDir must be provided if remoteCache is disabled');
     }
   }
 
