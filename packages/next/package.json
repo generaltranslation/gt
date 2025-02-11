@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "5.0.12-alpha.4",
+  "version": "5.0.12-alpha.5",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -43,20 +43,20 @@
       "default": "./dist/index.server.js"
     },
     "./config": {
-      "types": "./dist/config.d.ts",
-      "default": "./dist/config.js"
+      "types": "./dist/config/index.d.ts",
+      "default": "./dist/config/index.js"
     },
     "./client": {
       "types": "./dist/client.d.ts",
       "default": "./dist/client.js"
     },
     "./server": {
-      "types": "./dist/server.d.ts",
-      "default": "./dist/server.js"
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
     },
     "./middleware": {
-      "types": "./dist/middleware.d.ts",
-      "default": "./dist/middleware.js"
+      "types": "./dist/middleware/index.d.ts",
+      "default": "./dist/middleware/index.js"
     },
     "./_request": {
       "default": "./dist/_request.js"
@@ -71,16 +71,16 @@
   "typesVersions": {
     "*": {
       "config": [
-        "./dist/config.d.ts"
+        "./dist/config/index.d.ts"
       ],
       "client": [
         "./dist/client.d.ts"
       ],
       "server": [
-        "./dist/server.d.ts"
+        "./dist/server/index.d.ts"
       ],
       "middleware": [
-        "./dist/middleware.d.ts"
+        "./dist/middleware/index.d.ts"
       ],
       "_request": [
         "./dist/_request.d.ts"
@@ -97,31 +97,24 @@
     "baseUrl": ".",
     "paths": {
       "gt-next/config": [
-        "/dist/config",
-        "/dist/config"
+        "/dist/config/index"
       ],
       "gt-next/client": [
-        "/dist/client",
         "/dist/client"
       ],
       "gt-next/server": [
-        "/dist/server",
-        "/dist/server"
+        "/dist/server/index"
       ],
       "gt-next/middleware": [
-        "/dist/middleware",
-        "/dist/middleware"
+        "/dist/middleware/index"
       ],
       "gt-next/_request": [
-        "/dist/_request",
         "/dist/_request"
       ],
       "gt-next/_dictionary": [
-        "/dist/_dictionary",
         "/dist/_dictionary"
       ],
       "gt-next/_config": [
-        "/dist/_config",
         "/dist/_config"
       ]
     }
