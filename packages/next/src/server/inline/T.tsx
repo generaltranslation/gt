@@ -133,6 +133,7 @@ async function T({
   // Block until cache check resolves
   const translations = translationsPromise ? await translationsPromise : {};
 
+  console.log('translations', translations);
   // Gets the translation entry
   const translationEntry = translations?.[key];
 

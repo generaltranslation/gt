@@ -26,6 +26,7 @@ type I18NConfigurationParams = {
   devApiKey?: string;
   projectId?: string;
   cacheUrl: string;
+  srcDir?: string;
   runtimeUrl: string;
   cacheExpiryTime?: number;
   defaultLocale: string;
@@ -115,6 +116,7 @@ export default class I18NConfiguration {
     renderSettings,
     // Dictionaries
     dictionary,
+    srcDir,
     // Batching config
     maxConcurrentRequests,
     maxBatchSize,
@@ -180,6 +182,8 @@ export default class I18NConfiguration {
         projectId,
         cacheExpiryTime,
         _versionId,
+        remoteCache: _remoteCache,
+        srcDir,
       });
     }
     // Cache of hashes to speed up <GTProvider>

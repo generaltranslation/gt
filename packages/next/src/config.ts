@@ -10,6 +10,7 @@ import {
   projectIdMissingWarn,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
+import { ContextReplacementPlugin } from 'webpack';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -31,6 +32,7 @@ import { getSupportedLocale } from '@generaltranslation/supported-locales';
  * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
  * @param {string|undefined} i18n - Optional i18n configuration file path. If a string is provided, it will be used as a path.
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
+ * @param {string|undefined} srcDir - Optional directory path for source translation files. If a directory is provided, translations will be resolved via this path first.
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [devApiKey=defaultInitGTProps.devApiKey] - API key for dev environment only.
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
@@ -38,7 +40,7 @@ import { getSupportedLocale } from '@generaltranslation/supported-locales';
  * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
  * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - How long to cache translations in memory (milliseconds).
  * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
- * @param {boolean} [remoteCache=defaultInitGTProps.remoteCache] - Whether to enable remote caching of translations.
+ * @param {boolean} [remoteCache=defaultInitGTProps.remoteCache] - Whether to use GT infrastructure for caching and translation, or rely on local source files.
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
@@ -107,39 +109,59 @@ export function initGT(props: InitGTProps) {
 
   // ---------- ERROR CHECKS ---------- //
 
-  // Check: projectId is not required, but warn if missing for dev, nothing for prod
-  if (
-    (mergedConfig.runtimeTranslation || mergedConfig.remoteCache) &&
-    !mergedConfig.projectId &&
-    process.env.NODE_ENV === 'development'
-  ) {
-    console.warn(projectIdMissingWarn);
+  // If using SaaS infrastructure
+  if (mergedConfig.remoteCache || mergedConfig.runtimeTranslation) {
+    // Check: projectId is not required, but warn if missing for dev, nothing for prod
+    if (
+      (mergedConfig.runtimeTranslation || mergedConfig.remoteCache) &&
+      !mergedConfig.projectId &&
+      process.env.NODE_ENV === 'development'
+    ) {
+      console.warn(projectIdMissingWarn);
+    }
+
+    // Check: dev API key should not be included in production
+    if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
+      throw new Error(devApiKeyIncludedInProductionError);
+    }
+
+    // Check: An API key is required for runtime translation
+    if (
+      mergedConfig.runtimeTranslation &&
+      mergedConfig.apiKey &&
+      mergedConfig.devApiKey
+    ) {
+      console.error(APIKeyMissingError);
+    }
+
+    // Check: if using GT infrastructure, warn about unsupported locales
+    if (
+      mergedConfig.runtimeUrl === defaultInitGTProps.runtimeUrl ||
+      mergedConfig.cacheUrl === defaultInitGTProps.cacheUrl
+    ) {
+      const warningLocales = (
+        mergedConfig.locales || defaultInitGTProps.locales
+      ).filter((locale) => !getSupportedLocale(locale));
+      if (warningLocales.length) {
+        console.warn(createUnsupportedLocalesWarning(warningLocales));
+      }
+    }
+  } else {
+    // Check: srcDir must be provided if remoteCache is disabled
+    if (!mergedConfig.srcDir) {
+      throw new Error('srcDir must be provided if remoteCache is disabled');
+    }
   }
 
-  // Check: dev API key should not be included in production
-  if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
-    throw new Error(devApiKeyIncludedInProductionError);
-  }
-
-  // Check: An API key is required for runtime translation
-  if (
-    mergedConfig.runtimeTranslation &&
-    mergedConfig.apiKey &&
-    mergedConfig.devApiKey
-  ) {
-    console.error(APIKeyMissingError);
-  }
-
-  // Check: if using GT infrastructure, warn about unsupported locales
-  if (
-    mergedConfig.runtimeUrl === defaultInitGTProps.runtimeUrl ||
-    mergedConfig.cacheUrl === defaultInitGTProps.cacheUrl
-  ) {
-    const warningLocales = (
-      mergedConfig.locales || defaultInitGTProps.locales
-    ).filter((locale) => !getSupportedLocale(locale));
-    if (warningLocales.length) {
-      console.warn(createUnsupportedLocalesWarning(warningLocales));
+  // Check: srcDir must be a directory if provided
+  if (mergedConfig.srcDir) {
+    if (
+      !fs.existsSync(mergedConfig.srcDir) ||
+      !fs.statSync(mergedConfig.srcDir).isDirectory()
+    ) {
+      throw new Error(
+        `srcDir "${mergedConfig.srcDir}" must be a valid directory`
+      );
     }
   }
 
@@ -154,6 +176,7 @@ export function initGT(props: InitGTProps) {
     typeof mergedConfig.dictionary === 'string'
       ? mergedConfig.dictionary
       : resolveConfigFilepath('dictionary');
+  const resolvedConfigFilePath = resolveConfigFilepath('gt.config');
 
   // Store the resolved paths in the environment
   const I18NConfigParams = JSON.stringify(mergedConfig);
@@ -179,6 +202,12 @@ export function initGT(props: InitGTProps) {
           webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
             webpackConfig.context,
             resolvedDictionaryFilePath
+          );
+        }
+        if (resolvedConfigFilePath) {
+          webpackConfig.resolve.alias[`gt-next/_source`] = path.resolve(
+            webpackConfig.context,
+            resolvedConfigFilePath
           );
         }
         if (typeof nextConfig?.webpack === 'function') {

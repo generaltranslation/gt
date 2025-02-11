@@ -21,6 +21,8 @@ type RemoteTranslationsConfig = {
   projectId: string;
   cacheExpiryTime?: number;
   _versionId?: string;
+  srcDir?: string;
+  remoteCache: boolean;
 };
 
 /**
@@ -43,6 +45,8 @@ export class RemoteTranslationsManager {
       projectId: '',
       cacheExpiryTime: defaultInitGTProps.cacheExpiryTime, // default to 60 seconds
       _versionId: undefined,
+      srcDir: undefined,
+      remoteCache: true,
     };
     this.translationsMap = new Map();
     this.fetchPromises = new Map();
@@ -67,12 +71,48 @@ export class RemoteTranslationsManager {
     reference: string
   ): Promise<TranslationsObject | undefined> {
     try {
+      if (this.config.srcDir) {
+        try {
+          console.log('attempting to fetch translations from source');
+          const sourceConfig = require('gt-next/_source');
+          const getTranslation = sourceConfig.default;
+          const txSource = await getTranslation(reference);
+
+          console.log('txSource', txSource);
+          if (txSource && Object.keys(txSource).length) {
+            // Record our fetch time
+            this.lastFetchTime.set(reference, Date.now());
+            // Parse response
+            const parsedResult: TranslationsObject = Object.entries(
+              txSource
+            ).reduce(
+              (
+                translationsAcc: TranslationsObject,
+                [key, target]: [string, any]
+              ) => {
+                translationsAcc[key] = { state: 'success', target };
+                return translationsAcc;
+              },
+              {}
+            );
+            console.log('parsedResult', parsedResult);
+            return parsedResult;
+          }
+          // Catch module not found errors
+        } catch (error) {
+          console.error('import error: ', error);
+        }
+      }
+      if (!this.config.remoteCache) {
+        return undefined;
+      }
       const response = await fetch(
         `${this.config.cacheUrl}/${this.config.projectId}/${reference}${
           this.config._versionId ? `/${this.config._versionId}` : ''
         }`
       );
       const result = await response.json();
+      console.log('result', result);
       if (Object.keys(result).length) {
         // Record our fetch time
         this.lastFetchTime.set(reference, Date.now());
@@ -143,6 +183,7 @@ export class RemoteTranslationsManager {
       this.translationsMap.set(reference, retrievedTranslations);
     }
 
+    console.log('retrievedTranslations', retrievedTranslations);
     return retrievedTranslations;
   }
 
