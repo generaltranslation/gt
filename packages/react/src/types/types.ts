@@ -77,7 +77,6 @@ export type TranslationError = {
 export type TranslationSuccess = {
   state: 'success';
   target: TranslatedChildren | TranslatedContent; // target
-  hash?: string;
 };
 export type TranslationLoading = {
   state: 'loading';

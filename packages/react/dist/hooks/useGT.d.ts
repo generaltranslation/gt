@@ -12,7 +12,5 @@ import React from 'react';
  * const t = useGT();
  * console.log(t('hello')); // Translates item 'hello'
  */
-export default function useGT(
-  id?: string
-): (id: string, options?: Record<string, any>) => React.ReactNode;
+export default function useGT(id?: string): (id: string, options?: Record<string, any>) => React.ReactNode;
 //# sourceMappingURL=useGT.d.ts.map

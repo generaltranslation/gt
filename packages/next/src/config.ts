@@ -54,7 +54,7 @@ import { ContextReplacementPlugin } from 'webpack';
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  *
  */
-export function initGT(props: InitGTProps) {
+export function initGT(props: InitGTProps = {}) {
   // ---------- LOAD GT CONFIG FILE ---------- //
   let loadedConfig: Partial<InitGTProps> = {};
   try {

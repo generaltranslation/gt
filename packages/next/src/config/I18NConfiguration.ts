@@ -477,8 +477,7 @@ export default class I18NConfiguration {
                 {
                   state: 'success',
                   target: result.translation,
-                  hash: result.reference.key,
-                }
+                },
               );
             }
             // check for mismatching ids or hashes
@@ -506,7 +505,7 @@ export default class I18NConfiguration {
               state: 'error',
               error: result.error || 'Translation failed.',
               code: result.code || 500,
-            }
+            },
           );
         }
         return request.reject(new GTTranslationError(errorMsg, errorCode));
@@ -520,7 +519,7 @@ export default class I18NConfiguration {
             request.targetLocale,
             request.metadata.hash,
             request.metadata.id || request.metadata.hash,
-            { state: 'error', error: 'Translation failed.', code: 500 }
+            { state: 'error', error: 'Translation failed.', code: 500 },
           );
         }
         return request.reject(

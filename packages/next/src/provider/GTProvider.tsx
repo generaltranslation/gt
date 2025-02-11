@@ -7,6 +7,7 @@ import {
   isEmptyReactFragment,
   FlattenedTaggedDictionary,
   GTTranslationError,
+  TranslationError,
 } from 'gt-react/internal';
 import { ReactNode } from 'react';
 import getI18NConfig from '../config/getI18NConfig';
@@ -111,28 +112,12 @@ export default async function GTProvider({
             return;
           }
 
-          // Issue: every dev cache request with id is a cache miss
-          // because cache now stores ids over hashes, when we come
-          // across a tx from the cache w/o a hash (so it has an id instead)
-          // we will always trigger an on-demand translation because
-          // we cannot verify that the content has been changed.
-          // for now, this will only be an issue in dev, and for
-          // tx() which do translation on-demand.
-          // It shouldn't result in extra token charge because we
-          // will just grab the translation from the database instead,
-          // but it is definitely causes slower perfomance in dev and
-          // any other on-demand translations where id has replaced hash
+          // get tx entry and key
+          const key = hash || entryId;
+          const translationEntry = translations?.[hash] || translations?.[entryId];
 
-          // get tx entry
-          const key = process.env.NODE_ENV === 'development' ? hash : entryId;
-          const translationEntry = translations?.[key];
-
-          // skip if:
-          if (
-            translationEntry && // already have translation
-            (translationEntry.state !== 'success' || // not a success
-              translationEntry.hash === hash) // hash matches
-          ) {
+          // skip if translation already exists
+          if (translationEntry) {
             return;
           }
 
@@ -202,14 +187,12 @@ export default async function GTProvider({
           return;
         }
 
-        // If the translation already exists, then do not translate on demand
-        const key = process.env.NODE_ENV === 'development' ? hash : entryId;
-        const translationEntry = translations?.[key];
-        if (
-          translationEntry && // already have translation
-          (translationEntry.state !== 'success' || // not a success
-            translationEntry.hash === hash) // hash matches
-        ) {
+        // get tx entry and key
+        const key = hash || entryId;
+        const translationEntry = translations?.[hash] || translations?.[entryId];
+        
+        // skip if translation already exists
+        if (translationEntry) {
           return;
         }
 
@@ -245,6 +228,14 @@ export default async function GTProvider({
           };
         } catch (error) {
           console.error(error);
+          // set all promise ids to error in translations
+          let result;
+          if (error instanceof GTTranslationError) {
+            result = error.toTranslationError();
+          } else {
+            result = { state: 'error', error: 'An error occured', code: 500 };
+          }
+          translations[key] = result as TranslationError;
         }
       }
     )
