@@ -11,7 +11,7 @@ type RemoteTranslationsConfig = {
     projectId: string;
     cacheExpiryTime?: number;
     _versionId?: string;
-    localTranslations: boolean;
+    localTranslation: boolean;
     remoteCache: boolean;
 };
 /**

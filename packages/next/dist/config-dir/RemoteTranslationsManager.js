@@ -69,7 +69,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
             projectId: '',
             cacheExpiryTime: defaultInitGTProps_1.default.cacheExpiryTime, // default to 60 seconds
             _versionId: undefined,
-            localTranslations: false,
+            localTranslation: false,
             remoteCache: true,
         };
         this.translationsMap = new Map();
@@ -96,11 +96,11 @@ var RemoteTranslationsManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 7, , 8]);
-                        if (!this.config.localTranslations) return [3 /*break*/, 4];
+                        if (!this.config.localTranslation) return [3 /*break*/, 4];
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 4]);
-                        sourceConfig = require('gt-next/_source');
+                        sourceConfig = require('gt-next/_config');
                         getLocalTranslation = sourceConfig.default;
                         return [4 /*yield*/, getLocalTranslation(reference)];
                     case 2:
@@ -113,6 +113,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
                                 translationsAcc[key] = { state: 'success', target: target };
                                 return translationsAcc;
                             }, {});
+                            console.log('parsedResult', parsedResult);
                             return [2 /*return*/, parsedResult];
                         }
                         return [3 /*break*/, 4];

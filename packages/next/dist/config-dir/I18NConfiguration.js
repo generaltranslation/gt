@@ -72,17 +72,17 @@ var I18NConfiguration = /** @class */ (function () {
         // Cloud integration
         _b = _a.runtimeTranslation, 
         // Cloud integration
-        runtimeTranslation = _b === void 0 ? true : _b, _c = _a.remoteCache, remoteCache = _c === void 0 ? true : _c, apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
+        runtimeTranslation = _b === void 0 ? true : _b, _c = _a.remoteCache, remoteCache = _c === void 0 ? true : _c, _d = _a.localTranslation, localTranslation = _d === void 0 ? false : _d, apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
         // Locale info
         defaultLocale = _a.defaultLocale, locales = _a.locales, 
         // Render method
         renderSettings = _a.renderSettings, 
         // Dictionaries
-        dictionary = _a.dictionary, localTranslations = _a.localTranslations, 
+        dictionary = _a.dictionary, 
         // Batching config
         maxConcurrentRequests = _a.maxConcurrentRequests, maxBatchSize = _a.maxBatchSize, batchInterval = _a.batchInterval, 
         // Other metadata
-        metadata = __rest(_a, ["runtimeTranslation", "remoteCache", "apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "localTranslations", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
+        metadata = __rest(_a, ["runtimeTranslation", "remoteCache", "localTranslation", "apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
         // Cloud integration
         this.apiKey = apiKey;
         this.devApiKey = devApiKey;
@@ -96,7 +96,9 @@ var I18NConfiguration = /** @class */ (function () {
             ((this.apiKey && process.env.NODE_ENV === 'production') ||
                 (this.devApiKey && process.env.NODE_ENV === 'development')));
         var _remoteCache = remoteCache && !!this.projectId;
-        this.translationEnabled = !!(_remoteCache || _runtimeTranslation);
+        this.translationEnabled = !!(_remoteCache ||
+            _runtimeTranslation ||
+            localTranslation);
         // When we add <TX>, there will not be discrepancy between server and client
         this.serverRuntimeTranslationEnabled = _runtimeTranslation;
         this.clientRuntimeTranslationEnabled =
@@ -128,7 +130,7 @@ var I18NConfiguration = /** @class */ (function () {
                 cacheExpiryTime: cacheExpiryTime,
                 _versionId: _versionId,
                 remoteCache: _remoteCache,
-                localTranslations: localTranslations,
+                localTranslation: localTranslation,
             });
         }
         // Cache of hashes to speed up <GTProvider>

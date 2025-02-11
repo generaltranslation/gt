@@ -43,7 +43,7 @@ var defaultInitGTProps = {
     config: './gt.config.json',
     remoteCache: true,
     runtimeTranslation: true,
-    localTranslations: false,
+    localTranslation: false,
     runtimeUrl: internal_1.defaultRuntimeApiUrl,
     cacheUrl: internal_1.defaultCacheUrl,
     cacheExpiryTime: 60000,

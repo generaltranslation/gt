@@ -64,8 +64,8 @@
     "./_dictionary": {
       "default": "./dist/_dictionary.js"
     },
-    "./_source": {
-      "default": "./dist/_source.js"
+    "./_config": {
+      "default": "./dist/_config.js"
     }
   },
   "typesVersions": {
@@ -88,8 +88,8 @@
       "_dictionary": [
         "./dist/_dictionary.d.ts"
       ],
-      "_source": [
-        "./dist/_source.d.ts"
+      "_config": [
+        "./dist/_config.d.ts"
       ]
     }
   },
@@ -120,9 +120,9 @@
         "/dist/_dictionary",
         "/dist/_dictionary"
       ],
-      "gt-next/_source": [
-        "/dist/_source",
-        "/dist/_source"
+      "gt-next/_config": [
+        "/dist/_config",
+        "/dist/_config"
       ]
     }
   },

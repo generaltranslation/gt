@@ -8,7 +8,7 @@ type InitGTProps = {
   dictionary?: string;
   i18n?: string;
   config?: string;
-  srcDir?: string;
+  localTranslation?: boolean;
   // Cloud integration
   apiKey?: string;
   projectId?: string;

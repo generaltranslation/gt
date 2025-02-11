@@ -2,14 +2,13 @@ import { RenderMethod, TranslatedChildren, TranslatedContent, Children } from 'g
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TaggedChildren, TranslationsObject } from 'gt-react/internal';
 type I18NConfigurationParams = {
-    localTranslations: boolean;
     remoteCache: boolean;
     runtimeTranslation: boolean;
     apiKey?: string;
     devApiKey?: string;
     projectId?: string;
     cacheUrl: string;
-    srcDir?: string;
+    localTranslation?: boolean;
     runtimeUrl: string;
     cacheExpiryTime?: number;
     defaultLocale: string;
@@ -48,7 +47,7 @@ export default class I18NConfiguration {
     private _translationCache;
     private _taggedDictionary;
     private _template;
-    constructor({ runtimeTranslation, remoteCache, apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, localTranslations, maxConcurrentRequests, maxBatchSize, batchInterval, ...metadata }: I18NConfigurationParams);
+    constructor({ runtimeTranslation, remoteCache, localTranslation, apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, ...metadata }: I18NConfigurationParams);
     /**
      * Gets config for dynamic translation on the client side.
      */

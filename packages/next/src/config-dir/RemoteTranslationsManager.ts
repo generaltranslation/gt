@@ -24,7 +24,7 @@ type RemoteTranslationsConfig = {
   projectId: string;
   cacheExpiryTime?: number;
   _versionId?: string;
-  srcDir?: string;
+  localTranslation: boolean;
   remoteCache: boolean;
 };
 
@@ -48,7 +48,7 @@ export class RemoteTranslationsManager {
       projectId: '',
       cacheExpiryTime: defaultInitGTProps.cacheExpiryTime, // default to 60 seconds
       _versionId: undefined,
-      srcDir: undefined,
+      localTranslation: false,
       remoteCache: true,
     };
     this.translationsMap = new Map();
@@ -75,9 +75,9 @@ export class RemoteTranslationsManager {
   ): Promise<TranslationsObject | undefined> {
     try {
       // ----- LOCAL TRANSLATIONS ----- //
-      if (this.config.srcDir) {
+      if (this.config.localTranslation) {
         try {
-          const sourceConfig = require('gt-next/_source');
+          const sourceConfig = require('gt-next/_config');
           const getLocalTranslation = sourceConfig.default;
           const txSource = await getLocalTranslation(reference);
 
@@ -97,6 +97,7 @@ export class RemoteTranslationsManager {
               },
               {}
             );
+            console.log('parsedResult', parsedResult);
             return parsedResult;
           }
           // Catch module not found errors
