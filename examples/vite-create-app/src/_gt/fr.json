@@ -1,0 +1,67 @@
+{
+  "app.0": {
+    "type": "h1",
+    "props": {
+      "children": "Vite + React",
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  },
+  "app.1": {
+    "type": "div",
+    "props": {
+      "children": [
+        {
+          "type": "button",
+          "props": {
+            "children": [
+              "le compteur est ",
+              {
+                "id": 3,
+                "key": "_gt_value_3",
+                "variable": "variable"
+              }
+            ],
+            "data-_gt": {
+              "id": 2
+            }
+          }
+        },
+        {
+          "type": "p",
+          "props": {
+            "children": [
+              "Modifiez ",
+              {
+                "type": "code",
+                "props": {
+                  "children": "src/App.tsx",
+                  "data-_gt": {
+                    "id": 5
+                  }
+                }
+              },
+              " et sauvegardez pour tester le HMR"
+            ],
+            "data-_gt": {
+              "id": 4
+            }
+          }
+        }
+      ],
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  },
+  "app.2": {
+    "type": "p",
+    "props": {
+      "children": "Cliquez sur les logos de Vite et React pour en savoir plus",
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  }
+}

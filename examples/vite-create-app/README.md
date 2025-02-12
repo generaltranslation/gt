@@ -1,50 +1,61 @@
-# React + TypeScript + Vite
+# gt-react + Vite Create App Example
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is an example of how to use gt-react with Vite Create App.
 
-Currently, two official plugins are available:
+## Deploy to Vercel
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/General-Translation/gt-libraries/tree/main/examples/vite-create-app)
 
-## Expanding the ESLint configuration
+## Cloning
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+To clone this example and see it in action yourself, follow the following steps:
 
-- Configure the top-level `parserOptions` property like this:
+1. Run
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```bash
+git clone https://github.com/General-Translation/gt-libraries.git
+cd gt-libraries/examples/vite-create-app
+npm install
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+2. (Optional) Create a `.local.env` file and populate it with `VITE_GT_PROJECT_ID` and `VITE_GT_API_KEY`, obtainable via the GT Dashboard [here](https://generaltranslation.com/dashboard)
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+3. Run `npm run dev`
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+## Step by Step Setup
+
+Here is a list of steps done to reach this repo state:
+
+1. `npm create vite@latest`
+2. `npm install gt-react gt-react-cli`
+3. `npx gt-react-cli setup`
+4. Add `<GTProvider>` to the `main.tsx` file
+5. Create a `.local.env` file and populate it with `VITE_GT_PROJECT_ID` and `VITE_GT_API_KEY`
+6. `npm run dev`
+
+To deploy this app to production:
+
+1. Add `GT_PROJECT_ID` and `GT_API_KEY` to your `.env.local` file
+2. `npx gt-react-cli translate --locales es fr zh`
+3. Deploy to Vercel / Render / etc..
+
+### Local Translations
+
+This repo is setup to use local translations in production.
+
+To use local translations in production, follow the following additional steps:
+
+1. Add a `loadTranslation.ts` file under `./src` with the following content:
+
+```ts
+export default async function loadTranslation(locale: string) {
+  const t = await import(`./_gt/${locale}.json`);
+  return t.default;
+}
+```
+
+2. Instead of running the command in Step 2 above, run:
+
+```bash
+npx gt-react-cli translate --locales es fr zh --translations-dir ./src/_gt --no-publish
 ```
