@@ -34,7 +34,7 @@ import React from 'react';
 import T from '../inline/T';
 import useDetermineLocale from '../hooks/useDetermineLocale';
 import { getAuth } from '../utils/utils';
-
+import fetchTranslations from '../utils/fetchTranslations';
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -56,7 +56,7 @@ import { getAuth } from '../utils/utils';
 
 export default function GTProvider({
   children,
-  projectId: _projectId,
+  projectId: _projectId = '',
   devApiKey: _devApiKey,
   dictionary = {},
   locales = listSupportedLocales(),
@@ -65,6 +65,7 @@ export default function GTProvider({
   cacheUrl = defaultCacheUrl,
   runtimeUrl = defaultRuntimeApiUrl,
   renderSettings = defaultRenderSettings,
+  loadTranslation,
   _versionId,
   ...metadata
 }: {
@@ -82,6 +83,7 @@ export default function GTProvider({
     timeout?: number;
   };
   enableCache?: boolean;
+  loadTranslation?: (locale: string) => Promise<any>;
   _versionId?: string;
   [key: string]: any;
 }): React.JSX.Element {
@@ -195,12 +197,10 @@ export default function GTProvider({
     // fetch translations from cache
     (async () => {
       try {
-        const response = await fetch(
-          _versionId
-            ? `${cacheUrl}/${projectId}/${locale}/${_versionId}`
-            : `${cacheUrl}/${projectId}/${locale}`
-        ); // fetch from cache
-        const result = await response.json();
+        const result = loadTranslation
+          ? await loadTranslation(locale)
+          : await fetchTranslations(cacheUrl, projectId, locale, _versionId);
+
         const parsedResult = Object.entries(result).reduce(
           (
             translationsAcc: Record<string, any>,
@@ -281,7 +281,8 @@ export default function GTProvider({
       let stringIsLoading = false;
       const unresolvedDictionaryStringsAndHashes = Object.entries(
         dictionaryContentEntries
-      ).filter(([_, { hash }]) => { // key will always be hash here, bc this only happens for runtime tx
+      ).filter(([_, { hash }]) => {
+        // key will always be hash here, bc this only happens for runtime tx
         // filter out any translations that are currently loading or already resolved
         if (translations?.[hash]?.state === 'loading') stringIsLoading = true;
 
@@ -370,7 +371,9 @@ export default function GTProvider({
         const content = splitStringToContent(entry);
 
         // Get translation entry
-        const translationEntry = translations?.[dictionaryContentEntries[id]?.hash || ''] || translations?.[id];
+        const translationEntry =
+          translations?.[dictionaryContentEntries[id]?.hash || ''] ||
+          translations?.[id];
 
         // Skip if:
         if (

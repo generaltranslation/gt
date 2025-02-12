@@ -50,13 +50,13 @@ export function getAuth(
   projectId?: string,
   devApiKey?: string
 ): {
-  projectId?: string;
+  projectId: string;
   devApiKey?: string;
 } {
   // vite
   try {
     return {
-      projectId: projectId || import.meta.env.VITE_GT_PROJECT_ID,
+      projectId: projectId || import.meta.env.VITE_GT_PROJECT_ID || '',
       devApiKey: devApiKey || import.meta.env.VITE_GT_API_KEY,
     };
   } catch {}
@@ -68,7 +68,8 @@ export function getAuth(
           projectId ||
           process.env.REACT_APP_GT_PROJECT_ID ||
           process.env.NEXT_PUBLIC_GT_PROJECT_ID ||
-          process.env.GATSBY_GT_PROJECT_ID,
+          process.env.GATSBY_GT_PROJECT_ID ||
+          '',
         devApiKey:
           devApiKey ||
           process.env.REACT_APP_GT_API_KEY ||
