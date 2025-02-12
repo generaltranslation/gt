@@ -52,7 +52,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RemoteTranslationsManager = void 0;
 var generaltranslation_1 = require("generaltranslation");
-var createErrors_1 = require("../errors/createErrors");
 var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
 var internal_1 = require("generaltranslation/internal");
 /**
@@ -69,8 +68,6 @@ var RemoteTranslationsManager = /** @class */ (function () {
             projectId: '',
             cacheExpiryTime: defaultInitGTProps_1.default.cacheExpiryTime, // default to 60 seconds
             _versionId: undefined,
-            localTranslation: false,
-            remoteCache: true,
         };
         this.translationsMap = new Map();
         this.fetchPromises = new Map();
@@ -91,19 +88,15 @@ var RemoteTranslationsManager = /** @class */ (function () {
      */
     RemoteTranslationsManager.prototype._fetchTranslations = function (reference) {
         return __awaiter(this, void 0, void 0, function () {
-            var sourceConfig, getLocalTranslation, txSource, parsedResult, error_1, response, result, parsedResult, error_2;
+            var sourceConfig, getLocalTranslation, txSource, parsedResult, error_1, response, result, parsedResult;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 7, , 8]);
-                        if (!this.config.localTranslation) return [3 /*break*/, 4];
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        sourceConfig = require('gt-next/_config');
+                        _a.trys.push([0, 2, , 5]);
+                        sourceConfig = require('gt-next/_translationLoader');
                         getLocalTranslation = sourceConfig.default;
                         return [4 /*yield*/, getLocalTranslation(reference)];
-                    case 2:
+                    case 1:
                         txSource = _a.sent();
                         if (txSource && Object.keys(txSource).length) {
                             // Record our fetch time
@@ -113,24 +106,16 @@ var RemoteTranslationsManager = /** @class */ (function () {
                                 translationsAcc[key] = { state: 'success', target: target };
                                 return translationsAcc;
                             }, {});
-                            console.log('parsedResult', parsedResult);
                             return [2 /*return*/, parsedResult];
                         }
-                        return [3 /*break*/, 4];
-                    case 3:
+                        return [3 /*break*/, 5];
+                    case 2:
                         error_1 = _a.sent();
-                        console.error(createErrors_1.localTranslationsError, error_1);
-                        return [3 /*break*/, 4];
-                    case 4:
-                        // ----- REMOTE TRANSLATIONS ----- //
-                        if (!this.config.remoteCache) {
-                            return [2 /*return*/, undefined];
-                        }
                         return [4 /*yield*/, fetch("".concat(this.config.cacheUrl, "/").concat(this.config.projectId, "/").concat(reference).concat(this.config._versionId ? "/".concat(this.config._versionId) : ''))];
-                    case 5:
+                    case 3:
                         response = _a.sent();
                         return [4 /*yield*/, response.json()];
-                    case 6:
+                    case 4:
                         result = _a.sent();
                         if (Object.keys(result).length) {
                             // Record our fetch time
@@ -142,12 +127,8 @@ var RemoteTranslationsManager = /** @class */ (function () {
                             }, {});
                             return [2 /*return*/, parsedResult];
                         }
-                        return [3 /*break*/, 8];
-                    case 7:
-                        error_2 = _a.sent();
-                        console.error(createErrors_1.remoteTranslationsError, error_2);
-                        return [3 /*break*/, 8];
-                    case 8: return [2 /*return*/, undefined];
+                        return [3 /*break*/, 5];
+                    case 5: return [2 /*return*/, undefined];
                 }
             });
         });

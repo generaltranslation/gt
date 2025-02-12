@@ -5,4 +5,4 @@
  * @param {string} configFilepath - The path to the config file.
  * @param {Record<string, any>} configObject - The config object to write if the file does not exist.
  */
-export default function setupConfig(configFilepath: string, projectId?: string, defaultLocale?: string): void;
+export default function createConfig(configFilepath: string, projectId?: string, defaultLocale?: string): void;

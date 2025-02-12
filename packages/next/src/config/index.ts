@@ -39,8 +39,7 @@ import { ContextReplacementPlugin } from 'webpack';
  * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
  * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - How long to cache translations in memory (milliseconds).
  * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
- * @param {boolean} [remoteCache=defaultInitGTProps.remoteCache] - Whether to use GT infrastructure for caching and translation, or rely on local source files.
- * @param {boolean} [localTranslation=defaultInitGTProps.localTranslation] - Whether to use local translations.
+ * @param {string[]|undefined} - Whether to use local translations.
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
@@ -57,10 +56,10 @@ import { ContextReplacementPlugin } from 'webpack';
 export function initGT(props: InitGTProps = {}) {
   // ---------- LOAD GT CONFIG FILE ---------- //
   let loadedConfig: Partial<InitGTProps> = {};
+  const configPath = props.config || defaultInitGTProps.config;
   try {
-    const config = props.config || defaultInitGTProps.config;
-    if (typeof config === 'string' && fs.existsSync(config)) {
-      const fileContent = fs.readFileSync(config, 'utf-8');
+    if (typeof configPath === 'string' && fs.existsSync(configPath)) {
+      const fileContent = fs.readFileSync(configPath, 'utf-8');
       loadedConfig = JSON.parse(fileContent);
     }
   } catch (error) {
@@ -109,38 +108,36 @@ export function initGT(props: InitGTProps = {}) {
 
   // ---------- ERROR CHECKS ---------- //
 
-  // If using SaaS infrastructure
-  if (mergedConfig.remoteCache || mergedConfig.runtimeTranslation) {
-    // Check: projectId is not required, but warn if missing for dev, nothing for prod
-    if (!mergedConfig.projectId && process.env.NODE_ENV === 'development') {
-      console.warn(projectIdMissingWarn);
-    }
+  // If using GT
+  // Check: projectId is not required, but warn if missing for dev, nothing for prod
+  if (!mergedConfig.projectId && process.env.NODE_ENV === 'development') {
+    console.warn(projectIdMissingWarn);
+  }
 
+  if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
     // Check: dev API key should not be included in production
-    if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
-      throw new Error(devApiKeyIncludedInProductionError);
-    }
+    throw new Error(devApiKeyIncludedInProductionError);
+  }
 
-    // Check: An API key is required for runtime translation
-    if (
-      mergedConfig.runtimeTranslation &&
-      mergedConfig.apiKey &&
-      mergedConfig.devApiKey
-    ) {
-      console.error(APIKeyMissingError);
-    }
+  // Check: An API key is required for runtime translation
+  if (
+    mergedConfig.runtimeTranslation &&
+    mergedConfig.apiKey &&
+    mergedConfig.devApiKey
+  ) {
+    console.error(APIKeyMissingError);
+  }
 
-    // Check: if using GT infrastructure, warn about unsupported locales
-    if (
-      mergedConfig.runtimeUrl === defaultInitGTProps.runtimeUrl ||
-      mergedConfig.cacheUrl === defaultInitGTProps.cacheUrl
-    ) {
-      const warningLocales = (
-        mergedConfig.locales || defaultInitGTProps.locales
-      ).filter((locale) => !getSupportedLocale(locale));
-      if (warningLocales.length) {
-        console.warn(createUnsupportedLocalesWarning(warningLocales));
-      }
+  // Check: if using GT infrastructure, warn about unsupported locales
+  if (
+    mergedConfig.runtimeUrl === defaultInitGTProps.runtimeUrl ||
+    mergedConfig.cacheUrl === defaultInitGTProps.cacheUrl
+  ) {
+    const warningLocales = (
+      mergedConfig.locales || defaultInitGTProps.locales
+    ).filter((locale) => !getSupportedLocale(locale));
+    if (warningLocales.length) {
+      console.warn(createUnsupportedLocalesWarning(warningLocales));
     }
   }
 
@@ -155,7 +152,40 @@ export function initGT(props: InitGTProps = {}) {
     typeof mergedConfig.dictionary === 'string'
       ? mergedConfig.dictionary
       : resolveConfigFilepath('dictionary');
-  const resolvedConfigFilePath = resolveConfigFilepath('gt.config');
+
+  const customTranslationLoaderPath =
+    typeof mergedConfig.translationLoaderPath === 'string'
+      ? mergedConfig.translationLoaderPath
+      : resolveConfigFilepath('translationLoader');
+
+  const resolvedLocalTranslationDir =
+    typeof mergedConfig.localTranslationsDir === 'string'
+      ? mergedConfig.localTranslationsDir
+      : './public/_gt';
+
+  let localLocales: string[] = [];
+  if (
+    fs.existsSync(resolvedLocalTranslationDir) &&
+    fs.statSync(resolvedLocalTranslationDir).isDirectory()
+  ) {
+    localLocales = fs
+      .readdirSync(resolvedLocalTranslationDir)
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => file.replace('.json', ''));
+  }
+
+  if (
+    localLocales.length &&
+    !(
+      customTranslationLoaderPath &&
+      fs.existsSync(path.resolve(customTranslationLoaderPath))
+    )
+  ) {
+    throw new Error(
+      'Local translations are enabled, but no custom translation loader is found. Please create a custom translation loader at ' +
+        customTranslationLoaderPath
+    );
+  }
 
   // Store the resolved paths in the environment
   const I18NConfigParams = JSON.stringify(mergedConfig);
@@ -183,11 +213,9 @@ export function initGT(props: InitGTProps = {}) {
             resolvedDictionaryFilePath
           );
         }
-        if (resolvedConfigFilePath) {
-          webpackConfig.resolve.alias[`gt-next/_config`] = path.resolve(
-            webpackConfig.context,
-            resolvedConfigFilePath
-          );
+        if (customTranslationLoaderPath) {
+          webpackConfig.resolve.alias[`gt-next/_translationLoader`] =
+            path.resolve(webpackConfig.context, customTranslationLoaderPath);
         }
         if (typeof nextConfig?.webpack === 'function') {
           return nextConfig.webpack(webpackConfig, options);

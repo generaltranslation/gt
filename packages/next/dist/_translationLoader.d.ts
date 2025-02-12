@@ -1,3 +1,3 @@
 declare const _default: {};
 export default _default;
-//# sourceMappingURL=_config.d.ts.map
+//# sourceMappingURL=_translationLoader.d.ts.map

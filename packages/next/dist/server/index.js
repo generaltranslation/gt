@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getGT = exports.getLocale = exports.tx = exports.T = void 0;
+exports.useElement = exports.getGT = exports.getLocale = exports.tx = exports.T = void 0;
 exports.getDefaultLocale = getDefaultLocale;
 var T_1 = __importDefault(require("./inline/T"));
 exports.T = T_1.default;
@@ -14,6 +14,8 @@ exports.getLocale = getLocale_1.default;
 var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
 var getGT_1 = require("./getGT");
 Object.defineProperty(exports, "getGT", { enumerable: true, get: function () { return getGT_1.getGT; } });
+var useElement_1 = __importDefault(require("./useElement"));
+exports.useElement = useElement_1.default;
 function getDefaultLocale() {
     return (0, getI18NConfig_1.default)().getDefaultLocale();
 }

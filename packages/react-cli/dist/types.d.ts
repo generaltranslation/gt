@@ -8,7 +8,7 @@ export type Updates = ({
     metadata: Record<string, any>;
 })[];
 export type Options = {
-    options: string;
+    config: string;
     apiKey?: string;
     projectId?: string;
     jsconfig?: string;
@@ -25,7 +25,7 @@ export type Options = {
 };
 export type WrapOptions = {
     src: string[];
-    options: string;
+    config: string;
     disableIds: boolean;
     disableFormatting: boolean;
 };

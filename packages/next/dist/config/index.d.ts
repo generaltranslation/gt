@@ -26,8 +26,7 @@ import InitGTProps from './props/InitGTProps';
  * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
  * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - How long to cache translations in memory (milliseconds).
  * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
- * @param {boolean} [remoteCache=defaultInitGTProps.remoteCache] - Whether to use GT infrastructure for caching and translation, or rely on local source files.
- * @param {boolean} [localTranslation=defaultInitGTProps.localTranslation] - Whether to use local translations.
+ * @param {string[]|undefined} - Whether to use local translations.
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.

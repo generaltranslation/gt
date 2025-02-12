@@ -1,5 +1,8 @@
 import fs from 'fs';
-import { displayUpdatedConfigFile } from '../../console/console';
+import {
+  displayCreatedConfigFile,
+  displayUpdatedConfigFile,
+} from '../../console/console';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 /**
@@ -9,7 +12,7 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * @param {string} configFilepath - The path to the config file.
  * @param {Record<string, any>} configObject - The config object to write if the file does not exist.
  */
-export default function setupConfig(
+export default function createConfig(
   configFilepath: string,
   projectId?: string,
   defaultLocale?: string
@@ -37,7 +40,7 @@ export default function setupConfig(
     fs.writeFileSync(configFilepath, mergedJsonContent, 'utf-8');
 
     // show update in console
-    displayUpdatedConfigFile(configFilepath);
+    displayCreatedConfigFile(configFilepath);
   } catch (error) {
     console.error(`An error occurred while updating ${configFilepath}:`, error);
   }

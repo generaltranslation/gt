@@ -62,6 +62,7 @@ const commander_1 = require("commander");
 const console_1 = require("./console/console");
 const loadJSON_1 = __importDefault(require("./fs/loadJSON"));
 const findFilepath_1 = __importStar(require("./fs/findFilepath"));
+const loadConfig_1 = __importDefault(require("./fs/config/loadConfig"));
 const createESBuildConfig_1 = __importDefault(require("./config/createESBuildConfig"));
 const generaltranslation_1 = require("generaltranslation");
 const warnings_1 = require("./console/warnings");
@@ -103,7 +104,7 @@ class BaseCLI {
         commander_1.program
             .command('translate')
             .description('Scans the project for a dictionary and/or <T> tags, and updates the General Translation remote dictionary with the latest content.')
-            .option('--options <path>', 'Filepath to options JSON file, by default gt.config.json', './gt.config.json')
+            .option('--config <path>', 'Filepath to config file, by default gt.config.json', (0, findFilepath_1.default)(['gt.config.json']))
             .option('--api-key <key>', 'API key for General Translation cloud service')
             .option('--project-id <id>', 'Project ID for the translation service', resolveProjectId())
             .option('--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file', (0, findFilepath_1.default)(['./tsconfig.json', './jsconfig.json']))
@@ -135,7 +136,7 @@ class BaseCLI {
             .command('setup')
             .description('Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids')
             .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
-            .option('--options <path>', 'Filepath to options JSON file, by default gt.config.json', './gt.config.json')
+            .option('--config <path>', 'Filepath to config file, by default gt.config.json', (0, findFilepath_1.default)(['gt.config.json']))
             .option('--disable-ids', 'Disable id generation for the <T> tags', false)
             .option('--disable-formatting', 'Disable formatting of edited files', false)
             .action((options) => this.handleSetupCommand(options));
@@ -158,8 +159,9 @@ class BaseCLI {
                 process.exit(0);
             }
             // ----- Create a starter gt.config.json file -----
-            if (options.options)
-                (0, setupConfig_1.default)(options.options, process.env.GT_PROJECT_ID, '');
+            console.log(options.config);
+            if (!options.config)
+                (0, setupConfig_1.default)('gt.config.json', process.env.GT_PROJECT_ID, '');
             // ----- //
             // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
             const { errors, filesUpdated, warnings } = yield this.scanForContent(options);
@@ -187,12 +189,10 @@ class BaseCLI {
             var _a;
             (0, console_1.displayAsciiTitle)();
             (0, console_1.displayInitializingText)();
-            // ------ SETUP ----- //
-            // Consolidate config options
-            // options given in command || --options filepath || ./gt.config.json || parsing next.config.js
-            // it's alright for any of the options to be undefined at this point
-            // --options filepath || gt.config.json
-            const gtConfig = (0, loadJSON_1.default)(initOptions.options) || {};
+            // Load config file
+            const gtConfig = initOptions.config
+                ? (0, loadConfig_1.default)(initOptions.config)
+                : {};
             // merge options
             const options = Object.assign(Object.assign({}, gtConfig), initOptions);
             options.apiKey = options.apiKey || process.env.GT_API_KEY;
@@ -212,7 +212,7 @@ class BaseCLI {
                 throw new Error('No General Translation API key found. Use the --api-key flag to provide one.');
             // Warn if apiKey is present in gt.config.json
             if (gtConfig.apiKey) {
-                (0, warnings_1.warnApiKeyInConfig)(options.options);
+                (0, warnings_1.warnApiKeyInConfig)(options.config);
                 process.exit(1);
             }
             // Error if no API key at this point
@@ -242,21 +242,11 @@ class BaseCLI {
                 throw new Error(`Invalid timeout: ${options.timeout}. Must be a positive integer.`);
             }
             options.timeout = timeout.toString();
-            // // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
-            // // not foolproof but can't hurt
-            // const nextConfigFilepath = findFilepath([
-            //   "./next.config.mjs",
-            //   "./next.config.js",
-            //   "./next.config.ts",
-            //   "./next.config.cjs",
-            // ]);
-            // if (nextConfigFilepath)
-            //   options = { ...parseNextConfig(nextConfigFilepath), ...options };
             // if there's no existing config file, creates one
             // does not include the API key to avoid exposing it
             const { apiKey, projectId, defaultLocale } = options, rest = __rest(options, ["apiKey", "projectId", "defaultLocale"]);
-            if (options.options)
-                (0, setupConfig_1.default)(rest.options, projectId, defaultLocale);
+            if (!options.config)
+                (0, setupConfig_1.default)('gt.config.json', projectId, defaultLocale);
             // ---- CREATING UPDATES ---- //
             let updates = [];
             let errors = [];
@@ -344,8 +334,8 @@ class BaseCLI {
                     }
                     const { versionId, message, locales } = yield response.json();
                     spinner.succeed(chalk_1.default.green(message));
-                    if (options.options)
-                        (0, updateConfig_1.default)(Object.assign({ configFilepath: options.options, _versionId: versionId }, (options.locales && { locales: options.locales })));
+                    if (options.config)
+                        (0, updateConfig_1.default)(Object.assign({ configFilepath: options.config, _versionId: versionId }, (options.locales && { locales: options.locales })));
                     if (options.enableTimeout && locales) {
                         console.log();
                         // timeout was validated earlier

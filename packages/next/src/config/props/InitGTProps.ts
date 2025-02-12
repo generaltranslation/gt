@@ -2,13 +2,12 @@ import { RenderMethod } from 'gt-react/internal';
 
 type InitGTProps = {
   // Feature flags
-  remoteCache?: boolean;
   runtimeTranslation?: boolean;
   // Request scoped filepath
   dictionary?: string;
   i18n?: string;
   config?: string;
-  localTranslation?: boolean;
+  translationLoaderPath?: string;
   // Cloud integration
   apiKey?: string;
   projectId?: string;

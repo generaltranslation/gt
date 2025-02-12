@@ -41,9 +41,7 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
 var internal_2 = require("gt-react/internal");
 var defaultInitGTProps = {
     config: './gt.config.json',
-    remoteCache: true,
     runtimeTranslation: true,
-    localTranslation: false,
     runtimeUrl: internal_1.defaultRuntimeApiUrl,
     cacheUrl: internal_1.defaultCacheUrl,
     cacheExpiryTime: 60000,

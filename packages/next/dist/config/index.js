@@ -56,8 +56,7 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
  * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - How long to cache translations in memory (milliseconds).
  * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
- * @param {boolean} [remoteCache=defaultInitGTProps.remoteCache] - Whether to use GT infrastructure for caching and translation, or rely on local source files.
- * @param {boolean} [localTranslation=defaultInitGTProps.localTranslation] - Whether to use local translations.
+ * @param {string[]|undefined} - Whether to use local translations.
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
@@ -76,10 +75,10 @@ function initGT(props) {
     if (props === void 0) { props = {}; }
     // ---------- LOAD GT CONFIG FILE ---------- //
     var loadedConfig = {};
+    var configPath = props.config || defaultInitGTProps_1.default.config;
     try {
-        var config = props.config || defaultInitGTProps_1.default.config;
-        if (typeof config === 'string' && fs_1.default.existsSync(config)) {
-            var fileContent = fs_1.default.readFileSync(config, 'utf-8');
+        if (typeof configPath === 'string' && fs_1.default.existsSync(configPath)) {
+            var fileContent = fs_1.default.readFileSync(configPath, 'utf-8');
             loadedConfig = JSON.parse(fileContent);
         }
     }
@@ -112,29 +111,27 @@ function initGT(props) {
     }
     mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
     // ---------- ERROR CHECKS ---------- //
-    // If using SaaS infrastructure
-    if (mergedConfig.remoteCache || mergedConfig.runtimeTranslation) {
-        // Check: projectId is not required, but warn if missing for dev, nothing for prod
-        if (!mergedConfig.projectId && process.env.NODE_ENV === 'development') {
-            console.warn(createErrors_1.projectIdMissingWarn);
-        }
+    // If using GT
+    // Check: projectId is not required, but warn if missing for dev, nothing for prod
+    if (!mergedConfig.projectId && process.env.NODE_ENV === 'development') {
+        console.warn(createErrors_1.projectIdMissingWarn);
+    }
+    if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
         // Check: dev API key should not be included in production
-        if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
-            throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
-        }
-        // Check: An API key is required for runtime translation
-        if (mergedConfig.runtimeTranslation &&
-            mergedConfig.apiKey &&
-            mergedConfig.devApiKey) {
-            console.error(createErrors_1.APIKeyMissingError);
-        }
-        // Check: if using GT infrastructure, warn about unsupported locales
-        if (mergedConfig.runtimeUrl === defaultInitGTProps_1.default.runtimeUrl ||
-            mergedConfig.cacheUrl === defaultInitGTProps_1.default.cacheUrl) {
-            var warningLocales = (mergedConfig.locales || defaultInitGTProps_1.default.locales).filter(function (locale) { return !(0, supported_locales_1.getSupportedLocale)(locale); });
-            if (warningLocales.length) {
-                console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));
-            }
+        throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
+    }
+    // Check: An API key is required for runtime translation
+    if (mergedConfig.runtimeTranslation &&
+        mergedConfig.apiKey &&
+        mergedConfig.devApiKey) {
+        console.error(createErrors_1.APIKeyMissingError);
+    }
+    // Check: if using GT infrastructure, warn about unsupported locales
+    if (mergedConfig.runtimeUrl === defaultInitGTProps_1.default.runtimeUrl ||
+        mergedConfig.cacheUrl === defaultInitGTProps_1.default.cacheUrl) {
+        var warningLocales = (mergedConfig.locales || defaultInitGTProps_1.default.locales).filter(function (locale) { return !(0, supported_locales_1.getSupportedLocale)(locale); });
+        if (warningLocales.length) {
+            console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));
         }
     }
     // ---------- STORE CONFIGURATIONS ---------- //
@@ -145,7 +142,26 @@ function initGT(props) {
     var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
         ? mergedConfig.dictionary
         : resolveConfigFilepath('dictionary');
-    var resolvedConfigFilePath = resolveConfigFilepath('gt.config');
+    var customTranslationLoaderPath = typeof mergedConfig.translationLoaderPath === 'string'
+        ? mergedConfig.translationLoaderPath
+        : resolveConfigFilepath('translationLoader');
+    var resolvedLocalTranslationDir = typeof mergedConfig.localTranslationsDir === 'string'
+        ? mergedConfig.localTranslationsDir
+        : './public/_gt';
+    var localLocales = [];
+    if (fs_1.default.existsSync(resolvedLocalTranslationDir) &&
+        fs_1.default.statSync(resolvedLocalTranslationDir).isDirectory()) {
+        localLocales = fs_1.default
+            .readdirSync(resolvedLocalTranslationDir)
+            .filter(function (file) { return file.endsWith('.json'); })
+            .map(function (file) { return file.replace('.json', ''); });
+    }
+    if (localLocales.length &&
+        !(customTranslationLoaderPath &&
+            fs_1.default.existsSync(path_1.default.resolve(customTranslationLoaderPath)))) {
+        throw new Error('Local translations are enabled, but no custom translation loader is found. Please create a custom translation loader at ' +
+            customTranslationLoaderPath);
+    }
     // Store the resolved paths in the environment
     var I18NConfigParams = JSON.stringify(mergedConfig);
     return function (nextConfig) {
@@ -162,8 +178,9 @@ function initGT(props) {
                 if (resolvedDictionaryFilePath) {
                     webpackConfig.resolve.alias['gt-next/_dictionary'] = path_1.default.resolve(webpackConfig.context, resolvedDictionaryFilePath);
                 }
-                if (resolvedConfigFilePath) {
-                    webpackConfig.resolve.alias["gt-next/_config"] = path_1.default.resolve(webpackConfig.context, resolvedConfigFilePath);
+                if (customTranslationLoaderPath) {
+                    webpackConfig.resolve.alias["gt-next/_translationLoader"] =
+                        path_1.default.resolve(webpackConfig.context, customTranslationLoaderPath);
                 }
                 if (typeof (nextConfig === null || nextConfig === void 0 ? void 0 : nextConfig.webpack) === 'function') {
                     return nextConfig.webpack(webpackConfig, options);

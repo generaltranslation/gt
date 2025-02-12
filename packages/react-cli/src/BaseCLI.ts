@@ -15,6 +15,7 @@ import {
 } from './console/console';
 import loadJSON from './fs/loadJSON';
 import findFilepath, { findFilepaths } from './fs/findFilepath';
+import loadConfig from './fs/config/loadConfig';
 import createESBuildConfig from './config/createESBuildConfig';
 import { isValidLocale } from 'generaltranslation';
 import { warnApiKeyInConfig } from './console/warnings';
@@ -24,7 +25,7 @@ import chalk from 'chalk';
 import { select } from '@inquirer/prompts';
 import { waitForUpdates } from './api/waitForUpdates';
 import updateConfig from './fs/config/updateConfig';
-import setupConfig from './fs/config/setupConfig';
+import createConfig from './fs/config/setupConfig';
 import fs from 'fs';
 import { formatFiles } from './hooks/postProcess';
 
@@ -79,9 +80,9 @@ export abstract class BaseCLI {
         'Scans the project for a dictionary and/or <T> tags, and updates the General Translation remote dictionary with the latest content.'
       )
       .option(
-        '--options <path>',
-        'Filepath to options JSON file, by default gt.config.json',
-        './gt.config.json'
+        '--config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
       )
       .option(
         '--api-key <key>',
@@ -171,9 +172,9 @@ export abstract class BaseCLI {
         findFilepaths(['./src', './app', './pages', './components'])
       )
       .option(
-        '--options <path>',
-        'Filepath to options JSON file, by default gt.config.json',
-        './gt.config.json'
+        '--config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
       )
       .option('--disable-ids', 'Disable id generation for the <T> tags', false)
       .option(
@@ -206,9 +207,9 @@ export abstract class BaseCLI {
     }
 
     // ----- Create a starter gt.config.json file -----
-
-    if (options.options)
-      setupConfig(options.options, process.env.GT_PROJECT_ID, '');
+    console.log(options.config);
+    if (!options.config)
+      createConfig('gt.config.json', process.env.GT_PROJECT_ID, '');
 
     // ----- //
 
@@ -251,14 +252,10 @@ export abstract class BaseCLI {
     displayAsciiTitle();
     displayInitializingText();
 
-    // ------ SETUP ----- //
-
-    // Consolidate config options
-    // options given in command || --options filepath || ./gt.config.json || parsing next.config.js
-    // it's alright for any of the options to be undefined at this point
-
-    // --options filepath || gt.config.json
-    const gtConfig = loadJSON(initOptions.options) || {};
+    // Load config file
+    const gtConfig: Record<string, any> = initOptions.config
+      ? loadConfig(initOptions.config)
+      : {};
 
     // merge options
     const options = { ...gtConfig, ...initOptions };
@@ -283,7 +280,7 @@ export abstract class BaseCLI {
       );
     // Warn if apiKey is present in gt.config.json
     if (gtConfig.apiKey) {
-      warnApiKeyInConfig(options.options);
+      warnApiKeyInConfig(options.config);
       process.exit(1);
     }
 
@@ -328,21 +325,11 @@ export abstract class BaseCLI {
     }
     options.timeout = timeout.toString();
 
-    // // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
-    // // not foolproof but can't hurt
-    // const nextConfigFilepath = findFilepath([
-    //   "./next.config.mjs",
-    //   "./next.config.js",
-    //   "./next.config.ts",
-    //   "./next.config.cjs",
-    // ]);
-    // if (nextConfigFilepath)
-    //   options = { ...parseNextConfig(nextConfigFilepath), ...options };
-
     // if there's no existing config file, creates one
     // does not include the API key to avoid exposing it
     const { apiKey, projectId, defaultLocale, ...rest } = options;
-    if (options.options) setupConfig(rest.options, projectId, defaultLocale);
+    if (!options.config)
+      createConfig('gt.config.json', projectId, defaultLocale);
 
     // ---- CREATING UPDATES ---- //
 
@@ -489,9 +476,9 @@ export abstract class BaseCLI {
 
         const { versionId, message, locales } = await response.json();
         spinner.succeed(chalk.green(message));
-        if (options.options)
+        if (options.config)
           updateConfig({
-            configFilepath: options.options,
+            configFilepath: options.config,
             _versionId: versionId,
             ...(options.locales && { locales: options.locales }),
             // only save if locales was previously in options

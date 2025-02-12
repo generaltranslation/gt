@@ -24,8 +24,6 @@ type RemoteTranslationsConfig = {
   projectId: string;
   cacheExpiryTime?: number;
   _versionId?: string;
-  localTranslation: boolean;
-  remoteCache: boolean;
 };
 
 /**
@@ -48,8 +46,6 @@ export class RemoteTranslationsManager {
       projectId: '',
       cacheExpiryTime: defaultInitGTProps.cacheExpiryTime, // default to 60 seconds
       _versionId: undefined,
-      localTranslation: false,
-      remoteCache: true,
     };
     this.translationsMap = new Map();
     this.fetchPromises = new Map();
@@ -73,43 +69,32 @@ export class RemoteTranslationsManager {
   private async _fetchTranslations(
     reference: string
   ): Promise<TranslationsObject | undefined> {
+    // ----- LOCAL TRANSLATIONS ----- //
     try {
-      // ----- LOCAL TRANSLATIONS ----- //
-      if (this.config.localTranslation) {
-        try {
-          const sourceConfig = require('gt-next/_config');
-          const getLocalTranslation = sourceConfig.default;
-          const txSource = await getLocalTranslation(reference);
+      const sourceConfig = require('gt-next/_translationLoader');
+      const getLocalTranslation = sourceConfig.default;
+      const txSource = await getLocalTranslation(reference);
 
-          if (txSource && Object.keys(txSource).length) {
-            // Record our fetch time
-            this.lastFetchTime.set(reference, Date.now());
-            // Parse response
-            const parsedResult: TranslationsObject = Object.entries(
-              txSource
-            ).reduce(
-              (
-                translationsAcc: TranslationsObject,
-                [key, target]: [string, any]
-              ) => {
-                translationsAcc[key] = { state: 'success', target };
-                return translationsAcc;
-              },
-              {}
-            );
-            console.log('parsedResult', parsedResult);
-            return parsedResult;
-          }
-          // Catch module not found errors
-        } catch (error) {
-          console.error(localTranslationsError, error);
-        }
+      if (txSource && Object.keys(txSource).length) {
+        // Record our fetch time
+        this.lastFetchTime.set(reference, Date.now());
+        // Parse response
+        const parsedResult: TranslationsObject = Object.entries(
+          txSource
+        ).reduce(
+          (
+            translationsAcc: TranslationsObject,
+            [key, target]: [string, any]
+          ) => {
+            translationsAcc[key] = { state: 'success', target };
+            return translationsAcc;
+          },
+          {}
+        );
+        return parsedResult;
       }
-
-      // ----- REMOTE TRANSLATIONS ----- //
-      if (!this.config.remoteCache) {
-        return undefined;
-      }
+      // Fall back to remote cache
+    } catch (error) {
       const response = await fetch(
         `${this.config.cacheUrl}/${this.config.projectId}/${reference}${
           this.config._versionId ? `/${this.config._versionId}` : ''
@@ -133,8 +118,6 @@ export class RemoteTranslationsManager {
         );
         return parsedResult;
       }
-    } catch (error) {
-      console.error(remoteTranslationsError, error);
     }
     return undefined;
   }

@@ -8,9 +8,7 @@ import { defaultRenderSettings } from 'gt-react/internal';
 
 const defaultInitGTProps = {
   config: './gt.config.json',
-  remoteCache: true,
   runtimeTranslation: true,
-  localTranslation: false,
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
   cacheExpiryTime: 60000,

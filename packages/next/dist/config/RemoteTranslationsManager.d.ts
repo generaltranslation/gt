@@ -11,8 +11,6 @@ type RemoteTranslationsConfig = {
     projectId: string;
     cacheExpiryTime?: number;
     _versionId?: string;
-    localTranslation: boolean;
-    remoteCache: boolean;
 };
 /**
  * Manages remote translations.

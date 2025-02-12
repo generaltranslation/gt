@@ -20,13 +20,12 @@ import { hashJsxChildren } from 'generaltranslation/id';
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TaggedChildren, TranslationsObject } from 'gt-react/internal';
 type I18NConfigurationParams = {
-  remoteCache: boolean;
   runtimeTranslation: boolean;
   apiKey?: string;
   devApiKey?: string;
   projectId?: string;
   cacheUrl: string;
-  localTranslation?: boolean;
+  localTranslations?: string[];
   runtimeUrl: string;
   cacheExpiryTime?: number;
   defaultLocale: string;
@@ -101,8 +100,6 @@ export default class I18NConfiguration {
   constructor({
     // Cloud integration
     runtimeTranslation = true,
-    remoteCache = true,
-    localTranslation = false,
     apiKey,
     devApiKey,
     projectId,
@@ -138,12 +135,7 @@ export default class I18NConfiguration {
       ((this.apiKey && process.env.NODE_ENV === 'production') ||
         (this.devApiKey && process.env.NODE_ENV === 'development'))
     );
-    const _remoteCache = remoteCache && !!this.projectId;
-    this.translationEnabled = !!(
-      _remoteCache ||
-      _runtimeTranslation ||
-      localTranslation
-    );
+    this.translationEnabled = !!_runtimeTranslation;
     // When we add <TX>, there will not be discrepancy between server and client
     this.serverRuntimeTranslationEnabled = _runtimeTranslation;
     this.clientRuntimeTranslationEnabled =
@@ -186,8 +178,6 @@ export default class I18NConfiguration {
         projectId,
         cacheExpiryTime,
         _versionId,
-        remoteCache: _remoteCache,
-        localTranslation,
       });
     }
     // Cache of hashes to speed up <GTProvider>
