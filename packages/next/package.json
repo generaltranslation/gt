@@ -43,20 +43,20 @@
       "default": "./dist/index.server.js"
     },
     "./config": {
-      "types": "./dist/config_.d.ts",
-      "default": "./dist/config_.js"
+      "types": "./dist/config.d.ts",
+      "default": "./dist/config.js"
     },
     "./client": {
       "types": "./dist/client.d.ts",
       "default": "./dist/client.js"
     },
     "./server": {
-      "types": "./dist/server_.d.ts",
-      "default": "./dist/server_.js"
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
     },
     "./middleware": {
-      "types": "./dist/middleware_.d.ts",
-      "default": "./dist/middleware_.js"
+      "types": "./dist/middleware.d.ts",
+      "default": "./dist/middleware.js"
     },
     "./_request": {
       "default": "./dist/_request.js"
@@ -71,16 +71,16 @@
   "typesVersions": {
     "*": {
       "config": [
-        "./dist/config_.d.ts"
+        "./dist/config.d.ts"
       ],
       "client": [
         "./dist/client.d.ts"
       ],
       "server": [
-        "./dist/server_.d.ts"
+        "./dist/server.d.ts"
       ],
       "middleware": [
-        "./dist/middleware_.d.ts"
+        "./dist/middleware.d.ts"
       ],
       "_request": [
         "./dist/_request.d.ts"
@@ -97,16 +97,16 @@
     "baseUrl": ".",
     "paths": {
       "gt-next/config": [
-        "/dist/config_"
+        "/dist/config"
       ],
       "gt-next/client": [
         "/dist/client"
       ],
       "gt-next/server": [
-        "/dist/server_"
+        "/dist/server"
       ],
       "gt-next/middleware": [
-        "/dist/middleware_"
+        "/dist/middleware"
       ],
       "gt-next/_request": [
         "/dist/_request"
