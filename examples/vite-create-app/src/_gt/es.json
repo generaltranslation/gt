@@ -1,0 +1,67 @@
+{
+  "app.0": {
+    "type": "h1",
+    "props": {
+      "children": "Vite + React",
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  },
+  "app.1": {
+    "type": "div",
+    "props": {
+      "children": [
+        {
+          "type": "button",
+          "props": {
+            "children": [
+              "el contador es ",
+              {
+                "id": 3,
+                "key": "_gt_value_3",
+                "variable": "variable"
+              }
+            ],
+            "data-_gt": {
+              "id": 2
+            }
+          }
+        },
+        {
+          "type": "p",
+          "props": {
+            "children": [
+              "Edita ",
+              {
+                "type": "code",
+                "props": {
+                  "children": "src/App.tsx",
+                  "data-_gt": {
+                    "id": 5
+                  }
+                }
+              },
+              " y guarda para probar HMR"
+            ],
+            "data-_gt": {
+              "id": 4
+            }
+          }
+        }
+      ],
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  },
+  "app.2": {
+    "type": "p",
+    "props": {
+      "children": "Haz clic en los logotipos de Vite y React para obtener más información",
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  }
+}
