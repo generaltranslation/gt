@@ -16,7 +16,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var jsx_runtime_1 = require("react/jsx-runtime");
 var generaltranslation_1 = require("generaltranslation");
-var getI18NConfig_1 = __importDefault(require("../config-dir/getI18NConfig"));
+var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
  * It formats the number according to the current locale and optionally passed formatting options.

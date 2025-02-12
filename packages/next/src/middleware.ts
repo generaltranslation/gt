@@ -1,2 +1,2 @@
-import createNextMiddleware from './middleware-dir/createNextMiddleware';
+import createNextMiddleware from './middleware/createNextMiddleware';
 export { createNextMiddleware };

@@ -27,7 +27,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var jsx_runtime_1 = require("react/jsx-runtime");
 var generaltranslation_1 = require("generaltranslation");
-var getI18NConfig_1 = __importDefault(require("../config-dir/getI18NConfig"));
+var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
  *

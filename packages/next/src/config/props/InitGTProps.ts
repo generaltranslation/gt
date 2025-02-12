@@ -3,6 +3,7 @@ import { RenderMethod } from 'gt-react/internal';
 type InitGTProps = {
   // Feature flags
   runtimeTranslation?: boolean;
+  translationLoaderType?: 'remote' | 'custom' | 'disabled'; // remote: CDN, custom: uknown, disabled: no fetch
   // Request scoped filepath
   dictionary?: string;
   i18n?: string;

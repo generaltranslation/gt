@@ -2,9 +2,6 @@
 
 import { getLocaleProperties } from 'generaltranslation';
 
-export const APIKeyMissingError =
-  'General Translation: API key is required for runtime translation! Create an API key: generaltranslation.com/dashboard/api-keys. (Or, turn off runtime translation by setting runtimeUrl to an empty string.)';
-
 export const remoteTranslationsError =
   'General Translation: Error fetching remote translation.';
 
@@ -26,6 +23,20 @@ export const devApiKeyIncludedInProductionError = `General Translation: You are 
 
 export const createDictionarySubsetError = (id: string, functionName: string) =>
   `General Translation: ${functionName} with id: "${id}". Invalid dictionary entry detected. Make sure you are navigating to the correct subroute of the dictionary with the ID you provide.`;
+
+export const createMissingCustomTranslationLoadedError = (
+  customTranslationLoaderPath: string | undefined
+) =>
+  customTranslationLoaderPath
+    ? `Local translations exist, but no translation loader is found. Please create a translation loader at ${customTranslationLoaderPath}`
+    : 'Local translations exist, but no translation loader is found. See generaltranslation.com/docs for more information on how to create a translation loader.';
+
+export const APIKeyMissingError = `General Translation Error: 
+  An Development API key is required for runtime translation!
+  Find your Development API key: generaltranslation.com/dashboard
+  For more information, visit generaltranslation.com/docs
+  
+  (Or, disable this error message by setting runtimeUrl to an empty string which disables runtime translation.)`;
 
 // ---- WARNINGS ---- //
 
@@ -49,5 +60,15 @@ export const createMismatchingHashWarning = (
 ) =>
   `gt-next: Mismatching hashes! Expected hash: ${expectedHash}, but got hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;
 
-export const projectIdMissingWarn =
-  'General Translation: Project ID missing! Set projectId as GT_PROJECT_ID in the environment or by passing the projectId parameter to initGT(). Find your project ID: generaltranslation.com/dashboard.';
+export const projectIdMissingWarn = `General Translation Warning: Project ID missing!
+  Set projectId as GT_PROJECT_ID in your environment or by passing the projectId parameter to initGT().
+  Find your project ID: generaltranslation.com/dashboard.
+  
+  (Hint: if you want to use runtime translation, you need to add both GT_PROJECT_ID and GT_API_KEY to your environment.)`;
+
+export const noInitGTWarn = `General Translation Warning:
+  You are running General Translation without the initGT() plugin.
+  This means that you are not translating your app.
+  
+  To activate translation, add the initGT() plugin to your app, and set the projectId and apiKey in your environment.
+  For more information, visit https://generaltranslation.com/docs/next/tutorials/quickstart`;

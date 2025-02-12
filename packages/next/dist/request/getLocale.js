@@ -40,7 +40,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getLocale;
-var getI18NConfig_1 = __importDefault(require("../config-dir/getI18NConfig"));
+var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
 var getNextLocale_1 = require("../next/getNextLocale");
 var getLocaleFunction;
 /**

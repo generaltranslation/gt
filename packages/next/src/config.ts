@@ -1,10 +1,11 @@
 import path from 'path';
 import fs from 'fs';
 import { NextConfig } from 'next';
-import defaultInitGTProps from './config-dir/props/defaultInitGTProps';
-import InitGTProps from './config-dir/props/InitGTProps';
+import defaultInitGTProps from './config/props/defaultInitGTProps';
+import InitGTProps from './config/props/InitGTProps';
 import {
   APIKeyMissingError,
+  createMissingCustomTranslationLoadedError,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
   projectIdMissingWarn,
@@ -39,6 +40,7 @@ import { ContextReplacementPlugin } from 'webpack';
  * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
  * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - How long to cache translations in memory (milliseconds).
  * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
+ * @param {string|undefined} [translationLoaderType=defaultInitGTProps.translationLoaderType] - The type of translation loader to use. Values: 'remote' | 'custom' | 'disabled'. Default is remote.
  * @param {string[]|undefined} - Whether to use local translations.
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
@@ -106,63 +108,33 @@ export function initGT(props: InitGTProps = {}) {
   }
   mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
 
-  // ---------- ERROR CHECKS ---------- //
+  // ----------- RESOLVE ANY CONFIG/TX FILES ----------- //
 
-  // If using GT
-  // Check: projectId is not required, but warn if missing for dev, nothing for prod
-  if (!mergedConfig.projectId && process.env.NODE_ENV === 'development') {
-    console.warn(projectIdMissingWarn);
-  }
-
-  if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
-    // Check: dev API key should not be included in production
-    throw new Error(devApiKeyIncludedInProductionError);
-  }
-
-  // Check: An API key is required for runtime translation
-  if (
-    mergedConfig.runtimeTranslation &&
-    mergedConfig.apiKey &&
-    mergedConfig.devApiKey
-  ) {
-    console.error(APIKeyMissingError);
-  }
-
-  // Check: if using GT infrastructure, warn about unsupported locales
-  if (
-    mergedConfig.runtimeUrl === defaultInitGTProps.runtimeUrl ||
-    mergedConfig.cacheUrl === defaultInitGTProps.cacheUrl
-  ) {
-    const warningLocales = (
-      mergedConfig.locales || defaultInitGTProps.locales
-    ).filter((locale) => !getSupportedLocale(locale));
-    if (warningLocales.length) {
-      console.warn(createUnsupportedLocalesWarning(warningLocales));
-    }
-  }
-
-  // ---------- STORE CONFIGURATIONS ---------- //
-
-  // Resolve gt.config.json i18n and dictionary paths
+  // Resolve custom locale getter functions
   const resolvedI18NFilePath =
     typeof mergedConfig.i18n === 'string'
       ? mergedConfig.i18n
       : resolveConfigFilepath('i18n');
+
+  // Resolve dictionary filepath
   const resolvedDictionaryFilePath =
     typeof mergedConfig.dictionary === 'string'
       ? mergedConfig.dictionary
       : resolveConfigFilepath('dictionary');
 
+  // Resolve custom translation loader path
   const customTranslationLoaderPath =
     typeof mergedConfig.translationLoaderPath === 'string'
       ? mergedConfig.translationLoaderPath
       : resolveConfigFilepath('loadTranslation');
 
+  // Resolve local translations directory
   const resolvedLocalTranslationDir =
     typeof mergedConfig.localTranslationsDir === 'string'
       ? mergedConfig.localTranslationsDir
       : './public/_gt';
 
+  // Check for local translations and get the list of locales
   let localLocales: string[] = [];
   if (
     fs.existsSync(resolvedLocalTranslationDir) &&
@@ -173,7 +145,10 @@ export function initGT(props: InitGTProps = {}) {
       .filter((file) => file.endsWith('.json'))
       .map((file) => file.replace('.json', ''));
   }
-  console.log('customTranslationLoaderPath', customTranslationLoaderPath);
+  // ---------- ERROR CHECKS ---------- //
+
+  // Check: local translations are enabled, but no custom translation loader is found
+  // for now, we can just check if that file exists, and then assume the existance of the loaders
   if (
     localLocales.length &&
     !(
@@ -182,10 +157,50 @@ export function initGT(props: InitGTProps = {}) {
     )
   ) {
     throw new Error(
-      'Local translations are enabled, but no custom translation loader is found. Please create a custom translation loader at ' +
-        customTranslationLoaderPath
+      createMissingCustomTranslationLoadedError(customTranslationLoaderPath)
     );
   }
+  const localTranslationsEnabled = localLocales.length > 0;
+
+  // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
+  if (
+    !localTranslationsEnabled &&
+    !mergedConfig.projectId &&
+    process.env.NODE_ENV === 'development'
+  ) {
+    console.warn(projectIdMissingWarn);
+  }
+
+  // Check: dev API key should not be included in production
+  if (process.env.NODE_ENV === 'production' && mergedConfig.devApiKey) {
+    throw new Error(devApiKeyIncludedInProductionError);
+  }
+
+  // Check: An API key is required for runtime translation
+  if (
+    mergedConfig.projectId && // must have projectId for this check to matter anyways
+    mergedConfig.runtimeUrl &&
+    !(mergedConfig.apiKey || mergedConfig.devApiKey) &&
+    process.env.NODE_ENV === 'development'
+  ) {
+    console.error(APIKeyMissingError);
+  }
+
+  // Check: if using GT infrastructure, warn about unsupported locales
+  if (
+    mergedConfig.runtimeUrl === defaultInitGTProps.runtimeUrl ||
+    (mergedConfig.cacheUrl === defaultInitGTProps.cacheUrl &&
+      !localTranslationsEnabled)
+  ) {
+    const warningLocales = (
+      mergedConfig.locales || defaultInitGTProps.locales
+    ).filter((locale) => !getSupportedLocale(locale));
+    if (warningLocales.length) {
+      console.warn(createUnsupportedLocalesWarning(warningLocales));
+    }
+  }
+
+  // ---------- STORE CONFIGURATIONS ---------- //
 
   // Store the resolved paths in the environment
   const I18NConfigParams = JSON.stringify(mergedConfig);

@@ -9,7 +9,7 @@ import {
 import T from './inline/T';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
 import { getLocale } from '../server';
-import getI18NConfig from '../config-dir/getI18NConfig';
+import getI18NConfig from '../config/getI18NConfig';
 import {
   renderContentToString,
   splitStringToContent,
