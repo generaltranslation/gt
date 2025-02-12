@@ -88,7 +88,7 @@ var jsx_runtime_1 = require("react/jsx-runtime");
 var internal_1 = require("gt-react/internal");
 var T_1 = __importDefault(require("./inline/T"));
 var getDictionary_1 = __importStar(require("../dictionary/getDictionary"));
-var _1 = require(".");
+var server_1 = require("../server_");
 var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
 var generaltranslation_1 = require("generaltranslation");
 var getMetadata_1 = __importDefault(require("../request/getMetadata"));
@@ -119,7 +119,7 @@ function getGT(id) {
                     };
                     I18NConfig = (0, getI18NConfig_1.default)();
                     defaultLocale = I18NConfig.getDefaultLocale();
-                    return [4 /*yield*/, (0, _1.getLocale)()];
+                    return [4 /*yield*/, (0, server_1.getLocale)()];
                 case 1:
                     locale = _a.sent();
                     translationRequired = I18NConfig.requiresTranslation(locale);

@@ -1,14 +1,14 @@
 import path from 'path';
 import fs from 'fs';
 import { NextConfig } from 'next';
-import defaultInitGTProps from './props/defaultInitGTProps';
-import InitGTProps from './props/InitGTProps';
+import defaultInitGTProps from './config/props/defaultInitGTProps';
+import InitGTProps from './config/props/InitGTProps';
 import {
   APIKeyMissingError,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
   projectIdMissingWarn,
-} from '../errors/createErrors';
+} from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import { ContextReplacementPlugin } from 'webpack';
 
@@ -173,7 +173,7 @@ export function initGT(props: InitGTProps = {}) {
       .filter((file) => file.endsWith('.json'))
       .map((file) => file.replace('.json', ''));
   }
-
+  console.log('resolvedLocalTranslationDir', resolvedLocalTranslationDir);
   if (
     localLocales.length &&
     !(

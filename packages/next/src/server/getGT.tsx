@@ -8,7 +8,7 @@ import {
 } from 'gt-react/internal';
 import T from './inline/T';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
-import { getLocale } from '.';
+import { getLocale } from '../server_';
 import getI18NConfig from '../config/getI18NConfig';
 import {
   renderContentToString,

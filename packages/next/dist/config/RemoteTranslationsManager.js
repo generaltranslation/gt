@@ -93,6 +93,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 5]);
+                        console.log('fetching local translations');
                         sourceConfig = require('gt-next/_translationLoader');
                         getLocalTranslation = sourceConfig.default;
                         return [4 /*yield*/, getLocalTranslation(reference)];
@@ -111,6 +112,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
                         return [3 /*break*/, 5];
                     case 2:
                         error_1 = _a.sent();
+                        console.log('falling back to remote cache');
                         return [4 /*yield*/, fetch("".concat(this.config.cacheUrl, "/").concat(this.config.projectId, "/").concat(reference).concat(this.config._versionId ? "/".concat(this.config._versionId) : ''))];
                     case 3:
                         response = _a.sent();

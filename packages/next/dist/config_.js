@@ -26,8 +26,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.initGT = initGT;
 var path_1 = __importDefault(require("path"));
 var fs_1 = __importDefault(require("fs"));
-var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
-var createErrors_1 = require("../errors/createErrors");
+var defaultInitGTProps_1 = __importDefault(require("./config/props/defaultInitGTProps"));
+var createErrors_1 = require("./errors/createErrors");
 var supported_locales_1 = require("@generaltranslation/supported-locales");
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -232,4 +232,4 @@ function withExtensions(localPath) {
         "".concat(localPath, ".jsx"),
     ];
 }
-//# sourceMappingURL=index.js.map
+//# sourceMappingURL=config_.js.map

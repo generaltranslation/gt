@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "5.0.12-alpha.6",
+  "version": "5.0.12-alpha.8",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -43,20 +43,20 @@
       "default": "./dist/index.server.js"
     },
     "./config": {
-      "types": "./dist/config/index.d.ts",
-      "default": "./dist/config/index.js"
+      "types": "./dist/config_.d.ts",
+      "default": "./dist/config_.js"
     },
     "./client": {
       "types": "./dist/client.d.ts",
       "default": "./dist/client.js"
     },
     "./server": {
-      "types": "./dist/server/index.d.ts",
-      "default": "./dist/server/index.js"
+      "types": "./dist/server_.d.ts",
+      "default": "./dist/server_.js"
     },
     "./middleware": {
-      "types": "./dist/middleware/index.d.ts",
-      "default": "./dist/middleware/index.js"
+      "types": "./dist/middleware_.d.ts",
+      "default": "./dist/middleware_.js"
     },
     "./_request": {
       "default": "./dist/_request.js"
@@ -71,16 +71,16 @@
   "typesVersions": {
     "*": {
       "config": [
-        "./dist/config/index.d.ts"
+        "./dist/config_.d.ts"
       ],
       "client": [
         "./dist/client.d.ts"
       ],
       "server": [
-        "./dist/server/index.d.ts"
+        "./dist/server_.d.ts"
       ],
       "middleware": [
-        "./dist/middleware/index.d.ts"
+        "./dist/middleware_.d.ts"
       ],
       "_request": [
         "./dist/_request.d.ts"
@@ -97,16 +97,16 @@
     "baseUrl": ".",
     "paths": {
       "gt-next/config": [
-        "/dist/config/index"
+        "/dist/config_"
       ],
       "gt-next/client": [
         "/dist/client"
       ],
       "gt-next/server": [
-        "/dist/server/index"
+        "/dist/server_"
       ],
       "gt-next/middleware": [
-        "/dist/middleware/index"
+        "/dist/middleware_"
       ],
       "gt-next/_request": [
         "/dist/_request"

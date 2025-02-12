@@ -71,6 +71,7 @@ export class RemoteTranslationsManager {
   ): Promise<TranslationsObject | undefined> {
     // ----- LOCAL TRANSLATIONS ----- //
     try {
+      console.log('fetching local translations');
       const sourceConfig = require('gt-next/_translationLoader');
       const getLocalTranslation = sourceConfig.default;
       const txSource = await getLocalTranslation(reference);
@@ -95,6 +96,7 @@ export class RemoteTranslationsManager {
       }
       // Fall back to remote cache
     } catch (error) {
+      console.log('falling back to remote cache');
       const response = await fetch(
         `${this.config.cacheUrl}/${this.config.projectId}/${reference}${
           this.config._versionId ? `/${this.config._versionId}` : ''
