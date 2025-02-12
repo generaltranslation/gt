@@ -96,7 +96,6 @@ var I18NConfiguration = /** @class */ (function () {
             ((this.apiKey && process.env.NODE_ENV === 'production') ||
                 (this.devApiKey && process.env.NODE_ENV === 'development')));
         this.translationEnabled = !!_runtimeTranslation;
-        console.log('translationEnabled', this.translationEnabled);
         // When we add <TX>, there will not be discrepancy between server and client
         this.serverRuntimeTranslationEnabled = _runtimeTranslation;
         this.clientRuntimeTranslationEnabled =

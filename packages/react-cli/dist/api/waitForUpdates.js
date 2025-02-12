@@ -61,26 +61,29 @@ const waitForUpdates = (apiKey, baseUrl, versionId, locales, startTime, timeoutD
     const initialCheck = yield checkDeployment();
     if (initialCheck) {
         spinner.succeed(chalk_1.default.green('All translations are live!'));
-        return;
+        return true;
     }
-    let intervalCheck;
-    // Start the interval aligned with the original request time
-    setTimeout(() => {
-        intervalCheck = setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
-            const isDeployed = yield checkDeployment();
-            const elapsed = Date.now() - startTime;
-            if (isDeployed || elapsed >= timeoutDuration) {
-                process.stdout.write('\n');
-                clearInterval(intervalCheck);
-                if (isDeployed) {
-                    spinner.succeed(chalk_1.default.green('All translations are live!'));
+    return new Promise((resolve) => {
+        let intervalCheck;
+        // Start the interval aligned with the original request time
+        setTimeout(() => {
+            intervalCheck = setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
+                const isDeployed = yield checkDeployment();
+                const elapsed = Date.now() - startTime;
+                if (isDeployed || elapsed >= timeoutDuration) {
+                    process.stdout.write('\n');
+                    clearInterval(intervalCheck);
+                    if (isDeployed) {
+                        spinner.succeed(chalk_1.default.green('All translations are live!'));
+                        resolve(true);
+                    }
+                    else {
+                        spinner.fail(chalk_1.default.red('Timed out waiting for translations'));
+                        resolve(false);
+                    }
                 }
-                else {
-                    spinner.fail(chalk_1.default.red('Timed out waiting for translations'));
-                }
-                return;
-            }
-        }), 5000);
-    }, msUntilNextInterval);
+            }), 5000);
+        }, msUntilNextInterval);
+    });
 });
 exports.waitForUpdates = waitForUpdates;

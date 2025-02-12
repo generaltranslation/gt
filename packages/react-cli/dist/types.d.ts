@@ -11,6 +11,7 @@ export type Options = {
     config: string;
     apiKey?: string;
     projectId?: string;
+    versionId?: string;
     jsconfig?: string;
     dictionary?: string;
     src?: string[];
@@ -22,6 +23,8 @@ export type Options = {
     dryRun: boolean;
     enableTimeout: boolean;
     timeout: string;
+    publish: boolean;
+    translationsDir: string;
 };
 export type WrapOptions = {
     src: string[];

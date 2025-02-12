@@ -28,7 +28,7 @@ import updateConfig from './fs/config/updateConfig';
 import createConfig from './fs/config/setupConfig';
 import fs from 'fs';
 import { formatFiles } from './hooks/postProcess';
-
+import saveTranslations from './fs/saveTranslations';
 function resolveProjectId(): string | undefined {
   const CANDIDATES = [
     process.env.GT_PROJECT_ID, // any server side, Remix
@@ -45,7 +45,7 @@ function resolveProjectId(): string | undefined {
   ];
   return CANDIDATES.find((projectId) => projectId !== undefined);
 }
-const DEFAULT_TIMEOUT = 300;
+const DEFAULT_TIMEOUT = 600;
 
 export abstract class BaseCLI {
   private framework: 'gt-next' | 'gt-react';
@@ -93,6 +93,7 @@ export abstract class BaseCLI {
         'Project ID for the translation service',
         resolveProjectId()
       )
+      .option('--version-id <id>', 'Version ID for the translation service')
       .option(
         '--tsconfig, --jsconfig <path>',
         'Path to jsconfig or tsconfig file',
@@ -133,11 +134,6 @@ export abstract class BaseCLI {
         true
       )
       .option(
-        '--wrap',
-        'Wraps all JSX elements in the src directory with a <T> tag, with unique ids',
-        false
-      )
-      .option(
         '--ignore-errors',
         'Ignore errors encountered while scanning for <T> tags',
         false
@@ -151,6 +147,16 @@ export abstract class BaseCLI {
         '--enable-timeout',
         'When set to false, will wait for the updates to be deployed to the CDN before exiting',
         true
+      )
+      .option(
+        '--no-publish',
+        'Do not publish updates to the CDN. Instead, translations will be saved locally in the translations directory',
+        true
+      )
+      .option(
+        '--translations-dir <path>',
+        'Path to directory where translations will be saved if --publish is set to false',
+        './public/_gt'
       )
       .option(
         '--timeout <seconds>',
@@ -442,6 +448,8 @@ export abstract class BaseCLI {
         ...(options.locales && { locales: options.locales }),
         ...(additionalLocales && { additionalLocales }),
         metadata: globalMetadata,
+        publish: options.publish,
+        ...(options.versionId && { versionId: options.versionId }),
       };
 
       const spinner = await displayLoadingAnimation(
@@ -484,11 +492,12 @@ export abstract class BaseCLI {
             // only save if locales was previously in options
           });
 
-        if (options.enableTimeout && locales) {
+        // Wait for translations if publish is true or enableTimeout is true
+        if ((options.enableTimeout && locales) || !options.publish) {
           console.log();
           // timeout was validated earlier
           const timeout = parseInt(options.timeout) * 1000;
-          await waitForUpdates(
+          const result = await waitForUpdates(
             apiKey,
             options.baseUrl,
             versionId,
@@ -496,6 +505,16 @@ export abstract class BaseCLI {
             startTime,
             timeout
           );
+          // Save translations to local directory if publish is false
+          if (!options.publish && result) {
+            console.log();
+            await saveTranslations(
+              options.baseUrl,
+              apiKey,
+              versionId,
+              options.translationsDir
+            );
+          }
         }
       } catch (error) {
         spinner.fail(chalk.red('Failed to send updates'));

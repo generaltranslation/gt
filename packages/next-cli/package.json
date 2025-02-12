@@ -1,6 +1,6 @@
 {
   "name": "gt-next-cli",
-  "version": "2.0.10",
+  "version": "2.0.11-alpha.1",
   "main": "dist/main.js",
   "bin": {
     "gt-next-cli": "dist/main.js"
@@ -41,7 +41,8 @@
     "chalk": "^4.1.2",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
-    "esbuild": "^0.23.1"
+    "esbuild": "^0.23.1",
+    "gt-react-cli": "^2.1.13-alpha.1"
   },
   "devDependencies": {
     "@types/babel__generator": "^7.6.8",

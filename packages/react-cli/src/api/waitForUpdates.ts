@@ -69,27 +69,30 @@ export const waitForUpdates = async (
   const initialCheck = await checkDeployment();
   if (initialCheck) {
     spinner.succeed(chalk.green('All translations are live!'));
-    return;
+    return true;
   }
 
-  let intervalCheck: NodeJS.Timeout;
-  // Start the interval aligned with the original request time
-  setTimeout(() => {
-    intervalCheck = setInterval(async () => {
-      const isDeployed = await checkDeployment();
-      const elapsed = Date.now() - startTime;
+  return new Promise<boolean>((resolve) => {
+    let intervalCheck: NodeJS.Timeout;
+    // Start the interval aligned with the original request time
+    setTimeout(() => {
+      intervalCheck = setInterval(async () => {
+        const isDeployed = await checkDeployment();
+        const elapsed = Date.now() - startTime;
 
-      if (isDeployed || elapsed >= timeoutDuration) {
-        process.stdout.write('\n');
-        clearInterval(intervalCheck);
+        if (isDeployed || elapsed >= timeoutDuration) {
+          process.stdout.write('\n');
+          clearInterval(intervalCheck);
 
-        if (isDeployed) {
-          spinner.succeed(chalk.green('All translations are live!'));
-        } else {
-          spinner.fail(chalk.red('Timed out waiting for translations'));
+          if (isDeployed) {
+            spinner.succeed(chalk.green('All translations are live!'));
+            resolve(true);
+          } else {
+            spinner.fail(chalk.red('Timed out waiting for translations'));
+            resolve(false);
+          }
         }
-        return;
-      }
-    }, 5000);
-  }, msUntilNextInterval);
+      }, 5000);
+    }, msUntilNextInterval);
+  });
 };
