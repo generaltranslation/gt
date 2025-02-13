@@ -166,10 +166,10 @@ export function initGT(props: InitGTProps) {
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
   if (
-    ((mergedConfig.cacheUrl && mergedConfig.loadTranslationType === 'remote') ||
-      mergedConfig.runtimeUrl) &&
+    (mergedConfig.cacheUrl || mergedConfig.runtimeUrl) &&
     !mergedConfig.projectId &&
-    process.env.NODE_ENV === 'development'
+    process.env.NODE_ENV === 'development' &&
+    mergedConfig.loadTranslationType !== 'custom'
   ) {
     console.warn(projectIdMissingWarn);
   }

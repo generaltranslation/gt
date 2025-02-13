@@ -1,6 +1,7 @@
 import { TranslationsObject } from 'gt-react/internal';
 import {
   customLoadTranslationError,
+  remoteTranslationsError,
   unresolvedCustomLoadTranslationError,
 } from '../errors/createErrors';
 
@@ -101,7 +102,7 @@ export default async function loadTranslation(
         const result = await response.json();
         return parseResult(result);
       } catch (error) {
-        console.error(customLoadTranslationError, error);
+        console.error(remoteTranslationsError, error);
         return undefined;
       }
     };

@@ -147,10 +147,10 @@ function initGT(props) {
         throw new Error((0, createErrors_1.createMissingCustomTranslationLoadedError)(customLoadTranslationPath));
     }
     // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
-    if (((mergedConfig.cacheUrl && mergedConfig.loadTranslationType === 'remote') ||
-        mergedConfig.runtimeUrl) &&
+    if ((mergedConfig.cacheUrl || mergedConfig.runtimeUrl) &&
         !mergedConfig.projectId &&
-        process.env.NODE_ENV === 'development') {
+        process.env.NODE_ENV === 'development' &&
+        mergedConfig.loadTranslationType !== 'custom') {
         console.warn(createErrors_1.projectIdMissingWarn);
     }
     // Check: dev API key should not be included in production
