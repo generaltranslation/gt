@@ -48,6 +48,9 @@ function getI18NConfig() {
         else if (apiKeyType === 'dev') {
             devApiKey = envApiKey;
         }
+        // Parse: defaultLocale
+        // Currently, you have to specify the default locale in the config
+        var defaultLocale = defaultInitGTProps_1.default.defaultLocale;
         // Check: in dev, tell them to use initGT to activate translation
         if (process.env.NODE_ENV === 'development') {
             console.warn(createErrors_1.noInitGTWarn);
@@ -57,7 +60,7 @@ function getI18NConfig() {
             throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
         }
         // disable all translation
-        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { renderSettings: internal_1.defaultRenderSettings, apiKey: apiKey, projectId: projectId, devApiKey: devApiKey, runtimeUrl: null, cacheUrl: null, translationLoaderType: 'disabled' }));
+        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { locales: [defaultLocale], renderSettings: internal_1.defaultRenderSettings, apiKey: apiKey, projectId: projectId, devApiKey: devApiKey, runtimeUrl: null, cacheUrl: null, translationLoaderType: 'disabled' }));
     }
     return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
 }

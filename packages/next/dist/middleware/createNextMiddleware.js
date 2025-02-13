@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = createNextMiddleware;
 var generaltranslation_1 = require("generaltranslation");
 var internal_1 = require("generaltranslation/internal");
-var supported_locales_1 = require("@generaltranslation/supported-locales");
 var createErrors_1 = require("../errors/createErrors");
 var server_1 = require("next/server");
 /**
@@ -45,7 +44,7 @@ function createNextMiddleware(_a) {
         }
     }
     var defaultLocale = (envParams === null || envParams === void 0 ? void 0 : envParams.defaultLocale) || internal_1.libraryDefaultLocale;
-    var locales = (envParams === null || envParams === void 0 ? void 0 : envParams.locales) || (0, supported_locales_1.listSupportedLocales)();
+    var locales = (envParams === null || envParams === void 0 ? void 0 : envParams.locales) || [defaultLocale];
     if (!(0, generaltranslation_1.isValidLocale)(defaultLocale))
         throw new Error("gt-next middleware: defaultLocale \"".concat(defaultLocale, "\" is not a valid locale."));
     var warningLocales = locales.filter(function (locale) { return !(0, generaltranslation_1.isValidLocale)(locale); });

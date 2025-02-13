@@ -3,7 +3,6 @@ import {
   defaultCacheUrl,
   defaultRuntimeApiUrl,
 } from 'generaltranslation/internal';
-import { listSupportedLocales } from '@generaltranslation/supported-locales';
 import { defaultRenderSettings } from 'gt-react/internal';
 
 const defaultInitGTProps = {
@@ -15,7 +14,7 @@ const defaultInitGTProps = {
   cacheExpiryTime: 60000,
   defaultLocale: libraryDefaultLocale,
   getLocale: async () => libraryDefaultLocale,
-  locales: listSupportedLocales(),
+  locales: [] as string[],
   getMetadata: async () => ({}),
   maxConcurrentRequests: 100,
   maxBatchSize: 25,

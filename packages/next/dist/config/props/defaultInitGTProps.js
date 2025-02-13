@@ -37,7 +37,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var internal_1 = require("generaltranslation/internal");
-var supported_locales_1 = require("@generaltranslation/supported-locales");
 var internal_2 = require("gt-react/internal");
 var defaultInitGTProps = {
     config: './gt.config.json',
@@ -50,7 +49,7 @@ var defaultInitGTProps = {
     getLocale: function () { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
         return [2 /*return*/, internal_1.libraryDefaultLocale];
     }); }); },
-    locales: (0, supported_locales_1.listSupportedLocales)(),
+    locales: [],
     getMetadata: function () { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
         return [2 /*return*/, ({})];
     }); }); },

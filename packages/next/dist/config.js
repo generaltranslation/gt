@@ -144,7 +144,7 @@ function initGT(props) {
     }
     // ---------- ERROR CHECKS ---------- //
     // Check: local translations are enabled, but no custom translation loader is found
-    if (localLocales && mergedConfig.translationLoaderType !== 'custom') {
+    if (localLocales.length && mergedConfig.translationLoaderType !== 'custom') {
         throw new Error((0, createErrors_1.createMissingCustomTranslationLoadedError)(customTranslationLoaderPath));
     }
     // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod

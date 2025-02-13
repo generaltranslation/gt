@@ -157,7 +157,7 @@ export function initGT(props: InitGTProps = { _usingPlugin: true }) {
   // ---------- ERROR CHECKS ---------- //
 
   // Check: local translations are enabled, but no custom translation loader is found
-  if (localLocales && mergedConfig.translationLoaderType !== 'custom') {
+  if (localLocales.length && mergedConfig.translationLoaderType !== 'custom') {
     throw new Error(
       createMissingCustomTranslationLoadedError(customTranslationLoaderPath)
     );
