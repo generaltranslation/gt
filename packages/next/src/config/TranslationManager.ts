@@ -1,5 +1,4 @@
 import { standardizeLocale } from 'generaltranslation';
-import { remoteTranslationsError } from '../errors/createErrors';
 import defaultInitGTProps from './props/defaultInitGTProps';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import {
@@ -8,33 +7,35 @@ import {
   TranslationError,
   TranslationSuccess,
 } from 'gt-react/internal';
+import loadTranslation from './loadTranslation';
 
 /**
- * Configuration type for RemoteTranslationsManager.
- * @typedef {object} RemoteTranslationsConfig
+ * Configuration type for TranslationManager.
+ * @typedef {object} TranslationManagerConfig
  * @property {string} cacheUrl - The URL of the remote cache.
  * @property {string} projectId - The project identifier for translations.
  * @property {number} [cacheExpiryTime=60000] - The cache expiration time in milliseconds.
  */
-type RemoteTranslationsConfig = {
+export type TranslationManagerConfig = {
   cacheUrl: string;
   projectId: string;
   cacheExpiryTime?: number;
   _versionId?: string;
+  translationLoaderEnabled: boolean;
 };
 
 /**
  * Manages remote translations.
  */
-export class RemoteTranslationsManager {
-  private config: RemoteTranslationsConfig;
+export class TranslationManager {
+  private config: TranslationManagerConfig;
   private translationsMap: Map<string, TranslationsObject>;
   private fetchPromises: Map<string, Promise<TranslationsObject | undefined>>;
   private requestedTranslations: Map<string, boolean>;
   private lastFetchTime: Map<string, number>;
 
   /**
-   * Creates an instance of RemoteTranslationsManager.
+   * Creates an instance of TranslationManager.
    * @constructor
    */
   constructor() {
@@ -43,6 +44,7 @@ export class RemoteTranslationsManager {
       projectId: '',
       cacheExpiryTime: defaultInitGTProps.cacheExpiryTime, // default to 60 seconds
       _versionId: undefined,
+      translationLoaderEnabled: true,
     };
     this.translationsMap = new Map();
     this.fetchPromises = new Map();
@@ -51,49 +53,37 @@ export class RemoteTranslationsManager {
   }
 
   /**
-   * Sets the configuration for the RemoteTranslationsManager.
-   * @param {Partial<RemoteTranslationsConfig>} newConfig - The new configuration to apply.
+   * Sets the configuration for the TranslationManager.
+   * @param {Partial<TranslationManagerConfig>} newConfig - The new configuration to apply.
    */
-  setConfig(newConfig: Partial<RemoteTranslationsConfig>): void {
+  setConfig(newConfig: Partial<TranslationManagerConfig>): void {
     this.config = { ...this.config, ...newConfig };
   }
 
   /**
    * Fetches translations from the remote cache.
    * @param {string} reference - The translation reference.
-   * @returns {Promise<TranslationsObject | undefined>} The fetched translations or null if not found.
+   * @returns {Promise<TranslationsObject | undefined>} The fetched translations or undefined if not found.
    */
   private async _fetchTranslations(
     reference: string
   ): Promise<TranslationsObject | undefined> {
-    try {
-      const response = await fetch(
-        `${this.config.cacheUrl}/${this.config.projectId}/${reference}${
-          this.config._versionId ? `/${this.config._versionId}` : ''
-        }`
-      );
-      const result = await response.json();
-      if (Object.keys(result).length) {
-        // Record our fetch time
-        this.lastFetchTime.set(reference, Date.now());
+    // Return if loader is disabled
+    if (!this.config.translationLoaderEnabled) return undefined;
 
-        // Parse response
-        const parsedResult: TranslationsObject = Object.entries(result).reduce(
-          (
-            translationsAcc: TranslationsObject,
-            [key, target]: [string, any]
-          ) => {
-            translationsAcc[key] = { state: 'success', target };
-            return translationsAcc;
-          },
-          {}
-        );
-        return parsedResult;
-      }
-    } catch (error) {
-      console.error(remoteTranslationsError, error);
-    }
-    return undefined;
+    // load translation
+    const result = await loadTranslation({
+      targetLocale: reference,
+      projectId: this.config.projectId,
+      cacheUrl: this.config.cacheUrl,
+      _versionId: this.config._versionId,
+    });
+
+    // Record our fetch time
+    if (result) this.lastFetchTime.set(reference, Date.now());
+
+    // return
+    return result;
   }
 
   /**
@@ -160,7 +150,7 @@ export class RemoteTranslationsManager {
     hash: string,
     id: string = hash,
     translation: TranslationSuccess | TranslationLoading | TranslationError,
-    isRuntimeTranslation: boolean = true,
+    isRuntimeTranslation: boolean = true
   ): boolean {
     if (!(locale && hash && translation)) return false;
     const reference = standardizeLocale(locale);
@@ -195,5 +185,5 @@ export class RemoteTranslationsManager {
   }
 }
 
-const remoteTranslationsManager = new RemoteTranslationsManager();
-export default remoteTranslationsManager;
+const translationManager = new TranslationManager();
+export default translationManager;

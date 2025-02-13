@@ -5,7 +5,7 @@ export default function useRuntimeTranslation({ projectId, devApiKey, locale, ve
     locale: string;
     versionId?: string;
     defaultLocale?: string;
-    runtimeUrl?: string;
+    runtimeUrl?: string | null;
     runtimeTranslationEnabled: boolean;
     renderSettings: {
         method: RenderMethod;

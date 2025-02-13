@@ -6,11 +6,12 @@ import { TranslationsObject, TranslationLoading, TranslationError, TranslationSu
  * @property {string} projectId - The project identifier for translations.
  * @property {number} [cacheExpiryTime=60000] - The cache expiration time in milliseconds.
  */
-type RemoteTranslationsConfig = {
+export type RemoteTranslationsConfig = {
     cacheUrl: string;
     projectId: string;
     cacheExpiryTime?: number;
     _versionId?: string;
+    translationLoaderEnabled: boolean;
 };
 /**
  * Manages remote translations.
@@ -34,7 +35,7 @@ export declare class RemoteTranslationsManager {
     /**
      * Fetches translations from the remote cache.
      * @param {string} reference - The translation reference.
-     * @returns {Promise<TranslationsObject | undefined>} The fetched translations or null if not found.
+     * @returns {Promise<TranslationsObject | undefined>} The fetched translations or undefined if not found.
      */
     private _fetchTranslations;
     /**

@@ -63,7 +63,7 @@ export default function createNextMiddleware(
 
   const defaultLocale: string =
     envParams?.defaultLocale || libraryDefaultLocale;
-  const locales: string[] = envParams?.locales || listSupportedLocales();
+  const locales: string[] = envParams?.locales || [defaultLocale];
 
   if (!isValidLocale(defaultLocale))
     throw new Error(

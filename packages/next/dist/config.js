@@ -52,11 +52,11 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [devApiKey=defaultInitGTProps.devApiKey] - API key for dev environment only.
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
- * @param {string} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
- * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
+ * @param {string|null} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations. Set to null to disable.
+ * @param {string|null} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations. Set to null to disable.
  * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - How long to cache translations in memory (milliseconds).
  * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
- * @param {boolean} [remoteCache=defaultInitGTProps.remoteCache] - Whether to enable remote caching of translations.
+ * @param {string[]|undefined} - Whether to use local translations.
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
  * @param {object} [renderSettings=defaultInitGTProps.renderSettings] - Render settings for how translations should be handled.
@@ -72,13 +72,12 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  */
 function initGT(props) {
     var _a;
-    if (props === void 0) { props = {}; }
     // ---------- LOAD GT CONFIG FILE ---------- //
     var loadedConfig = {};
+    var configPath = props.config || defaultInitGTProps_1.default.config;
     try {
-        var config = props.config || defaultInitGTProps_1.default.config;
-        if (typeof config === 'string' && fs_1.default.existsSync(config)) {
-            var fileContent = fs_1.default.readFileSync(config, 'utf-8');
+        if (typeof configPath === 'string' && fs_1.default.existsSync(configPath)) {
+            var fileContent = fs_1.default.readFileSync(configPath, 'utf-8');
             loadedConfig = JSON.parse(fileContent);
         }
     }
@@ -104,15 +103,53 @@ function initGT(props) {
     var envConfig = __assign(__assign(__assign({}, (projectId ? { projectId: projectId } : {})), (apiKey ? { apiKey: apiKey } : {})), (devApiKey ? { devApiKey: devApiKey } : {}));
     // ---------- MERGE CONFIGS ---------- //
     // precedence: input > env > config file > defaults
-    var mergedConfig = __assign(__assign(__assign(__assign({}, defaultInitGTProps_1.default), loadedConfig), envConfig), props);
+    var mergedConfig = __assign(__assign(__assign(__assign(__assign({}, defaultInitGTProps_1.default), loadedConfig), envConfig), props), { _usingPlugin: true });
     // ----------- LOCALE STANDARDIZATION ----------- //
     if (mergedConfig.locales && mergedConfig.defaultLocale) {
         mergedConfig.locales.unshift(mergedConfig.defaultLocale);
     }
     mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
+    // ----------- RESOLVE ANY CONFIG/TX FILES ----------- //
+    // Resolve custom locale getter functions
+    var resolvedI18NFilePath = typeof mergedConfig.i18n === 'string'
+        ? mergedConfig.i18n
+        : resolveConfigFilepath('i18n');
+    // Resolve dictionary filepath
+    var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
+        ? mergedConfig.dictionary
+        : resolveConfigFilepath('dictionary');
+    // Resolve custom translation loader path
+    var customTranslationLoaderPath = typeof mergedConfig.translationLoaderPath === 'string'
+        ? mergedConfig.translationLoaderPath
+        : resolveConfigFilepath('loadTranslation');
+    // Resolve local translations directory
+    var resolvedLocalTranslationDir = typeof mergedConfig.localTranslationsDir === 'string'
+        ? mergedConfig.localTranslationsDir
+        : './public/_gt';
+    // Check for local translations and get the list of locales
+    var localLocales = [];
+    if (fs_1.default.existsSync(resolvedLocalTranslationDir) &&
+        fs_1.default.statSync(resolvedLocalTranslationDir).isDirectory()) {
+        localLocales = fs_1.default
+            .readdirSync(resolvedLocalTranslationDir)
+            .filter(function (file) { return file.endsWith('.json'); })
+            .map(function (file) { return file.replace('.json', ''); });
+    }
+    // When there are local translations, force custom translation loader
+    // for now, we can just check if that file exists, and then assume the existance of the loaders
+    if (customTranslationLoaderPath &&
+        fs_1.default.existsSync(path_1.default.resolve(customTranslationLoaderPath))) {
+        mergedConfig.translationLoaderType = 'custom';
+    }
     // ---------- ERROR CHECKS ---------- //
-    // Check: projectId is not required, but warn if missing for dev, nothing for prod
-    if ((mergedConfig.runtimeTranslation || mergedConfig.remoteCache) &&
+    // Check: local translations are enabled, but no custom translation loader is found
+    if (localLocales.length && mergedConfig.translationLoaderType !== 'custom') {
+        throw new Error((0, createErrors_1.createMissingCustomTranslationLoadedError)(customTranslationLoaderPath));
+    }
+    // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
+    if (((mergedConfig.cacheUrl &&
+        mergedConfig.translationLoaderType === 'remote') ||
+        mergedConfig.runtimeUrl) &&
         !mergedConfig.projectId &&
         process.env.NODE_ENV === 'development') {
         console.warn(createErrors_1.projectIdMissingWarn);
@@ -122,27 +159,22 @@ function initGT(props) {
         throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
     }
     // Check: An API key is required for runtime translation
-    if (mergedConfig.runtimeTranslation &&
-        mergedConfig.apiKey &&
-        mergedConfig.devApiKey) {
-        console.error(createErrors_1.APIKeyMissingError);
+    if (mergedConfig.projectId && // must have projectId for this check to matter anyways
+        mergedConfig.runtimeUrl &&
+        !(mergedConfig.apiKey || mergedConfig.devApiKey) &&
+        process.env.NODE_ENV === 'development') {
+        console.warn(createErrors_1.APIKeyMissingWarn);
     }
     // Check: if using GT infrastructure, warn about unsupported locales
     if (mergedConfig.runtimeUrl === defaultInitGTProps_1.default.runtimeUrl ||
-        mergedConfig.cacheUrl === defaultInitGTProps_1.default.cacheUrl) {
+        (mergedConfig.cacheUrl === defaultInitGTProps_1.default.cacheUrl &&
+            mergedConfig.translationLoaderType === 'remote')) {
         var warningLocales = (mergedConfig.locales || defaultInitGTProps_1.default.locales).filter(function (locale) { return !(0, supported_locales_1.getSupportedLocale)(locale); });
         if (warningLocales.length) {
             console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));
         }
     }
     // ---------- STORE CONFIGURATIONS ---------- //
-    // Resolve gt.config.json i18n and dictionary paths
-    var resolvedI18NFilePath = typeof mergedConfig.i18n === 'string'
-        ? mergedConfig.i18n
-        : resolveConfigFilepath('i18n');
-    var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
-        ? mergedConfig.dictionary
-        : resolveConfigFilepath('dictionary');
     // Store the resolved paths in the environment
     var I18NConfigParams = JSON.stringify(mergedConfig);
     return function (nextConfig) {
@@ -158,6 +190,10 @@ function initGT(props) {
                 }
                 if (resolvedDictionaryFilePath) {
                     webpackConfig.resolve.alias['gt-next/_dictionary'] = path_1.default.resolve(webpackConfig.context, resolvedDictionaryFilePath);
+                }
+                if (customTranslationLoaderPath) {
+                    webpackConfig.resolve.alias["gt-next/_translationLoader"] =
+                        path_1.default.resolve(webpackConfig.context, customTranslationLoaderPath);
                 }
                 if (typeof (nextConfig === null || nextConfig === void 0 ? void 0 : nextConfig.webpack) === 'function') {
                     return nextConfig.webpack(webpackConfig, options);

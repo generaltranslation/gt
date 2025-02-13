@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "5.0.11",
+  "version": "5.0.12-alpha.10",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -63,6 +63,9 @@
     },
     "./_dictionary": {
       "default": "./dist/_dictionary.js"
+    },
+    "./_translationLoader": {
+      "default": "./dist/_translationLoader.js"
     }
   },
   "typesVersions": {
@@ -84,6 +87,9 @@
       ],
       "_dictionary": [
         "./dist/_dictionary.d.ts"
+      ],
+      "_translationLoader": [
+        "./dist/_translationLoader.d.ts"
       ]
     }
   },
@@ -91,28 +97,25 @@
     "baseUrl": ".",
     "paths": {
       "gt-next/config": [
-        "/dist/config",
         "/dist/config"
       ],
       "gt-next/client": [
-        "/dist/client",
         "/dist/client"
       ],
       "gt-next/server": [
-        "/dist/server",
         "/dist/server"
       ],
       "gt-next/middleware": [
-        "/dist/middleware",
         "/dist/middleware"
       ],
       "gt-next/_request": [
-        "/dist/_request",
         "/dist/_request"
       ],
       "gt-next/_dictionary": [
-        "/dist/_dictionary",
         "/dist/_dictionary"
+      ],
+      "gt-next/_translationLoader": [
+        "/dist/_translationLoader"
       ]
     }
   },

@@ -52,9 +52,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RemoteTranslationsManager = void 0;
 var generaltranslation_1 = require("generaltranslation");
-var createErrors_1 = require("../errors/createErrors");
 var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
 var internal_1 = require("generaltranslation/internal");
+var loadTranslation_1 = __importDefault(require("./loadTranslation"));
 /**
  * Manages remote translations.
  */
@@ -69,6 +69,7 @@ var RemoteTranslationsManager = /** @class */ (function () {
             projectId: '',
             cacheExpiryTime: defaultInitGTProps_1.default.cacheExpiryTime, // default to 60 seconds
             _versionId: undefined,
+            translationLoaderEnabled: true,
         };
         this.translationsMap = new Map();
         this.fetchPromises = new Map();
@@ -85,37 +86,30 @@ var RemoteTranslationsManager = /** @class */ (function () {
     /**
      * Fetches translations from the remote cache.
      * @param {string} reference - The translation reference.
-     * @returns {Promise<TranslationsObject | undefined>} The fetched translations or null if not found.
+     * @returns {Promise<TranslationsObject | undefined>} The fetched translations or undefined if not found.
      */
     RemoteTranslationsManager.prototype._fetchTranslations = function (reference) {
         return __awaiter(this, void 0, void 0, function () {
-            var response, result, parsedResult, error_1;
+            var result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 3, , 4]);
-                        return [4 /*yield*/, fetch("".concat(this.config.cacheUrl, "/").concat(this.config.projectId, "/").concat(reference).concat(this.config._versionId ? "/".concat(this.config._versionId) : ''))];
+                        // Return if loader is disabled
+                        if (!this.config.translationLoaderEnabled)
+                            return [2 /*return*/, undefined];
+                        return [4 /*yield*/, (0, loadTranslation_1.default)({
+                                targetLocale: reference,
+                                projectId: this.config.projectId,
+                                cacheUrl: this.config.cacheUrl,
+                                _versionId: this.config._versionId,
+                            })];
                     case 1:
-                        response = _a.sent();
-                        return [4 /*yield*/, response.json()];
-                    case 2:
                         result = _a.sent();
-                        if (Object.keys(result).length) {
-                            // Record our fetch time
+                        // Record our fetch time
+                        if (result)
                             this.lastFetchTime.set(reference, Date.now());
-                            parsedResult = Object.entries(result).reduce(function (translationsAcc, _a) {
-                                var key = _a[0], target = _a[1];
-                                translationsAcc[key] = { state: 'success', target: target };
-                                return translationsAcc;
-                            }, {});
-                            return [2 /*return*/, parsedResult];
-                        }
-                        return [3 /*break*/, 4];
-                    case 3:
-                        error_1 = _a.sent();
-                        console.error(createErrors_1.remoteTranslationsError, error_1);
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/, undefined];
+                        // return
+                        return [2 /*return*/, result];
                 }
             });
         });

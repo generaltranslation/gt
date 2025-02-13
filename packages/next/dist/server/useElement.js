@@ -47,13 +47,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useElement = useElement;
+exports.default = useElement;
 var jsx_runtime_1 = require("react/jsx-runtime");
 var internal_1 = require("gt-react/internal");
 var T_1 = __importDefault(require("./inline/T"));
 var getDictionary_1 = require("../dictionary/getDictionary");
 var createErrors_1 = require("../errors/createErrors");
 var react_1 = __importStar(require("react"));
+var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
 /**
  * Returns the translation function `t()`, which is used to translate an item from the dictionary.
  *
@@ -73,6 +74,16 @@ function useElement(id) {
     var getId = function (suffix) {
         return id ? "".concat(id, ".").concat(suffix) : suffix;
     };
+    var I18NConfig = (0, getI18NConfig_1.default)();
+    if (!I18NConfig.isDictionaryEnabled()) {
+        if (process.env.NODE_ENV === 'production') {
+            console.error(createErrors_1.dictionaryDisabledError);
+            return function () { return (0, jsx_runtime_1.jsx)(react_1.default.Fragment, {}); };
+        }
+        else {
+            throw new Error(createErrors_1.dictionaryDisabledError);
+        }
+    }
     /**
      * Translates a dictionary item based on its `id` and options, ensuring that it is a JSX element.
      *

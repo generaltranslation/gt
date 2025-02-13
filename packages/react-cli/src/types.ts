@@ -12,9 +12,10 @@ export type Updates = (
 )[];
 
 export type Options = {
-  options: string;
+  config: string;
   apiKey?: string;
   projectId?: string;
+  versionId?: string;
   jsconfig?: string;
   dictionary?: string;
   src?: string[];
@@ -26,11 +27,13 @@ export type Options = {
   dryRun: boolean;
   enableTimeout: boolean;
   timeout: string;
+  publish: boolean;
+  translationsDir: string;
 };
 
 export type WrapOptions = {
   src: string[];
-  options: string;
+  config: string;
   disableIds: boolean;
   disableFormatting: boolean;
 };

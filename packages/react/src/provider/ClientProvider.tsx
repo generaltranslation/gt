@@ -26,6 +26,7 @@ import { isEmptyReactFragment } from '../utils/utils';
 import renderVariable from './rendering/renderVariable';
 import useRuntimeTranslation from './runtime/useRuntimeTranslation';
 import { localeCookieName } from 'generaltranslation/internal';
+import { dictionaryDisabledError } from '../messages/createMessages';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -35,6 +36,7 @@ export default function ClientProvider({
   translationPromises,
   locale: _locale,
   _versionId,
+  dictionaryEnabled = false,
   defaultLocale,
   translationRequired,
   dialectTranslationRequired,
@@ -152,6 +154,15 @@ export default function ClientProvider({
     ): React.ReactNode | string | undefined => {
       // ----- SETUP ----- //
 
+      if (!dictionaryEnabled) {
+        if (process.env.NODE_ENV === 'production') {
+          console.error(dictionaryDisabledError);
+          return undefined;
+        } else {
+          throw new Error(dictionaryDisabledError);
+        }
+      }
+
       // Get the dictionary entry
       const dictionaryEntry:
         | TaggedDictionary
@@ -172,7 +183,8 @@ export default function ClientProvider({
       const variablesOptions = metadata?.variablesOptions;
 
       // Get the translation entry
-      const translationEntry = translations?.[metadata?.hash || ''] || translations?.[id];
+      const translationEntry =
+        translations?.[metadata?.hash || ''] || translations?.[id];
 
       // ----- RENDER STRINGS ----- //
 

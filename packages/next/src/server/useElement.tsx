@@ -5,8 +5,12 @@ import {
 } from 'gt-react/internal';
 import T from './inline/T';
 import { getDictionaryEntry } from '../dictionary/getDictionary';
-import { createNoEntryWarning } from '../errors/createErrors';
+import {
+  createNoEntryWarning,
+  dictionaryDisabledError,
+} from '../errors/createErrors';
 import React, { isValidElement } from 'react';
+import getI18NConfig from '../config/getI18NConfig';
 
 /**
  * Returns the translation function `t()`, which is used to translate an item from the dictionary.
@@ -23,12 +27,22 @@ import React, { isValidElement } from 'react';
  * const t = useElement();
  * console.log(t('hello')); // Translates item 'hello', returns as JSX
  */
-export function useElement(
+export default function useElement(
   id?: string
 ): (id: string, options?: Record<string, any>) => React.JSX.Element {
   const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
   };
+
+  const I18NConfig = getI18NConfig();
+  if (!I18NConfig.isDictionaryEnabled()) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error(dictionaryDisabledError);
+      return () => <React.Fragment />;
+    } else {
+      throw new Error(dictionaryDisabledError);
+    }
+  }
 
   /**
    * Translates a dictionary item based on its `id` and options, ensuring that it is a JSX element.

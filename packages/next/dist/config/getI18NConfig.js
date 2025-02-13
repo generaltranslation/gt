@@ -21,24 +21,24 @@ var createErrors_1 = require("../errors/createErrors");
 var internal_1 = require("gt-react/internal");
 function getI18NConfig() {
     var _a;
+    // Return the singleton instance
     var globalObj = globalThis;
-    // Return the instance if it already exists (singleton)
     if (globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE) {
         return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
     }
-    // Get config from environment
+    // initGT: Get config from environment
     var I18NConfigParams = process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
     if (I18NConfigParams) {
         globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), JSON.parse(I18NConfigParams)));
     }
     else {
         console.warn(createErrors_1.usingDefaultsWarning);
-        // Check: projectId is not required, but warn if missing for dev, nothing for prod
+        // no initGT implies:
+        //  - not translating at all
+        //  - using only default locales
+        // Parse: projectId
         var projectId = process.env.GT_PROJECT_ID || '';
-        if (!projectId && process.env.NODE_ENV === 'development') {
-            console.warn(createErrors_1.projectIdMissingWarn);
-        }
-        // Parse API keys
+        // Parse: apiKey, devApiKey
         var apiKey = void 0, devApiKey = void 0;
         var envApiKey = process.env.GT_API_KEY || '';
         var apiKeyType = (_a = envApiKey === null || envApiKey === void 0 ? void 0 : envApiKey.split('-')) === null || _a === void 0 ? void 0 : _a[1];
@@ -48,12 +48,19 @@ function getI18NConfig() {
         else if (apiKeyType === 'dev') {
             devApiKey = envApiKey;
         }
+        // Parse: defaultLocale
+        // Currently, you have to specify the default locale in the config
+        var defaultLocale = defaultInitGTProps_1.default.defaultLocale;
+        // Check: in dev, tell them to use initGT to activate translation
+        if (process.env.NODE_ENV === 'development') {
+            console.warn(createErrors_1.noInitGTWarn);
+        }
+        // Check: no devApiKey in production
         if (process.env.NODE_ENV === 'production' && devApiKey) {
             throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
         }
-        if (!apiKey && !devApiKey)
-            console.error(createErrors_1.APIKeyMissingError);
-        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { renderSettings: internal_1.defaultRenderSettings, apiKey: apiKey, projectId: projectId, devApiKey: devApiKey }));
+        // disable all translation
+        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { locales: [defaultLocale], renderSettings: internal_1.defaultRenderSettings, apiKey: apiKey, projectId: projectId, devApiKey: devApiKey, runtimeUrl: null, cacheUrl: null, translationLoaderType: 'disabled' }));
     }
     return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
 }

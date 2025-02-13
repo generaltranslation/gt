@@ -34,7 +34,7 @@ export default function useRuntimeTranslation({
   locale: string;
   versionId?: string;
   defaultLocale?: string;
-  runtimeUrl?: string;
+  runtimeUrl?: string | null;
   runtimeTranslationEnabled: boolean;
   renderSettings: {
     method: RenderMethod;

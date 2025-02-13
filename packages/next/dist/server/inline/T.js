@@ -132,7 +132,8 @@ function T(_a) {
                     defaultLocale = I18NConfig.getDefaultLocale();
                     renderSettings = I18NConfig.getRenderSettings();
                     translationRequired = I18NConfig.requiresTranslation(locale);
-                    serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled() && process.env.NODE_ENV === 'development';
+                    serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled() &&
+                        process.env.NODE_ENV === 'development';
                     dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, defaultLocale);
                     taggedChildren = I18NConfig.addGTIdentifier(children);
                     renderDefaultLocale = function () {

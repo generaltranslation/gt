@@ -6,11 +6,8 @@ import { WrapOptions } from 'gt-react-cli/types';
  * @param options - The options object
  * @returns An object containing the updates and errors
  */
-export default function scanForContent(
-  options: WrapOptions,
-  framework: 'gt-next'
-): Promise<{
-  errors: string[];
-  filesUpdated: string[];
-  warnings: string[];
+export default function scanForContent(options: WrapOptions, framework: 'gt-next'): Promise<{
+    errors: string[];
+    filesUpdated: string[];
+    warnings: string[];
 }>;

@@ -1,6 +1,6 @@
 {
   "name": "gt-react-cli",
-  "version": "2.1.12",
+  "version": "2.1.14-alpha.1",
   "main": "dist/index.js",
   "bin": {
     "gt-react-cli": "dist/main.js"
@@ -30,7 +30,7 @@
     "url": "git+https://github.com/General-Translation/gt-libraries.git"
   },
   "peerDependencies": {
-    "gt-react": "^9.0.5",
+    "gt-react": "^9.0.9-alpha.1",
     "react": ">=16.8.0 <20.0.0",
     "react-dom": ">=16.8.0 <20.0.0"
   },

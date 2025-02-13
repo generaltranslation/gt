@@ -62,6 +62,7 @@ const commander_1 = require("commander");
 const console_1 = require("./console/console");
 const loadJSON_1 = __importDefault(require("./fs/loadJSON"));
 const findFilepath_1 = __importStar(require("./fs/findFilepath"));
+const loadConfig_1 = __importDefault(require("./fs/config/loadConfig"));
 const createESBuildConfig_1 = __importDefault(require("./config/createESBuildConfig"));
 const generaltranslation_1 = require("generaltranslation");
 const warnings_1 = require("./console/warnings");
@@ -73,6 +74,7 @@ const waitForUpdates_1 = require("./api/waitForUpdates");
 const updateConfig_1 = __importDefault(require("./fs/config/updateConfig"));
 const setupConfig_1 = __importDefault(require("./fs/config/setupConfig"));
 const postProcess_1 = require("./hooks/postProcess");
+const saveTranslations_1 = __importDefault(require("./fs/saveTranslations"));
 function resolveProjectId() {
     const CANDIDATES = [
         process.env.GT_PROJECT_ID, // any server side, Remix
@@ -89,7 +91,7 @@ function resolveProjectId() {
     ];
     return CANDIDATES.find((projectId) => projectId !== undefined);
 }
-const DEFAULT_TIMEOUT = 300;
+const DEFAULT_TIMEOUT = 600;
 class BaseCLI {
     constructor(framework) {
         this.framework = framework;
@@ -103,9 +105,10 @@ class BaseCLI {
         commander_1.program
             .command('translate')
             .description('Scans the project for a dictionary and/or <T> tags, and updates the General Translation remote dictionary with the latest content.')
-            .option('--options <path>', 'Filepath to options JSON file, by default gt.config.json', './gt.config.json')
+            .option('--config <path>', 'Filepath to config file, by default gt.config.json', (0, findFilepath_1.default)(['gt.config.json']))
             .option('--api-key <key>', 'API key for General Translation cloud service')
             .option('--project-id <id>', 'Project ID for the translation service', resolveProjectId())
+            .option('--version-id <id>', 'Version ID for the translation service')
             .option('--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file', (0, findFilepath_1.default)(['./tsconfig.json', './jsconfig.json']))
             .option('--dictionary <path>', 'Path to dictionary file', (0, findFilepath_1.default)([
             './dictionary.js',
@@ -123,10 +126,11 @@ class BaseCLI {
             .option('--default-language, --default-locale <locale>', 'Default locale (e.g., en)')
             .option('--new, --locales <locales...>', 'Space-separated list of locales (e.g., en fr es)')
             .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
-            .option('--wrap', 'Wraps all JSX elements in the src directory with a <T> tag, with unique ids', false)
             .option('--ignore-errors', 'Ignore errors encountered while scanning for <T> tags', false)
             .option('--dry-run', 'Dry run, does not send updates to General Translation API', false)
             .option('--enable-timeout', 'When set to false, will wait for the updates to be deployed to the CDN before exiting', true)
+            .option('--no-publish', 'Do not publish updates to the CDN. Instead, translations will be saved locally in the translations directory', true)
+            .option('--translations-dir <path>', 'Path to directory where translations will be saved if --publish is set to false', './public/_gt')
             .option('--timeout <seconds>', 'Timeout in seconds for waiting for updates to be deployed to the CDN', DEFAULT_TIMEOUT.toString())
             .action((options) => this.handleTranslateCommand(options));
     }
@@ -135,7 +139,7 @@ class BaseCLI {
             .command('setup')
             .description('Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids')
             .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
-            .option('--options <path>', 'Filepath to options JSON file, by default gt.config.json', './gt.config.json')
+            .option('--config <path>', 'Filepath to config file, by default gt.config.json', (0, findFilepath_1.default)(['gt.config.json']))
             .option('--disable-ids', 'Disable id generation for the <T> tags', false)
             .option('--disable-formatting', 'Disable formatting of edited files', false)
             .action((options) => this.handleSetupCommand(options));
@@ -158,8 +162,9 @@ class BaseCLI {
                 process.exit(0);
             }
             // ----- Create a starter gt.config.json file -----
-            if (options.options)
-                (0, setupConfig_1.default)(options.options, process.env.GT_PROJECT_ID, '');
+            console.log(options.config);
+            if (!options.config)
+                (0, setupConfig_1.default)('gt.config.json', process.env.GT_PROJECT_ID, '');
             // ----- //
             // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
             const { errors, filesUpdated, warnings } = yield this.scanForContent(options);
@@ -187,12 +192,10 @@ class BaseCLI {
             var _a;
             (0, console_1.displayAsciiTitle)();
             (0, console_1.displayInitializingText)();
-            // ------ SETUP ----- //
-            // Consolidate config options
-            // options given in command || --options filepath || ./gt.config.json || parsing next.config.js
-            // it's alright for any of the options to be undefined at this point
-            // --options filepath || gt.config.json
-            const gtConfig = (0, loadJSON_1.default)(initOptions.options) || {};
+            // Load config file
+            const gtConfig = initOptions.config
+                ? (0, loadConfig_1.default)(initOptions.config)
+                : {};
             // merge options
             const options = Object.assign(Object.assign({}, gtConfig), initOptions);
             options.apiKey = options.apiKey || process.env.GT_API_KEY;
@@ -212,7 +215,7 @@ class BaseCLI {
                 throw new Error('No General Translation API key found. Use the --api-key flag to provide one.');
             // Warn if apiKey is present in gt.config.json
             if (gtConfig.apiKey) {
-                (0, warnings_1.warnApiKeyInConfig)(options.options);
+                (0, warnings_1.warnApiKeyInConfig)(options.config);
                 process.exit(1);
             }
             // Error if no API key at this point
@@ -242,21 +245,11 @@ class BaseCLI {
                 throw new Error(`Invalid timeout: ${options.timeout}. Must be a positive integer.`);
             }
             options.timeout = timeout.toString();
-            // // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
-            // // not foolproof but can't hurt
-            // const nextConfigFilepath = findFilepath([
-            //   "./next.config.mjs",
-            //   "./next.config.js",
-            //   "./next.config.ts",
-            //   "./next.config.cjs",
-            // ]);
-            // if (nextConfigFilepath)
-            //   options = { ...parseNextConfig(nextConfigFilepath), ...options };
             // if there's no existing config file, creates one
             // does not include the API key to avoid exposing it
             const { apiKey, projectId, defaultLocale } = options, rest = __rest(options, ["apiKey", "projectId", "defaultLocale"]);
-            if (options.options)
-                (0, setupConfig_1.default)(rest.options, projectId, defaultLocale);
+            if (!options.config)
+                (0, setupConfig_1.default)('gt.config.json', projectId, defaultLocale);
             // ---- CREATING UPDATES ---- //
             let updates = [];
             let errors = [];
@@ -324,7 +317,7 @@ class BaseCLI {
                 // If additionalLocales is provided, additionalLocales + project.current_locales will be translated
                 // If not, then options.locales will be translated
                 // If neither, then project.current_locales will be translated
-                const body = Object.assign(Object.assign(Object.assign({ updates }, (options.locales && { locales: options.locales })), (additionalLocales && { additionalLocales })), { metadata: globalMetadata });
+                const body = Object.assign(Object.assign(Object.assign(Object.assign({ updates }, (options.locales && { locales: options.locales })), (additionalLocales && { additionalLocales })), { metadata: globalMetadata, publish: options.publish }), (options.versionId && { versionId: options.versionId }));
                 const spinner = yield (0, console_1.displayLoadingAnimation)('Sending updates to General Translation API...');
                 try {
                     const startTime = Date.now();
@@ -344,13 +337,19 @@ class BaseCLI {
                     }
                     const { versionId, message, locales } = yield response.json();
                     spinner.succeed(chalk_1.default.green(message));
-                    if (options.options)
-                        (0, updateConfig_1.default)(Object.assign({ configFilepath: options.options, _versionId: versionId }, (options.locales && { locales: options.locales })));
-                    if (options.enableTimeout && locales) {
+                    if (options.config)
+                        (0, updateConfig_1.default)(Object.assign({ configFilepath: options.config, _versionId: versionId }, (options.locales && { locales: options.locales })));
+                    // Wait for translations if publish is true or enableTimeout is true
+                    if ((options.enableTimeout && locales) || !options.publish) {
                         console.log();
                         // timeout was validated earlier
                         const timeout = parseInt(options.timeout) * 1000;
-                        yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, locales, startTime, timeout);
+                        const result = yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, locales, startTime, timeout);
+                        // Save translations to local directory if publish is false
+                        if (!options.publish && result) {
+                            console.log();
+                            yield (0, saveTranslations_1.default)(options.baseUrl, apiKey, versionId, options.translationsDir);
+                        }
                     }
                 }
                 catch (error) {

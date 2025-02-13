@@ -114,7 +114,8 @@ export default async function GTProvider({
 
           // get tx entry and key
           const key = hash || entryId;
-          const translationEntry = translations?.[hash] || translations?.[entryId];
+          const translationEntry =
+            translations?.[hash] || translations?.[entryId];
 
           // skip if translation already exists
           if (translationEntry) {
@@ -189,8 +190,9 @@ export default async function GTProvider({
 
         // get tx entry and key
         const key = hash || entryId;
-        const translationEntry = translations?.[hash] || translations?.[entryId];
-        
+        const translationEntry =
+          translations?.[hash] || translations?.[entryId];
+
         // skip if translation already exists
         if (translationEntry) {
           return;

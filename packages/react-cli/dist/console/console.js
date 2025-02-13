@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.displayLoadingAnimation = exports.displayUpdatedConfigFile = exports.displayFoundTMessage = exports.displayResolvedPaths = exports.displayProjectId = exports.displayInitializingText = exports.displayAsciiTitle = void 0;
+exports.displayLoadingAnimation = exports.displayUpdatedConfigFile = exports.displayCreatedConfigFile = exports.displayFoundTMessage = exports.displayResolvedPaths = exports.displayProjectId = exports.displayInitializingText = exports.displayAsciiTitle = void 0;
 const chalk_1 = __importDefault(require("chalk"));
 const displayAsciiTitle = () => console.log('\n\n' +
     chalk_1.default.cyan(`  ,ad8888ba,  888888888888  
@@ -46,6 +46,10 @@ const displayFoundTMessage = (file, id) => {
     console.log(`Found ${chalk_1.default.cyan('<T>')} component in ${chalk_1.default.green(file)} with id "${chalk_1.default.yellow(id)}"`);
 };
 exports.displayFoundTMessage = displayFoundTMessage;
+const displayCreatedConfigFile = (configFilepath) => {
+    console.log(chalk_1.default.blue(`\nCreating config file ${chalk_1.default.green(configFilepath)}\n`));
+};
+exports.displayCreatedConfigFile = displayCreatedConfigFile;
 const displayUpdatedConfigFile = (configFilepath) => {
     console.log(chalk_1.default.blue(`\nUpdating config file ${chalk_1.default.green(configFilepath)}\n`));
 };

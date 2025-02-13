@@ -1,7 +1,5 @@
 import { requiresTranslation } from 'generaltranslation';
-import remoteTranslationsManager, {
-  RemoteTranslationsManager,
-} from './RemoteTranslationsManager';
+import translationManager, { TranslationManager } from './TranslationManager';
 import {
   addGTIdentifier,
   writeChildrenAsObjects,
@@ -12,21 +10,17 @@ import {
   defaultRenderSettings,
   GTTranslationError,
 } from 'gt-react/internal';
-import {
-  createMismatchingHashWarning,
-  devApiKeyIncludedInProductionError,
-} from '../errors/createErrors';
+import { createMismatchingHashWarning } from '../errors/createErrors';
 import { hashJsxChildren } from 'generaltranslation/id';
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TaggedChildren, TranslationsObject } from 'gt-react/internal';
 type I18NConfigurationParams = {
-  remoteCache: boolean;
-  runtimeTranslation: boolean;
   apiKey?: string;
   devApiKey?: string;
   projectId?: string;
-  cacheUrl: string;
-  runtimeUrl: string;
+  runtimeUrl: string | null;
+  cacheUrl: string | null;
+  translationLoaderType: 'remote' | 'custom' | 'disabled';
   cacheExpiryTime?: number;
   defaultLocale: string;
   locales: string[];
@@ -37,6 +31,7 @@ type I18NConfigurationParams = {
   maxConcurrentRequests: number;
   maxBatchSize: number;
   batchInterval: number;
+  _usingPlugin: boolean;
   [key: string]: any;
 };
 
@@ -67,11 +62,13 @@ export default class I18NConfiguration {
   translationEnabled: boolean;
   serverRuntimeTranslationEnabled: boolean;
   clientRuntimeTranslationEnabled: boolean;
+  translationLoaderEnabled: boolean = true;
   // Cloud integration
+  projectId?: string;
   apiKey?: string;
   devApiKey?: string;
-  runtimeUrl: string;
-  projectId?: string;
+  runtimeUrl: string | null;
+  cacheUrl: string | null;
   _versionId?: string;
   // Locale info
   defaultLocale: string;
@@ -82,7 +79,7 @@ export default class I18NConfiguration {
     timeout?: number;
   };
   // Dictionaries
-  private _remoteTranslationsManager: RemoteTranslationsManager | undefined;
+  private _translationManager: TranslationManager | undefined;
   // Other metadata
   metadata: Record<string, any>;
   // Batching config
@@ -96,11 +93,11 @@ export default class I18NConfiguration {
   // Processed dictionary
   private _taggedDictionary: Map<string, any>;
   private _template: Map<string, { [hash: string]: TranslatedChildren }>;
+  // Internal
+  private _usingPlugin: boolean;
 
   constructor({
     // Cloud integration
-    runtimeTranslation = true,
-    remoteCache = true,
     apiKey,
     devApiKey,
     projectId,
@@ -108,6 +105,7 @@ export default class I18NConfiguration {
     runtimeUrl,
     cacheUrl,
     cacheExpiryTime,
+    translationLoaderType,
     // Locale info
     defaultLocale,
     locales,
@@ -119,40 +117,46 @@ export default class I18NConfiguration {
     maxConcurrentRequests,
     maxBatchSize,
     batchInterval,
+    // Internal
+    _usingPlugin,
     // Other metadata
     ...metadata
   }: I18NConfigurationParams) {
-    // Cloud integration
+    // ----- CLOUD INTEGRATION ----- //
+
     this.apiKey = apiKey;
     this.devApiKey = devApiKey;
     this.projectId = projectId;
     this.runtimeUrl = runtimeUrl;
+    this.cacheUrl = cacheUrl;
     this._versionId = _versionId; // version id for the dictionary
-    // Feature flags
+
+    // ----- FEATURE FLAGS ----- //
+
+    // runtime translations
     const _runtimeTranslation = !!(
-      runtimeTranslation &&
       this.projectId &&
       this.runtimeUrl &&
       ((this.apiKey && process.env.NODE_ENV === 'production') ||
         (this.devApiKey && process.env.NODE_ENV === 'development'))
     );
-    const _remoteCache = remoteCache && !!this.projectId;
-    this.translationEnabled = !!(_remoteCache || _runtimeTranslation);
-    // When we add <TX>, there will not be discrepancy between server and client
+    // translation loader
+    this.translationLoaderEnabled = !!(
+      translationLoaderType === 'custom' ||
+      (translationLoaderType === 'remote' && this.projectId && this.cacheUrl)
+    );
+    this.translationEnabled =
+      this.translationLoaderEnabled || _runtimeTranslation; // two types of tx: loader (remote/custom) and runtime
+    // When we add <TX> for both client and server, there will not be discrepancy between server and client
     this.serverRuntimeTranslationEnabled = _runtimeTranslation;
     this.clientRuntimeTranslationEnabled =
       _runtimeTranslation && !!this.devApiKey;
+
+    // ----- OTHER SETUP ----- //
+
     // Locales
     this.defaultLocale = defaultLocale;
     this.locales = locales;
-    // Default env is production
-    if (
-      process.env.NODE_ENV !== 'development' &&
-      process.env.NODE_ENV !== 'test' &&
-      this.devApiKey
-    ) {
-      throw new Error(devApiKeyIncludedInProductionError);
-    }
     // Render method
     this.renderSettings = {
       method: renderSettings.method,
@@ -174,11 +178,12 @@ export default class I18NConfiguration {
     };
     // Dictionary managers
     if (cacheUrl && projectId) {
-      this._remoteTranslationsManager = remoteTranslationsManager;
-      this._remoteTranslationsManager.setConfig({
+      this._translationManager = translationManager;
+      this._translationManager.setConfig({
         cacheUrl,
         projectId,
         cacheExpiryTime,
+        translationLoaderEnabled: this.translationLoaderEnabled,
         _versionId,
       });
     }
@@ -193,6 +198,8 @@ export default class I18NConfiguration {
     this._activeRequests = 0;
     this._translationCache = new Map(); // cache for ongoing promises, so things aren't translated twice
     this._startBatching();
+    // Internal
+    this._usingPlugin = _usingPlugin;
   }
 
   /**
@@ -205,6 +212,7 @@ export default class I18NConfiguration {
       runtimeUrl: this.runtimeUrl,
       translationEnabled: this.translationEnabled,
       runtimeTranslationEnabled: this.clientRuntimeTranslationEnabled,
+      dictionaryEnabled: this.isDictionaryEnabled(),
     };
   }
 
@@ -222,6 +230,13 @@ export default class I18NConfiguration {
    */
   getLocales(): string[] {
     return this.locales;
+  }
+
+  /**
+   * @returns true if dictionaries are enabled
+   */
+  isDictionaryEnabled(): boolean {
+    return this._usingPlugin;
   }
 
   /**
@@ -315,8 +330,7 @@ export default class I18NConfiguration {
    */
   async getCachedTranslations(locale: string): Promise<TranslationsObject> {
     return (
-      (await this._remoteTranslationsManager?.getCachedTranslations(locale)) ||
-      {}
+      (await this._translationManager?.getCachedTranslations(locale)) || {}
     );
   }
 
@@ -465,15 +479,15 @@ export default class I18NConfiguration {
         if (result && typeof result === 'object') {
           if ('translation' in result && result.translation) {
             // record translations
-            if (this._remoteTranslationsManager) {
-              this._remoteTranslationsManager.setTranslations(
+            if (this._translationManager) {
+              this._translationManager.setTranslations(
                 request.targetLocale,
                 request.metadata.hash,
                 key,
                 {
                   state: 'success',
                   target: result.translation,
-                },
+                }
               );
             }
             // check for mismatching ids or hashes
@@ -492,8 +506,8 @@ export default class I18NConfiguration {
           }
         }
         // record translation error
-        if (this._remoteTranslationsManager) {
-          this._remoteTranslationsManager.setTranslations(
+        if (this._translationManager) {
+          this._translationManager.setTranslations(
             request.targetLocale,
             request.metadata.hash,
             key,
@@ -501,7 +515,7 @@ export default class I18NConfiguration {
               state: 'error',
               error: result.error || 'Translation failed.',
               code: result.code || 500,
-            },
+            }
           );
         }
         return request.reject(new GTTranslationError(errorMsg, errorCode));
@@ -510,12 +524,12 @@ export default class I18NConfiguration {
       console.error(error);
       batch.forEach((request) => {
         // record translation error
-        if (this._remoteTranslationsManager) {
-          this._remoteTranslationsManager.setTranslations(
+        if (this._translationManager) {
+          this._translationManager.setTranslations(
             request.targetLocale,
             request.metadata.hash,
             request.metadata.id || request.metadata.hash,
-            { state: 'error', error: 'Translation failed.', code: 500 },
+            { state: 'error', error: 'Translation failed.', code: 500 }
           );
         }
         return request.reject(

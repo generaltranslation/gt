@@ -48,6 +48,11 @@ export const displayFoundTMessage = (file: string, id: string) => {
   );
 };
 
+export const displayCreatedConfigFile = (configFilepath: string) => {
+  console.log(
+    chalk.blue(`\nCreating config file ${chalk.green(configFilepath)}\n`)
+  );
+};
 export const displayUpdatedConfigFile = (configFilepath: string) => {
   console.log(
     chalk.blue(`\nUpdating config file ${chalk.green(configFilepath)}\n`)

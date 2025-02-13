@@ -150,6 +150,7 @@ export type ClientProviderProps = {
   locale: string;
   locales: string[];
   _versionId?: string;
+  dictionaryEnabled?: boolean;
   defaultLocale: string;
   translationRequired: boolean;
   dialectTranslationRequired: boolean;
@@ -162,7 +163,7 @@ export type ClientProviderProps = {
   runtimeTranslationEnabled: boolean;
   projectId?: string;
   devApiKey?: string;
-  runtimeUrl?: string;
+  runtimeUrl?: string | null;
   onLocaleChange?: () => void;
   cookieName?: string;
 };

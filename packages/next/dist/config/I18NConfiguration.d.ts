@@ -2,13 +2,12 @@ import { RenderMethod, TranslatedChildren, TranslatedContent, Children } from 'g
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TaggedChildren, TranslationsObject } from 'gt-react/internal';
 type I18NConfigurationParams = {
-    remoteCache: boolean;
-    runtimeTranslation: boolean;
     apiKey?: string;
     devApiKey?: string;
     projectId?: string;
-    cacheUrl: string;
-    runtimeUrl: string;
+    runtimeUrl: string | null;
+    cacheUrl: string | null;
+    translationLoaderType: 'remote' | 'custom' | 'disabled';
     cacheExpiryTime?: number;
     defaultLocale: string;
     locales: string[];
@@ -19,16 +18,19 @@ type I18NConfigurationParams = {
     maxConcurrentRequests: number;
     maxBatchSize: number;
     batchInterval: number;
+    _usingPlugin: boolean;
     [key: string]: any;
 };
 export default class I18NConfiguration {
     translationEnabled: boolean;
     serverRuntimeTranslationEnabled: boolean;
     clientRuntimeTranslationEnabled: boolean;
+    translationLoaderEnabled: boolean;
+    projectId?: string;
     apiKey?: string;
     devApiKey?: string;
-    runtimeUrl: string;
-    projectId?: string;
+    runtimeUrl: string | null;
+    cacheUrl: string | null;
     _versionId?: string;
     defaultLocale: string;
     locales: string[];
@@ -36,7 +38,7 @@ export default class I18NConfiguration {
         method: RenderMethod;
         timeout?: number;
     };
-    private _remoteTranslationsManager;
+    private _translationManager;
     metadata: Record<string, any>;
     maxConcurrentRequests: number;
     maxBatchSize: number;
@@ -46,16 +48,18 @@ export default class I18NConfiguration {
     private _translationCache;
     private _taggedDictionary;
     private _template;
-    constructor({ runtimeTranslation, remoteCache, apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, ...metadata }: I18NConfigurationParams);
+    private _usingPlugin;
+    constructor({ apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, translationLoaderType, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, _usingPlugin, ...metadata }: I18NConfigurationParams);
     /**
      * Gets config for dynamic translation on the client side.
      */
     getClientSideConfig(): {
         projectId: string | undefined;
         devApiKey: string | undefined;
-        runtimeUrl: string;
+        runtimeUrl: string | null;
         translationEnabled: boolean;
         runtimeTranslationEnabled: boolean;
+        dictionaryEnabled: boolean;
     };
     /**
      * Gets the application's default locale
@@ -67,6 +71,10 @@ export default class I18NConfiguration {
      * @returns {string[]} A list of BCP-47 locale tags, or undefined if none were provided
      */
     getLocales(): string[];
+    /**
+     * @returns true if dictionaries are enabled
+     */
+    isDictionaryEnabled(): boolean;
     /**
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
      */

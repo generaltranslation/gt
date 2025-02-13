@@ -15,6 +15,7 @@ import {
 } from './console/console';
 import loadJSON from './fs/loadJSON';
 import findFilepath, { findFilepaths } from './fs/findFilepath';
+import loadConfig from './fs/config/loadConfig';
 import createESBuildConfig from './config/createESBuildConfig';
 import { isValidLocale } from 'generaltranslation';
 import { warnApiKeyInConfig } from './console/warnings';
@@ -24,10 +25,10 @@ import chalk from 'chalk';
 import { select } from '@inquirer/prompts';
 import { waitForUpdates } from './api/waitForUpdates';
 import updateConfig from './fs/config/updateConfig';
-import setupConfig from './fs/config/setupConfig';
+import createConfig from './fs/config/setupConfig';
 import fs from 'fs';
 import { formatFiles } from './hooks/postProcess';
-
+import saveTranslations from './fs/saveTranslations';
 function resolveProjectId(): string | undefined {
   const CANDIDATES = [
     process.env.GT_PROJECT_ID, // any server side, Remix
@@ -44,7 +45,7 @@ function resolveProjectId(): string | undefined {
   ];
   return CANDIDATES.find((projectId) => projectId !== undefined);
 }
-const DEFAULT_TIMEOUT = 300;
+const DEFAULT_TIMEOUT = 600;
 
 export abstract class BaseCLI {
   private framework: 'gt-next' | 'gt-react';
@@ -79,9 +80,9 @@ export abstract class BaseCLI {
         'Scans the project for a dictionary and/or <T> tags, and updates the General Translation remote dictionary with the latest content.'
       )
       .option(
-        '--options <path>',
-        'Filepath to options JSON file, by default gt.config.json',
-        './gt.config.json'
+        '--config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
       )
       .option(
         '--api-key <key>',
@@ -92,6 +93,7 @@ export abstract class BaseCLI {
         'Project ID for the translation service',
         resolveProjectId()
       )
+      .option('--version-id <id>', 'Version ID for the translation service')
       .option(
         '--tsconfig, --jsconfig <path>',
         'Path to jsconfig or tsconfig file',
@@ -132,11 +134,6 @@ export abstract class BaseCLI {
         true
       )
       .option(
-        '--wrap',
-        'Wraps all JSX elements in the src directory with a <T> tag, with unique ids',
-        false
-      )
-      .option(
         '--ignore-errors',
         'Ignore errors encountered while scanning for <T> tags',
         false
@@ -150,6 +147,16 @@ export abstract class BaseCLI {
         '--enable-timeout',
         'When set to false, will wait for the updates to be deployed to the CDN before exiting',
         true
+      )
+      .option(
+        '--no-publish',
+        'Do not publish updates to the CDN. Instead, translations will be saved locally in the translations directory',
+        true
+      )
+      .option(
+        '--translations-dir <path>',
+        'Path to directory where translations will be saved if --publish is set to false',
+        './public/_gt'
       )
       .option(
         '--timeout <seconds>',
@@ -171,9 +178,9 @@ export abstract class BaseCLI {
         findFilepaths(['./src', './app', './pages', './components'])
       )
       .option(
-        '--options <path>',
-        'Filepath to options JSON file, by default gt.config.json',
-        './gt.config.json'
+        '--config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
       )
       .option('--disable-ids', 'Disable id generation for the <T> tags', false)
       .option(
@@ -206,9 +213,9 @@ export abstract class BaseCLI {
     }
 
     // ----- Create a starter gt.config.json file -----
-
-    if (options.options)
-      setupConfig(options.options, process.env.GT_PROJECT_ID, '');
+    console.log(options.config);
+    if (!options.config)
+      createConfig('gt.config.json', process.env.GT_PROJECT_ID, '');
 
     // ----- //
 
@@ -251,14 +258,10 @@ export abstract class BaseCLI {
     displayAsciiTitle();
     displayInitializingText();
 
-    // ------ SETUP ----- //
-
-    // Consolidate config options
-    // options given in command || --options filepath || ./gt.config.json || parsing next.config.js
-    // it's alright for any of the options to be undefined at this point
-
-    // --options filepath || gt.config.json
-    const gtConfig = loadJSON(initOptions.options) || {};
+    // Load config file
+    const gtConfig: Record<string, any> = initOptions.config
+      ? loadConfig(initOptions.config)
+      : {};
 
     // merge options
     const options = { ...gtConfig, ...initOptions };
@@ -283,7 +286,7 @@ export abstract class BaseCLI {
       );
     // Warn if apiKey is present in gt.config.json
     if (gtConfig.apiKey) {
-      warnApiKeyInConfig(options.options);
+      warnApiKeyInConfig(options.config);
       process.exit(1);
     }
 
@@ -328,21 +331,11 @@ export abstract class BaseCLI {
     }
     options.timeout = timeout.toString();
 
-    // // manually parsing next.config.js (or .mjs, .cjs, .ts etc.)
-    // // not foolproof but can't hurt
-    // const nextConfigFilepath = findFilepath([
-    //   "./next.config.mjs",
-    //   "./next.config.js",
-    //   "./next.config.ts",
-    //   "./next.config.cjs",
-    // ]);
-    // if (nextConfigFilepath)
-    //   options = { ...parseNextConfig(nextConfigFilepath), ...options };
-
     // if there's no existing config file, creates one
     // does not include the API key to avoid exposing it
     const { apiKey, projectId, defaultLocale, ...rest } = options;
-    if (options.options) setupConfig(rest.options, projectId, defaultLocale);
+    if (!options.config)
+      createConfig('gt.config.json', projectId, defaultLocale);
 
     // ---- CREATING UPDATES ---- //
 
@@ -455,6 +448,8 @@ export abstract class BaseCLI {
         ...(options.locales && { locales: options.locales }),
         ...(additionalLocales && { additionalLocales }),
         metadata: globalMetadata,
+        publish: options.publish,
+        ...(options.versionId && { versionId: options.versionId }),
       };
 
       const spinner = await displayLoadingAnimation(
@@ -489,19 +484,20 @@ export abstract class BaseCLI {
 
         const { versionId, message, locales } = await response.json();
         spinner.succeed(chalk.green(message));
-        if (options.options)
+        if (options.config)
           updateConfig({
-            configFilepath: options.options,
+            configFilepath: options.config,
             _versionId: versionId,
             ...(options.locales && { locales: options.locales }),
             // only save if locales was previously in options
           });
 
-        if (options.enableTimeout && locales) {
+        // Wait for translations if publish is true or enableTimeout is true
+        if ((options.enableTimeout && locales) || !options.publish) {
           console.log();
           // timeout was validated earlier
           const timeout = parseInt(options.timeout) * 1000;
-          await waitForUpdates(
+          const result = await waitForUpdates(
             apiKey,
             options.baseUrl,
             versionId,
@@ -509,6 +505,16 @@ export abstract class BaseCLI {
             startTime,
             timeout
           );
+          // Save translations to local directory if publish is false
+          if (!options.publish && result) {
+            console.log();
+            await saveTranslations(
+              options.baseUrl,
+              apiKey,
+              versionId,
+              options.translationsDir
+            );
+          }
         }
       } catch (error) {
         spinner.fail(chalk.red('Failed to send updates'));

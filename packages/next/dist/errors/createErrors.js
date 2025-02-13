@@ -1,10 +1,10 @@
 "use strict";
 // ---- ERRORS ---- //
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.projectIdMissingWarn = exports.createMismatchingHashWarning = exports.createUnsupportedLocalesWarning = exports.createNoEntryWarning = exports.usingDefaultsWarning = exports.createDictionarySubsetError = exports.devApiKeyIncludedInProductionError = exports.createRequiredPrefixError = exports.createDictionaryStringTranslationError = exports.createStringTranslationError = exports.remoteTranslationsError = exports.APIKeyMissingError = void 0;
+exports.APIKeyMissingWarn = exports.noInitGTWarn = exports.projectIdMissingWarn = exports.createMismatchingHashWarning = exports.createUnsupportedLocalesWarning = exports.createNoEntryWarning = exports.usingDefaultsWarning = exports.unresolvedCustomTranslationLoaderError = exports.dictionaryDisabledError = exports.createMissingCustomTranslationLoadedError = exports.createDictionarySubsetError = exports.devApiKeyIncludedInProductionError = exports.createRequiredPrefixError = exports.createDictionaryStringTranslationError = exports.createStringTranslationError = exports.customTranslationLoaderError = exports.remoteTranslationsError = void 0;
 var generaltranslation_1 = require("generaltranslation");
-exports.APIKeyMissingError = 'General Translation: API key is required for runtime translation! Create an API key: generaltranslation.com/dashboard/api-keys. (Or, turn off runtime translation by setting runtimeUrl to an empty string.)';
 exports.remoteTranslationsError = 'General Translation: Error fetching remote translation.';
+exports.customTranslationLoaderError = 'General Translation: Error fetching locally stored translations. If you are using a custom translation loader, make sure it is correctly implemented.';
 var createStringTranslationError = function (content, id) {
     return "gt-next string translation error. tx(\"".concat(content, "\")").concat(id ? " with id \"".concat(id, "\"") : '', " failed.");
 };
@@ -22,6 +22,14 @@ var createDictionarySubsetError = function (id, functionName) {
     return "General Translation: ".concat(functionName, " with id: \"").concat(id, "\". Invalid dictionary entry detected. Make sure you are navigating to the correct subroute of the dictionary with the ID you provide.");
 };
 exports.createDictionarySubsetError = createDictionarySubsetError;
+var createMissingCustomTranslationLoadedError = function (customTranslationLoaderPath) {
+    return customTranslationLoaderPath
+        ? "Local translations exist, but no translation loader is found. Please create a translation loader at ".concat(customTranslationLoaderPath)
+        : 'Local translations exist, but no translation loader is found. See generaltranslation.com/docs for more information on how to create a translation loader.';
+};
+exports.createMissingCustomTranslationLoadedError = createMissingCustomTranslationLoadedError;
+exports.dictionaryDisabledError = "General Translation Error:\nYou are trying to use a dictionary, but you have not added the initGT() plugin to your app.\nYou must add initGT() to use dictionaries.\n\nFor more information, visit generaltranslation.com/docs";
+exports.unresolvedCustomTranslationLoaderError = "General Translation Error:\nCustom translation loader could not be resolved.\nThis usually means that the file was found, but the translation loader function itself was not exported.";
 // ---- WARNINGS ---- //
 exports.usingDefaultsWarning = 'General Translation: Unable to access gt-next configuration. Using defaults.';
 var createNoEntryWarning = function (id) {
@@ -41,5 +49,7 @@ var createMismatchingHashWarning = function (expectedHash, receivedHash) {
     return "gt-next: Mismatching hashes! Expected hash: ".concat(expectedHash, ", but got hash: ").concat(receivedHash, ". We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs");
 };
 exports.createMismatchingHashWarning = createMismatchingHashWarning;
-exports.projectIdMissingWarn = 'General Translation: Project ID missing! Set projectId as GT_PROJECT_ID in the environment or by passing the projectId parameter to initGT(). Find your project ID: generaltranslation.com/dashboard.';
+exports.projectIdMissingWarn = "General Translation Warning: Project ID missing!\nSet projectId as GT_PROJECT_ID in your environment or by passing the projectId parameter to initGT().\nFind your project ID: generaltranslation.com/dashboard.\n\n(Hint: if you want to use runtime translation, you need to add both GT_PROJECT_ID and GT_API_KEY to your environment.)";
+exports.noInitGTWarn = "General Translation Warning:\nYou are running General Translation without the initGT() plugin.\nThis means that you are not translating your app.\n\nTo activate translation, add the initGT() plugin to your app, and set the projectId and apiKey in your environment.\nFor more information, visit https://generaltranslation.com/docs/next/tutorials/quickstart";
+exports.APIKeyMissingWarn = "General Translation Warning: \nAn Development API key is required for runtime translation!\nFind your Development API key: generaltranslation.com/dashboard\nFor more information, visit generaltranslation.com/docs\n\n(Or, disable this warning message by setting runtimeUrl to an empty string which disables runtime translation.)";
 //# sourceMappingURL=createErrors.js.map

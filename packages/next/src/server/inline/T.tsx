@@ -83,7 +83,9 @@ async function T({
   const defaultLocale = I18NConfig.getDefaultLocale();
   const renderSettings = I18NConfig.getRenderSettings();
   const translationRequired = I18NConfig.requiresTranslation(locale);
-  const serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled() && process.env.NODE_ENV === 'development';
+  const serverRuntimeTranslationEnabled =
+    I18NConfig.isServerRuntimeTranslationEnabled() &&
+    process.env.NODE_ENV === 'development';
   const dialectTranslationRequired =
     translationRequired && isSameLanguage(locale, defaultLocale);
 
@@ -129,10 +131,10 @@ async function T({
     taggedChildren,
     context
   );
-  
+
   // Block until cache check resolves
   const translations = translationsPromise ? await translationsPromise : {};
-  
+
   // Gets the translation entry
   const translationEntry = translations?.[hash] || translations?.[id || ''];
 
