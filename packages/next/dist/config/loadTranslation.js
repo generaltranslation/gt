@@ -93,7 +93,6 @@ function loadTranslation(props) {
                             throw new Error(createErrors_1.unresolvedCustomLoadTranslationError);
                         }
                         // Set custom translation loader
-                        console.log('using custom loader');
                         loadTranslationFunction = function (props) { return __awaiter(_this, void 0, void 0, function () {
                             var result, error_1;
                             return __generator(this, function (_a) {

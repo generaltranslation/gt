@@ -160,6 +160,7 @@ function initGT(props) {
     // Check: An API key is required for runtime translation
     if (mergedConfig.projectId && // must have projectId for this check to matter anyways
         mergedConfig.runtimeUrl &&
+        mergedConfig.loadTranslationType !== 'custom' && // this usually conincides with not using runtime tx
         !(mergedConfig.apiKey || mergedConfig.devApiKey) &&
         process.env.NODE_ENV === 'development') {
         console.warn(createErrors_1.APIKeyMissingWarn);
@@ -173,7 +174,6 @@ function initGT(props) {
             console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));
         }
     }
-    console.log('txloader:', mergedConfig.loadTranslationType);
     // ---------- STORE CONFIGURATIONS ---------- //
     // Store the resolved paths in the environment
     var I18NConfigParams = JSON.stringify(mergedConfig);

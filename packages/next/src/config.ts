@@ -183,6 +183,7 @@ export function initGT(props: InitGTProps) {
   if (
     mergedConfig.projectId && // must have projectId for this check to matter anyways
     mergedConfig.runtimeUrl &&
+    mergedConfig.loadTranslationType !== 'custom' && // this usually conincides with not using runtime tx
     !(mergedConfig.apiKey || mergedConfig.devApiKey) &&
     process.env.NODE_ENV === 'development'
   ) {
