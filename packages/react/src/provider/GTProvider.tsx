@@ -37,6 +37,7 @@ import T from '../inline/T';
 import useDetermineLocale from '../hooks/useDetermineLocale';
 import { getAuth } from '../utils/utils';
 import fetchTranslations from '../utils/fetchTranslations';
+import getKey from '../utils/getKey';
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -318,7 +319,7 @@ export default function GTProvider({
       })
       .reduce(
         (
-          acc: Record<string, { hash: string; source: Content }>,
+          acc: Record<string, { hash: string; source: Content; key: string }>,
           [id, entryWithMetadata]
         ) => {
           // Prep entries for translation
@@ -326,10 +327,11 @@ export default function GTProvider({
           const context = metadata?.context;
           const source = splitStringToContent(entry as string);
           const hash = hashJsxChildren({ source, ...(context && { context }) });
-          acc[id] = { source, hash };
+          const key = getKey(hash, id);
+          acc[id] = { source, hash, key };
           return acc;
         },
-        {} as Record<string, { hash: string; source: Content }>
+        {} as Record<string, { hash: string; source: Content; key: string }>
       );
   }, [flattenedDictionary]);
 
@@ -343,13 +345,13 @@ export default function GTProvider({
       let stringIsLoading = false;
       const unresolvedDictionaryStringsAndHashes = Object.entries(
         dictionaryContentEntries
-      ).filter(([_, { hash }]) => {
-        // key will always be hash here, bc this only happens for runtime tx
+      ).filter(([_, { key }]) => {
+        // key will always be hash or hash:id here
         // filter out any translations that are currently loading or already resolved
-        if (translations?.[hash]?.state === 'loading') stringIsLoading = true;
+        if (translations?.[key]?.state === 'loading') stringIsLoading = true;
 
         // dont tx if translation already exists
-        return !translations?.[hash];
+        return !translations?.[key];
       });
       const dictionaryStringsResolved =
         !stringIsLoading && unresolvedDictionaryStringsAndHashes.length === 0;

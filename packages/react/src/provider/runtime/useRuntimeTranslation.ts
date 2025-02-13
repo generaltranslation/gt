@@ -16,6 +16,7 @@ import {
   maxBatchSize,
   batchInterval,
 } from '../config/defaultProps';
+import getKey from '../../utils/getKey';
 
 export default function useRuntimeTranslation({
   projectId,
@@ -92,18 +93,17 @@ export default function useRuntimeTranslation({
       metadata: { hash: string; context?: string } & Record<string, any>;
     }): Promise<void> => {
       // get the key
-      const id = params.metadata.id ? `${params.metadata.id}-` : '';
-      const key = `${id}${params.metadata.hash}-${params.targetLocale}`;
+      const keyWithLocale = `${getKey(params.metadata.hash, params.metadata.id)}:${params.targetLocale}`;
 
       // return a promise to current request if it exists
-      const pendingRequest = pendingRequestQueueRef.current.get(key);
+      const pendingRequest = pendingRequestQueueRef.current.get(keyWithLocale);
       if (pendingRequest) {
         return pendingRequest;
       }
 
       // promise for hooking into the translation request request to know when complete
       const translationPromise = new Promise<void>((resolve, reject) => {
-        requestQueueRef.current.set(key, {
+        requestQueueRef.current.set(keyWithLocale, {
           type: 'content',
           source: params.source,
           metadata: params.metadata,
@@ -115,9 +115,9 @@ export default function useRuntimeTranslation({
           throw error;
         })
         .finally(() => {
-          pendingRequestQueueRef.current.delete(key);
+          pendingRequestQueueRef.current.delete(keyWithLocale);
         });
-      pendingRequestQueueRef.current.set(key, translationPromise);
+      pendingRequestQueueRef.current.set(keyWithLocale, translationPromise);
       return translationPromise;
     },
     [locale]
@@ -134,18 +134,17 @@ export default function useRuntimeTranslation({
       metadata: { hash: string; context?: string } & Record<string, any>;
     }): Promise<void> => {
       // get the key
-      const id = params.metadata.id ? `${params.metadata.id}-` : '';
-      const key = `${id}${params.metadata.hash}-${params.targetLocale}`;
+      const keyWithLocale = `${getKey(params.metadata.hash, params.metadata.id)}:${params.targetLocale}`;
 
       // return a promise to current request if it exists
-      const pendingRequest = pendingRequestQueueRef.current.get(key);
+      const pendingRequest = pendingRequestQueueRef.current.get(keyWithLocale);
       if (pendingRequest) {
         return pendingRequest;
       }
 
       // promise for hooking into the translation request to know when complete
       const translationPromise = new Promise<void>((resolve, reject) => {
-        requestQueueRef.current.set(key, {
+        requestQueueRef.current.set(keyWithLocale, {
           type: 'jsx',
           source: params.source,
           metadata: params.metadata,
@@ -157,9 +156,9 @@ export default function useRuntimeTranslation({
           throw error;
         })
         .finally(() => {
-          pendingRequestQueueRef.current.delete(key);
+          pendingRequestQueueRef.current.delete(keyWithLocale);
         });
-      pendingRequestQueueRef.current.set(key, translationPromise);
+      pendingRequestQueueRef.current.set(keyWithLocale, translationPromise);
       return translationPromise;
     },
     [locale]
@@ -184,7 +183,9 @@ export default function useRuntimeTranslation({
       const loadingTranslations: TranslationsObject = requests.reduce(
         (acc: TranslationsObject, request) => {
           // loading state for jsx, render loading behavior
-          acc[request.metadata.hash] = { state: 'loading' };
+          acc[getKey(request.metadata.hash, request.metadata.id)] = {
+            state: 'loading',
+          };
           return acc;
         },
         {}
@@ -243,21 +244,12 @@ export default function useRuntimeTranslation({
 
       // process each result
       results.forEach((result, index) => {
-        const request = requests[index];
-        const key = request.metadata.hash;
-
         // translation received
         if ('translation' in result && result.translation && result.reference) {
           const {
             translation,
-            reference: { key: hash },
+            reference: { key },
           } = result;
-          // check for mismatching ids or hashes
-          if (hash !== request.metadata.hash) {
-            console.warn(
-              createMismatchingHashWarning(request.metadata.hash, hash)
-            );
-          }
           // set translation
           newTranslations[key] = {
             state: 'success',
@@ -266,6 +258,8 @@ export default function useRuntimeTranslation({
           return;
         }
 
+        const request = requests[index];
+        const key = getKey(request.metadata.hash, request.metadata.id);
         // translation failure
         if (
           result.error !== undefined &&
@@ -312,7 +306,7 @@ export default function useRuntimeTranslation({
       // add error message to all translations from this request
       requests.forEach((request) => {
         // id defaults to hash if none provided
-        newTranslations[request.metadata.hash] = {
+        newTranslations[getKey(request.metadata.hash, request.metadata.id)] = {
           state: 'error',
           error: 'An error occurred.',
           code: 500,
@@ -352,7 +346,9 @@ export default function useRuntimeTranslation({
             });
           }
         })();
-        batchRequests.forEach((_, key) => requestQueueRef.current.delete(key));
+        batchRequests.forEach((_, keyWithLocale) =>
+          requestQueueRef.current.delete(keyWithLocale)
+        );
       }
     }, batchInterval);
 
