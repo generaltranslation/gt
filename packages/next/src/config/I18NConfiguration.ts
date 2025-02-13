@@ -1,7 +1,5 @@
 import { requiresTranslation } from 'generaltranslation';
-import remoteTranslationsManager, {
-  RemoteTranslationsManager,
-} from './RemoteTranslationsManager';
+import translationManager, { TranslationManager } from './TranslationManager';
 import {
   addGTIdentifier,
   writeChildrenAsObjects,
@@ -81,7 +79,7 @@ export default class I18NConfiguration {
     timeout?: number;
   };
   // Dictionaries
-  private _remoteTranslationsManager: RemoteTranslationsManager | undefined;
+  private _remoteTranslationsManager: TranslationManager | undefined;
   // Other metadata
   metadata: Record<string, any>;
   // Batching config
@@ -180,7 +178,7 @@ export default class I18NConfiguration {
     };
     // Dictionary managers
     if (cacheUrl && projectId) {
-      this._remoteTranslationsManager = remoteTranslationsManager;
+      this._remoteTranslationsManager = translationManager;
       this._remoteTranslationsManager.setConfig({
         cacheUrl,
         projectId,

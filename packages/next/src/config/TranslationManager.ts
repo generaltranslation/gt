@@ -10,13 +10,13 @@ import {
 import loadTranslation from './loadTranslation';
 
 /**
- * Configuration type for RemoteTranslationsManager.
- * @typedef {object} RemoteTranslationsConfig
+ * Configuration type for TranslationManager.
+ * @typedef {object} TranslationManagerConfig
  * @property {string} cacheUrl - The URL of the remote cache.
  * @property {string} projectId - The project identifier for translations.
  * @property {number} [cacheExpiryTime=60000] - The cache expiration time in milliseconds.
  */
-export type RemoteTranslationsConfig = {
+export type TranslationManagerConfig = {
   cacheUrl: string;
   projectId: string;
   cacheExpiryTime?: number;
@@ -27,15 +27,15 @@ export type RemoteTranslationsConfig = {
 /**
  * Manages remote translations.
  */
-export class RemoteTranslationsManager {
-  private config: RemoteTranslationsConfig;
+export class TranslationManager {
+  private config: TranslationManagerConfig;
   private translationsMap: Map<string, TranslationsObject>;
   private fetchPromises: Map<string, Promise<TranslationsObject | undefined>>;
   private requestedTranslations: Map<string, boolean>;
   private lastFetchTime: Map<string, number>;
 
   /**
-   * Creates an instance of RemoteTranslationsManager.
+   * Creates an instance of TranslationManager.
    * @constructor
    */
   constructor() {
@@ -53,10 +53,10 @@ export class RemoteTranslationsManager {
   }
 
   /**
-   * Sets the configuration for the RemoteTranslationsManager.
-   * @param {Partial<RemoteTranslationsConfig>} newConfig - The new configuration to apply.
+   * Sets the configuration for the TranslationManager.
+   * @param {Partial<TranslationManagerConfig>} newConfig - The new configuration to apply.
    */
-  setConfig(newConfig: Partial<RemoteTranslationsConfig>): void {
+  setConfig(newConfig: Partial<TranslationManagerConfig>): void {
     this.config = { ...this.config, ...newConfig };
   }
 
@@ -185,5 +185,5 @@ export class RemoteTranslationsManager {
   }
 }
 
-const remoteTranslationsManager = new RemoteTranslationsManager();
-export default remoteTranslationsManager;
+const translationManager = new TranslationManager();
+export default translationManager;

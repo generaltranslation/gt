@@ -62,7 +62,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var generaltranslation_1 = require("generaltranslation");
-var RemoteTranslationsManager_1 = __importDefault(require("./RemoteTranslationsManager"));
+var TranslationManager_1 = __importDefault(require("./TranslationManager"));
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
 var id_1 = require("generaltranslation/id");
@@ -121,7 +121,7 @@ var I18NConfiguration = /** @class */ (function () {
         })), { projectId: this.projectId, publish: true, fast: true }), metadata);
         // Dictionary managers
         if (cacheUrl && projectId) {
-            this._remoteTranslationsManager = RemoteTranslationsManager_1.default;
+            this._remoteTranslationsManager = TranslationManager_1.default;
             this._remoteTranslationsManager.setConfig({
                 cacheUrl: cacheUrl,
                 projectId: projectId,
