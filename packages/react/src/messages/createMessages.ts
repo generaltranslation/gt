@@ -57,7 +57,7 @@ For more information, visit generaltranslation.com/docs`;
 // ---- WARNINGS ---- //
 
 export const projectIdMissingWarning =
-  'gt-react warn: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
+  'gt-react warn: Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
 
 export const createLibraryNoEntryWarning = (id: string) =>
   `gt-react: No dictionary entry found for id: "${id}"`;

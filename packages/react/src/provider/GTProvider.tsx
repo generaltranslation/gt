@@ -126,7 +126,8 @@ export default function GTProvider({
 
   // check: projectId missing while using cache/runtime in dev
   if (
-    (loadTranslationType === 'remote' || runtimeUrl) &&
+    loadTranslationType !== 'custom' &&
+    (cacheUrl || runtimeUrl) &&
     !projectId &&
     process.env.NODE_ENV === 'development'
   ) {
@@ -172,7 +173,8 @@ export default function GTProvider({
   ] = useMemo(() => {
     const runtimeTranslationEnabled = !!(projectId && runtimeUrl && devApiKey);
     const translationEnabled = !!(
-      (projectId && cacheUrl) ||
+      loadTranslationType === 'custom' ||
+      (projectId && loadTranslationType === 'remote') ||
       runtimeTranslationEnabled
     );
     const translationRequired = requiresTranslation(
@@ -269,6 +271,7 @@ export default function GTProvider({
           setTranslations(parsedResult); // store results
         }
       } catch (error) {
+        console.error(error);
         if (storeResults) {
           setTranslations({}); // not classified as a tx error, bc we can still fetch from API
         }
