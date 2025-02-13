@@ -192,7 +192,7 @@ function initGT(props) {
                     webpackConfig.resolve.alias['gt-next/_dictionary'] = path_1.default.resolve(webpackConfig.context, resolvedDictionaryFilePath);
                 }
                 if (customLoadTranslationPath) {
-                    webpackConfig.resolve.alias["gt-next/_loadTranslation"] =
+                    webpackConfig.resolve.alias["gt-next/_load-translation"] =
                         path_1.default.resolve(webpackConfig.context, customLoadTranslationPath);
                 }
                 if (typeof (nextConfig === null || nextConfig === void 0 ? void 0 : nextConfig.webpack) === 'function') {

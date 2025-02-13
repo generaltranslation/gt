@@ -47,7 +47,7 @@ export default async function loadTranslation(
   let usingCustomLoader = true;
   let customLoadTranslationConfig;
   try {
-    customLoadTranslationConfig = require('gt-next/_loadTranslation');
+    customLoadTranslationConfig = require('gt-next/_load-translation');
   } catch {
     usingCustomLoader = false;
   }

@@ -71,7 +71,7 @@ function loadTranslation(props) {
                 case 2:
                     usingCustomLoader = true;
                     try {
-                        customLoadTranslationConfig = require('gt-next/_loadTranslation');
+                        customLoadTranslationConfig = require('gt-next/_load-translation');
                     }
                     catch (_b) {
                         usingCustomLoader = false;

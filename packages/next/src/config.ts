@@ -233,7 +233,7 @@ export function initGT(props: InitGTProps) {
           );
         }
         if (customLoadTranslationPath) {
-          webpackConfig.resolve.alias[`gt-next/_loadTranslation`] =
+          webpackConfig.resolve.alias[`gt-next/_load-translation`] =
             path.resolve(webpackConfig.context, customLoadTranslationPath);
         }
         if (typeof nextConfig?.webpack === 'function') {

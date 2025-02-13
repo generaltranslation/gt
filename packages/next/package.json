@@ -64,8 +64,8 @@
     "./_dictionary": {
       "default": "./dist/_dictionary.js"
     },
-    "./_loadtranslation": {
-      "default": "./dist/_loadtranslation.js"
+    "./_load-translation": {
+      "default": "./dist/_load-translation.js"
     }
   },
   "typesVersions": {
@@ -88,8 +88,8 @@
       "_dictionary": [
         "./dist/_dictionary.d.ts"
       ],
-      "_loadtranslation": [
-        "./dist/_loadtranslation.d.ts"
+      "_load-translation": [
+        "./dist/_load-translation.d.ts"
       ]
     }
   },
@@ -114,8 +114,8 @@
       "gt-next/_dictionary": [
         "/dist/_dictionary"
       ],
-      "gt-next/_loadtranslation": [
-        "/dist/_loadtranslation"
+      "gt-next/_load-translation": [
+        "/dist/_load-translation"
       ]
     }
   },
