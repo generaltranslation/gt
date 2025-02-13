@@ -6,8 +6,4 @@ import { PluralType } from '../settings/plurals';
  * @param {locales[]} forms - The allowed plural forms.
  * @returns {PluralType} The determined plural form, or an empty string if none fit.
  */
-export default function _getPluralForm(
-  n: number,
-  forms?: PluralType[],
-  locales?: string[]
-): PluralType | '';
+export default function _getPluralForm(n: number, forms?: PluralType[], locales?: string[]): PluralType | '';
