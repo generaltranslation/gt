@@ -2,12 +2,12 @@ import { RenderMethod } from 'gt-react/internal';
 
 type InitGTProps = {
   // Feature flags
-  translationLoaderType?: 'remote' | 'custom' | 'disabled'; // remote: CDN, custom: uknown, disabled: no fetch
+  loadTranslationType?: 'remote' | 'custom' | 'disabled'; // remote: CDN, custom: uknown, disabled: no fetch
   // Request scoped filepath
   dictionary?: string;
   i18n?: string;
   config?: string;
-  translationLoaderPath?: string;
+  loadTranslationPath?: string;
   // Cloud integration
   apiKey?: string;
   projectId?: string;

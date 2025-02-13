@@ -17,11 +17,11 @@ import loadTranslation from './loadTranslation';
  * @property {number} [cacheExpiryTime=60000] - The cache expiration time in milliseconds.
  */
 export type TranslationManagerConfig = {
-  cacheUrl: string;
-  projectId: string;
+  cacheUrl?: string | null;
+  projectId?: string;
   cacheExpiryTime?: number;
   _versionId?: string;
-  translationLoaderEnabled: boolean;
+  loadTranslationEnabled: boolean;
 };
 
 /**
@@ -44,7 +44,7 @@ export class TranslationManager {
       projectId: '',
       cacheExpiryTime: defaultInitGTProps.cacheExpiryTime, // default to 60 seconds
       _versionId: undefined,
-      translationLoaderEnabled: true,
+      loadTranslationEnabled: true,
     };
     this.translationsMap = new Map();
     this.fetchPromises = new Map();
@@ -69,14 +69,14 @@ export class TranslationManager {
     reference: string
   ): Promise<TranslationsObject | undefined> {
     // Return if loader is disabled
-    if (!this.config.translationLoaderEnabled) return undefined;
+    if (!this.config.loadTranslationEnabled) return undefined;
 
     // load translation
     const result = await loadTranslation({
       targetLocale: reference,
-      projectId: this.config.projectId,
-      cacheUrl: this.config.cacheUrl,
-      _versionId: this.config._versionId,
+      ...(this.config._versionId && { _versionId: this.config._versionId }),
+      ...(this.config.cacheUrl && { cacheUrl: this.config.cacheUrl }),
+      ...(this.config.projectId && { projectId: this.config.projectId }),
     });
 
     // Record our fetch time

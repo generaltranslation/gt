@@ -5,8 +5,8 @@ import { getLocaleProperties } from 'generaltranslation';
 export const remoteTranslationsError =
   'General Translation: Error fetching remote translation.';
 
-export const customTranslationLoaderError =
-  'General Translation: Error fetching locally stored translations. If you are using a custom translation loader, make sure it is correctly implemented.';
+export const customLoadTranslationError =
+  'General Translation: Error fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.';
 
 export const createStringTranslationError = (content: string, id?: string) =>
   `gt-next string translation error. tx("${content}")${
@@ -25,10 +25,10 @@ export const createDictionarySubsetError = (id: string, functionName: string) =>
   `General Translation: ${functionName} with id: "${id}". Invalid dictionary entry detected. Make sure you are navigating to the correct subroute of the dictionary with the ID you provide.`;
 
 export const createMissingCustomTranslationLoadedError = (
-  customTranslationLoaderPath: string | undefined
+  customLoadTranslationPath: string | undefined
 ) =>
-  customTranslationLoaderPath
-    ? `Local translations exist, but no translation loader is found. Please create a translation loader at ${customTranslationLoaderPath}`
+  customLoadTranslationPath
+    ? `Local translations exist, but no translation loader is found. Please create a translation loader at ${customLoadTranslationPath}`
     : 'Local translations exist, but no translation loader is found. See generaltranslation.com/docs for more information on how to create a translation loader.';
 
 export const dictionaryDisabledError = `General Translation Error:
@@ -37,7 +37,7 @@ You must add initGT() to use dictionaries.
 
 For more information, visit generaltranslation.com/docs`;
 
-export const unresolvedCustomTranslationLoaderError = `General Translation Error:
+export const unresolvedCustomLoadTranslationError = `General Translation Error:
 Custom translation loader could not be resolved.
 This usually means that the file was found, but the translation loader function itself was not exported.`;
 

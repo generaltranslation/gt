@@ -69,7 +69,7 @@ var TranslationManager = /** @class */ (function () {
             projectId: '',
             cacheExpiryTime: defaultInitGTProps_1.default.cacheExpiryTime, // default to 60 seconds
             _versionId: undefined,
-            translationLoaderEnabled: true,
+            loadTranslationEnabled: true,
         };
         this.translationsMap = new Map();
         this.fetchPromises = new Map();
@@ -95,14 +95,9 @@ var TranslationManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         // Return if loader is disabled
-                        if (!this.config.translationLoaderEnabled)
+                        if (!this.config.loadTranslationEnabled)
                             return [2 /*return*/, undefined];
-                        return [4 /*yield*/, (0, loadTranslation_1.default)({
-                                targetLocale: reference,
-                                projectId: this.config.projectId,
-                                cacheUrl: this.config.cacheUrl,
-                                _versionId: this.config._versionId,
-                            })];
+                        return [4 /*yield*/, (0, loadTranslation_1.default)(__assign(__assign(__assign({ targetLocale: reference }, (this.config._versionId && { _versionId: this.config._versionId })), (this.config.cacheUrl && { cacheUrl: this.config.cacheUrl })), (this.config.projectId && { projectId: this.config.projectId })))];
                     case 1:
                         result = _a.sent();
                         // Record our fetch time

@@ -1,13 +1,13 @@
 import { TranslationsObject } from 'gt-react/internal';
 import {
-  customTranslationLoaderError,
-  unresolvedCustomTranslationLoaderError,
+  customLoadTranslationError,
+  unresolvedCustomLoadTranslationError,
 } from '../errors/createErrors';
 
 type RemoteLoadTranslationInput = {
   targetLocale: string;
-  projectId: string;
-  cacheUrl: string;
+  projectId?: string;
+  cacheUrl?: string | null;
   _versionId?: string;
 };
 
@@ -45,9 +45,9 @@ export default async function loadTranslation(
 
   // ----- CHECK FOR CUSTOM LOADER ----- //
   let usingCustomLoader = true;
-  let customTranslationLoaderConfig;
+  let customLoadTranslationConfig;
   try {
-    customTranslationLoaderConfig = require('gt-next/_translationLoader');
+    customLoadTranslationConfig = require('gt-next/_loadTranslation');
   } catch {
     usingCustomLoader = false;
   }
@@ -60,19 +60,19 @@ export default async function loadTranslation(
     const customLoadTranslation:
       | ((locale: string) => Promise<any>)
       | undefined =
-      customTranslationLoaderConfig?.default ||
-      customTranslationLoaderConfig?.getLocalTranslation;
+      customLoadTranslationConfig?.default ||
+      customLoadTranslationConfig?.getLocalTranslation;
 
     // Check: custom loader is exported
     if (!customLoadTranslation) {
       // Custom loader file was defined but not exported
       if (process.env.NODE_ENV === 'production') {
-        console.error(unresolvedCustomTranslationLoaderError);
+        console.error(unresolvedCustomLoadTranslationError);
         loadTranslationFunction = async (_: RemoteLoadTranslationInput) =>
           undefined;
         return undefined;
       }
-      throw new Error(unresolvedCustomTranslationLoaderError);
+      throw new Error(unresolvedCustomLoadTranslationError);
     }
 
     // Set custom translation loader
@@ -81,7 +81,7 @@ export default async function loadTranslation(
         const result = await customLoadTranslation(props.targetLocale);
         return parseResult(result);
       } catch (error) {
-        console.error(customTranslationLoaderError, error);
+        console.error(customLoadTranslationError, error);
         return undefined;
       }
     };
@@ -101,7 +101,7 @@ export default async function loadTranslation(
         const result = await response.json();
         return parseResult(result);
       } catch (error) {
-        console.error(customTranslationLoaderError, error);
+        console.error(customLoadTranslationError, error);
         return undefined;
       }
     };

@@ -41,7 +41,7 @@ var internal_2 = require("gt-react/internal");
 var defaultInitGTProps = {
     config: './gt.config.json',
     runtimeTranslation: true,
-    translationLoaderType: 'remote',
+    loadTranslationType: 'remote',
     runtimeUrl: internal_1.defaultRuntimeApiUrl,
     cacheUrl: internal_1.defaultCacheUrl,
     cacheExpiryTime: 60000,

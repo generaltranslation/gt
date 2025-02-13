@@ -1,8 +1,8 @@
 import { TranslationsObject } from 'gt-react/internal';
 type RemoteLoadTranslationInput = {
     targetLocale: string;
-    projectId: string;
-    cacheUrl: string;
+    projectId?: string;
+    cacheUrl?: string | null;
     _versionId?: string;
 };
 /**

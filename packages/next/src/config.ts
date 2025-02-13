@@ -123,9 +123,9 @@ export function initGT(props: InitGTProps) {
       : resolveConfigFilepath('dictionary');
 
   // Resolve custom translation loader path
-  const customTranslationLoaderPath =
-    typeof mergedConfig.translationLoaderPath === 'string'
-      ? mergedConfig.translationLoaderPath
+  const customLoadTranslationPath =
+    typeof mergedConfig.loadTranslationPath === 'string'
+      ? mergedConfig.loadTranslationPath
       : resolveConfigFilepath('loadTranslation');
 
   // Resolve local translations directory
@@ -149,25 +149,24 @@ export function initGT(props: InitGTProps) {
   // When there are local translations, force custom translation loader
   // for now, we can just check if that file exists, and then assume the existance of the loaders
   if (
-    customTranslationLoaderPath &&
-    fs.existsSync(path.resolve(customTranslationLoaderPath))
+    customLoadTranslationPath &&
+    fs.existsSync(path.resolve(customLoadTranslationPath))
   ) {
-    mergedConfig.translationLoaderType = 'custom';
+    mergedConfig.loadTranslationType = 'custom';
   }
 
   // ---------- ERROR CHECKS ---------- //
 
   // Check: local translations are enabled, but no custom translation loader is found
-  if (localLocales.length && mergedConfig.translationLoaderType !== 'custom') {
+  if (localLocales.length && mergedConfig.loadTranslationType !== 'custom') {
     throw new Error(
-      createMissingCustomTranslationLoadedError(customTranslationLoaderPath)
+      createMissingCustomTranslationLoadedError(customLoadTranslationPath)
     );
   }
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
   if (
-    ((mergedConfig.cacheUrl &&
-      mergedConfig.translationLoaderType === 'remote') ||
+    ((mergedConfig.cacheUrl && mergedConfig.loadTranslationType === 'remote') ||
       mergedConfig.runtimeUrl) &&
     !mergedConfig.projectId &&
     process.env.NODE_ENV === 'development'
@@ -194,7 +193,7 @@ export function initGT(props: InitGTProps) {
   if (
     mergedConfig.runtimeUrl === defaultInitGTProps.runtimeUrl ||
     (mergedConfig.cacheUrl === defaultInitGTProps.cacheUrl &&
-      mergedConfig.translationLoaderType === 'remote')
+      mergedConfig.loadTranslationType === 'remote')
   ) {
     const warningLocales = (
       mergedConfig.locales || defaultInitGTProps.locales
@@ -232,9 +231,9 @@ export function initGT(props: InitGTProps) {
             resolvedDictionaryFilePath
           );
         }
-        if (customTranslationLoaderPath) {
-          webpackConfig.resolve.alias[`gt-next/_translationLoader`] =
-            path.resolve(webpackConfig.context, customTranslationLoaderPath);
+        if (customLoadTranslationPath) {
+          webpackConfig.resolve.alias[`gt-next/_loadTranslation`] =
+            path.resolve(webpackConfig.context, customLoadTranslationPath);
         }
         if (typeof nextConfig?.webpack === 'function') {
           return nextConfig.webpack(webpackConfig, options);

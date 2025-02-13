@@ -7,11 +7,11 @@ import { TranslationsObject, TranslationLoading, TranslationError, TranslationSu
  * @property {number} [cacheExpiryTime=60000] - The cache expiration time in milliseconds.
  */
 export type TranslationManagerConfig = {
-    cacheUrl: string;
-    projectId: string;
+    cacheUrl?: string | null;
+    projectId?: string;
     cacheExpiryTime?: number;
     _versionId?: string;
-    translationLoaderEnabled: boolean;
+    loadTranslationEnabled: boolean;
 };
 /**
  * Manages remote translations.

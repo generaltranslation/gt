@@ -60,7 +60,7 @@ function parseResult(result) {
  */
 function loadTranslation(props) {
     return __awaiter(this, void 0, void 0, function () {
-        var usingCustomLoader, customTranslationLoaderConfig, customLoadTranslation_1;
+        var usingCustomLoader, customLoadTranslationConfig, customLoadTranslation_1;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -71,28 +71,29 @@ function loadTranslation(props) {
                 case 2:
                     usingCustomLoader = true;
                     try {
-                        customTranslationLoaderConfig = require('gt-next/_translationLoader');
+                        customLoadTranslationConfig = require('gt-next/_loadTranslation');
                     }
                     catch (_b) {
                         usingCustomLoader = false;
                     }
                     // Assign a loader to singleton
                     if (usingCustomLoader) {
-                        customLoadTranslation_1 = (customTranslationLoaderConfig === null || customTranslationLoaderConfig === void 0 ? void 0 : customTranslationLoaderConfig.default) ||
-                            (customTranslationLoaderConfig === null || customTranslationLoaderConfig === void 0 ? void 0 : customTranslationLoaderConfig.getLocalTranslation);
+                        customLoadTranslation_1 = (customLoadTranslationConfig === null || customLoadTranslationConfig === void 0 ? void 0 : customLoadTranslationConfig.default) ||
+                            (customLoadTranslationConfig === null || customLoadTranslationConfig === void 0 ? void 0 : customLoadTranslationConfig.getLocalTranslation);
                         // Check: custom loader is exported
                         if (!customLoadTranslation_1) {
                             // Custom loader file was defined but not exported
                             if (process.env.NODE_ENV === 'production') {
-                                console.error(createErrors_1.unresolvedCustomTranslationLoaderError);
+                                console.error(createErrors_1.unresolvedCustomLoadTranslationError);
                                 loadTranslationFunction = function (_) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                                     return [2 /*return*/, undefined];
                                 }); }); };
                                 return [2 /*return*/, undefined];
                             }
-                            throw new Error(createErrors_1.unresolvedCustomTranslationLoaderError);
+                            throw new Error(createErrors_1.unresolvedCustomLoadTranslationError);
                         }
                         // Set custom translation loader
+                        console.log('using custom loader');
                         loadTranslationFunction = function (props) { return __awaiter(_this, void 0, void 0, function () {
                             var result, error_1;
                             return __generator(this, function (_a) {
@@ -105,7 +106,7 @@ function loadTranslation(props) {
                                         return [2 /*return*/, parseResult(result)];
                                     case 2:
                                         error_1 = _a.sent();
-                                        console.error(createErrors_1.customTranslationLoaderError, error_1);
+                                        console.error(createErrors_1.customLoadTranslationError, error_1);
                                         return [2 /*return*/, undefined];
                                     case 3: return [2 /*return*/];
                                 }
@@ -130,7 +131,7 @@ function loadTranslation(props) {
                                         return [2 /*return*/, parseResult(result)];
                                     case 3:
                                         error_2 = _a.sent();
-                                        console.error(createErrors_1.customTranslationLoaderError, error_2);
+                                        console.error(createErrors_1.customLoadTranslationError, error_2);
                                         return [2 /*return*/, undefined];
                                     case 4: return [2 /*return*/];
                                 }

@@ -7,7 +7,7 @@ type I18NConfigurationParams = {
     projectId?: string;
     runtimeUrl: string | null;
     cacheUrl: string | null;
-    translationLoaderType: 'remote' | 'custom' | 'disabled';
+    loadTranslationType: 'remote' | 'custom' | 'disabled';
     cacheExpiryTime?: number;
     defaultLocale: string;
     locales: string[];
@@ -25,7 +25,7 @@ export default class I18NConfiguration {
     translationEnabled: boolean;
     serverRuntimeTranslationEnabled: boolean;
     clientRuntimeTranslationEnabled: boolean;
-    translationLoaderEnabled: boolean;
+    loadTranslationEnabled: boolean;
     projectId?: string;
     apiKey?: string;
     devApiKey?: string;
@@ -49,7 +49,7 @@ export default class I18NConfiguration {
     private _taggedDictionary;
     private _template;
     private _usingPlugin;
-    constructor({ apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, translationLoaderType, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, _usingPlugin, ...metadata }: I18NConfigurationParams);
+    constructor({ apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, loadTranslationType, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, _usingPlugin, ...metadata }: I18NConfigurationParams);
     /**
      * Gets config for dynamic translation on the client side.
      */

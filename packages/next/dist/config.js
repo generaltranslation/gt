@@ -119,8 +119,8 @@ function initGT(props) {
         ? mergedConfig.dictionary
         : resolveConfigFilepath('dictionary');
     // Resolve custom translation loader path
-    var customTranslationLoaderPath = typeof mergedConfig.translationLoaderPath === 'string'
-        ? mergedConfig.translationLoaderPath
+    var customLoadTranslationPath = typeof mergedConfig.loadTranslationPath === 'string'
+        ? mergedConfig.loadTranslationPath
         : resolveConfigFilepath('loadTranslation');
     // Resolve local translations directory
     var resolvedLocalTranslationDir = typeof mergedConfig.localTranslationsDir === 'string'
@@ -137,18 +137,17 @@ function initGT(props) {
     }
     // When there are local translations, force custom translation loader
     // for now, we can just check if that file exists, and then assume the existance of the loaders
-    if (customTranslationLoaderPath &&
-        fs_1.default.existsSync(path_1.default.resolve(customTranslationLoaderPath))) {
-        mergedConfig.translationLoaderType = 'custom';
+    if (customLoadTranslationPath &&
+        fs_1.default.existsSync(path_1.default.resolve(customLoadTranslationPath))) {
+        mergedConfig.loadTranslationType = 'custom';
     }
     // ---------- ERROR CHECKS ---------- //
     // Check: local translations are enabled, but no custom translation loader is found
-    if (localLocales.length && mergedConfig.translationLoaderType !== 'custom') {
-        throw new Error((0, createErrors_1.createMissingCustomTranslationLoadedError)(customTranslationLoaderPath));
+    if (localLocales.length && mergedConfig.loadTranslationType !== 'custom') {
+        throw new Error((0, createErrors_1.createMissingCustomTranslationLoadedError)(customLoadTranslationPath));
     }
     // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
-    if (((mergedConfig.cacheUrl &&
-        mergedConfig.translationLoaderType === 'remote') ||
+    if (((mergedConfig.cacheUrl && mergedConfig.loadTranslationType === 'remote') ||
         mergedConfig.runtimeUrl) &&
         !mergedConfig.projectId &&
         process.env.NODE_ENV === 'development') {
@@ -168,12 +167,13 @@ function initGT(props) {
     // Check: if using GT infrastructure, warn about unsupported locales
     if (mergedConfig.runtimeUrl === defaultInitGTProps_1.default.runtimeUrl ||
         (mergedConfig.cacheUrl === defaultInitGTProps_1.default.cacheUrl &&
-            mergedConfig.translationLoaderType === 'remote')) {
+            mergedConfig.loadTranslationType === 'remote')) {
         var warningLocales = (mergedConfig.locales || defaultInitGTProps_1.default.locales).filter(function (locale) { return !(0, supported_locales_1.getSupportedLocale)(locale); });
         if (warningLocales.length) {
             console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));
         }
     }
+    console.log('txloader:', mergedConfig.loadTranslationType);
     // ---------- STORE CONFIGURATIONS ---------- //
     // Store the resolved paths in the environment
     var I18NConfigParams = JSON.stringify(mergedConfig);
@@ -191,9 +191,9 @@ function initGT(props) {
                 if (resolvedDictionaryFilePath) {
                     webpackConfig.resolve.alias['gt-next/_dictionary'] = path_1.default.resolve(webpackConfig.context, resolvedDictionaryFilePath);
                 }
-                if (customTranslationLoaderPath) {
-                    webpackConfig.resolve.alias["gt-next/_translationLoader"] =
-                        path_1.default.resolve(webpackConfig.context, customTranslationLoaderPath);
+                if (customLoadTranslationPath) {
+                    webpackConfig.resolve.alias["gt-next/_loadTranslation"] =
+                        path_1.default.resolve(webpackConfig.context, customLoadTranslationPath);
                 }
                 if (typeof (nextConfig === null || nextConfig === void 0 ? void 0 : nextConfig.webpack) === 'function') {
                     return nextConfig.webpack(webpackConfig, options);

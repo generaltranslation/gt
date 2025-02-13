@@ -20,7 +20,7 @@ type I18NConfigurationParams = {
   projectId?: string;
   runtimeUrl: string | null;
   cacheUrl: string | null;
-  translationLoaderType: 'remote' | 'custom' | 'disabled';
+  loadTranslationType: 'remote' | 'custom' | 'disabled';
   cacheExpiryTime?: number;
   defaultLocale: string;
   locales: string[];
@@ -62,7 +62,7 @@ export default class I18NConfiguration {
   translationEnabled: boolean;
   serverRuntimeTranslationEnabled: boolean;
   clientRuntimeTranslationEnabled: boolean;
-  translationLoaderEnabled: boolean = true;
+  loadTranslationEnabled: boolean = true;
   // Cloud integration
   projectId?: string;
   apiKey?: string;
@@ -105,7 +105,7 @@ export default class I18NConfiguration {
     runtimeUrl,
     cacheUrl,
     cacheExpiryTime,
-    translationLoaderType,
+    loadTranslationType,
     // Locale info
     defaultLocale,
     locales,
@@ -141,12 +141,12 @@ export default class I18NConfiguration {
         (this.devApiKey && process.env.NODE_ENV === 'development'))
     );
     // translation loader
-    this.translationLoaderEnabled = !!(
-      translationLoaderType === 'custom' ||
-      (translationLoaderType === 'remote' && this.projectId && this.cacheUrl)
+    this.loadTranslationEnabled = !!(
+      loadTranslationType === 'custom' ||
+      (loadTranslationType === 'remote' && this.projectId && this.cacheUrl)
     );
     this.translationEnabled =
-      this.translationLoaderEnabled || _runtimeTranslation; // two types of tx: loader (remote/custom) and runtime
+      this.loadTranslationEnabled || _runtimeTranslation; // two types of tx: loader (remote/custom) and runtime
     // When we add <TX> for both client and server, there will not be discrepancy between server and client
     this.serverRuntimeTranslationEnabled = _runtimeTranslation;
     this.clientRuntimeTranslationEnabled =
@@ -177,16 +177,14 @@ export default class I18NConfiguration {
       ...metadata,
     };
     // Dictionary managers
-    if (cacheUrl && projectId) {
-      this._translationManager = translationManager;
-      this._translationManager.setConfig({
-        cacheUrl,
-        projectId,
-        cacheExpiryTime,
-        translationLoaderEnabled: this.translationLoaderEnabled,
-        _versionId,
-      });
-    }
+    this._translationManager = translationManager;
+    this._translationManager.setConfig({
+      cacheUrl,
+      projectId,
+      cacheExpiryTime,
+      loadTranslationEnabled: this.loadTranslationEnabled,
+      _versionId,
+    });
     // Cache of hashes to speed up <GTProvider>
     this._taggedDictionary = new Map();
     this._template = new Map();
