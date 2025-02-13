@@ -5,7 +5,6 @@ import {
   renderContentToString,
   splitStringToContent,
 } from 'generaltranslation';
-import { listSupportedLocales } from '@generaltranslation/supported-locales';
 import { GTContext } from './GTContext';
 import {
   ClientProviderProps,
@@ -40,7 +39,7 @@ export default function ClientProvider({
   defaultLocale,
   translationRequired,
   dialectTranslationRequired,
-  locales = listSupportedLocales(),
+  locales = [],
   requiredPrefix,
   renderSettings,
   projectId,

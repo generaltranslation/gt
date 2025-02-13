@@ -4,7 +4,6 @@ import {
   libraryDefaultLocale,
   localeCookieName,
 } from 'generaltranslation/internal';
-import { listSupportedLocales } from '@generaltranslation/supported-locales';
 
 /**
  *
@@ -17,7 +16,7 @@ import { listSupportedLocales } from '@generaltranslation/supported-locales';
 export default function useDetermineLocale({
   locale: _locale = '',
   defaultLocale = libraryDefaultLocale,
-  locales = listSupportedLocales(),
+  locales = [],
   cookieName = localeCookieName,
 }: {
   defaultLocale: string;

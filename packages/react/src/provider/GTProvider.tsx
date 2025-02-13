@@ -28,10 +28,7 @@ import {
   devApiKeyProductionError,
   projectIdMissingWarning,
 } from '../messages/createMessages';
-import {
-  getSupportedLocale,
-  listSupportedLocales,
-} from '@generaltranslation/supported-locales';
+import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from './runtime/useRuntimeTranslation';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
 import { hashJsxChildren } from 'generaltranslation/id';
@@ -64,7 +61,7 @@ export default function GTProvider({
   projectId: _projectId = '',
   devApiKey: _devApiKey,
   dictionary = {},
-  locales = listSupportedLocales(),
+  locales = [],
   defaultLocale = libraryDefaultLocale,
   locale: _locale,
   cacheUrl = defaultCacheUrl,
