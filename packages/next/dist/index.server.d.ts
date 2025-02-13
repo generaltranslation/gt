@@ -7,5 +7,6 @@ import GTProvider from './provider/GTProvider';
 import T from './server-dir/inline/T';
 import Branch from './branches/Branch';
 import Plural from './branches/Plural';
-export { GTProvider, T, useElement, Var, Num, Currency, DateTime, Branch, Plural, };
+import TX from './server-dir/inline/TX';
+export { GTProvider, T, TX, useElement, Var, Num, Currency, DateTime, Branch, Plural, };
 //# sourceMappingURL=index.server.d.ts.map

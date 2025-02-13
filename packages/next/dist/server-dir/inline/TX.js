@@ -76,19 +76,19 @@ function Resolver(_a) {
  * @example
  * ```jsx
  * // Basic usage:
- * <T id="welcome_message">
+ * <TX id="welcome_message">
  *  Hello, <Var name="name" value={firstname}>!
- * </T>
+ * </TX>
  * ```
  *
  * @example
  * ```jsx
  * // Translating a plural
- * <T id="item_count">
+ * <TX id="item_count">
  *  <Plural n={3} singular={<>You have <Num value={n}/> item.</>}>
  *      You have <Num value={n}/> items.
  *  </Plural>
- * </T>
+ * </TX>
  * ```
  *
  * When used on the server-side, can create translations on demand.
@@ -112,7 +112,7 @@ function Resolver(_a) {
  *
  * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
-function T(_a) {
+function TX(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
         var I18NConfig, locale, defaultLocale, renderSettings, translationRequired, serverRuntimeTranslationEnabled, dialectTranslationRequired, taggedChildren, renderDefaultLocale, renderLoadingDefault, translationsPromise, _c, childrenAsObjects, hash, translations, _d, translationEntry, translationPromise, _e, _f, _g, loadingFallback;
         var _h;
@@ -132,8 +132,7 @@ function T(_a) {
                     defaultLocale = I18NConfig.getDefaultLocale();
                     renderSettings = I18NConfig.getRenderSettings();
                     translationRequired = I18NConfig.requiresTranslation(locale);
-                    serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled() &&
-                        process.env.NODE_ENV === 'development';
+                    serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled();
                     dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, defaultLocale);
                     taggedChildren = I18NConfig.addGTIdentifier(children);
                     renderDefaultLocale = function () {
@@ -227,6 +226,6 @@ function T(_a) {
         });
     });
 }
-T.gtTransformation = 'translate-server';
-exports.default = T;
-//# sourceMappingURL=T.js.map
+TX.gtTransformation = 'translate-server';
+exports.default = TX;
+//# sourceMappingURL=TX.js.map

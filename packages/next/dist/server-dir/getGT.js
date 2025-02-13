@@ -109,7 +109,7 @@ var react_1 = require("react");
  */
 function getGT(id) {
     return __awaiter(this, void 0, void 0, function () {
-        var getId, I18NConfig, defaultLocale, locale, translationRequired, serverRuntimeTranslationEnabled, filteredTranslations, translationsPromise, additionalMetadata_1, dictionarySubset, flattenedDictionaryEntries, translations_1;
+        var getId, I18NConfig, defaultLocale, locale, translationRequired, serverRuntimeTranslationEnabled, stringTranslationsById, translationsPromise, additionalMetadata_1, dictionarySubset, flattenedDictionaryEntries, translations_1;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -134,7 +134,7 @@ function getGT(id) {
                     translationRequired = I18NConfig.requiresTranslation(locale);
                     serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled() &&
                         process.env.NODE_ENV === 'development';
-                    filteredTranslations = {};
+                    stringTranslationsById = {};
                     if (!translationRequired) return [3 /*break*/, 5];
                     translationsPromise = I18NConfig.getCachedTranslations(locale);
                     return [4 /*yield*/, (0, getMetadata_1.default)()];
@@ -167,11 +167,11 @@ function getGT(id) {
                                         }
                                         contentArray = (0, generaltranslation_1.splitStringToContent)(entry);
                                         hash = I18NConfig.hashContent(contentArray, metadata === null || metadata === void 0 ? void 0 : metadata.context);
-                                        translationEntry = translations_1[hash] || translations_1[entryId];
+                                        translationEntry = translations_1[hash];
                                         if (translationEntry) {
                                             // success
                                             if (translationEntry.state === 'success') {
-                                                return [2 /*return*/, (filteredTranslations[entryId] =
+                                                return [2 /*return*/, (stringTranslationsById[entryId] =
                                                         translationEntry.target)];
                                             }
                                             // error fallback (strings in local cache will only be success or error)
@@ -190,7 +190,7 @@ function getGT(id) {
                                         _f.label = 1;
                                     case 1:
                                         _f.trys.push([1, 3, , 4]);
-                                        _d = filteredTranslations;
+                                        _d = stringTranslationsById;
                                         _e = entryId;
                                         return [4 /*yield*/, translationPromise];
                                     case 2:
@@ -227,7 +227,7 @@ function getGT(id) {
                         var variablesOptions = metadata === null || metadata === void 0 ? void 0 : metadata.variablesOptions;
                         // Render strings
                         if (typeof entry === 'string') {
-                            var contentArray = filteredTranslations[id] || (0, generaltranslation_1.splitStringToContent)(entry);
+                            var contentArray = stringTranslationsById[id] || (0, generaltranslation_1.splitStringToContent)(entry);
                             return (0, generaltranslation_1.renderContentToString)(contentArray, [locale, defaultLocale], variables, variablesOptions);
                         }
                         // Reject empty fragments

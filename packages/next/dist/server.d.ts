@@ -3,6 +3,7 @@ import tx from './server-dir/strings/tx';
 import getLocale from './request/getLocale';
 import { getGT } from './server-dir/getGT';
 import useElement from './server-dir/useElement';
+import TX from './server-dir/inline/TX';
 export declare function getDefaultLocale(): string;
-export { T, tx, getLocale, getGT, useElement };
+export { T, TX, tx, getLocale, getGT, useElement };
 //# sourceMappingURL=server.d.ts.map

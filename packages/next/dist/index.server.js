@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Plural = exports.Branch = exports.DateTime = exports.Currency = exports.Num = exports.Var = exports.useElement = exports.T = exports.GTProvider = void 0;
+exports.Plural = exports.Branch = exports.DateTime = exports.Currency = exports.Num = exports.Var = exports.useElement = exports.TX = exports.T = exports.GTProvider = void 0;
 var Var_1 = __importDefault(require("./variables/Var"));
 exports.Var = Var_1.default;
 var Num_1 = __importDefault(require("./variables/Num"));
@@ -22,4 +22,6 @@ var Branch_1 = __importDefault(require("./branches/Branch"));
 exports.Branch = Branch_1.default;
 var Plural_1 = __importDefault(require("./branches/Plural"));
 exports.Plural = Plural_1.default;
+var TX_1 = __importDefault(require("./server-dir/inline/TX"));
+exports.TX = TX_1.default;
 //# sourceMappingURL=index.server.js.map
