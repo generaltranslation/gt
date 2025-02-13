@@ -72,7 +72,6 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  */
 function initGT(props) {
     var _a;
-    if (props === void 0) { props = { _usingPlugin: true }; }
     // ---------- LOAD GT CONFIG FILE ---------- //
     var loadedConfig = {};
     var configPath = props.config || defaultInitGTProps_1.default.config;
@@ -104,7 +103,7 @@ function initGT(props) {
     var envConfig = __assign(__assign(__assign({}, (projectId ? { projectId: projectId } : {})), (apiKey ? { apiKey: apiKey } : {})), (devApiKey ? { devApiKey: devApiKey } : {}));
     // ---------- MERGE CONFIGS ---------- //
     // precedence: input > env > config file > defaults
-    var mergedConfig = __assign(__assign(__assign(__assign({}, defaultInitGTProps_1.default), loadedConfig), envConfig), props);
+    var mergedConfig = __assign(__assign(__assign(__assign(__assign({}, defaultInitGTProps_1.default), loadedConfig), envConfig), props), { _usingPlugin: true });
     // ----------- LOCALE STANDARDIZATION ----------- //
     if (mergedConfig.locales && mergedConfig.defaultLocale) {
         mergedConfig.locales.unshift(mergedConfig.defaultLocale);

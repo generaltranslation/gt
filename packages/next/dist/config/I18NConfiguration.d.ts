@@ -59,6 +59,7 @@ export default class I18NConfiguration {
         runtimeUrl: string | null;
         translationEnabled: boolean;
         runtimeTranslationEnabled: boolean;
+        dictionaryEnabled: boolean;
     };
     /**
      * Gets the application's default locale

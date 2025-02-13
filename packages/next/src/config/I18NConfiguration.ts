@@ -214,6 +214,7 @@ export default class I18NConfiguration {
       runtimeUrl: this.runtimeUrl,
       translationEnabled: this.translationEnabled,
       runtimeTranslationEnabled: this.clientRuntimeTranslationEnabled,
+      dictionaryEnabled: this.isDictionaryEnabled(),
     };
   }
 

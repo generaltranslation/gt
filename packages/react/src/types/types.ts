@@ -150,6 +150,7 @@ export type ClientProviderProps = {
   locale: string;
   locales: string[];
   _versionId?: string;
+  dictionaryEnabled?: boolean;
   defaultLocale: string;
   translationRequired: boolean;
   dialectTranslationRequired: boolean;

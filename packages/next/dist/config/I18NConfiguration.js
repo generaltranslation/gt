@@ -154,6 +154,7 @@ var I18NConfiguration = /** @class */ (function () {
             runtimeUrl: this.runtimeUrl,
             translationEnabled: this.translationEnabled,
             runtimeTranslationEnabled: this.clientRuntimeTranslationEnabled,
+            dictionaryEnabled: this.isDictionaryEnabled(),
         };
     };
     /**
