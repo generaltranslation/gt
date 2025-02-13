@@ -6,11 +6,51 @@
 
 # General Translation Libraries
 
-This monorepo contains the libraries for General Translation, a powerful translation platform for Next.js and React applications.
+This monorepo contains the libraries for General Translation, a next-generation translation platform for Next.js and React applications.
 
-Get started with General Translation at [generaltranslation.com](https://generaltranslation.com).
+Get started with General Translation at [generaltranslation.com](https://generaltranslation.com)!
 
 Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](https://generaltranslation.com/docs).
+
+## Features
+
+### ⚛️ Translate entire React components, not just strings
+
+- A single opening and closing `<T>` component is all you need to translate an entire React component.
+- No need for complex refactoring or messy function calls.
+
+```tsx
+export default function Page() {
+  return (
+    <T>
+      <p>You can write any JSX as children of the {'<T>'} component.</p>
+      <p>
+        For example, you could write a <a href='/'>link</a> and have the text be
+        translated in context.
+      </p>
+      <div>
+        <div>
+          <p>Even deeply nested components are translated in context.</p>
+          <button>Click me!</button>
+        </div>
+      </div>
+    </T>
+  );
+}
+```
+
+### 🧠 AI-powered translations
+
+- Translations are created in seconds.
+- UI and HTML elements are translated in context by state of the art AI models.
+- HTML content are re-arranged and customized according to the language.
+
+### 🔧 Developer-friendly
+
+- Setup is simple and can be done in minutes, no need for complex refactoring.
+- Never have to worry about localization while coding, ever again.
+- No more wasting time managing translation keys like `t('menu.header.title')`.
+  - Just write everything in-line!
 
 ## Examples
 

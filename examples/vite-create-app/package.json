@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "gt-react": "^9.0.9-alpha.1",
-    "gt-react-cli": "^2.1.14-alpha.1",
+    "gt-react": "^9.0.10-alpha.0",
+    "gt-react-cli": "^2.1.14-alpha.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
