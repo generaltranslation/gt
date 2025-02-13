@@ -19,6 +19,7 @@ import {
   createDictionarySubsetError,
   createNoEntryWarning,
   createDictionaryStringTranslationError,
+  dictionaryDisabledError,
 } from '../errors/createErrors';
 import React, { isValidElement } from 'react';
 /**
@@ -44,6 +45,14 @@ export async function getGT(
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
+  if (!I18NConfig.isDictionaryEnabled()) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error(dictionaryDisabledError);
+      return () => undefined;
+    } else {
+      throw new Error(dictionaryDisabledError);
+    }
+  }
   const defaultLocale = I18NConfig.getDefaultLocale();
   const locale = await getLocale();
   const translationRequired = I18NConfig.requiresTranslation(locale);
@@ -53,7 +62,7 @@ export async function getGT(
   let filteredTranslations: Record<string, TranslatedContent> = {};
 
   if (translationRequired) {
-    // send a request to cache for translations
+    // Send a request to cache for translations
     let translationsPromise = I18NConfig.getCachedTranslations(locale);
 
     // Additional setup

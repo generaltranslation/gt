@@ -4,7 +4,7 @@ import { NextConfig } from 'next';
 import defaultInitGTProps from './config/props/defaultInitGTProps';
 import InitGTProps from './config/props/InitGTProps';
 import {
-  APIKeyMissingError,
+  APIKeyMissingWarn,
   createMissingCustomTranslationLoadedError,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
@@ -36,11 +36,10 @@ import { ContextReplacementPlugin } from 'webpack';
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [devApiKey=defaultInitGTProps.devApiKey] - API key for dev environment only.
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
- * @param {string} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
- * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
+ * @param {string|null} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations. Set to null to disable.
+ * @param {string|null} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations. Set to null to disable.
  * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - How long to cache translations in memory (milliseconds).
  * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
- * @param {string|undefined} [translationLoaderType=defaultInitGTProps.translationLoaderType] - The type of translation loader to use. Values: 'remote' | 'custom' | 'disabled'. Default is remote.
  * @param {string[]|undefined} - Whether to use local translations.
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
@@ -55,7 +54,7 @@ import { ContextReplacementPlugin } from 'webpack';
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  *
  */
-export function initGT(props: InitGTProps = {}) {
+export function initGT(props: InitGTProps = { _usingPlugin: true }) {
   // ---------- LOAD GT CONFIG FILE ---------- //
   let loadedConfig: Partial<InitGTProps> = {};
   const configPath = props.config || defaultInitGTProps.config;
@@ -145,26 +144,30 @@ export function initGT(props: InitGTProps = {}) {
       .filter((file) => file.endsWith('.json'))
       .map((file) => file.replace('.json', ''));
   }
+
+  // When there are local translations, force custom translation loader
+  // for now, we can just check if that file exists, and then assume the existance of the loaders
+  if (
+    customTranslationLoaderPath &&
+    fs.existsSync(path.resolve(customTranslationLoaderPath))
+  ) {
+    mergedConfig.translationLoaderType = 'custom';
+  }
+
   // ---------- ERROR CHECKS ---------- //
 
   // Check: local translations are enabled, but no custom translation loader is found
-  // for now, we can just check if that file exists, and then assume the existance of the loaders
-  if (
-    localLocales.length &&
-    !(
-      customTranslationLoaderPath &&
-      fs.existsSync(path.resolve(customTranslationLoaderPath))
-    )
-  ) {
+  if (localLocales && mergedConfig.translationLoaderType !== 'custom') {
     throw new Error(
       createMissingCustomTranslationLoadedError(customTranslationLoaderPath)
     );
   }
-  const localTranslationsEnabled = localLocales.length > 0;
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
   if (
-    !localTranslationsEnabled &&
+    ((mergedConfig.cacheUrl &&
+      mergedConfig.translationLoaderType === 'remote') ||
+      mergedConfig.runtimeUrl) &&
     !mergedConfig.projectId &&
     process.env.NODE_ENV === 'development'
   ) {
@@ -183,14 +186,14 @@ export function initGT(props: InitGTProps = {}) {
     !(mergedConfig.apiKey || mergedConfig.devApiKey) &&
     process.env.NODE_ENV === 'development'
   ) {
-    console.error(APIKeyMissingError);
+    console.warn(APIKeyMissingWarn);
   }
 
   // Check: if using GT infrastructure, warn about unsupported locales
   if (
     mergedConfig.runtimeUrl === defaultInitGTProps.runtimeUrl ||
     (mergedConfig.cacheUrl === defaultInitGTProps.cacheUrl &&
-      !localTranslationsEnabled)
+      mergedConfig.translationLoaderType === 'remote')
   ) {
     const warningLocales = (
       mergedConfig.locales || defaultInitGTProps.locales

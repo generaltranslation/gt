@@ -1,14 +1,14 @@
 import { RenderMethod } from 'gt-react/internal';
 type InitGTProps = {
-    runtimeTranslation?: boolean;
+    translationLoaderType?: 'remote' | 'custom' | 'disabled';
     dictionary?: string;
     i18n?: string;
     config?: string;
     translationLoaderPath?: string;
     apiKey?: string;
     projectId?: string;
-    runtimeUrl?: string;
-    cacheUrl?: string;
+    runtimeUrl?: string | null;
+    cacheUrl?: string | null;
     cacheExpiryTime?: number;
     locales?: string[];
     defaultLocale?: string;
@@ -22,6 +22,7 @@ type InitGTProps = {
     maxBatchSize?: number;
     batchInterval?: number;
     description?: string;
+    _usingPlugin?: boolean;
     [key: string]: any;
 };
 export default InitGTProps;

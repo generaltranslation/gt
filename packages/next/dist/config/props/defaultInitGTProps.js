@@ -42,6 +42,7 @@ var internal_2 = require("gt-react/internal");
 var defaultInitGTProps = {
     config: './gt.config.json',
     runtimeTranslation: true,
+    translationLoaderType: 'remote',
     runtimeUrl: internal_1.defaultRuntimeApiUrl,
     cacheUrl: internal_1.defaultCacheUrl,
     cacheExpiryTime: 60000,
@@ -57,6 +58,7 @@ var defaultInitGTProps = {
     maxBatchSize: 25,
     batchInterval: 50,
     renderSettings: internal_2.defaultRenderSettings,
+    _usingPlugin: false,
 };
 exports.default = defaultInitGTProps;
 //# sourceMappingURL=defaultInitGTProps.js.map

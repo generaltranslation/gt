@@ -1,6 +1,7 @@
 declare const defaultInitGTProps: {
     readonly config: "./gt.config.json";
     readonly runtimeTranslation: true;
+    readonly translationLoaderType: "remote";
     readonly runtimeUrl: "https://runtime.gtx.dev";
     readonly cacheUrl: "https://cdn.gtx.dev";
     readonly cacheExpiryTime: 60000;
@@ -15,6 +16,7 @@ declare const defaultInitGTProps: {
         method: import("gt-react/internal").RenderMethod;
         timeout?: number;
     };
+    readonly _usingPlugin: false;
 };
 export default defaultInitGTProps;
 //# sourceMappingURL=defaultInitGTProps.d.ts.map

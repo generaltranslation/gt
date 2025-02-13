@@ -124,7 +124,7 @@ type ClientProviderProps = {
     runtimeTranslationEnabled: boolean;
     projectId?: string;
     devApiKey?: string;
-    runtimeUrl?: string;
+    runtimeUrl?: string | null;
     onLocaleChange?: () => void;
     cookieName?: string;
 };
@@ -137,7 +137,7 @@ declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId
     locale: string;
     versionId?: string;
     defaultLocale?: string;
-    runtimeUrl?: string;
+    runtimeUrl?: string | null;
     runtimeTranslationEnabled: boolean;
     renderSettings: {
         method: RenderMethod;

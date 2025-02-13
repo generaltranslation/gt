@@ -52,8 +52,8 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [devApiKey=defaultInitGTProps.devApiKey] - API key for dev environment only.
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
- * @param {string} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations.
- * @param {string} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations.
+ * @param {string|null} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations. Set to null to disable.
+ * @param {string|null} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations. Set to null to disable.
  * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - How long to cache translations in memory (milliseconds).
  * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
  * @param {string[]|undefined} - Whether to use local translations.
@@ -72,7 +72,7 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  */
 function initGT(props) {
     var _a;
-    if (props === void 0) { props = {}; }
+    if (props === void 0) { props = { _usingPlugin: true }; }
     // ---------- LOAD GT CONFIG FILE ---------- //
     var loadedConfig = {};
     var configPath = props.config || defaultInitGTProps_1.default.config;
@@ -136,17 +136,21 @@ function initGT(props) {
             .filter(function (file) { return file.endsWith('.json'); })
             .map(function (file) { return file.replace('.json', ''); });
     }
+    // When there are local translations, force custom translation loader
+    // for now, we can just check if that file exists, and then assume the existance of the loaders
+    if (customTranslationLoaderPath &&
+        fs_1.default.existsSync(path_1.default.resolve(customTranslationLoaderPath))) {
+        mergedConfig.translationLoaderType = 'custom';
+    }
     // ---------- ERROR CHECKS ---------- //
     // Check: local translations are enabled, but no custom translation loader is found
-    // for now, we can just check if that file exists, and then assume the existance of the loaders
-    if (localLocales.length &&
-        !(customTranslationLoaderPath &&
-            fs_1.default.existsSync(path_1.default.resolve(customTranslationLoaderPath)))) {
+    if (localLocales && mergedConfig.translationLoaderType !== 'custom') {
         throw new Error((0, createErrors_1.createMissingCustomTranslationLoadedError)(customTranslationLoaderPath));
     }
-    var localTranslationsEnabled = localLocales.length > 0;
     // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
-    if (!localTranslationsEnabled &&
+    if (((mergedConfig.cacheUrl &&
+        mergedConfig.translationLoaderType === 'remote') ||
+        mergedConfig.runtimeUrl) &&
         !mergedConfig.projectId &&
         process.env.NODE_ENV === 'development') {
         console.warn(createErrors_1.projectIdMissingWarn);
@@ -160,12 +164,12 @@ function initGT(props) {
         mergedConfig.runtimeUrl &&
         !(mergedConfig.apiKey || mergedConfig.devApiKey) &&
         process.env.NODE_ENV === 'development') {
-        console.error(createErrors_1.APIKeyMissingError);
+        console.warn(createErrors_1.APIKeyMissingWarn);
     }
     // Check: if using GT infrastructure, warn about unsupported locales
     if (mergedConfig.runtimeUrl === defaultInitGTProps_1.default.runtimeUrl ||
         (mergedConfig.cacheUrl === defaultInitGTProps_1.default.cacheUrl &&
-            !localTranslationsEnabled)) {
+            mergedConfig.translationLoaderType === 'remote')) {
         var warningLocales = (mergedConfig.locales || defaultInitGTProps_1.default.locales).filter(function (locale) { return !(0, supported_locales_1.getSupportedLocale)(locale); });
         if (warningLocales.length) {
             console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));

@@ -118,6 +118,15 @@ function getGT(id) {
                         return id ? "".concat(id, ".").concat(suffix) : suffix;
                     };
                     I18NConfig = (0, getI18NConfig_1.default)();
+                    if (!I18NConfig.isDictionaryEnabled()) {
+                        if (process.env.NODE_ENV === 'production') {
+                            console.error(createErrors_1.dictionaryDisabledError);
+                            return [2 /*return*/, function () { return undefined; }];
+                        }
+                        else {
+                            throw new Error(createErrors_1.dictionaryDisabledError);
+                        }
+                    }
                     defaultLocale = I18NConfig.getDefaultLocale();
                     return [4 /*yield*/, (0, server_1.getLocale)()];
                 case 1:

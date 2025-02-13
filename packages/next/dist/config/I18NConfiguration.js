@@ -68,11 +68,10 @@ var createErrors_1 = require("../errors/createErrors");
 var id_1 = require("generaltranslation/id");
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
+        // ----- CLOUD INTEGRATION ----- //
         var 
         // Cloud integration
-        _b = _a.runtimeTranslation, 
-        // Cloud integration
-        runtimeTranslation = _b === void 0 ? true : _b, apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, 
+        apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, translationLoaderType = _a.translationLoaderType, 
         // Locale info
         defaultLocale = _a.defaultLocale, locales = _a.locales, 
         // Render method
@@ -81,34 +80,36 @@ var I18NConfiguration = /** @class */ (function () {
         dictionary = _a.dictionary, 
         // Batching config
         maxConcurrentRequests = _a.maxConcurrentRequests, maxBatchSize = _a.maxBatchSize, batchInterval = _a.batchInterval, 
+        // Internal
+        _usingPlugin = _a._usingPlugin, 
         // Other metadata
-        metadata = __rest(_a, ["runtimeTranslation", "apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval"]);
-        // Cloud integration
+        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "translationLoaderType", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "_usingPlugin"]);
+        this.translationLoaderEnabled = true;
         this.apiKey = apiKey;
         this.devApiKey = devApiKey;
         this.projectId = projectId;
         this.runtimeUrl = runtimeUrl;
+        this.cacheUrl = cacheUrl;
         this._versionId = _versionId; // version id for the dictionary
-        // Feature flags
-        var _runtimeTranslation = !!(runtimeTranslation &&
-            this.projectId &&
+        // ----- FEATURE FLAGS ----- //
+        // runtime translations
+        var _runtimeTranslation = !!(this.projectId &&
             this.runtimeUrl &&
             ((this.apiKey && process.env.NODE_ENV === 'production') ||
                 (this.devApiKey && process.env.NODE_ENV === 'development')));
-        this.translationEnabled = !!_runtimeTranslation;
-        // When we add <TX>, there will not be discrepancy between server and client
+        // translation loader
+        this.translationLoaderEnabled = !!(translationLoaderType === 'custom' ||
+            (translationLoaderType === 'remote' && this.projectId && this.cacheUrl));
+        this.translationEnabled =
+            this.translationLoaderEnabled || _runtimeTranslation; // two types of tx: loader (remote/custom) and runtime
+        // When we add <TX> for both client and server, there will not be discrepancy between server and client
         this.serverRuntimeTranslationEnabled = _runtimeTranslation;
         this.clientRuntimeTranslationEnabled =
             _runtimeTranslation && !!this.devApiKey;
+        // ----- OTHER SETUP ----- //
         // Locales
         this.defaultLocale = defaultLocale;
         this.locales = locales;
-        // Default env is production
-        if (process.env.NODE_ENV !== 'development' &&
-            process.env.NODE_ENV !== 'test' &&
-            this.devApiKey) {
-            throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
-        }
         // Render method
         this.renderSettings = __assign({ method: renderSettings.method }, ((renderSettings.timeout !== undefined ||
             internal_1.defaultRenderSettings.timeout !== undefined) && {
@@ -125,6 +126,7 @@ var I18NConfiguration = /** @class */ (function () {
                 cacheUrl: cacheUrl,
                 projectId: projectId,
                 cacheExpiryTime: cacheExpiryTime,
+                translationLoaderEnabled: this.translationLoaderEnabled,
                 _versionId: _versionId,
             });
         }
@@ -139,6 +141,8 @@ var I18NConfiguration = /** @class */ (function () {
         this._activeRequests = 0;
         this._translationCache = new Map(); // cache for ongoing promises, so things aren't translated twice
         this._startBatching();
+        // Internal
+        this._usingPlugin = _usingPlugin;
     }
     /**
      * Gets config for dynamic translation on the client side.
@@ -165,6 +169,12 @@ var I18NConfiguration = /** @class */ (function () {
      */
     I18NConfiguration.prototype.getLocales = function () {
         return this.locales;
+    };
+    /**
+     * @returns true if dictionaries are enabled
+     */
+    I18NConfiguration.prototype.isDictionaryEnabled = function () {
+        return this._usingPlugin;
     };
     /**
      * @returns A boolean indicating whether automatic translation is enabled or disabled for this config

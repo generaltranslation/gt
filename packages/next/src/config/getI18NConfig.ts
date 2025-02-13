@@ -57,9 +57,8 @@ export default function getI18NConfig(): I18NConfiguration {
       apiKey,
       projectId,
       devApiKey,
-      runtimeTranslation: false,
-      runtimeUrl: '',
-      cacheUrl: '',
+      runtimeUrl: null,
+      cacheUrl: null,
       translationLoaderType: 'disabled',
     });
   }

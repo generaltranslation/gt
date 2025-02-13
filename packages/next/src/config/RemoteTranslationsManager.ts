@@ -1,8 +1,4 @@
 import { standardizeLocale } from 'generaltranslation';
-import {
-  localTranslationsError,
-  remoteTranslationsError,
-} from '../errors/createErrors';
 import defaultInitGTProps from './props/defaultInitGTProps';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import {
@@ -11,6 +7,7 @@ import {
   TranslationError,
   TranslationSuccess,
 } from 'gt-react/internal';
+import loadTranslation from './loadTranslation';
 
 /**
  * Configuration type for RemoteTranslationsManager.
@@ -19,11 +16,12 @@ import {
  * @property {string} projectId - The project identifier for translations.
  * @property {number} [cacheExpiryTime=60000] - The cache expiration time in milliseconds.
  */
-type RemoteTranslationsConfig = {
+export type RemoteTranslationsConfig = {
   cacheUrl: string;
   projectId: string;
   cacheExpiryTime?: number;
   _versionId?: string;
+  translationLoaderEnabled: boolean;
 };
 
 /**
@@ -46,6 +44,7 @@ export class RemoteTranslationsManager {
       projectId: '',
       cacheExpiryTime: defaultInitGTProps.cacheExpiryTime, // default to 60 seconds
       _versionId: undefined,
+      translationLoaderEnabled: true,
     };
     this.translationsMap = new Map();
     this.fetchPromises = new Map();
@@ -64,64 +63,27 @@ export class RemoteTranslationsManager {
   /**
    * Fetches translations from the remote cache.
    * @param {string} reference - The translation reference.
-   * @returns {Promise<TranslationsObject | undefined>} The fetched translations or null if not found.
+   * @returns {Promise<TranslationsObject | undefined>} The fetched translations or undefined if not found.
    */
   private async _fetchTranslations(
     reference: string
   ): Promise<TranslationsObject | undefined> {
-    // ----- LOCAL TRANSLATIONS ----- //
-    try {
-      console.log('fetching local translations');
-      const sourceConfig = require('gt-next/_translationLoader');
-      const getLocalTranslation = sourceConfig.default;
-      const txSource = await getLocalTranslation(reference);
+    // Return if loader is disabled
+    if (!this.config.translationLoaderEnabled) return undefined;
 
-      if (txSource && Object.keys(txSource).length) {
-        // Record our fetch time
-        this.lastFetchTime.set(reference, Date.now());
-        // Parse response
-        const parsedResult: TranslationsObject = Object.entries(
-          txSource
-        ).reduce(
-          (
-            translationsAcc: TranslationsObject,
-            [key, target]: [string, any]
-          ) => {
-            translationsAcc[key] = { state: 'success', target };
-            return translationsAcc;
-          },
-          {}
-        );
-        return parsedResult;
-      }
-      // Fall back to remote cache
-    } catch (error) {
-      console.log('falling back to remote cache');
-      const response = await fetch(
-        `${this.config.cacheUrl}/${this.config.projectId}/${reference}${
-          this.config._versionId ? `/${this.config._versionId}` : ''
-        }`
-      );
-      const result = await response.json();
-      if (Object.keys(result).length) {
-        // Record our fetch time
-        this.lastFetchTime.set(reference, Date.now());
+    // load translation
+    const result = await loadTranslation({
+      targetLocale: reference,
+      projectId: this.config.projectId,
+      cacheUrl: this.config.cacheUrl,
+      _versionId: this.config._versionId,
+    });
 
-        // Parse response
-        const parsedResult: TranslationsObject = Object.entries(result).reduce(
-          (
-            translationsAcc: TranslationsObject,
-            [key, target]: [string, any]
-          ) => {
-            translationsAcc[key] = { state: 'success', target };
-            return translationsAcc;
-          },
-          {}
-        );
-        return parsedResult;
-      }
-    }
-    return undefined;
+    // Record our fetch time
+    if (result) this.lastFetchTime.set(reference, Date.now());
+
+    // return
+    return result;
   }
 
   /**

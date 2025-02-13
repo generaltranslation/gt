@@ -2,7 +2,6 @@ import { RenderMethod } from 'gt-react/internal';
 
 type InitGTProps = {
   // Feature flags
-  runtimeTranslation?: boolean;
   translationLoaderType?: 'remote' | 'custom' | 'disabled'; // remote: CDN, custom: uknown, disabled: no fetch
   // Request scoped filepath
   dictionary?: string;
@@ -12,8 +11,8 @@ type InitGTProps = {
   // Cloud integration
   apiKey?: string;
   projectId?: string;
-  runtimeUrl?: string;
-  cacheUrl?: string;
+  runtimeUrl?: string | null;
+  cacheUrl?: string | null;
   cacheExpiryTime?: number;
   // Locale info
   locales?: string[];
@@ -33,6 +32,7 @@ type InitGTProps = {
   // Translation assistance
   description?: string;
   // Other
+  _usingPlugin?: boolean;
   [key: string]: any;
 };
 

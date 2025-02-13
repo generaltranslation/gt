@@ -162,7 +162,7 @@ export type ClientProviderProps = {
   runtimeTranslationEnabled: boolean;
   projectId?: string;
   devApiKey?: string;
-  runtimeUrl?: string;
+  runtimeUrl?: string | null;
   onLocaleChange?: () => void;
   cookieName?: string;
 };

@@ -21,6 +21,7 @@ const defaultInitGTProps = {
   maxBatchSize: 25,
   batchInterval: 50,
   renderSettings: defaultRenderSettings,
+  _usingPlugin: false,
 } as const;
 
 export default defaultInitGTProps;
