@@ -12,6 +12,10 @@ Get started with General Translation at [generaltranslation.com](https://general
 
 Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](https://generaltranslation.com/docs).
 
+## Examples
+
+See the [examples](examples) directory for some example projects that use our libraries. We currently support React and Next.js.
+
 ## Libraries
 
 See the below for links to the relevant libraries:
