@@ -30,8 +30,19 @@ Here is a list of steps done to reach this repo state:
 2. `npm install gt-next gt-next-cli`
 3. `npx gt-next-cli setup`
 4. Add `<GTProvider>` to the `src/app/layout.tsx` file
-5. Create a `.local.env` file and populate it with `GT_PROJECT_ID` and `GT_API_KEY`
-6. `npm run dev`
+5. Add `initGT()` to the `next.config.ts` file:
+
+```ts
+const withGT = initGT({
+  defaultLocale: 'en-US',
+  locales: ['en-US', 'fr', 'es', 'zh'],
+});
+
+export default withGT(nextConfig);
+```
+
+6. Create a `.local.env` file and populate it with `GT_PROJECT_ID` and `GT_API_KEY`
+7. `npm run dev`
 
 To deploy this app to production:
 
