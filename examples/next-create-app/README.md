@@ -1,10 +1,25 @@
 # gt-next + Create Next.js App Example
 
-This is an example of how to use gt-next with Create Next.js App. See it live [here](https://next-create-app-eight.vercel.app/).
+This is an example project showcasing a multilingual Next.js App using `gt-next`.
+
+[See it live here](https://next-create-app-eight.vercel.app/).
+
+Change your browser language to see the translations in action.
+
+- [Chrome](https://support.google.com/chrome/answer/95647)
+- [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
+- [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
+- [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
 
 ## Deploy to Vercel
 
+One-click deploy to Vercel:
+
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/General-Translation/gt-libraries/tree/main/examples/next-create-app)
+
+## Docs
+
+See the [docs](https://generaltranslation.com/docs/next/tutorials/quickstart) for more information on how to use `gt-next` with Next.js.
 
 ## Cloning
 
@@ -19,6 +34,8 @@ npm install
 ```
 
 2. (Optional) Create a `.local.env` file and populate it with `GT_PROJECT_ID` and `GT_API_KEY`, obtainable via the GT Dashboard [here](https://generaltranslation.com/dashboard)
+
+   - This example comes with translations for French, Spanish, and Chinese out of the box, but if you want to experiment with other locales or modify some content, you'll need to add your own API keys.
 
 3. Run `npm run dev`
 
