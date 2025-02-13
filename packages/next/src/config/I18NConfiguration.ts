@@ -79,7 +79,7 @@ export default class I18NConfiguration {
     timeout?: number;
   };
   // Dictionaries
-  private _remoteTranslationsManager: TranslationManager | undefined;
+  private _translationManager: TranslationManager | undefined;
   // Other metadata
   metadata: Record<string, any>;
   // Batching config
@@ -178,8 +178,8 @@ export default class I18NConfiguration {
     };
     // Dictionary managers
     if (cacheUrl && projectId) {
-      this._remoteTranslationsManager = translationManager;
-      this._remoteTranslationsManager.setConfig({
+      this._translationManager = translationManager;
+      this._translationManager.setConfig({
         cacheUrl,
         projectId,
         cacheExpiryTime,
@@ -330,8 +330,7 @@ export default class I18NConfiguration {
    */
   async getCachedTranslations(locale: string): Promise<TranslationsObject> {
     return (
-      (await this._remoteTranslationsManager?.getCachedTranslations(locale)) ||
-      {}
+      (await this._translationManager?.getCachedTranslations(locale)) || {}
     );
   }
 
@@ -480,8 +479,8 @@ export default class I18NConfiguration {
         if (result && typeof result === 'object') {
           if ('translation' in result && result.translation) {
             // record translations
-            if (this._remoteTranslationsManager) {
-              this._remoteTranslationsManager.setTranslations(
+            if (this._translationManager) {
+              this._translationManager.setTranslations(
                 request.targetLocale,
                 request.metadata.hash,
                 key,
@@ -507,8 +506,8 @@ export default class I18NConfiguration {
           }
         }
         // record translation error
-        if (this._remoteTranslationsManager) {
-          this._remoteTranslationsManager.setTranslations(
+        if (this._translationManager) {
+          this._translationManager.setTranslations(
             request.targetLocale,
             request.metadata.hash,
             key,
@@ -525,8 +524,8 @@ export default class I18NConfiguration {
       console.error(error);
       batch.forEach((request) => {
         // record translation error
-        if (this._remoteTranslationsManager) {
-          this._remoteTranslationsManager.setTranslations(
+        if (this._translationManager) {
+          this._translationManager.setTranslations(
             request.targetLocale,
             request.metadata.hash,
             request.metadata.id || request.metadata.hash,

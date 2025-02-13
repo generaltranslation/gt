@@ -121,8 +121,8 @@ var I18NConfiguration = /** @class */ (function () {
         })), { projectId: this.projectId, publish: true, fast: true }), metadata);
         // Dictionary managers
         if (cacheUrl && projectId) {
-            this._remoteTranslationsManager = TranslationManager_1.default;
-            this._remoteTranslationsManager.setConfig({
+            this._translationManager = TranslationManager_1.default;
+            this._translationManager.setConfig({
                 cacheUrl: cacheUrl,
                 projectId: projectId,
                 cacheExpiryTime: cacheExpiryTime,
@@ -249,9 +249,8 @@ var I18NConfiguration = /** @class */ (function () {
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, ((_a = this._remoteTranslationsManager) === null || _a === void 0 ? void 0 : _a.getCachedTranslations(locale))];
-                    case 1: return [2 /*return*/, ((_b.sent()) ||
-                            {})];
+                    case 0: return [4 /*yield*/, ((_a = this._translationManager) === null || _a === void 0 ? void 0 : _a.getCachedTranslations(locale))];
+                    case 1: return [2 /*return*/, ((_b.sent()) || {})];
                 }
             });
         });
@@ -400,8 +399,8 @@ var I18NConfiguration = /** @class */ (function () {
                             if (result && typeof result === 'object') {
                                 if ('translation' in result && result.translation) {
                                     // record translations
-                                    if (_this._remoteTranslationsManager) {
-                                        _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, key, {
+                                    if (_this._translationManager) {
+                                        _this._translationManager.setTranslations(request.targetLocale, request.metadata.hash, key, {
                                             state: 'success',
                                             target: result.translation,
                                         });
@@ -418,8 +417,8 @@ var I18NConfiguration = /** @class */ (function () {
                                 }
                             }
                             // record translation error
-                            if (_this._remoteTranslationsManager) {
-                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, key, {
+                            if (_this._translationManager) {
+                                _this._translationManager.setTranslations(request.targetLocale, request.metadata.hash, key, {
                                     state: 'error',
                                     error: result.error || 'Translation failed.',
                                     code: result.code || 500,
@@ -433,8 +432,8 @@ var I18NConfiguration = /** @class */ (function () {
                         console.error(error_1);
                         batch.forEach(function (request) {
                             // record translation error
-                            if (_this._remoteTranslationsManager) {
-                                _this._remoteTranslationsManager.setTranslations(request.targetLocale, request.metadata.hash, request.metadata.id || request.metadata.hash, { state: 'error', error: 'Translation failed.', code: 500 });
+                            if (_this._translationManager) {
+                                _this._translationManager.setTranslations(request.targetLocale, request.metadata.hash, request.metadata.id || request.metadata.hash, { state: 'error', error: 'Translation failed.', code: 500 });
                             }
                             return request.reject(new internal_1.GTTranslationError('Translation failed.', 500));
                         });

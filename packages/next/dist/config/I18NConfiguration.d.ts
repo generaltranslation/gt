@@ -38,7 +38,7 @@ export default class I18NConfiguration {
         method: RenderMethod;
         timeout?: number;
     };
-    private _remoteTranslationsManager;
+    private _translationManager;
     metadata: Record<string, any>;
     maxConcurrentRequests: number;
     maxBatchSize: number;
