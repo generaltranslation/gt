@@ -1,0 +1,175 @@
+{
+  "app.page.0": {
+    "type": "div",
+    "props": {
+      "children": [
+        {
+          "type": "main",
+          "props": {
+            "children": [
+              {
+                "type": "Image",
+                "props": {
+                  "data-_gt": {
+                    "id": 3
+                  }
+                }
+              },
+              {
+                "type": "ol",
+                "props": {
+                  "children": [
+                    {
+                      "type": "li",
+                      "props": {
+                        "children": [
+                          "Commencez en modifiant ",
+                          {
+                            "type": "code",
+                            "props": {
+                              "children": "src/app/page.tsx",
+                              "data-_gt": {
+                                "id": 6
+                              }
+                            }
+                          },
+                          "."
+                        ],
+                        "data-_gt": {
+                          "id": 5
+                        }
+                      }
+                    },
+                    {
+                      "type": "li",
+                      "props": {
+                        "children": "Enregistrez et voyez vos changements instantanément.",
+                        "data-_gt": {
+                          "id": 7
+                        }
+                      }
+                    }
+                  ],
+                  "data-_gt": {
+                    "id": 4
+                  }
+                }
+              },
+              {
+                "type": "div",
+                "props": {
+                  "children": [
+                    {
+                      "type": "a",
+                      "props": {
+                        "children": [
+                          {
+                            "type": "Image",
+                            "props": {
+                              "data-_gt": {
+                                "id": 10
+                              }
+                            }
+                          },
+                          "Déployer maintenant"
+                        ],
+                        "data-_gt": {
+                          "id": 9
+                        }
+                      }
+                    },
+                    {
+                      "type": "a",
+                      "props": {
+                        "children": "Lire notre documentation",
+                        "data-_gt": {
+                          "id": 11
+                        }
+                      }
+                    }
+                  ],
+                  "data-_gt": {
+                    "id": 8
+                  }
+                }
+              }
+            ],
+            "data-_gt": {
+              "id": 2
+            }
+          }
+        },
+        {
+          "type": "footer",
+          "props": {
+            "children": [
+              {
+                "type": "a",
+                "props": {
+                  "children": [
+                    {
+                      "type": "Image",
+                      "props": {
+                        "data-_gt": {
+                          "id": 14
+                        }
+                      }
+                    },
+                    "Apprendre"
+                  ],
+                  "data-_gt": {
+                    "id": 13
+                  }
+                }
+              },
+              {
+                "type": "a",
+                "props": {
+                  "children": [
+                    {
+                      "type": "Image",
+                      "props": {
+                        "data-_gt": {
+                          "id": 16
+                        }
+                      }
+                    },
+                    "Exemples"
+                  ],
+                  "data-_gt": {
+                    "id": 15
+                  }
+                }
+              },
+              {
+                "type": "a",
+                "props": {
+                  "children": [
+                    {
+                      "type": "Image",
+                      "props": {
+                        "data-_gt": {
+                          "id": 18
+                        }
+                      }
+                    },
+                    "Aller sur nextjs.org →"
+                  ],
+                  "data-_gt": {
+                    "id": 17
+                  }
+                }
+              }
+            ],
+            "data-_gt": {
+              "id": 12
+            }
+          }
+        }
+      ],
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  }
+}
