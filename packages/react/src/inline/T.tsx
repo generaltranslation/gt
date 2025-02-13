@@ -10,7 +10,7 @@ import useGTContext from '../provider/GTContext';
 import renderTranslatedChildren from '../provider/rendering/renderTranslatedChildren';
 import { useMemo } from 'react';
 import renderVariable from '../provider/rendering/renderVariable';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashJsxChildren } from '../internal/hashUtilities';
 import renderSkeleton from '../provider/rendering/renderSkeleton';
 import { TranslatedChildren } from '../types/types';
 

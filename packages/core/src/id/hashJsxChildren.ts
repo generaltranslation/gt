@@ -9,9 +9,11 @@ import CryptoJS from 'crypto-js';
  * Calculates a unique hash for a given string using sha256.
  *
  * @param {string} string - The string to be hashed.
+ * @param {string} id - An optional identifier to be appended to the string before hashing.
  * @returns {string} - The resulting hash as a hexadecimal string.
  */
-export function hashString(string: string): string {
+export function hashString(string: string, id?: string): string {
+  string = id ? `${string}${id}` : string;
   return CryptoJS.SHA256(string).toString(CryptoJS.enc.Hex);
 }
 
@@ -19,6 +21,7 @@ export function hashString(string: string): string {
  * Calculates a unique ID for the given children objects by hashing their sanitized JSON string representation.
  *
  * @param {any} childrenAsObjects - The children objects to be hashed.
+ * @param {string} id - An optional identifier to be appended to the jsx children before hashing.
  * @param {string} context - The context for the children
  * @param {function} hashFunction custom hash function
  * @returns {string} - The unique has of the children.
@@ -26,17 +29,19 @@ export function hashString(string: string): string {
 export function hashJsxChildren({
   source,
   context,
+  id,
   hashFunction = hashString,
 }: {
   source: JsxChildren;
   context?: string;
-  hashFunction?: (string: string) => string;
+  id?: string;
+  hashFunction?: (string: string, id?: string) => string;
 }): string {
   const unhashedKey = stringify({
     source: sanitizeJsxChildren(source),
     ...(context && { context }),
   });
-  return hashFunction(unhashedKey);
+  return hashFunction(unhashedKey, id);
 }
 
 type SanitizedVariable = Omit<Variable, 'id'>;

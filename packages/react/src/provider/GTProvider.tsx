@@ -31,7 +31,7 @@ import {
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from './runtime/useRuntimeTranslation';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashJsxChildren } from '../internal/hashUtilities';
 import React from 'react';
 import T from '../inline/T';
 import useDetermineLocale from '../hooks/useDetermineLocale';
