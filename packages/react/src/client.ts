@@ -5,7 +5,6 @@ import ClientProvider from './provider/ClientProvider';
 import Branch from './branches/Branch';
 import Plural from './branches/plurals/Plural';
 import useDefaultLocale from './hooks/useDefaultLocale';
-import useElement from './hooks/useElement';
 import useGT from './hooks/useGT';
 import useLocale from './hooks/useLocale';
 import T from './inline/T';
@@ -22,7 +21,6 @@ export {
   renderVariable,
   ClientProvider,
   useGT,
-  useElement,
   useDefaultLocale,
   useLocale,
   T,

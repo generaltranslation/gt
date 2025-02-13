@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Plural = exports.Branch = exports.DateTime = exports.Currency = exports.Num = exports.Var = exports.useElement = exports.TX = exports.T = exports.GTProvider = void 0;
+exports.Plural = exports.Branch = exports.DateTime = exports.Currency = exports.Num = exports.Var = exports.TX = exports.T = exports.GTProvider = void 0;
 var Var_1 = __importDefault(require("./variables/Var"));
 exports.Var = Var_1.default;
 var Num_1 = __importDefault(require("./variables/Num"));
@@ -12,8 +12,6 @@ var Currency_1 = __importDefault(require("./variables/Currency"));
 exports.Currency = Currency_1.default;
 var DateTime_1 = __importDefault(require("./variables/DateTime"));
 exports.DateTime = DateTime_1.default;
-var useElement_1 = __importDefault(require("./server-dir/useElement"));
-exports.useElement = useElement_1.default;
 var GTProvider_1 = __importDefault(require("./provider/GTProvider"));
 exports.GTProvider = GTProvider_1.default;
 var T_1 = __importDefault(require("./server-dir/inline/T"));

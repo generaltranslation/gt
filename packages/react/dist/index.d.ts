@@ -1,6 +1,5 @@
 import T from './inline/T';
 import useGT from './hooks/useGT';
-import useElement from './hooks/useElement';
 import useDefaultLocale from './hooks/useDefaultLocale';
 import useLocale from './hooks/useLocale';
 import GTProvider from './provider/GTProvider';
@@ -13,5 +12,5 @@ import Branch from './branches/Branch';
 import useLocales from './hooks/useLocales';
 import useSetLocale from './hooks/useSetLocale';
 import LocaleSelector from './ui/LocaleSelector';
-export { Var, Num, Currency, DateTime, T, GTProvider, Plural, Branch, useGT, useElement, useDefaultLocale, useLocale, useSetLocale, useLocales, LocaleSelector, };
+export { Var, Num, Currency, DateTime, T, GTProvider, Plural, Branch, useGT, useDefaultLocale, useLocale, useSetLocale, useLocales, LocaleSelector, };
 //# sourceMappingURL=index.d.ts.map
