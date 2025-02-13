@@ -62,7 +62,7 @@ export default function getI18NConfig(): I18NConfiguration {
       apiKey,
       projectId,
       devApiKey,
-      runtimeUrl: null,
+      runtimeUrl: undefined,
       cacheUrl: null,
       loadTranslationType: 'disabled',
     });

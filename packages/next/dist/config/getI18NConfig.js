@@ -60,7 +60,7 @@ function getI18NConfig() {
             throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
         }
         // disable all translation
-        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { locales: [defaultLocale], renderSettings: internal_1.defaultRenderSettings, apiKey: apiKey, projectId: projectId, devApiKey: devApiKey, runtimeUrl: null, cacheUrl: null, loadTranslationType: 'disabled' }));
+        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { locales: [defaultLocale], renderSettings: internal_1.defaultRenderSettings, apiKey: apiKey, projectId: projectId, devApiKey: devApiKey, runtimeUrl: undefined, cacheUrl: null, loadTranslationType: 'disabled' }));
     }
     return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
 }

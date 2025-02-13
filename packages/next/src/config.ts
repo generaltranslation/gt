@@ -215,6 +215,19 @@ export function initGT(props: InitGTProps) {
         ...nextConfig.env,
         _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
       },
+      experimental: {
+        ...nextConfig.experimental,
+        turbo: {
+          ...(nextConfig.experimental?.turbo || {}),
+          resolveAlias: {
+            ...(nextConfig.experimental?.turbo?.resolveAlias || {}),
+            'gt-next/_request': resolvedI18NFilePath || '',
+            'gt-next/_dictionary': resolvedDictionaryFilePath || '',
+            'gt-next/_load-translation': customLoadTranslationPath || '',
+          },
+        },
+      },
+      // Keep existing webpack config for backward compatibility
       webpack: function webpack(
         ...[webpackConfig, options]: Parameters<
           NonNullable<NextConfig['webpack']>

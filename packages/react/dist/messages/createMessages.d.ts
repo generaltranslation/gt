@@ -10,7 +10,7 @@ export declare const createNestedTError: (child: any) => string;
 export declare const renderingError = "General Translation: Rendering error.";
 export declare const dynamicTranslationError = "Error fetching batched translations:";
 export declare const createGenericRuntimeTranslationError: (id: string | undefined, hash: string) => string;
-export declare const dictionaryDisabledError = "gt-react Error:\nYou are trying to use a dictionary, but dictionary has been disabled.\nThis is likely because the server cannot access the dictionary upstream.\nFor example, if you are using gt-next, make sure that you have added the initGT() plugin to your app and that the dictionary exists.\n\nFor more information, visit generaltranslation.com/docs";
+export declare const dictionaryDisabledError: string;
 export declare const projectIdMissingWarning = "gt-react warn: Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.";
 export declare const createLibraryNoEntryWarning: (id: string) => string;
 export declare const createNoEntryWarning: (id: string, prefixedId: string) => string;

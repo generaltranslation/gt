@@ -18,7 +18,7 @@ type I18NConfigurationParams = {
   apiKey?: string;
   devApiKey?: string;
   projectId?: string;
-  runtimeUrl: string | null;
+  runtimeUrl: string | undefined;
   cacheUrl: string | null;
   loadTranslationType: 'remote' | 'custom' | 'disabled';
   cacheExpiryTime?: number;
@@ -67,7 +67,7 @@ export default class I18NConfiguration {
   projectId?: string;
   apiKey?: string;
   devApiKey?: string;
-  runtimeUrl: string | null;
+  runtimeUrl: string | undefined;
   cacheUrl: string | null;
   _versionId?: string;
   // Locale info
