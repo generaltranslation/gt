@@ -1,5 +1,7 @@
 // ---- ERRORS ---- //
 
+import { getLocaleProperties } from 'generaltranslation';
+
 export const projectIdMissingError =
   'gt-react Error: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
 
@@ -74,3 +76,16 @@ export const createMismatchingHashWarning = (
   receivedHash: string
 ) =>
   `Mismatching hashes! Expected hash: ${expectedHash}, but got hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;
+
+export const APIKeyMissingWarn =
+  `gt-react: Warn An Development API key is required for runtime translation!  ` +
+  `Find your Development API key: generaltranslation.com/dashboard.  ` +
+  `(Or, disable this warning message by setting runtimeUrl to an empty string which disables runtime translation.)`;
+
+export const createUnsupportedLocalesWarning = (locales: string[]) =>
+  `gt-react: Warn The following locales are currently unsupported by our service: ${locales
+    .map((locale) => {
+      const { name } = getLocaleProperties(locale);
+      return `${locale} (${name})`;
+    })
+    .join(', ')}`;

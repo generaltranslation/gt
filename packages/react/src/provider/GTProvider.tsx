@@ -23,10 +23,15 @@ import {
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
 import {
+  APIKeyMissingWarn,
+  createUnsupportedLocalesWarning,
   devApiKeyProductionError,
   projectIdMissingWarning,
 } from '../messages/createMessages';
-import { listSupportedLocales } from '@generaltranslation/supported-locales';
+import {
+  getSupportedLocale,
+  listSupportedLocales,
+} from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from './runtime/useRuntimeTranslation';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
 import { hashJsxChildren } from 'generaltranslation/id';
@@ -87,23 +92,11 @@ export default function GTProvider({
   _versionId?: string;
   [key: string]: any;
 }): React.JSX.Element {
-  // ---------- SETUP ---------- //
+  // ---------- SANITIZATION ---------- //
 
-  // validation:
+  // read env
   const { projectId, devApiKey } = getAuth(_projectId, _devApiKey);
-  // validate dev key + env
-  if (process.env.NODE_ENV === 'production' && devApiKey) {
-    // prod + dev key
-    throw new Error(devApiKeyProductionError);
-  }
-  // validate projectId
-  if (
-    !projectId &&
-    (cacheUrl === defaultCacheUrl || runtimeUrl === defaultRuntimeApiUrl) &&
-    process.env.NODE_ENV === 'development'
-  ) {
-    console.warn(projectIdMissingWarning);
-  }
+
   // locale standardization
   locales = useMemo(() => {
     locales.unshift(defaultLocale);
@@ -116,15 +109,61 @@ export default function GTProvider({
     locales,
     locale: _locale,
   });
+
   // set render settings
-  if (
-    renderSettings.timeout === undefined &&
-    defaultRenderSettings.timeout !== undefined
-  ) {
+  if (renderSettings.timeout === undefined) {
     renderSettings.timeout = defaultRenderSettings.timeout;
   }
 
-  // get tx required info
+  // loadTranslation type, only custom and remote for now
+  const loadTranslationType: 'remote' | 'custom' | 'disabled' = useMemo(() => {
+    if (loadTranslation) return 'custom';
+    if (cacheUrl) return 'remote';
+    return 'disabled';
+  }, [loadTranslation]);
+
+  // ---------- CHECKS ---------- //
+
+  // check: projectId missing while using cache/runtime in dev
+  if (
+    (loadTranslationType === 'remote' || runtimeUrl) &&
+    !projectId &&
+    process.env.NODE_ENV === 'development'
+  ) {
+    console.warn(projectIdMissingWarning);
+  }
+
+  // check: no devApiKey in production
+  if (process.env.NODE_ENV === 'production' && devApiKey) {
+    // prod + dev key
+    throw new Error(devApiKeyProductionError);
+  }
+
+  // Check: An API key is required for runtime translation
+  if (
+    projectId && // must have projectId for this check to matter anyways
+    runtimeUrl &&
+    loadTranslationType !== 'custom' && // this usually conincides with not using runtime tx
+    !devApiKey &&
+    process.env.NODE_ENV === 'development'
+  ) {
+    console.warn(APIKeyMissingWarn);
+  }
+
+  // Check: if using GT infrastructure, warn about unsupported locales
+  if (
+    runtimeUrl === defaultRuntimeApiUrl ||
+    (cacheUrl === defaultCacheUrl && loadTranslationType === 'remote')
+  ) {
+    const warningLocales = (locales || locales).filter(
+      (locale) => !getSupportedLocale(locale)
+    );
+    if (warningLocales.length) {
+      console.warn(createUnsupportedLocalesWarning(warningLocales));
+    }
+  }
+
+  // ---------- FLAGS ---------- //
   const [
     translationRequired,
     dialectTranslationRequired,
@@ -150,7 +189,6 @@ export default function GTProvider({
       runtimeTranslationEnabled,
     ];
   }, [defaultLocale, locale, locales]);
-
   // ---------- TRANSLATION STATE ---------- //
   /** Key for translation tracking:
    * Cache Loading            -> translations = null
@@ -197,9 +235,25 @@ export default function GTProvider({
     // fetch translations from cache
     (async () => {
       try {
-        const result = loadTranslation
-          ? await loadTranslation(locale)
-          : await fetchTranslations(cacheUrl, projectId, locale, _versionId);
+        let result;
+        switch (loadTranslationType) {
+          case 'custom':
+            // check is redundant, but makes ts happy
+            if (loadTranslation) result = await loadTranslation(locale);
+            break;
+          case 'remote':
+            // check is redundant, but makes ts happy
+            if (projectId)
+              result = await fetchTranslations(
+                cacheUrl,
+                projectId,
+                locale,
+                _versionId
+              );
+            break;
+          default:
+            result = {};
+        }
 
         const parsedResult = Object.entries(result).reduce(
           (
@@ -225,7 +279,15 @@ export default function GTProvider({
       // cancel fetch if a dep changes
       storeResults = false;
     };
-  }, [translations, translationRequired, cacheUrl, projectId, locale]);
+  }, [
+    translations,
+    translationRequired,
+    cacheUrl,
+    projectId,
+    locale,
+    loadTranslationType,
+    _versionId,
+  ]);
 
   // ----- PERFORM STRING DICTIONARY TRANSLATION ----- //
 
