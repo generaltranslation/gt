@@ -217,15 +217,19 @@ export function initGT(props: InitGTProps) {
       },
       experimental: {
         ...nextConfig.experimental,
-        turbo: {
-          ...(nextConfig.experimental?.turbo || {}),
-          resolveAlias: {
-            ...(nextConfig.experimental?.turbo?.resolveAlias || {}),
-            'gt-next/_request': resolvedI18NFilePath || '',
-            'gt-next/_dictionary': resolvedDictionaryFilePath || '',
-            'gt-next/_load-translation': customLoadTranslationPath || '',
-          },
-        },
+        ...(nextConfig.experimental?.turbo
+          ? {
+              turbo: {
+                ...(nextConfig.experimental.turbo || {}),
+                resolveAlias: {
+                  ...(nextConfig.experimental.turbo.resolveAlias || {}),
+                  'gt-next/_request': resolvedI18NFilePath || '',
+                  'gt-next/_dictionary': resolvedDictionaryFilePath || '',
+                  'gt-next/_load-translation': customLoadTranslationPath || '',
+                },
+              },
+            }
+          : {}),
       },
       // Keep existing webpack config for backward compatibility
       webpack: function webpack(

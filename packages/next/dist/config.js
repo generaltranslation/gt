@@ -178,9 +178,13 @@ function initGT(props) {
     // Store the resolved paths in the environment
     var I18NConfigParams = JSON.stringify(mergedConfig);
     return function (nextConfig) {
-        var _a, _b, _c;
+        var _a;
         if (nextConfig === void 0) { nextConfig = {}; }
-        return __assign(__assign({}, nextConfig), { env: __assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), experimental: __assign(__assign({}, nextConfig.experimental), { turbo: __assign(__assign({}, (((_a = nextConfig.experimental) === null || _a === void 0 ? void 0 : _a.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_c = (_b = nextConfig.experimental) === null || _b === void 0 ? void 0 : _b.turbo) === null || _c === void 0 ? void 0 : _c.resolveAlias) || {})), { 'gt-next/_request': path_1.default.resolve(process.cwd(), resolvedI18NFilePath || ''), 'gt-next/_dictionary': path_1.default.resolve(process.cwd(), resolvedDictionaryFilePath || ''), 'gt-next/_load-translation': path_1.default.resolve(process.cwd(), customLoadTranslationPath || '') }) }) }), 
+        return __assign(__assign({}, nextConfig), { env: __assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), experimental: __assign(__assign({}, nextConfig.experimental), (((_a = nextConfig.experimental) === null || _a === void 0 ? void 0 : _a.turbo)
+                ? {
+                    turbo: __assign(__assign({}, (nextConfig.experimental.turbo || {})), { resolveAlias: __assign(__assign({}, (nextConfig.experimental.turbo.resolveAlias || {})), { 'gt-next/_request': resolvedI18NFilePath || '', 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translation': customLoadTranslationPath || '' }) }),
+                }
+                : {})), 
             // Keep existing webpack config for backward compatibility
             webpack: function webpack() {
                 var _a = [];
