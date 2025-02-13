@@ -1,6 +1,6 @@
 # gt-react + Vite Create App Example
 
-This is an example of how to use gt-react with Vite Create App.
+This is an example of how to use gt-react with Vite Create App. See it live [here](https://example-vite-create-app.vercel.app/).
 
 ## Deploy to Vercel
 
