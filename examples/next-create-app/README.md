@@ -1,6 +1,6 @@
 # gt-next + Create Next.js App Example
 
-This is an example of how to use gt-next with Create Next.js App. See it live [here](https://gt-next-create-next-app.vercel.app/).
+This is an example of how to use gt-next with Create Next.js App. See it live [here](https://next-create-app-eight.vercel.app/).
 
 ## Deploy to Vercel
 
