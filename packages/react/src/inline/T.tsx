@@ -70,9 +70,9 @@ function T({
     translateChildren,
     renderSettings,
     locale,
+    defaultLocale,
   } = useGTContext(`<T> used on the client-side outside of <GTProvider>`);
 
-  const defaultLocale = useDefaultLocale();
   const taggedChildren = useMemo(() => addGTIdentifier(children), [children]);
 
   // ----- FETCH TRANSLATION ----- //
@@ -94,9 +94,10 @@ function T({
   }, [context, taggedChildren, translationRequired, children]);
 
   // get tx entry
-  const translationEntry = translations?.[hash] || translations?.[id || ''];
+  const translationEntry = translations?.[hash];
+  // || translations?.[id || ''];
 
-  // Do translation if required
+  // Do dev translation if required
   useEffect(() => {
     // skip if:
     if (

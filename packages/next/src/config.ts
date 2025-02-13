@@ -1,8 +1,8 @@
 import path from 'path';
 import fs from 'fs';
 import { NextConfig } from 'next';
-import defaultInitGTProps from './config/props/defaultInitGTProps';
-import InitGTProps from './config/props/InitGTProps';
+import defaultInitGTProps from './config-dir/props/defaultInitGTProps';
+import InitGTProps from './config-dir/props/InitGTProps';
 import {
   APIKeyMissingWarn,
   createMissingCustomTranslationLoadedError,
@@ -217,12 +217,13 @@ export function initGT(props: InitGTProps) {
       },
       experimental: {
         ...nextConfig.experimental,
-        ...(nextConfig.experimental?.turbo
+        // Only include turbo config if Turbopack is enabled or already configured
+        ...(process.env.TURBOPACK === '1' || nextConfig.experimental?.turbo
           ? {
               turbo: {
-                ...(nextConfig.experimental.turbo || {}),
+                ...(nextConfig.experimental?.turbo || {}),
                 resolveAlias: {
-                  ...(nextConfig.experimental.turbo.resolveAlias || {}),
+                  ...(nextConfig.experimental?.turbo?.resolveAlias || {}),
                   'gt-next/_request': resolvedI18NFilePath || '',
                   'gt-next/_dictionary': resolvedDictionaryFilePath || '',
                   'gt-next/_load-translation': customLoadTranslationPath || '',
@@ -237,21 +238,27 @@ export function initGT(props: InitGTProps) {
           NonNullable<NextConfig['webpack']>
         >
       ) {
-        if (resolvedI18NFilePath) {
-          webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
-            webpackConfig.context,
-            resolvedI18NFilePath
-          );
-        }
-        if (resolvedDictionaryFilePath) {
-          webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
-            webpackConfig.context,
-            resolvedDictionaryFilePath
-          );
-        }
-        if (customLoadTranslationPath) {
-          webpackConfig.resolve.alias[`gt-next/_load-translation`] =
-            path.resolve(webpackConfig.context, customLoadTranslationPath);
+        // Only apply webpack aliases if we're using webpack (not Turbopack)
+        const isTurbopack =
+          (options as any)?.turbo || process.env.TURBOPACK === '1';
+
+        if (!isTurbopack) {
+          if (resolvedI18NFilePath) {
+            webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
+              webpackConfig.context,
+              resolvedI18NFilePath
+            );
+          }
+          if (resolvedDictionaryFilePath) {
+            webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
+              webpackConfig.context,
+              resolvedDictionaryFilePath
+            );
+          }
+          if (customLoadTranslationPath) {
+            webpackConfig.resolve.alias[`gt-next/_load-translation`] =
+              path.resolve(webpackConfig.context, customLoadTranslationPath);
+          }
         }
         if (typeof nextConfig?.webpack === 'function') {
           return nextConfig.webpack(webpackConfig, options);

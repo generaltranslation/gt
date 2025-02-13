@@ -10,7 +10,7 @@ import {
   TranslationError,
 } from 'gt-react/internal';
 import { ReactNode } from 'react';
-import getI18NConfig from '../config/getI18NConfig';
+import getI18NConfig from '../config-dir/getI18NConfig';
 import getLocale from '../request/getLocale';
 import getMetadata from '../request/getMetadata';
 import { isSameLanguage, splitStringToContent } from 'generaltranslation';

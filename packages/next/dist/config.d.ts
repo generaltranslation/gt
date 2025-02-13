@@ -1,4 +1,4 @@
-import InitGTProps from './config/props/InitGTProps';
+import InitGTProps from './config-dir/props/InitGTProps';
 /**
  * Initializes General Translation settings for a Next.js application.
  *

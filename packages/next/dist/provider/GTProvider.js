@@ -86,7 +86,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = GTProvider;
 var jsx_runtime_1 = require("react/jsx-runtime");
 var internal_1 = require("gt-react/internal");
-var getI18NConfig_1 = __importDefault(require("../config/getI18NConfig"));
+var getI18NConfig_1 = __importDefault(require("../config-dir/getI18NConfig"));
 var getLocale_1 = __importDefault(require("../request/getLocale"));
 var getMetadata_1 = __importDefault(require("../request/getMetadata"));
 var generaltranslation_1 = require("generaltranslation");
