@@ -97,8 +97,9 @@ export type TranslateChildrenCallback = (params: {
 }) => Promise<void>;
 export type GTContextType = {
     translateDictionaryEntry: (id: string, options?: Record<string, any>) => React.ReactNode;
-    translateContent: TranslateContentCallback;
-    translateChildren: TranslateChildrenCallback;
+    registerContentForTranslation: TranslateContentCallback;
+    registerJsxForTranslation: TranslateChildrenCallback;
+    developmentTranslationEnabled: boolean;
     locale: string;
     locales: string[];
     setLocale: (locale: string) => void;
@@ -111,8 +112,6 @@ export type GTContextType = {
         timeout?: number;
     };
     projectId?: string;
-    translationEnabled: boolean;
-    runtimeTranslationEnabled: boolean;
 };
 export declare class GTTranslationError extends Error {
     error: string;
@@ -137,8 +136,7 @@ export type ClientProviderProps = {
         method: RenderMethod;
         timeout?: number;
     };
-    translationEnabled: boolean;
-    runtimeTranslationEnabled: boolean;
+    developmentTranslationEnabled: boolean;
     projectId?: string;
     devApiKey?: string;
     runtimeUrl?: string | null;

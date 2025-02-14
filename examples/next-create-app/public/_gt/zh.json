@@ -1,5 +1,62 @@
 {
-  "app.page.0": {
+  "208e5f142bafc5c53e7dd711ad1e8807755c2509402fb3db6b9306a778c7ceed": {
+    "type": "div",
+    "props": {
+      "children": [
+        "生存还是",
+        {
+          "type": "b",
+          "props": {
+            "children": "不",
+            "data-_gt": {
+              "id": 2
+            }
+          }
+        },
+        "生存！"
+      ],
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  },
+  "959ea53222f5f63574d400c12033cb4f00f274477f68fb69cf1642c2ea78c0fa": [
+    {
+      "type": "div",
+      "props": {
+        "children": [
+          "你好 ",
+          {
+            "id": 2,
+            "key": "_gt_value_2",
+            "variable": "variable"
+          },
+          " "
+        ],
+        "data-_gt": {
+          "id": 1
+        }
+      }
+    },
+    {
+      "id": 3,
+      "key": "_gt_value_3",
+      "variable": "variable"
+    },
+    {
+      "id": 4,
+      "key": "_gt_value_4",
+      "variable": "variable"
+    }
+  ],
+  "af0985d458efdf9c8b209031b2b2ca5da7cf508b5d75fac70396c2c0974b8542": [
+    "你好，",
+    {
+      "key": "name"
+    },
+    "！"
+  ],
+  "fb3ec24460ce1826d5f410f0810dca47281424656014882a85ec6b98dd22ed3a": {
     "type": "div",
     "props": {
       "children": [
@@ -16,6 +73,16 @@
                 }
               },
               {
+                "id": 4,
+                "key": "_gt_value_4",
+                "variable": "variable"
+              },
+              {
+                "id": 5,
+                "key": "_gt_value_5",
+                "variable": "variable"
+              },
+              {
                 "type": "ol",
                 "props": {
                   "children": [
@@ -23,20 +90,20 @@
                       "type": "li",
                       "props": {
                         "children": [
-                          "从编辑 ",
+                          "通过编辑 ",
                           {
                             "type": "code",
                             "props": {
                               "children": "src/app/page.tsx",
                               "data-_gt": {
-                                "id": 6
+                                "id": 8
                               }
                             }
                           },
                           " 开始。"
                         ],
                         "data-_gt": {
-                          "id": 5
+                          "id": 7
                         }
                       }
                     },
@@ -45,13 +112,13 @@
                       "props": {
                         "children": "保存后即可实时查看更改。",
                         "data-_gt": {
-                          "id": 7
+                          "id": 9
                         }
                       }
                     }
                   ],
                   "data-_gt": {
-                    "id": 4
+                    "id": 6
                   }
                 }
               },
@@ -67,14 +134,14 @@
                             "type": "Image",
                             "props": {
                               "data-_gt": {
-                                "id": 10
+                                "id": 12
                               }
                             }
                           },
                           "立即部署"
                         ],
                         "data-_gt": {
-                          "id": 9
+                          "id": 11
                         }
                       }
                     },
@@ -83,13 +150,13 @@
                       "props": {
                         "children": "阅读文档",
                         "data-_gt": {
-                          "id": 11
+                          "id": 13
                         }
                       }
                     }
                   ],
                   "data-_gt": {
-                    "id": 8
+                    "id": 10
                   }
                 }
               }
@@ -111,30 +178,11 @@
                       "type": "Image",
                       "props": {
                         "data-_gt": {
-                          "id": 14
-                        }
-                      }
-                    },
-                    "学习"
-                  ],
-                  "data-_gt": {
-                    "id": 13
-                  }
-                }
-              },
-              {
-                "type": "a",
-                "props": {
-                  "children": [
-                    {
-                      "type": "Image",
-                      "props": {
-                        "data-_gt": {
                           "id": 16
                         }
                       }
                     },
-                    "示例"
+                    "学习"
                   ],
                   "data-_gt": {
                     "id": 15
@@ -153,16 +201,35 @@
                         }
                       }
                     },
-                    "访问 nextjs.org →"
+                    "示例"
                   ],
                   "data-_gt": {
                     "id": 17
                   }
                 }
+              },
+              {
+                "type": "a",
+                "props": {
+                  "children": [
+                    {
+                      "type": "Image",
+                      "props": {
+                        "data-_gt": {
+                          "id": 20
+                        }
+                      }
+                    },
+                    "前往 nextjs.org →"
+                  ],
+                  "data-_gt": {
+                    "id": 19
+                  }
+                }
               }
             ],
             "data-_gt": {
-              "id": 12
+              "id": 14
             }
           }
         }

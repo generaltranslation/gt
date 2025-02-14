@@ -1,8 +1,8 @@
 import path from 'path';
 import fs from 'fs';
 import { NextConfig } from 'next';
-import defaultInitGTProps from './config/props/defaultInitGTProps';
-import InitGTProps from './config/props/InitGTProps';
+import defaultInitGTProps from './config-dir/props/defaultInitGTProps';
+import InitGTProps from './config-dir/props/InitGTProps';
 import {
   APIKeyMissingWarn,
   createMissingCustomTranslationLoadedError,
@@ -123,9 +123,9 @@ export function initGT(props: InitGTProps) {
       : resolveConfigFilepath('dictionary');
 
   // Resolve custom translation loader path
-  const customTranslationLoaderPath =
-    typeof mergedConfig.translationLoaderPath === 'string'
-      ? mergedConfig.translationLoaderPath
+  const customLoadTranslationPath =
+    typeof mergedConfig.loadTranslationPath === 'string'
+      ? mergedConfig.loadTranslationPath
       : resolveConfigFilepath('loadTranslation');
 
   // Resolve local translations directory
@@ -149,28 +149,27 @@ export function initGT(props: InitGTProps) {
   // When there are local translations, force custom translation loader
   // for now, we can just check if that file exists, and then assume the existance of the loaders
   if (
-    customTranslationLoaderPath &&
-    fs.existsSync(path.resolve(customTranslationLoaderPath))
+    customLoadTranslationPath &&
+    fs.existsSync(path.resolve(customLoadTranslationPath))
   ) {
-    mergedConfig.translationLoaderType = 'custom';
+    mergedConfig.loadTranslationType = 'custom';
   }
 
   // ---------- ERROR CHECKS ---------- //
 
   // Check: local translations are enabled, but no custom translation loader is found
-  if (localLocales.length && mergedConfig.translationLoaderType !== 'custom') {
+  if (localLocales.length && mergedConfig.loadTranslationType !== 'custom') {
     throw new Error(
-      createMissingCustomTranslationLoadedError(customTranslationLoaderPath)
+      createMissingCustomTranslationLoadedError(customLoadTranslationPath)
     );
   }
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
   if (
-    ((mergedConfig.cacheUrl &&
-      mergedConfig.translationLoaderType === 'remote') ||
-      mergedConfig.runtimeUrl) &&
+    (mergedConfig.cacheUrl || mergedConfig.runtimeUrl) &&
     !mergedConfig.projectId &&
-    process.env.NODE_ENV === 'development'
+    process.env.NODE_ENV === 'development' &&
+    mergedConfig.loadTranslationType !== 'custom'
   ) {
     console.warn(projectIdMissingWarn);
   }
@@ -184,6 +183,7 @@ export function initGT(props: InitGTProps) {
   if (
     mergedConfig.projectId && // must have projectId for this check to matter anyways
     mergedConfig.runtimeUrl &&
+    mergedConfig.loadTranslationType !== 'custom' && // this usually conincides with not using runtime tx
     !(mergedConfig.apiKey || mergedConfig.devApiKey) &&
     process.env.NODE_ENV === 'development'
   ) {
@@ -194,7 +194,7 @@ export function initGT(props: InitGTProps) {
   if (
     mergedConfig.runtimeUrl === defaultInitGTProps.runtimeUrl ||
     (mergedConfig.cacheUrl === defaultInitGTProps.cacheUrl &&
-      mergedConfig.translationLoaderType === 'remote')
+      mergedConfig.loadTranslationType === 'remote')
   ) {
     const warningLocales = (
       mergedConfig.locales || defaultInitGTProps.locales
@@ -205,7 +205,6 @@ export function initGT(props: InitGTProps) {
   }
 
   // ---------- STORE CONFIGURATIONS ---------- //
-
   // Store the resolved paths in the environment
   const I18NConfigParams = JSON.stringify(mergedConfig);
   return (nextConfig: any = {}): any => {
@@ -215,26 +214,50 @@ export function initGT(props: InitGTProps) {
         ...nextConfig.env,
         _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
       },
+      experimental: {
+        ...nextConfig.experimental,
+        // Only include turbo config if Turbopack is enabled or already configured
+        ...(process.env.TURBOPACK === '1' || nextConfig.experimental?.turbo
+          ? {
+              turbo: {
+                ...(nextConfig.experimental?.turbo || {}),
+                resolveAlias: {
+                  ...(nextConfig.experimental?.turbo?.resolveAlias || {}),
+                  'gt-next/_request': resolvedI18NFilePath || '',
+                  'gt-next/_dictionary': resolvedDictionaryFilePath || '',
+                  'gt-next/_load-translation': customLoadTranslationPath || '',
+                },
+              },
+            }
+          : {}),
+      },
+      // Keep existing webpack config for backward compatibility
       webpack: function webpack(
         ...[webpackConfig, options]: Parameters<
           NonNullable<NextConfig['webpack']>
         >
       ) {
-        if (resolvedI18NFilePath) {
-          webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
-            webpackConfig.context,
-            resolvedI18NFilePath
-          );
-        }
-        if (resolvedDictionaryFilePath) {
-          webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
-            webpackConfig.context,
-            resolvedDictionaryFilePath
-          );
-        }
-        if (customTranslationLoaderPath) {
-          webpackConfig.resolve.alias[`gt-next/_translationLoader`] =
-            path.resolve(webpackConfig.context, customTranslationLoaderPath);
+        // Only apply webpack aliases if we're using webpack (not Turbopack)
+        const isTurbopack =
+          (options as any)?.turbo || process.env.TURBOPACK === '1';
+
+        if (!isTurbopack) {
+          if (resolvedI18NFilePath) {
+            webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
+              webpackConfig.context,
+              resolvedI18NFilePath
+            );
+          }
+          if (resolvedDictionaryFilePath) {
+            webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
+              webpackConfig.context,
+              resolvedDictionaryFilePath
+            );
+          }
+          if (customLoadTranslationPath) {
+            webpackConfig.resolve.alias[`gt-next/_load-translation`] =
+              path.resolve(webpackConfig.context, customLoadTranslationPath);
+          }
         }
         if (typeof nextConfig?.webpack === 'function') {
           return nextConfig.webpack(webpackConfig, options);

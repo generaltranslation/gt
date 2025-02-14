@@ -11,15 +11,12 @@ export declare function hashString(string: string): string;
  *
  * @param {any} childrenAsObjects - The children objects to be hashed.
  * @param {string} context - The context for the children
+ * @param {string} id - The id for the JSX Children object
  * @param {function} hashFunction custom hash function
  * @returns {string} - The unique has of the children.
  */
-export declare function hashJsxChildren({
-  source,
-  context,
-  hashFunction,
-}: {
-  source: JsxChildren;
-  context?: string;
-  hashFunction?: (string: string) => string;
-}): string;
+export declare function hashJsxChildren({ source, context, id, }: {
+    source: JsxChildren;
+    context?: string;
+    id?: string;
+}, hashFunction?: (string: string) => string): string;

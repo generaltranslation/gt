@@ -1,6 +1,6 @@
 {
   "name": "gt-react-cli",
-  "version": "2.1.14-alpha.2",
+  "version": "2.2.0",
   "main": "dist/index.js",
   "bin": {
     "gt-react-cli": "dist/main.js"
@@ -30,7 +30,7 @@
     "url": "git+https://github.com/General-Translation/gt-libraries.git"
   },
   "peerDependencies": {
-    "gt-react": "^9.0.10-alpha.0",
+    "gt-react": "^9.1.0",
     "react": ">=16.8.0 <20.0.0",
     "react-dom": ">=16.8.0 <20.0.0"
   },
@@ -52,7 +52,7 @@
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
-    "generaltranslation": "^6.1.10",
+    "generaltranslation": "^6.2.0",
     "ora": "^8.2.0"
   },
   "devDependencies": {
@@ -65,7 +65,7 @@
     "@types/react": "^18.3.4",
     "eslint": "^9.20.0",
     "esm": "^3.2.25",
-    "gt-react": "^9.0.10-alpha.0",
+    "gt-react": "^9.1.0",
     "prettier": "^3.4.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4"

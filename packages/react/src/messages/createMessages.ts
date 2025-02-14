@@ -1,5 +1,7 @@
 // ---- ERRORS ---- //
 
+import { getLocaleProperties } from 'generaltranslation';
+
 export const projectIdMissingError =
   'gt-react Error: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
 
@@ -45,17 +47,16 @@ export const createGenericRuntimeTranslationError = (
   }
 };
 
-export const dictionaryDisabledError = `gt-react Error:
-You are trying to use a dictionary, but dictionary has been disabled.
-This is likely because the server cannot access the dictionary upstream.
-For example, if you are using gt-next, make sure that you have added the initGT() plugin to your app and that the dictionary exists.
-
-For more information, visit generaltranslation.com/docs`;
+export const dictionaryDisabledError =
+  `gt-react Error: ` +
+  `You are trying to use a dictionary, but dictionary has been disabled. ` +
+  `This is likely because the server cannot access the dictionary upstream. ` +
+  `For example, if you are using gt-next, make sure that you have added the initGT() plugin to your app and that the dictionary exists.`;
 
 // ---- WARNINGS ---- //
 
 export const projectIdMissingWarning =
-  'gt-react warn: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
+  'gt-react warn: Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
 
 export const createLibraryNoEntryWarning = (id: string) =>
   `gt-react: No dictionary entry found for id: "${id}"`;
@@ -74,3 +75,16 @@ export const createMismatchingHashWarning = (
   receivedHash: string
 ) =>
   `Mismatching hashes! Expected hash: ${expectedHash}, but got hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;
+
+export const APIKeyMissingWarn =
+  `gt-react: An Development API key is required for runtime translation!  ` +
+  `Find your Development API key: generaltranslation.com/dashboard.  ` +
+  `(Or, disable this warning message by setting runtimeUrl to an empty string which disables runtime translation.)`;
+
+export const createUnsupportedLocalesWarning = (locales: string[]) =>
+  `gt-react: The following locales are currently unsupported by our service: ${locales
+    .map((locale) => {
+      const { name } = getLocaleProperties(locale);
+      return `${locale} (${name})`;
+    })
+    .join(', ')}`;

@@ -23,8 +23,6 @@ import {
 } from './formatting/string_content';
 import {
   Content,
-  Update,
-  Request,
   JsxChildren,
   JsxTranslationResult,
   ContentTranslationResult,

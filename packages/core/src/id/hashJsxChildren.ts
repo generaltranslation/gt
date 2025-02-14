@@ -20,20 +20,25 @@ export function hashString(string: string): string {
  *
  * @param {any} childrenAsObjects - The children objects to be hashed.
  * @param {string} context - The context for the children
+ * @param {string} id - The id for the JSX Children object
  * @param {function} hashFunction custom hash function
  * @returns {string} - The unique has of the children.
  */
-export function hashJsxChildren({
-  source,
-  context,
-  hashFunction = hashString,
-}: {
-  source: JsxChildren;
-  context?: string;
-  hashFunction?: (string: string) => string;
-}): string {
+export function hashJsxChildren(
+  {
+    source,
+    context,
+    id,
+  }: {
+    source: JsxChildren;
+    context?: string;
+    id?: string;
+  },
+  hashFunction: (string: string) => string = hashString
+): string {
   const unhashedKey = stringify({
     source: sanitizeJsxChildren(source),
+    ...(id && { id }),
     ...(context && { context }),
   });
   return hashFunction(unhashedKey);

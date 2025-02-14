@@ -1,5 +1,5 @@
 import { formatDateTime } from 'generaltranslation';
-import getI18NConfig from '../config/getI18NConfig';
+import getI18NConfig from '../config-dir/getI18NConfig';
 
 /**
  * The `<DateTime>` component renders a formatted date or time string, allowing customization of the name, default value, and formatting options.
@@ -35,10 +35,7 @@ function DateTime({
   locales?: string[];
   'data-_gt'?: any;
 }): React.JSX.Element {
-  // Extract general translation data from props
   const { 'data-_gt': generaltranslation } = props;
-
-  // Determine the default value to use
   if (typeof children !== 'undefined' && typeof value === 'undefined') {
     value = children;
   }
