@@ -15,7 +15,7 @@ import {
 } from '../types/types';
 import getDictionaryEntry from './helpers/getDictionaryEntry';
 import { flattenDictionary, isEmptyReactFragment } from '../internal';
-import extractEntryMetadata from './helpers/extractEntryMetadata';
+import getEntryAndMetadata from './helpers/getEntryAndMetadata';
 import {
   Content,
   defaultCacheUrl,
@@ -35,9 +35,9 @@ import { hashJsxChildren } from 'generaltranslation/id';
 import React from 'react';
 import T from '../inline/T';
 import useDetermineLocale from '../hooks/useDetermineLocale';
-import { getAuth } from '../utils/utils';
+import { readAuthFromEnv } from '../utils/utils';
 import fetchTranslations from '../utils/fetchTranslations';
-import getKey from '../utils/getKey';
+
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -47,7 +47,7 @@ import getKey from '../utils/getKey';
  * @param {string[]} [locales] - The list of approved locales for the project.
  * @param {string} [defaultLocale=libraryDefaultLocale] - The default locale to use if no other locale is found.
  * @param {string} [locale] - The current locale, if already set.
- * @param {string} [cacheUrl='https://cache.gtx.dev'] - The URL of the cache service for fetching translations.
+ * @param {string} [cacheUrl='https://cdn.gtx.dev'] - The URL of the cache service for fetching translations.
  * @param {string} [runtimeUrl='https://runtime.gtx.dev'] - The URL of the runtime service for fetching translations.
  * @param {RenderSettings} [renderSettings=defaultRenderSettings] - The settings for rendering translations.
  * @param {string} [_versionId] - The version ID for fetching translations.
@@ -55,8 +55,7 @@ import getKey from '../utils/getKey';
  * @param {object} [metadata] - Additional metadata to pass to the context.
  *
  * @returns {JSX.Element} The provider component for General Translation context.
- */
-
+*/
 export default function GTProvider({
   children,
   projectId: _projectId = '',
@@ -85,15 +84,15 @@ export default function GTProvider({
     method: RenderMethod;
     timeout?: number;
   };
-  enableCache?: boolean;
   loadTranslation?: (locale: string) => Promise<any>;
   _versionId?: string;
   [key: string]: any;
 }): React.JSX.Element {
+  
   // ---------- SANITIZATION ---------- //
 
   // read env
-  const { projectId, devApiKey } = getAuth(_projectId, _devApiKey);
+  const { projectId, devApiKey } = readAuthFromEnv(_projectId, _devApiKey);
 
   // locale standardization
   locales = useMemo(() => {
@@ -108,131 +107,139 @@ export default function GTProvider({
     locale: _locale,
   });
 
-  // set render settings
-  if (renderSettings.timeout === undefined) {
-    renderSettings.timeout = defaultRenderSettings.timeout;
-  }
+  // loadTranslation type, only custom and default for now
+  const loadTranslationType: 'default' | 'custom' | 'disabled' = (
+    (loadTranslation && "custom")
+    || (cacheUrl && "default")
+    || "disabled"
+  );
 
-  // loadTranslation type, only custom and remote for now
-  const loadTranslationType: 'remote' | 'custom' | 'disabled' = useMemo(() => {
-    if (loadTranslation) return 'custom';
-    if (cacheUrl) return 'remote';
-    return 'disabled';
-  }, [loadTranslation]);
+  // ---------- MEMOIZED CHECKS ---------- //
 
-  // ---------- CHECKS ---------- //
-
-  // check: projectId missing while using cache/runtime in dev
-  if (
-    loadTranslationType !== 'custom' &&
-    (cacheUrl || runtimeUrl) &&
-    !projectId &&
-    process.env.NODE_ENV === 'development'
-  ) {
-    console.warn(projectIdMissingWarning);
-  }
-
-  // check: no devApiKey in production
-  if (process.env.NODE_ENV === 'production' && devApiKey) {
-    // prod + dev key
-    throw new Error(devApiKeyProductionError);
-  }
-
-  // Check: An API key is required for runtime translation
-  if (
-    projectId && // must have projectId for this check to matter anyways
-    runtimeUrl &&
-    loadTranslationType !== 'custom' && // this usually conincides with not using runtime tx
-    !devApiKey &&
-    process.env.NODE_ENV === 'development'
-  ) {
-    console.warn(APIKeyMissingWarn);
-  }
-
-  // Check: if using GT infrastructure, warn about unsupported locales
-  if (
-    runtimeUrl === defaultRuntimeApiUrl ||
-    (cacheUrl === defaultCacheUrl && loadTranslationType === 'remote')
-  ) {
-    const warningLocales = (locales || locales).filter(
-      (locale) => !getSupportedLocale(locale)
-    );
-    if (warningLocales.length) {
-      console.warn(createUnsupportedLocalesWarning(warningLocales));
+  useMemo(() => {
+    // check: no devApiKey in production
+    if (process.env.NODE_ENV === 'production' && devApiKey) {
+      // prod + dev key
+      throw new Error(devApiKeyProductionError);
     }
-  }
+
+    // check: projectId missing while using cache/runtime in dev
+    if (
+      loadTranslationType !== 'custom' &&
+      (cacheUrl || runtimeUrl) &&
+      !projectId &&
+      process.env.NODE_ENV === 'development'
+    ) {
+      console.warn(projectIdMissingWarning);
+    }
+
+     // Check: An API key is required for runtime translation
+    if (
+      projectId && // must have projectId for this check to matter anyways
+      runtimeUrl &&
+      loadTranslationType !== 'custom' && // this usually conincides with not using runtime tx
+      !devApiKey &&
+      process.env.NODE_ENV === 'development'
+    ) {
+      console.warn(APIKeyMissingWarn);
+    }
+
+    // Check: if using GT infrastructure, warn about unsupported locales
+    if (
+      runtimeUrl === defaultRuntimeApiUrl ||
+      (cacheUrl === defaultCacheUrl && loadTranslationType === 'default')
+    ) {
+      const warningLocales = (locales || locales).filter(
+        (locale) => !getSupportedLocale(locale)
+      );
+      if (warningLocales.length) {
+        console.warn(createUnsupportedLocalesWarning(warningLocales));
+      }
+    }
+  }, [
+    // THESE TYPES ALMOST NEVER CHANGE
+    process.env.NODE_ENV,
+    devApiKey,
+    loadTranslationType,
+    cacheUrl, runtimeUrl,
+    projectId,
+    locales
+  ]);
 
   // ---------- FLAGS ---------- //
+
   const [
-    translationRequired,
-    dialectTranslationRequired,
-    translationEnabled,
-    runtimeTranslationEnabled,
+    translationRequired, dialectTranslationRequired
   ] = useMemo(() => {
+    
+    // TRANSLATION REQUIRED
+
+    // User locale is not default locale or equivalent
+    const translationRequired = requiresTranslation(
+      defaultLocale, locale, locales
+    );
+
+    // User locale is not default locale but is a dialect of the same language
+    const dialectTranslationRequired = translationRequired && isSameLanguage(defaultLocale, locale);
+
+    /*
+    // TRANSLATION ENABLED
+
+    // Translation at runtime during development is enabled
     const runtimeTranslationEnabled = !!(projectId && runtimeUrl && devApiKey);
+
+    // Translation is enabled at all
     const translationEnabled = !!(
       loadTranslationType === 'custom' ||
-      (projectId && loadTranslationType === 'remote') ||
+      (projectId && cacheUrl && loadTranslationType === 'default') ||
       runtimeTranslationEnabled
-    );
-    const translationRequired = requiresTranslation(
-      defaultLocale,
-      locale,
-      locales
-    );
-    const dialectTranslationRequired =
-      translationRequired && isSameLanguage(defaultLocale, locale);
+    );*/
+
     return [
-      translationRequired,
-      dialectTranslationRequired,
-      translationEnabled,
-      runtimeTranslationEnabled,
+      translationRequired, dialectTranslationRequired
     ];
+    
   }, [defaultLocale, locale, locales]);
+
+  // Translation at runtime during development is enabled
+  const developmentTranslationEnabled = !!(projectId && runtimeUrl && devApiKey);
+
   // ---------- TRANSLATION STATE ---------- //
+  
   /** Key for translation tracking:
    * Cache Loading            -> translations = null
    * Cache Fail (for locale)  -> translations = {}
-   * Cache Fail (for id)      -> translations[id] = undefined
    * Cache Fail (for hash)    -> translations[hash] = undefined
    *
-   * API Loading              -> translations[key] = TranslationLoading
-   * API Fail (for batch)     -> translations[key] = TranslationError
-   * API Fail (for hash)      -> translations[key] = TranslationError
+   * API Loading              -> translations[hash] = TranslationLoading
+   * API Fail (for batch)     -> translations[hash] = TranslationError
+   * API Fail (for hash)      -> translations[hash] = TranslationError
    *
-   * Success (Cache/API)      -> translations[key] = TranslationSuccess
+   * Success (Cache/API)      -> translations[hash] = TranslationSuccess
    *
    * Possible scenarios:
    * Cache Loading -> Success
    * Cache Loading -> Cache Fail -> API Loading -> Success
    * Cache Loading -> Cache Fail -> API Loading -> API Fail
    */
+
   const [translations, setTranslations] = useState<TranslationsObject | null>(
-    cacheUrl && translationRequired ? null : {}
+    translationRequired ? null : {}
   );
-
   // Reset translations if locale changes (null to trigger a new cache fetch)
-  useEffect(
-    () => setTranslations(cacheUrl && translationRequired ? null : {}),
-    [locale]
-  );
+  useEffect(() => setTranslations(translationRequired ? null : {}), [locale]);
 
-  // ----- CHECK CACHE FOR TX ----- //
+  // ----- ATTEMPT TO LOAD TRANSLATIONS ----- //
 
   useEffect(() => {
-    // check if cache fetch is necessary
+    // Early return if no need to translate
     if (
       translations ||
-      !translationRequired ||
-      !translationEnabled ||
-      !cacheUrl
-    )
-      return;
+      !translationRequired
+    ) return;
 
-    // flag for storing fetch from cache
+    // Fetch translations
     let storeResults = true;
-
-    // fetch translations from cache
     (async () => {
       try {
         let result;
@@ -241,15 +248,13 @@ export default function GTProvider({
             // check is redundant, but makes ts happy
             if (loadTranslation) result = await loadTranslation(locale);
             break;
-          case 'remote':
-            // check is redundant, but makes ts happy
-            if (projectId)
-              result = await fetchTranslations(
-                cacheUrl,
-                projectId,
-                locale,
-                _versionId
-              );
+          case 'default':
+            result = await fetchTranslations({
+              cacheUrl,
+              projectId,
+              locale,
+              versionId: _versionId
+            });
             break;
           default:
             result = {};
@@ -271,7 +276,7 @@ export default function GTProvider({
       } catch (error) {
         console.error(error);
         if (storeResults) {
-          setTranslations({}); // not classified as a tx error, bc we can still fetch from API
+          setTranslations({}); // not classified as a translation error, because we can still fetch from API
         }
       }
     })();
@@ -281,106 +286,61 @@ export default function GTProvider({
       storeResults = false;
     };
   }, [
-    translations,
-    translationRequired,
-    cacheUrl,
-    projectId,
-    locale,
+    translations, translationRequired,
     loadTranslationType,
-    _versionId,
+    cacheUrl, projectId, locale, _versionId
   ]);
 
-  // ----- PERFORM STRING DICTIONARY TRANSLATION ----- //
-
-  // Step 0: Flatten dictionaries for processing while waiting for translations
-  const flattenedDictionary = useMemo(
-    () => flattenDictionary(dictionary),
-    [dictionary]
-  );
-
-  // Step 1: Get strings from dictionary and get them ready for translation (should run once)
-  const dictionaryContentEntries = useMemo(() => {
-    // filter out any non-string entries
-    return Object.entries(flattenedDictionary)
-      .filter(([id, entryWithMetadata]) => {
-        // filter out any non-string entries
-        const { entry } = extractEntryMetadata(entryWithMetadata);
-        if (typeof entry === 'string') {
-          // show warning for empty strings
-          if (!entry.length) {
-            console.warn(
-              `gt-react warn: Empty string found in dictionary with id: ${id}`
-            );
-            return false;
-          }
-          return true;
+  // ----- TRANSLATE STRINGS IN THE DICTIONARY (MUST DELAY PAGE LOAD UNTIL COMPLETE) ----- //
+  
+  const [
+    // Flatten dictionaries for processing
+    flattenedDictionary, 
+    // Get any string entries which might need to be translateds
+    // because we need to delay page load if so
+    flattenedDictionaryContentEntries 
+  ] = useMemo(() => {
+    const flattenedDictionary = flattenDictionary(dictionary);
+    const flattenedDictionaryContentEntries: Record<string, { hash: string; source: Content; metadata?: Record<string, any> }> = {};
+    for (const [id, entryWithMetadata] of Object.entries(flattenedDictionary)) {
+      const { entry, metadata } = getEntryAndMetadata(entryWithMetadata);
+      if (typeof entry === 'string') {
+        // Continue if entry is an empty string
+        if (!entry.length) {
+          console.warn(
+            `gt-react warn: Empty string found in dictionary with id: ${id}`
+          );
+          continue;
         }
-        return false;
-      })
-      .reduce(
-        (
-          acc: Record<string, { hash: string; source: Content; key: string }>,
-          [id, entryWithMetadata]
-        ) => {
-          // Prep entries for translation
-          const { entry, metadata } = extractEntryMetadata(entryWithMetadata);
-          const context = metadata?.context;
-          const source = splitStringToContent(entry as string);
-          const hash = hashJsxChildren({ source, ...(context && { context }) });
-          const key = getKey(hash, id);
-          acc[id] = { source, hash, key };
-          return acc;
-        },
-        {} as Record<string, { hash: string; source: Content; key: string }>
-      );
-  }, [flattenedDictionary]);
+        const context = metadata?.context;
+        const source = splitStringToContent(entry as string);
+        const hash = hashJsxChildren({ source, ...(context && { context }), id });
+        flattenedDictionaryContentEntries[id] = { source, hash, metadata }
+      }
+    }
+    return [
+      flattenedDictionary,
+      flattenedDictionaryContentEntries
+    ]
+  }, [dictionary]);
 
-  // Step 2: Filter out any strings that are already resolved or currently loading
-  const [unresolvedDictionaryStringsAndHashes, dictionaryStringsResolved] =
-    useMemo(() => {
-      // skip unnecessary processing if: translation not required, or runtime translation disabled
-      if (!translationRequired || !runtimeTranslationEnabled) return [[], true];
+  // Memoize check for strings resolving
+  const stringTranslationsResolved = useMemo(() => {
+    // Skip unnecessary processing if translation not required
+    // Or translations not resolved yet
+    if (!translationRequired || !translations || !developmentTranslationEnabled) 
+      return true;
 
-      // filter out any entries whose translations are loading/resolved
-      let stringIsLoading = false;
-      const unresolvedDictionaryStringsAndHashes = Object.entries(
-        dictionaryContentEntries
-      ).filter(([_, { key }]) => {
-        // key will always be hash or hash:id here
-        // filter out any translations that are currently loading or already resolved
-        if (translations?.[key]?.state === 'loading') stringIsLoading = true;
-
-        // dont tx if translation already exists
-        return !translations?.[key];
-      });
-      const dictionaryStringsResolved =
-        !stringIsLoading && unresolvedDictionaryStringsAndHashes.length === 0;
-
-      return [unresolvedDictionaryStringsAndHashes, dictionaryStringsResolved];
-    }, [
-      translations,
-      dictionaryContentEntries,
-      runtimeTranslationEnabled,
-      locale, // locale is a dependency because we need to reset all translations when locale changes
-    ]);
-
-  // Step 3: do translation strings at runtime
-  // this useEffect is for translating strings in the dictionary before the page loads
-  // page will block until strings are loaded (ie until all string translations are either succes/error)
-  useEffect(() => {
-    // skip if:
-    if (
-      !translationRequired || // no translation required
-      !runtimeTranslationEnabled || // runtime translation disabled
-      !unresolvedDictionaryStringsAndHashes.length // no unresolved strings to translate
-    )
-      return;
-
-    // iterate through unresolvedDictionaryStringsAndHashes
-    unresolvedDictionaryStringsAndHashes.forEach(([id, { hash, source }]) => {
-      // Translate the content
-      const { metadata } = extractEntryMetadata(flattenedDictionary[id]);
-      translateContent({
+    // Filter out any entries whose translations are loading/resolved
+    let stringTranslationsResolved = true;
+    for (const [id, { hash, source, metadata }] of Object.entries(flattenedDictionaryContentEntries)) {
+      if (translations?.[hash]) {
+        if (translations[hash].state === 'loading') {
+          stringTranslationsResolved = false;
+        }
+        continue;
+      }
+      registerContentForTranslation({
         source,
         targetLocale: locale,
         metadata: {
@@ -389,41 +349,43 @@ export default function GTProvider({
           hash,
         },
       });
-    });
-    // is this already translated? if so, skip
+      stringTranslationsResolved = false;
+    }
+
+    return stringTranslationsResolved;
   }, [
-    translationRequired,
-    unresolvedDictionaryStringsAndHashes,
-    flattenedDictionary,
-    runtimeTranslationEnabled,
-  ]);
+    translationRequired, developmentTranslationEnabled,
+    flattenedDictionaryContentEntries, 
+    locale, translations
+  ])
 
   // ----- TRANSLATE FUNCTION FOR DICTIONARIES ----- //
-  // useGT(), useElement()
 
   const translateDictionaryEntry = useCallback(
     (
       id: string,
       options: Record<string, any> = {}
-    ): React.ReactNode | string | undefined => {
+    ): React.ReactNode => {
+
       // ----- SETUP ----- //
 
-      // get the dictionary entry
-      const dictionaryEntry: DictionaryEntry | undefined = getDictionaryEntry(
+      // Get dictionary entry
+      const entryWithMetadata: DictionaryEntry | undefined = getDictionaryEntry(
         flattenedDictionary,
         id
       );
-      if (!dictionaryEntry && dictionaryEntry !== '') return undefined; // dictionary entry not found
+      if (!entryWithMetadata) 
+        return undefined; // Dictionary entry not found
 
-      // Parse the dictionary entry
-      const { entry, metadata } = extractEntryMetadata(dictionaryEntry);
-      const variables = options;
-      const variablesOptions = metadata?.variablesOptions;
+      // Get the entry, metadata, and variables
+      const { entry, metadata } = getEntryAndMetadata(entryWithMetadata);
+      const variables = options; const variablesOptions = metadata?.variablesOptions;
 
-      // ----- RENDER STRINGS ----- //
+      // ----- HANDLE STRINGS ----- //
 
       if (typeof entry === 'string') {
-        // Reject empty strings
+        
+        // Reject empty strings 
         if (!entry.length) {
           console.warn(
             `gt-react warn: Empty string found in dictionary with id: ${id}`
@@ -431,47 +393,31 @@ export default function GTProvider({
           return entry;
         }
 
-        // Get content
-        const content = splitStringToContent(entry);
+        // Split string to content
+        const source = splitStringToContent(entry);
 
-        // Get translation entry
-        const translationEntry =
-          translations?.[dictionaryContentEntries[id]?.hash || ''] ||
-          translations?.[id];
-
-        // Skip if:
+        // Check if target exists
+        const translation = translations?.[flattenedDictionaryContentEntries[id]?.hash];
+        
+        // Error handling
         if (
-          !translationRequired || // no translation required
-          !translationEntry || // error behavior: no translation found
-          !translationEnabled || // error behavior: translation not enabled
-          translationEntry?.state !== 'success' // error behavior: translation did not resolve
+          !translationRequired || // If no translation required
+          translation?.state !== "success" // If translation was unsuccessful
         ) {
           return renderContentToString(
-            content,
-            locales,
-            variables,
-            variablesOptions
+            source, locales, variables, variablesOptions
           );
         }
 
-        // Render translated content
+        // Display translated content
         return renderContentToString(
-          translationEntry.target as TranslatedContent,
+          translation.target as TranslatedContent,
           [locale, defaultLocale],
-          variables,
-          variablesOptions
+          variables, variablesOptions
         );
       }
 
-      // ----- RENDER JSX ----- //
-
-      // Reject empty fragments
-      if (isEmptyReactFragment(entry)) {
-        console.warn(
-          `gt-react warn: Empty fragment found in dictionary with id: ${id}`
-        );
-        return entry;
-      }
+      // ----- HANDLE JSX ----- //
 
       return (
         <T
@@ -488,19 +434,20 @@ export default function GTProvider({
       dictionary,
       translations,
       translationRequired,
-      defaultLocale,
+      locale, defaultLocale,
       flattenedDictionary,
-      dictionaryStringsResolved,
-      dictionaryContentEntries,
-      runtimeTranslationEnabled,
+      flattenedDictionaryContentEntries
     ]
   );
 
-  const { translateChildren, translateContent } = useRuntimeTranslation({
+  const { 
+    registerJsxForTranslation, 
+    registerContentForTranslation 
+  } = useRuntimeTranslation({
     locale,
     versionId: _versionId,
     projectId,
-    runtimeTranslationEnabled,
+    runtimeTranslationEnabled: developmentTranslationEnabled,
     defaultLocale,
     devApiKey,
     runtimeUrl,
@@ -514,8 +461,8 @@ export default function GTProvider({
     <GTContext.Provider
       value={{
         translateDictionaryEntry,
-        translateContent,
-        translateChildren,
+        registerContentForTranslation,
+        registerJsxForTranslation,
         locale: locale,
         locales,
         setLocale,
@@ -524,15 +471,17 @@ export default function GTProvider({
         translationRequired,
         dialectTranslationRequired,
         projectId,
-        translationEnabled,
-        runtimeTranslationEnabled,
         renderSettings,
       }}
     >
-      {(!translationRequired ||
-        !translationEnabled ||
-        (dictionaryStringsResolved && translations)) &&
-        children}
+      {
+        (
+          !translationRequired ||
+          (stringTranslationsResolved && translations)
+        ) 
+        &&
+        children
+      }
     </GTContext.Provider>
   );
 }

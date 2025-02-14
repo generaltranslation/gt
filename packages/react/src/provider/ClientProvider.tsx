@@ -17,7 +17,7 @@ import {
   TranslationsObject,
   TranslationSuccess,
 } from '../types/types';
-import extractEntryMetadata from './helpers/extractEntryMetadata';
+import extractEntryMetadata from './helpers/getEntryAndMetadata';
 import renderDefaultChildren from './rendering/renderDefaultChildren';
 import renderSkeleton from './rendering/renderSkeleton';
 import renderTranslatedChildren from './rendering/renderTranslatedChildren';

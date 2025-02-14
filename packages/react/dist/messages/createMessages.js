@@ -1,0 +1,27 @@
+// ---- ERRORS ---- //
+export const projectIdMissingError = 'gt-react Error: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
+export const devApiKeyProductionError = 'gt-react Error: Production environments cannot include a development api key.';
+export const createNoAuthError = 'gt-react Error: Configuration is missing a projectId and/or devApiKey. Please add these values to your environment or pass them to the <GTProvider> directly.';
+export const createPluralMissingError = (children) => `<Plural> component with children "${children}" requires "n" option.`;
+export const createStringTranslationError = (content, id) => `gt-next string translation error. tx("${content}")${id ? ` with id "${id}"` : ''} failed.`;
+export const createClientSideTDictionaryCollisionError = (id) => `<T id="${id}">, "${id}" is also used as a key in the dictionary. Don't give <T> components the same ID as dictionary entries.`;
+export const createClientSideTHydrationError = (id) => `<T id="${id}"> is used in a client component without a valid saved translation. This can cause hydration errors.` +
+    `\n\nTo fix this error, consider using a dictionary with useGT() or pushing translations from the command line in advance.`;
+export const createNestedDataGTError = (child) => `General Translation already in use on child with props: ${child.props}. This usually occurs when you nest <T> components within the same file. Remove one of the <T> components to continue.`;
+export const createNestedTError = (child) => { var _a; return `General Translation: Nested <T> components. The inner <T> has the id: "${(_a = child === null || child === void 0 ? void 0 : child.props) === null || _a === void 0 ? void 0 : _a.id}".`; };
+export const renderingError = 'General Translation: Rendering error.';
+export const dynamicTranslationError = 'Error fetching batched translations:';
+export const createGenericRuntimeTranslationError = (id, hash) => {
+    if (!id) {
+        return `Translation failed for hash: ${hash}`;
+    }
+    else {
+        return `Translation failed for id: ${id}, hash: ${hash} `;
+    }
+};
+// ---- WARNINGS ---- //
+export const projectIdMissingWarning = 'gt-react warn: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
+export const createLibraryNoEntryWarning = (id) => `gt-react: No dictionary entry found for id: "${id}"`;
+export const createNoEntryWarning = (id, prefixedId) => `t('${id}') finding no translation for dictionary item ${prefixedId} !`;
+export const createInvalidElementEntryWarning = (id, prefixedId) => `t('${id}') invalid dictionary entry for ${prefixedId} ! useElement() can only be used to render JSX elements. Strings and other types are not allowed.`;
+export const createMismatchingHashWarning = (expectedHash, receivedHash) => `Mismatching hashes! Expected hash: ${expectedHash}, but got hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;

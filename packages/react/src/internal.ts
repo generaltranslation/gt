@@ -3,7 +3,7 @@ import addGTIdentifier from './internal/addGTIdentifier';
 import writeChildrenAsObjects from './internal/writeChildrenAsObjects';
 import getPluralBranch from './branches/plurals/getPluralBranch';
 import getDictionaryEntry from './provider/helpers/getDictionaryEntry';
-import extractEntryMetadata from './provider/helpers/extractEntryMetadata';
+import extractEntryMetadata from './provider/helpers/getEntryAndMetadata';
 import getVariableProps from './variables/_getVariableProps';
 import isVariableObject from './provider/helpers/isVariableObject';
 import getVariableName, {

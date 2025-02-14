@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  createMismatchingHashWarning,
   dynamicTranslationError,
   createGenericRuntimeTranslationError,
 } from '../../messages/createMessages';
@@ -10,13 +9,30 @@ import {
   TranslateContentCallback,
   TranslationsObject,
 } from '../../types/types';
-import { Content } from 'generaltranslation/internal';
+import { Content, JsxChildren } from 'generaltranslation/internal';
 import {
   maxConcurrentRequests,
   maxBatchSize,
   batchInterval,
 } from '../config/defaultProps';
-import getKey from '../../utils/getKey';
+
+// Queue to store requested keys between renders.
+type TranslationRequestMetadata = {
+  hash: string;
+  context?: string;
+  [attr: string]: any;
+}
+type TranslationRequestQueueItem = ({
+  type: 'content';
+  source: Content;
+} | {
+  type: 'jsx';
+  source: JsxChildren;
+}) & {
+  metadata: TranslationRequestMetadata;
+  resolve: any;
+  reject: any;
+};
 
 export default function useRuntimeTranslation({
   projectId,
@@ -28,7 +44,7 @@ export default function useRuntimeTranslation({
   renderSettings,
   setTranslations,
   runtimeTranslationEnabled,
-  ...metadata
+  ...globalMetadata
 }: {
   projectId?: string;
   devApiKey?: string;
@@ -44,35 +60,32 @@ export default function useRuntimeTranslation({
   setTranslations: React.Dispatch<React.SetStateAction<any>>;
   [key: string]: any;
 }): {
-  translateContent: TranslateContentCallback;
-  translateChildren: TranslateChildrenCallback;
+  registerContentForTranslation: TranslateContentCallback;
+  registerJsxForTranslation: TranslateChildrenCallback;
 } {
-  metadata = { ...metadata, projectId, sourceLocale: defaultLocale };
 
-  const [activeRequests, setActiveRequests] = useState(0);
+  // ------ EARLY RETURN IF DISABLED ----- //
 
   if (!runtimeTranslationEnabled)
     return {
-      translateContent: () =>
+      registerContentForTranslation: () =>
         Promise.reject(
-          new Error('translateContent() failed because translation is disabled')
+          new Error('registerContentForTranslation() failed because translation is disabled')
         ),
-      translateChildren: () =>
+      registerJsxForTranslation: () =>
         Promise.reject(
           new Error(
-            'translateChildren() failed because translation is disabled'
+            'registerJsxForTranslation() failed because translation is disabled'
           )
         ),
     };
 
-  // Queue to store requested keys between renders.
-  type TranslationRequestQueueItem = {
-    type: 'content' | 'jsx';
-    source: Content | any;
-    metadata: { hash: string; context?: string } & Record<string, any>;
-    resolve: any;
-    reject: any;
-  };
+  // ----- SETUP ----- //
+
+  globalMetadata = { ...globalMetadata, projectId, sourceLocale: defaultLocale };
+
+  const [activeRequests, setActiveRequests] = useState(0);
+
   // Requests waiting to be sent
   const requestQueueRef = useRef<Map<string, TranslationRequestQueueItem>>(
     new Map()
@@ -86,91 +99,66 @@ export default function useRuntimeTranslation({
     requestQueueRef.current.clear();
   }, [locale]);
 
-  const translateContent = useCallback(
-    (params: {
-      source: Content;
-      targetLocale: string;
-      metadata: { hash: string; context?: string } & Record<string, any>;
-    }): Promise<void> => {
-      // get the key
-      const keyWithLocale = `${getKey(params.metadata.hash, params.metadata.id)}:${params.targetLocale}`;
+  // ----- DEFINE FUNCTIONS ----- //
 
-      // return a promise to current request if it exists
-      const pendingRequest = pendingRequestQueueRef.current.get(keyWithLocale);
-      if (pendingRequest) {
-        return pendingRequest;
-      }
-
-      // promise for hooking into the translation request request to know when complete
-      const translationPromise = new Promise<void>((resolve, reject) => {
-        requestQueueRef.current.set(keyWithLocale, {
-          type: 'content',
-          source: params.source,
-          metadata: params.metadata,
-          resolve,
-          reject,
-        });
-      })
-        .catch((error) => {
+  const [
+    registerContentForTranslation,
+    registerJsxForTranslation
+  ] = useMemo(() => {
+    const createTranslationRegistrationFunction = (
+      type: "jsx" | "content"
+    ) => {
+      return (params: {
+        source: Content;
+        targetLocale: string;
+        metadata: TranslationRequestMetadata;
+      }): Promise<void> => {
+  
+        // Get the key, which is a combination of hash and locale
+        const key = `${params.metadata.hash}:${params.targetLocale}`;
+  
+        // Return a promise to current request if it exists
+        const pendingRequest = pendingRequestQueueRef.current.get(key);
+        if (pendingRequest) {
+          return pendingRequest;
+        }
+  
+        // Promise for hooking into the translation request to know when complete
+        const translationPromise = new Promise<void>((resolve, reject) => {
+          requestQueueRef.current.set(key, {
+            type,
+            source: params.source,
+            metadata: params.metadata,
+            resolve,
+            reject,
+          });
+        }).catch((error) => {
           throw error;
-        })
-        .finally(() => {
-          pendingRequestQueueRef.current.delete(keyWithLocale);
+        }).finally(() => {
+          pendingRequestQueueRef.current.delete(key);
         });
-      pendingRequestQueueRef.current.set(keyWithLocale, translationPromise);
-      return translationPromise;
-    },
-    [locale]
-  );
-
-  /**
-   * Call this from <T> components to request a translation key.
-   * Keys are batched and fetched in the next effect cycle.
-   */
-  const translateChildren = useCallback(
-    (params: {
-      source: any;
-      targetLocale: string;
-      metadata: { hash: string; context?: string } & Record<string, any>;
-    }): Promise<void> => {
-      // get the key
-      const keyWithLocale = `${getKey(params.metadata.hash, params.metadata.id)}:${params.targetLocale}`;
-
-      // return a promise to current request if it exists
-      const pendingRequest = pendingRequestQueueRef.current.get(keyWithLocale);
-      if (pendingRequest) {
-        return pendingRequest;
+  
+        pendingRequestQueueRef.current.set(key, translationPromise);
+        return translationPromise;
       }
+    }
+    return [
+      createTranslationRegistrationFunction("content"),
+      createTranslationRegistrationFunction("jsx"),
+    ]
+  }, []); // refs are stable so don't need to be included in dep array
 
-      // promise for hooking into the translation request to know when complete
-      const translationPromise = new Promise<void>((resolve, reject) => {
-        requestQueueRef.current.set(keyWithLocale, {
-          type: 'jsx',
-          source: params.source,
-          metadata: params.metadata,
-          resolve,
-          reject,
-        });
-      })
-        .catch((error) => {
-          throw error;
-        })
-        .finally(() => {
-          pendingRequestQueueRef.current.delete(keyWithLocale);
-        });
-      pendingRequestQueueRef.current.set(keyWithLocale, translationPromise);
-      return translationPromise;
-    },
-    [locale]
-  );
+  // ----- DEFINE FUNCTIONS ----- //
+
   // Send a request to the runtime server
-  const sendBatchRequest = async (
+  const sendBatchRequest = useCallback(async (
     batchRequests: Map<string, TranslationRequestQueueItem>,
     targetLocale: string
   ) => {
+
     if (requestQueueRef.current.size === 0) {
       return {};
-    }
+    };
 
     // increment active requests
     setActiveRequests((prev) => prev + 1);
@@ -183,7 +171,7 @@ export default function useRuntimeTranslation({
       const loadingTranslations: TranslationsObject = requests.reduce(
         (acc: TranslationsObject, request) => {
           // loading state for jsx, render loading behavior
-          acc[getKey(request.metadata.hash, request.metadata.id)] = {
+          acc[request.metadata.hash] = {
             state: 'loading',
           };
           return acc;
@@ -227,7 +215,7 @@ export default function useRuntimeTranslation({
           body: JSON.stringify({
             requests,
             targetLocale,
-            metadata,
+            metadata: globalMetadata,
             versionId,
           }),
         },
@@ -248,10 +236,10 @@ export default function useRuntimeTranslation({
         if ('translation' in result && result.translation && result.reference) {
           const {
             translation,
-            reference: { key },
+            reference: { hash },
           } = result;
           // set translation
-          newTranslations[key] = {
+          newTranslations[hash] = {
             state: 'success',
             target: translation,
           };
@@ -259,7 +247,7 @@ export default function useRuntimeTranslation({
         }
 
         const request = requests[index];
-        const key = getKey(request.metadata.hash, request.metadata.id);
+        const hash = request.metadata.hash; // identical to reference hash
         // translation failure
         if (
           result.error !== undefined &&
@@ -277,7 +265,7 @@ export default function useRuntimeTranslation({
             result.error
           );
           // set error in translation object
-          newTranslations[key] = {
+          newTranslations[hash] = {
             state: 'error',
             error: result.error,
             code: result.code,
@@ -293,7 +281,7 @@ export default function useRuntimeTranslation({
           ),
           result
         );
-        newTranslations[key] = {
+        newTranslations[hash] = {
           state: 'error',
           error: 'An error occurred.',
           code: 500,
@@ -306,7 +294,7 @@ export default function useRuntimeTranslation({
       // add error message to all translations from this request
       requests.forEach((request) => {
         // id defaults to hash if none provided
-        newTranslations[getKey(request.metadata.hash, request.metadata.id)] = {
+        newTranslations[request.metadata.hash] = {
           state: 'error',
           error: 'An error occurred.',
           code: 500,
@@ -322,10 +310,19 @@ export default function useRuntimeTranslation({
       // return the new translations
       return newTranslations;
     }
-  };
+  }, [
+    runtimeUrl,
+    projectId,
+    devApiKey,
+    globalMetadata,
+    versionId,
+    renderSettings.timeout,
+    dynamicTranslationError,
+    createGenericRuntimeTranslationError,
+  ]);
 
   useEffect(() => {
-    // flag for storing fetch from api
+    // flag for storing fetch from API
     let storeResults = true;
 
     // Send a batch request every `batchInterval` ms
@@ -359,5 +356,5 @@ export default function useRuntimeTranslation({
     };
   }, [locale]);
 
-  return { translateContent, translateChildren };
+  return { registerContentForTranslation, registerJsxForTranslation };
 }

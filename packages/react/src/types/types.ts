@@ -109,8 +109,8 @@ export type GTContextType = {
     id: string,
     options?: Record<string, any>
   ) => React.ReactNode;
-  translateContent: TranslateContentCallback;
-  translateChildren: TranslateChildrenCallback;
+  registerContentForTranslation: TranslateContentCallback;
+  registerJsxForTranslation: TranslateChildrenCallback;
   locale: string;
   locales: string[];
   setLocale: (locale: string) => void;
@@ -120,8 +120,6 @@ export type GTContextType = {
   dialectTranslationRequired: boolean;
   renderSettings: { method: RenderMethod; timeout?: number };
   projectId?: string;
-  translationEnabled: boolean;
-  runtimeTranslationEnabled: boolean;
 };
 
 export class GTTranslationError extends Error {

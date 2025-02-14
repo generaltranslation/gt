@@ -46,7 +46,7 @@ export function isEmptyReactFragment(
   return false;
 }
 
-export function getAuth(
+export function readAuthFromEnv(
   projectId?: string,
   devApiKey?: string
 ): {

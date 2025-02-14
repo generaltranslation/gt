@@ -1,0 +1,8 @@
+/**
+ * renderSkeleton is a function that handles the rendering behavior for the skeleton loading method.
+ * It replaces all content with empty strings
+ * @returns an empty string
+ */
+export default function renderSkeleton() {
+    return '';
+}

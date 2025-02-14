@@ -6,7 +6,7 @@ import {
   TaggedEntry,
 } from '../../types/types';
 
-export default function extractEntryMetadata(
+export default function getEntryAndMetadata(
   value: DictionaryEntry | TaggedDictionaryEntry
 ): {
   entry: Entry | TaggedEntry;

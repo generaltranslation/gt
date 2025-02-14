@@ -9,8 +9,8 @@ function shouldApplyTimeout() {
 // Apply an 8 second timeout for non dev/testign environments
 export const defaultRenderSettings: {
   method: RenderMethod;
-  timeout?: number;
+  timeout: number;
 } = {
   method: 'default',
-  ...(shouldApplyTimeout() ? { timeout: 8000 } : {}),
+  timeout: shouldApplyTimeout() ? 8000 : 12000
 } as const;
