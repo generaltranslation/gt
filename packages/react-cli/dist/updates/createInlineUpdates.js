@@ -77,11 +77,7 @@ function createInlineUpdates(options) {
         yield Promise.all(updates.map((update) => __awaiter(this, void 0, void 0, function* () {
             const context = update.metadata.context;
             const hash = (0, id_1.hashJsxChildren)(context
-                ? {
-                    source: update.source,
-                    context,
-                }
-                : { source: update.source });
+                ? Object.assign({ source: update.source, context }, (update.metadata.id && { id: update.metadata.id })) : Object.assign({ source: update.source }, (update.metadata.id && { id: update.metadata.id })));
             update.metadata.hash = hash;
         })));
         return { updates, errors };

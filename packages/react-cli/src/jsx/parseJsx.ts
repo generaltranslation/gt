@@ -225,12 +225,7 @@ export function parseJSXElement(
 
     componentObj.tree = tree.length === 1 ? tree[0] : tree;
 
-    // Check the id ...
     const id = componentObj.props.id;
-    // If user forgot to provide an `id`, warn
-    // if (!id) {
-    //   errors.push(warnNoId(file));
-    // }
 
     // If we found an unwrapped expression, skip
     if (unwrappedExpressions.length > 0) {

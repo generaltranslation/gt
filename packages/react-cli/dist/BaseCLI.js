@@ -280,10 +280,12 @@ class BaseCLI {
             const idHashMap = new Map();
             const duplicateIds = new Set();
             updates = updates.map((update) => {
+                if (!update.metadata.id)
+                    return update;
                 const existingHash = idHashMap.get(update.metadata.id);
                 if (existingHash) {
                     if (existingHash !== update.metadata.hash) {
-                        errors.push(`Hashes don't match on two translations with the same id: ${chalk_1.default.blue(update.metadata.id)}. Check your ${chalk_1.default.green(`<T id="${chalk_1.default.blue(update.metadata.id)}">`)} tags and make sure you're not accidentally duplicating IDs.`);
+                        errors.push(`Hashes don't match on two components with the same id: ${chalk_1.default.blue(update.metadata.id)}. Check your ${chalk_1.default.green('<T>')} tags and dictionary entries and make sure you're not accidentally duplicating IDs.`);
                         duplicateIds.add(update.metadata.id);
                     }
                 }

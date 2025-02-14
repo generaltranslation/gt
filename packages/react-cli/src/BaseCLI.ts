@@ -374,15 +374,16 @@ export abstract class BaseCLI {
     const duplicateIds = new Set<string>();
 
     updates = updates.map((update) => {
+      if (!update.metadata.id) return update;
       const existingHash = idHashMap.get(update.metadata.id);
       if (existingHash) {
         if (existingHash !== update.metadata.hash) {
           errors.push(
-            `Hashes don't match on two translations with the same id: ${chalk.blue(
+            `Hashes don't match on two components with the same id: ${chalk.blue(
               update.metadata.id
             )}. Check your ${chalk.green(
-              `<T id="${chalk.blue(update.metadata.id)}">`
-            )} tags and make sure you're not accidentally duplicating IDs.`
+              '<T>'
+            )} tags and dictionary entries and make sure you're not accidentally duplicating IDs.`
           );
           duplicateIds.add(update.metadata.id);
         }
