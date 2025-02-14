@@ -1,5 +1,4 @@
 import {
-  useElement,
   Var,
   Num,
   Currency,
@@ -13,7 +12,6 @@ import {
 export {
   GTProvider as PagesRouterGTProvider,
   T,
-  useElement,
   Var,
   Num,
   Currency,
