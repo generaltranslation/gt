@@ -6,6 +6,6 @@ import GTProvider from './provider/GTProvider';
 import T from './server-dir/inline/T';
 import Branch from './branches/Branch';
 import Plural from './branches/Plural';
-import TX from './server-dir/inline/TX';
+// import TX from './server-dir/inline/TX';
 
-export { GTProvider, T, TX, Var, Num, Currency, DateTime, Branch, Plural };
+export { GTProvider, T, Var, Num, Currency, DateTime, Branch, Plural };

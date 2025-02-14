@@ -6,7 +6,7 @@ import { build, BuildOptions } from 'esbuild';
 import { Options, Updates } from '../types';
 import {
   addGTIdentifier,
-  extractEntryMetadata,
+  getEntryAndMetadata,
   flattenDictionary,
   writeChildrenAsObjects,
 } from 'gt-react/internal';
@@ -71,7 +71,7 @@ export default async function createDictionaryUpdates(
     let {
       entry,
       metadata: props, // context, etc.
-    } = extractEntryMetadata(dictionary[id]);
+    } = getEntryAndMetadata(dictionary[id]);
     const taggedEntry = addGTIdentifier(entry);
 
     const entryAsObjects = writeChildrenAsObjects(taggedEntry);

@@ -51,6 +51,12 @@ export declare class TranslationManager {
      */
     getCachedTranslations(locale: string): Promise<TranslationsObject | undefined>;
     /**
+     * Retrieves translations for a given locale which are already cached locally
+     * @param {string} locale - The locale code.
+     * @returns {Promise<TranslationsObject | undefined>} The translations data or null if not found.
+     */
+    getRecentTranslations(locale: string): TranslationsObject | undefined;
+    /**
      * Sets a new translation entry.
      * @param {string} locale - The locale code.
      * @param {string} hash - The key for the new entry.
@@ -59,7 +65,7 @@ export declare class TranslationManager {
      * @param {boolean} [isRuntimeTranslation=true] - Whether the translation was a runtime translation.
      * @returns {boolean} True if the entry was set successfully, false otherwise.
      */
-    setTranslations(locale: string, hash: string, id: string | undefined, translation: TranslationSuccess | TranslationLoading | TranslationError, isRuntimeTranslation?: boolean): boolean;
+    setTranslations(locale: string, hash: string, translation: TranslationSuccess | TranslationLoading | TranslationError): boolean;
     /**
      * Marks translations as requested for a given locale.
      * @param {string} locale - The locale code.

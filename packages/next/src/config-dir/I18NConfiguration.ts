@@ -2,7 +2,6 @@ import { requiresTranslation } from 'generaltranslation';
 import translationManager, { TranslationManager } from './TranslationManager';
 import {
   addGTIdentifier,
-  writeChildrenAsObjects,
   RenderMethod,
   TranslatedChildren,
   TranslatedContent,
@@ -136,7 +135,7 @@ export default class I18NConfiguration {
     const _runtimeTranslation = !!(
       this.projectId &&
       this.runtimeUrl &&
-      ((this.apiKey && process.env.NODE_ENV === 'production') ||
+      (this.apiKey ||
         (this.devApiKey && process.env.NODE_ENV === 'development'))
     );
     // translation loader
@@ -301,6 +300,15 @@ export default class I18NConfiguration {
   }
 
   /**
+   * Retrieves translations for a given locale which are already cached locally
+   * @param {string} locale - The locale code.
+   * @returns {TranslationsObject} The translations data or an empty object if not found.
+   */
+  getRecentTranslations(locale: string): TranslationsObject {
+    return this._translationManager?.getRecentTranslations(locale) || {};
+  }
+
+  /**
    * Translate content into language associated with a given locale
    * @param params - Parameters for translation
    * @returns Translated string
@@ -441,15 +449,14 @@ export default class I18NConfiguration {
         if (!result)
           return request.reject(new GTTranslationError(errorMsg, errorCode));
 
-        const key = request.metadata.id || request.metadata.hash;
+        const hash = request.metadata.hash;
         if (result && typeof result === 'object') {
           if ('translation' in result && result.translation) {
             // record translations
             if (this._translationManager) {
               this._translationManager.setTranslations(
                 request.targetLocale,
-                request.metadata.hash,
-                key,
+                hash,
                 {
                   state: 'success',
                   target: result.translation,
@@ -457,12 +464,9 @@ export default class I18NConfiguration {
               );
             }
             // check for mismatching ids or hashes
-            if (result.reference.key !== request.metadata.hash) {
+            if (result.reference.hash !== hash) {
               console.warn(
-                createMismatchingHashWarning(
-                  request.metadata.hash,
-                  result.reference.key
-                )
+                createMismatchingHashWarning(hash, result.reference.hash)
               );
             }
             return request.resolve(result.translation);
@@ -473,16 +477,11 @@ export default class I18NConfiguration {
         }
         // record translation error
         if (this._translationManager) {
-          this._translationManager.setTranslations(
-            request.targetLocale,
-            request.metadata.hash,
-            key,
-            {
-              state: 'error',
-              error: result.error || 'Translation failed.',
-              code: result.code || 500,
-            }
-          );
+          this._translationManager.setTranslations(request.targetLocale, hash, {
+            state: 'error',
+            error: result.error || 'Translation failed.',
+            code: result.code || 500,
+          });
         }
         return request.reject(new GTTranslationError(errorMsg, errorCode));
       });
@@ -494,7 +493,6 @@ export default class I18NConfiguration {
           this._translationManager.setTranslations(
             request.targetLocale,
             request.metadata.hash,
-            request.metadata.id || request.metadata.hash,
             { state: 'error', error: 'Translation failed.', code: 500 }
           );
         }

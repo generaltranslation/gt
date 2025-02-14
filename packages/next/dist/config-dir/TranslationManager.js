@@ -159,6 +159,16 @@ var TranslationManager = /** @class */ (function () {
         });
     };
     /**
+     * Retrieves translations for a given locale which are already cached locally
+     * @param {string} locale - The locale code.
+     * @returns {Promise<TranslationsObject | undefined>} The translations data or null if not found.
+     */
+    TranslationManager.prototype.getRecentTranslations = function (locale) {
+        var reference = (0, generaltranslation_1.standardizeLocale)(locale);
+        // Return locally cached translations (if they exist for the locale)
+        return this.translationsMap.get(reference);
+    };
+    /**
      * Sets a new translation entry.
      * @param {string} locale - The locale code.
      * @param {string} hash - The key for the new entry.
@@ -167,16 +177,13 @@ var TranslationManager = /** @class */ (function () {
      * @param {boolean} [isRuntimeTranslation=true] - Whether the translation was a runtime translation.
      * @returns {boolean} True if the entry was set successfully, false otherwise.
      */
-    TranslationManager.prototype.setTranslations = function (locale, hash, id, translation, isRuntimeTranslation) {
+    TranslationManager.prototype.setTranslations = function (locale, hash, translation) {
         var _a;
-        if (id === void 0) { id = hash; }
-        if (isRuntimeTranslation === void 0) { isRuntimeTranslation = true; }
         if (!(locale && hash && translation))
             return false;
         var reference = (0, generaltranslation_1.standardizeLocale)(locale);
         var currentTranslations = this.translationsMap.get(reference) || {};
-        var key = isRuntimeTranslation ? hash : id;
-        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[key] = translation, _a)));
+        this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[hash] = translation, _a)));
         // Reset the fetch time since we just manually updated the translation
         this.lastFetchTime.set(reference, Date.now());
         return true;

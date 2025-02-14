@@ -113,7 +113,7 @@ function Resolver(_a) {
  */
 function T(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, renderSettings, translationRequired, serverRuntimeTranslationEnabled, dialectTranslationRequired, taggedChildren, renderDefaultLocale, renderLoadingDefault, translationsPromise, childrenAsObjects, hash, translations, _c, translationEntry, translationPromise, loadingFallback;
+        var I18NConfig, locale, defaultLocale, renderSettings, translationRequired, serverRuntimeTranslationEnabled, dialectTranslationRequired, taggedChildren, renderDefaultLocale, renderLoadingDefault, translationsPromise, childrenAsObjects, hash, translations, _c, translation, translationPromise, loadingFallback;
         var children = _b.children, id = _b.id, context = _b.context, variables = _b.variables, variablesOptions = _b.variablesOptions;
         return __generator(this, function (_d) {
             switch (_d.label) {
@@ -165,20 +165,20 @@ function T(_a) {
                     _d.label = 4;
                 case 4:
                     translations = _c;
-                    translationEntry = translations === null || translations === void 0 ? void 0 : translations[hash];
+                    translation = translations === null || translations === void 0 ? void 0 : translations[hash];
                     // ----- RENDER CACHED TRANSLATIONS ----- //
                     // if we have a cached translation, render it
-                    if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success') {
+                    if ((translation === null || translation === void 0 ? void 0 : translation.state) === 'success') {
                         return [2 /*return*/, (0, internal_1.renderTranslatedChildren)({
                                 source: taggedChildren,
-                                target: translationEntry.target,
+                                target: translation.target,
                                 variables: variables,
                                 variablesOptions: variablesOptions,
                                 locales: [locale, defaultLocale],
                                 renderVariable: renderVariable_1.default,
                             })];
                     }
-                    else if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error' || // fallback to default if error
+                    else if ((translation === null || translation === void 0 ? void 0 : translation.state) === 'error' || // fallback to default if error
                         !serverRuntimeTranslationEnabled // fallback to default if runtime translation is disabled (loading should never happen here)
                     ) {
                         return [2 /*return*/, renderDefaultLocale()];

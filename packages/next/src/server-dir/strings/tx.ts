@@ -8,13 +8,10 @@ import getLocale from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
 import { hashJsxChildren } from 'generaltranslation/id';
 
-
 /**
  * Translates the provided content string based on the specified locale and options.
  * If no translation is required, it renders the content as is. Otherwise, it fetches the
  * required translations or falls back to on-demand translation if enabled.
- *
- * By default, General Translation saves the translation in a remote cache if an `id` option is passed.
  *
  * @async
  * @function tx (translate)
@@ -56,11 +53,11 @@ export default async function tx(
     [key: string]: any;
   } = {}
 ): Promise<string> {
-
+  if (!content || typeof content !== 'string') return '';
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
-  const locale = options.locale || await getLocale();
+  const locale = options.locale || (await getLocale());
   const defaultLocale = I18NConfig.getDefaultLocale();
   const translationRequired = I18NConfig.requiresTranslation(locale);
   const source = splitStringToContent(content); // parse content
@@ -77,27 +74,30 @@ export default async function tx(
   };
 
   // ----- RENDER LOGIC ----- //
-
   // translation required
-  if (!translationRequired || !content) 
+  if (!translationRequired || !I18NConfig.isServerRuntimeTranslationEnabled())
     return renderContent(source, [defaultLocale]);
 
   // get hash
   const hash = hashJsxChildren({
-    source, 
-    ...(options?.context && { context: options.context }),
-    ...(options?.id && { id: options.id })
-  })
-
-  // New translation required
-  const translationPromise = await I18NConfig.translateContent({
     source,
-    targetLocale: locale,
-    options: { ...options, hash },
+    ...(options?.context && { context: options.context }),
+    ...(options?.id && { id: options.id }),
   });
 
+  // Check local cache
+  const recentTranslations = I18NConfig.getRecentTranslations(locale);
+  if (recentTranslations[hash]) {
+    return renderContent(recentTranslations[hash], [locale, defaultLocale]);
+  }
+
+  // New translation required
   try {
-    const target = await translationPromise;
+    const target = await I18NConfig.translateContent({
+      source,
+      targetLocale: locale,
+      options: { ...options, hash },
+    });
     return renderContent(target, [locale, defaultLocale]);
   } catch (error) {
     console.error(createStringTranslationError(content, options.id), error);

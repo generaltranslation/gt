@@ -205,7 +205,6 @@ export function initGT(props: InitGTProps) {
   }
 
   // ---------- STORE CONFIGURATIONS ---------- //
-
   // Store the resolved paths in the environment
   const I18NConfigParams = JSON.stringify(mergedConfig);
   return (nextConfig: any = {}): any => {

@@ -61,8 +61,6 @@ var id_1 = require("generaltranslation/id");
  * If no translation is required, it renders the content as is. Otherwise, it fetches the
  * required translations or falls back to on-demand translation if enabled.
  *
- * By default, General Translation saves the translation in a remote cache if an `id` option is passed.
- *
  * @async
  * @function tx (translate)
  *
@@ -92,11 +90,13 @@ var id_1 = require("generaltranslation/id");
  */
 function tx(content_1) {
     return __awaiter(this, arguments, void 0, function (content, options) {
-        var I18NConfig, locale, _a, defaultLocale, translationRequired, source, renderContent, hash, translationPromise, target, error_1;
+        var I18NConfig, locale, _a, defaultLocale, translationRequired, source, renderContent, hash, recentTranslations, target, error_1;
         if (options === void 0) { options = {}; }
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
+                    if (!content || typeof content !== 'string')
+                        return [2 /*return*/, ''];
                     I18NConfig = (0, getI18NConfig_1.default)();
                     _a = options.locale;
                     if (_a) return [3 /*break*/, 2];
@@ -114,28 +114,29 @@ function tx(content_1) {
                     };
                     // ----- RENDER LOGIC ----- //
                     // translation required
-                    if (!translationRequired || !content)
+                    if (!translationRequired || !I18NConfig.isServerRuntimeTranslationEnabled())
                         return [2 /*return*/, renderContent(source, [defaultLocale])];
                     hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options.id })));
+                    recentTranslations = I18NConfig.getRecentTranslations(locale);
+                    if (recentTranslations[hash]) {
+                        return [2 /*return*/, renderContent(recentTranslations[hash], [locale, defaultLocale])];
+                    }
+                    _b.label = 3;
+                case 3:
+                    _b.trys.push([3, 5, , 6]);
                     return [4 /*yield*/, I18NConfig.translateContent({
                             source: source,
                             targetLocale: locale,
                             options: __assign(__assign({}, options), { hash: hash }),
                         })];
-                case 3:
-                    translationPromise = _b.sent();
-                    _b.label = 4;
                 case 4:
-                    _b.trys.push([4, 6, , 7]);
-                    return [4 /*yield*/, translationPromise];
-                case 5:
                     target = _b.sent();
                     return [2 /*return*/, renderContent(target, [locale, defaultLocale])];
-                case 6:
+                case 5:
                     error_1 = _b.sent();
                     console.error((0, createErrors_1.createStringTranslationError)(content, options.id), error_1);
                     return [2 /*return*/, renderContent(source, [defaultLocale])];
-                case 7: return [2 /*return*/];
+                case 6: return [2 /*return*/];
             }
         });
     });

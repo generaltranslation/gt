@@ -59,7 +59,7 @@ function createDictionaryUpdates(options, esbuildConfig) {
         let updates = [];
         for (const id of Object.keys(dictionary)) {
             let { entry, metadata: props, // context, etc.
-             } = (0, internal_1.extractEntryMetadata)(dictionary[id]);
+             } = (0, internal_1.getEntryAndMetadata)(dictionary[id]);
             const taggedEntry = (0, internal_1.addGTIdentifier)(entry);
             const entryAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedEntry);
             const context = props === null || props === void 0 ? void 0 : props.context;

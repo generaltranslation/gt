@@ -70,7 +70,6 @@ async function T({
   context?: string;
   [key: string]: any;
 }): Promise<any> {
-  
   if (!children) return;
 
   // ----- SET UP ----- //
@@ -88,7 +87,6 @@ async function T({
 
   // Gets tagged children with GT identifiers
   const taggedChildren = I18NConfig.addGTIdentifier(children);
-
   // ----- RENDER METHODS ----- //
 
   // render in default language
@@ -135,22 +133,22 @@ async function T({
   const translations = translationsPromise ? await translationsPromise : {};
 
   // Gets the translation entry
-  const translationEntry = translations?.[hash];
+  const translation = translations?.[hash];
 
   // ----- RENDER CACHED TRANSLATIONS ----- //
 
   // if we have a cached translation, render it
-  if (translationEntry?.state === 'success') {
+  if (translation?.state === 'success') {
     return renderTranslatedChildren({
       source: taggedChildren,
-      target: translationEntry.target,
+      target: translation.target,
       variables,
       variablesOptions,
       locales: [locale, defaultLocale],
       renderVariable,
     });
   } else if (
-    translationEntry?.state === 'error' || // fallback to default if error
+    translation?.state === 'error' || // fallback to default if error
     !serverRuntimeTranslationEnabled // fallback to default if runtime translation is disabled (loading should never happen here)
   ) {
     return renderDefaultLocale();

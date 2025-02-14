@@ -114,6 +114,12 @@ export default class I18NConfiguration {
      */
     getCachedTranslations(locale: string): Promise<TranslationsObject>;
     /**
+     * Retrieves translations for a given locale which are already cached locally
+     * @param {string} locale - The locale code.
+     * @returns {TranslationsObject} The translations data or an empty object if not found.
+     */
+    getRecentTranslations(locale: string): TranslationsObject;
+    /**
      * Translate content into language associated with a given locale
      * @param params - Parameters for translation
      * @returns Translated string

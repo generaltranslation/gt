@@ -1,4 +1,4 @@
-export default function fetchTranslations({ cacheUrl, projectId, locale, versionId }: {
+export default function fetchTranslations({ cacheUrl, projectId, locale, versionId, }: {
     cacheUrl: string;
     projectId: string;
     locale: string;

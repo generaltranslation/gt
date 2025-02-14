@@ -17,7 +17,7 @@ import React from 'react';
  * @param {object} [metadata] - Additional metadata to pass to the context.
  *
  * @returns {JSX.Element} The provider component for General Translation context.
-*/
+ */
 export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadTranslation, _versionId, ...metadata }: {
     children?: React.ReactNode;
     projectId?: string;

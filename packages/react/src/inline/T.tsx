@@ -1,9 +1,6 @@
 import React, { useEffect } from 'react';
 import renderDefaultChildren from '../provider/rendering/renderDefaultChildren';
-import {
-  addGTIdentifier,
-  writeChildrenAsObjects,
-} from '../internal';
+import { addGTIdentifier, writeChildrenAsObjects } from '../internal';
 import useGTContext from '../provider/GTContext';
 import renderTranslatedChildren from '../provider/rendering/renderTranslatedChildren';
 import { useMemo } from 'react';
@@ -53,7 +50,6 @@ function T({
   context?: string;
   [key: string]: any;
 }): React.JSX.Element | undefined {
-
   if (!children) return undefined;
 
   const { variables, variablesOptions } = props;
@@ -81,7 +77,7 @@ function T({
       const hash: string = hashJsxChildren({
         source: childrenAsObjects,
         ...(context && { context }),
-        ...(id && { id })
+        ...(id && { id }),
       });
       return [childrenAsObjects, hash];
     } else {
@@ -91,7 +87,6 @@ function T({
 
   // get translation entry
   const translation = translations?.[hash];
-
   // Do dev translation if required
   useEffect(() => {
     // skip if:
@@ -171,7 +166,7 @@ function T({
   }
 
   // loading behavior (checking cache or fetching runtime translation)
-  if (!translation|| translation?.state === 'loading') {
+  if (!translation || translation?.state === 'loading') {
     let loadingFallback;
     if (renderSettings.method === 'skeleton') {
       loadingFallback = renderSkeleton();
@@ -186,9 +181,7 @@ function T({
 
   // render translated content
   return (
-    <React.Fragment>
-      {renderTranslation(translation.target)}
-    </React.Fragment>
+    <React.Fragment>{renderTranslation(translation.target)}</React.Fragment>
   );
 }
 

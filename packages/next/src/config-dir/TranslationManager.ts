@@ -137,6 +137,17 @@ export class TranslationManager {
   }
 
   /**
+   * Retrieves translations for a given locale which are already cached locally
+   * @param {string} locale - The locale code.
+   * @returns {Promise<TranslationsObject | undefined>} The translations data or null if not found.
+   */
+  getRecentTranslations(locale: string): TranslationsObject | undefined {
+    const reference = standardizeLocale(locale);
+    // Return locally cached translations (if they exist for the locale)
+    return this.translationsMap.get(reference);
+  }
+
+  /**
    * Sets a new translation entry.
    * @param {string} locale - The locale code.
    * @param {string} hash - The key for the new entry.
@@ -148,17 +159,14 @@ export class TranslationManager {
   setTranslations(
     locale: string,
     hash: string,
-    id: string = hash,
-    translation: TranslationSuccess | TranslationLoading | TranslationError,
-    isRuntimeTranslation: boolean = true
+    translation: TranslationSuccess | TranslationLoading | TranslationError
   ): boolean {
     if (!(locale && hash && translation)) return false;
     const reference = standardizeLocale(locale);
     const currentTranslations = this.translationsMap.get(reference) || {};
-    const key = isRuntimeTranslation ? hash : id;
     this.translationsMap.set(reference, {
       ...currentTranslations,
-      [key]: translation,
+      [hash]: translation,
     });
     // Reset the fetch time since we just manually updated the translation
     this.lastFetchTime.set(reference, Date.now());

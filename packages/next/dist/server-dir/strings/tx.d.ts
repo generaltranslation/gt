@@ -3,8 +3,6 @@
  * If no translation is required, it renders the content as is. Otherwise, it fetches the
  * required translations or falls back to on-demand translation if enabled.
  *
- * By default, General Translation saves the translation in a remote cache if an `id` option is passed.
- *
  * @async
  * @function tx (translate)
  *

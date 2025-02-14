@@ -94,7 +94,7 @@ var I18NConfiguration = /** @class */ (function () {
         // runtime translations
         var _runtimeTranslation = !!(this.projectId &&
             this.runtimeUrl &&
-            ((this.apiKey && process.env.NODE_ENV === 'production') ||
+            (this.apiKey ||
                 (this.devApiKey && process.env.NODE_ENV === 'development')));
         // translation loader
         this.loadTranslationEnabled = !!(loadTranslationType === 'custom' ||
@@ -231,6 +231,15 @@ var I18NConfiguration = /** @class */ (function () {
                 }
             });
         });
+    };
+    /**
+     * Retrieves translations for a given locale which are already cached locally
+     * @param {string} locale - The locale code.
+     * @returns {TranslationsObject} The translations data or an empty object if not found.
+     */
+    I18NConfiguration.prototype.getRecentTranslations = function (locale) {
+        var _a;
+        return ((_a = this._translationManager) === null || _a === void 0 ? void 0 : _a.getRecentTranslations(locale)) || {};
     };
     /**
      * Translate content into language associated with a given locale
@@ -372,19 +381,19 @@ var I18NConfiguration = /** @class */ (function () {
                             var errorCode = 500;
                             if (!result)
                                 return request.reject(new internal_1.GTTranslationError(errorMsg, errorCode));
-                            var key = request.metadata.id || request.metadata.hash;
+                            var hash = request.metadata.hash;
                             if (result && typeof result === 'object') {
                                 if ('translation' in result && result.translation) {
                                     // record translations
                                     if (_this._translationManager) {
-                                        _this._translationManager.setTranslations(request.targetLocale, request.metadata.hash, key, {
+                                        _this._translationManager.setTranslations(request.targetLocale, hash, {
                                             state: 'success',
                                             target: result.translation,
                                         });
                                     }
                                     // check for mismatching ids or hashes
-                                    if (result.reference.key !== request.metadata.hash) {
-                                        console.warn((0, createErrors_1.createMismatchingHashWarning)(request.metadata.hash, result.reference.key));
+                                    if (result.reference.hash !== hash) {
+                                        console.warn((0, createErrors_1.createMismatchingHashWarning)(hash, result.reference.hash));
                                     }
                                     return request.resolve(result.translation);
                                 }
@@ -395,7 +404,7 @@ var I18NConfiguration = /** @class */ (function () {
                             }
                             // record translation error
                             if (_this._translationManager) {
-                                _this._translationManager.setTranslations(request.targetLocale, request.metadata.hash, key, {
+                                _this._translationManager.setTranslations(request.targetLocale, hash, {
                                     state: 'error',
                                     error: result.error || 'Translation failed.',
                                     code: result.code || 500,
@@ -410,7 +419,7 @@ var I18NConfiguration = /** @class */ (function () {
                         batch.forEach(function (request) {
                             // record translation error
                             if (_this._translationManager) {
-                                _this._translationManager.setTranslations(request.targetLocale, request.metadata.hash, request.metadata.id || request.metadata.hash, { state: 'error', error: 'Translation failed.', code: 500 });
+                                _this._translationManager.setTranslations(request.targetLocale, request.metadata.hash, { state: 'error', error: 'Translation failed.', code: 500 });
                             }
                             return request.reject(new internal_1.GTTranslationError('Translation failed.', 500));
                         });
