@@ -8,13 +8,12 @@ declare const defaultInitGTProps: {
     readonly defaultLocale: "en-US";
     readonly getLocale: () => Promise<"en-US">;
     readonly locales: string[];
-    readonly getMetadata: () => Promise<{}>;
     readonly maxConcurrentRequests: 100;
     readonly maxBatchSize: 25;
     readonly batchInterval: 50;
     readonly renderSettings: {
         method: import("gt-react/internal").RenderMethod;
-        timeout?: number;
+        timeout: number;
     };
     readonly _usingPlugin: false;
 };

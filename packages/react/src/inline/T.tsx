@@ -1,9 +1,7 @@
 import React, { useEffect } from 'react';
-import useDefaultLocale from '../hooks/useDefaultLocale';
 import renderDefaultChildren from '../provider/rendering/renderDefaultChildren';
 import {
   addGTIdentifier,
-  isEmptyReactFragment,
   writeChildrenAsObjects,
 } from '../internal';
 import useGTContext from '../provider/GTContext';
@@ -55,19 +53,17 @@ function T({
   context?: string;
   [key: string]: any;
 }): React.JSX.Element | undefined {
-  if (!children) return undefined;
 
-  if (isEmptyReactFragment(children)) return <React.Fragment />;
+  if (!children) return undefined;
 
   const { variables, variablesOptions } = props;
 
   const {
     translations,
     translationRequired,
-    translationEnabled,
-    runtimeTranslationEnabled,
+    developmentTranslationEnabled,
     dialectTranslationRequired,
-    translateChildren,
+    registerJsxForTranslation,
     renderSettings,
     locale,
     defaultLocale,
@@ -76,9 +72,8 @@ function T({
   const taggedChildren = useMemo(() => addGTIdentifier(children), [children]);
 
   // ----- FETCH TRANSLATION ----- //
-  // (checking cache is handled by GTProvider)
 
-  // Calculate necessary info for fetching tx/generating tx
+  // Calculate necessary info for fetching translation / generating translation
   const context = props.context;
   const [childrenAsObjects, hash] = useMemo(() => {
     if (translationRequired) {
@@ -86,6 +81,7 @@ function T({
       const hash: string = hashJsxChildren({
         source: childrenAsObjects,
         ...(context && { context }),
+        ...(id && { id })
       });
       return [childrenAsObjects, hash];
     } else {
@@ -93,25 +89,24 @@ function T({
     }
   }, [context, taggedChildren, translationRequired, children]);
 
-  // get tx entry
-  const translationEntry = translations?.[hash];
-  // || translations?.[id || ''];
+  // get translation entry
+  const translation = translations?.[hash];
 
   // Do dev translation if required
   useEffect(() => {
     // skip if:
     if (
-      !runtimeTranslationEnabled || // runtime translation disabled
+      !developmentTranslationEnabled || // runtime translation disabled
       !translationRequired || // no translation required
       !translations || // cache not checked yet
       !locale || // locale not loaded
-      translationEntry // translation exists
+      translation // translation exists
     ) {
       return;
     }
 
     // Translate content
-    translateChildren({
+    registerJsxForTranslation({
       source: childrenAsObjects,
       targetLocale: locale,
       metadata: {
@@ -121,9 +116,9 @@ function T({
       },
     });
   }, [
-    runtimeTranslationEnabled,
+    developmentTranslationEnabled,
     translations,
-    translationEntry,
+    translation,
     translationRequired,
     id,
     hash,
@@ -168,15 +163,15 @@ function T({
   // fallback if:
   if (
     !translationRequired || // no translation required
-    !translationEnabled || // translation not enabled
-    (translations && !translationEntry && !runtimeTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
-    translationEntry?.state === 'error' // error fetching translation
+    // !translationEnabled || // translation not enabled
+    (translations && !translation && !developmentTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
+    translation?.state === 'error' // error fetching translation
   ) {
     return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
   }
 
   // loading behavior (checking cache or fetching runtime translation)
-  if (!translationEntry || translationEntry?.state === 'loading') {
+  if (!translation|| translation?.state === 'loading') {
     let loadingFallback;
     if (renderSettings.method === 'skeleton') {
       loadingFallback = renderSkeleton();
@@ -186,14 +181,13 @@ function T({
       // default
       loadingFallback = renderLoadingDefault();
     }
-    // The suspense exists here for hydration reasons
     return <React.Fragment>{loadingFallback}</React.Fragment>;
   }
 
   // render translated content
   return (
     <React.Fragment>
-      {renderTranslation(translationEntry.target)}
+      {renderTranslation(translation.target)}
     </React.Fragment>
   );
 }

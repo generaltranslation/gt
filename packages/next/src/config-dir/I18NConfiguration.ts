@@ -11,7 +11,6 @@ import {
   GTTranslationError,
 } from 'gt-react/internal';
 import { createMismatchingHashWarning } from '../errors/createErrors';
-import { hashJsxChildren } from 'generaltranslation/id';
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TaggedChildren, TranslationsObject } from 'gt-react/internal';
 type I18NConfigurationParams = {
@@ -287,37 +286,6 @@ export default class I18NConfiguration {
 
   addGTIdentifier(children: Children): TaggedChildren {
     return addGTIdentifier(children);
-  }
-
-  /**
-   * @param {TaggedChildren} children - The children to be serialized
-   * @param {string} context - The context in which the children are being serialized
-   * @returns {[JsxChildren, string]} Serialized children and SHA256 hash generated from it
-   */
-  serializeAndHashChildren(
-    children: TaggedChildren,
-    context?: string
-  ): [JsxChildren, string] {
-    const childrenAsObjects = writeChildrenAsObjects(children);
-    return [
-      childrenAsObjects,
-      hashJsxChildren({
-        source: childrenAsObjects,
-        ...(context && { context }),
-      }),
-    ];
-  }
-
-  /**
-   * @param {Content} content - The content to be hashed
-   * @param {string} context - The context in which the content are being hashed
-   * @returns {string} A SHA256 hash of the content
-   */
-  hashContent(content: Content, context?: string): string {
-    return hashJsxChildren({
-      source: content,
-      ...(context && { context }),
-    });
   }
 
   /**

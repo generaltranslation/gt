@@ -33,7 +33,6 @@
  * const translation = await tx("The price is {price}", { locale: 'es-MX', variables: { price: 29.99 } });
  */
 export default function tx(content: string, options?: {
-    id?: string;
     locale?: string;
     context?: string;
     variables?: Record<string, any>;

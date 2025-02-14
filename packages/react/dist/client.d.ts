@@ -87,8 +87,9 @@ type TranslateChildrenCallback = (params: {
 }) => Promise<void>;
 type GTContextType = {
     translateDictionaryEntry: (id: string, options?: Record<string, any>) => React__default.ReactNode;
-    translateContent: TranslateContentCallback;
-    translateChildren: TranslateChildrenCallback;
+    registerContentForTranslation: TranslateContentCallback;
+    registerJsxForTranslation: TranslateChildrenCallback;
+    developmentTranslationEnabled: boolean;
     locale: string;
     locales: string[];
     setLocale: (locale: string) => void;
@@ -101,8 +102,6 @@ type GTContextType = {
         timeout?: number;
     };
     projectId?: string;
-    translationEnabled: boolean;
-    runtimeTranslationEnabled: boolean;
 };
 type ClientProviderProps = {
     children: any;
@@ -121,8 +120,7 @@ type ClientProviderProps = {
         method: RenderMethod;
         timeout?: number;
     };
-    translationEnabled: boolean;
-    runtimeTranslationEnabled: boolean;
+    developmentTranslationEnabled: boolean;
     projectId?: string;
     devApiKey?: string;
     runtimeUrl?: string | null;
@@ -132,7 +130,7 @@ type ClientProviderProps = {
 
 declare const GTContext: React$1.Context<GTContextType | undefined>;
 
-declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId, defaultLocale, runtimeUrl, renderSettings, setTranslations, runtimeTranslationEnabled, ...metadata }: {
+declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId, defaultLocale, runtimeUrl, renderSettings, setTranslations, runtimeTranslationEnabled, ...globalMetadata }: {
     projectId?: string;
     devApiKey?: string;
     locale: string;
@@ -147,8 +145,8 @@ declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId
     setTranslations: React.Dispatch<React.SetStateAction<any>>;
     [key: string]: any;
 }): {
-    translateContent: TranslateContentCallback;
-    translateChildren: TranslateChildrenCallback;
+    registerContentForTranslation: TranslateContentCallback;
+    registerJsxForTranslation: TranslateChildrenCallback;
 };
 
 declare function renderVariable({ variableType, variableName, variableValue, variableOptions, locales, }: {
@@ -159,7 +157,7 @@ declare function renderVariable({ variableType, variableName, variableValue, var
     locales: string[];
 }): React.JSX.Element;
 
-declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale: _locale, _versionId, dictionaryEnabled, defaultLocale, translationRequired, dialectTranslationRequired, locales, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl, translationEnabled, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
+declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl, developmentTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -474,7 +472,7 @@ declare function LocaleSelector({ locales, }: {
  * @param {string[]} [locales] - The list of approved locales for the project.
  * @param {string} [defaultLocale=libraryDefaultLocale] - The default locale to use if no other locale is found.
  * @param {string} [locale] - The current locale, if already set.
- * @param {string} [cacheUrl='https://cache.gtx.dev'] - The URL of the cache service for fetching translations.
+ * @param {string} [cacheUrl='https://cdn.gtx.dev'] - The URL of the cache service for fetching translations.
  * @param {string} [runtimeUrl='https://runtime.gtx.dev'] - The URL of the runtime service for fetching translations.
  * @param {RenderSettings} [renderSettings=defaultRenderSettings] - The settings for rendering translations.
  * @param {string} [_versionId] - The version ID for fetching translations.
@@ -482,7 +480,7 @@ declare function LocaleSelector({ locales, }: {
  * @param {object} [metadata] - Additional metadata to pass to the context.
  *
  * @returns {JSX.Element} The provider component for General Translation context.
- */
+*/
 declare function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadTranslation, _versionId, ...metadata }: {
     children?: React__default.ReactNode;
     projectId?: string;
@@ -497,7 +495,6 @@ declare function GTProvider({ children, projectId: _projectId, devApiKey: _devAp
         method: RenderMethod;
         timeout?: number;
     };
-    enableCache?: boolean;
     loadTranslation?: (locale: string) => Promise<any>;
     _versionId?: string;
     [key: string]: any;

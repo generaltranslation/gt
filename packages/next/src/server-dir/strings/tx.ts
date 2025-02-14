@@ -5,9 +5,9 @@ import {
 } from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import getLocale from '../../request/getLocale';
-import getMetadata from '../../request/getMetadata';
 import { createStringTranslationError } from '../../errors/createErrors';
-import { Content } from 'generaltranslation/internal';
+import { hashJsxChildren } from 'generaltranslation/id';
+
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -46,7 +46,6 @@ import { Content } from 'generaltranslation/internal';
 export default async function tx(
   content: string,
   options: {
-    id?: string;
     locale?: string;
     context?: string;
     variables?: Record<string, any>;
@@ -57,29 +56,14 @@ export default async function tx(
     [key: string]: any;
   } = {}
 ): Promise<string> {
+
   // ----- SET UP ----- //
 
-  // No content to translate
-  if (!content) {
-    // Reject empty strings
-    if (content === '') {
-      console.warn(
-        `gt-next warn: Empty string found in tx() ${
-          options.id && `with id: ${options.id}`
-        }`
-      );
-      ``;
-    }
-    return '';
-  }
-
   const I18NConfig = getI18NConfig();
-  const locale = options.locale || (await getLocale());
+  const locale = options.locale || await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const translationRequired = I18NConfig.requiresTranslation(locale);
-  const contentArray = splitStringToContent(content); // parse content
-  const serverRuntimeTranslationEnabled =
-    I18NConfig.isServerRuntimeTranslationEnabled(); // allowed in prod
+  const source = splitStringToContent(content); // parse content
 
   // ----- RENDER METHOD ----- //
 
@@ -95,43 +79,21 @@ export default async function tx(
   // ----- RENDER LOGIC ----- //
 
   // translation required
-  if (!translationRequired) return renderContent(contentArray, [defaultLocale]);
+  if (!translationRequired || !content) 
+    return renderContent(source, [defaultLocale]);
 
   // get hash
-  const hash = I18NConfig.hashContent(contentArray, options.context);
-
-  // Check cache for translation (if there is no id, then we don't cache)
-  if (options.id) {
-    let translations;
-    try {
-      translations = await I18NConfig.getCachedTranslations(locale);
-      const translationEntry =
-        translations?.[hash] || translations?.[options.id || ''];
-      if (translationEntry) {
-        const translationResult = translationEntry;
-        if (translationResult.state !== 'success') {
-          // fallback error
-          return renderContent(content, [locale, defaultLocale]);
-        }
-        return renderContent(translationResult.target, [locale, defaultLocale]);
-      }
-    } catch (error) {
-      console.error('Error fetching translations from cache:', error);
-      // fallback error
-      return renderContent(content, [locale, defaultLocale]);
-    }
-  }
-
-  // If tx not enabled (and nothing in cache), return default
-  if (!serverRuntimeTranslationEnabled) {
-    return renderContent(content, [locale, defaultLocale]);
-  }
+  const hash = hashJsxChildren({
+    source, 
+    ...(options?.context && { context: options.context }),
+    ...(options?.id && { id: options.id })
+  })
 
   // New translation required
-  const translationPromise = I18NConfig.translateContent({
-    source: contentArray,
+  const translationPromise = await I18NConfig.translateContent({
+    source,
     targetLocale: locale,
-    options: { ...options, ...(await getMetadata()), hash },
+    options: { ...options, hash },
   });
 
   try {
@@ -139,6 +101,6 @@ export default async function tx(
     return renderContent(target, [locale, defaultLocale]);
   } catch (error) {
     console.error(createStringTranslationError(content, options.id), error);
-    return renderContent(contentArray, [defaultLocale]);
+    return renderContent(source, [defaultLocale]);
   }
 }

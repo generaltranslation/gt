@@ -38,9 +38,7 @@ var getI18NConfig_1 = __importDefault(require("../config-dir/getI18NConfig"));
  */
 function DateTime(_a) {
     var children = _a.children, name = _a.name, value = _a.value, _b = _a.options, options = _b === void 0 ? {} : _b, _c = _a.locales, locales = _c === void 0 ? [(0, getI18NConfig_1.default)().getDefaultLocale()] : _c, props = __rest(_a, ["children", "name", "value", "options", "locales"]);
-    // Extract general translation data from props
     var generaltranslation = props["data-_gt"];
-    // Determine the default value to use
     if (typeof children !== 'undefined' && typeof value === 'undefined') {
         value = children;
     }

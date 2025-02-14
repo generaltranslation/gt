@@ -111,6 +111,7 @@ export type GTContextType = {
   ) => React.ReactNode;
   registerContentForTranslation: TranslateContentCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
+  developmentTranslationEnabled: boolean;
   locale: string;
   locales: string[];
   setLocale: (locale: string) => void;
@@ -157,8 +158,7 @@ export type ClientProviderProps = {
     method: RenderMethod;
     timeout?: number;
   };
-  translationEnabled: boolean;
-  runtimeTranslationEnabled: boolean;
+  developmentTranslationEnabled: boolean;
   projectId?: string;
   devApiKey?: string;
   runtimeUrl?: string | null;

@@ -54,8 +54,8 @@ exports.default = tx;
 var generaltranslation_1 = require("generaltranslation");
 var getI18NConfig_1 = __importDefault(require("../../config-dir/getI18NConfig"));
 var getLocale_1 = __importDefault(require("../../request/getLocale"));
-var getMetadata_1 = __importDefault(require("../../request/getMetadata"));
 var createErrors_1 = require("../../errors/createErrors");
+var id_1 = require("generaltranslation/id");
 /**
  * Translates the provided content string based on the specified locale and options.
  * If no translation is required, it renders the content as is. Otherwise, it fetches the
@@ -92,93 +92,50 @@ var createErrors_1 = require("../../errors/createErrors");
  */
 function tx(content_1) {
     return __awaiter(this, arguments, void 0, function (content, options) {
-        var I18NConfig, locale, _a, defaultLocale, translationRequired, contentArray, serverRuntimeTranslationEnabled, renderContent, hash, translations, translationEntry, translationResult, error_1, translationPromise, _b, _c, _d, target, error_2;
-        var _e;
+        var I18NConfig, locale, _a, defaultLocale, translationRequired, source, renderContent, hash, translationPromise, target, error_1;
         if (options === void 0) { options = {}; }
-        return __generator(this, function (_f) {
-            switch (_f.label) {
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    // ----- SET UP ----- //
-                    // No content to translate
-                    if (!content) {
-                        // Reject empty strings
-                        if (content === '') {
-                            console.warn("gt-next warn: Empty string found in tx() ".concat(options.id && "with id: ".concat(options.id)));
-                            "";
-                        }
-                        return [2 /*return*/, ''];
-                    }
                     I18NConfig = (0, getI18NConfig_1.default)();
                     _a = options.locale;
                     if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    _a = (_f.sent());
-                    _f.label = 2;
+                    _a = (_b.sent());
+                    _b.label = 2;
                 case 2:
                     locale = _a;
                     defaultLocale = I18NConfig.getDefaultLocale();
                     translationRequired = I18NConfig.requiresTranslation(locale);
-                    contentArray = (0, generaltranslation_1.splitStringToContent)(content);
-                    serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled();
+                    source = (0, generaltranslation_1.splitStringToContent)(content);
                     renderContent = function (content, locales) {
                         return (0, generaltranslation_1.renderContentToString)(content, locales, options.variables, options.variablesOptions);
                     };
                     // ----- RENDER LOGIC ----- //
                     // translation required
-                    if (!translationRequired)
-                        return [2 /*return*/, renderContent(contentArray, [defaultLocale])];
-                    hash = I18NConfig.hashContent(contentArray, options.context);
-                    if (!options.id) return [3 /*break*/, 6];
-                    translations = void 0;
-                    _f.label = 3;
+                    if (!translationRequired || !content)
+                        return [2 /*return*/, renderContent(source, [defaultLocale])];
+                    hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options.id })));
+                    return [4 /*yield*/, I18NConfig.translateContent({
+                            source: source,
+                            targetLocale: locale,
+                            options: __assign(__assign({}, options), { hash: hash }),
+                        })];
                 case 3:
-                    _f.trys.push([3, 5, , 6]);
-                    return [4 /*yield*/, I18NConfig.getCachedTranslations(locale)];
+                    translationPromise = _b.sent();
+                    _b.label = 4;
                 case 4:
-                    translations = _f.sent();
-                    translationEntry = (translations === null || translations === void 0 ? void 0 : translations[hash]) || (translations === null || translations === void 0 ? void 0 : translations[options.id || '']);
-                    if (translationEntry) {
-                        translationResult = translationEntry;
-                        if (translationResult.state !== 'success') {
-                            // fallback error
-                            return [2 /*return*/, renderContent(content, [locale, defaultLocale])];
-                        }
-                        return [2 /*return*/, renderContent(translationResult.target, [locale, defaultLocale])];
-                    }
-                    return [3 /*break*/, 6];
-                case 5:
-                    error_1 = _f.sent();
-                    console.error('Error fetching translations from cache:', error_1);
-                    // fallback error
-                    return [2 /*return*/, renderContent(content, [locale, defaultLocale])];
-                case 6:
-                    // If tx not enabled (and nothing in cache), return default
-                    if (!serverRuntimeTranslationEnabled) {
-                        return [2 /*return*/, renderContent(content, [locale, defaultLocale])];
-                    }
-                    _c = (_b = I18NConfig).translateContent;
-                    _e = {
-                        source: contentArray,
-                        targetLocale: locale
-                    };
-                    _d = [__assign({}, options)];
-                    return [4 /*yield*/, (0, getMetadata_1.default)()];
-                case 7:
-                    translationPromise = _c.apply(_b, [(_e.options = __assign.apply(void 0, [__assign.apply(void 0, _d.concat([(_f.sent())])), { hash: hash }]),
-                            _e)]);
-                    _f.label = 8;
-                case 8:
-                    _f.trys.push([8, 10, , 11]);
+                    _b.trys.push([4, 6, , 7]);
                     return [4 /*yield*/, translationPromise];
-                case 9:
-                    target = _f.sent();
+                case 5:
+                    target = _b.sent();
                     return [2 /*return*/, renderContent(target, [locale, defaultLocale])];
-                case 10:
-                    error_2 = _f.sent();
-                    console.error((0, createErrors_1.createStringTranslationError)(content, options.id), error_2);
-                    return [2 /*return*/, renderContent(contentArray, [defaultLocale])];
-                case 11: return [2 /*return*/];
+                case 6:
+                    error_1 = _b.sent();
+                    console.error((0, createErrors_1.createStringTranslationError)(content, options.id), error_1);
+                    return [2 /*return*/, renderContent(source, [defaultLocale])];
+                case 7: return [2 /*return*/];
             }
         });
     });

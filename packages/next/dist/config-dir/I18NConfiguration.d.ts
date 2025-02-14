@@ -107,18 +107,6 @@ export default class I18NConfiguration {
     requiresTranslation(locale: string): boolean;
     addGTIdentifier(children: Children): TaggedChildren;
     /**
-     * @param {TaggedChildren} children - The children to be serialized
-     * @param {string} context - The context in which the children are being serialized
-     * @returns {[JsxChildren, string]} Serialized children and SHA256 hash generated from it
-     */
-    serializeAndHashChildren(children: TaggedChildren, context?: string): [JsxChildren, string];
-    /**
-     * @param {Content} content - The content to be hashed
-     * @param {string} context - The context in which the content are being hashed
-     * @returns {string} A SHA256 hash of the content
-     */
-    hashContent(content: Content, context?: string): string;
-    /**
      * Get the translation dictionaries for this user's locale, if they exist
      * Globally shared cache or saved locally
      * @param locale - The locale set by the user

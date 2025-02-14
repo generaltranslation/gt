@@ -1,10 +1,9 @@
 import {
-  extractEntryMetadata,
+  getEntryAndMetadata,
   flattenDictionary,
   DictionaryEntry,
   Dictionary,
   TranslatedContent,
-  isEmptyReactFragment,
 } from 'gt-react/internal';
 import T from './inline/T';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
@@ -14,7 +13,6 @@ import {
   renderContentToString,
   splitStringToContent,
 } from 'generaltranslation';
-import getMetadata from '../request/getMetadata';
 import {
   createDictionarySubsetError,
   createNoEntryWarning,
@@ -22,6 +20,7 @@ import {
   dictionaryDisabledError,
 } from '../errors/createErrors';
 import React, { isValidElement } from 'react';
+import { hashJsxChildren } from 'generaltranslation/id';
 /**
  * Returns the translation function `t()`, which is used to translate an item from the dictionary.
  *
@@ -65,9 +64,6 @@ export async function getGT(
     // Send a request to cache for translations
     let translationsPromise = I18NConfig.getCachedTranslations(locale);
 
-    // Additional setup
-    const additionalMetadata = await getMetadata();
-
     // Flatten dictionaries for processing while waiting for translations
     const dictionarySubset =
       (id ? getDictionaryEntry(id) : getDictionary()) || {};
@@ -86,7 +82,7 @@ export async function getGT(
       Object.entries(flattenedDictionaryEntries ?? {}).map(
         async ([suffix, dictionaryEntry]) => {
           // Get the entry from the dictionary
-          let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
+          let { entry, metadata } = getEntryAndMetadata(dictionaryEntry);
 
           // only tx strings
           if (typeof entry !== 'string') return;
@@ -103,8 +99,12 @@ export async function getGT(
           }
 
           // Serialize and hash
-          const contentArray = splitStringToContent(entry);
-          const hash = I18NConfig.hashContent(contentArray, metadata?.context);
+          const source = splitStringToContent(entry);
+          const hash = hashJsxChildren({
+            source, 
+            ...(metadata?.context && { context: metadata?.context }),
+            id: entryId
+          })
 
           // ----- CHECK CACHE ----- //
 
@@ -128,9 +128,9 @@ export async function getGT(
 
           // Send a request to cache for translations
           const translationPromise = I18NConfig.translateContent({
-            source: contentArray,
+            source,
             targetLocale: locale,
-            options: { id: entryId, hash, ...additionalMetadata },
+            options: { id: entryId, hash },
           });
 
           // for server-side rendering, all strings are blocking
@@ -162,7 +162,7 @@ export async function getGT(
       console.warn(createNoEntryWarning(id));
       return undefined;
     }
-    let { entry, metadata } = extractEntryMetadata(
+    let { entry, metadata } = getEntryAndMetadata(
       dictionaryEntry as DictionaryEntry
     );
 
@@ -172,22 +172,14 @@ export async function getGT(
 
     // Render strings
     if (typeof entry === 'string') {
-      const contentArray =
+      const source =
         stringTranslationsById[id] || splitStringToContent(entry);
       return renderContentToString(
-        contentArray,
+        source,
         [locale, defaultLocale],
         variables,
         variablesOptions
       );
-    }
-
-    // Reject empty fragments
-    if (isEmptyReactFragment(entry)) {
-      console.warn(
-        `gt-next warn: Empty fragment found in dictionary with id: ${id}`
-      );
-      return entry;
     }
 
     // Translate on demand

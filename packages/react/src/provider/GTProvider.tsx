@@ -14,7 +14,7 @@ import {
   TranslationsObject,
 } from '../types/types';
 import getDictionaryEntry from './helpers/getDictionaryEntry';
-import { flattenDictionary, isEmptyReactFragment } from '../internal';
+import { flattenDictionary } from '../internal';
 import getEntryAndMetadata from './helpers/getEntryAndMetadata';
 import {
   Content,
@@ -463,6 +463,7 @@ export default function GTProvider({
         translateDictionaryEntry,
         registerContentForTranslation,
         registerJsxForTranslation,
+        developmentTranslationEnabled,
         locale: locale,
         locales,
         setLocale,

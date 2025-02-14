@@ -17,7 +17,6 @@ type InitGTProps = {
         method: RenderMethod;
         timeout?: number;
     };
-    getMetadata?: () => Promise<Record<string, any>>;
     maxConcurrentRequests?: number;
     maxBatchSize?: number;
     batchInterval?: number;

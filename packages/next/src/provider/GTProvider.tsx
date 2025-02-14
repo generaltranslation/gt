@@ -1,23 +1,23 @@
 import {
   flattenDictionary,
-  extractEntryMetadata,
+  getEntryAndMetadata,
   DictionaryEntry,
   Entry,
   TranslatedChildren,
-  isEmptyReactFragment,
   FlattenedTaggedDictionary,
   GTTranslationError,
   TranslationError,
+  writeChildrenAsObjects,
 } from 'gt-react/internal';
 import { ReactNode } from 'react';
 import getI18NConfig from '../config-dir/getI18NConfig';
 import getLocale from '../request/getLocale';
-import getMetadata from '../request/getMetadata';
 import { isSameLanguage, splitStringToContent } from 'generaltranslation';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
 import { Dictionary, TranslationsObject } from 'gt-react/internal';
 import { createDictionarySubsetError } from '../errors/createErrors';
 import ClientProvider from './ClientProviderWrapper';
+import { hashJsxChildren } from 'generaltranslation/id'
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -40,7 +40,6 @@ export default async function GTProvider({
   };
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
-  const additionalMetadata = await getMetadata();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const translationRequired = I18NConfig.requiresTranslation(locale);
   const dialectTranslationRequired =
@@ -87,16 +86,18 @@ export default async function GTProvider({
 
         // Get the entry from the dictionary
         const entryId = getId(suffix);
-        let { entry, metadata } = extractEntryMetadata(dictionaryEntry);
+        let { entry, metadata } = getEntryAndMetadata(dictionaryEntry);
 
         // ---- POPULATE DICTIONARY JSX ---- //
         if (typeof entry !== 'string') {
           // Populating the dictionary that we will pass to the client
           const taggedChildren = I18NConfig.addGTIdentifier(entry);
-          const [childrenAsObjects, hash] = I18NConfig.serializeAndHashChildren(
-            taggedChildren,
-            metadata?.context
-          );
+          const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+          const hash = hashJsxChildren({
+            source: childrenAsObjects,
+            ...(metadata?.context && { context: metadata.context }),
+            id: entryId,
+          })
           dictionary[entryId] = [
             taggedChildren as Entry,
             { ...metadata, hash },
@@ -119,16 +120,6 @@ export default async function GTProvider({
 
           // skip if translation already exists
           if (translationEntry) {
-            return;
-          }
-
-          // Reject empty fragments
-          if (isEmptyReactFragment(entry)) {
-            translations[key] = {
-              state: 'error',
-              error: 'Empty fragments are not allowed for translation.',
-              code: 400,
-            };
             return;
           }
 
@@ -170,11 +161,15 @@ export default async function GTProvider({
 
         // ---- POPULATE DICTIONARY STRINGS ---- //
 
-        // Get serialize and hash string entry
+        // Serialize and hash string entry
         const content = splitStringToContent(entry);
-        const hash =
-          metadata?.hash || I18NConfig.hashContent(content, metadata?.context);
+        const hash = hashJsxChildren({
+          source: content, 
+          ...(metadata?.context && { context: metadata?.context }),
+          id: entryId
+        })
 
+        
         // Add to client dictionary
         dictionary[entryId] = [entry, { ...metadata, hash }];
 
@@ -218,7 +213,6 @@ export default async function GTProvider({
             options: {
               id: entryId,
               hash,
-              ...additionalMetadata,
               ...{ context: metadata?.context },
             },
           });
@@ -255,6 +249,7 @@ export default async function GTProvider({
       dialectTranslationRequired={dialectTranslationRequired}
       requiredPrefix={id}
       renderSettings={I18NConfig.getRenderSettings()}
+      developmentTranslationEnabled={clientRuntimeTranslationEnabled}
       {...I18NConfig.getClientSideConfig()}
     >
       {children}

@@ -15,7 +15,6 @@ const defaultInitGTProps = {
   defaultLocale: libraryDefaultLocale,
   getLocale: async () => libraryDefaultLocale,
   locales: [] as string[],
-  getMetadata: async () => ({}),
   maxConcurrentRequests: 100,
   maxBatchSize: 25,
   batchInterval: 50,

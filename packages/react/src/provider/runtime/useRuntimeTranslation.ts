@@ -321,40 +321,43 @@ export default function useRuntimeTranslation({
     createGenericRuntimeTranslationError,
   ]);
 
-  useEffect(() => {
-    // flag for storing fetch from API
-    let storeResults = true;
+  // Create a ref to hold the latest activeRequests value.
+  const activeRequestsRef = useRef(activeRequests);
 
-    // Send a batch request every `batchInterval` ms
+  // Update the ref whenever activeRequests changes.
+  useEffect(() => {
+    activeRequestsRef.current = activeRequests;
+  }, [activeRequests]);
+
+  useEffect(() => {
+    let storeResults = true;
     const intervalId = setInterval(() => {
+      // Use the ref value for the current activeRequests
       if (
         requestQueueRef.current.size > 0 &&
-        activeRequests < maxConcurrentRequests
+        activeRequestsRef.current < maxConcurrentRequests
       ) {
         const batchSize = Math.min(maxBatchSize, requestQueueRef.current.size);
         const batchRequests = new Map(
           Array.from(requestQueueRef.current.entries()).slice(0, batchSize)
         );
         (async () => {
-          const batchResult = await sendBatchRequest(batchRequests, locale);
-          if (storeResults) {
-            setTranslations((prev: any) => {
-              return { ...(prev || {}), ...batchResult };
-            });
-          }
+        const batchResult = await sendBatchRequest(batchRequests, locale);
+        if (storeResults) {
+          setTranslations((prev: any) => ({ ...(prev || {}), ...batchResult }));
+        }
         })();
-        batchRequests.forEach((_, keyWithLocale) =>
-          requestQueueRef.current.delete(keyWithLocale)
+        batchRequests.forEach((_, key) =>
+          requestQueueRef.current.delete(key)
         );
       }
     }, batchInterval);
 
-    // Cleanup on unmount
     return () => {
-      storeResults = false; // Don't store locale changes
-      clearInterval(intervalId); // Clear the interval
+      storeResults = false;
+      clearInterval(intervalId);
     };
-  }, [locale]);
+  }, [locale, sendBatchRequest]);
 
   return { registerContentForTranslation, registerJsxForTranslation };
 }

@@ -53,12 +53,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var jsx_runtime_1 = require("react/jsx-runtime");
 var getI18NConfig_1 = __importDefault(require("../../config-dir/getI18NConfig"));
 var getLocale_1 = __importDefault(require("../../request/getLocale"));
-var getMetadata_1 = __importDefault(require("../../request/getMetadata"));
 var react_1 = require("react");
 var internal_1 = require("gt-react/internal");
 var renderVariable_1 = __importDefault(require("../rendering/renderVariable"));
 var generaltranslation_1 = require("generaltranslation");
-var react_2 = __importDefault(require("react"));
+var id_1 = require("generaltranslation/id");
 function Resolver(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
         var children = _b.children;
@@ -114,21 +113,17 @@ function Resolver(_a) {
  */
 function T(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, renderSettings, translationRequired, serverRuntimeTranslationEnabled, dialectTranslationRequired, taggedChildren, renderDefaultLocale, renderLoadingDefault, translationsPromise, _c, childrenAsObjects, hash, translations, _d, translationEntry, translationPromise, _e, _f, _g, loadingFallback;
-        var _h;
+        var I18NConfig, locale, defaultLocale, renderSettings, translationRequired, serverRuntimeTranslationEnabled, dialectTranslationRequired, taggedChildren, renderDefaultLocale, renderLoadingDefault, translationsPromise, childrenAsObjects, hash, translations, _c, translationEntry, translationPromise, loadingFallback;
         var children = _b.children, id = _b.id, context = _b.context, variables = _b.variables, variablesOptions = _b.variablesOptions;
-        return __generator(this, function (_j) {
-            switch (_j.label) {
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0:
-                    if (!children) {
+                    if (!children)
                         return [2 /*return*/];
-                    }
-                    if ((0, internal_1.isEmptyReactFragment)(children))
-                        return [2 /*return*/, (0, jsx_runtime_1.jsx)(react_2.default.Fragment, {})];
                     I18NConfig = (0, getI18NConfig_1.default)();
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    locale = _j.sent();
+                    locale = _d.sent();
                     defaultLocale = I18NConfig.getDefaultLocale();
                     renderSettings = I18NConfig.getRenderSettings();
                     translationRequired = I18NConfig.requiresTranslation(locale);
@@ -158,17 +153,18 @@ function T(_a) {
                         return [2 /*return*/, renderDefaultLocale()];
                     }
                     translationsPromise = translationRequired && I18NConfig.getCachedTranslations(locale);
-                    _c = I18NConfig.serializeAndHashChildren(taggedChildren, context), childrenAsObjects = _c[0], hash = _c[1];
+                    childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedChildren);
+                    hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: childrenAsObjects }, (context && { context: context })), (id && { id: id })));
                     if (!translationsPromise) return [3 /*break*/, 3];
                     return [4 /*yield*/, translationsPromise];
                 case 2:
-                    _d = _j.sent();
+                    _c = _d.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    _d = {};
-                    _j.label = 4;
+                    _c = {};
+                    _d.label = 4;
                 case 4:
-                    translations = _d;
+                    translations = _c;
                     translationEntry = translations === null || translations === void 0 ? void 0 : translations[hash];
                     // ----- RENDER CACHED TRANSLATIONS ----- //
                     // if we have a cached translation, render it
@@ -187,17 +183,12 @@ function T(_a) {
                     ) {
                         return [2 /*return*/, renderDefaultLocale()];
                     }
-                    _f = (_e = I18NConfig).translateChildren;
-                    _h = {
+                    translationPromise = I18NConfig.translateChildren({
                         // do on demand translation
                         source: childrenAsObjects,
-                        targetLocale: locale
-                    };
-                    _g = [__assign(__assign(__assign({}, (id && { id: id })), { hash: hash }), (context && { context: context }))];
-                    return [4 /*yield*/, (0, getMetadata_1.default)()];
-                case 5:
-                    translationPromise = _f.apply(_e, [(_h.metadata = __assign.apply(void 0, [__assign.apply(void 0, _g.concat([(_j.sent())])), (renderSettings.timeout && { timeout: renderSettings.timeout })]),
-                            _h)])
+                        targetLocale: locale,
+                        metadata: __assign(__assign(__assign(__assign({}, (id && { id: id })), { hash: hash }), (context && { context: context })), (renderSettings.timeout && { timeout: renderSettings.timeout })),
+                    })
                         .then(function (translation) {
                         // render the translation
                         return (0, internal_1.renderTranslatedChildren)({

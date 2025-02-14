@@ -35,10 +35,7 @@ function DateTime({
   locales?: string[];
   'data-_gt'?: any;
 }): React.JSX.Element {
-  // Extract general translation data from props
   const { 'data-_gt': generaltranslation } = props;
-
-  // Determine the default value to use
   if (typeof children !== 'undefined' && typeof value === 'undefined') {
     value = children;
   }

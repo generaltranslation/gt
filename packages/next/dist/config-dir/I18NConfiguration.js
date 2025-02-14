@@ -65,7 +65,6 @@ var generaltranslation_1 = require("generaltranslation");
 var TranslationManager_1 = __importDefault(require("./TranslationManager"));
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
-var id_1 = require("generaltranslation/id");
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         // ----- CLOUD INTEGRATION ----- //
@@ -215,26 +214,6 @@ var I18NConfiguration = /** @class */ (function () {
     };
     I18NConfiguration.prototype.addGTIdentifier = function (children) {
         return (0, internal_1.addGTIdentifier)(children);
-    };
-    /**
-     * @param {TaggedChildren} children - The children to be serialized
-     * @param {string} context - The context in which the children are being serialized
-     * @returns {[JsxChildren, string]} Serialized children and SHA256 hash generated from it
-     */
-    I18NConfiguration.prototype.serializeAndHashChildren = function (children, context) {
-        var childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(children);
-        return [
-            childrenAsObjects,
-            (0, id_1.hashJsxChildren)(__assign({ source: childrenAsObjects }, (context && { context: context }))),
-        ];
-    };
-    /**
-     * @param {Content} content - The content to be hashed
-     * @param {string} context - The context in which the content are being hashed
-     * @returns {string} A SHA256 hash of the content
-     */
-    I18NConfiguration.prototype.hashContent = function (content, context) {
-        return (0, id_1.hashJsxChildren)(__assign({ source: content }, (context && { context: context })));
     };
     /**
      * Get the translation dictionaries for this user's locale, if they exist

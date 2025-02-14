@@ -17,11 +17,10 @@ import {
   TranslationsObject,
   TranslationSuccess,
 } from '../types/types';
-import extractEntryMetadata from './helpers/getEntryAndMetadata';
+import getEntryAndMetadata from './helpers/getEntryAndMetadata';
 import renderDefaultChildren from './rendering/renderDefaultChildren';
 import renderSkeleton from './rendering/renderSkeleton';
 import renderTranslatedChildren from './rendering/renderTranslatedChildren';
-import { isEmptyReactFragment } from '../utils/utils';
 import renderVariable from './rendering/renderVariable';
 import useRuntimeTranslation from './runtime/useRuntimeTranslation';
 import { localeCookieName } from 'generaltranslation/internal';
@@ -35,7 +34,6 @@ export default function ClientProvider({
   translationPromises,
   locale: _locale,
   _versionId,
-  dictionaryEnabled = false,
   defaultLocale,
   translationRequired,
   dialectTranslationRequired,
@@ -45,11 +43,11 @@ export default function ClientProvider({
   projectId,
   devApiKey,
   runtimeUrl,
-  translationEnabled,
-  runtimeTranslationEnabled,
+  developmentTranslationEnabled,
   onLocaleChange = () => {},
   cookieName = localeCookieName,
 }: ClientProviderProps): React.JSX.Element {
+
   // ----- TRANSLATIONS STATE ----- //
 
   /**
@@ -63,6 +61,7 @@ export default function ClientProvider({
   );
 
   // ----- LOCALE STATE ----- //
+
   // Maintain the locale state
   const [locale, _setLocale] = useState<string>(
     _locale ? determineLocale(_locale, locales) || '' : ''
@@ -76,7 +75,7 @@ export default function ClientProvider({
       ?.split('=')[1];
     if (
       locale &&
-      (cookieLocale || cookieLocale === '') &&
+      cookieLocale &&
       cookieLocale !== locale
     ) {
       document.cookie = `${cookieName}=${locale};path=/`;
@@ -151,16 +150,8 @@ export default function ClientProvider({
       id: string,
       options: Record<string, any> = {}
     ): React.ReactNode | string | undefined => {
+      
       // ----- SETUP ----- //
-
-      if (!dictionaryEnabled) {
-        if (process.env.NODE_ENV === 'production') {
-          console.error(dictionaryDisabledError);
-          return undefined;
-        } else {
-          throw new Error(dictionaryDisabledError);
-        }
-      }
 
       // Get the dictionary entry
       const dictionaryEntry:
@@ -177,50 +168,47 @@ export default function ClientProvider({
       }
 
       // Parse the dictionary entry
-      const { entry, metadata } = extractEntryMetadata(dictionaryEntry);
-      const variables = options;
-      const variablesOptions = metadata?.variablesOptions;
+      const { entry, metadata } = getEntryAndMetadata(dictionaryEntry);
+      const variables = options; const variablesOptions = metadata?.variablesOptions;
 
       // Get the translation entry
-      const translationEntry =
-        translations?.[metadata?.hash || ''] || translations?.[id];
+      const translation = translations?.[metadata?.hash];
 
-      // ----- RENDER STRINGS ----- //
+      // ----- HANDLE STRINGS ----- //
 
       if (typeof entry === 'string') {
-        // Reject empty strings
+        
+        // Reject empty strings 
         if (!entry.length) {
           console.warn(
-            `gt-next warn: Empty string found in dictionary with key: ${id}`
+            `gt-react warn: Empty string found in dictionary with id: ${id}`
           );
           return entry;
         }
 
-        // Handle fallback cases
-        const content = splitStringToContent(entry);
+        // Split string to content
+        const source = splitStringToContent(entry);
+
+        // Error handling
         if (
-          !translationRequired || // no translation required
-          !translationEntry || // error behavior: no translation found
-          translationEntry?.state !== 'success' // error behavior: translation did not resolve (loading state wont happen here)
+          !translationRequired || // If no translation required
+          translation?.state !== "success" // If translation was unsuccessful
         ) {
           return renderContentToString(
-            content,
-            locales,
-            variables,
-            variablesOptions
+            source, locales, variables, variablesOptions
           );
         }
 
-        // render translated content
+        // Display translated content
         return renderContentToString(
-          translationEntry.target as TranslatedContent,
+          translation.target as TranslatedContent,
           [locale, defaultLocale],
-          variables,
-          variablesOptions
+          variables, variablesOptions
         );
       }
 
-      // ----- RENDER METHODS FOR JSX ----- //
+      // ----- HANDLE JSX ----- //
+
       const taggedChildren = entry;
 
       // for default/fallback rendering
@@ -257,13 +245,13 @@ export default function ClientProvider({
       // fallback if:
       if (
         !translationRequired || // no translation required
-        (translations && !translationEntry && !runtimeTranslationEnabled) // cache miss and dev runtime translation disabled (production)
+        (translations && !translation && !developmentTranslationEnabled) // cache miss and dev runtime translation disabled (production)
       ) {
         return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
       }
 
       // loading behavior: no translation found or translation is loading
-      if (!translationEntry || translationEntry?.state === 'loading') {
+      if (!translation || translation?.state === 'loading') {
         let loadingFallback;
         if (renderSettings.method === 'skeleton') {
           loadingFallback = renderSkeleton();
@@ -278,20 +266,13 @@ export default function ClientProvider({
       }
 
       // error behavior
-      if (translationEntry.state === 'error') {
-        // Reject empty fragments
-        if (isEmptyReactFragment(entry)) {
-          console.warn(
-            `gt-next warn: Empty fragment found in dictionary with id: ${id}`
-          );
-          return entry;
-        }
+      if (translation.state === 'error') {
         return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
       }
       // render translated content
       return (
         <React.Fragment>
-          {renderTranslation(translationEntry.target)}
+          {renderTranslation(translation.target)}
         </React.Fragment>
       );
     },
@@ -299,7 +280,7 @@ export default function ClientProvider({
   );
 
   // For <T> components
-  const { translateChildren, translateContent } = useRuntimeTranslation({
+  const { registerContentForTranslation, registerJsxForTranslation } = useRuntimeTranslation({
     locale: locale,
     versionId: _versionId,
     projectId,
@@ -308,15 +289,15 @@ export default function ClientProvider({
     setTranslations,
     defaultLocale,
     renderSettings,
-    runtimeTranslationEnabled,
+    runtimeTranslationEnabled: developmentTranslationEnabled
   });
 
   return (
     <GTContext.Provider
       value={{
         translateDictionaryEntry,
-        translateChildren,
-        translateContent,
+        registerJsxForTranslation,
+        registerContentForTranslation,
         setLocale,
         locale,
         locales,
@@ -325,12 +306,13 @@ export default function ClientProvider({
         translationRequired,
         dialectTranslationRequired,
         renderSettings,
-        translationEnabled,
-        runtimeTranslationEnabled,
+        developmentTranslationEnabled
       }}
     >
-      {(!translationRequired || !translationEnabled || translations) &&
-        children}
+      {
+        (!translationRequired || translations) &&
+        children
+      }
     </GTContext.Provider>
   );
 }

@@ -1,16 +1,16 @@
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import getLocale from '../../request/getLocale';
-import getMetadata from '../../request/getMetadata';
 import { Suspense } from 'react';
 import {
-  isEmptyReactFragment,
   renderDefaultChildren,
   renderSkeleton,
   renderTranslatedChildren,
+  writeChildrenAsObjects,
 } from 'gt-react/internal';
 import renderVariable from '../rendering/renderVariable';
 import { isSameLanguage } from 'generaltranslation';
 import React from 'react';
+import { hashJsxChildren } from 'generaltranslation/id';
 
 async function Resolver({ children }: { children: React.ReactNode }) {
   return await children;
@@ -70,11 +70,8 @@ async function T({
   context?: string;
   [key: string]: any;
 }): Promise<any> {
-  if (!children) {
-    return;
-  }
-
-  if (isEmptyReactFragment(children)) return <React.Fragment />;
+  
+  if (!children) return;
 
   // ----- SET UP ----- //
 
@@ -127,10 +124,12 @@ async function T({
 
   // Turns tagged children into objects
   // The hash is used to identify the translation
-  const [childrenAsObjects, hash] = I18NConfig.serializeAndHashChildren(
-    taggedChildren,
-    context
-  );
+  const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+  const hash = hashJsxChildren({
+    source: childrenAsObjects,
+    ...(context && { context }),
+    ...(id && { id }),
+  });
 
   // Block until cache check resolves
   const translations = translationsPromise ? await translationsPromise : {};
@@ -170,7 +169,6 @@ async function T({
       ...(id && { id }),
       hash,
       ...(context && { context }),
-      ...(await getMetadata()),
       ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
     },
   })

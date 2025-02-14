@@ -50,9 +50,6 @@ var defaultInitGTProps = {
         return [2 /*return*/, internal_1.libraryDefaultLocale];
     }); }); },
     locales: [],
-    getMetadata: function () { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
-        return [2 /*return*/, ({})];
-    }); }); },
     maxConcurrentRequests: 100,
     maxBatchSize: 25,
     batchInterval: 50,

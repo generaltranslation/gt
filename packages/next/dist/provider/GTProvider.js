@@ -88,11 +88,11 @@ var jsx_runtime_1 = require("react/jsx-runtime");
 var internal_1 = require("gt-react/internal");
 var getI18NConfig_1 = __importDefault(require("../config-dir/getI18NConfig"));
 var getLocale_1 = __importDefault(require("../request/getLocale"));
-var getMetadata_1 = __importDefault(require("../request/getMetadata"));
 var generaltranslation_1 = require("generaltranslation");
 var getDictionary_1 = __importStar(require("../dictionary/getDictionary"));
 var createErrors_1 = require("../errors/createErrors");
 var ClientProviderWrapper_1 = __importDefault(require("./ClientProviderWrapper"));
+var id_1 = require("generaltranslation/id");
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -103,7 +103,7 @@ var ClientProviderWrapper_1 = __importDefault(require("./ClientProviderWrapper")
  */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var getId, I18NConfig, locale, additionalMetadata, defaultLocale, translationRequired, dialectTranslationRequired, clientRuntimeTranslationEnabled, translationsPromise, dictionarySubset, flattenedDictionarySubset, translations, _c, dictionary, promises;
+        var getId, I18NConfig, locale, defaultLocale, translationRequired, dialectTranslationRequired, clientRuntimeTranslationEnabled, translationsPromise, dictionarySubset, flattenedDictionarySubset, translations, _c, dictionary, promises;
         var _this = this;
         var children = _b.children, id = _b.id;
         return __generator(this, function (_d) {
@@ -116,9 +116,6 @@ function GTProvider(_a) {
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
                     locale = _d.sent();
-                    return [4 /*yield*/, (0, getMetadata_1.default)()];
-                case 2:
-                    additionalMetadata = _d.sent();
                     defaultLocale = I18NConfig.getDefaultLocale();
                     translationRequired = I18NConfig.requiresTranslation(locale);
                     dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, defaultLocale);
@@ -129,15 +126,15 @@ function GTProvider(_a) {
                         // cannot be a DictionaryEntry, must be a Dictionary
                         throw new Error((0, createErrors_1.createDictionarySubsetError)(id !== null && id !== void 0 ? id : '', '<GTProvider>'));
                     flattenedDictionarySubset = (0, internal_1.flattenDictionary)(dictionarySubset);
-                    if (!translationsPromise) return [3 /*break*/, 4];
+                    if (!translationsPromise) return [3 /*break*/, 3];
                     return [4 /*yield*/, translationsPromise];
-                case 3:
+                case 2:
                     _c = _d.sent();
-                    return [3 /*break*/, 5];
-                case 4:
+                    return [3 /*break*/, 4];
+                case 3:
                     _c = {};
-                    _d.label = 5;
-                case 5:
+                    _d.label = 4;
+                case 4:
                     translations = _c;
                     dictionary = {};
                     promises = {};
@@ -151,20 +148,21 @@ function GTProvider(_a) {
                      *
                      */
                     return [4 /*yield*/, Promise.all(Object.entries(flattenedDictionarySubset !== null && flattenedDictionarySubset !== void 0 ? flattenedDictionarySubset : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var entryId, _c, entry, metadata, taggedChildren, _d, childrenAsObjects, hash_1, key_1, translationEntry_1, translationPromise, content, hash, key, translationEntry, translation, error_1, result;
+                            var entryId, _c, entry, metadata, taggedChildren, childrenAsObjects, hash_1, key_1, translationEntry_1, translationPromise, content, hash, key, translationEntry, translation, error_1, result;
                             var suffix = _b[0], dictionaryEntry = _b[1];
-                            return __generator(this, function (_e) {
-                                switch (_e.label) {
+                            return __generator(this, function (_d) {
+                                switch (_d.label) {
                                     case 0:
                                         // reject bad dictionary entries (we handle empty strings later)
                                         if (!dictionaryEntry && dictionaryEntry !== '')
                                             return [2 /*return*/];
                                         entryId = getId(suffix);
-                                        _c = (0, internal_1.extractEntryMetadata)(dictionaryEntry), entry = _c.entry, metadata = _c.metadata;
+                                        _c = (0, internal_1.getEntryAndMetadata)(dictionaryEntry), entry = _c.entry, metadata = _c.metadata;
                                         // ---- POPULATE DICTIONARY JSX ---- //
                                         if (typeof entry !== 'string') {
                                             taggedChildren = I18NConfig.addGTIdentifier(entry);
-                                            _d = I18NConfig.serializeAndHashChildren(taggedChildren, metadata === null || metadata === void 0 ? void 0 : metadata.context), childrenAsObjects = _d[0], hash_1 = _d[1];
+                                            childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedChildren);
+                                            hash_1 = (0, id_1.hashJsxChildren)(__assign(__assign({ source: childrenAsObjects }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata.context })), { id: entryId }));
                                             dictionary[entryId] = [
                                                 taggedChildren,
                                                 __assign(__assign({}, metadata), { hash: hash_1 }),
@@ -180,15 +178,6 @@ function GTProvider(_a) {
                                             translationEntry_1 = (translations === null || translations === void 0 ? void 0 : translations[hash_1]) || (translations === null || translations === void 0 ? void 0 : translations[entryId]);
                                             // skip if translation already exists
                                             if (translationEntry_1) {
-                                                return [2 /*return*/];
-                                            }
-                                            // Reject empty fragments
-                                            if ((0, internal_1.isEmptyReactFragment)(entry)) {
-                                                translations[key_1] = {
-                                                    state: 'error',
-                                                    error: 'Empty fragments are not allowed for translation.',
-                                                    code: 400,
-                                                };
                                                 return [2 /*return*/];
                                             }
                                             // Perform on-demand translation
@@ -223,7 +212,7 @@ function GTProvider(_a) {
                                             return [2 /*return*/];
                                         }
                                         content = (0, generaltranslation_1.splitStringToContent)(entry);
-                                        hash = (metadata === null || metadata === void 0 ? void 0 : metadata.hash) || I18NConfig.hashContent(content, metadata === null || metadata === void 0 ? void 0 : metadata.context);
+                                        hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: content }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: entryId }));
                                         // Add to client dictionary
                                         dictionary[entryId] = [entry, __assign(__assign({}, metadata), { hash: hash })];
                                         // ----- TRANSLATE STRINGS ON DEMAND ----- //
@@ -248,16 +237,16 @@ function GTProvider(_a) {
                                             };
                                             return [2 /*return*/];
                                         }
-                                        _e.label = 1;
+                                        _d.label = 1;
                                     case 1:
-                                        _e.trys.push([1, 3, , 4]);
+                                        _d.trys.push([1, 3, , 4]);
                                         return [4 /*yield*/, I18NConfig.translateContent({
                                                 source: content,
                                                 targetLocale: locale,
-                                                options: __assign(__assign({ id: entryId, hash: hash }, additionalMetadata), { context: metadata === null || metadata === void 0 ? void 0 : metadata.context }),
+                                                options: __assign({ id: entryId, hash: hash }, { context: metadata === null || metadata === void 0 ? void 0 : metadata.context }),
                                             })];
                                     case 2:
-                                        translation = _e.sent();
+                                        translation = _d.sent();
                                         // overwriting any old translations, this is most recent on demand, so should be most accurate
                                         translations[key] = {
                                             state: 'success',
@@ -265,7 +254,7 @@ function GTProvider(_a) {
                                         };
                                         return [3 /*break*/, 4];
                                     case 3:
-                                        error_1 = _e.sent();
+                                        error_1 = _d.sent();
                                         console.error(error_1);
                                         result = void 0;
                                         if (error_1 instanceof internal_1.GTTranslationError) {
@@ -280,7 +269,7 @@ function GTProvider(_a) {
                                 }
                             });
                         }); }))];
-                case 6:
+                case 5:
                     // ---- POPULATE DICTONARY + TRANSLATE DICTIONARY ON DEMAND ---- //
                     /**
                      * Populate dictionaries
@@ -291,7 +280,7 @@ function GTProvider(_a) {
                      *
                      */
                     _d.sent();
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, translationPromises: promises, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings() }, I18NConfig.getClientSideConfig(), { children: children })))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, translationPromises: promises, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, requiredPrefix: id, renderSettings: I18NConfig.getRenderSettings(), developmentTranslationEnabled: clientRuntimeTranslationEnabled }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });
     });
