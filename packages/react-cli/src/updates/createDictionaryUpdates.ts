@@ -81,9 +81,11 @@ export default async function createDictionaryUpdates(
       const metadata: Record<string, any> = {
         id,
         ...(context && { context }),
+        // This hash isn't actually used by the GT API, just for consistency sake
         hash: hashJsxChildren({
           source: splitStringToContent(entry),
           ...(context && { context }),
+          ...(id && { id }),
         }),
       };
       updates.push({
@@ -95,9 +97,11 @@ export default async function createDictionaryUpdates(
       const metadata: Record<string, any> = {
         id,
         ...(context && { context }),
+        // This hash isn't actually used by the GT API, just for consistency sake
         hash: hashJsxChildren({
           source: entryAsObjects,
           ...(context && { context }),
+          ...(id && { id }),
         }),
       };
       updates.push({
