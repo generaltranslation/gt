@@ -1,0 +1,60 @@
+"use strict";
+// ---- ERRORS ---- //
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.APIKeyMissingWarn = exports.noInitGTWarn = exports.projectIdMissingWarn = exports.createMismatchingHashWarning = exports.createUnsupportedLocalesWarning = exports.createNoEntryWarning = exports.usingDefaultsWarning = exports.unresolvedCustomLoadTranslationError = exports.dictionaryDisabledError = exports.createMissingCustomTranslationLoadedError = exports.createDictionarySubsetError = exports.devApiKeyIncludedInProductionError = exports.createRequiredPrefixError = exports.createDictionaryStringTranslationError = exports.createStringTranslationError = exports.customLoadTranslationError = exports.remoteTranslationsError = void 0;
+var generaltranslation_1 = require("generaltranslation");
+exports.remoteTranslationsError = 'gt-next Error: fetching remote translation.';
+exports.customLoadTranslationError = 'gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.';
+var createStringTranslationError = function (content, id) {
+    return "gt-next string translation error. tx(\"".concat(content, "\")").concat(id ? " with id \"".concat(id, "\"") : '', " failed.");
+};
+exports.createStringTranslationError = createStringTranslationError;
+var createDictionaryStringTranslationError = function (id) {
+    return "gt-next Error: string translation error. Translation from dictionary with id: ".concat(id, " failed.");
+};
+exports.createDictionaryStringTranslationError = createDictionaryStringTranslationError;
+var createRequiredPrefixError = function (id, requiredPrefix) {
+    return "gt-next Error: You are using <GTProvider> with a provided prefix id: \"".concat(requiredPrefix, "\", but one of the children of <GTProvider> has the id \"").concat(id, "\". Change the <GTProvider> id prop or your dictionary structure to proceed.");
+};
+exports.createRequiredPrefixError = createRequiredPrefixError;
+exports.devApiKeyIncludedInProductionError = "gt-next Error: You are attempting a production using a development API key. Replace this API key with a production API key when you build your app for production.";
+var createDictionarySubsetError = function (id, functionName) {
+    return "gt-next Error: ".concat(functionName, " with id: \"").concat(id, "\". Invalid dictionary entry detected. Make sure you are navigating to the correct subroute of the dictionary with the ID you provide.");
+};
+exports.createDictionarySubsetError = createDictionarySubsetError;
+var createMissingCustomTranslationLoadedError = function (customLoadTranslationPath) {
+    return 'gt-next Error: ' + customLoadTranslationPath
+        ? "Local translations exist, but no translation loader is found. Please create a translation loader at ".concat(customLoadTranslationPath)
+        : 'Local translations exist, but no translation loader is found. See generaltranslation.com/docs for more information on how to create a translation loader.';
+};
+exports.createMissingCustomTranslationLoadedError = createMissingCustomTranslationLoadedError;
+exports.dictionaryDisabledError = "gt-next Error: You are trying to use a dictionary, but you have not added the initGT() plugin to your app. You must add initGT() to use dictionaries. For more information, visit generaltranslation.com/docs";
+exports.unresolvedCustomLoadTranslationError = "gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.";
+// ---- WARNINGS ---- //
+exports.usingDefaultsWarning = 'gt-next: Unable to access gt-next configuration. Using defaults.';
+var createNoEntryWarning = function (id) {
+    return "gt-next: No dictionary entry found for id: \"".concat(id, "\"");
+};
+exports.createNoEntryWarning = createNoEntryWarning;
+var createUnsupportedLocalesWarning = function (locales) {
+    return "gt-next: The following locales are currently unsupported by our service: ".concat(locales
+        .map(function (locale) {
+        var name = (0, generaltranslation_1.getLocaleProperties)(locale).name;
+        return "".concat(locale, " (").concat(name, ")");
+    })
+        .join(', '));
+};
+exports.createUnsupportedLocalesWarning = createUnsupportedLocalesWarning;
+var createMismatchingHashWarning = function (expectedHash, receivedHash) {
+    return "gt-next: Mismatching hashes! Expected hash: ".concat(expectedHash, ", but got hash: ").concat(receivedHash, ". We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs");
+};
+exports.createMismatchingHashWarning = createMismatchingHashWarning;
+exports.projectIdMissingWarn = "gt-next: Project ID missing! Set projectId as GT_PROJECT_ID in your environment or by passing the projectId parameter to initGT(). Find your project ID: generaltranslation.com/dashboard.";
+exports.noInitGTWarn = "gt-next: You are running General Translation without the initGT() plugin. " +
+    "This means that you are not translating your app. To activate translation, add the initGT() plugin to your app, " +
+    "and set the projectId and apiKey in your environment. " +
+    "For more information, visit https://generaltranslation.com/docs/next/tutorials/quickstart";
+exports.APIKeyMissingWarn = "gt-next: A Development API key is required for runtime translation!  " +
+    "Find your Development API key: generaltranslation.com/dashboard.  " +
+    "(Or, disable this warning message by setting runtimeUrl to an empty string which disables runtime translation.)";
+//# sourceMappingURL=createErrors.js.map
