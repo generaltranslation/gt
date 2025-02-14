@@ -1,0 +1,67 @@
+{
+  "268bf547b71518c7879b49f2dff0966525d9a3f3c694ce3fe4bbf7d9384bb2e1": {
+    "type": "h1",
+    "props": {
+      "children": "Vite + React",
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  },
+  "2a75381e312ae0421d5363983d23b6a166fa7323a6888d481abac47065a781ea": {
+    "type": "div",
+    "props": {
+      "children": [
+        {
+          "type": "button",
+          "props": {
+            "children": [
+              "计数为 ",
+              {
+                "id": 3,
+                "key": "_gt_value_3",
+                "variable": "variable"
+              }
+            ],
+            "data-_gt": {
+              "id": 2
+            }
+          }
+        },
+        {
+          "type": "p",
+          "props": {
+            "children": [
+              "编辑 ",
+              {
+                "type": "code",
+                "props": {
+                  "children": "src/App.tsx",
+                  "data-_gt": {
+                    "id": 5
+                  }
+                }
+              },
+              " 并保存以测试 HMR"
+            ],
+            "data-_gt": {
+              "id": 4
+            }
+          }
+        }
+      ],
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  },
+  "d6ce46b788849d0c6354a30c3ef1c23b61df9155434bc8ed808ff126ac3083ca": {
+    "type": "p",
+    "props": {
+      "children": "点击 Vite 和 React 的标志以了解更多",
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  }
+}
