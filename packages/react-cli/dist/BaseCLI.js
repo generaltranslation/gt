@@ -128,9 +128,11 @@ class BaseCLI {
             .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
             .option('--ignore-errors', 'Ignore errors encountered while scanning for <T> tags', false)
             .option('--dry-run', 'Dry run, does not send updates to General Translation API', false)
-            .option('--enable-timeout', 'When set to false, will wait for the updates to be deployed to the CDN before exiting', true)
-            .option('--no-publish', 'Do not publish updates to the CDN. Instead, translations will be saved locally in the translations directory', true)
-            .option('--translations-dir <path>', 'Path to directory where translations will be saved if --publish is set to false', './public/_gt')
+            .option('--no-wait', 'Do not wait for the updates to be deployed to the CDN before exiting', true // Default value of options.wait
+        )
+            .option('--no-publish', 'Do not publish updates to the CDN.', true // Default value of options.publish
+        )
+            .option('-t, --translations-dir, --translation-dir <path>', 'Path to directory where translations will be saved. If this flag is not provided, translations will not be saved locally.')
             .option('--timeout <seconds>', 'Timeout in seconds for waiting for updates to be deployed to the CDN', DEFAULT_TIMEOUT.toString())
             .action((options) => this.handleTranslateCommand(options));
     }
@@ -341,17 +343,17 @@ class BaseCLI {
                     spinner.succeed(chalk_1.default.green(message));
                     if (options.config)
                         (0, updateConfig_1.default)(Object.assign({ configFilepath: options.config, _versionId: versionId }, (options.locales && { locales: options.locales })));
-                    // Wait for translations if publish is true or enableTimeout is true
-                    if ((options.enableTimeout && locales) || !options.publish) {
+                    // Wait for translations if wait is true
+                    if (options.wait && locales) {
                         console.log();
                         // timeout was validated earlier
                         const timeout = parseInt(options.timeout) * 1000;
                         const result = yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, locales, startTime, timeout);
-                        // Save translations to local directory if publish is false
-                        if (!options.publish && result) {
-                            console.log();
-                            yield (0, saveTranslations_1.default)(options.baseUrl, apiKey, versionId, options.translationsDir);
-                        }
+                    }
+                    // Save translations to local directory if translationsDir is provided
+                    if (options.translationsDir) {
+                        console.log();
+                        yield (0, saveTranslations_1.default)(options.baseUrl, apiKey, versionId, options.translationsDir);
                     }
                 }
                 catch (error) {

@@ -89,5 +89,5 @@ export default async function loadTranslation(locale: string) {
 2. Instead of running the command in Step 2 above, run:
 
 ```bash
-npx gt-next-cli translate --locales es fr zh --no-publish
+npx gt-next-cli translate --locales es fr zh -t ./public/_gt --no-publish
 ```
