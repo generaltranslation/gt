@@ -144,19 +144,18 @@ export abstract class BaseCLI {
         false
       )
       .option(
-        '--enable-timeout',
-        'When set to false, will wait for the updates to be deployed to the CDN before exiting',
-        true
+        '--no-wait',
+        'Do not wait for the updates to be deployed to the CDN before exiting',
+        true // Default value of options.wait
       )
       .option(
         '--no-publish',
-        'Do not publish updates to the CDN. Instead, translations will be saved locally in the translations directory',
-        true
+        'Do not publish updates to the CDN.',
+        true // Default value of options.publish
       )
       .option(
-        '--translations-dir <path>',
-        'Path to directory where translations will be saved if --publish is set to false',
-        './public/_gt'
+        '-t, --translations-dir, --translation-dir <path>',
+        'Path to directory where translations will be saved. If this flag is not provided, translations will not be saved locally.'
       )
       .option(
         '--timeout <seconds>',
@@ -493,8 +492,8 @@ export abstract class BaseCLI {
             // only save if locales was previously in options
           });
 
-        // Wait for translations if publish is true or enableTimeout is true
-        if ((options.enableTimeout && locales) || !options.publish) {
+        // Wait for translations if wait is true
+        if (options.wait && locales) {
           console.log();
           // timeout was validated earlier
           const timeout = parseInt(options.timeout) * 1000;
@@ -506,16 +505,17 @@ export abstract class BaseCLI {
             startTime,
             timeout
           );
-          // Save translations to local directory if publish is false
-          if (!options.publish && result) {
-            console.log();
-            await saveTranslations(
-              options.baseUrl,
-              apiKey,
-              versionId,
-              options.translationsDir
-            );
-          }
+        }
+
+        // Save translations to local directory if translationsDir is provided
+        if (options.translationsDir) {
+          console.log();
+          await saveTranslations(
+            options.baseUrl,
+            apiKey,
+            versionId,
+            options.translationsDir
+          );
         }
       } catch (error) {
         spinner.fail(chalk.red('Failed to send updates'));

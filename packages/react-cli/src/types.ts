@@ -25,7 +25,7 @@ export type Options = {
   inline?: boolean;
   ignoreErrors: boolean;
   dryRun: boolean;
-  enableTimeout: boolean;
+  wait: boolean;
   timeout: string;
   publish: boolean;
   translationsDir: string;

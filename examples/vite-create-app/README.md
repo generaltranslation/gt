@@ -78,5 +78,5 @@ export default async function loadTranslation(locale: string) {
 2. Instead of running the command in Step 2 above, run:
 
 ```bash
-npx gt-react-cli translate --locales es fr zh --translations-dir ./src/_gt --no-publish
+npx gt-react-cli translate --locales es fr zh -t ./src/_gt --no-publish
 ```
