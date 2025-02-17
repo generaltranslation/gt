@@ -54,7 +54,6 @@ const supportedLocales = {
   et: ['et'], // Estonian
   fa: ['fa'], // Persian
   fi: ['fi'], // Finnish
-  fil: ['fil'], // Filipino
   fr: [
     // French
     'fr', // France

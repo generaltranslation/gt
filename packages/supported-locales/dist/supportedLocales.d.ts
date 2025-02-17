@@ -1,4 +1,4 @@
 declare const supportedLocales: {
-  [language: string]: string[];
+    [language: string]: string[];
 };
 export default supportedLocales;
