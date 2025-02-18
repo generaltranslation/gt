@@ -23,7 +23,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.initGT = initGT;
+exports.initGT = void 0;
+exports.withGTConfig = withGTConfig;
 var path_1 = __importDefault(require("path"));
 var fs_1 = __importDefault(require("fs"));
 var defaultInitGTProps_1 = __importDefault(require("./config-dir/props/defaultInitGTProps"));
@@ -36,15 +37,13 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  *
  * @example
  * // In next.config.mjs
- * import { initGT } from 'gt-next/config';
+ * import { withGTConfig } from 'gt-next/config';
  *
- * const withGT = initGT({
+ * export default withGTConfig(nextConfig, {
  *   projectId: 'abc-123',
  *   locales: ['en', 'es', 'fr'],
  *   defaultLocale: 'en'
- * });
- *
- * export default withGT({})
+ * })
  *
  * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
  * @param {string|undefined} i18n - Optional i18n configuration file path. If a string is provided, it will be used as a path.
@@ -65,13 +64,15 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
- * @returns {function(NextConfig): NextConfig} - A function that accepts a Next.js config object and returns an updated config with GT settings applied.
+ * @param {NextConfig} nextConfig - The Next.js configuration object to extend
+ * @param {InitGTProps} props - General Translation configuration properties
+ * @returns {NextConfig} - An updated Next.js config with GT settings applied
  *
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
- *
  */
-function initGT(props) {
-    var _a;
+function withGTConfig(nextConfig, props) {
+    var _a, _b, _c, _d, _e;
+    if (nextConfig === void 0) { nextConfig = {}; }
     // ---------- LOAD GT CONFIG FILE ---------- //
     var loadedConfig = {};
     var configPath = props.config || defaultInitGTProps_1.default.config;
@@ -175,44 +176,42 @@ function initGT(props) {
         }
     }
     // ---------- STORE CONFIGURATIONS ---------- //
-    // Store the resolved paths in the environment
     var I18NConfigParams = JSON.stringify(mergedConfig);
-    return function (nextConfig) {
-        var _a, _b, _c, _d;
-        if (nextConfig === void 0) { nextConfig = {}; }
-        return __assign(__assign({}, nextConfig), { env: __assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_a = nextConfig.experimental) === null || _a === void 0 ? void 0 : _a.turbo)
-                ? {
-                    turbo: __assign(__assign({}, (((_b = nextConfig.experimental) === null || _b === void 0 ? void 0 : _b.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_d = (_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo) === null || _d === void 0 ? void 0 : _d.resolveAlias) || {})), { 'gt-next/_request': resolvedI18NFilePath || '', 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translation': customLoadTranslationPath || '' }) }),
+    return __assign(__assign({}, nextConfig), { env: __assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_b = nextConfig.experimental) === null || _b === void 0 ? void 0 : _b.turbo)
+            ? {
+                turbo: __assign(__assign({}, (((_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_e = (_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) === null || _e === void 0 ? void 0 : _e.resolveAlias) || {})), { 'gt-next/_request': resolvedI18NFilePath || '', 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translation': customLoadTranslationPath || '' }) }),
+            }
+            : {})), webpack: function webpack() {
+            var _a = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                _a[_i] = arguments[_i];
+            }
+            var webpackConfig = _a[0], options = _a[1];
+            // Only apply webpack aliases if we're using webpack (not Turbopack)
+            var isTurbopack = (options === null || options === void 0 ? void 0 : options.turbo) || process.env.TURBOPACK === '1';
+            if (!isTurbopack) {
+                if (resolvedI18NFilePath) {
+                    webpackConfig.resolve.alias['gt-next/_request'] = path_1.default.resolve(webpackConfig.context, resolvedI18NFilePath);
                 }
-                : {})), 
-            // Keep existing webpack config for backward compatibility
-            webpack: function webpack() {
-                var _a = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    _a[_i] = arguments[_i];
+                if (resolvedDictionaryFilePath) {
+                    webpackConfig.resolve.alias['gt-next/_dictionary'] = path_1.default.resolve(webpackConfig.context, resolvedDictionaryFilePath);
                 }
-                var webpackConfig = _a[0], options = _a[1];
-                // Only apply webpack aliases if we're using webpack (not Turbopack)
-                var isTurbopack = (options === null || options === void 0 ? void 0 : options.turbo) || process.env.TURBOPACK === '1';
-                if (!isTurbopack) {
-                    if (resolvedI18NFilePath) {
-                        webpackConfig.resolve.alias['gt-next/_request'] = path_1.default.resolve(webpackConfig.context, resolvedI18NFilePath);
-                    }
-                    if (resolvedDictionaryFilePath) {
-                        webpackConfig.resolve.alias['gt-next/_dictionary'] = path_1.default.resolve(webpackConfig.context, resolvedDictionaryFilePath);
-                    }
-                    if (customLoadTranslationPath) {
-                        webpackConfig.resolve.alias["gt-next/_load-translation"] =
-                            path_1.default.resolve(webpackConfig.context, customLoadTranslationPath);
-                    }
+                if (customLoadTranslationPath) {
+                    webpackConfig.resolve.alias["gt-next/_load-translation"] =
+                        path_1.default.resolve(webpackConfig.context, customLoadTranslationPath);
                 }
-                if (typeof (nextConfig === null || nextConfig === void 0 ? void 0 : nextConfig.webpack) === 'function') {
-                    return nextConfig.webpack(webpackConfig, options);
-                }
-                return webpackConfig;
-            } });
-    };
+            }
+            if (typeof (nextConfig === null || nextConfig === void 0 ? void 0 : nextConfig.webpack) === 'function') {
+                return nextConfig.webpack(webpackConfig, options);
+            }
+            return webpackConfig;
+        } });
 }
+// Keep initGT for backward compatibility
+var initGT = function (props) { return function (nextConfig) {
+    return withGTConfig(nextConfig, props);
+}; };
+exports.initGT = initGT;
 /**
  * Resolves a configuration filepath for i18n or dictionary files.
  *

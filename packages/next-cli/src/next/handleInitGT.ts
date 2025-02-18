@@ -21,12 +21,31 @@ export default async function handleInitGT(
       createParenthesizedExpressions: true,
     });
 
-    // Add import statement for withGTConfig
+    const needsCJS = filepath.endsWith('.js');
+
+    // Add appropriate import statement for withGTConfig based on module type
     ast.program.body.unshift(
-      t.importDeclaration(
-        [t.importDefaultSpecifier(t.identifier('withGTConfig'))],
-        t.stringLiteral('gt-next/config')
-      )
+      needsCJS
+        ? t.variableDeclaration('const', [
+            t.variableDeclarator(
+              t.identifier('withGTConfig'),
+              t.memberExpression(
+                t.callExpression(t.identifier('require'), [
+                  t.stringLiteral('gt-next/config'),
+                ]),
+                t.identifier('withGTConfig')
+              )
+            ),
+          ])
+        : t.importDeclaration(
+            [
+              t.importSpecifier(
+                t.identifier('withGTConfig'),
+                t.identifier('withGTConfig')
+              ),
+            ],
+            t.stringLiteral('gt-next/config')
+          )
     );
 
     // Find and transform the default export
@@ -97,8 +116,16 @@ export default async function handleInitGT(
       code
     );
 
-    // Write the changes back to the file
-    fs.writeFileSync(filepath, output.code);
+    // Post-process the output to fix import spacing
+    let processedCode = output.code;
+    // Add newline after the comment only
+    processedCode = processedCode.replace(
+      /((?:import\s*{\s*withGTConfig\s*}\s*from|const\s*{\s*withGTConfig\s*}\s*=\s*require)\s*['"]gt-next\/config['"];?)/,
+      '$1\n'
+    );
+
+    // Write the modified code back to the file
+    fs.writeFileSync(filepath, processedCode);
     filesUpdated.push(filepath);
   } catch (error) {
     console.error(`Error parsing file ${filepath}:`, error);
