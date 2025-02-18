@@ -99,6 +99,7 @@ class BaseCLI {
     initialize() {
         this.setupTranslateCommand();
         this.setupSetupCommand();
+        this.setupScanCommand();
         commander_1.program.parse();
     }
     setupTranslateCommand() {
@@ -142,11 +143,19 @@ class BaseCLI {
             .description('Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids')
             .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
             .option('--config <path>', 'Filepath to config file, by default gt.config.json', (0, findFilepath_1.default)(['gt.config.json']))
-            .option('--disable-ids', 'Disable id generation for the <T> tags', false)
-            .option('--disable-formatting', 'Disable formatting of edited files', false)
             .action((options) => this.handleSetupCommand(options));
     }
-    handleSetupCommand(options) {
+    setupScanCommand() {
+        commander_1.program
+            .command('scan')
+            .description('Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids')
+            .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
+            .option('--config <path>', 'Filepath to config file, by default gt.config.json', (0, findFilepath_1.default)(['gt.config.json']))
+            .option('--disable-ids', 'Disable id generation for the <T> tags', false)
+            .option('--disable-formatting', 'Disable formatting of edited files', false)
+            .action((options) => this.handleScanCommand(options));
+    }
+    handleScanCommand(options) {
         return __awaiter(this, void 0, void 0, function* () {
             (0, console_1.displayAsciiTitle)();
             (0, console_1.displayInitializingText)();
@@ -164,7 +173,6 @@ class BaseCLI {
                 process.exit(0);
             }
             // ----- Create a starter gt.config.json file -----
-            console.log(options.config);
             if (!options.config)
                 (0, setupConfig_1.default)('gt.config.json', process.env.GT_PROJECT_ID, '');
             // ----- //
@@ -187,6 +195,75 @@ class BaseCLI {
                 console.log(chalk_1.default.yellow('\n⚠️  Warnings encountered:'));
                 console.log(warnings.map((warning) => `${chalk_1.default.yellow('-')} ${warning}`).join('\n'));
             }
+        });
+    }
+    handleSetupCommand(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            (0, console_1.displayInitializingText)();
+            // Ask user for confirmation using inquirer
+            const answer = yield (0, prompts_1.select)({
+                message: chalk_1.default.yellow(`This operation will prepare your project for internationalization.
+        Make sure you have committed or stashed any changes.
+        Do you want to continue?`),
+                choices: [
+                    { value: true, name: 'Yes' },
+                    { value: false, name: 'No' },
+                ],
+                default: true,
+            });
+            if (!answer) {
+                console.log(chalk_1.default.gray('\nOperation cancelled.'));
+                process.exit(0);
+            }
+            const includeTId = yield (0, prompts_1.select)({
+                message: 'Do you want to include an unique id for each <T> tag?',
+                choices: [
+                    { value: true, name: 'Yes' },
+                    { value: false, name: 'No' },
+                ],
+                default: true,
+            });
+            // ----- Create a starter gt.config.json file -----
+            if (!options.config)
+                (0, setupConfig_1.default)('gt.config.json', process.env.GT_PROJECT_ID, '');
+            // ----- //
+            const mergeOptions = Object.assign(Object.assign({}, options), { disableIds: !includeTId, disableFormatting: true });
+            // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
+            const { errors, filesUpdated, warnings } = yield this.scanForContent(mergeOptions);
+            if (errors.length > 0) {
+                console.log(chalk_1.default.red('\n✗ Failed to write files:\n'));
+                console.log(errors.join('\n'));
+            }
+            console.log(chalk_1.default.green(`\nSuccess! Added <T> tags and updated ${chalk_1.default.bold(filesUpdated.length)} files:\n`));
+            if (filesUpdated.length > 0) {
+                console.log(filesUpdated.map((file) => `${chalk_1.default.green('-')} ${file}`).join('\n'));
+                console.log();
+                console.log(chalk_1.default.green('Please verify the changes before committing.'));
+            }
+            if (warnings.length > 0) {
+                console.log(chalk_1.default.yellow('\nWarnings encountered:'));
+                console.log(warnings.map((warning) => `${chalk_1.default.yellow('-')} ${warning}`).join('\n'));
+            }
+            // Stage only the modified files
+            const { execSync } = require('child_process');
+            for (const file of filesUpdated) {
+                yield execSync(`git add "${file}"`);
+            }
+            const formatter = yield (0, postProcess_1.detectFormatter)();
+            if (!formatter) {
+                return;
+            }
+            const applyFormatting = yield (0, prompts_1.select)({
+                message: `Would you like to auto-format the modified files? ${chalk_1.default.gray(`(${formatter})`)}`,
+                choices: [
+                    { value: true, name: 'Yes' },
+                    { value: false, name: 'No' },
+                ],
+                default: true,
+            });
+            // Format updated files if formatters are available
+            if (applyFormatting)
+                yield (0, postProcess_1.formatFiles)(filesUpdated, formatter);
         });
     }
     handleTranslateCommand(initOptions) {

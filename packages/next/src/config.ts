@@ -11,7 +11,6 @@ import {
   projectIdMissingWarn,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import { ContextReplacementPlugin } from 'webpack';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -20,15 +19,13 @@ import { ContextReplacementPlugin } from 'webpack';
  *
  * @example
  * // In next.config.mjs
- * import { initGT } from 'gt-next/config';
+ * import { withGTConfig } from 'gt-next/config';
  *
- * const withGT = initGT({
+ * export default withGTConfig(nextConfig, {
  *   projectId: 'abc-123',
  *   locales: ['en', 'es', 'fr'],
  *   defaultLocale: 'en'
- * });
- *
- * export default withGT({})
+ * })
  *
  * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
  * @param {string|undefined} i18n - Optional i18n configuration file path. If a string is provided, it will be used as a path.
@@ -49,12 +46,13 @@ import { ContextReplacementPlugin } from 'webpack';
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
- * @returns {function(NextConfig): NextConfig} - A function that accepts a Next.js config object and returns an updated config with GT settings applied.
+ * @param {NextConfig} nextConfig - The Next.js configuration object to extend
+ * @param {InitGTProps} props - General Translation configuration properties
+ * @returns {NextConfig} - An updated Next.js config with GT settings applied
  *
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
- *
  */
-export function initGT(props: InitGTProps) {
+export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
   // ---------- LOAD GT CONFIG FILE ---------- //
   let loadedConfig: Partial<InitGTProps> = {};
   const configPath = props.config || defaultInitGTProps.config;
@@ -205,68 +203,69 @@ export function initGT(props: InitGTProps) {
   }
 
   // ---------- STORE CONFIGURATIONS ---------- //
-  // Store the resolved paths in the environment
   const I18NConfigParams = JSON.stringify(mergedConfig);
-  return (nextConfig: any = {}): any => {
-    return {
-      ...nextConfig,
-      env: {
-        ...nextConfig.env,
-        _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
-      },
-      experimental: {
-        ...nextConfig.experimental,
-        // Only include turbo config if Turbopack is enabled or already configured
-        ...(process.env.TURBOPACK === '1' || nextConfig.experimental?.turbo
-          ? {
-              turbo: {
-                ...(nextConfig.experimental?.turbo || {}),
-                resolveAlias: {
-                  ...(nextConfig.experimental?.turbo?.resolveAlias || {}),
-                  'gt-next/_request': resolvedI18NFilePath || '',
-                  'gt-next/_dictionary': resolvedDictionaryFilePath || '',
-                  'gt-next/_load-translation': customLoadTranslationPath || '',
-                },
-              },
-            }
-          : {}),
-      },
-      // Keep existing webpack config for backward compatibility
-      webpack: function webpack(
-        ...[webpackConfig, options]: Parameters<
-          NonNullable<NextConfig['webpack']>
-        >
-      ) {
-        // Only apply webpack aliases if we're using webpack (not Turbopack)
-        const isTurbopack =
-          (options as any)?.turbo || process.env.TURBOPACK === '1';
 
-        if (!isTurbopack) {
-          if (resolvedI18NFilePath) {
-            webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
-              webpackConfig.context,
-              resolvedI18NFilePath
-            );
+  return {
+    ...nextConfig,
+    env: {
+      ...nextConfig.env,
+      _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
+    },
+    experimental: {
+      ...nextConfig.experimental,
+      // Only include turbo config if Turbopack is enabled or already configured
+      ...(process.env.TURBOPACK === '1' || nextConfig.experimental?.turbo
+        ? {
+            turbo: {
+              ...(nextConfig.experimental?.turbo || {}),
+              resolveAlias: {
+                ...(nextConfig.experimental?.turbo?.resolveAlias || {}),
+                'gt-next/_request': resolvedI18NFilePath || '',
+                'gt-next/_dictionary': resolvedDictionaryFilePath || '',
+                'gt-next/_load-translation': customLoadTranslationPath || '',
+              },
+            },
           }
-          if (resolvedDictionaryFilePath) {
-            webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
-              webpackConfig.context,
-              resolvedDictionaryFilePath
-            );
-          }
-          if (customLoadTranslationPath) {
-            webpackConfig.resolve.alias[`gt-next/_load-translation`] =
-              path.resolve(webpackConfig.context, customLoadTranslationPath);
-          }
+        : {}),
+    },
+    webpack: function webpack(
+      ...[webpackConfig, options]: Parameters<
+        NonNullable<NextConfig['webpack']>
+      >
+    ) {
+      // Only apply webpack aliases if we're using webpack (not Turbopack)
+      const isTurbopack =
+        (options as any)?.turbo || process.env.TURBOPACK === '1';
+
+      if (!isTurbopack) {
+        if (resolvedI18NFilePath) {
+          webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
+            webpackConfig.context,
+            resolvedI18NFilePath
+          );
         }
-        if (typeof nextConfig?.webpack === 'function') {
-          return nextConfig.webpack(webpackConfig, options);
+        if (resolvedDictionaryFilePath) {
+          webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
+            webpackConfig.context,
+            resolvedDictionaryFilePath
+          );
         }
-        return webpackConfig;
-      },
-    };
+        if (customLoadTranslationPath) {
+          webpackConfig.resolve.alias[`gt-next/_load-translation`] =
+            path.resolve(webpackConfig.context, customLoadTranslationPath);
+        }
+      }
+      if (typeof nextConfig?.webpack === 'function') {
+        return nextConfig.webpack(webpackConfig, options);
+      }
+      return webpackConfig;
+    },
   };
 }
+
+// Keep initGT for backward compatibility
+export const initGT = (props: InitGTProps) => (nextConfig: any) =>
+  withGTConfig(nextConfig, props);
 
 /**
  * Resolves a configuration filepath for i18n or dictionary files.

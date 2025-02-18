@@ -1,4 +1,4 @@
-import { Options, Updates, WrapOptions } from './types';
+import { Options, SetupOptions, Updates, WrapOptions } from './types';
 export declare abstract class BaseCLI {
     private framework;
     protected constructor(framework: 'gt-next' | 'gt-react');
@@ -15,6 +15,8 @@ export declare abstract class BaseCLI {
     initialize(): void;
     private setupTranslateCommand;
     private setupSetupCommand;
-    protected handleSetupCommand(options: WrapOptions): Promise<void>;
+    private setupScanCommand;
+    protected handleScanCommand(options: WrapOptions): Promise<void>;
+    protected handleSetupCommand(options: SetupOptions): Promise<void>;
     protected handleTranslateCommand(initOptions: Options): Promise<void>;
 }
