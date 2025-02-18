@@ -31,7 +31,7 @@ export const createMissingCustomTranslationLoadedError = (
     ? `Local translations exist, but no translation loader is found. Please create a translation loader at ${customLoadTranslationPath}`
     : 'Local translations exist, but no translation loader is found. See generaltranslation.com/docs for more information on how to create a translation loader.';
 
-export const dictionaryDisabledError = `gt-next Error: You are trying to use a dictionary, but you have not added the initGT() plugin to your app. You must add initGT() to use dictionaries. For more information, visit generaltranslation.com/docs`;
+export const dictionaryDisabledError = `gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs`;
 
 export const unresolvedCustomLoadTranslationError = `gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.`;
 
@@ -57,11 +57,11 @@ export const createMismatchingHashWarning = (
 ) =>
   `gt-next: Mismatching hashes! Expected hash: ${expectedHash}, but got hash: ${receivedHash}. We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs`;
 
-export const projectIdMissingWarn = `gt-next: Project ID missing! Set projectId as GT_PROJECT_ID in your environment or by passing the projectId parameter to initGT(). Find your project ID: generaltranslation.com/dashboard.`;
+export const projectIdMissingWarn = `gt-next: Project ID missing! Set projectId as GT_PROJECT_ID in your environment or by passing the projectId parameter to withGTConfig(). Find your project ID: generaltranslation.com/dashboard.`;
 
 export const noInitGTWarn =
-  `gt-next: You are running General Translation without the initGT() plugin. ` +
-  `This means that you are not translating your app. To activate translation, add the initGT() plugin to your app, ` +
+  `gt-next: You are running General Translation without the withGTConfig() plugin. ` +
+  `This means that you are not translating your app. To activate translation, add the withGTConfig() plugin to your app, ` +
   `and set the projectId and apiKey in your environment. ` +
   `For more information, visit https://generaltranslation.com/docs/next/tutorials/quickstart`;
 
