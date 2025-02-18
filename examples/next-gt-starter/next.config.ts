@@ -1,8 +1,8 @@
-import type { NextConfig } from "next";
-import { initGT } from "gt-next/config";
+import type { NextConfig } from 'next';
+import { withGTConfig } from 'gt-next/config';
 
-const nextConfig: NextConfig = initGT({})({
+const nextConfig: NextConfig = {};
+
+export default withGTConfig(nextConfig, {
   /* config options here */
 });
-
-export default nextConfig;
