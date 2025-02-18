@@ -460,6 +460,11 @@ export default function GTProvider({
     ]
   );
 
+  const display = !!(
+    (!translationRequired || (stringTranslationsResolved && translations)) &&
+    locale
+  );
+
   // hang until cache response, then render translations or loading state (when waiting on API response)
   return (
     <GTContext.Provider
@@ -479,8 +484,7 @@ export default function GTProvider({
         renderSettings,
       }}
     >
-      {(!translationRequired || (stringTranslationsResolved && translations)) &&
-        children}
+      {display && children}
     </GTContext.Provider>
   );
 }

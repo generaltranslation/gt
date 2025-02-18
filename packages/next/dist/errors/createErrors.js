@@ -28,7 +28,7 @@ var createMissingCustomTranslationLoadedError = function (customLoadTranslationP
         : 'Local translations exist, but no translation loader is found. See generaltranslation.com/docs for more information on how to create a translation loader.';
 };
 exports.createMissingCustomTranslationLoadedError = createMissingCustomTranslationLoadedError;
-exports.dictionaryDisabledError = "gt-next Error: You are trying to use a dictionary, but you have not added the initGT() plugin to your app. You must add initGT() to use dictionaries. For more information, visit generaltranslation.com/docs";
+exports.dictionaryDisabledError = "gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs";
 exports.unresolvedCustomLoadTranslationError = "gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.";
 // ---- WARNINGS ---- //
 exports.usingDefaultsWarning = 'gt-next: Unable to access gt-next configuration. Using defaults.';
@@ -49,9 +49,9 @@ var createMismatchingHashWarning = function (expectedHash, receivedHash) {
     return "gt-next: Mismatching hashes! Expected hash: ".concat(expectedHash, ", but got hash: ").concat(receivedHash, ". We will still render your translation, but make sure to update to the newest version: generaltranslation.com/docs");
 };
 exports.createMismatchingHashWarning = createMismatchingHashWarning;
-exports.projectIdMissingWarn = "gt-next: Project ID missing! Set projectId as GT_PROJECT_ID in your environment or by passing the projectId parameter to initGT(). Find your project ID: generaltranslation.com/dashboard.";
-exports.noInitGTWarn = "gt-next: You are running General Translation without the initGT() plugin. " +
-    "This means that you are not translating your app. To activate translation, add the initGT() plugin to your app, " +
+exports.projectIdMissingWarn = "gt-next: Project ID missing! Set projectId as GT_PROJECT_ID in your environment or by passing the projectId parameter to withGTConfig(). Find your project ID: generaltranslation.com/dashboard.";
+exports.noInitGTWarn = "gt-next: You are running General Translation without the withGTConfig() plugin. " +
+    "This means that you are not translating your app. To activate translation, add the withGTConfig() plugin to your app, " +
     "and set the projectId and apiKey in your environment. " +
     "For more information, visit https://generaltranslation.com/docs/next/tutorials/quickstart";
 exports.APIKeyMissingWarn = "gt-next: A Development API key is required for runtime translation!  " +
