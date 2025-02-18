@@ -118,7 +118,6 @@ function T(_a) {
         return __generator(this, function (_d) {
             switch (_d.label) {
                 case 0:
-                    console.log('--+');
                     if (!children)
                         return [2 /*return*/];
                     I18NConfig = (0, getI18NConfig_1.default)();

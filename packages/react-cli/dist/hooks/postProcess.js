@@ -12,24 +12,47 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.detectFormatter = detectFormatter;
 exports.formatFiles = formatFiles;
 const fs_1 = __importDefault(require("fs"));
 const chalk_1 = __importDefault(require("chalk"));
-function formatFiles(filesUpdated) {
+function detectFormatter() {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Try Prettier
+        try {
+            require('prettier');
+            return 'prettier';
+        }
+        catch (_a) { }
+        // Try Biome
+        try {
+            const { execSync } = require('child_process');
+            execSync('npx @biomejs/biome --version', { stdio: 'ignore' });
+            return 'biome';
+        }
+        catch (_b) { }
+        // Try ESLint
+        try {
+            require('eslint');
+            return 'eslint';
+        }
+        catch (_c) { }
+        return null;
+    });
+}
+function formatFiles(filesUpdated, formatter) {
     return __awaiter(this, void 0, void 0, function* () {
         if (filesUpdated.length === 0)
             return;
         try {
-            // Try Prettier
-            let prettier;
-            try {
-                prettier = require('prettier');
+            const detectedFormatter = formatter || (yield detectFormatter());
+            if (!detectedFormatter) {
+                console.log(chalk_1.default.yellow('\n⚠️  No supported formatter detected'));
+                return;
             }
-            catch (_a) {
-                prettier = null;
-            }
-            if (prettier) {
+            if (detectedFormatter === 'prettier') {
                 console.log(chalk_1.default.gray('\nCleaning up with prettier...'));
+                const prettier = require('prettier');
                 for (const file of filesUpdated) {
                     const config = yield prettier.resolveConfig(file);
                     const content = yield fs_1.default.promises.readFile(file, 'utf-8');
@@ -38,18 +61,7 @@ function formatFiles(filesUpdated) {
                 }
                 return;
             }
-            // Try Biome
-            let biome;
-            try {
-                const { execSync } = require('child_process');
-                // Check if biome is installed
-                execSync('npx @biomejs/biome --version', { stdio: 'ignore' });
-                biome = true;
-            }
-            catch (_b) {
-                biome = null;
-            }
-            if (biome) {
+            if (detectedFormatter === 'biome') {
                 console.log(chalk_1.default.gray('\nCleaning up with biome...'));
                 try {
                     const { execSync } = require('child_process');
@@ -65,16 +77,9 @@ function formatFiles(filesUpdated) {
                 }
                 return;
             }
-            // Try ESLint
-            let ESLint;
-            try {
-                ({ ESLint } = require('eslint'));
-            }
-            catch (_c) {
-                ESLint = null;
-            }
-            if (ESLint) {
+            if (detectedFormatter === 'eslint') {
                 console.log(chalk_1.default.gray('\nCleaning up with eslint...'));
+                const { ESLint } = require('eslint');
                 const eslint = new ESLint({
                     fix: true,
                     overrideConfigFile: undefined, // Will use project's .eslintrc

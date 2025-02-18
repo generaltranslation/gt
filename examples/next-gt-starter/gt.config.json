@@ -1,0 +1,26 @@
+{
+  "locales": [
+    "cs",
+    "fr",
+    "de",
+    "es",
+    "ja",
+    "zh",
+    "ko",
+    "nl",
+    "da",
+    "sv",
+    "el",
+    "ru",
+    "hi",
+    "he",
+    "ar-EG",
+    "it-IT",
+    "pl",
+    "sw-TZ",
+    "uk",
+    "tr"
+  ],
+  "projectId": "c3603e4ee480ad27fa745104499d928f250fba230da1ef62e8eadd0ad741f946",
+  "defaultLocale": "en-US"
+}

@@ -32,6 +32,10 @@ export type WrapOptions = {
     disableIds: boolean;
     disableFormatting: boolean;
 };
+export type SetupOptions = {
+    src: string[];
+    config: string;
+};
 export type Framework = 'gt-next' | 'gt-react';
 export interface ContentScanner {
     scanForContent(options: WrapOptions, framework: Framework): Promise<{

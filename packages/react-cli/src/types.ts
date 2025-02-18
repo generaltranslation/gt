@@ -38,6 +38,11 @@ export type WrapOptions = {
   disableFormatting: boolean;
 };
 
+export type SetupOptions = {
+  src: string[];
+  config: string;
+};
+
 export type Framework = 'gt-next' | 'gt-react';
 
 export interface ContentScanner {

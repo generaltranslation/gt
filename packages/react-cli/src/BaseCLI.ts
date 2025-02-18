@@ -4,6 +4,7 @@ import {
   ContentScanner,
   Framework,
   Options,
+  SetupOptions,
   Updates,
   WrapOptions,
 } from './types';
@@ -27,7 +28,7 @@ import { waitForUpdates } from './api/waitForUpdates';
 import updateConfig from './fs/config/updateConfig';
 import createConfig from './fs/config/setupConfig';
 import fs from 'fs';
-import { formatFiles } from './hooks/postProcess';
+import { detectFormatter, formatFiles } from './hooks/postProcess';
 import saveTranslations from './fs/saveTranslations';
 function resolveProjectId(): string | undefined {
   const CANDIDATES = [
@@ -70,6 +71,7 @@ export abstract class BaseCLI {
   public initialize(): void {
     this.setupTranslateCommand();
     this.setupSetupCommand();
+    this.setupScanCommand();
     program.parse();
   }
 
@@ -181,16 +183,35 @@ export abstract class BaseCLI {
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
+      .action((options: SetupOptions) => this.handleSetupCommand(options));
+  }
+
+  private setupScanCommand(): void {
+    program
+      .command('scan')
+      .description(
+        'Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids'
+      )
+      .option(
+        '--src <paths...>',
+        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
+        findFilepaths(['./src', './app', './pages', './components'])
+      )
+      .option(
+        '--config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
+      )
       .option('--disable-ids', 'Disable id generation for the <T> tags', false)
       .option(
         '--disable-formatting',
         'Disable formatting of edited files',
         false
       )
-      .action((options: WrapOptions) => this.handleSetupCommand(options));
+      .action((options: WrapOptions) => this.handleScanCommand(options));
   }
 
-  protected async handleSetupCommand(options: WrapOptions): Promise<void> {
+  protected async handleScanCommand(options: WrapOptions): Promise<void> {
     displayAsciiTitle();
     displayInitializingText();
 
@@ -212,7 +233,6 @@ export abstract class BaseCLI {
     }
 
     // ----- Create a starter gt.config.json file -----
-    console.log(options.config);
     if (!options.config)
       createConfig('gt.config.json', process.env.GT_PROJECT_ID, '');
 
@@ -251,6 +271,105 @@ export abstract class BaseCLI {
         warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')
       );
     }
+  }
+
+  protected async handleSetupCommand(options: SetupOptions): Promise<void> {
+    displayInitializingText();
+
+    // Ask user for confirmation using inquirer
+    const answer = await select({
+      message: chalk.yellow(
+        `This operation will prepare your project for internationalization.
+        Make sure you have committed or stashed any changes.
+        Do you want to continue?`
+      ),
+      choices: [
+        { value: true, name: 'Yes' },
+        { value: false, name: 'No' },
+      ],
+      default: true,
+    });
+
+    if (!answer) {
+      console.log(chalk.gray('\nOperation cancelled.'));
+      process.exit(0);
+    }
+
+    const includeTId = await select({
+      message: 'Do you want to include an unique id for each <T> tag?',
+      choices: [
+        { value: true, name: 'Yes' },
+        { value: false, name: 'No' },
+      ],
+      default: true,
+    });
+
+    // ----- Create a starter gt.config.json file -----
+    if (!options.config)
+      createConfig('gt.config.json', process.env.GT_PROJECT_ID, '');
+
+    // ----- //
+
+    const mergeOptions = {
+      ...options,
+      disableIds: !includeTId,
+      disableFormatting: true,
+    };
+
+    // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
+    const { errors, filesUpdated, warnings } =
+      await this.scanForContent(mergeOptions);
+
+    if (errors.length > 0) {
+      console.log(chalk.red('\n✗ Failed to write files:\n'));
+      console.log(errors.join('\n'));
+    }
+
+    console.log(
+      chalk.green(
+        `\nSuccess! Added <T> tags and updated ${chalk.bold(
+          filesUpdated.length
+        )} files:\n`
+      )
+    );
+    if (filesUpdated.length > 0) {
+      console.log(
+        filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
+      );
+      console.log();
+      console.log(chalk.green('Please verify the changes before committing.'));
+    }
+
+    if (warnings.length > 0) {
+      console.log(chalk.yellow('\nWarnings encountered:'));
+      console.log(
+        warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')
+      );
+    }
+    // Stage only the modified files
+    const { execSync } = require('child_process');
+    for (const file of filesUpdated) {
+      await execSync(`git add "${file}"`);
+    }
+
+    const formatter = await detectFormatter();
+
+    if (!formatter) {
+      return;
+    }
+
+    const applyFormatting = await select({
+      message: `Would you like to auto-format the modified files? ${chalk.gray(
+        `(${formatter})`
+      )}`,
+      choices: [
+        { value: true, name: 'Yes' },
+        { value: false, name: 'No' },
+      ],
+      default: true,
+    });
+    // Format updated files if formatters are available
+    if (applyFormatting) await formatFiles(filesUpdated, formatter);
   }
 
   protected async handleTranslateCommand(initOptions: Options): Promise<void> {

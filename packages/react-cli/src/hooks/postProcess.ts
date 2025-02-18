@@ -1,19 +1,48 @@
 import fs from 'fs';
 import chalk from 'chalk';
 
-export async function formatFiles(filesUpdated: string[]): Promise<void> {
-  if (filesUpdated.length === 0) return;
+type Formatter = 'prettier' | 'biome' | 'eslint';
+
+export async function detectFormatter(): Promise<Formatter | null> {
+  // Try Prettier
   try {
-    // Try Prettier
-    let prettier;
-    try {
-      prettier = require('prettier');
-    } catch {
-      prettier = null;
+    require('prettier');
+    return 'prettier';
+  } catch {}
+
+  // Try Biome
+  try {
+    const { execSync } = require('child_process');
+    execSync('npx @biomejs/biome --version', { stdio: 'ignore' });
+    return 'biome';
+  } catch {}
+
+  // Try ESLint
+  try {
+    require('eslint');
+    return 'eslint';
+  } catch {}
+
+  return null;
+}
+
+export async function formatFiles(
+  filesUpdated: string[],
+  formatter?: Formatter
+): Promise<void> {
+  if (filesUpdated.length === 0) return;
+
+  try {
+    const detectedFormatter = formatter || (await detectFormatter());
+
+    if (!detectedFormatter) {
+      console.log(chalk.yellow('\n⚠️  No supported formatter detected'));
+      return;
     }
 
-    if (prettier) {
+    if (detectedFormatter === 'prettier') {
       console.log(chalk.gray('\nCleaning up with prettier...'));
+      const prettier = require('prettier');
       for (const file of filesUpdated) {
         const config = await prettier.resolveConfig(file);
         const content = await fs.promises.readFile(file, 'utf-8');
@@ -26,17 +55,7 @@ export async function formatFiles(filesUpdated: string[]): Promise<void> {
       return;
     }
 
-    // Try Biome
-    let biome;
-    try {
-      const { execSync } = require('child_process');
-      // Check if biome is installed
-      execSync('npx @biomejs/biome --version', { stdio: 'ignore' });
-      biome = true;
-    } catch {
-      biome = null;
-    }
-    if (biome) {
+    if (detectedFormatter === 'biome') {
       console.log(chalk.gray('\nCleaning up with biome...'));
       try {
         const { execSync } = require('child_process');
@@ -55,15 +74,9 @@ export async function formatFiles(filesUpdated: string[]): Promise<void> {
       return;
     }
 
-    // Try ESLint
-    let ESLint;
-    try {
-      ({ ESLint } = require('eslint'));
-    } catch {
-      ESLint = null;
-    }
-    if (ESLint) {
+    if (detectedFormatter === 'eslint') {
       console.log(chalk.gray('\nCleaning up with eslint...'));
+      const { ESLint } = require('eslint');
       const eslint = new ESLint({
         fix: true,
         overrideConfigFile: undefined, // Will use project's .eslintrc

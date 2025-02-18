@@ -6,15 +6,13 @@ import InitGTProps from './config-dir/props/InitGTProps';
  *
  * @example
  * // In next.config.mjs
- * import { initGT } from 'gt-next/config';
+ * import { withGTConfig } from 'gt-next/config';
  *
- * const withGT = initGT({
+ * export default withGTConfig(nextConfig, {
  *   projectId: 'abc-123',
  *   locales: ['en', 'es', 'fr'],
  *   defaultLocale: 'en'
- * });
- *
- * export default withGT({})
+ * })
  *
  * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
  * @param {string|undefined} i18n - Optional i18n configuration file path. If a string is provided, it will be used as a path.
@@ -35,10 +33,12 @@ import InitGTProps from './config-dir/props/InitGTProps';
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
- * @returns {function(NextConfig): NextConfig} - A function that accepts a Next.js config object and returns an updated config with GT settings applied.
+ * @param {NextConfig} nextConfig - The Next.js configuration object to extend
+ * @param {InitGTProps} props - General Translation configuration properties
+ * @returns {NextConfig} - An updated Next.js config with GT settings applied
  *
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
- *
  */
-export declare function initGT(props: InitGTProps): (nextConfig?: any) => any;
+export declare function withGTConfig(nextConfig: any | undefined, props: InitGTProps): any;
+export declare const initGT: (props: InitGTProps) => (nextConfig: any) => any;
 //# sourceMappingURL=config.d.ts.map
