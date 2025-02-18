@@ -6,16 +6,6 @@ import {
   T,
   Branch,
   Plural,
-  GTProvider,
 } from 'gt-react/client';
 
-export {
-  GTProvider as PagesRouterGTProvider,
-  T,
-  Var,
-  Num,
-  Currency,
-  DateTime,
-  Branch,
-  Plural,
-};
+export { T, Var, Num, Currency, DateTime, Branch, Plural };

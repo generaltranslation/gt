@@ -3,6 +3,13 @@ import {
   useDefaultLocale,
   useLocale,
   LocaleSelector,
+  GTProvider,
 } from 'gt-react/client';
 
-export { useGT, useDefaultLocale, useLocale, LocaleSelector };
+export {
+  GTProvider as GTClientProvider,
+  useGT,
+  useDefaultLocale,
+  useLocale,
+  LocaleSelector,
+};
