@@ -295,7 +295,8 @@ export default function ClientProvider({
       // Skip if:
       if (
         !translationRequired || // tx not required
-        !source // no content
+        !source || // no content
+        !translations // cache not loaded
       ) {
         return renderFallback();
       }
@@ -324,13 +325,7 @@ export default function ClientProvider({
         variablesOptions
       );
     },
-    [
-      translations,
-      locale,
-      defaultLocale,
-      translationRequired,
-      runtimeTranslationEnabled,
-    ]
+    [translations, locale, defaultLocale, translationRequired]
   );
 
   // For <T> components

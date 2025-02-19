@@ -470,7 +470,7 @@ export default function GTProvider({
       options: Record<string, any>,
       metadata: Record<string, any>
     ): string => {
-      // ---------- INITIAL CHECKS ---------- //
+      // ----- INITIAL CHECKS ----- //
 
       // set up
       const variables = options;
@@ -482,12 +482,13 @@ export default function GTProvider({
       // Skip if:
       if (
         !translationRequired || // tx not required
-        !source // no content
+        !source || // no content
+        !translations // cache not loaded
       ) {
         return renderFallback();
       }
 
-      // ---------- CHECK CACHE ---------- //
+      // ----- CHECK CACHE ----- //
       // Remember, render is blocked until after cache is checked
 
       // Get the translation entry
@@ -511,13 +512,7 @@ export default function GTProvider({
         variablesOptions
       );
     },
-    [
-      translations,
-      locale,
-      defaultLocale,
-      translationRequired,
-      runtimeTranslationEnabled,
-    ]
+    [translations, locale, defaultLocale, translationRequired]
   );
 
   const display = !!(
