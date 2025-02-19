@@ -1,65 +1,100 @@
-import { isSameLanguage, renderContentToString, splitStringToContent } from "generaltranslation";
-import getI18NConfig from "../../config-dir/getI18NConfig";
-import { getLocale } from "../../server";
-import { hashJsxChildren } from "generaltranslation/id";
-import { createStringTranslationError } from "../../errors/createErrors";
+import {
+  isSameLanguage,
+  renderContentToString,
+  splitStringToContent,
+} from 'generaltranslation';
+import getI18NConfig from '../../config-dir/getI18NConfig';
+import { getLocale } from '../../server';
+import { hashJsxChildren } from 'generaltranslation/id';
+import { createStringTranslationError } from '../../errors/createErrors';
+import { TranslationOptions } from 'gt-react/internal';
 
-export default async function getGT() {
+/**
+ * getGT() returns a function that translates a string.
+ *
+ * @returns A promise of the t() function used for translating strings
+ *
+ * @example
+ * const t = await getGT();
+ * console.log(t('Hello, world!')); // Translates 'Hello, world!'
+ */
+export default async function getGT(): Promise<
+  (
+    content: string,
+    options?: {
+      locale?: string;
+    } & TranslationOptions
+  ) => string
+> {
+  // ---------- SET UP ---------- //
+  const I18NConfig = getI18NConfig();
+  const locale = await getLocale();
+  const defaultLocale = I18NConfig.getDefaultLocale();
+  const translationRequired = I18NConfig.requiresTranslation(locale);
+  const translations = translationRequired
+    ? await I18NConfig.getCachedTranslations(locale)
+    : undefined;
 
+  // ---------- THE t() METHOD ---------- //
+
+  /**
+   * @param {string} content
+   * @param { TranslationOptions & { locale?: string; }} options For translating strings, the locale to translate to.
+   * @returns The translated version of content
+   *
+   * @example
+   * t('Hello, world!'); // Translates 'Hello, world!'
+   *
+   * @example
+   * t('My name is {name}', { variables: { name: 'John' } }); // Translates 'My name is {name}' and replaces {name} with 'John'
+   */
+  const t = (
+    content: string,
+    options: {
+      locale?: string;
+    } & TranslationOptions = {}
+  ) => {
     // ----- SET UP ----- //
-    const I18NConfig = getI18NConfig();
-    const locale = await getLocale();
-    const defaultLocale = I18NConfig.getDefaultLocale();
-    const translationRequired = I18NConfig.requiresTranslation(locale);
-    const translations =
-        translationRequired ? await I18NConfig.getCachedTranslations(locale) : undefined;
 
-    const t = (
-        content: string,
-        options: {
-          locale?: string;
-          context?: string;
-          variables?: Record<string, any>;
-          variableOptions?: Record<
-            string,
-            Intl.NumberFormatOptions | Intl.DateTimeFormatOptions
-          >;
-          [key: string]: any;
-        } = {}
-    ) => {
+    // Validate content
+    if (!content || typeof content !== 'string') return '';
 
-        if (!content || typeof content !== 'string') return '';
+    // Parse content
+    const source = splitStringToContent(content);
 
-        const source = splitStringToContent(content);
+    // Render Method
+    const renderContent = (content: any, locales: string[]) => {
+      return renderContentToString(
+        content,
+        locales,
+        options.variables,
+        options.variablesOptions
+      );
+    };
 
-        const renderContent = (content: any, locales: string[]) => {
-            return renderContentToString(
-              content,
-              locales,
-              options.variables,
-              options.variablesOptions
-            );
-        };
+    // Check: translation required
+    if (!translationRequired) return renderContent(source, [defaultLocale]);
 
-        if (!translationRequired) return renderContent(source, [defaultLocale]);
+    // ----- GET TRANSLATION ----- //
 
-        const context = options?.context;
-        const id = options?.id;
-        const hash = hashJsxChildren({
-            source,
-            ...(context && { context }),
-            ...(id && { id }),
-        });
+    const hash = hashJsxChildren({
+      source,
+      ...(options?.context && { context: options?.context }),
+      ...(options?.id && { id: options?.id }),
+    });
+    const translationEntry = translations?.[hash];
 
-        if (translations?.[hash]?.state === 'success') {
-            return renderContent(translations[hash].target, [locale, defaultLocale]);
-        }
+    // ----- RENDER TRANSLATION ----- //
 
-        // FALLBACK
-        console.warn(createStringTranslationError(content, id, "t"));
-
-        return renderContent(source, [ defaultLocale ]);
+    // Render translation
+    if (translationEntry?.state === 'success') {
+      return renderContent(translationEntry.target, [locale, defaultLocale]);
     }
 
-    return t;
+    // Fallback to defaultLocale if not found
+    console.warn(createStringTranslationError(content, options?.id, 't'));
+    return renderContent(source, [defaultLocale]);
+  };
+
+  return t;
 }

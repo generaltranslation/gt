@@ -4,11 +4,14 @@ import {
   DictionaryEntry,
   Dictionary,
   TranslatedContent,
+  TranslationOptions,
 } from 'gt-react/internal';
-import T from '../T';
-import getDictionary, { getDictionaryEntry } from '../../../dictionary/getDictionary';
-import getLocale from '../../../request/getLocale'
-import getI18NConfig from '../../../config-dir/getI18NConfig';
+import T from './T';
+import getDictionary, {
+  getDictionaryEntry,
+} from '../../dictionary/getDictionary';
+import getLocale from '../../request/getLocale';
+import getI18NConfig from '../../config-dir/getI18NConfig';
 import {
   renderContentToString,
   splitStringToContent,
@@ -18,7 +21,7 @@ import {
   createNoEntryWarning,
   createDictionaryStringTranslationError,
   dictionaryDisabledError,
-} from '../../../errors/createErrors';
+} from '../../errors/createErrors';
 import React, { isValidElement } from 'react';
 import { hashJsxChildren } from 'generaltranslation/id';
 
@@ -35,14 +38,19 @@ import { hashJsxChildren } from 'generaltranslation/id';
  * const d = await getDict();
  * console.log(d('hello')); // Translates item 'hello'
  */
-export default async function getDict(
-  id?: string
-): Promise<(id: string, options?: Record<string, any>) => React.ReactNode> {
+export default async function getDict(id?: string): Promise<
+  (
+    id: string,
+    options?: {
+      locale?: string;
+    } & TranslationOptions
+  ) => React.ReactNode
+> {
   const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
   };
 
-  // ----- SET UP ----- //
+  // ---------- SET UP ---------- //
 
   const I18NConfig = getI18NConfig();
   if (!I18NConfig.isDictionaryEnabled()) {
@@ -61,7 +69,11 @@ export default async function getDict(
     process.env.NODE_ENV === 'development'; // need proper credentials
   let stringTranslationsById: Record<string, TranslatedContent> = {};
 
+  // ---------- GET TRANSLATIONS ---------- //
+
   if (translationRequired) {
+    // ----- FETCH CACHE ----- //
+
     // Send a request to cache for translations
     let translationsPromise = I18NConfig.getCachedTranslations(locale);
 
@@ -78,10 +90,14 @@ export default async function getDict(
     // Block until cache check resolves
     const translations = await translationsPromise;
 
+    // ----- RESOLVE TRANSLATIONS ----- //
+
     // Translate all strings in sub dictionary (block until completed)
     await Promise.all(
       Object.entries(flattenedDictionaryEntries ?? {}).map(
         async ([suffix, dictionaryEntry]) => {
+          // ----- EXTRACT IDENTIFIERS ----- //
+
           // Get the entry from the dictionary
           let { entry, metadata } = getEntryAndMetadata(dictionaryEntry);
 
@@ -102,12 +118,12 @@ export default async function getDict(
           // Serialize and hash
           const source = splitStringToContent(entry);
           const hash = hashJsxChildren({
-            source, 
+            source,
             ...(metadata?.context && { context: metadata?.context }),
-            id: entryId
-          })
+            id: entryId,
+          });
 
-          // ----- CHECK CACHE ----- //
+          // ----- CHECK CACHED TRANSLATIONS ----- //
 
           // If a translation already exists int our cache from earlier, add it to the translations
           const translationEntry = translations[hash];
@@ -149,7 +165,39 @@ export default async function getDict(
     );
   }
 
-  return (id: string, options?: Record<string, any>): React.ReactNode => {
+  // ---------- THE d() METHOD ---------- //
+
+  /**
+   *
+   * @param {string} id The identifier of the dictionary entry to translate.
+   * @param { TranslationOptions & { locale?: string; }} options For translating strings, the locale to translate to.
+   * @returns The translated version of the dictionary entry.
+   *
+   * @example
+   * d('greetings.greeting1'); // Translates item in dictionary under greetings.greeting1
+   *
+   * @example
+   * d('greetings.greeting1', { locale: 'fr' }); // Translates item in dictionary under greetings.greeting1 to French
+   *
+   * @example
+   * // dictionary entry
+   * {
+   *  greetings: {
+   *    greeting2: "Hello, {name}!"
+   *  }
+   * }
+   *
+   * // Translates item in dictionary under greetings.greeting2 and replaces {name} with 'John'
+   * d('greetings.greeting2', { variables: { name: 'John' } });
+   */
+  const d = (
+    id: string,
+    options: {
+      locale?: string;
+    } & TranslationOptions = {}
+  ): React.ReactNode => {
+    // ----- SET UP ----- //
+
     // Get entry
     id = getId(id);
     const dictionaryEntry = getDictionaryEntry(id);
@@ -171,10 +219,11 @@ export default async function getDict(
     let variables = options;
     let variablesOptions = metadata?.variablesOptions;
 
+    // ----- STRINGS ----- //
+
     // Render strings
     if (typeof entry === 'string') {
-      const source =
-        stringTranslationsById[id] || splitStringToContent(entry);
+      const source = stringTranslationsById[id] || splitStringToContent(entry);
       return renderContentToString(
         source,
         [locale, defaultLocale],
@@ -182,6 +231,8 @@ export default async function getDict(
         variablesOptions
       );
     }
+
+    // ----- JSX ----- //
 
     // Translate on demand
     return (
@@ -195,4 +246,6 @@ export default async function getDict(
       </T>
     );
   };
+
+  return d;
 }
