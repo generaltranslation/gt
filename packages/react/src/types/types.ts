@@ -113,7 +113,7 @@ export type GTContextType = {
   translateJsx: TranslateChildrenCallback;
   getContentTranslation: (
     content: string,
-    options: Record<string, any>,
+    options: Record<string, any>
   ) => string;
   runtimeTranslationEnabled: boolean;
   locale: string;
@@ -125,6 +125,16 @@ export type GTContextType = {
   dialectTranslationRequired: boolean;
   renderSettings: { method: RenderMethod; timeout?: number };
   projectId?: string;
+};
+
+export type TranslationOptions = {
+  context?: string;
+  variables?: Record<string, any>;
+  variableOptions?: Record<
+    string,
+    Intl.NumberFormatOptions | Intl.DateTimeFormatOptions
+  >;
+  [key: string]: any;
 };
 
 export class GTTranslationError extends Error {

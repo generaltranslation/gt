@@ -99,7 +99,7 @@ export type GTContextType = {
     getDictionaryEntryTranslation: (id: string, options?: Record<string, any>) => React.ReactNode;
     translateContent: TranslateContentCallback;
     translateJsx: TranslateChildrenCallback;
-    getContentTranslation: (content: string, id: string, options: Record<string, any>, metadata: Record<string, any>) => string;
+    getContentTranslation: (content: string, options: Record<string, any>) => string;
     runtimeTranslationEnabled: boolean;
     locale: string;
     locales: string[];
@@ -113,6 +113,12 @@ export type GTContextType = {
         timeout?: number;
     };
     projectId?: string;
+};
+export type TranslationOptions = {
+    context?: string;
+    variables?: Record<string, any>;
+    variableOptions?: Record<string, Intl.NumberFormatOptions | Intl.DateTimeFormatOptions>;
+    [key: string]: any;
 };
 export declare class GTTranslationError extends Error {
     error: string;

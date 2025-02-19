@@ -89,7 +89,7 @@ type GTContextType = {
     getDictionaryEntryTranslation: (id: string, options?: Record<string, any>) => React__default.ReactNode;
     translateContent: TranslateContentCallback;
     translateJsx: TranslateChildrenCallback;
-    getContentTranslation: (content: string, id: string, options: Record<string, any>, metadata: Record<string, any>) => string;
+    getContentTranslation: (content: string, options: Record<string, any>) => string;
     runtimeTranslationEnabled: boolean;
     locale: string;
     locales: string[];
@@ -103,6 +103,12 @@ type GTContextType = {
         timeout?: number;
     };
     projectId?: string;
+};
+type TranslationOptions = {
+    context?: string;
+    variables?: Record<string, any>;
+    variableOptions?: Record<string, Intl.NumberFormatOptions | Intl.DateTimeFormatOptions>;
+    [key: string]: any;
 };
 type ClientProviderProps = {
     children: any;
@@ -229,13 +235,13 @@ declare namespace Plural {
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
  *
  * @example
- * const t = useGT('user');
+ * const t = useGT();
  * console.log(t('To be or not to be...'));
  *
  * const t = useGT();
  * return (<> {t('...that is the question')} </>);
  */
-declare function useGT(): (content?: string, id?: string, options?: Record<string, any>, metadata?: Record<string, any>) => string;
+declare function useGT(): (content?: string, options?: TranslationOptions) => string;
 
 /**
  * Retrieves the application's default locale from the `<GTProvider>` context.

@@ -37,6 +37,7 @@ import {
   TaggedDictionaryEntry,
   TaggedEntry,
   ClientProviderProps,
+  TranslationOptions,
 } from './types/types';
 export {
   addGTIdentifier,
@@ -76,4 +77,5 @@ export {
   TranslationSuccess,
   GTContextType,
   ClientProviderProps,
+  TranslationOptions,
 };

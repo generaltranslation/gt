@@ -1,67 +1,71 @@
-import { renderContentToString, splitStringToContent } from "generaltranslation";
-import { hashJsxChildren } from "generaltranslation/id";
-import { useCallback } from "react";
-import { TranslationsObject } from "../../internal";
+import {
+  renderContentToString,
+  splitStringToContent,
+} from 'generaltranslation';
+import { hashJsxChildren } from 'generaltranslation/id';
+import { useCallback } from 'react';
+import { TranslationsObject } from '../../internal';
 
 export default function useTranslateContent(
-    translations: TranslationsObject | null, 
-    locale: string, defaultLocale: string,
-    translationRequired: boolean
+  translations: TranslationsObject | null,
+  locale: string,
+  defaultLocale: string,
+  translationRequired: boolean
 ) {
-    return useCallback((
-        content: string,
-        options: {
-            locale?: string;
-            context?: string;
-            variables?: Record<string, any>;
-            variableOptions?: Record<
-                string,
-                Intl.NumberFormatOptions | Intl.DateTimeFormatOptions
-            >;
-            [key: string]: any;
-        } = {}
+  return useCallback(
+    (
+      content: string,
+      options: {
+        locale?: string;
+        context?: string;
+        variables?: Record<string, any>;
+        variableOptions?: Record<
+          string,
+          Intl.NumberFormatOptions | Intl.DateTimeFormatOptions
+        >;
+        [key: string]: any;
+      } = {}
     ) => {
-        if (!content || typeof content !== 'string') return '';
+      // ----- SET UP ----- //
 
-        // ----- RENDER METHOD ----- //
+      // Check: reject invalid content
+      if (!content || typeof content !== 'string') return '';
 
-        const source = splitStringToContent(content); // parse content
+      // Parse content
+      const source = splitStringToContent(content);
 
-        const renderContent = (content: any, locales: string[]) => {
-          return renderContentToString(
-            content,
-            locales,
-            options.variables,
-            options.variablesOptions
-          );
-        };
+      // Render method
+      const renderContent = (content: any, locales: string[]) => {
+        return renderContentToString(
+          content,
+          locales,
+          options.variables,
+          options.variablesOptions
+        );
+      };
 
-        if (!translationRequired)
-          return renderContent(source, [defaultLocale]);
+      // Check: translation not required
+      if (!translationRequired) return renderContent(source, [defaultLocale]);
 
-        // get hash
-        const hash = hashJsxChildren({
-          source,
-          ...(options?.context && { context: options.context }),
-          ...(options?.id && { id: options.id }),
-        });
-    
-        // ----- CHECK CACHE ----- //
-        // Remember, render is blocked until after cache is checked
+      // ----- CHECK TRANSLATIONS ----- //
 
-        const translation = translations?.[hash];
-    
-        // Check translation successful
-        if (translation?.state === 'success') {
-            return renderContent(
-              translation.target,
-              [locale, defaultLocale]
-            );
-        }
-    
-        // Note: in the future, we may add on demand translation for dev here
-        return renderContent(source, [defaultLocale]);
-        },
-      [translations, locale, defaultLocale, translationRequired]
-    );
+      // Get key
+      const key = hashJsxChildren({
+        source,
+        ...(options?.context && { context: options.context }),
+        ...(options?.id && { id: options.id }),
+      });
+
+      // Check translation successful
+      const translation = translations?.[key];
+      if (translation?.state === 'success') {
+        return renderContent(translation.target, [locale, defaultLocale]);
+      }
+
+      // Fallback to defaultLocale
+      // Note: in the future, we may add on demand translation for dev here
+      return renderContent(source, [defaultLocale]);
+    },
+    [translations, locale, defaultLocale, translationRequired]
+  );
 }
