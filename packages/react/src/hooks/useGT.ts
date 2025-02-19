@@ -11,7 +11,12 @@ import { TranslationOptions } from '../types/types';
  * console.log(t('To be or not to be...'));
  *
  * const t = useGT();
- * return (<> {t('...that is the question')} </>);
+ * return (<>
+ *  {
+ *     t('My name is {customName}', { variables: { customName: "Brian" } } )
+ *  }
+ * </>);
+ *
  */
 export default function useGT() {
   const { getContentTranslation } = useGTContext(
@@ -19,9 +24,9 @@ export default function useGT() {
   );
 
   /**
-   * @param content String to translate
-   * @param options Optional options for the translation and variable insertion
-   * @returns {string} A promise of a translated string.
+   * @param {string} content String to translate
+   * @param {TranslationOptions} options Optional options for the translation and variable insertion
+   * @returns {string} A translated string.
    */
   function t(content: string = '', options: TranslationOptions = {}): string {
     if (getContentTranslation) {

@@ -4,14 +4,14 @@ import {
 } from 'generaltranslation';
 import { hashJsxChildren } from 'generaltranslation/id';
 import { useCallback } from 'react';
-import { TranslationsObject } from '../../internal';
+import { TranslationOptions, TranslationsObject } from '../../types/types';
 
 export default function useTranslateContent(
   translations: TranslationsObject | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean
-) {
+): (content: string, options?: TranslationOptions) => string {
   return useCallback(
     (
       content: string,

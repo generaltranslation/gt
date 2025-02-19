@@ -1,6 +1,7 @@
 import React from 'react';
 import useGTContext from '../provider/GTContext';
 import { createNoEntryWarning } from '../messages/createMessages';
+import { TranslationOptions } from '../types/types';
 
 /**
  * Gets the dictionary access function `d` provided by `<GTProvider>`.
@@ -17,7 +18,7 @@ import { createNoEntryWarning } from '../messages/createMessages';
  */
 export default function useDict(
   id: string = ''
-): (id: string, options?: Record<string, any>) => React.ReactNode {
+): (id: string, options?: TranslationOptions) => React.ReactNode {
   // Create a prefix for translation keys if an id is provided
   const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
@@ -33,15 +34,18 @@ export default function useDict(
    * Translates a dictionary item based on its `id` and options.
    *
    * @param {string} [id=''] - The ID of the item in the dictionary to translate.
-   * @param {Record<string, any>} [options={}] - Variables or parameters (e.g., `n`) passed into the translation for dynamic content.
+   * @param {TranslationOptions} [options={}] - Variables or parameters (e.g., `n`) passed into the translation for dynamic content.
    *
    * @returns {React.ReactNode}
    */
   function d(
     id: string = '',
-    options: Record<string, any> = {}
+    options: TranslationOptions = {}
   ): React.ReactNode {
+    // Get the prefixed ID
     const prefixedId = getId(id);
+
+    // Get the translation
     if (translateDictionaryEntry) {
       const translation = translateDictionaryEntry(prefixedId, options);
       if (translation === undefined || translation === null)
