@@ -42,6 +42,7 @@ class NextCLI extends gt_react_cli_1.BaseCLI {
     }
     handleSetupCommand(options) {
         return __awaiter(this, void 0, void 0, function* () {
+            (0, console_1.displayAsciiTitle)();
             (0, console_1.displayInitializingText)();
             // Ask user for confirmation using inquirer
             const answer = yield (0, prompts_1.select)({
@@ -134,10 +135,10 @@ class NextCLI extends gt_react_cli_1.BaseCLI {
                 console.log(warnings.map((warning) => `${chalk_1.default.yellow('-')} ${warning}`).join('\n'));
             }
             // Stage only the modified files
-            const { execSync } = require('child_process');
-            for (const file of filesUpdated) {
-                yield execSync(`git add "${file}"`);
-            }
+            // const { execSync } = require('child_process');
+            // for (const file of filesUpdated) {
+            //   await execSync(`git add "${file}"`);
+            // }
             const formatter = yield (0, postProcess_1.detectFormatter)();
             if (!formatter || filesUpdated.length === 0) {
                 return;

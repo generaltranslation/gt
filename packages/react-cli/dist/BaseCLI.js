@@ -197,6 +197,7 @@ class BaseCLI {
     }
     handleSetupCommand(options) {
         return __awaiter(this, void 0, void 0, function* () {
+            (0, console_1.displayAsciiTitle)();
             (0, console_1.displayInitializingText)();
             // Ask user for confirmation using inquirer
             const answer = yield (0, prompts_1.select)({
@@ -235,7 +236,7 @@ class BaseCLI {
                     default: 'pages',
                 });
                 if (routerType === 'app') {
-                    console.log(chalk_1.default.red('\nPlease use gt-next and gt-next-cli instead. gt-react is not supported for the App router.'));
+                    console.log(chalk_1.default.red('\nPlease use gt-next and gt-next-cli instead. gt-react should not be used with the App router.'));
                     process.exit(0);
                 }
                 addGTProvider = yield (0, prompts_1.select)({
@@ -283,10 +284,10 @@ class BaseCLI {
                 console.log(warnings.map((warning) => `${chalk_1.default.yellow('-')} ${warning}`).join('\n'));
             }
             // Stage only the modified files
-            const { execSync } = require('child_process');
-            for (const file of filesUpdated) {
-                yield execSync(`git add "${file}"`);
-            }
+            // const { execSync } = require('child_process');
+            // for (const file of filesUpdated) {
+            //   await execSync(`git add "${file}"`);
+            // }
             const formatter = yield (0, postProcess_1.detectFormatter)();
             if (!formatter || filesUpdated.length === 0) {
                 return;

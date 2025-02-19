@@ -6,7 +6,10 @@ import {
   SetupOptions,
   SupportedFrameworks,
 } from 'gt-react-cli/types';
-import { displayInitializingText } from 'gt-react-cli/console/console';
+import {
+  displayAsciiTitle,
+  displayInitializingText,
+} from 'gt-react-cli/console/console';
 import chalk from 'chalk';
 import { select } from '@inquirer/prompts';
 import createConfig from 'gt-react-cli/fs/config/setupConfig';
@@ -42,6 +45,7 @@ export class NextCLI extends BaseCLI {
   }
 
   protected async handleSetupCommand(options: SetupOptions): Promise<void> {
+    displayAsciiTitle();
     displayInitializingText();
 
     // Ask user for confirmation using inquirer

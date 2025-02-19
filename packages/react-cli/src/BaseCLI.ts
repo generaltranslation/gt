@@ -275,6 +275,7 @@ export abstract class BaseCLI {
   }
 
   protected async handleSetupCommand(options: SetupOptions): Promise<void> {
+    displayAsciiTitle();
     displayInitializingText();
 
     // Ask user for confirmation using inquirer
@@ -320,7 +321,7 @@ export abstract class BaseCLI {
       if (routerType === 'app') {
         console.log(
           chalk.red(
-            '\nPlease use gt-next and gt-next-cli instead. gt-react is not supported for the App router.'
+            '\nPlease use gt-next and gt-next-cli instead. gt-react should not be used with the App router.'
           )
         );
         process.exit(0);
