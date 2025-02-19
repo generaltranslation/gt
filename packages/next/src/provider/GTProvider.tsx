@@ -17,7 +17,7 @@ import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
 import { Dictionary, TranslationsObject } from 'gt-react/internal';
 import { createDictionarySubsetError } from '../errors/createErrors';
 import ClientProvider from './ClientProviderWrapper';
-import { hashJsxChildren } from 'generaltranslation/id'
+import { hashJsxChildren } from 'generaltranslation/id';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -34,6 +34,7 @@ export default async function GTProvider({
   children?: ReactNode;
   id?: string;
 }) {
+  
   // Set up
   const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
@@ -46,7 +47,7 @@ export default async function GTProvider({
     translationRequired && isSameLanguage(locale, defaultLocale);
   const clientRuntimeTranslationEnabled =
     I18NConfig.isClientRuntimeTranslationEnabled(); // runtime translation enabled in dev
-
+    
   // Start fetching translations from cache
   const translationsPromise =
     translationRequired && I18NConfig.getCachedTranslations(locale);

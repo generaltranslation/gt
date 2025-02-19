@@ -7,7 +7,7 @@ import {
   renderTranslatedChildren,
   writeChildrenAsObjects,
 } from 'gt-react/internal';
-import renderVariable from '../rendering/renderVariable';
+import renderVariable from '../variables/renderVariable';
 import { isSameLanguage } from 'generaltranslation';
 import React from 'react';
 import { hashJsxChildren } from 'generaltranslation/id';
@@ -18,7 +18,7 @@ async function Resolver({ children }: { children: React.ReactNode }) {
 
 // TODO
 // WIP
-async function TX({
+async function Tx({
   children,
   id,
   context,
@@ -162,6 +162,6 @@ async function TX({
   );
 }
 
-TX.gtTransformation = 'translate-server';
+Tx.gtTransformation = 'translate-server';
 
-// export default TX;
+export default Tx;

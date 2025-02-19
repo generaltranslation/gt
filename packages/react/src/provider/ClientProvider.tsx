@@ -25,6 +25,7 @@ import renderVariable from './rendering/renderVariable';
 import useRuntimeTranslation from './runtime/useRuntimeTranslation';
 import { localeCookieName } from 'generaltranslation/internal';
 import { dictionaryDisabledError } from '../messages/createMessages';
+import { hashJsxChildren } from 'generaltranslation/id';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -275,6 +276,63 @@ export default function ClientProvider({
     [dictionary, translations, locale]
   );
 
+  const getContentTranslation = useCallback(
+    (
+      content: string,
+      id: string,
+      options: Record<string, any>,
+      metadata: Record<string, any>
+    ): string => {
+      // ---------- INITIAL CHECKS ---------- //
+
+      // set up
+      const variables = options;
+      const variablesOptions = metadata?.variablesOptions;
+      const source = splitStringToContent(content as string);
+      const renderFallback = () =>
+        renderContentToString(source, locales, variables, variablesOptions);
+
+      // Skip if:
+      if (
+        !translationRequired || // tx not required
+        !source // no content
+      ) {
+        return renderFallback();
+      }
+
+      // ---------- CHECK CACHE ---------- //
+      // Remember, render is blocked until after cache is checked
+
+      // Get the translation entry
+      const key = hashJsxChildren({
+        source,
+        ...(options.context && { context: options.context }),
+        ...(id && { id }),
+      });
+      const translation = translations?.[key];
+
+      // Check translation successful
+      if (translation?.state !== 'success') {
+        return renderFallback();
+      }
+
+      // Note: in the future, we may add on demand translation for dev here
+      return renderContentToString(
+        translation.target as TranslatedContent,
+        [locale, defaultLocale],
+        variables,
+        variablesOptions
+      );
+    },
+    [
+      translations,
+      locale,
+      defaultLocale,
+      translationRequired,
+      runtimeTranslationEnabled,
+    ]
+  );
+
   // For <T> components
   const { translateContent, translateJsx } = useRuntimeTranslation({
     locale: locale,
@@ -295,7 +353,7 @@ export default function ClientProvider({
         translateJsx,
         translateContent,
         setLocale,
-        getContentTranslation: () => Promise.resolve(''),
+        getContentTranslation,
         locale,
         locales,
         defaultLocale,

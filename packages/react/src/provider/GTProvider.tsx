@@ -464,10 +464,11 @@ export default function GTProvider({
   // ---------- ON-DEMAND STRING TRANSLATION ---------- //
 
   const getContentTranslation = useCallback(
-    async (
+    (
       content: string,
       id: string,
-      options: Record<string, any>
+      options: Record<string, any>,
+      metadata: Record<string, any>
     ): string => {
       // ---------- INITIAL CHECKS ---------- //
 
@@ -519,6 +520,11 @@ export default function GTProvider({
     ]
   );
 
+  const display = !!(
+    (!translationRequired || (stringTranslationsResolved && translations)) &&
+    locale
+  );
+
   // hang until cache response, then render translations or loading state (when waiting on API response)
   return (
     <GTContext.Provider
@@ -539,8 +545,7 @@ export default function GTProvider({
         renderSettings,
       }}
     >
-      {(!translationRequired || (stringTranslationsResolved && translations)) &&
-        children}
+      {display && children}
     </GTContext.Provider>
   );
 }

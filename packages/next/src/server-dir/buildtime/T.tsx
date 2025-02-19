@@ -7,7 +7,7 @@ import {
   renderTranslatedChildren,
   writeChildrenAsObjects,
 } from 'gt-react/internal';
-import renderVariable from '../rendering/renderVariable';
+import renderVariable from '../variables/renderVariable';
 import { isSameLanguage } from 'generaltranslation';
 import React from 'react';
 import { hashJsxChildren } from 'generaltranslation/id';
@@ -118,7 +118,7 @@ async function T({
 
   // Begin by sending check to cache for translations
   const translationsPromise =
-    translationRequired && I18NConfig.getCachedTranslations(locale);
+    translationRequired ? I18NConfig.getCachedTranslations(locale) : undefined;
 
   // Turns tagged children into objects
   // The hash is used to identify the translation

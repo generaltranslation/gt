@@ -9,18 +9,16 @@ import { hashJsxChildren } from 'generaltranslation/id';
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
  *
  * @example
- * const t = useTranslation('user');
+ * const t = useGT('user');
  * console.log(t('To be or not to be...'));
  *
- * const t = useTranslation();
+ * const t = useGT();
  * return (<> {t('...that is the question')} </>);
  */
-export default function useTranslation() {
+export default function useGT() {
   const { getContentTranslation } = useGTContext(
-    `useTranslation(): No context provided. You're trying to get the t() function from the useTranslation() hook, which can be invoked within a <GTProvider>.`
+    `useGT(): No context provided. You're trying to get the t() function from the useGT() hook, which can be invoked within a <GTProvider>.`
   );
-
-  console.log('useTranslation()');
 
   /**
    * @param content String to translate
@@ -31,12 +29,13 @@ export default function useTranslation() {
   function t(
     content: string = '',
     id: string = '',
-    options: Record<string, any> = {}
+    options: Record<string, any> = {},
+    metadata: Record<string, any> = {}
   ): string {
     if (getContentTranslation) {
-      return getContentTranslation(content, id, options);
+      return getContentTranslation(content, id, options, metadata);
     }
-    return Promise.resolve('');
+    return '';
   }
 
   return t;

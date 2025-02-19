@@ -81,8 +81,8 @@ export class NextCLI extends BaseCLI {
       console.log(chalk.red('No next.config.js file found.'));
       process.exit(0);
     }
-    const addInitGT = await select({
-      message: `Do you want to automatically add initGT() to your ${nextConfigPath}?`,
+    const addWithGTConfig = await select({
+      message: `Do you want to automatically add withGTConfig() to your ${nextConfigPath}?`,
       choices: [
         { value: true, name: 'Yes' },
         { value: false, name: 'No' },
@@ -116,8 +116,8 @@ export class NextCLI extends BaseCLI {
       addGTProvider
     );
 
-    if (addInitGT) {
-      // Add the initGT() function to the next.config.js file
+    if (addWithGTConfig) {
+      // Add the withGTConfig() function to the next.config.js file
       const { errors: initGTErrors, filesUpdated: initGTFilesUpdated } =
         await handleInitGT(nextConfigPath);
 

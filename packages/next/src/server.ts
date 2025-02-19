@@ -1,12 +1,20 @@
-import T from './server-dir/inline/T';
-import tx from './server-dir/strings/tx';
+import T from './server-dir/buildtime/T';
+import tx from './server-dir/runtime/tx';
 import getLocale from './request/getLocale';
 import getI18NConfig from './config-dir/getI18NConfig';
-import { getGT } from './server-dir/getGT';
-// import TX from './server-dir/inline/TX';
+import getDict from './server-dir/buildtime/dictionary/getDict';
+import GTProvider from './provider/GTProvider';
+import Tx from './server-dir/runtime/_Tx'
+import getGT from './server-dir/buildtime/getGT';
 
 export function getDefaultLocale(): string {
   return getI18NConfig().getDefaultLocale();
 }
 
-export { T, tx, getLocale, getGT };
+export { 
+  GTProvider, 
+  T, getGT,
+  tx, Tx,
+  getLocale, // getDefaultLocale
+  getDict
+};

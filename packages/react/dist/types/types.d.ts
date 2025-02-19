@@ -99,7 +99,7 @@ export type GTContextType = {
     getDictionaryEntryTranslation: (id: string, options?: Record<string, any>) => React.ReactNode;
     translateContent: TranslateContentCallback;
     translateJsx: TranslateChildrenCallback;
-    getContentTranslation: (content: string, id: string, options: Record<string, any>) => Promise<string>;
+    getContentTranslation: (content: string, id: string, options: Record<string, any>, metadata: Record<string, any>) => string;
     runtimeTranslationEnabled: boolean;
     locale: string;
     locales: string[];
