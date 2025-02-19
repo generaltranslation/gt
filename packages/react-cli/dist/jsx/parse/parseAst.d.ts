@@ -27,4 +27,4 @@ export interface ImportNameResult {
     local: string;
     original: string;
 }
-export declare function extractImportName(node: ImportDeclaration | VariableDeclaration, pkg: string, translationFuncs: string[]): ImportNameResult | null;
+export declare function extractImportName(node: ImportDeclaration | VariableDeclaration, pkg: string, translationFuncs: string[]): ImportNameResult[];

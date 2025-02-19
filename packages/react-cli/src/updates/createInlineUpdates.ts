@@ -88,15 +88,11 @@ export default async function createInlineUpdates(
             pkg,
             translationFuncs
           );
-          if (importName) {
-            if (
-              importName.original === 'useGT' ||
-              importName.original === 'getGT'
-            ) {
-              parseStrings(importName.local, path, updates, errors, file);
+          for (const name of importName) {
+            if (name.original === 'useGT' || name.original === 'getGT') {
+              parseStrings(name.local, path, updates, errors, file);
             } else {
-              console.log(importName);
-              importAliases[importName.local] = importName.original;
+              importAliases[name.local] = name.original;
             }
           }
         }
@@ -122,20 +118,11 @@ export default async function createInlineUpdates(
                 pkg,
                 translationFuncs
               );
-              if (importName) {
-                if (
-                  importName.original === 'useGT' ||
-                  importName.original === 'getGT'
-                ) {
-                  parseStrings(
-                    importName.local,
-                    parentPath,
-                    updates,
-                    errors,
-                    file
-                  );
+              for (const name of importName) {
+                if (name.original === 'useGT' || name.original === 'getGT') {
+                  parseStrings(name.local, parentPath, updates, errors, file);
                 } else {
-                  importAliases[importName.local] = importName.original;
+                  importAliases[name.local] = name.original;
                 }
               }
             }
@@ -143,7 +130,6 @@ export default async function createInlineUpdates(
         }
       },
     });
-    console.log(importAliases);
     // Parse <T> components
     traverse(ast, {
       JSXElement(path) {
@@ -151,8 +137,6 @@ export default async function createInlineUpdates(
       },
     });
   }
-
-  console.log(JSON.stringify(updates, null, 2));
 
   // Post-process to add a hash to each update
   await Promise.all(

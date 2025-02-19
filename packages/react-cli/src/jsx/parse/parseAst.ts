@@ -165,7 +165,9 @@ export function extractImportName(
   node: ImportDeclaration | VariableDeclaration,
   pkg: string,
   translationFuncs: string[]
-): ImportNameResult | null {
+): ImportNameResult[] {
+  const results: ImportNameResult[] = [];
+
   if (node.type === 'ImportDeclaration') {
     // Handle ES6 imports
     if (node.source.value.startsWith(pkg)) {
@@ -175,10 +177,10 @@ export function extractImportName(
           'name' in specifier.imported &&
           translationFuncs.includes(specifier.imported.name)
         ) {
-          return {
+          results.push({
             local: specifier.local.name,
             original: specifier.imported.name,
-          };
+          });
         }
       }
     }
@@ -202,10 +204,10 @@ export function extractImportName(
               translationFuncs.includes(prop.key.name) &&
               prop.value.type === 'Identifier'
             ) {
-              return {
+              results.push({
                 local: prop.value.name,
                 original: prop.key.name,
-              };
+              });
             }
           }
         }
@@ -226,10 +228,10 @@ export function extractImportName(
                   stmt.declarations[0].init.property.name
                 )
               ) {
-                return {
+                results.push({
                   local: stmt.declarations[0].id.name,
                   original: stmt.declarations[0].init.property.name,
-                };
+                });
               }
             }
           }
@@ -242,12 +244,12 @@ export function extractImportName(
         translationFuncs.includes(declaration.init.property.name) &&
         declaration.id.type === 'Identifier'
       ) {
-        return {
+        results.push({
           local: declaration.id.name,
           original: declaration.init.property.name,
-        };
+        });
       }
     }
   }
-  return null;
+  return results;
 }

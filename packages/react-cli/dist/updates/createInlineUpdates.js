@@ -84,14 +84,12 @@ function createInlineUpdates(options, pkg) {
                 ImportDeclaration(path) {
                     if (path.node.source.value.startsWith(pkg)) {
                         const importName = (0, parseAst_1.extractImportName)(path.node, pkg, translationFuncs);
-                        if (importName) {
-                            if (importName.original === 'useGT' ||
-                                importName.original === 'getGT') {
-                                (0, parseStringFunction_1.parseStrings)(importName.local, path, updates, errors, file);
+                        for (const name of importName) {
+                            if (name.original === 'useGT' || name.original === 'getGT') {
+                                (0, parseStringFunction_1.parseStrings)(name.local, path, updates, errors, file);
                             }
                             else {
-                                console.log(importName);
-                                importAliases[importName.local] = importName.original;
+                                importAliases[name.local] = name.original;
                             }
                         }
                     }
@@ -110,13 +108,12 @@ function createInlineUpdates(options, pkg) {
                             const parentPath = path.parentPath;
                             if (parentPath.isVariableDeclaration()) {
                                 const importName = (0, parseAst_1.extractImportName)(parentPath.node, pkg, translationFuncs);
-                                if (importName) {
-                                    if (importName.original === 'useGT' ||
-                                        importName.original === 'getGT') {
-                                        (0, parseStringFunction_1.parseStrings)(importName.local, parentPath, updates, errors, file);
+                                for (const name of importName) {
+                                    if (name.original === 'useGT' || name.original === 'getGT') {
+                                        (0, parseStringFunction_1.parseStrings)(name.local, parentPath, updates, errors, file);
                                     }
                                     else {
-                                        importAliases[importName.local] = importName.original;
+                                        importAliases[name.local] = name.original;
                                     }
                                 }
                             }
@@ -124,7 +121,6 @@ function createInlineUpdates(options, pkg) {
                     }
                 },
             });
-            console.log(importAliases);
             // Parse <T> components
             (0, traverse_1.default)(ast, {
                 JSXElement(path) {
@@ -132,7 +128,6 @@ function createInlineUpdates(options, pkg) {
                 },
             });
         }
-        console.log(JSON.stringify(updates, null, 2));
         // Post-process to add a hash to each update
         yield Promise.all(updates.map((update) => __awaiter(this, void 0, void 0, function* () {
             const context = update.metadata.context;
