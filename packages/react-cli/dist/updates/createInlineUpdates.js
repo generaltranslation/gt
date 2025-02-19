@@ -20,6 +20,7 @@ const traverse_1 = __importDefault(require("@babel/traverse"));
 const id_1 = require("generaltranslation/id");
 const parseJsx_1 = require("../jsx/parseJsx");
 const parseStringFunction_1 = require("../jsx/parse/parseStringFunction");
+const parseAst_1 = require("../jsx/parse/parseAst");
 function createInlineUpdates(options, pkg) {
     return __awaiter(this, void 0, void 0, function* () {
         const updates = [];
@@ -68,17 +69,70 @@ function createInlineUpdates(options, pkg) {
                 console.error(`Error parsing file ${file}:`, error);
                 continue;
             }
+            const translationFuncs = [
+                'useGT',
+                'getGT',
+                'T',
+                'Var',
+                'DateTime',
+                'Currency',
+                'Num',
+            ];
+            const importAliases = {};
+            // handle imports & alias & handle string functions
             (0, traverse_1.default)(ast, {
                 ImportDeclaration(path) {
-                    if (path.node.source.value === pkg) {
-                        (0, parseStringFunction_1.parseStrings)(path, updates, errors, file, pkg);
+                    if (path.node.source.value.startsWith(pkg)) {
+                        const importName = (0, parseAst_1.extractImportName)(path.node, pkg, translationFuncs);
+                        if (importName) {
+                            if (importName.original === 'useGT' ||
+                                importName.original === 'getGT') {
+                                (0, parseStringFunction_1.parseStrings)(importName.local, path, updates, errors, file);
+                            }
+                            else {
+                                console.log(importName);
+                                importAliases[importName.local] = importName.original;
+                            }
+                        }
                     }
                 },
+                VariableDeclarator(path) {
+                    var _a;
+                    // Check if the init is a require call
+                    if (((_a = path.node.init) === null || _a === void 0 ? void 0 : _a.type) === 'CallExpression' &&
+                        path.node.init.callee.type === 'Identifier' &&
+                        path.node.init.callee.name === 'require') {
+                        // Check if it's requiring our package
+                        const args = path.node.init.arguments;
+                        if (args.length === 1 &&
+                            args[0].type === 'StringLiteral' &&
+                            args[0].value.startsWith(pkg)) {
+                            const parentPath = path.parentPath;
+                            if (parentPath.isVariableDeclaration()) {
+                                const importName = (0, parseAst_1.extractImportName)(parentPath.node, pkg, translationFuncs);
+                                if (importName) {
+                                    if (importName.original === 'useGT' ||
+                                        importName.original === 'getGT') {
+                                        (0, parseStringFunction_1.parseStrings)(importName.local, parentPath, updates, errors, file);
+                                    }
+                                    else {
+                                        importAliases[importName.local] = importName.original;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+            });
+            console.log(importAliases);
+            // Parse <T> components
+            (0, traverse_1.default)(ast, {
                 JSXElement(path) {
-                    (0, parseJsx_1.parseJSXElement)(path.node, updates, errors, file);
+                    (0, parseJsx_1.parseJSXElement)(importAliases, path.node, updates, errors, file);
                 },
             });
         }
+        console.log(JSON.stringify(updates, null, 2));
         // Post-process to add a hash to each update
         yield Promise.all(updates.map((update) => __awaiter(this, void 0, void 0, function* () {
             const context = update.metadata.context;

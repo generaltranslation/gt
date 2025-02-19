@@ -2,6 +2,11 @@ import * as t from '@babel/types';
 import traverse from '@babel/traverse';
 import { ParseResult } from '@babel/parser';
 import * as babel from '@babel/types';
+import {
+  ImportDeclaration,
+  VariableDeclarator,
+  VariableDeclaration,
+} from '@babel/types';
 
 export function determineModuleType(ast: ParseResult<t.File>) {
   let isESM = false;
@@ -149,4 +154,100 @@ export function createImports(
   const importNodes = generateImports(needsImport, isESM, importMap);
 
   insertImports(ast, importNodes);
+}
+
+export interface ImportNameResult {
+  local: string;
+  original: string;
+}
+
+export function extractImportName(
+  node: ImportDeclaration | VariableDeclaration,
+  pkg: string,
+  translationFuncs: string[]
+): ImportNameResult | null {
+  if (node.type === 'ImportDeclaration') {
+    // Handle ES6 imports
+    if (node.source.value.startsWith(pkg)) {
+      for (const specifier of node.specifiers) {
+        if (
+          specifier.type === 'ImportSpecifier' &&
+          'name' in specifier.imported &&
+          translationFuncs.includes(specifier.imported.name)
+        ) {
+          return {
+            local: specifier.local.name,
+            original: specifier.imported.name,
+          };
+        }
+      }
+    }
+  } else if (node.type === 'VariableDeclaration') {
+    // Handle CJS requires
+    for (const declaration of node.declarations) {
+      // Handle direct require with destructuring
+      if (
+        declaration.init?.type === 'CallExpression' &&
+        declaration.init.callee.type === 'Identifier' &&
+        declaration.init.callee.name === 'require' &&
+        declaration.init.arguments[0]?.type === 'StringLiteral' &&
+        declaration.init.arguments[0].value.startsWith(pkg)
+      ) {
+        // Handle destructuring case: const { T } = require('gt-next')
+        if (declaration.id.type === 'ObjectPattern') {
+          for (const prop of declaration.id.properties) {
+            if (
+              prop.type === 'ObjectProperty' &&
+              prop.key.type === 'Identifier' &&
+              translationFuncs.includes(prop.key.name) &&
+              prop.value.type === 'Identifier'
+            ) {
+              return {
+                local: prop.value.name,
+                original: prop.key.name,
+              };
+            }
+          }
+        }
+        // Handle intermediate variable case: const temp = require('gt-next')
+        else if (declaration.id.type === 'Identifier') {
+          const requireVarName = declaration.id.name;
+          const parentBody = (node as any).parent?.body;
+          if (parentBody) {
+            for (let i = 0; i < parentBody.length; i++) {
+              const stmt = parentBody[i];
+              if (
+                stmt.type === 'VariableDeclaration' &&
+                stmt.declarations[0]?.init?.type === 'MemberExpression' &&
+                stmt.declarations[0].init.object.type === 'Identifier' &&
+                stmt.declarations[0].init.object.name === requireVarName &&
+                stmt.declarations[0].init.property.type === 'Identifier' &&
+                translationFuncs.includes(
+                  stmt.declarations[0].init.property.name
+                )
+              ) {
+                return {
+                  local: stmt.declarations[0].id.name,
+                  original: stmt.declarations[0].init.property.name,
+                };
+              }
+            }
+          }
+        }
+      }
+      // Handle member expression assignment: const TranslateFunc = temp.T
+      if (
+        declaration.init?.type === 'MemberExpression' &&
+        declaration.init.property.type === 'Identifier' &&
+        translationFuncs.includes(declaration.init.property.name) &&
+        declaration.id.type === 'Identifier'
+      ) {
+        return {
+          local: declaration.id.name,
+          original: declaration.init.property.name,
+        };
+      }
+    }
+  }
+  return null;
 }

@@ -8,6 +8,7 @@ import traverse from '@babel/traverse';
 import { hashJsxChildren } from 'generaltranslation/id';
 import { parseJSXElement } from '../jsx/parseJsx';
 import { parseStrings } from '../jsx/parse/parseStringFunction';
+import { extractImportName } from '../jsx/parse/parseAst';
 
 export default async function createInlineUpdates(
   options: Options,
@@ -68,17 +69,90 @@ export default async function createInlineUpdates(
       continue;
     }
 
+    const translationFuncs = [
+      'useGT',
+      'getGT',
+      'T',
+      'Var',
+      'DateTime',
+      'Currency',
+      'Num',
+    ];
+    const importAliases: Record<string, string> = {};
+    // handle imports & alias & handle string functions
     traverse(ast, {
       ImportDeclaration(path) {
-        if (path.node.source.value === pkg) {
-          parseStrings(path, updates, errors, file, pkg);
+        if (path.node.source.value.startsWith(pkg)) {
+          const importName = extractImportName(
+            path.node,
+            pkg,
+            translationFuncs
+          );
+          if (importName) {
+            if (
+              importName.original === 'useGT' ||
+              importName.original === 'getGT'
+            ) {
+              parseStrings(importName.local, path, updates, errors, file);
+            } else {
+              console.log(importName);
+              importAliases[importName.local] = importName.original;
+            }
+          }
         }
       },
+      VariableDeclarator(path) {
+        // Check if the init is a require call
+        if (
+          path.node.init?.type === 'CallExpression' &&
+          path.node.init.callee.type === 'Identifier' &&
+          path.node.init.callee.name === 'require'
+        ) {
+          // Check if it's requiring our package
+          const args = path.node.init.arguments;
+          if (
+            args.length === 1 &&
+            args[0].type === 'StringLiteral' &&
+            args[0].value.startsWith(pkg)
+          ) {
+            const parentPath = path.parentPath;
+            if (parentPath.isVariableDeclaration()) {
+              const importName = extractImportName(
+                parentPath.node,
+                pkg,
+                translationFuncs
+              );
+              if (importName) {
+                if (
+                  importName.original === 'useGT' ||
+                  importName.original === 'getGT'
+                ) {
+                  parseStrings(
+                    importName.local,
+                    parentPath,
+                    updates,
+                    errors,
+                    file
+                  );
+                } else {
+                  importAliases[importName.local] = importName.original;
+                }
+              }
+            }
+          }
+        }
+      },
+    });
+    console.log(importAliases);
+    // Parse <T> components
+    traverse(ast, {
       JSXElement(path) {
-        parseJSXElement(path.node, updates, errors, file);
+        parseJSXElement(importAliases, path.node, updates, errors, file);
       },
     });
   }
+
+  console.log(JSON.stringify(updates, null, 2));
 
   // Post-process to add a hash to each update
   await Promise.all(

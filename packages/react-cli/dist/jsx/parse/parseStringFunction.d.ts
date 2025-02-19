@@ -1,4 +1,12 @@
 import { NodePath } from '@babel/traverse';
-import { ImportDeclaration, VariableDeclaration } from '@babel/types';
 import { Updates } from '../../types';
-export declare function parseStrings(path: NodePath<ImportDeclaration | VariableDeclaration>, updates: Updates, errors: string[], file: string, pkg: 'gt-react' | 'gt-next'): void;
+export declare const attributes: string[];
+/**
+ * For the following example code:
+ * const tx = useGT();
+ * tx('string to translate', { id: 'exampleId', context: 'exampleContext' });
+ *
+ * This function will find all call expressions of useGT(), then find all call expressions
+ * of the subsequent tx() calls, and append the content and metadata to the updates array.
+ */
+export declare function parseStrings(importName: string, path: NodePath, updates: Updates, errors: string[], file: string): void;

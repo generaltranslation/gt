@@ -1,5 +1,6 @@
 import * as t from '@babel/types';
 import { ParseResult } from '@babel/parser';
+import { ImportDeclaration, VariableDeclaration } from '@babel/types';
 export declare function determineModuleType(ast: ParseResult<t.File>): boolean;
 export type ImportItem = string | {
     local: string;
@@ -22,3 +23,8 @@ export declare function createImports(ast: ParseResult<t.File>, needsImport: Imp
     name: string;
     source: string;
 }>): void;
+export interface ImportNameResult {
+    local: string;
+    original: string;
+}
+export declare function extractImportName(node: ImportDeclaration | VariableDeclaration, pkg: string, translationFuncs: string[]): ImportNameResult | null;
