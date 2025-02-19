@@ -27,10 +27,9 @@ import {
   createUnsupportedLocalesWarning,
   devApiKeyProductionError,
   projectIdMissingWarning,
-  runtimeTranslationError,
 } from '../messages/createMessages';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import useRuntimeTranslation from './runtime/useRuntimeTranslation';
+import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
 import { hashJsxChildren } from 'generaltranslation/id';
 import React from 'react';
@@ -227,25 +226,26 @@ export default function GTProvider({
   const [translations, setTranslations] = useState<TranslationsObject | null>(
     translationRequired ? null : {}
   );
-  const { 
-    translateJsx, 
-    translateContent 
-  } = useRuntimeTranslation({
-    locale,
-    versionId: _versionId,
-    projectId,
-    runtimeTranslationEnabled,
-    defaultLocale,
-    devApiKey,
-    runtimeUrl,
-    renderSettings,
-    setTranslations,
-    ...metadata,
-  });
+
   // Reset translations if locale changes (null to trigger a new cache fetch)
   useEffect(() => setTranslations(translationRequired ? null : {}), [locale]);
 
-  // ----- ATTEMPT TO LOAD TRANSLATIONS ----- //
+  // Setup runtime translation
+  const { registerContentForTranslation, registerJsxForTranslation } =
+    useRuntimeTranslation({
+      locale,
+      versionId: _versionId,
+      projectId,
+      runtimeTranslationEnabled,
+      defaultLocale,
+      devApiKey,
+      runtimeUrl,
+      renderSettings,
+      setTranslations,
+      ...metadata,
+    });
+
+  // ---------- ATTEMPT TO LOAD TRANSLATIONS ---------- //
 
   useEffect(() => {
     // Early return if no need to translate
@@ -308,7 +308,8 @@ export default function GTProvider({
     _versionId,
   ]);
 
-  // ----- TRANSLATE STRINGS IN THE DICTIONARY (MUST DELAY PAGE LOAD UNTIL COMPLETE) ----- //
+  // ---------- TRANSLATE STRINGS IN THE DICTIONARY ---------- //
+  // must block until load complete
 
   const [
     // Flatten dictionaries for processing
@@ -363,7 +364,7 @@ export default function GTProvider({
         }
         continue;
       }
-      translateContent({
+      registerContentForTranslation({
         source,
         targetLocale: locale,
         metadata: {
@@ -383,7 +384,8 @@ export default function GTProvider({
     locale,
     translations,
   ]);
-  // ----- TRANSLATE FUNCTION FOR DICTIONARIES ----- //
+
+  // ---------- TRANSLATE FUNCTION FOR DICTIONARIES ---------- //
 
   const getDictionaryEntryTranslation = useCallback(
     (id: string, options: Record<string, any> = {}): React.ReactNode => {
@@ -467,8 +469,11 @@ export default function GTProvider({
 
   // ---------- ON-DEMAND STRING TRANSLATION ---------- //
 
-  const getContentTranslation = useTranslateContent(
-    translations, locale, defaultLocale, translationRequired
+  const translateContent = useTranslateContent(
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired
   );
 
   const display = !!(
@@ -481,9 +486,9 @@ export default function GTProvider({
     <GTContext.Provider
       value={{
         getDictionaryEntryTranslation,
+        registerContentForTranslation,
+        registerJsxForTranslation,
         translateContent,
-        translateJsx,
-        getContentTranslation,
         runtimeTranslationEnabled,
         locale,
         locales,

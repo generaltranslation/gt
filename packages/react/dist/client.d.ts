@@ -69,6 +69,13 @@ type TranslationsObject = {
     [key: string]: TranslationSuccess | TranslationLoading | TranslationError;
 };
 type RenderMethod = 'skeleton' | 'replace' | 'default';
+type TranslationOptions = {
+    context?: string;
+    variables?: Record<string, any>;
+    variableOptions?: Record<string, Intl.NumberFormatOptions | Intl.DateTimeFormatOptions>;
+    [key: string]: any;
+};
+
 type TranslateContentCallback = (params: {
     source: any;
     targetLocale: string;
@@ -85,18 +92,12 @@ type TranslateChildrenCallback = (params: {
         context?: string;
     } & Record<string, any>;
 }) => Promise<TranslationSuccess | TranslationLoading | TranslationError>;
-type TranslationOptions = {
-    context?: string;
-    variables?: Record<string, any>;
-    variableOptions?: Record<string, Intl.NumberFormatOptions | Intl.DateTimeFormatOptions>;
-    [key: string]: any;
-};
 
 type GTContextType = {
-    getDictionaryEntryTranslation: (id: string, options?: Record<string, any>) => React.ReactNode;
-    translateContent: TranslateContentCallback;
-    translateJsx: TranslateChildrenCallback;
-    getContentTranslation: (content: string, options: Record<string, any>) => string;
+    registerContentForTranslation: TranslateContentCallback;
+    registerJsxForTranslation: TranslateChildrenCallback;
+    translateContent: (content: string, options: TranslationOptions) => string;
+    getDictionaryEntryTranslation: (id: string, options?: TranslationOptions) => React.ReactNode;
     runtimeTranslationEnabled: boolean;
     locale: string;
     locales: string[];
@@ -153,8 +154,8 @@ declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId
     setTranslations: React.Dispatch<React.SetStateAction<any>>;
     [key: string]: any;
 }): {
-    translateContent: TranslateContentCallback;
-    translateJsx: TranslateChildrenCallback;
+    registerContentForTranslation: TranslateContentCallback;
+    registerJsxForTranslation: TranslateChildrenCallback;
 };
 
 declare function renderVariable({ variableType, variableName, variableValue, variableOptions, locales, }: {
@@ -240,7 +241,12 @@ declare namespace Plural {
  * console.log(t('To be or not to be...'));
  *
  * const t = useGT();
- * return (<> {t('...that is the question')} </>);
+ * return (<>
+ *  {
+ *     t('My name is {customName}', { variables: { customName: "Brian" } } )
+ *  }
+ * </>);
+ *
  */
 declare function useGT(): (content?: string, options?: TranslationOptions) => string;
 
@@ -270,7 +276,7 @@ declare function useDefaultLocale(): string;
  * const d = useDict();
  * console.log(d('hello')); // Translates item 'hello'
  */
-declare function useDict(id?: string): (id: string, options?: Record<string, any>) => React__default.ReactNode;
+declare function useDict(id?: string): (id: string, options?: TranslationOptions) => React__default.ReactNode;
 
 /**
  * Retrieves the user's locale from the `<GTProvider>` context.

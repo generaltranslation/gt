@@ -59,7 +59,7 @@ function T({
     translationRequired,
     runtimeTranslationEnabled,
     dialectTranslationRequired,
-    translateJsx,
+    registerJsxForTranslation,
     renderSettings,
     locale,
     defaultLocale,
@@ -101,7 +101,7 @@ function T({
     }
 
     // Translate content
-    translateJsx({
+    registerJsxForTranslation({
       source: childrenAsObjects,
       targetLocale: locale,
       metadata: {

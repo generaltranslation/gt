@@ -5,18 +5,21 @@ import {
 } from '../../messages/createMessages';
 import {
   RenderMethod,
-  TranslateChildrenCallback,
-  TranslateContentCallback,
   TranslationError,
   TranslationsObject,
   TranslationSuccess,
 } from '../../types/types';
+
+import {
+  TranslateContentCallback,
+  TranslateChildrenCallback,
+} from '../../types/runtime';
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import {
   maxConcurrentRequests,
   maxBatchSize,
   batchInterval,
-} from '../config/defaultProps';
+} from '../../provider/config/defaultProps';
 
 // Queue to store requested keys between renders.
 type TranslationRequestMetadata = {
@@ -65,20 +68,20 @@ export default function useRuntimeTranslation({
   setTranslations: React.Dispatch<React.SetStateAction<any>>;
   [key: string]: any;
 }): {
-  translateContent: TranslateContentCallback;
-  translateJsx: TranslateChildrenCallback;
+  registerContentForTranslation: TranslateContentCallback;
+  registerJsxForTranslation: TranslateChildrenCallback;
 } {
   // ------ EARLY RETURN IF DISABLED ----- //
 
   if (!runtimeTranslationEnabled)
     return {
-      translateContent: () =>
+      registerContentForTranslation: () =>
         Promise.reject(
           new Error(
             'registerContentForTranslation() failed because translation is disabled'
           )
         ),
-      translateJsx: () =>
+      registerJsxForTranslation: () =>
         Promise.reject(
           new Error(
             'registerJsxForTranslation() failed because translation is disabled'
@@ -379,7 +382,7 @@ export default function useRuntimeTranslation({
   }, [locale]);
 
   return {
-    translateContent: registerContentForTranslation,
-    translateJsx: registerJsxForTranslation,
+    registerContentForTranslation,
+    registerJsxForTranslation,
   };
 }

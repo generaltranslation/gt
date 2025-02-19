@@ -22,7 +22,7 @@ import renderDefaultChildren from './rendering/renderDefaultChildren';
 import renderSkeleton from './rendering/renderSkeleton';
 import renderTranslatedChildren from './rendering/renderTranslatedChildren';
 import renderVariable from './rendering/renderVariable';
-import useRuntimeTranslation from './runtime/useRuntimeTranslation';
+import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { localeCookieName } from 'generaltranslation/internal';
 import useTranslateContent from '../hooks/internal/useTranslateContent';
 
@@ -137,7 +137,7 @@ export default function ClientProvider({
     };
   }, [initialTranslations, translationPromises]);
 
-  // ----- TRANSLATION METHODS ----- //
+  // ---------- TRANSLATION METHODS ---------- //
 
   // for dictionaries (strings are actually already resolved, but JSX needs tx still)
   const getDictionaryEntryTranslation = useCallback(
@@ -275,34 +275,36 @@ export default function ClientProvider({
     [dictionary, translations, locale]
   );
 
-  const getContentTranslation = useTranslateContent(
+  // Translate content function
+  const translateContent = useTranslateContent(
     translations,
     locale,
     defaultLocale,
     translationRequired
   );
 
-  // For <T> components
-  const { translateContent, translateJsx } = useRuntimeTranslation({
-    locale: locale,
-    versionId: _versionId,
-    projectId,
-    devApiKey,
-    runtimeUrl,
-    setTranslations,
-    defaultLocale,
-    renderSettings,
-    runtimeTranslationEnabled,
-  });
+  // Setup runtime translation
+  const { registerContentForTranslation, registerJsxForTranslation } =
+    useRuntimeTranslation({
+      locale: locale,
+      versionId: _versionId,
+      projectId,
+      devApiKey,
+      runtimeUrl,
+      setTranslations,
+      defaultLocale,
+      renderSettings,
+      runtimeTranslationEnabled,
+    });
 
   return (
     <GTContext.Provider
       value={{
-        getDictionaryEntryTranslation,
-        translateJsx,
-        translateContent,
+        registerContentForTranslation,
+        registerJsxForTranslation,
         setLocale,
-        getContentTranslation,
+        translateContent,
+        getDictionaryEntryTranslation,
         locale,
         locales,
         defaultLocale,

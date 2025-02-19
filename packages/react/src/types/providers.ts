@@ -1,23 +1,21 @@
 import {
-  TranslateContentCallback,
-  TranslateChildrenCallback,
   TranslationsObject,
   RenderMethod,
   FlattenedTaggedDictionary,
   TranslatedChildren,
+  TranslationOptions,
 } from './types';
 
+import { TranslateContentCallback, TranslateChildrenCallback } from './runtime';
+
 export type GTContextType = {
+  registerContentForTranslation: TranslateContentCallback;
+  registerJsxForTranslation: TranslateChildrenCallback;
+  translateContent: (content: string, options: TranslationOptions) => string;
   getDictionaryEntryTranslation: (
     id: string,
-    options?: Record<string, any>
+    options?: TranslationOptions
   ) => React.ReactNode;
-  translateContent: TranslateContentCallback;
-  translateJsx: TranslateChildrenCallback;
-  getContentTranslation: (
-    content: string,
-    options: Record<string, any>
-  ) => string;
   runtimeTranslationEnabled: boolean;
   locale: string;
   locales: string[];

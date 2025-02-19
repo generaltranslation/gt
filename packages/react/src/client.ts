@@ -1,5 +1,5 @@
 import { GTContext } from './provider/GTContext';
-import useRuntimeTranslation from './provider/runtime/useRuntimeTranslation';
+import useRuntimeTranslation from './hooks/internal/useRuntimeTranslation';
 import renderVariable from './provider/rendering/renderVariable';
 import ClientProvider from './provider/ClientProvider';
 import Branch from './branches/Branch';

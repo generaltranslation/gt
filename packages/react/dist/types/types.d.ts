@@ -79,22 +79,6 @@ export type LocalesTranslations = {
     [locale: string]: TranslationsObject | null;
 };
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
-export type TranslateContentCallback = (params: {
-    source: any;
-    targetLocale: string;
-    metadata: {
-        hash: string;
-        context?: string;
-    } & Record<string, any>;
-}) => Promise<TranslationSuccess | TranslationLoading | TranslationError>;
-export type TranslateChildrenCallback = (params: {
-    source: any;
-    targetLocale: string;
-    metadata: {
-        hash: string;
-        context?: string;
-    } & Record<string, any>;
-}) => Promise<TranslationSuccess | TranslationLoading | TranslationError>;
 export type TranslationOptions = {
     context?: string;
     variables?: Record<string, any>;

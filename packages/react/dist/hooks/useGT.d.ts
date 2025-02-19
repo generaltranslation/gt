@@ -9,7 +9,12 @@ import { TranslationOptions } from '../types/types';
  * console.log(t('To be or not to be...'));
  *
  * const t = useGT();
- * return (<> {t('...that is the question')} </>);
+ * return (<>
+ *  {
+ *     t('My name is {customName}', { variables: { customName: "Brian" } } )
+ *  }
+ * </>);
+ *
  */
 export default function useGT(): (content?: string, options?: TranslationOptions) => string;
 //# sourceMappingURL=useGT.d.ts.map
