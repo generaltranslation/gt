@@ -7,6 +7,7 @@ import getI18NConfig from '../../config-dir/getI18NConfig';
 import getLocale from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
 import { hashJsxChildren } from 'generaltranslation/id';
+import { TranslationOptions } from 'gt-react/internal';
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -44,14 +45,7 @@ export default async function tx(
   content: string,
   options: {
     locale?: string;
-    context?: string;
-    variables?: Record<string, any>;
-    variableOptions?: Record<
-      string,
-      Intl.NumberFormatOptions | Intl.DateTimeFormatOptions
-    >;
-    [key: string]: any;
-  } = {}
+  } & TranslationOptions = {}
 ): Promise<string> {
   if (!content || typeof content !== 'string') return '';
   // ----- SET UP ----- //
@@ -88,7 +82,10 @@ export default async function tx(
   // Check local cache
   const recentTranslations = I18NConfig.getRecentTranslations(locale);
   if (recentTranslations?.[hash]?.state === 'success') {
-    return renderContent(recentTranslations[hash].target, [locale, defaultLocale]);
+    return renderContent(recentTranslations[hash].target, [
+      locale,
+      defaultLocale,
+    ]);
   }
 
   // New translation required
