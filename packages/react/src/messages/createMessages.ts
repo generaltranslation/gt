@@ -53,6 +53,8 @@ export const dictionaryDisabledError =
   `This is likely because the server cannot access the dictionary upstream. ` +
   `For example, if you are using gt-next, make sure that you have added the initGT() plugin to your app and that the dictionary exists.`;
 
+export const runtimeTranslationError = `gt-react Error: Runtime translation failed: `;
+
 // ---- WARNINGS ---- //
 
 export const projectIdMissingWarning =

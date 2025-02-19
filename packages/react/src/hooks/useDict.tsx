@@ -9,13 +9,13 @@ import { createNoEntryWarning } from '../messages/createMessages';
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
  *
  * @example
- * const t = useGT('user');
- * console.log(t('name')); // Translates item 'user.name'
+ * const d = useDict('user');
+ * console.log(d('name')); // Translates item 'user.name'
  *
- * const t = useGT();
- * console.log(t('hello')); // Translates item 'hello'
+ * const d = useDict();
+ * console.log(d('hello')); // Translates item 'hello'
  */
-export default function useGT(
+export default function useDict(
   id: string = ''
 ): (id: string, options?: Record<string, any>) => React.ReactNode {
   // Create a prefix for translation keys if an id is provided
@@ -24,9 +24,10 @@ export default function useGT(
   };
 
   // Get the translation context
-  const { translateDictionaryEntry } = useGTContext(
-    `useGT('${id}'): No context provided. You're trying to get the t() function on the client, which can only be done inside a <GTProvider>.`
-  );
+  const { getDictionaryEntryTranslation: translateDictionaryEntry } =
+    useGTContext(
+      `useGT('${id}'): No context provided. You're trying to get the t() function on the client, which can only be done inside a <GTProvider>.`
+    );
 
   /**
    * Translates a dictionary item based on its `id` and options.
@@ -36,7 +37,7 @@ export default function useGT(
    *
    * @returns {React.ReactNode}
    */
-  function t(
+  function d(
     id: string = '',
     options: Record<string, any> = {}
   ): React.ReactNode {
@@ -49,5 +50,5 @@ export default function useGT(
     }
   }
 
-  return t;
+  return d;
 }

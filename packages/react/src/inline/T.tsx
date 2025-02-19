@@ -57,9 +57,9 @@ function T({
   const {
     translations,
     translationRequired,
-    developmentTranslationEnabled,
+    runtimeTranslationEnabled,
     dialectTranslationRequired,
-    registerJsxForTranslation,
+    translateJsx,
     renderSettings,
     locale,
     defaultLocale,
@@ -91,7 +91,7 @@ function T({
   useEffect(() => {
     // skip if:
     if (
-      !developmentTranslationEnabled || // runtime translation disabled
+      !runtimeTranslationEnabled || // runtime translation disabled
       !translationRequired || // no translation required
       !translations || // cache not checked yet
       !locale || // locale not loaded
@@ -101,7 +101,7 @@ function T({
     }
 
     // Translate content
-    registerJsxForTranslation({
+    translateJsx({
       source: childrenAsObjects,
       targetLocale: locale,
       metadata: {
@@ -111,7 +111,7 @@ function T({
       },
     });
   }, [
-    developmentTranslationEnabled,
+    runtimeTranslationEnabled,
     translations,
     translation,
     translationRequired,
@@ -159,7 +159,7 @@ function T({
   if (
     !translationRequired || // no translation required
     // !translationEnabled || // translation not enabled
-    (translations && !translation && !developmentTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
+    (translations && !translation && !runtimeTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
     translation?.state === 'error' // error fetching translation
   ) {
     return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;

@@ -11,10 +11,7 @@ declare const defaultInitGTProps: {
     readonly maxConcurrentRequests: 100;
     readonly maxBatchSize: 25;
     readonly batchInterval: 50;
-    readonly renderSettings: {
-        method: import("gt-react/internal").RenderMethod;
-        timeout: number;
-    };
+    readonly renderSettings: any;
     readonly _usingPlugin: false;
 };
 export default defaultInitGTProps;

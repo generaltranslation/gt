@@ -43,11 +43,10 @@ export default function ClientProvider({
   projectId,
   devApiKey,
   runtimeUrl,
-  developmentTranslationEnabled,
+  runtimeTranslationEnabled,
   onLocaleChange = () => {},
   cookieName = localeCookieName,
 }: ClientProviderProps): React.JSX.Element {
-
   // ----- TRANSLATIONS STATE ----- //
 
   /**
@@ -73,11 +72,7 @@ export default function ClientProvider({
       .split('; ')
       .find((row) => row.startsWith(`${cookieName}=`))
       ?.split('=')[1];
-    if (
-      locale &&
-      cookieLocale &&
-      cookieLocale !== locale
-    ) {
+    if (locale && cookieLocale && cookieLocale !== locale) {
       document.cookie = `${cookieName}=${locale};path=/`;
     }
   }, [locale]);
@@ -145,12 +140,11 @@ export default function ClientProvider({
   // ----- TRANSLATION METHODS ----- //
 
   // for dictionaries (strings are actually already resolved, but JSX needs tx still)
-  const translateDictionaryEntry = useCallback(
+  const getDictionaryEntryTranslation = useCallback(
     (
       id: string,
       options: Record<string, any> = {}
     ): React.ReactNode | string | undefined => {
-      
       // ----- SETUP ----- //
 
       // Get the dictionary entry
@@ -169,7 +163,8 @@ export default function ClientProvider({
 
       // Parse the dictionary entry
       const { entry, metadata } = getEntryAndMetadata(dictionaryEntry);
-      const variables = options; const variablesOptions = metadata?.variablesOptions;
+      const variables = options;
+      const variablesOptions = metadata?.variablesOptions;
 
       // Get the translation entry
       const translation = translations?.[metadata?.hash];
@@ -177,8 +172,7 @@ export default function ClientProvider({
       // ----- HANDLE STRINGS ----- //
 
       if (typeof entry === 'string') {
-        
-        // Reject empty strings 
+        // Reject empty strings
         if (!entry.length) {
           console.warn(
             `gt-react warn: Empty string found in dictionary with id: ${id}`
@@ -192,10 +186,13 @@ export default function ClientProvider({
         // Error handling
         if (
           !translationRequired || // If no translation required
-          translation?.state !== "success" // If translation was unsuccessful
+          translation?.state !== 'success' // If translation was unsuccessful
         ) {
           return renderContentToString(
-            source, locales, variables, variablesOptions
+            source,
+            locales,
+            variables,
+            variablesOptions
           );
         }
 
@@ -203,7 +200,8 @@ export default function ClientProvider({
         return renderContentToString(
           translation.target as TranslatedContent,
           [locale, defaultLocale],
-          variables, variablesOptions
+          variables,
+          variablesOptions
         );
       }
 
@@ -245,7 +243,7 @@ export default function ClientProvider({
       // fallback if:
       if (
         !translationRequired || // no translation required
-        (translations && !translation && !developmentTranslationEnabled) // cache miss and dev runtime translation disabled (production)
+        (translations && !translation && !runtimeTranslationEnabled) // cache miss and dev runtime translation disabled (production)
       ) {
         return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
       }
@@ -271,16 +269,14 @@ export default function ClientProvider({
       }
       // render translated content
       return (
-        <React.Fragment>
-          {renderTranslation(translation.target)}
-        </React.Fragment>
+        <React.Fragment>{renderTranslation(translation.target)}</React.Fragment>
       );
     },
     [dictionary, translations, locale]
   );
 
   // For <T> components
-  const { registerContentForTranslation, registerJsxForTranslation } = useRuntimeTranslation({
+  const { translateContent, translateJsx } = useRuntimeTranslation({
     locale: locale,
     versionId: _versionId,
     projectId,
@@ -289,16 +285,17 @@ export default function ClientProvider({
     setTranslations,
     defaultLocale,
     renderSettings,
-    runtimeTranslationEnabled: developmentTranslationEnabled
+    runtimeTranslationEnabled,
   });
 
   return (
     <GTContext.Provider
       value={{
-        translateDictionaryEntry,
-        registerJsxForTranslation,
-        registerContentForTranslation,
+        getDictionaryEntryTranslation,
+        translateJsx,
+        translateContent,
         setLocale,
+        getContentTranslation: () => Promise.resolve(''),
         locale,
         locales,
         defaultLocale,
@@ -306,13 +303,10 @@ export default function ClientProvider({
         translationRequired,
         dialectTranslationRequired,
         renderSettings,
-        developmentTranslationEnabled
+        runtimeTranslationEnabled,
       }}
     >
-      {
-        (!translationRequired || translations) &&
-        children
-      }
+      {(!translationRequired || translations) && children}
     </GTContext.Provider>
   );
 }

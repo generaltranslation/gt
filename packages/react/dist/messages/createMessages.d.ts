@@ -11,6 +11,7 @@ export declare const renderingError = "General Translation: Rendering error.";
 export declare const dynamicTranslationError = "Error fetching batched translations:";
 export declare const createGenericRuntimeTranslationError: (id: string | undefined, hash: string) => string;
 export declare const dictionaryDisabledError: string;
+export declare const runtimeTranslationError = "gt-react Error: Runtime translation failed: ";
 export declare const projectIdMissingWarning = "gt-react warn: Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.";
 export declare const createLibraryNoEntryWarning: (id: string) => string;
 export declare const createNoEntryWarning: (id: string, prefixedId: string) => string;

@@ -27,6 +27,7 @@ import {
   createUnsupportedLocalesWarning,
   devApiKeyProductionError,
   projectIdMissingWarning,
+  runtimeTranslationError,
 } from '../messages/createMessages';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from './runtime/useRuntimeTranslation';
@@ -107,10 +108,11 @@ export default function GTProvider({
   });
 
   // Translation at runtime during development is enabled
-  const developmentTranslationEnabled = !!(
+  const runtimeTranslationEnabled = !!(
     projectId &&
     runtimeUrl &&
-    devApiKey
+    devApiKey &&
+    process.env.NODE_ENV === 'development'
   );
 
   // loadTranslation type, only custom and default for now
@@ -224,19 +226,18 @@ export default function GTProvider({
   const [translations, setTranslations] = useState<TranslationsObject | null>(
     translationRequired ? null : {}
   );
-  const { registerJsxForTranslation, registerContentForTranslation } =
-    useRuntimeTranslation({
-      locale,
-      versionId: _versionId,
-      projectId,
-      runtimeTranslationEnabled: developmentTranslationEnabled,
-      defaultLocale,
-      devApiKey,
-      runtimeUrl,
-      renderSettings,
-      setTranslations,
-      ...metadata,
-    });
+  const { translateJsx, translateContent } = useRuntimeTranslation({
+    locale,
+    versionId: _versionId,
+    projectId,
+    runtimeTranslationEnabled,
+    defaultLocale,
+    devApiKey,
+    runtimeUrl,
+    renderSettings,
+    setTranslations,
+    ...metadata,
+  });
   // Reset translations if locale changes (null to trigger a new cache fetch)
   useEffect(() => setTranslations(translationRequired ? null : {}), [locale]);
 
@@ -344,7 +345,7 @@ export default function GTProvider({
   const stringTranslationsResolved = useMemo(() => {
     // Skip unnecessary processing if translation not required
     // Or translations not resolved yet
-    if (!translationRequired || !translations || !developmentTranslationEnabled)
+    if (!translationRequired || !translations || !runtimeTranslationEnabled)
       return true;
 
     // Filter out any entries whose translations are loading/resolved
@@ -358,7 +359,7 @@ export default function GTProvider({
         }
         continue;
       }
-      registerContentForTranslation({
+      translateContent({
         source,
         targetLocale: locale,
         metadata: {
@@ -373,14 +374,14 @@ export default function GTProvider({
     return stringTranslationsResolved;
   }, [
     translationRequired,
-    developmentTranslationEnabled,
+    runtimeTranslationEnabled,
     flattenedDictionaryContentEntries,
     locale,
     translations,
   ]);
   // ----- TRANSLATE FUNCTION FOR DICTIONARIES ----- //
 
-  const translateDictionaryEntry = useCallback(
+  const getDictionaryEntryTranslation = useCallback(
     (id: string, options: Record<string, any> = {}): React.ReactNode => {
       // ----- SETUP ----- //
 
@@ -460,15 +461,126 @@ export default function GTProvider({
     ]
   );
 
+  // ---------- ON-DEMAND STRING TRANSLATION ---------- //
+
+  const getContentTranslation = useCallback(
+    async (
+      content: string,
+      id: string,
+      options: Record<string, any>
+    ): Promise<string> => {
+      // ---------- INITIAL CHECKS ---------- //
+
+      // set up
+      const variables = options;
+      const variablesOptions = metadata?.variablesOptions;
+      const source = splitStringToContent(content as string);
+      const renderFallback = () =>
+        renderContentToString(source, locales, variables, variablesOptions);
+
+      // Skip if: no content or tx not required
+      if (!translationRequired) {
+        return renderFallback();
+      }
+
+      // Skip if: no content to tx
+      if (!source) {
+        return '';
+      }
+
+      // ---------- CHECK CACHE ---------- //
+      // Remember, render is blocked until after cache is checked
+
+      // TODO: remove this check
+      if (!translations) {
+        console.log(
+          'Error!!! Cache has not been checked yet!! This should not be called'
+        );
+      }
+
+      // Get the translation entry
+      const key = hashJsxChildren({
+        source,
+        ...(options.context && { context: options.context }),
+        ...(id && { id }),
+      });
+      const translation = translations?.[key];
+
+      // Render translation
+      if (translation?.state === 'success') {
+        return renderContentToString(
+          translation.target as TranslatedContent,
+          [locale, defaultLocale],
+          variables,
+          variablesOptions
+        );
+      }
+
+      // ---------- ON DEMAND TRANSLATION ---------- //
+      // On demand translation occurs in development envs only
+
+      // Skip if:
+      if (
+        !runtimeTranslationEnabled || // runtime translation disabled
+        !locale // locale unknown
+      ) {
+        return renderFallback();
+      }
+
+      // Translate content (works for loading state)
+      const translationPromise = translateContent({
+        source,
+        targetLocale: locale,
+        metadata: {
+          id,
+          hash: key,
+          context: options.context,
+        },
+      })
+        .then((result) => {
+          // render translation
+          if (result.state === 'success') {
+            return renderContentToString(
+              result.target as TranslatedContent,
+              [locale, defaultLocale],
+              variables,
+              variablesOptions
+            );
+          } else if (result.state === 'error') {
+            throw new Error(
+              `Translation failed status: ${result.code} error: ${result.error}`
+            );
+          }
+          throw new Error(`Translation failed for an unknown reason.`);
+        })
+        .catch((error) => {
+          // fallback
+          console.error(runtimeTranslationError, error);
+          return renderFallback();
+        });
+
+      // Block until translation is resolved
+      return await translationPromise;
+    },
+    [
+      translations,
+      locale,
+      defaultLocale,
+      translationRequired,
+      runtimeTranslationEnabled,
+    ]
+  );
+
   // hang until cache response, then render translations or loading state (when waiting on API response)
   return (
     <GTContext.Provider
       value={{
-        translateDictionaryEntry,
-        registerContentForTranslation,
-        registerJsxForTranslation,
-        developmentTranslationEnabled,
-        locale: locale,
+        getDictionaryEntryTranslation,
+        translateContent,
+        translateJsx,
+        getContentTranslation,
+        runtimeTranslationEnabled,
+        locale,
         locales,
         setLocale,
         defaultLocale,

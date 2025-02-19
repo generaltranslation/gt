@@ -76,7 +76,7 @@ type TranslateContentCallback = (params: {
         hash: string;
         context?: string;
     } & Record<string, any>;
-}) => Promise<void>;
+}) => Promise<TranslationSuccess | TranslationLoading | TranslationError>;
 type TranslateChildrenCallback = (params: {
     source: any;
     targetLocale: string;
@@ -84,12 +84,13 @@ type TranslateChildrenCallback = (params: {
         hash: string;
         context?: string;
     } & Record<string, any>;
-}) => Promise<void>;
+}) => Promise<TranslationSuccess | TranslationLoading | TranslationError>;
 type GTContextType = {
-    translateDictionaryEntry: (id: string, options?: Record<string, any>) => React__default.ReactNode;
-    registerContentForTranslation: TranslateContentCallback;
-    registerJsxForTranslation: TranslateChildrenCallback;
-    developmentTranslationEnabled: boolean;
+    getDictionaryEntryTranslation: (id: string, options?: Record<string, any>) => React__default.ReactNode;
+    translateContent: TranslateContentCallback;
+    translateJsx: TranslateChildrenCallback;
+    getContentTranslation: (content: string, id: string, options: Record<string, any>) => Promise<string>;
+    runtimeTranslationEnabled: boolean;
     locale: string;
     locales: string[];
     setLocale: (locale: string) => void;
@@ -120,7 +121,7 @@ type ClientProviderProps = {
         method: RenderMethod;
         timeout?: number;
     };
-    developmentTranslationEnabled: boolean;
+    runtimeTranslationEnabled: boolean;
     projectId?: string;
     devApiKey?: string;
     runtimeUrl?: string | null;
@@ -145,8 +146,8 @@ declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId
     setTranslations: React.Dispatch<React.SetStateAction<any>>;
     [key: string]: any;
 }): {
-    registerContentForTranslation: TranslateContentCallback;
-    registerJsxForTranslation: TranslateChildrenCallback;
+    translateContent: TranslateContentCallback;
+    translateJsx: TranslateChildrenCallback;
 };
 
 declare function renderVariable({ variableType, variableName, variableValue, variableOptions, locales, }: {
@@ -157,7 +158,7 @@ declare function renderVariable({ variableType, variableName, variableValue, var
     locales: string[];
 }): React.JSX.Element;
 
-declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl, developmentTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
+declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -223,6 +224,20 @@ declare namespace Plural {
 }
 
 /**
+ * Gets the translation function `t` provided by `<GTProvider>`.
+ *
+ * @returns {Function} A translation function that accepts a key string and returns the translated value.
+ *
+ * @example
+ * const t = useTranslation('user');
+ * console.log(await t('To be or not to be...'));
+ *
+ * const t = useTranslation();
+ * return (<> {t('...that is the question')} </>);
+ */
+declare function useTranslation(): (content?: string, id?: string, options?: Record<string, any>) => Promise<string | undefined>;
+
+/**
  * Retrieves the application's default locale from the `<GTProvider>` context.
  *
  * If no default locale is passed to the `<GTProvider>`, it defaults to providing 'en'.
@@ -242,13 +257,13 @@ declare function useDefaultLocale(): string;
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
  *
  * @example
- * const t = useGT('user');
- * console.log(t('name')); // Translates item 'user.name'
+ * const d = useDict('user');
+ * console.log(d('name')); // Translates item 'user.name'
  *
- * const t = useGT();
- * console.log(t('hello')); // Translates item 'hello'
+ * const d = useDict();
+ * console.log(d('hello')); // Translates item 'hello'
  */
-declare function useGT(id?: string): (id: string, options?: Record<string, any>) => React__default.ReactNode;
+declare function useDict(id?: string): (id: string, options?: Record<string, any>) => React__default.ReactNode;
 
 /**
  * Retrieves the user's locale from the `<GTProvider>` context.
@@ -500,4 +515,4 @@ declare function GTProvider({ children, projectId: _projectId, devApiKey: _devAp
     [key: string]: any;
 }): React__default.JSX.Element;
 
-export { Branch, ClientProvider, Currency, DateTime, GTContext, GTProvider, LocaleSelector, Num, Plural, T, Var, renderVariable, useDefaultLocale, useGT, useLocale, useRuntimeTranslation };
+export { Branch, ClientProvider, Currency, DateTime, GTContext, GTProvider, LocaleSelector, Num, Plural, T, Var, renderVariable, useDefaultLocale, useDict, useLocale, useRuntimeTranslation, useTranslation };

@@ -7,7 +7,9 @@ import {
   RenderMethod,
   TranslateChildrenCallback,
   TranslateContentCallback,
+  TranslationError,
   TranslationsObject,
+  TranslationSuccess,
 } from '../../types/types';
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import {
@@ -63,20 +65,20 @@ export default function useRuntimeTranslation({
   setTranslations: React.Dispatch<React.SetStateAction<any>>;
   [key: string]: any;
 }): {
-  registerContentForTranslation: TranslateContentCallback;
-  registerJsxForTranslation: TranslateChildrenCallback;
+  translateContent: TranslateContentCallback;
+  translateJsx: TranslateChildrenCallback;
 } {
   // ------ EARLY RETURN IF DISABLED ----- //
 
   if (!runtimeTranslationEnabled)
     return {
-      registerContentForTranslation: () =>
+      translateContent: () =>
         Promise.reject(
           new Error(
             'registerContentForTranslation() failed because translation is disabled'
           )
         ),
-      registerJsxForTranslation: () =>
+      translateJsx: () =>
         Promise.reject(
           new Error(
             'registerJsxForTranslation() failed because translation is disabled'
@@ -99,7 +101,9 @@ export default function useRuntimeTranslation({
     new Map()
   );
   // Requests that have yet to be resolved
-  const pendingRequestQueueRef = useRef<Map<string, Promise<void>>>(new Map());
+  const pendingRequestQueueRef = useRef<
+    Map<string, Promise<TranslationSuccess | TranslationError>>
+  >(new Map());
 
   useEffect(() => {
     // remove all pending requests
@@ -118,7 +122,7 @@ export default function useRuntimeTranslation({
           source: Content;
           targetLocale: string;
           metadata: TranslationRequestMetadata;
-        }): Promise<void> => {
+        }): Promise<TranslationSuccess | TranslationError> => {
           // Get the key, which is a combination of hash and locale
           const key = `${params.metadata.hash}:${params.targetLocale}`;
 
@@ -129,7 +133,9 @@ export default function useRuntimeTranslation({
           }
 
           // Promise for hooking into the translation request to know when complete
-          const translationPromise = new Promise<void>((resolve, reject) => {
+          const translationPromise = new Promise<
+            TranslationSuccess | TranslationError
+          >((resolve, reject) => {
             requestQueueRef.current.set(key, {
               type,
               source: params.source,
@@ -175,16 +181,15 @@ export default function useRuntimeTranslation({
 
       try {
         // ----- TRANSLATION LOADING ----- //
-        const loadingTranslations: TranslationsObject = requests.reduce(
-          (acc: TranslationsObject, request) => {
-            // loading state for jsx, render loading behavior
-            acc[request.metadata.hash] = {
-              state: 'loading',
-            };
-            return acc;
-          },
-          {}
-        );
+        const loadingTranslations: TranslationsObject = Object.entries(
+          batchRequests
+        ).reduce((acc: TranslationsObject, [key, request]) => {
+          // loading state for jsx, render loading behavior
+          acc[request.metadata.hash] = {
+            state: 'loading',
+          };
+          return acc;
+        }, {});
         setTranslations((prev: any) => {
           return { ...(prev || {}), ...loadingTranslations };
         });
@@ -314,7 +319,9 @@ export default function useRuntimeTranslation({
         setActiveRequests((prev) => prev - 1);
 
         // resolve all promises
-        requests.forEach((request) => request.resolve());
+        requests.forEach((request) =>
+          request.resolve(newTranslations[request.metadata.hash])
+        );
 
         // return the new translations
         return newTranslations;
@@ -371,5 +378,8 @@ export default function useRuntimeTranslation({
     };
   }, [locale]);
 
-  return { registerContentForTranslation, registerJsxForTranslation };
+  return {
+    translateContent: registerContentForTranslation,
+    translateJsx: registerJsxForTranslation,
+  };
 }

@@ -1,5 +1,6 @@
 import T from './inline/T';
-import useGT from './hooks/useGT';
+import useTranslation from './hooks/useTranslation';
+import useDict from './hooks/useDict';
 import useDefaultLocale from './hooks/useDefaultLocale';
 import useLocale from './hooks/useLocale';
 import GTProvider from './provider/GTProvider';
@@ -22,7 +23,8 @@ export {
   GTProvider,
   Plural,
   Branch,
-  useGT,
+  useTranslation,
+  useDict,
   useDefaultLocale,
   useLocale,
   useSetLocale,

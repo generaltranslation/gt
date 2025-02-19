@@ -14,7 +14,7 @@ export default function useRuntimeTranslation({ projectId, devApiKey, locale, ve
     setTranslations: React.Dispatch<React.SetStateAction<any>>;
     [key: string]: any;
 }): {
-    registerContentForTranslation: TranslateContentCallback;
-    registerJsxForTranslation: TranslateChildrenCallback;
+    translateContent: TranslateContentCallback;
+    translateJsx: TranslateChildrenCallback;
 };
 //# sourceMappingURL=useRuntimeTranslation.d.ts.map
