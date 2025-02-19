@@ -1,7 +1,4 @@
-import { useCallback, useMemo } from 'react';
 import useGTContext from '../provider/GTContext';
-import { writeChildrenAsObjects } from '../internal';
-import { hashJsxChildren } from 'generaltranslation/id';
 
 /**
  * Gets the translation function `t` provided by `<GTProvider>`.
@@ -16,6 +13,7 @@ import { hashJsxChildren } from 'generaltranslation/id';
  * return (<> {t('...that is the question')} </>);
  */
 export default function useGT() {
+
   const { getContentTranslation } = useGTContext(
     `useGT(): No context provided. You're trying to get the t() function from the useGT() hook, which can be invoked within a <GTProvider>.`
   );

@@ -117,8 +117,7 @@ async function T({
   // ----- CHECK CACHED TRANSLATIONS ----- //
 
   // Begin by sending check to cache for translations
-  const translationsPromise =
-    translationRequired ? I18NConfig.getCachedTranslations(locale) : undefined;
+  const translationsPromise = I18NConfig.getCachedTranslations(locale);
 
   // Turns tagged children into objects
   // The hash is used to identify the translation
@@ -130,25 +129,25 @@ async function T({
   });
 
   // Block until cache check resolves
-  const translations = translationsPromise ? await translationsPromise : {};
+  const translations = await translationsPromise;
 
   // Gets the translation entry
-  const translation = translations?.[hash];
+  const translationEntry = translations?.[hash];
 
   // ----- RENDER CACHED TRANSLATIONS ----- //
 
   // if we have a cached translation, render it
-  if (translation?.state === 'success') {
+  if (translationEntry?.state === 'success') {
     return renderTranslatedChildren({
       source: taggedChildren,
-      target: translation.target,
+      target: translationEntry.target,
       variables,
       variablesOptions,
       locales: [locale, defaultLocale],
       renderVariable,
     });
   } else if (
-    translation?.state === 'error' || // fallback to default if error
+    translationEntry?.state === 'error' || // fallback to default if error
     !serverRuntimeTranslationEnabled // fallback to default if runtime translation is disabled (loading should never happen here)
   ) {
     return renderDefaultLocale();

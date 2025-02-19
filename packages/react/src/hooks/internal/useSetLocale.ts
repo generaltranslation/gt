@@ -1,4 +1,4 @@
-import useGTContext from '../provider/GTContext';
+import useGTContext from '../../provider/GTContext';
 
 /**
  * Sets the user's locale in the `<GTProvider>` context.

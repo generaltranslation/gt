@@ -113,9 +113,7 @@ export type GTContextType = {
   translateJsx: TranslateChildrenCallback;
   getContentTranslation: (
     content: string,
-    id: string,
     options: Record<string, any>,
-    metadata: Record<string, any>
   ) => string;
   runtimeTranslationEnabled: boolean;
   locale: string;

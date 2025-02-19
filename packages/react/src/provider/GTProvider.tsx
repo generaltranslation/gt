@@ -35,9 +35,10 @@ import { defaultRenderSettings } from './rendering/defaultRenderSettings';
 import { hashJsxChildren } from 'generaltranslation/id';
 import React from 'react';
 import T from '../inline/T';
-import useDetermineLocale from '../hooks/useDetermineLocale';
+import useDetermineLocale from '../hooks/internal/useDetermineLocale';
 import { readAuthFromEnv } from '../utils/utils';
 import fetchTranslations from '../utils/fetchTranslations';
+import useTranslateContent from '../hooks/internal/useTranslateContent';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -226,7 +227,10 @@ export default function GTProvider({
   const [translations, setTranslations] = useState<TranslationsObject | null>(
     translationRequired ? null : {}
   );
-  const { translateJsx, translateContent } = useRuntimeTranslation({
+  const { 
+    translateJsx, 
+    translateContent 
+  } = useRuntimeTranslation({
     locale,
     versionId: _versionId,
     projectId,
@@ -463,56 +467,8 @@ export default function GTProvider({
 
   // ---------- ON-DEMAND STRING TRANSLATION ---------- //
 
-  const getContentTranslation = useCallback(
-    (
-      content: string,
-      id: string,
-      options: Record<string, any>,
-      metadata: Record<string, any>
-    ): string => {
-      // ----- INITIAL CHECKS ----- //
-
-      // set up
-      const variables = options;
-      const variablesOptions = metadata?.variablesOptions;
-      const source = splitStringToContent(content as string);
-      const renderFallback = () =>
-        renderContentToString(source, locales, variables, variablesOptions);
-
-      // Skip if:
-      if (
-        !translationRequired || // tx not required
-        !source || // no content
-        !translations // cache not loaded
-      ) {
-        return renderFallback();
-      }
-
-      // ----- CHECK CACHE ----- //
-      // Remember, render is blocked until after cache is checked
-
-      // Get the translation entry
-      const key = hashJsxChildren({
-        source,
-        ...(options.context && { context: options.context }),
-        ...(id && { id }),
-      });
-      const translation = translations?.[key];
-
-      // Check translation successful
-      if (translation?.state !== 'success') {
-        return renderFallback();
-      }
-
-      // Note: in the future, we may add on demand translation for dev here
-      return renderContentToString(
-        translation.target as TranslatedContent,
-        [locale, defaultLocale],
-        variables,
-        variablesOptions
-      );
-    },
-    [translations, locale, defaultLocale, translationRequired]
+  const getContentTranslation = useTranslateContent(
+    translations, locale, defaultLocale, translationRequired
   );
 
   const display = !!(

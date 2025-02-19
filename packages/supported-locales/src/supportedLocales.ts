@@ -10,11 +10,7 @@ const supportedLocales = {
     'ar-SA', // Saudi Arabia
   ],
   bg: ['bg'], // Bulgarian
-  bn: [
-    // Bengali
-    'bn-BD', // Bangladesh
-    'bn-IN', // India
-  ],
+  bn: ['bn'], // Bengali
   bs: ['bs'], // Bosnian
   ca: ['ca'], // Catalan
   cs: ['cs'], // Czech
@@ -74,8 +70,8 @@ const supportedLocales = {
   is: ['is'], // Icelandic
   it: [
     // Italian
+    'it', // Italy
     'it-CH', // Switzerland
-    'it-IT', // Italy
   ],
   ja: ['ja'], // Japanese
   ka: ['ka'], // Georgian

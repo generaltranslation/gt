@@ -76,9 +76,8 @@ async function Tx({
 
   // ----- CHECK CACHED TRANSLATIONS ----- //
 
-  // Begin by sending check to cache for translations
-  const translationsPromise =
-    translationRequired && I18NConfig.getCachedTranslations(locale);
+  // Check locally cached translations
+  const translations = I18NConfig.getRecentTranslations(locale);
 
   // Turns tagged children into objects
   // The hash is used to identify the translation
@@ -88,9 +87,6 @@ async function Tx({
     ...(context && { context }),
     ...(id && { id }),
   });
-
-  // Block until cache check resolves
-  const translations = translationsPromise ? await translationsPromise : {};
 
   // Gets the translation entry
   const translationEntry = translations?.[hash];
