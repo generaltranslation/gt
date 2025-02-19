@@ -20,6 +20,8 @@ export default function useTranslation() {
     `useTranslation(): No context provided. You're trying to get the t() function from the useTranslation() hook, which can be invoked within a <GTProvider>.`
   );
 
+  console.log('useTranslation()');
+
   /**
    * @param content String to translate
    * @param id Optional custom identifier for translation
@@ -34,7 +36,7 @@ export default function useTranslation() {
     if (getContentTranslation) {
       return getContentTranslation(content, id, options);
     }
-    return '';
+    return Promise.resolve('');
   }
 
   return t;

@@ -5,10 +5,10 @@
  *
  * @example
  * const t = useTranslation('user');
- * console.log(await t('To be or not to be...'));
+ * console.log(t('To be or not to be...'));
  *
  * const t = useTranslation();
  * return (<> {t('...that is the question')} </>);
  */
-export default function useTranslation(): (content?: string, id?: string, options?: Record<string, any>) => Promise<string | undefined>;
+export default function useTranslation(): (content?: string, id?: string, options?: Record<string, any>) => Promise<string>;
 //# sourceMappingURL=useTranslation.d.ts.map

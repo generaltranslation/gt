@@ -468,7 +468,7 @@ export default function GTProvider({
       content: string,
       id: string,
       options: Record<string, any>
-    ): Promise<string> => {
+    ): string => {
       // ---------- INITIAL CHECKS ---------- //
 
       // set up
@@ -478,25 +478,16 @@ export default function GTProvider({
       const renderFallback = () =>
         renderContentToString(source, locales, variables, variablesOptions);
 
-      // Skip if: no content or tx not required
-      if (!translationRequired) {
+      // Skip if:
+      if (
+        !translationRequired || // tx not required
+        !source // no content
+      ) {
         return renderFallback();
-      }
-
-      // Skip if: no content to tx
-      if (!source) {
-        return '';
       }
 
       // ---------- CHECK CACHE ---------- //
       // Remember, render is blocked until after cache is checked
-
-      // TODO: remove this check
-      if (!translations) {
-        console.log(
-          'Error!!! Cache has not been checked yet!! This should not be called'
-        );
-      }
 
       // Get the translation entry
       const key = hashJsxChildren({
@@ -506,61 +497,18 @@ export default function GTProvider({
       });
       const translation = translations?.[key];
 
-      // Render translation
-      if (translation?.state === 'success') {
-        return renderContentToString(
-          translation.target as TranslatedContent,
-          [locale, defaultLocale],
-          variables,
-          variablesOptions
-        );
-      }
-
-      // ---------- ON DEMAND TRANSLATION ---------- //
-      // On demand translation occurs in development envs only
-
-      // Skip if:
-      if (
-        !runtimeTranslationEnabled || // runtime translation disabled
-        !locale // locale unknown
-      ) {
+      // Check translation successful
+      if (translation?.state !== 'success') {
         return renderFallback();
       }
 
-      // Translate content (works for loading state)
-      const translationPromise = translateContent({
-        source,
-        targetLocale: locale,
-        metadata: {
-          id,
-          hash: key,
-          context: options.context,
-        },
-      })
-        .then((result) => {
-          // render translation
-          if (result.state === 'success') {
-            return renderContentToString(
-              result.target as TranslatedContent,
-              [locale, defaultLocale],
-              variables,
-              variablesOptions
-            );
-          } else if (result.state === 'error') {
-            throw new Error(
-              `Translation failed status: ${result.code} error: ${result.error}`
-            );
-          }
-          throw new Error(`Translation failed for an unknown reason.`);
-        })
-        .catch((error) => {
-          // fallback
-          console.error(runtimeTranslationError, error);
-          return renderFallback();
-        });
-
-      // Block until translation is resolved
-      return await translationPromise;
+      // Note: in the future, we may add on demand translation for dev here
+      return renderContentToString(
+        translation.target as TranslatedContent,
+        [locale, defaultLocale],
+        variables,
+        variablesOptions
+      );
     },
     [
       translations,

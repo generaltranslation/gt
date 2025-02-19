@@ -230,12 +230,12 @@ declare namespace Plural {
  *
  * @example
  * const t = useTranslation('user');
- * console.log(await t('To be or not to be...'));
+ * console.log(t('To be or not to be...'));
  *
  * const t = useTranslation();
  * return (<> {t('...that is the question')} </>);
  */
-declare function useTranslation(): (content?: string, id?: string, options?: Record<string, any>) => Promise<string | undefined>;
+declare function useTranslation(): (content?: string, id?: string, options?: Record<string, any>) => Promise<string>;
 
 /**
  * Retrieves the application's default locale from the `<GTProvider>` context.

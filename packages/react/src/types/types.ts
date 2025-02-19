@@ -115,7 +115,7 @@ export type GTContextType = {
     content: string,
     id: string,
     options: Record<string, any>
-  ) => Promise<string>;
+  ) => string;
   runtimeTranslationEnabled: boolean;
   locale: string;
   locales: string[];
