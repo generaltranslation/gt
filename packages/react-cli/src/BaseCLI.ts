@@ -405,10 +405,10 @@ export abstract class BaseCLI {
       );
     }
     // Stage only the modified files
-    const { execSync } = require('child_process');
-    for (const file of filesUpdated) {
-      await execSync(`git add "${file}"`);
-    }
+    // const { execSync } = require('child_process');
+    // for (const file of filesUpdated) {
+    //   await execSync(`git add "${file}"`);
+    // }
 
     const formatter = await detectFormatter();
 
