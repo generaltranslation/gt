@@ -8,10 +8,10 @@ export const remoteTranslationsError =
 export const customLoadTranslationError =
   'gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.';
 
-export const createStringTranslationError = (content: string, id?: string) =>
-  `gt-next string translation error. tx("${content}")${
+export const createStringTranslationError = (content: string, id?: string, functionName = 'tx') =>
+  `gt-next string translation error. ${functionName}("${content}")${
     id ? ` with id "${id}"` : ''
-  } failed.`;
+  } could not locate translation.`;
 
 export const createDictionaryStringTranslationError = (id: string) =>
   `gt-next Error: string translation error. Translation from dictionary with id: ${id} failed.`;

@@ -5,10 +5,10 @@ import {
   Dictionary,
   TranslatedContent,
 } from 'gt-react/internal';
-import T from './inline/T';
-import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
-import { getLocale } from '../server';
-import getI18NConfig from '../config-dir/getI18NConfig';
+import T from '../T';
+import getDictionary, { getDictionaryEntry } from '../../../dictionary/getDictionary';
+import getLocale from '../../../request/getLocale'
+import getI18NConfig from '../../../config-dir/getI18NConfig';
 import {
   renderContentToString,
   splitStringToContent,
@@ -18,23 +18,24 @@ import {
   createNoEntryWarning,
   createDictionaryStringTranslationError,
   dictionaryDisabledError,
-} from '../errors/createErrors';
+} from '../../../errors/createErrors';
 import React, { isValidElement } from 'react';
 import { hashJsxChildren } from 'generaltranslation/id';
+
 /**
- * Returns the translation function `t()`, which is used to translate an item from the dictionary.
+ * Returns the dictionary access function `d()`, which is used to translate an item from the dictionary.
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
  *
  * @example
- * const t = await getGT('user');
- * console.log(t('name')); // Translates item 'user.name'
+ * const d = await getDict('user');
+ * console.log(d('name')); // Translates item 'user.name'
  *
- * const t = await getGT();
- * console.log(t('hello')); // Translates item 'hello'
+ * const d = await getDict();
+ * console.log(d('hello')); // Translates item 'hello'
  */
-export async function getGT(
+export default async function getDict(
   id?: string
 ): Promise<(id: string, options?: Record<string, any>) => React.ReactNode> {
   const getId = (suffix: string) => {
@@ -69,7 +70,7 @@ export async function getGT(
       (id ? getDictionaryEntry(id) : getDictionary()) || {};
     if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
       // check that it is a Dictionary, not a Dictionary Entry
-      throw new Error(createDictionarySubsetError(id ?? '', 'getGT'));
+      throw new Error(createDictionarySubsetError(id ?? '', 'getDict'));
     const flattenedDictionaryEntries = flattenDictionary(
       dictionarySubset as Dictionary
     );

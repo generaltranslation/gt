@@ -75,6 +75,7 @@ function getLocale() {
                 case 4:
                     _a = _c.sent();
                     I18NConfig_1 = (0, getI18NConfig_1.default)();
+                    console.log(I18NConfig_1.getDefaultLocale(), I18NConfig_1.getLocales());
                     getLocaleFunction = function () { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             switch (_a.label) {
