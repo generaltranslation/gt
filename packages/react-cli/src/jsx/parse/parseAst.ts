@@ -99,6 +99,10 @@ export function generateImports(
   return importNodes;
 }
 
+/*
+ * This function traverses the AST and records the relevant imports for the pkg.
+ * It also records the import aliases for the T and Var components. (in case of conflicts)
+ */
 export function generateImportMap(ast: ParseResult<t.File>, pkg: string) {
   let importAlias = { TComponent: 'T', VarComponent: 'Var' };
   // Check existing imports
@@ -109,17 +113,124 @@ export function generateImportMap(ast: ParseResult<t.File>, pkg: string) {
       if (source === pkg) {
         initialImports = [
           ...initialImports,
-          ...path.node.specifiers.map((spec) => spec.local.name),
+          ...path.node.specifiers.map((spec) => {
+            // For named imports (import { x as y }), use the original name
+            if (babel.isImportSpecifier(spec)) {
+              return babel.isIdentifier(spec.imported)
+                ? spec.imported.name
+                : spec.imported.value;
+            }
+            // For default imports, fall back to local name
+            return spec.local.name;
+          }),
         ];
       }
       // Check for conflicting imports only if they're not from gt libraries
       if (source !== pkg) {
         path.node.specifiers.forEach((spec) => {
-          if (babel.isImportSpecifier(spec)) {
+          if (
+            babel.isImportSpecifier(spec) ||
+            babel.isImportDefaultSpecifier(spec)
+          ) {
             if (spec.local.name === 'T') importAlias.TComponent = 'GTT';
             if (spec.local.name === 'Var') importAlias.VarComponent = 'GTVar';
           }
         });
+      }
+    },
+    VariableDeclaration(path) {
+      const declaration = path.node.declarations[0];
+      if (!declaration) return;
+
+      // Handle const { T, Var } = require('pkg')
+      if (
+        babel.isCallExpression(declaration.init) &&
+        babel.isIdentifier(declaration.init.callee) &&
+        declaration.init.callee.name === 'require' &&
+        babel.isStringLiteral(declaration.init.arguments[0]) &&
+        declaration.init.arguments[0].value === pkg &&
+        babel.isObjectPattern(declaration.id)
+      ) {
+        initialImports = [
+          ...initialImports,
+          ...declaration.id.properties
+            .map((prop) => {
+              if (
+                babel.isObjectProperty(prop) &&
+                babel.isIdentifier(prop.key)
+              ) {
+                return prop.key.name;
+              }
+              return '';
+            })
+            .filter(Boolean),
+        ];
+      }
+
+      // Handle const temp = require('pkg') followed by const { T, Var } = temp
+      if (
+        babel.isCallExpression(declaration.init) &&
+        babel.isIdentifier(declaration.init.callee) &&
+        declaration.init.callee.name === 'require' &&
+        babel.isStringLiteral(declaration.init.arguments[0]) &&
+        declaration.init.arguments[0].value === pkg &&
+        babel.isIdentifier(declaration.id)
+      ) {
+        const requireVarName = declaration.id.name;
+        const parentBody =
+          babel.isProgram(path.parent) || babel.isBlockStatement(path.parent)
+            ? path.parent.body
+            : [];
+
+        // Look for subsequent destructuring
+        for (const node of parentBody) {
+          if (
+            babel.isVariableDeclaration(node) &&
+            node.declarations[0] &&
+            babel.isObjectPattern(node.declarations[0].id) &&
+            babel.isMemberExpression(node.declarations[0].init) &&
+            babel.isIdentifier(node.declarations[0].init.object) &&
+            node.declarations[0].init.object.name === requireVarName
+          ) {
+            initialImports = [
+              ...initialImports,
+              ...node.declarations[0].id.properties
+                .map((prop) => {
+                  if (
+                    babel.isObjectProperty(prop) &&
+                    babel.isIdentifier(prop.key)
+                  ) {
+                    return prop.key.name;
+                  }
+                  return '';
+                })
+                .filter(Boolean),
+            ];
+          }
+        }
+      }
+
+      // Check for conflicting requires
+      if (
+        babel.isCallExpression(declaration.init) &&
+        babel.isIdentifier(declaration.init.callee) &&
+        declaration.init.callee.name === 'require' &&
+        babel.isStringLiteral(declaration.init.arguments[0]) &&
+        declaration.init.arguments[0].value !== pkg &&
+        babel.isObjectPattern(declaration.id)
+      ) {
+        declaration.id.properties.forEach((prop) => {
+          if (babel.isObjectProperty(prop) && babel.isIdentifier(prop.value)) {
+            if (prop.value.name === 'T') importAlias.TComponent = 'GTT';
+            if (prop.value.name === 'Var') importAlias.VarComponent = 'GTVar';
+          }
+        });
+      }
+
+      // Add check for intermediate variable conflict
+      if (babel.isIdentifier(declaration.id)) {
+        if (declaration.id.name === 'T') importAlias.TComponent = 'GTT';
+        if (declaration.id.name === 'Var') importAlias.VarComponent = 'GTVar';
       }
     },
   });
