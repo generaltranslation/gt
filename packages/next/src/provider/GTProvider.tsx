@@ -34,7 +34,6 @@ export default async function GTProvider({
   children?: ReactNode;
   id?: string;
 }) {
-  
   // Set up
   const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
@@ -47,7 +46,7 @@ export default async function GTProvider({
     translationRequired && isSameLanguage(locale, defaultLocale);
   const clientRuntimeTranslationEnabled =
     I18NConfig.isClientRuntimeTranslationEnabled(); // runtime translation enabled in dev
-    
+
   // Start fetching translations from cache
   const translationsPromise =
     translationRequired && I18NConfig.getCachedTranslations(locale);
@@ -98,7 +97,7 @@ export default async function GTProvider({
             source: childrenAsObjects,
             ...(metadata?.context && { context: metadata.context }),
             id: entryId,
-          })
+          });
           dictionary[entryId] = [
             taggedChildren as Entry,
             { ...metadata, hash },
@@ -165,12 +164,11 @@ export default async function GTProvider({
         // Serialize and hash string entry
         const content = splitStringToContent(entry);
         const hash = hashJsxChildren({
-          source: content, 
+          source: content,
           ...(metadata?.context && { context: metadata?.context }),
-          id: entryId
-        })
+          id: entryId,
+        });
 
-        
         // Add to client dictionary
         dictionary[entryId] = [entry, { ...metadata, hash }];
 
@@ -250,7 +248,6 @@ export default async function GTProvider({
       dialectTranslationRequired={dialectTranslationRequired}
       requiredPrefix={id}
       renderSettings={I18NConfig.getRenderSettings()}
-      developmentTranslationEnabled={clientRuntimeTranslationEnabled}
       {...I18NConfig.getClientSideConfig()}
     >
       {children}

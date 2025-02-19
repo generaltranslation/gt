@@ -168,7 +168,7 @@ export default async function getDict(id?: string): Promise<
   // ---------- THE d() METHOD ---------- //
 
   /**
-   *
+   * @description A function that translates a dictionary entry based on its `id` and options.
    * @param {string} id The identifier of the dictionary entry to translate.
    * @param { TranslationOptions & { locale?: string; }} options For translating strings, the locale to translate to.
    * @returns The translated version of the dictionary entry.

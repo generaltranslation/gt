@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
-import renderDefaultChildren from '../provider/rendering/renderDefaultChildren';
-import { addGTIdentifier, writeChildrenAsObjects } from '../internal';
-import useGTContext from '../provider/GTContext';
-import renderTranslatedChildren from '../provider/rendering/renderTranslatedChildren';
+import renderDefaultChildren from '../../provider/rendering/renderDefaultChildren';
+import { addGTIdentifier, writeChildrenAsObjects } from '../../internal';
+import useGTContext from '../../provider/GTContext';
+import renderTranslatedChildren from '../../provider/rendering/renderTranslatedChildren';
 import { useMemo } from 'react';
-import renderVariable from '../provider/rendering/renderVariable';
+import renderVariable from '../../provider/rendering/renderVariable';
 import { hashJsxChildren } from 'generaltranslation/id';
-import renderSkeleton from '../provider/rendering/renderSkeleton';
-import { TranslatedChildren } from '../types/types';
+import renderSkeleton from '../../provider/rendering/renderSkeleton';
+import { TranslatedChildren } from '../../types/types';
 
 /**
  * Translation component that handles rendering translated content, including plural forms.

@@ -1,7 +1,7 @@
 import React from 'react';
-import useGTContext from '../provider/GTContext';
-import { createNoEntryWarning } from '../messages/createMessages';
-import { TranslationOptions } from '../types/types';
+import useGTContext from '../../provider/GTContext';
+import { createNoEntryWarning } from '../../messages/createMessages';
+import { TranslationOptions } from '../../types/types';
 
 /**
  * Gets the dictionary access function `d` provided by `<GTProvider>`.
@@ -31,12 +31,24 @@ export default function useDict(
     );
 
   /**
-   * Translates a dictionary item based on its `id` and options.
+   * @description A function that translates a dictionary entry based on its `id` and options.
+   * @param {string} id The identifier of the dictionary entry to translate.
+   * @param { TranslationOptions} options for translating strings.
+   * @returns The translated version of the dictionary entry.
    *
-   * @param {string} [id=''] - The ID of the item in the dictionary to translate.
-   * @param {TranslationOptions} [options={}] - Variables or parameters (e.g., `n`) passed into the translation for dynamic content.
+   * @example
+   * d('greetings.greeting1'); // Translates item in dictionary under greetings.greeting1
+   *x
+   * @example
+   * // dictionary entry
+   * {
+   *  greetings: {
+   *    greeting2: "Hello, {name}!"
+   *  }
+   * }
    *
-   * @returns {React.ReactNode}
+   * // Translates item in dictionary under greetings.greeting2 and replaces {name} with 'John'
+   * d('greetings.greeting2', { variables: { name: 'John' } });
    */
   function d(
     id: string = '',

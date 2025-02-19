@@ -1,6 +1,6 @@
 export declare const remoteTranslationsError = "gt-next Error: fetching remote translation.";
 export declare const customLoadTranslationError = "gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.";
-export declare const createStringTranslationError: (content: string, id?: string) => string;
+export declare const createStringTranslationError: (content: string, id?: string, functionName?: string) => string;
 export declare const createDictionaryStringTranslationError: (id: string) => string;
 export declare const createRequiredPrefixError: (id: string, requiredPrefix: string) => string;
 export declare const devApiKeyIncludedInProductionError = "gt-next Error: You are attempting a production using a development API key. Replace this API key with a production API key when you build your app for production.";

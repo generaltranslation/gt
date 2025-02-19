@@ -1,5 +1,5 @@
-import useGTContext from '../provider/GTContext';
-import { TranslationOptions } from '../types/types';
+import useGTContext from '../../provider/GTContext';
+import { TranslationOptions } from '../../types/types';
 
 /**
  * Gets the translation function `t` provided by `<GTProvider>`.

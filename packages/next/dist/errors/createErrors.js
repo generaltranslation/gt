@@ -5,8 +5,9 @@ exports.APIKeyMissingWarn = exports.noInitGTWarn = exports.projectIdMissingWarn 
 var generaltranslation_1 = require("generaltranslation");
 exports.remoteTranslationsError = 'gt-next Error: fetching remote translation.';
 exports.customLoadTranslationError = 'gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.';
-var createStringTranslationError = function (content, id) {
-    return "gt-next string translation error. tx(\"".concat(content, "\")").concat(id ? " with id \"".concat(id, "\"") : '', " failed.");
+var createStringTranslationError = function (content, id, functionName) {
+    if (functionName === void 0) { functionName = 'tx'; }
+    return "gt-next string translation error. ".concat(functionName, "(\"").concat(content, "\")").concat(id ? " with id \"".concat(id, "\"") : '', " could not locate translation.");
 };
 exports.createStringTranslationError = createStringTranslationError;
 var createDictionaryStringTranslationError = function (id) {
