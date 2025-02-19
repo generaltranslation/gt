@@ -85,8 +85,15 @@ type TranslateChildrenCallback = (params: {
         context?: string;
     } & Record<string, any>;
 }) => Promise<TranslationSuccess | TranslationLoading | TranslationError>;
+type TranslationOptions = {
+    context?: string;
+    variables?: Record<string, any>;
+    variableOptions?: Record<string, Intl.NumberFormatOptions | Intl.DateTimeFormatOptions>;
+    [key: string]: any;
+};
+
 type GTContextType = {
-    getDictionaryEntryTranslation: (id: string, options?: Record<string, any>) => React__default.ReactNode;
+    getDictionaryEntryTranslation: (id: string, options?: Record<string, any>) => React.ReactNode;
     translateContent: TranslateContentCallback;
     translateJsx: TranslateChildrenCallback;
     getContentTranslation: (content: string, options: Record<string, any>) => string;
@@ -103,12 +110,6 @@ type GTContextType = {
         timeout?: number;
     };
     projectId?: string;
-};
-type TranslationOptions = {
-    context?: string;
-    variables?: Record<string, any>;
-    variableOptions?: Record<string, Intl.NumberFormatOptions | Intl.DateTimeFormatOptions>;
-    [key: string]: any;
 };
 type ClientProviderProps = {
     children: any;
@@ -257,7 +258,7 @@ declare function useGT(): (content?: string, options?: TranslationOptions) => st
 declare function useDefaultLocale(): string;
 
 /**
- * Gets the translation function `t` provided by `<GTProvider>`.
+ * Gets the dictionary access function `d` provided by `<GTProvider>`.
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.

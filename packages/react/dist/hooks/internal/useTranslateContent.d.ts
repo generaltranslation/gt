@@ -1,4 +1,4 @@
-import { TranslationsObject } from "../../internal";
+import { TranslationsObject } from '../../internal';
 export default function useTranslateContent(translations: TranslationsObject | null, locale: string, defaultLocale: string, translationRequired: boolean): (content: string, options?: {
     locale?: string;
     context?: string;

@@ -6,8 +6,8 @@ import {
   splitStringToContent,
 } from 'generaltranslation';
 import { GTContext } from './GTContext';
+import { ClientProviderProps } from '../types/providers';
 import {
-  ClientProviderProps,
   GTTranslationError,
   TaggedDictionary,
   TaggedDictionaryEntry,
@@ -24,8 +24,6 @@ import renderTranslatedChildren from './rendering/renderTranslatedChildren';
 import renderVariable from './rendering/renderVariable';
 import useRuntimeTranslation from './runtime/useRuntimeTranslation';
 import { localeCookieName } from 'generaltranslation/internal';
-import { dictionaryDisabledError } from '../messages/createMessages';
-import { hashJsxChildren } from 'generaltranslation/id';
 import useTranslateContent from '../hooks/internal/useTranslateContent';
 
 // meant to be used inside the server-side <GTProvider>
@@ -278,7 +276,10 @@ export default function ClientProvider({
   );
 
   const getContentTranslation = useTranslateContent(
-    translations, locale, defaultLocale, translationRequired
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired
   );
 
   // For <T> components

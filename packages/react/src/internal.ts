@@ -22,7 +22,6 @@ import {
   TranslationsObject,
   DictionaryEntry,
   TranslationSuccess,
-  GTContextType,
   TranslationLoading,
   TaggedChildren,
   Children,
@@ -36,9 +35,11 @@ import {
   TaggedDictionary,
   TaggedDictionaryEntry,
   TaggedEntry,
-  ClientProviderProps,
   TranslationOptions,
 } from './types/types';
+
+import { GTContextType, ClientProviderProps } from './types/providers';
+
 export {
   addGTIdentifier,
   writeChildrenAsObjects,

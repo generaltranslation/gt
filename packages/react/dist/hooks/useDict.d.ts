@@ -1,6 +1,6 @@
 import React from 'react';
 /**
- * Gets the translation function `t` provided by `<GTProvider>`.
+ * Gets the dictionary access function `d` provided by `<GTProvider>`.
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
