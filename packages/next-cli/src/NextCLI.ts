@@ -16,6 +16,7 @@ import scanForContent from './next/nextScanForContent';
 import createDictionaryUpdates from 'gt-react-cli/updates/createDictionaryUpdates';
 import createInlineUpdates from 'gt-react-cli/updates/createInlineUpdates';
 import handleInitGT from './next/handleInitGT';
+const pkg = 'gt-next';
 export class NextCLI extends BaseCLI {
   constructor() {
     super();
@@ -24,7 +25,7 @@ export class NextCLI extends BaseCLI {
     options: WrapOptions,
     framework: SupportedFrameworks
   ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
-    return scanForContent(options, 'gt-next', framework);
+    return scanForContent(options, pkg, framework);
   }
 
   protected createDictionaryUpdates(
@@ -37,7 +38,7 @@ export class NextCLI extends BaseCLI {
   protected createInlineUpdates(
     options: Options
   ): Promise<{ updates: Updates; errors: string[] }> {
-    return createInlineUpdates(options);
+    return createInlineUpdates(options, pkg);
   }
 
   protected async handleSetupCommand(options: SetupOptions): Promise<void> {

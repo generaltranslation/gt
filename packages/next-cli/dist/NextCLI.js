@@ -26,19 +26,19 @@ const nextScanForContent_1 = __importDefault(require("./next/nextScanForContent"
 const createDictionaryUpdates_1 = __importDefault(require("gt-react-cli/updates/createDictionaryUpdates"));
 const createInlineUpdates_1 = __importDefault(require("gt-react-cli/updates/createInlineUpdates"));
 const handleInitGT_1 = __importDefault(require("./next/handleInitGT"));
-const framework = 'gt-next';
+const pkg = 'gt-next';
 class NextCLI extends gt_react_cli_1.BaseCLI {
     constructor() {
-        super(framework);
+        super();
     }
-    scanForContent(options, addGTProvider = false) {
-        return (0, nextScanForContent_1.default)(options, framework, addGTProvider);
+    scanForContent(options, framework) {
+        return (0, nextScanForContent_1.default)(options, pkg, framework);
     }
     createDictionaryUpdates(options, esbuildConfig) {
         return (0, createDictionaryUpdates_1.default)(options, esbuildConfig);
     }
     createInlineUpdates(options) {
-        return (0, createInlineUpdates_1.default)(options);
+        return (0, createInlineUpdates_1.default)(options, pkg);
     }
     handleSetupCommand(options) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -59,7 +59,7 @@ class NextCLI extends gt_react_cli_1.BaseCLI {
                 process.exit(0);
             }
             const addGTProvider = yield (0, prompts_1.select)({
-                message: 'Do you want to automatically add the GTProvider component?',
+                message: 'Do you want the setup tool to automatically add the GTProvider component?',
                 choices: [
                     { value: true, name: 'Yes' },
                     { value: false, name: 'No' },
@@ -77,8 +77,8 @@ class NextCLI extends gt_react_cli_1.BaseCLI {
                 console.log(chalk_1.default.red('No next.config.js file found.'));
                 process.exit(0);
             }
-            const addInitGT = yield (0, prompts_1.select)({
-                message: `Do you want to automatically add initGT() to your ${nextConfigPath}?`,
+            const addWithGTConfig = yield (0, prompts_1.select)({
+                message: `Do you want to automatically add withGTConfig() to your ${nextConfigPath}?`,
                 choices: [
                     { value: true, name: 'Yes' },
                     { value: false, name: 'No' },
@@ -97,11 +97,11 @@ class NextCLI extends gt_react_cli_1.BaseCLI {
             if (!options.config)
                 (0, setupConfig_1.default)('gt.config.json', process.env.GT_PROJECT_ID, '');
             // ----- //
-            const mergeOptions = Object.assign(Object.assign({}, options), { disableIds: !includeTId, disableFormatting: true });
+            const mergeOptions = Object.assign(Object.assign({}, options), { disableIds: !includeTId, disableFormatting: true, addGTProvider });
             // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-            const { errors, filesUpdated, warnings } = yield this.scanForContent(mergeOptions, addGTProvider);
-            if (addInitGT) {
-                // Add the initGT() function to the next.config.js file
+            const { errors, filesUpdated, warnings } = yield this.scanForContent(mergeOptions, 'next-app');
+            if (addWithGTConfig) {
+                // Add the withGTConfig() function to the next.config.js file
                 const { errors: initGTErrors, filesUpdated: initGTFilesUpdated } = yield (0, handleInitGT_1.default)(nextConfigPath);
                 // merge errors and files
                 errors.push(...initGTErrors);

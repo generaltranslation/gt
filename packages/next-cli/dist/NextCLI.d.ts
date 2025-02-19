@@ -1,8 +1,8 @@
 import { BaseCLI } from 'gt-react-cli';
-import { WrapOptions, Options, Updates, SetupOptions } from 'gt-react-cli/types';
+import { WrapOptions, Options, Updates, SetupOptions, SupportedFrameworks } from 'gt-react-cli/types';
 export declare class NextCLI extends BaseCLI {
     constructor();
-    protected scanForContent(options: WrapOptions, addGTProvider?: boolean): Promise<{
+    protected scanForContent(options: WrapOptions, framework: SupportedFrameworks): Promise<{
         errors: string[];
         filesUpdated: string[];
         warnings: string[];

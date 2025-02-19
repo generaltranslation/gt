@@ -72,8 +72,8 @@ const IMPORT_MAP = {
  * @param options - The options object
  * @returns An object containing the updates and errors
  */
-function scanForContent(options_1, framework_1) {
-    return __awaiter(this, arguments, void 0, function* (options, framework, addGTProvider = false) {
+function scanForContent(options, pkg, framework) {
+    return __awaiter(this, void 0, void 0, function* () {
         const errors = [];
         const warnings = [];
         const srcDirectory = options.src || ['./'];
@@ -107,8 +107,8 @@ function scanForContent(options_1, framework_1) {
             let globalId = 0;
             (0, traverse_1.default)(ast, {
                 JSXElement(path) {
-                    if (framework === 'gt-next' &&
-                        addGTProvider &&
+                    if (pkg === 'gt-next' &&
+                        options.addGTProvider &&
                         (0, utils_1.isHtmlElement)(path.node.openingElement)) {
                         // Find the body element in the HTML children
                         const bodyElement = path.node.children.find((child) => t.isJSXElement(child) && (0, utils_1.isBodyElement)(child.openingElement));
@@ -117,7 +117,7 @@ function scanForContent(options_1, framework_1) {
                             return;
                         }
                         // Skip if body already has GTProvider
-                        if ((0, utils_1.hasGTProviderChild)(bodyElement.children)) {
+                        if ((0, utils_1.hasGTProviderChild)(bodyElement)) {
                             return;
                         }
                         // Handle lang attribute for html tag

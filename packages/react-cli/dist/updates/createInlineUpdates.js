@@ -19,7 +19,8 @@ const parser_1 = require("@babel/parser");
 const traverse_1 = __importDefault(require("@babel/traverse"));
 const id_1 = require("generaltranslation/id");
 const parseJsx_1 = require("../jsx/parseJsx");
-function createInlineUpdates(options) {
+const parseStringFunction_1 = require("../jsx/parse/parseStringFunction");
+function createInlineUpdates(options, pkg) {
     return __awaiter(this, void 0, void 0, function* () {
         const updates = [];
         const errors = [];
@@ -68,6 +69,11 @@ function createInlineUpdates(options) {
                 continue;
             }
             (0, traverse_1.default)(ast, {
+                ImportDeclaration(path) {
+                    if (path.node.source.value === pkg) {
+                        (0, parseStringFunction_1.parseStrings)(path, updates, errors, file, pkg);
+                    }
+                },
                 JSXElement(path) {
                     (0, parseJsx_1.parseJSXElement)(path.node, updates, errors, file);
                 },
@@ -76,8 +82,7 @@ function createInlineUpdates(options) {
         // Post-process to add a hash to each update
         yield Promise.all(updates.map((update) => __awaiter(this, void 0, void 0, function* () {
             const context = update.metadata.context;
-            const hash = (0, id_1.hashJsxChildren)(context
-                ? Object.assign({ source: update.source, context }, (update.metadata.id && { id: update.metadata.id })) : Object.assign({ source: update.source }, (update.metadata.id && { id: update.metadata.id })));
+            const hash = (0, id_1.hashJsxChildren)(Object.assign(Object.assign({ source: update.source }, (context && { context })), (update.metadata.id && { id: update.metadata.id })));
             update.metadata.hash = hash;
         })));
         return { updates, errors };
