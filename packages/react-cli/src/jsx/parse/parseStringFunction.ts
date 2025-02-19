@@ -8,7 +8,11 @@ import { Updates } from '../../types';
 import { splitStringToContent } from 'generaltranslation';
 import * as t from '@babel/types';
 import { isStaticExpression } from '../evaluateJsx';
-
+import {
+  warnNonStaticExpression,
+  warnVariableProp,
+} from '../../console/warnings';
+import generate from '@babel/generator';
 export function parseStrings(
   path: NodePath<ImportDeclaration | VariableDeclaration>,
   updates: Updates,
@@ -27,7 +31,13 @@ export function parseStrings(
           'name' in specifier.imported &&
           translationFuncs.includes(specifier.imported.name)
         ) {
-          handleTranslationFunction(specifier.local.name, path, updates);
+          handleTranslationFunction(
+            specifier.local.name,
+            path,
+            updates,
+            errors,
+            file
+          );
         }
       });
     }
@@ -49,7 +59,13 @@ export function parseStrings(
             translationFuncs.includes(prop.key.name) &&
             prop.value.type === 'Identifier'
           ) {
-            handleTranslationFunction(prop.value.name, path, updates);
+            handleTranslationFunction(
+              prop.value.name,
+              path,
+              updates,
+              errors,
+              file
+            );
           }
         });
       }
@@ -60,7 +76,9 @@ export function parseStrings(
 function handleTranslationFunction(
   importName: string,
   path: NodePath,
-  updates: Updates
+  updates: Updates,
+  errors: string[],
+  file: string
 ): void {
   path.scope.bindings[importName]?.referencePaths.forEach((refPath) => {
     const varDecl = refPath.findParent((p) =>
@@ -91,6 +109,15 @@ function handleTranslationFunction(
                   // Check for id property
                   if (prop.key.name === 'id' && t.isExpression(prop.value)) {
                     const idResult = isStaticExpression(prop.value);
+                    if (!idResult.isStatic) {
+                      errors.push(
+                        warnNonStaticExpression(
+                          file,
+                          'id',
+                          generate(prop.value).code
+                        )
+                      );
+                    }
                     if (idResult.isStatic && idResult.value) {
                       metadata.id = idResult.value;
                     }
@@ -101,6 +128,15 @@ function handleTranslationFunction(
                     t.isExpression(prop.value)
                   ) {
                     const contextResult = isStaticExpression(prop.value);
+                    if (!contextResult.isStatic) {
+                      errors.push(
+                        warnNonStaticExpression(
+                          file,
+                          'context',
+                          generate(prop.value).code
+                        )
+                      );
+                    }
                     if (contextResult.isStatic && contextResult.value) {
                       metadata.context = contextResult.value;
                     }

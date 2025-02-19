@@ -50,3 +50,16 @@ export const warnHasUnwrappedExpression = (
     chalk.white(') to translate this properly.\n')
   );
 };
+
+export const warnNonStaticExpression = (
+  file: string,
+  attrName: string,
+  value: string
+) => {
+  return (
+    `Found non-static expression in ${chalk.cyan(
+      file
+    )} for attribute ${attrName}: "${chalk.white(value)}". ` +
+    `Change "${attrName}" to ensure this content is translated.\n`
+  );
+};
