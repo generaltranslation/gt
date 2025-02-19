@@ -5,6 +5,9 @@ import {
   VariableDeclaration,
 } from '@babel/types';
 import { Updates } from '../../types';
+import { splitStringToContent } from 'generaltranslation';
+import * as t from '@babel/types';
+import { isStaticExpression } from '../evaluateJsx';
 
 export function parseStrings(
   path: NodePath<ImportDeclaration | VariableDeclaration>,
@@ -13,7 +16,7 @@ export function parseStrings(
   file: string,
   pkg: 'gt-react' | 'gt-next'
 ): void {
-  const translationFuncs = ['useStringTranslation', 'getStringTranslation']; // placeholder for now
+  const translationFuncs = ['useGT', 'getGT']; // placeholder for now
 
   if (path.node.type === 'ImportDeclaration') {
     // Handle ES6 imports
@@ -72,10 +75,44 @@ function handleTranslationFunction(
         ) {
           const arg = tPath.parent.arguments[0];
           if (arg.type === 'StringLiteral') {
+            const source = arg.value;
+            const content = splitStringToContent(source);
+            const options = tPath.parent.arguments[1];
+
+            let metadata: Record<string, string> = {};
+
+            // Only process options if they exist
+            if (options && options.type === 'ObjectExpression') {
+              options.properties.forEach((prop) => {
+                if (
+                  prop.type === 'ObjectProperty' &&
+                  prop.key.type === 'Identifier'
+                ) {
+                  // Check for id property
+                  if (prop.key.name === 'id' && t.isExpression(prop.value)) {
+                    const idResult = isStaticExpression(prop.value);
+                    if (idResult.isStatic && idResult.value) {
+                      metadata.id = idResult.value;
+                    }
+                  }
+                  // Check for context property
+                  if (
+                    prop.key.name === 'context' &&
+                    t.isExpression(prop.value)
+                  ) {
+                    const contextResult = isStaticExpression(prop.value);
+                    if (contextResult.isStatic && contextResult.value) {
+                      metadata.context = contextResult.value;
+                    }
+                  }
+                }
+              });
+            }
+
             updates.push({
               type: 'content',
-              source: arg.value,
-              metadata: {},
+              source: content,
+              metadata,
             });
           }
         }
