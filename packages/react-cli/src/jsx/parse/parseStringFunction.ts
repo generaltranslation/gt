@@ -1,0 +1,85 @@
+import { NodePath } from '@babel/traverse';
+import {
+  ImportDeclaration,
+  VariableDeclarator,
+  VariableDeclaration,
+} from '@babel/types';
+import { Updates } from '../../types';
+
+export function parseStrings(
+  path: NodePath<ImportDeclaration | VariableDeclaration>,
+  updates: Updates,
+  errors: string[],
+  file: string,
+  pkg: 'gt-react' | 'gt-next'
+): void {
+  const translationFuncs = ['useStringTranslation', 'getStringTranslation']; // placeholder for now
+
+  if (path.node.type === 'ImportDeclaration') {
+    // Handle ES6 imports
+    if (path.node.source.value === pkg) {
+      path.node.specifiers.forEach((specifier) => {
+        if (
+          specifier.type === 'ImportSpecifier' &&
+          'name' in specifier.imported &&
+          translationFuncs.includes(specifier.imported.name)
+        ) {
+          handleTranslationFunction(specifier.local.name, path, updates);
+        }
+      });
+    }
+  } else if (path.node.type === 'VariableDeclaration') {
+    // Handle CJS requires
+    path.node.declarations.forEach((declaration) => {
+      if (
+        declaration.init?.type === 'CallExpression' &&
+        declaration.init.callee.type === 'Identifier' &&
+        declaration.init.callee.name === 'require' &&
+        declaration.init.arguments[0]?.type === 'StringLiteral' &&
+        declaration.init.arguments[0].value === pkg &&
+        declaration.id.type === 'ObjectPattern'
+      ) {
+        declaration.id.properties.forEach((prop) => {
+          if (
+            prop.type === 'ObjectProperty' &&
+            prop.key.type === 'Identifier' &&
+            translationFuncs.includes(prop.key.name) &&
+            prop.value.type === 'Identifier'
+          ) {
+            handleTranslationFunction(prop.value.name, path, updates);
+          }
+        });
+      }
+    });
+  }
+}
+
+function handleTranslationFunction(
+  importName: string,
+  path: NodePath,
+  updates: Updates
+): void {
+  path.scope.bindings[importName]?.referencePaths.forEach((refPath) => {
+    const varDecl = refPath.findParent((p) =>
+      p.isVariableDeclarator()
+    ) as NodePath<VariableDeclarator>;
+    if (varDecl && varDecl.node.id.type === 'Identifier') {
+      const tFuncName = varDecl.node.id.name;
+      path.scope.bindings[tFuncName]?.referencePaths.forEach((tPath) => {
+        if (
+          tPath.parent.type === 'CallExpression' &&
+          tPath.parent.arguments.length > 0
+        ) {
+          const arg = tPath.parent.arguments[0];
+          if (arg.type === 'StringLiteral') {
+            updates.push({
+              type: 'content',
+              source: arg.value,
+              metadata: {},
+            });
+          }
+        }
+      });
+    }
+  });
+}

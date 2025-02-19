@@ -19,18 +19,34 @@ export function determineModuleType(ast: ParseResult<t.File>) {
   return isESM;
 }
 
+export type ImportItem =
+  | string
+  | {
+      local: string;
+      imported: string;
+      source: string;
+    };
+
 export function generateImports(
-  needsImport: string[],
+  needsImport: ImportItem[],
   isESM: boolean,
   importMap: Record<string, { name: string; source: string }>
 ) {
   // Group imports by their source
   const importsBySource = needsImport.reduce(
     (acc, imp) => {
-      const importInfo = importMap[imp as keyof typeof importMap];
-      const source = importInfo.source;
-      if (!acc[source]) acc[source] = [];
-      acc[source].push({ local: imp, imported: importInfo.name });
+      if (typeof imp === 'string') {
+        // Handle standard GT component imports
+        const importInfo = importMap[imp];
+        const source = importInfo.source;
+        if (!acc[source]) acc[source] = [];
+        acc[source].push({ local: imp, imported: importInfo.name });
+      } else {
+        // Handle custom imports (like config)
+        const source = imp.source;
+        if (!acc[source]) acc[source] = [];
+        acc[source].push({ local: imp.local, imported: imp.imported });
+      }
       return acc;
     },
     {} as Record<string, { local: string; imported: string }[]>
@@ -42,26 +58,31 @@ export function generateImports(
       if (isESM) {
         return babel.importDeclaration(
           imports.map((imp) =>
-            babel.importSpecifier(
-              babel.identifier(imp.imported),
-              babel.identifier(imp.local)
-            )
+            imp.imported === 'default'
+              ? babel.importDefaultSpecifier(babel.identifier(imp.local))
+              : babel.importSpecifier(
+                  babel.identifier(imp.local),
+                  babel.identifier(imp.imported)
+                )
           ),
           babel.stringLiteral(source)
         );
       } else {
+        // For CommonJS, handle default imports differently
         return babel.variableDeclaration('const', [
           babel.variableDeclarator(
-            babel.objectPattern(
-              imports.map((imp) =>
-                babel.objectProperty(
-                  babel.identifier(imp.local),
-                  babel.identifier(imp.imported),
-                  false,
-                  imp.local === imp.imported
-                )
-              )
-            ),
+            imports.some((imp) => imp.imported === 'default')
+              ? babel.identifier(imports[0].local)
+              : babel.objectPattern(
+                  imports.map((imp) =>
+                    babel.objectProperty(
+                      babel.identifier(imp.local),
+                      babel.identifier(imp.imported),
+                      false,
+                      imp.local === imp.imported
+                    )
+                  )
+                ),
             babel.callExpression(babel.identifier('require'), [
               babel.stringLiteral(source),
             ])
@@ -73,21 +94,21 @@ export function generateImports(
   return importNodes;
 }
 
-export function generateImportMap(ast: ParseResult<t.File>, framework: string) {
+export function generateImportMap(ast: ParseResult<t.File>, pkg: string) {
   let importAlias = { TComponent: 'T', VarComponent: 'Var' };
   // Check existing imports
   let initialImports: string[] = [];
   traverse(ast, {
     ImportDeclaration(path) {
       const source = path.node.source.value;
-      if (source === framework) {
+      if (source === pkg) {
         initialImports = [
           ...initialImports,
           ...path.node.specifiers.map((spec) => spec.local.name),
         ];
       }
       // Check for conflicting imports only if they're not from gt libraries
-      if (source !== framework) {
+      if (source !== pkg) {
         path.node.specifiers.forEach((spec) => {
           if (babel.isImportSpecifier(spec)) {
             if (spec.local.name === 'T') importAlias.TComponent = 'GTT';
@@ -120,7 +141,7 @@ export function insertImports(
 
 export function createImports(
   ast: ParseResult<t.File>,
-  needsImport: string[],
+  needsImport: ImportItem[],
   importMap: Record<string, { name: string; source: string }>
 ) {
   const isESM = determineModuleType(ast);

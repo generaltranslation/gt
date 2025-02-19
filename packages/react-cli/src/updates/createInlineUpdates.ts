@@ -7,9 +7,11 @@ import traverse from '@babel/traverse';
 
 import { hashJsxChildren } from 'generaltranslation/id';
 import { parseJSXElement } from '../jsx/parseJsx';
+import { parseStrings } from '../jsx/parse/parseStringFunction';
 
 export default async function createInlineUpdates(
-  options: Options
+  options: Options,
+  pkg: 'gt-react' | 'gt-next'
 ): Promise<{ updates: Updates; errors: string[] }> {
   const updates: Updates = [];
 
@@ -67,6 +69,11 @@ export default async function createInlineUpdates(
     }
 
     traverse(ast, {
+      ImportDeclaration(path) {
+        if (path.node.source.value === pkg) {
+          parseStrings(path, updates, errors, file, pkg);
+        }
+      },
       JSXElement(path) {
         parseJSXElement(path.node, updates, errors, file);
       },
@@ -77,18 +84,11 @@ export default async function createInlineUpdates(
   await Promise.all(
     updates.map(async (update) => {
       const context = update.metadata.context;
-      const hash = hashJsxChildren(
-        context
-          ? {
-              source: update.source,
-              context,
-              ...(update.metadata.id && { id: update.metadata.id }),
-            }
-          : {
-              source: update.source,
-              ...(update.metadata.id && { id: update.metadata.id }),
-            }
-      );
+      const hash = hashJsxChildren({
+        source: update.source,
+        ...(context && { context }),
+        ...(update.metadata.id && { id: update.metadata.id }),
+      });
       update.metadata.hash = hash;
     })
   );

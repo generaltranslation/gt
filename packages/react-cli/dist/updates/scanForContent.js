@@ -47,6 +47,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = scanForContent;
 const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
 const t = __importStar(require("@babel/types"));
 const parser_1 = require("@babel/parser");
 const traverse_1 = __importDefault(require("@babel/traverse"));
@@ -71,7 +72,7 @@ const IMPORT_MAP = {
  * @param options - The options object
  * @returns An object containing the updates and errors
  */
-function scanForContent(options, framework) {
+function scanForContent(options, pkg, framework) {
     return __awaiter(this, void 0, void 0, function* () {
         const errors = [];
         const warnings = [];
@@ -79,6 +80,12 @@ function scanForContent(options, framework) {
         const files = srcDirectory.flatMap((dir) => (0, findJsxFilepath_1.getFiles)(dir));
         const filesUpdated = [];
         for (const file of files) {
+            const baseFileName = path_1.default.basename(file);
+            const configPath = path_1.default.relative(path_1.default.dirname(file), path_1.default.resolve(process.cwd(), options.config));
+            // Ensure the path starts with ./ or ../
+            const normalizedConfigPath = configPath.startsWith('.')
+                ? configPath
+                : './' + configPath;
             const code = fs_1.default.readFileSync(file, 'utf8');
             // Create relative path from src directory and remove extension
             const relativePath = (0, findFilepath_1.getRelativePath)(file, srcDirectory[0]);
@@ -98,7 +105,7 @@ function scanForContent(options, framework) {
             }
             let modified = false;
             let usedImports = [];
-            let { importAlias, initialImports } = (0, parseAst_1.generateImportMap)(ast, framework);
+            let { importAlias, initialImports } = (0, parseAst_1.generateImportMap)(ast, pkg);
             // If the file already has a T import, skip processing it
             if (initialImports.includes(IMPORT_MAP.T.name)) {
                 continue;
@@ -106,6 +113,41 @@ function scanForContent(options, framework) {
             let globalId = 0;
             (0, traverse_1.default)(ast, {
                 JSXElement(path) {
+                    if (framework === 'next-pages' &&
+                        options.addGTProvider &&
+                        (baseFileName === '_app.tsx' || baseFileName === '_app.jsx')) {
+                        // Check if this is the top-level JSX element in the default export
+                        let isDefaultExport = false;
+                        let currentPath = path;
+                        // Check if GTProvider already exists in the ancestors
+                        let hasGTProvider = false;
+                        while (currentPath.parentPath) {
+                            if (t.isJSXElement(currentPath.node) &&
+                                t.isJSXIdentifier(currentPath.node.openingElement.name) &&
+                                currentPath.node.openingElement.name.name === 'GTProvider') {
+                                hasGTProvider = true;
+                                break;
+                            }
+                            if (t.isExportDefaultDeclaration(currentPath.parentPath.node)) {
+                                isDefaultExport = true;
+                            }
+                            currentPath = currentPath.parentPath;
+                        }
+                        if (isDefaultExport && !hasGTProvider) {
+                            // Wrap the JSX element with GTProvider
+                            const gtProviderJsx = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('GTProvider'), [t.jsxSpreadAttribute(t.identifier('gtConfig'))], false), t.jsxClosingElement(t.jsxIdentifier('GTProvider')), [path.node]);
+                            path.replaceWith(gtProviderJsx);
+                            usedImports.push('GTProvider');
+                            usedImports.push({
+                                local: 'gtConfig',
+                                imported: 'default',
+                                source: normalizedConfigPath,
+                            });
+                            modified = true;
+                            path.skip();
+                            return;
+                        }
+                    }
                     // Check if this JSX element has any JSX element ancestors
                     let currentPath = path;
                     while (currentPath.parentPath) {
@@ -127,7 +169,9 @@ function scanForContent(options, framework) {
             });
             if (!modified)
                 continue;
-            let needsImport = usedImports.filter((imp) => !initialImports.includes(imp));
+            let needsImport = usedImports.filter((imp) => typeof imp === 'string'
+                ? !initialImports.includes(imp)
+                : !initialImports.includes(imp.local));
             if (needsImport.length > 0) {
                 (0, parseAst_1.createImports)(ast, needsImport, IMPORT_MAP);
             }

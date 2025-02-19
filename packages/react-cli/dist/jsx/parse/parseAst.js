@@ -61,21 +61,36 @@ function determineModuleType(ast) {
 function generateImports(needsImport, isESM, importMap) {
     // Group imports by their source
     const importsBySource = needsImport.reduce((acc, imp) => {
-        const importInfo = importMap[imp];
-        const source = importInfo.source;
-        if (!acc[source])
-            acc[source] = [];
-        acc[source].push({ local: imp, imported: importInfo.name });
+        if (typeof imp === 'string') {
+            // Handle standard GT component imports
+            const importInfo = importMap[imp];
+            const source = importInfo.source;
+            if (!acc[source])
+                acc[source] = [];
+            acc[source].push({ local: imp, imported: importInfo.name });
+        }
+        else {
+            // Handle custom imports (like config)
+            const source = imp.source;
+            if (!acc[source])
+                acc[source] = [];
+            acc[source].push({ local: imp.local, imported: imp.imported });
+        }
         return acc;
     }, {});
     // Generate import nodes for each source
     const importNodes = Object.entries(importsBySource).map(([source, imports]) => {
         if (isESM) {
-            return babel.importDeclaration(imports.map((imp) => babel.importSpecifier(babel.identifier(imp.imported), babel.identifier(imp.local))), babel.stringLiteral(source));
+            return babel.importDeclaration(imports.map((imp) => imp.imported === 'default'
+                ? babel.importDefaultSpecifier(babel.identifier(imp.local))
+                : babel.importSpecifier(babel.identifier(imp.local), babel.identifier(imp.imported))), babel.stringLiteral(source));
         }
         else {
+            // For CommonJS, handle default imports differently
             return babel.variableDeclaration('const', [
-                babel.variableDeclarator(babel.objectPattern(imports.map((imp) => babel.objectProperty(babel.identifier(imp.local), babel.identifier(imp.imported), false, imp.local === imp.imported))), babel.callExpression(babel.identifier('require'), [
+                babel.variableDeclarator(imports.some((imp) => imp.imported === 'default')
+                    ? babel.identifier(imports[0].local)
+                    : babel.objectPattern(imports.map((imp) => babel.objectProperty(babel.identifier(imp.local), babel.identifier(imp.imported), false, imp.local === imp.imported))), babel.callExpression(babel.identifier('require'), [
                     babel.stringLiteral(source),
                 ])),
             ]);
@@ -83,21 +98,21 @@ function generateImports(needsImport, isESM, importMap) {
     });
     return importNodes;
 }
-function generateImportMap(ast, framework) {
+function generateImportMap(ast, pkg) {
     let importAlias = { TComponent: 'T', VarComponent: 'Var' };
     // Check existing imports
     let initialImports = [];
     (0, traverse_1.default)(ast, {
         ImportDeclaration(path) {
             const source = path.node.source.value;
-            if (source === framework) {
+            if (source === pkg) {
                 initialImports = [
                     ...initialImports,
                     ...path.node.specifiers.map((spec) => spec.local.name),
                 ];
             }
             // Check for conflicting imports only if they're not from gt libraries
-            if (source !== framework) {
+            if (source !== pkg) {
                 path.node.specifiers.forEach((spec) => {
                     if (babel.isImportSpecifier(spec)) {
                         if (spec.local.name === 'T')

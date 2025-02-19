@@ -5,6 +5,7 @@ import {
   Framework,
   Options,
   SetupOptions,
+  SupportedFrameworks,
   Updates,
   WrapOptions,
 } from './types';
@@ -49,14 +50,12 @@ function resolveProjectId(): string | undefined {
 const DEFAULT_TIMEOUT = 600;
 
 export abstract class BaseCLI {
-  private framework: 'gt-next' | 'gt-react';
-  protected constructor(framework: 'gt-next' | 'gt-react') {
-    this.framework = framework;
-  }
+  protected constructor() {}
 
   // Abstract method that subclasses must implement
   protected abstract scanForContent(
-    options: WrapOptions
+    options: WrapOptions,
+    framework: SupportedFrameworks
   ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }>;
 
   protected abstract createDictionaryUpdates(
@@ -239,8 +238,10 @@ export abstract class BaseCLI {
     // ----- //
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { errors, filesUpdated, warnings } =
-      await this.scanForContent(options);
+    const { errors, filesUpdated, warnings } = await this.scanForContent(
+      options,
+      'react'
+    );
 
     if (errors.length > 0) {
       console.log(chalk.red('\n✗ Failed to write files:\n'));
@@ -295,6 +296,56 @@ export abstract class BaseCLI {
       process.exit(0);
     }
 
+    const frameworkType = await select({
+      message: 'What framework are you using?',
+      choices: [
+        { value: 'next', name: chalk.blue('Next.js') },
+        { value: 'vite', name: chalk.green('Vite') },
+        { value: 'gatsby', name: chalk.magenta('Gatsby') },
+        { value: 'react', name: chalk.yellow('React') },
+        { value: 'other', name: chalk.gray('Other') },
+      ],
+      default: 'next',
+    });
+    let addGTProvider = false;
+    if (frameworkType === 'next') {
+      const routerType = await select({
+        message: 'Are you using the App router or the Pages router?',
+        choices: [
+          { value: 'pages', name: 'Pages Router' },
+          { value: 'app', name: 'App Router' },
+        ],
+        default: 'pages',
+      });
+      if (routerType === 'app') {
+        console.log(
+          chalk.red(
+            '\nPlease use gt-next and gt-next-cli instead. gt-react is not supported for the App router.'
+          )
+        );
+        process.exit(0);
+      }
+      addGTProvider = await select({
+        message:
+          'Do you want the setup tool to automatically add the GTProvider component?',
+        choices: [
+          { value: true, name: 'Yes' },
+          { value: false, name: 'No' },
+        ],
+        default: true,
+      });
+    } else if (frameworkType === 'other') {
+      console.log(
+        chalk.red(
+          `\nSorry, at the moment we currently do not support other React frameworks. 
+            Please let us know what you would like to see supported at https://github.com/General-Translation/gt-libraries/issues`
+        )
+      );
+      process.exit(0);
+    }
+    const selectedFramework: SupportedFrameworks =
+      frameworkType === 'next' ? 'next-pages' : 'next-app';
+
     const includeTId = await select({
       message: 'Do you want to include an unique id for each <T> tag?',
       choices: [
@@ -306,7 +357,11 @@ export abstract class BaseCLI {
 
     // ----- Create a starter gt.config.json file -----
     if (!options.config)
-      createConfig('gt.config.json', process.env.GT_PROJECT_ID, '');
+      options.config = createConfig(
+        'gt.config.json',
+        process.env.GT_PROJECT_ID,
+        ''
+      );
 
     // ----- //
 
@@ -314,11 +369,14 @@ export abstract class BaseCLI {
       ...options,
       disableIds: !includeTId,
       disableFormatting: true,
+      addGTProvider,
     };
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { errors, filesUpdated, warnings } =
-      await this.scanForContent(mergeOptions);
+    const { errors, filesUpdated, warnings } = await this.scanForContent(
+      mergeOptions,
+      selectedFramework
+    );
 
     if (errors.length > 0) {
       console.log(chalk.red('\n✗ Failed to write files:\n'));

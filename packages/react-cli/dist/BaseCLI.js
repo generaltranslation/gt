@@ -93,9 +93,7 @@ function resolveProjectId() {
 }
 const DEFAULT_TIMEOUT = 600;
 class BaseCLI {
-    constructor(framework) {
-        this.framework = framework;
-    }
+    constructor() { }
     initialize() {
         this.setupTranslateCommand();
         this.setupSetupCommand();
@@ -177,7 +175,7 @@ class BaseCLI {
                 (0, setupConfig_1.default)('gt.config.json', process.env.GT_PROJECT_ID, '');
             // ----- //
             // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-            const { errors, filesUpdated, warnings } = yield this.scanForContent(options);
+            const { errors, filesUpdated, warnings } = yield this.scanForContent(options, 'react');
             if (errors.length > 0) {
                 console.log(chalk_1.default.red('\n✗ Failed to write files:\n'));
                 console.log(errors.join('\n'));
@@ -215,6 +213,46 @@ class BaseCLI {
                 console.log(chalk_1.default.gray('\nOperation cancelled.'));
                 process.exit(0);
             }
+            const frameworkType = yield (0, prompts_1.select)({
+                message: 'What framework are you using?',
+                choices: [
+                    { value: 'next', name: chalk_1.default.blue('Next.js') },
+                    { value: 'vite', name: chalk_1.default.green('Vite') },
+                    { value: 'gatsby', name: chalk_1.default.magenta('Gatsby') },
+                    { value: 'react', name: chalk_1.default.yellow('React') },
+                    { value: 'other', name: chalk_1.default.gray('Other') },
+                ],
+                default: 'next',
+            });
+            let addGTProvider = false;
+            if (frameworkType === 'next') {
+                const routerType = yield (0, prompts_1.select)({
+                    message: 'Are you using the App router or the Pages router?',
+                    choices: [
+                        { value: 'pages', name: 'Pages Router' },
+                        { value: 'app', name: 'App Router' },
+                    ],
+                    default: 'pages',
+                });
+                if (routerType === 'app') {
+                    console.log(chalk_1.default.red('\nPlease use gt-next and gt-next-cli instead. gt-react is not supported for the App router.'));
+                    process.exit(0);
+                }
+                addGTProvider = yield (0, prompts_1.select)({
+                    message: 'Do you want the setup tool to automatically add the GTProvider component?',
+                    choices: [
+                        { value: true, name: 'Yes' },
+                        { value: false, name: 'No' },
+                    ],
+                    default: true,
+                });
+            }
+            else if (frameworkType === 'other') {
+                console.log(chalk_1.default.red(`\nSorry, at the moment we currently do not support other React frameworks. 
+            Please let us know what you would like to see supported at https://github.com/General-Translation/gt-libraries/issues`));
+                process.exit(0);
+            }
+            const selectedFramework = frameworkType === 'next' ? 'next-pages' : 'next-app';
             const includeTId = yield (0, prompts_1.select)({
                 message: 'Do you want to include an unique id for each <T> tag?',
                 choices: [
@@ -225,11 +263,11 @@ class BaseCLI {
             });
             // ----- Create a starter gt.config.json file -----
             if (!options.config)
-                (0, setupConfig_1.default)('gt.config.json', process.env.GT_PROJECT_ID, '');
+                options.config = (0, setupConfig_1.default)('gt.config.json', process.env.GT_PROJECT_ID, '');
             // ----- //
-            const mergeOptions = Object.assign(Object.assign({}, options), { disableIds: !includeTId, disableFormatting: true });
+            const mergeOptions = Object.assign(Object.assign({}, options), { disableIds: !includeTId, disableFormatting: true, addGTProvider });
             // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-            const { errors, filesUpdated, warnings } = yield this.scanForContent(mergeOptions);
+            const { errors, filesUpdated, warnings } = yield this.scanForContent(mergeOptions, selectedFramework);
             if (errors.length > 0) {
                 console.log(chalk_1.default.red('\n✗ Failed to write files:\n'));
                 console.log(errors.join('\n'));

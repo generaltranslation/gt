@@ -1,4 +1,5 @@
 import * as t from '@babel/types';
+import { ImportItem } from './parse/parseAst';
 /**
  * Recursively wraps a JSX element with a <T> component and unique id
  * @param node - The JSX element to wrap
@@ -24,7 +25,7 @@ export declare function wrapJsxElement(node: t.JSXElement, options: {
     VarComponent?: string;
     idPrefix: string;
     idCount: number;
-    usedImports: string[];
+    usedImports: ImportItem[];
     modified: boolean;
 }, isMeaningful: (node: t.Node) => boolean, mark: boolean): WrapResult;
 /**
@@ -36,7 +37,7 @@ export declare function wrapJsxElement(node: t.JSXElement, options: {
  */
 export declare function handleJsxElement(rootNode: t.JSXElement, options: {
     createIds: boolean;
-    usedImports: string[];
+    usedImports: ImportItem[];
     TComponent?: string;
     VarComponent?: string;
     idPrefix: string;

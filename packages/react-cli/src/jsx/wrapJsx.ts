@@ -1,6 +1,6 @@
 import * as t from '@babel/types';
 import { isStaticExpression, isStaticValue } from './evaluateJsx';
-import generate from '@babel/generator';
+import { ImportItem } from './parse/parseAst';
 /**
  * Recursively wraps a JSX element with a <T> component and unique id
  * @param node - The JSX element to wrap
@@ -22,7 +22,7 @@ function wrapJsxExpression(
     VarComponent?: string;
     idPrefix: string;
     idCount: number;
-    usedImports: string[];
+    usedImports: ImportItem[];
     modified: boolean;
   },
   isMeaningful: (node: t.Node) => boolean,
@@ -328,7 +328,7 @@ export function wrapJsxElement(
     VarComponent?: string;
     idPrefix: string;
     idCount: number;
-    usedImports: string[];
+    usedImports: ImportItem[];
     modified: boolean;
   },
   isMeaningful: (node: t.Node) => boolean,
@@ -397,7 +397,7 @@ export function handleJsxElement(
   rootNode: t.JSXElement,
   options: {
     createIds: boolean;
-    usedImports: string[];
+    usedImports: ImportItem[];
     TComponent?: string;
     VarComponent?: string;
     idPrefix: string;
@@ -425,7 +425,7 @@ function wrapWithT(
     VarComponent?: string;
     idPrefix: string;
     idCount: number;
-    usedImports: string[];
+    usedImports: ImportItem[];
     modified: boolean;
   },
   mark: boolean
@@ -468,7 +468,7 @@ function wrapExpressionWithT(
     VarComponent?: string;
     idPrefix: string;
     idCount: number;
-    usedImports: string[];
+    usedImports: ImportItem[];
     modified: boolean;
   },
   mark: boolean
@@ -508,7 +508,7 @@ function wrapWithVar(
   options: {
     TComponent?: string;
     VarComponent?: string;
-    usedImports: string[];
+    usedImports: ImportItem[];
     modified: boolean;
   },
   mark: boolean

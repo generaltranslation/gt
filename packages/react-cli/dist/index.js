@@ -10,13 +10,12 @@ Object.defineProperty(exports, "BaseCLI", { enumerable: true, get: function () {
 const scanForContent_1 = __importDefault(require("./updates/scanForContent"));
 const createDictionaryUpdates_1 = __importDefault(require("./updates/createDictionaryUpdates"));
 const createInlineUpdates_1 = __importDefault(require("./updates/createInlineUpdates"));
-const framework = 'gt-react';
 class ReactCLI extends BaseCLI_1.BaseCLI {
     constructor() {
-        super(framework);
+        super();
     }
-    scanForContent(options) {
-        return (0, scanForContent_1.default)(options, framework);
+    scanForContent(options, framework) {
+        return (0, scanForContent_1.default)(options, 'gt-react', framework);
     }
     createDictionaryUpdates(options, esbuildConfig) {
         return (0, createDictionaryUpdates_1.default)(options, esbuildConfig);

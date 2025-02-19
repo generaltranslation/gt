@@ -4,6 +4,7 @@ import {
   Options,
   Updates,
   SetupOptions,
+  SupportedFrameworks,
 } from 'gt-react-cli/types';
 import { displayInitializingText } from 'gt-react-cli/console/console';
 import chalk from 'chalk';
@@ -15,16 +16,15 @@ import scanForContent from './next/nextScanForContent';
 import createDictionaryUpdates from 'gt-react-cli/updates/createDictionaryUpdates';
 import createInlineUpdates from 'gt-react-cli/updates/createInlineUpdates';
 import handleInitGT from './next/handleInitGT';
-const framework = 'gt-next';
 export class NextCLI extends BaseCLI {
   constructor() {
-    super(framework);
+    super();
   }
   protected scanForContent(
     options: WrapOptions,
-    addGTProvider: boolean = false
+    framework: SupportedFrameworks
   ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
-    return scanForContent(options, framework, addGTProvider);
+    return scanForContent(options, 'gt-next', framework);
   }
 
   protected createDictionaryUpdates(
@@ -63,7 +63,8 @@ export class NextCLI extends BaseCLI {
     }
 
     const addGTProvider = await select({
-      message: 'Do you want to automatically add the GTProvider component?',
+      message:
+        'Do you want the setup tool to automatically add the GTProvider component?',
       choices: [
         { value: true, name: 'Yes' },
         { value: false, name: 'No' },
@@ -108,12 +109,13 @@ export class NextCLI extends BaseCLI {
       ...options,
       disableIds: !includeTId,
       disableFormatting: true,
+      addGTProvider,
     };
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
     const { errors, filesUpdated, warnings } = await this.scanForContent(
       mergeOptions,
-      addGTProvider
+      'next-app'
     );
 
     if (addWithGTConfig) {

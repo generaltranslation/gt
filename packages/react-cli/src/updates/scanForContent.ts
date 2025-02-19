@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { Options, Updates, WrapOptions } from '../types';
+import { Options, SupportedFrameworks, Updates, WrapOptions } from '../types';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
@@ -14,6 +14,7 @@ import {
   determineModuleType,
   generateImportMap,
   createImports,
+  ImportItem,
 } from '../jsx/parse/parseAst';
 
 const IMPORT_MAP = {
@@ -34,7 +35,8 @@ const IMPORT_MAP = {
  */
 export default async function scanForContent(
   options: WrapOptions,
-  framework: 'gt-next' | 'gt-react'
+  pkg: 'gt-next' | 'gt-react',
+  framework: SupportedFrameworks
 ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -44,6 +46,17 @@ export default async function scanForContent(
   const filesUpdated = [];
 
   for (const file of files) {
+    const baseFileName = path.basename(file);
+    const configPath = path.relative(
+      path.dirname(file),
+      path.resolve(process.cwd(), options.config)
+    );
+
+    // Ensure the path starts with ./ or ../
+    const normalizedConfigPath = configPath.startsWith('.')
+      ? configPath
+      : './' + configPath;
+
     const code = fs.readFileSync(file, 'utf8');
 
     // Create relative path from src directory and remove extension
@@ -64,9 +77,9 @@ export default async function scanForContent(
     }
 
     let modified = false;
-    let usedImports: string[] = [];
+    let usedImports: ImportItem[] = [];
 
-    let { importAlias, initialImports } = generateImportMap(ast, framework);
+    let { importAlias, initialImports } = generateImportMap(ast, pkg);
 
     // If the file already has a T import, skip processing it
     if (initialImports.includes(IMPORT_MAP.T.name)) {
@@ -76,6 +89,57 @@ export default async function scanForContent(
     let globalId = 0;
     traverse(ast, {
       JSXElement(path) {
+        if (
+          framework === 'next-pages' &&
+          options.addGTProvider &&
+          (baseFileName === '_app.tsx' || baseFileName === '_app.jsx')
+        ) {
+          // Check if this is the top-level JSX element in the default export
+          let isDefaultExport = false;
+          let currentPath: NodePath = path;
+
+          // Check if GTProvider already exists in the ancestors
+          let hasGTProvider = false;
+          while (currentPath.parentPath) {
+            if (
+              t.isJSXElement(currentPath.node) &&
+              t.isJSXIdentifier(currentPath.node.openingElement.name) &&
+              currentPath.node.openingElement.name.name === 'GTProvider'
+            ) {
+              hasGTProvider = true;
+              break;
+            }
+            if (t.isExportDefaultDeclaration(currentPath.parentPath.node)) {
+              isDefaultExport = true;
+            }
+            currentPath = currentPath.parentPath;
+          }
+
+          if (isDefaultExport && !hasGTProvider) {
+            // Wrap the JSX element with GTProvider
+            const gtProviderJsx = t.jsxElement(
+              t.jsxOpeningElement(
+                t.jsxIdentifier('GTProvider'),
+                [t.jsxSpreadAttribute(t.identifier('gtConfig'))],
+                false
+              ),
+              t.jsxClosingElement(t.jsxIdentifier('GTProvider')),
+              [path.node]
+            );
+
+            path.replaceWith(gtProviderJsx);
+            usedImports.push('GTProvider');
+            usedImports.push({
+              local: 'gtConfig',
+              imported: 'default',
+              source: normalizedConfigPath,
+            });
+            modified = true;
+            path.skip();
+            return;
+          }
+        }
+
         // Check if this JSX element has any JSX element ancestors
         let currentPath: NodePath = path;
         while (currentPath.parentPath) {
@@ -106,8 +170,10 @@ export default async function scanForContent(
     });
     if (!modified) continue;
 
-    let needsImport = usedImports.filter(
-      (imp) => !initialImports.includes(imp)
+    let needsImport = usedImports.filter((imp) =>
+      typeof imp === 'string'
+        ? !initialImports.includes(imp)
+        : !initialImports.includes(imp.local)
     );
 
     if (needsImport.length > 0) {
