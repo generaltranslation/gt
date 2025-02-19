@@ -119,6 +119,13 @@ function withGTConfig(nextConfig, props) {
     var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
         ? mergedConfig.dictionary
         : resolveConfigFilepath('dictionary');
+    // if (resolvedDictionaryFilePath) {
+    //   console.log(resolvedDictionaryFilePath);
+    //   console.log(process.cwd());
+    //   const module = import(resolvedDictionaryFilePath).then((module) => {
+    //     console.log(module);
+    //   });
+    // }
     // Resolve custom translation loader path
     var customLoadTranslationPath = typeof mergedConfig.loadTranslationPath === 'string'
         ? mergedConfig.loadTranslationPath

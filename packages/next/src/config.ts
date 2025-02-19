@@ -120,6 +120,14 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
       ? mergedConfig.dictionary
       : resolveConfigFilepath('dictionary');
 
+  // if (resolvedDictionaryFilePath) {
+  //   console.log(resolvedDictionaryFilePath);
+  //   console.log(process.cwd());
+  //   const module = import(resolvedDictionaryFilePath).then((module) => {
+  //     console.log(module);
+  //   });
+  // }
+
   // Resolve custom translation loader path
   const customLoadTranslationPath =
     typeof mergedConfig.loadTranslationPath === 'string'

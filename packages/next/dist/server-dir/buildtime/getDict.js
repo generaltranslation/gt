@@ -109,7 +109,7 @@ var id_1 = require("generaltranslation/id");
  */
 function getDict(id) {
     return __awaiter(this, void 0, void 0, function () {
-        var getId, I18NConfig, defaultLocale, locale, translationRequired, serverRuntimeTranslationEnabled, stringTranslationsById, translationsPromise, dictionarySubset, flattenedDictionaryEntries, translations_1, d;
+        var getId, I18NConfig, defaultLocale, locale, translationRequired, serverRuntimeTranslationEnabled, stringTranslationsById, translations, translationsPromise, dictionarySubset, flattenedDictionaryEntries, d;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -144,11 +144,12 @@ function getDict(id) {
                     flattenedDictionaryEntries = (0, internal_1.flattenDictionary)(dictionarySubset);
                     return [4 /*yield*/, translationsPromise];
                 case 2:
-                    translations_1 = _a.sent();
+                    // Block until cache check resolves
+                    translations = _a.sent();
                     // ----- RESOLVE TRANSLATIONS ----- //
                     // Translate all strings in sub dictionary (block until completed)
                     return [4 /*yield*/, Promise.all(Object.entries(flattenedDictionaryEntries !== null && flattenedDictionaryEntries !== void 0 ? flattenedDictionaryEntries : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var _c, entry, metadata, entryId, source, hash, translationEntry, translationPromise, _d, _e, error_1;
+                            var _c, entry, metadata, entryId, key, translationEntry, translationPromise, _d, _e, error_1;
                             var suffix = _b[0], dictionaryEntry = _b[1];
                             return __generator(this, function (_f) {
                                 switch (_f.label) {
@@ -163,9 +164,15 @@ function getDict(id) {
                                             console.warn("gt-next warn: Empty string found in dictionary with id: ".concat(entryId));
                                             return [2 /*return*/];
                                         }
-                                        source = (0, generaltranslation_1.splitStringToContent)(entry);
-                                        hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: entryId }));
-                                        translationEntry = translations_1[hash];
+                                        key = '';
+                                        if (process.env.NODE_ENV === 'production') {
+                                            // TODO: calculate hashes at build time for prod
+                                            throw new Error('Not implemented');
+                                        }
+                                        else {
+                                            key = (0, id_1.hashJsxChildren)(__assign(__assign({ source: (0, generaltranslation_1.splitStringToContent)(entry) }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: entryId }));
+                                        }
+                                        translationEntry = translations[key];
                                         if (translationEntry) {
                                             // success
                                             if (translationEntry.state === 'success') {
@@ -181,9 +188,9 @@ function getDict(id) {
                                         if (!serverRuntimeTranslationEnabled)
                                             return [2 /*return*/];
                                         translationPromise = I18NConfig.translateContent({
-                                            source: source,
+                                            source: (0, generaltranslation_1.splitStringToContent)(entry),
                                             targetLocale: locale,
-                                            options: { id: entryId, hash: hash },
+                                            options: { id: entryId, hash: key },
                                         });
                                         _f.label = 1;
                                     case 1:

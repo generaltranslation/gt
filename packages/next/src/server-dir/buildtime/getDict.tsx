@@ -5,6 +5,7 @@ import {
   Dictionary,
   TranslatedContent,
   TranslationOptions,
+  TranslationsObject,
 } from 'gt-react/internal';
 import T from './T';
 import getDictionary, {
@@ -71,6 +72,7 @@ export default async function getDict(id?: string): Promise<
 
   // ---------- GET TRANSLATIONS ---------- //
 
+  let translations: TranslationsObject;
   if (translationRequired) {
     // ----- FETCH CACHE ----- //
 
@@ -78,6 +80,7 @@ export default async function getDict(id?: string): Promise<
     let translationsPromise = I18NConfig.getCachedTranslations(locale);
 
     // Flatten dictionaries for processing while waiting for translations
+    // TODO: flatten dictionary at build time
     const dictionarySubset =
       (id ? getDictionaryEntry(id) : getDictionary()) || {};
     if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
@@ -88,7 +91,7 @@ export default async function getDict(id?: string): Promise<
     );
 
     // Block until cache check resolves
-    const translations = await translationsPromise;
+    translations = await translationsPromise;
 
     // ----- RESOLVE TRANSLATIONS ----- //
 
@@ -96,7 +99,7 @@ export default async function getDict(id?: string): Promise<
     await Promise.all(
       Object.entries(flattenedDictionaryEntries ?? {}).map(
         async ([suffix, dictionaryEntry]) => {
-          // ----- EXTRACT IDENTIFIERS ----- //
+          // ----- PARSE ENTRY ----- //
 
           // Get the entry from the dictionary
           let { entry, metadata } = getEntryAndMetadata(dictionaryEntry);
@@ -115,18 +118,23 @@ export default async function getDict(id?: string): Promise<
             return;
           }
 
-          // Serialize and hash
-          const source = splitStringToContent(entry);
-          const hash = hashJsxChildren({
-            source,
-            ...(metadata?.context && { context: metadata?.context }),
-            id: entryId,
-          });
-
           // ----- CHECK CACHED TRANSLATIONS ----- //
 
+          // Serialize and hash
+          let key = '';
+          if (process.env.NODE_ENV === 'production') {
+            // TODO: calculate hashes at build time for prod
+            throw new Error('Not implemented');
+          } else {
+            key = hashJsxChildren({
+              source: splitStringToContent(entry),
+              ...(metadata?.context && { context: metadata?.context }),
+              id: entryId,
+            });
+          }
+
           // If a translation already exists int our cache from earlier, add it to the translations
-          const translationEntry = translations[hash];
+          const translationEntry = translations[key];
           if (translationEntry) {
             // success
             if (translationEntry.state === 'success') {
@@ -145,9 +153,9 @@ export default async function getDict(id?: string): Promise<
 
           // Send a request to cache for translations
           const translationPromise = I18NConfig.translateContent({
-            source,
+            source: splitStringToContent(entry),
             targetLocale: locale,
-            options: { id: entryId, hash },
+            options: { id: entryId, hash: key },
           });
 
           // for server-side rendering, all strings are blocking
