@@ -99,7 +99,7 @@ function scanForContent(options, pkg, framework) {
             }
             let modified = false;
             let usedImports = [];
-            let { importAlias, initialImports } = (0, parseAst_1.generateImportMap)(ast, framework);
+            let { importAlias, initialImports } = (0, parseAst_1.generateImportMap)(ast, pkg);
             // If the file already has a T import, skip processing it
             if (initialImports.includes(IMPORT_MAP.T.name)) {
                 continue;

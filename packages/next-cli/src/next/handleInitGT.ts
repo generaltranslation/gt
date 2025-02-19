@@ -23,30 +23,64 @@ export default async function handleInitGT(
 
     const needsCJS = filepath.endsWith('.js');
 
-    // Add appropriate import statement for withGTConfig based on module type
-    ast.program.body.unshift(
-      needsCJS
-        ? t.variableDeclaration('const', [
-            t.variableDeclarator(
-              t.identifier('withGTConfig'),
-              t.memberExpression(
-                t.callExpression(t.identifier('require'), [
-                  t.stringLiteral('gt-next/config'),
-                ]),
-                t.identifier('withGTConfig')
-              )
-            ),
-          ])
-        : t.importDeclaration(
-            [
-              t.importSpecifier(
-                t.identifier('withGTConfig'),
-                t.identifier('withGTConfig')
-              ),
-            ],
-            t.stringLiteral('gt-next/config')
+    // Check if withGTConfig is already imported/required
+    let hasGTConfig = false;
+    traverse(ast, {
+      ImportDeclaration(path) {
+        if (
+          path.node.source.value === 'gt-next/config' &&
+          path.node.specifiers.some(
+            (spec) =>
+              t.isImportSpecifier(spec) && spec.local.name === 'withGTConfig'
           )
-    );
+        ) {
+          hasGTConfig = true;
+        }
+      },
+      VariableDeclaration(path) {
+        if (
+          path.node.declarations.some(
+            (dec) =>
+              t.isVariableDeclarator(dec) &&
+              t.isIdentifier(dec.id, { name: 'withGTConfig' }) &&
+              t.isCallExpression(dec.init) &&
+              t.isIdentifier(dec.init.callee, { name: 'require' }) &&
+              t.isStringLiteral(dec.init.arguments[0], {
+                value: 'gt-next/config',
+              })
+          )
+        ) {
+          hasGTConfig = true;
+        }
+      },
+    });
+
+    // Only add import if withGTConfig is not already present
+    if (!hasGTConfig) {
+      ast.program.body.unshift(
+        needsCJS
+          ? t.variableDeclaration('const', [
+              t.variableDeclarator(
+                t.identifier('withGTConfig'),
+                t.memberExpression(
+                  t.callExpression(t.identifier('require'), [
+                    t.stringLiteral('gt-next/config'),
+                  ]),
+                  t.identifier('withGTConfig')
+                )
+              ),
+            ])
+          : t.importDeclaration(
+              [
+                t.importSpecifier(
+                  t.identifier('withGTConfig'),
+                  t.identifier('withGTConfig')
+                ),
+              ],
+              t.stringLiteral('gt-next/config')
+            )
+      );
+    }
 
     // Find and transform the default export
     traverse(ast, {

@@ -79,7 +79,7 @@ export default async function scanForContent(
     let modified = false;
     let usedImports: string[] = [];
 
-    let { importAlias, initialImports } = generateImportMap(ast, framework);
+    let { importAlias, initialImports } = generateImportMap(ast, pkg);
 
     // If the file already has a T import, skip processing it
     if (initialImports.includes(IMPORT_MAP.T.name)) {
