@@ -62,7 +62,22 @@ export class NextCLI extends BaseCLI {
       console.log(chalk.gray('\nOperation cancelled.'));
       process.exit(0);
     }
-
+    const routerType = await select({
+      message: 'Are you using the Next.js App router or the Pages router?',
+      choices: [
+        { value: 'app', name: 'App Router' },
+        { value: 'pages', name: 'Pages Router' },
+      ],
+      default: 'app',
+    });
+    if (routerType === 'pages') {
+      console.log(
+        chalk.red(
+          '\nPlease use gt-react and gt-react-cli instead. gt-next is currently not supported for the Pages router.'
+        )
+      );
+      process.exit(0);
+    }
     const addGTProvider = await select({
       message:
         'Do you want the setup tool to automatically add the GTProvider component?',
@@ -163,7 +178,7 @@ export class NextCLI extends BaseCLI {
 
     const formatter = await detectFormatter();
 
-    if (!formatter) {
+    if (!formatter || filesUpdated.length === 0) {
       return;
     }
 

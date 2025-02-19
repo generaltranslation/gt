@@ -58,6 +58,18 @@ class NextCLI extends gt_react_cli_1.BaseCLI {
                 console.log(chalk_1.default.gray('\nOperation cancelled.'));
                 process.exit(0);
             }
+            const routerType = yield (0, prompts_1.select)({
+                message: 'Are you using the Next.js App router or the Pages router?',
+                choices: [
+                    { value: 'app', name: 'App Router' },
+                    { value: 'pages', name: 'Pages Router' },
+                ],
+                default: 'app',
+            });
+            if (routerType === 'pages') {
+                console.log(chalk_1.default.red('\nPlease use gt-react and gt-react-cli instead. gt-next is currently not supported for the Pages router.'));
+                process.exit(0);
+            }
             const addGTProvider = yield (0, prompts_1.select)({
                 message: 'Do you want the setup tool to automatically add the GTProvider component?',
                 choices: [
@@ -127,7 +139,7 @@ class NextCLI extends gt_react_cli_1.BaseCLI {
                 yield execSync(`git add "${file}"`);
             }
             const formatter = yield (0, postProcess_1.detectFormatter)();
-            if (!formatter) {
+            if (!formatter || filesUpdated.length === 0) {
                 return;
             }
             const applyFormatting = yield (0, prompts_1.select)({

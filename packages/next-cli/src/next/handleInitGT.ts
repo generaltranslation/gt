@@ -23,64 +23,66 @@ export default async function handleInitGT(
 
     const needsCJS = filepath.endsWith('.js');
 
-    // Check if withGTConfig is already imported/required
+    // Check if withGTConfig or initGT is already imported/required
     let hasGTConfig = false;
+    let hasInitGT = false;
     traverse(ast, {
       ImportDeclaration(path) {
-        if (
-          path.node.source.value === 'gt-next/config' &&
-          path.node.specifiers.some(
-            (spec) =>
-              t.isImportSpecifier(spec) && spec.local.name === 'withGTConfig'
-          )
-        ) {
-          hasGTConfig = true;
+        if (path.node.source.value === 'gt-next/config') {
+          path.node.specifiers.forEach((spec) => {
+            if (t.isImportSpecifier(spec)) {
+              if (spec.local.name === 'withGTConfig') hasGTConfig = true;
+              if (spec.local.name === 'initGT') hasInitGT = true;
+            }
+          });
         }
       },
       VariableDeclaration(path) {
-        if (
-          path.node.declarations.some(
-            (dec) =>
-              t.isVariableDeclarator(dec) &&
-              t.isIdentifier(dec.id, { name: 'withGTConfig' }) &&
-              t.isCallExpression(dec.init) &&
-              t.isIdentifier(dec.init.callee, { name: 'require' }) &&
-              t.isStringLiteral(dec.init.arguments[0], {
-                value: 'gt-next/config',
-              })
-          )
-        ) {
-          hasGTConfig = true;
-        }
+        path.node.declarations.forEach((dec) => {
+          if (
+            t.isVariableDeclarator(dec) &&
+            t.isCallExpression(dec.init) &&
+            t.isIdentifier(dec.init.callee, { name: 'require' }) &&
+            t.isStringLiteral(dec.init.arguments[0], {
+              value: 'gt-next/config',
+            })
+          ) {
+            if (t.isIdentifier(dec.id, { name: 'withGTConfig' }))
+              hasGTConfig = true;
+            if (t.isIdentifier(dec.id, { name: 'initGT' })) hasInitGT = true;
+          }
+        });
       },
     });
 
-    // Only add import if withGTConfig is not already present
-    if (!hasGTConfig) {
-      ast.program.body.unshift(
-        needsCJS
-          ? t.variableDeclaration('const', [
-              t.variableDeclarator(
-                t.identifier('withGTConfig'),
-                t.memberExpression(
-                  t.callExpression(t.identifier('require'), [
-                    t.stringLiteral('gt-next/config'),
-                  ]),
-                  t.identifier('withGTConfig')
-                )
-              ),
-            ])
-          : t.importDeclaration(
-              [
-                t.importSpecifier(
-                  t.identifier('withGTConfig'),
-                  t.identifier('withGTConfig')
-                ),
-              ],
-              t.stringLiteral('gt-next/config')
-            )
-      );
+    // Return early if either withGTConfig or initGT is already present
+    if (hasGTConfig || hasInitGT) {
+      return { errors, filesUpdated, warnings };
     }
+
+    ast.program.body.unshift(
+      needsCJS
+        ? t.variableDeclaration('const', [
+            t.variableDeclarator(
+              t.identifier('withGTConfig'),
+              t.memberExpression(
+                t.callExpression(t.identifier('require'), [
+                  t.stringLiteral('gt-next/config'),
+                ]),
+                t.identifier('withGTConfig')
+              )
+            ),
+          ])
+        : t.importDeclaration(
+            [
+              t.importSpecifier(
+                t.identifier('withGTConfig'),
+                t.identifier('withGTConfig')
+              ),
+            ],
+            t.stringLiteral('gt-next/config')
+          )
+    );
 
     // Find and transform the default export
     traverse(ast, {

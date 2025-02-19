@@ -412,7 +412,7 @@ export abstract class BaseCLI {
 
     const formatter = await detectFormatter();
 
-    if (!formatter) {
+    if (!formatter || filesUpdated.length === 0) {
       return;
     }
 

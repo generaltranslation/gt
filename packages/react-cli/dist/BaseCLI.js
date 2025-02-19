@@ -288,7 +288,7 @@ class BaseCLI {
                 yield execSync(`git add "${file}"`);
             }
             const formatter = yield (0, postProcess_1.detectFormatter)();
-            if (!formatter) {
+            if (!formatter || filesUpdated.length === 0) {
                 return;
             }
             const applyFormatting = yield (0, prompts_1.select)({
