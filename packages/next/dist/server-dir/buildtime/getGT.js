@@ -67,7 +67,7 @@ var createErrors_1 = require("../../errors/createErrors");
  */
 function getGT() {
     return __awaiter(this, void 0, void 0, function () {
-        var I18NConfig, locale, defaultLocale, translationRequired, translations, _a, t;
+        var I18NConfig, locale, defaultLocale, translationRequired, translations, _a, serverRuntimeTranslationEnabled, t;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -87,6 +87,8 @@ function getGT() {
                     _b.label = 4;
                 case 4:
                     translations = _a;
+                    serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled() &&
+                        process.env.NODE_ENV === 'development';
                     t = function (content, options) {
                         // ----- SET UP ----- //
                         if (options === void 0) { options = {}; }
@@ -103,15 +105,27 @@ function getGT() {
                         if (!translationRequired)
                             return renderContent(source, [defaultLocale]);
                         // ----- GET TRANSLATION ----- //
-                        var hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })));
-                        var translationEntry = translations === null || translations === void 0 ? void 0 : translations[hash];
+                        var key = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })));
+                        var translationEntry = translations === null || translations === void 0 ? void 0 : translations[key];
                         // ----- RENDER TRANSLATION ----- //
                         // Render translation
                         if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success') {
                             return renderContent(translationEntry.target, [locale, defaultLocale]);
                         }
                         // Fallback to defaultLocale if not found
-                        console.warn((0, createErrors_1.createStringTranslationError)(content, options === null || options === void 0 ? void 0 : options.id, 't'));
+                        if (!serverRuntimeTranslationEnabled) {
+                            console.warn((0, createErrors_1.createStringTranslationError)(content, options === null || options === void 0 ? void 0 : options.id, 't'));
+                            return renderContent(source, [defaultLocale]);
+                        }
+                        // ----- ON DEMAND TRANSLATION ----- //
+                        // Dev only
+                        // Translate on demand
+                        I18NConfig.translateChildren({
+                            source: source,
+                            targetLocale: locale,
+                            metadata: __assign(__assign(__assign({}, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })), { hash: key }),
+                        });
+                        console.warn(createErrors_1.translationLoadingWarningLittleT);
                         return renderContent(source, [defaultLocale]);
                     };
                     return [2 /*return*/, t];

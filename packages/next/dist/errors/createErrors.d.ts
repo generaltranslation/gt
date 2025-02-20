@@ -15,4 +15,5 @@ export declare const createMismatchingHashWarning: (expectedHash: string, receiv
 export declare const projectIdMissingWarn = "gt-next: Project ID missing! Set projectId as GT_PROJECT_ID in your environment or by passing the projectId parameter to withGTConfig(). Find your project ID: generaltranslation.com/dashboard.";
 export declare const noInitGTWarn: string;
 export declare const APIKeyMissingWarn: string;
+export declare const translationLoadingWarningLittleT: string;
 //# sourceMappingURL=createErrors.d.ts.map

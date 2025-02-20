@@ -1,7 +1,7 @@
 "use strict";
 // ---- ERRORS ---- //
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.APIKeyMissingWarn = exports.noInitGTWarn = exports.projectIdMissingWarn = exports.createMismatchingHashWarning = exports.createUnsupportedLocalesWarning = exports.createNoEntryWarning = exports.usingDefaultsWarning = exports.unresolvedCustomLoadTranslationError = exports.dictionaryDisabledError = exports.createMissingCustomTranslationLoadedError = exports.createDictionarySubsetError = exports.devApiKeyIncludedInProductionError = exports.createRequiredPrefixError = exports.createDictionaryStringTranslationError = exports.createStringTranslationError = exports.customLoadTranslationError = exports.remoteTranslationsError = void 0;
+exports.translationLoadingWarningLittleT = exports.APIKeyMissingWarn = exports.noInitGTWarn = exports.projectIdMissingWarn = exports.createMismatchingHashWarning = exports.createUnsupportedLocalesWarning = exports.createNoEntryWarning = exports.usingDefaultsWarning = exports.unresolvedCustomLoadTranslationError = exports.dictionaryDisabledError = exports.createMissingCustomTranslationLoadedError = exports.createDictionarySubsetError = exports.devApiKeyIncludedInProductionError = exports.createRequiredPrefixError = exports.createDictionaryStringTranslationError = exports.createStringTranslationError = exports.customLoadTranslationError = exports.remoteTranslationsError = void 0;
 var generaltranslation_1 = require("generaltranslation");
 exports.remoteTranslationsError = 'gt-next Error: fetching remote translation.';
 exports.customLoadTranslationError = 'gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.';
@@ -58,4 +58,7 @@ exports.noInitGTWarn = "gt-next: You are running General Translation without the
 exports.APIKeyMissingWarn = "gt-next: A Development API key is required for runtime translation!  " +
     "Find your Development API key: generaltranslation.com/dashboard.  " +
     "(Or, disable this warning message by setting runtimeUrl to an empty string which disables runtime translation.)";
+exports.translationLoadingWarningLittleT = "gt-next: [DEV ONLY] Translation is loading for t(). " +
+    "Please refresh the page to see the translated content. " +
+    "In production, translations in production will be preloaded, and page will not need to be refreshed.";
 //# sourceMappingURL=createErrors.js.map

@@ -1,12 +1,14 @@
 import {
-  isSameLanguage,
   renderContentToString,
   splitStringToContent,
 } from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../server';
 import { hashJsxChildren } from 'generaltranslation/id';
-import { createStringTranslationError } from '../../errors/createErrors';
+import {
+  createStringTranslationError,
+  translationLoadingWarningLittleT,
+} from '../../errors/createErrors';
 import { TranslationOptions } from 'gt-react/internal';
 
 /**
@@ -34,6 +36,9 @@ export default async function getGT(): Promise<
   const translations = translationRequired
     ? await I18NConfig.getCachedTranslations(locale)
     : undefined;
+  const serverRuntimeTranslationEnabled =
+    I18NConfig.isServerRuntimeTranslationEnabled() &&
+    process.env.NODE_ENV === 'development';
 
   // ---------- THE t() METHOD ---------- //
 
@@ -77,12 +82,12 @@ export default async function getGT(): Promise<
 
     // ----- GET TRANSLATION ----- //
 
-    const hash = hashJsxChildren({
+    const key = hashJsxChildren({
       source,
       ...(options?.context && { context: options?.context }),
       ...(options?.id && { id: options?.id }),
     });
-    const translationEntry = translations?.[hash];
+    const translationEntry = translations?.[key];
 
     // ----- RENDER TRANSLATION ----- //
 
@@ -92,7 +97,26 @@ export default async function getGT(): Promise<
     }
 
     // Fallback to defaultLocale if not found
-    console.warn(createStringTranslationError(content, options?.id, 't'));
+    if (!serverRuntimeTranslationEnabled) {
+      console.warn(createStringTranslationError(content, options?.id, 't'));
+      return renderContent(source, [defaultLocale]);
+    }
+
+    // ----- ON DEMAND TRANSLATION ----- //
+    // Dev only
+
+    // Translate on demand
+    I18NConfig.translateChildren({
+      source,
+      targetLocale: locale,
+      metadata: {
+        ...(options?.context && { context: options?.context }),
+        ...(options?.id && { id: options?.id }),
+        hash: key,
+      },
+    });
+
+    console.warn(translationLoadingWarningLittleT);
     return renderContent(source, [defaultLocale]);
   };
 
