@@ -67,7 +67,7 @@ var createErrors_1 = require("../../errors/createErrors");
  */
 function getGT() {
     return __awaiter(this, void 0, void 0, function () {
-        var I18NConfig, locale, defaultLocale, translationRequired, translations, _a, serverRuntimeTranslationEnabled, t;
+        var I18NConfig, locale, defaultLocale, translationRequired, translations, _a, serverRuntimeTranslationEnabled, renderSettings, dialectTranslationRequired, t;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -89,6 +89,8 @@ function getGT() {
                     translations = _a;
                     serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled() &&
                         process.env.NODE_ENV === 'development';
+                    renderSettings = I18NConfig.getRenderSettings();
+                    dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, defaultLocale);
                     t = function (content, options) {
                         // ----- SET UP ----- //
                         if (options === void 0) { options = {}; }
@@ -125,8 +127,18 @@ function getGT() {
                             targetLocale: locale,
                             metadata: __assign(__assign(__assign({}, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })), { hash: key }),
                         });
+                        // Loading translation warning
                         console.warn(createErrors_1.translationLoadingWarningLittleT);
-                        return renderContent(source, [defaultLocale]);
+                        // Loading behavior
+                        if (renderSettings.method === 'replace') {
+                            return renderContent(source, [defaultLocale]);
+                        }
+                        else if (renderSettings.method === 'skeleton') {
+                            return '';
+                        }
+                        return dialectTranslationRequired // default behavior
+                            ? renderContent(source, [defaultLocale])
+                            : '';
                     };
                     return [2 /*return*/, t];
             }

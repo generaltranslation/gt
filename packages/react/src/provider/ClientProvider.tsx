@@ -1,30 +1,18 @@
 'use client';
-import React, { isValidElement, useCallback, useEffect, useState } from 'react';
-import {
-  determineLocale,
-  renderContentToString,
-  splitStringToContent,
-} from 'generaltranslation';
+import React, { useEffect, useState } from 'react';
+import { determineLocale } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/providers';
 import {
   GTTranslationError,
-  TaggedDictionary,
-  TaggedDictionaryEntry,
-  TranslatedChildren,
-  TranslatedContent,
   TranslationError,
   TranslationsObject,
   TranslationSuccess,
 } from '../types/types';
-import getEntryAndMetadata from './helpers/getEntryAndMetadata';
-import renderDefaultChildren from './rendering/renderDefaultChildren';
-import renderSkeleton from './rendering/renderSkeleton';
-import renderTranslatedChildren from './rendering/renderTranslatedChildren';
-import renderVariable from './rendering/renderVariable';
 import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { localeCookieName } from 'generaltranslation/internal';
 import useTranslateContent from '../hooks/internal/useTranslateContent';
+import useTranslateEntryFromServer from '../hooks/internal/useTranslateEntryFromServer';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -140,140 +128,17 @@ export default function ClientProvider({
   // ---------- TRANSLATION METHODS ---------- //
 
   // for dictionaries (strings are actually already resolved, but JSX needs tx still)
-  const translateDictionaryEntry = useCallback(
-    (
-      id: string,
-      options: Record<string, any> = {}
-    ): React.ReactNode | string | undefined => {
-      // ----- SETUP ----- //
-
-      // Get the dictionary entry
-      const dictionaryEntry:
-        | TaggedDictionary
-        | TaggedDictionaryEntry
-        | undefined = dictionary[id]; // this is a flattened dictionary
-      if (
-        (!dictionaryEntry && dictionaryEntry !== '') || // entry not found
-        (typeof dictionaryEntry === 'object' &&
-          !isValidElement(dictionaryEntry) &&
-          !Array.isArray(dictionaryEntry))
-      ) {
-        return undefined; // dictionary entry not found
-      }
-
-      // Parse the dictionary entry
-      const { entry, metadata } = getEntryAndMetadata(dictionaryEntry);
-      const variables = options;
-      const variablesOptions = metadata?.variablesOptions;
-
-      // Get the translation entry
-      const translation = translations?.[metadata?.hash];
-
-      // ----- HANDLE STRINGS ----- //
-
-      if (typeof entry === 'string') {
-        // Reject empty strings
-        if (!entry.length) {
-          console.warn(
-            `gt-react warn: Empty string found in dictionary with id: ${id}`
-          );
-          return entry;
-        }
-
-        // Split string to content
-        const source = splitStringToContent(entry);
-
-        // Error handling
-        if (
-          !translationRequired || // If no translation required
-          translation?.state !== 'success' // If translation was unsuccessful
-        ) {
-          return renderContentToString(
-            source,
-            locales,
-            variables,
-            variablesOptions
-          );
-        }
-
-        // Display translated content
-        return renderContentToString(
-          translation.target as TranslatedContent,
-          [locale, defaultLocale],
-          variables,
-          variablesOptions
-        );
-      }
-
-      // ----- HANDLE JSX ----- //
-
-      const taggedChildren = entry;
-
-      // for default/fallback rendering
-      const renderDefaultLocale = () => {
-        return renderDefaultChildren({
-          children: taggedChildren,
-          variables,
-          variablesOptions,
-          defaultLocale,
-          renderVariable,
-        });
-      };
-
-      const renderLoadingDefault = () => {
-        if (dialectTranslationRequired) {
-          return renderDefaultLocale();
-        }
-        return renderSkeleton();
-      };
-
-      const renderTranslation = (target: TranslatedChildren) => {
-        return renderTranslatedChildren({
-          source: taggedChildren,
-          target,
-          variables,
-          variablesOptions,
-          locales: [locale, defaultLocale],
-          renderVariable,
-        }) as React.JSX.Element;
-      };
-
-      // ----- RENDER JSX ----- //
-
-      // fallback if:
-      if (
-        !translationRequired || // no translation required
-        (translations && !translation && !runtimeTranslationEnabled) // cache miss and dev runtime translation disabled (production)
-      ) {
-        return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
-      }
-
-      // loading behavior: no translation found or translation is loading
-      if (!translation || translation?.state === 'loading') {
-        let loadingFallback;
-        if (renderSettings.method === 'skeleton') {
-          loadingFallback = renderSkeleton();
-        } else if (renderSettings.method === 'replace') {
-          loadingFallback = renderDefaultLocale();
-        } else {
-          // default
-          loadingFallback = renderLoadingDefault();
-        }
-        // The suspense exists here for hydration reasons
-        return <React.Fragment>{loadingFallback}</React.Fragment>;
-      }
-
-      // error behavior
-      if (translation.state === 'error') {
-        return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
-      }
-      // render translated content
-      return (
-        <React.Fragment>{renderTranslation(translation.target)}</React.Fragment>
-      );
-    },
-    [dictionary, translations, locale]
-  );
+  const translateEntry = useTranslateEntryFromServer({
+    dictionary,
+    translations,
+    locale,
+    renderSettings,
+    runtimeTranslationEnabled,
+    translationRequired,
+    dialectTranslationRequired,
+    locales,
+    defaultLocale,
+  });
 
   // Setup runtime translation
   const { registerContentForTranslation, registerJsxForTranslation } =
@@ -308,7 +173,7 @@ export default function ClientProvider({
         registerJsxForTranslation,
         setLocale,
         translateContent,
-        translateDictionaryEntry,
+        translateEntry,
         locale,
         locales,
         defaultLocale,

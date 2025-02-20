@@ -25,7 +25,7 @@ export default function useDict(
   };
 
   // Get the translation context
-  const { translateDictionaryEntry } = useGTContext(
+  const { translateEntry } = useGTContext(
     `useGT('${id}'): No context provided. You're trying to get the t() function on the client, which can only be done inside a <GTProvider>.`
   );
 
@@ -57,8 +57,8 @@ export default function useDict(
     const prefixedId = getId(id);
 
     // Get the translation
-    if (translateDictionaryEntry) {
-      const translation = translateDictionaryEntry(prefixedId, options);
+    if (translateEntry) {
+      const translation = translateEntry(prefixedId, options);
       if (translation === undefined || translation === null)
         console.warn(createNoEntryWarning(id, prefixedId));
       return translation;

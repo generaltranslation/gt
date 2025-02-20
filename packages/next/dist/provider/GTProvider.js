@@ -103,7 +103,7 @@ var id_1 = require("generaltranslation/id");
  */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var getId, I18NConfig, locale, defaultLocale, translationRequired, dialectTranslationRequired, clientRuntimeTranslationEnabled, translationsPromise, dictionarySubset, flattenedDictionarySubset, translations, _c, dictionary, promises;
+        var getId, I18NConfig, locale, defaultLocale, translationRequired, dialectTranslationRequired, serverRuntimeTranslationEnabled, translationsPromise, dictionarySubset, flattenedDictionarySubset, translations, _c, dictionary, promises;
         var _this = this;
         var children = _b.children, id = _b.id;
         return __generator(this, function (_d) {
@@ -119,7 +119,8 @@ function GTProvider(_a) {
                     defaultLocale = I18NConfig.getDefaultLocale();
                     translationRequired = I18NConfig.requiresTranslation(locale);
                     dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, defaultLocale);
-                    clientRuntimeTranslationEnabled = I18NConfig.isClientRuntimeTranslationEnabled();
+                    serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled() &&
+                        process.env.NODE_ENV === 'development';
                     translationsPromise = translationRequired && I18NConfig.getCachedTranslations(locale);
                     dictionarySubset = (id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)()) || {};
                     if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
@@ -148,7 +149,7 @@ function GTProvider(_a) {
                      *
                      */
                     return [4 /*yield*/, Promise.all(Object.entries(flattenedDictionarySubset !== null && flattenedDictionarySubset !== void 0 ? flattenedDictionarySubset : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var entryId, _c, entry, metadata, taggedChildren, childrenAsObjects, hash_1, key_1, translationEntry_1, translationPromise, content, hash, key, translationEntry, translation, error_1, result;
+                            var entryId, _c, entry, metadata, taggedChildren, childrenAsObjects, key_1, translationEntry_1, translationPromise, content, key, translationEntry, translation, error_1, result;
                             var suffix = _b[0], dictionaryEntry = _b[1];
                             return __generator(this, function (_d) {
                                 switch (_d.label) {
@@ -162,20 +163,19 @@ function GTProvider(_a) {
                                         if (typeof entry !== 'string') {
                                             taggedChildren = I18NConfig.addGTIdentifier(entry);
                                             childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedChildren);
-                                            hash_1 = (0, id_1.hashJsxChildren)(__assign(__assign({ source: childrenAsObjects }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata.context })), { id: entryId }));
+                                            key_1 = (0, id_1.hashJsxChildren)(__assign(__assign({ source: childrenAsObjects }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata.context })), { id: entryId }));
                                             dictionary[entryId] = [
                                                 taggedChildren,
-                                                __assign(__assign({}, metadata), { hash: hash_1 }),
+                                                __assign(__assign({}, metadata), { hash: key_1 }),
                                             ];
                                             // ----- TRANSLATE JSX ON DEMAND ----- //
                                             // dev only (with api key) skip if:
                                             if (!translationRequired || // no translation required
-                                                !clientRuntimeTranslationEnabled // dev runtime translation disabled
+                                                !serverRuntimeTranslationEnabled // dev runtime translation disabled
                                             ) {
                                                 return [2 /*return*/];
                                             }
-                                            key_1 = hash_1 || entryId;
-                                            translationEntry_1 = (translations === null || translations === void 0 ? void 0 : translations[hash_1]) || (translations === null || translations === void 0 ? void 0 : translations[entryId]);
+                                            translationEntry_1 = translations === null || translations === void 0 ? void 0 : translations[key_1];
                                             // skip if translation already exists
                                             if (translationEntry_1) {
                                                 return [2 /*return*/];
@@ -185,7 +185,7 @@ function GTProvider(_a) {
                                             translationPromise = I18NConfig.translateChildren({
                                                 source: childrenAsObjects,
                                                 targetLocale: locale,
-                                                metadata: __assign(__assign({}, metadata), { id: entryId, hash: hash_1 }),
+                                                metadata: __assign(__assign({}, metadata), { id: entryId, hash: key_1 }),
                                             })
                                                 .then(function (result) {
                                                 translations[key_1] = {
@@ -212,18 +212,17 @@ function GTProvider(_a) {
                                             return [2 /*return*/];
                                         }
                                         content = (0, generaltranslation_1.splitStringToContent)(entry);
-                                        hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: content }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: entryId }));
+                                        key = (0, id_1.hashJsxChildren)(__assign(__assign({ source: content }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: entryId }));
                                         // Add to client dictionary
-                                        dictionary[entryId] = [entry, __assign(__assign({}, metadata), { hash: hash })];
+                                        dictionary[entryId] = [entry, __assign(__assign({}, metadata), { hash: key })];
                                         // ----- TRANSLATE STRINGS ON DEMAND ----- //
                                         // dev only (with api key) skip if:
                                         if (!translationRequired || // no translation required
-                                            !clientRuntimeTranslationEnabled // dev runtime translation disabled
+                                            !serverRuntimeTranslationEnabled // dev runtime translation disabled
                                         ) {
                                             return [2 /*return*/];
                                         }
-                                        key = hash || entryId;
-                                        translationEntry = (translations === null || translations === void 0 ? void 0 : translations[hash]) || (translations === null || translations === void 0 ? void 0 : translations[entryId]);
+                                        translationEntry = translations === null || translations === void 0 ? void 0 : translations[key];
                                         // skip if translation already exists
                                         if (translationEntry) {
                                             return [2 /*return*/];
@@ -243,7 +242,7 @@ function GTProvider(_a) {
                                         return [4 /*yield*/, I18NConfig.translateContent({
                                                 source: content,
                                                 targetLocale: locale,
-                                                options: __assign({ id: entryId, hash: hash }, { context: metadata === null || metadata === void 0 ? void 0 : metadata.context }),
+                                                options: __assign({ id: entryId, hash: key }, { context: metadata === null || metadata === void 0 ? void 0 : metadata.context }),
                                             })];
                                     case 2:
                                         translation = _d.sent();

@@ -44,8 +44,9 @@ export default async function GTProvider({
   const translationRequired = I18NConfig.requiresTranslation(locale);
   const dialectTranslationRequired =
     translationRequired && isSameLanguage(locale, defaultLocale);
-  const clientRuntimeTranslationEnabled =
-    I18NConfig.isClientRuntimeTranslationEnabled(); // runtime translation enabled in dev
+  const serverRuntimeTranslationEnabled =
+    I18NConfig.isServerRuntimeTranslationEnabled() &&
+    process.env.NODE_ENV === 'development'; // runtime translation enabled in dev
 
   // Start fetching translations from cache
   const translationsPromise =
@@ -93,14 +94,14 @@ export default async function GTProvider({
           // Populating the dictionary that we will pass to the client
           const taggedChildren = I18NConfig.addGTIdentifier(entry);
           const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-          const hash = hashJsxChildren({
+          const key = hashJsxChildren({
             source: childrenAsObjects,
             ...(metadata?.context && { context: metadata.context }),
             id: entryId,
           });
           dictionary[entryId] = [
             taggedChildren as Entry,
-            { ...metadata, hash },
+            { ...metadata, hash: key },
           ];
 
           // ----- TRANSLATE JSX ON DEMAND ----- //
@@ -108,15 +109,13 @@ export default async function GTProvider({
           // dev only (with api key) skip if:
           if (
             !translationRequired || // no translation required
-            !clientRuntimeTranslationEnabled // dev runtime translation disabled
+            !serverRuntimeTranslationEnabled // dev runtime translation disabled
           ) {
             return;
           }
 
           // get tx entry and key
-          const key = hash || entryId;
-          const translationEntry =
-            translations?.[hash] || translations?.[entryId];
+          const translationEntry = translations?.[key];
 
           // skip if translation already exists
           if (translationEntry) {
@@ -131,7 +130,7 @@ export default async function GTProvider({
             metadata: {
               ...metadata,
               id: entryId,
-              hash,
+              hash: key,
             },
           })
             .then((result) => {
@@ -163,29 +162,27 @@ export default async function GTProvider({
 
         // Serialize and hash string entry
         const content = splitStringToContent(entry);
-        const hash = hashJsxChildren({
+        const key = hashJsxChildren({
           source: content,
           ...(metadata?.context && { context: metadata?.context }),
           id: entryId,
         });
 
         // Add to client dictionary
-        dictionary[entryId] = [entry, { ...metadata, hash }];
+        dictionary[entryId] = [entry, { ...metadata, hash: key }];
 
         // ----- TRANSLATE STRINGS ON DEMAND ----- //
 
         // dev only (with api key) skip if:
         if (
           !translationRequired || // no translation required
-          !clientRuntimeTranslationEnabled // dev runtime translation disabled
+          !serverRuntimeTranslationEnabled // dev runtime translation disabled
         ) {
           return;
         }
 
         // get tx entry and key
-        const key = hash || entryId;
-        const translationEntry =
-          translations?.[hash] || translations?.[entryId];
+        const translationEntry = translations?.[key];
 
         // skip if translation already exists
         if (translationEntry) {
@@ -211,7 +208,7 @@ export default async function GTProvider({
             targetLocale: locale,
             options: {
               id: entryId,
-              hash,
+              hash: key,
               ...{ context: metadata?.context },
             },
           });

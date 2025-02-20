@@ -1,3 +1,4 @@
+import { Content } from 'generaltranslation/internal';
 import React, { ReactElement } from 'react';
 
 export type Child = React.ReactNode;
@@ -24,6 +25,11 @@ export type TaggedDictionary = {
 export type FlattenedTaggedDictionary = {
   [key: string]: TaggedDictionaryEntry;
 };
+
+export type FlattenedContentDictionary = Record<
+  string,
+  { hash: string; source: Content; metadata?: Record<string, any> }
+>;
 
 export type Entry = string | ReactElement;
 export type Metadata = {
