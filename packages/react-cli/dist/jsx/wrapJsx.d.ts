@@ -9,7 +9,7 @@ import { ImportItem } from './parse/parseAst';
  * @param options - Optional component names for T and Var
  */
 export interface WrapResult {
-    node: t.JSXElement;
+    node: t.JSXElement | t.JSXFragment;
     hasMeaningfulContent: boolean;
 }
 /**
@@ -19,7 +19,7 @@ export interface WrapResult {
  * @param isMeaningful - A function to determine if a node is meaningful
  * @returns The wrapped JSX element
  */
-export declare function wrapJsxElement(node: t.JSXElement, options: {
+export declare function wrapJsxElement(node: t.JSXElement | t.JSXFragment, options: {
     createIds: boolean;
     TComponent?: string;
     VarComponent?: string;
@@ -37,7 +37,7 @@ export declare function wrapJsxElement(node: t.JSXElement, options: {
  * @param isMeaningful - A function to determine if a node is meaningful
  * @returns The wrapped JSX element
  */
-export declare function handleJsxElement(rootNode: t.JSXElement, options: {
+export declare function handleJsxElement(rootNode: t.JSXElement | t.JSXFragment, options: {
     createIds: boolean;
     usedImports: ImportItem[];
     TComponent?: string;

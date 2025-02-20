@@ -46,8 +46,8 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
     const expression = t.isParenthesizedExpression(node.expression)
         ? node.expression.expression
         : node.expression;
-    // Handle JSX Element directly, no need to wrap with Var
-    if (t.isJSXElement(expression)) {
+    // Handle both JSX Elements and Fragments
+    if (t.isJSXElement(expression) || t.isJSXFragment(expression)) {
         const result = wrapJsxElement(expression, options, isMeaningful, mark);
         // re-wrap the result in a JSXExpressionContainer
         if (t.isParenthesizedExpression(node.expression)) {
@@ -70,7 +70,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
             ? expression.alternate.expression
             : expression.alternate;
         // Handle consequent
-        if (t.isJSXElement(consequent)) {
+        if (t.isJSXElement(consequent) || t.isJSXFragment(consequent)) {
             const result = handleJsxElement(consequent, options, isMeaningful);
             // Re-insert into parenthesized expression if necessary
             if (t.isParenthesizedExpression(expression.consequent)) {
@@ -116,7 +116,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
             }
         }
         // Handle alternate
-        if (t.isJSXElement(alternate)) {
+        if (t.isJSXElement(alternate) || t.isJSXFragment(alternate)) {
             const result = handleJsxElement(alternate, options, isMeaningful);
             // Re-insert into parenthesized expression if necessary
             if (t.isParenthesizedExpression(expression.alternate)) {
@@ -163,7 +163,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
         const right = t.isParenthesizedExpression(expression.right)
             ? expression.right.expression
             : expression.right;
-        if (t.isJSXElement(left)) {
+        if (t.isJSXElement(left) || t.isJSXFragment(left)) {
             const result = handleJsxElement(left, options, isMeaningful);
             // Re-insert into parenthesized expression if necessary
             if (t.isParenthesizedExpression(expression.left)) {
@@ -199,7 +199,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                 }
             }
         }
-        if (t.isJSXElement(right)) {
+        if (t.isJSXElement(right) || t.isJSXFragment(right)) {
             const result = handleJsxElement(right, options, isMeaningful);
             // Re-insert into parenthesized expression if necessary
             if (t.isParenthesizedExpression(expression.right)) {
@@ -262,21 +262,23 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
 function wrapJsxElement(node, options, isMeaningful, mark) {
     const TComponentName = options.TComponent || 'T';
     const VarComponentName = options.VarComponent || 'Var';
-    // Handle JSX Element
-    if (t.isJSXElement(node)) {
-        // Don't process if it's already a T or Var component
-        const name = node.openingElement.name;
-        if (t.isJSXIdentifier(name) &&
-            (name.name === TComponentName || name.name === VarComponentName)) {
-            return {
-                node,
-                hasMeaningfulContent: false,
-            };
+    // Handle both JSX Elements and Fragments
+    if (t.isJSXElement(node) || t.isJSXFragment(node)) {
+        // For elements, check if it's already a T or Var component
+        if (t.isJSXElement(node)) {
+            const name = node.openingElement.name;
+            if (t.isJSXIdentifier(name) &&
+                (name.name === TComponentName || name.name === VarComponentName)) {
+                return {
+                    node,
+                    hasMeaningfulContent: false,
+                };
+            }
         }
         // Process children recursively (DFS postorder)
         let hasMeaningfulContent = false;
         const processedChildren = node.children.map((child) => {
-            if (t.isJSXElement(child)) {
+            if (t.isJSXElement(child) || t.isJSXFragment(child)) {
                 const result = wrapJsxElement(child, options, isMeaningful, mark);
                 hasMeaningfulContent =
                     hasMeaningfulContent || result.hasMeaningfulContent;
