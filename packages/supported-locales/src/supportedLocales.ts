@@ -3,6 +3,7 @@ const supportedLocales = {
   am: ['am'], // Amharic
   ar: [
     // Arabic
+    'ar',
     'ar-AE', // United Arab Emirates
     'ar-EG', // Egypt
     'ar-LB', // Lebanon
@@ -29,6 +30,7 @@ const supportedLocales = {
   ],
   en: [
     // English
+    'en',
     'en-AU', // Australia
     'en-CA', // Canada
     'en-GB', // United Kingdom
@@ -97,6 +99,7 @@ const supportedLocales = {
   pl: ['pl'], // Polish
   pt: [
     // Portuguese
+    'pt',
     'pt-BR', // Brazil
     'pt-PT', // Portugal
   ],
@@ -110,6 +113,7 @@ const supportedLocales = {
   sv: ['sv'], // Swedish
   sw: [
     // Swahili
+    'sw',
     'sw-KE', // Kenya
     'sw-TZ', // Tanzania
   ],
@@ -123,7 +127,7 @@ const supportedLocales = {
   vi: ['vi'], // Vietnamese
   zh: [
     // Chinese
-    'zh', // China
+    'zh',
     'zh-HK', // Hong Kong
     'zh-SG', // Singapore
     'zh-TW', // Taiwan
