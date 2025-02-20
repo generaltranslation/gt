@@ -106,7 +106,7 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
   }
   mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
 
-  // ----------- RESOLVE ANY CONFIG/TX FILES ----------- //
+  // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
 
   // Resolve custom locale getter functions
   const resolvedI18NFilePath =
@@ -120,14 +120,6 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
       ? mergedConfig.dictionary
       : resolveConfigFilepath('dictionary');
 
-  // if (resolvedDictionaryFilePath) {
-  //   console.log(resolvedDictionaryFilePath);
-  //   console.log(process.cwd());
-  //   const module = import(resolvedDictionaryFilePath).then((module) => {
-  //     console.log(module);
-  //   });
-  // }
-
   // Resolve custom translation loader path
   const customLoadTranslationPath =
     typeof mergedConfig.loadTranslationPath === 'string'
@@ -140,6 +132,8 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
       ? mergedConfig.localTranslationsDir
       : './public/_gt';
 
+  // ----- RESOLVE CONFIG LOCALES ----- //
+
   // Check for local translations and get the list of locales
   let localLocales: string[] = [];
   if (
@@ -151,6 +145,8 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
       .filter((file) => file.endsWith('.json'))
       .map((file) => file.replace('.json', ''));
   }
+
+  // ----- RESOLVE LOCAL TRANSLATIONS ----- //
 
   // When there are local translations, force custom translation loader
   // for now, we can just check if that file exists, and then assume the existance of the loaders

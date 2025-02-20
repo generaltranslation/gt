@@ -25,7 +25,6 @@ import {
 } from '../../errors/createErrors';
 import React, { isValidElement } from 'react';
 import { hashJsxChildren } from 'generaltranslation/id';
-
 /**
  * Returns the dictionary access function `d()`, which is used to translate an item from the dictionary.
  *
@@ -80,7 +79,6 @@ export default async function getDict(id?: string): Promise<
     let translationsPromise = I18NConfig.getCachedTranslations(locale);
 
     // Flatten dictionaries for processing while waiting for translations
-    // TODO: flatten dictionary at build time
     const dictionarySubset =
       (id ? getDictionaryEntry(id) : getDictionary()) || {};
     if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
@@ -93,84 +91,65 @@ export default async function getDict(id?: string): Promise<
     // Block until cache check resolves
     translations = await translationsPromise;
 
-    // ----- RESOLVE TRANSLATIONS ----- //
+    // ----- ON DEMAND TRANSLATE STRING ----- //
+    // dev only (with api key)
 
-    // Translate all strings in sub dictionary (block until completed)
-    await Promise.all(
-      Object.entries(flattenedDictionaryEntries ?? {}).map(
-        async ([suffix, dictionaryEntry]) => {
-          // ----- PARSE ENTRY ----- //
+    if (serverRuntimeTranslationEnabled) {
+      // Translate all strings in sub dictionary (block until completed)
+      await Promise.all(
+        Object.entries(flattenedDictionaryEntries ?? {}).map(
+          async ([suffix, dictionaryEntry]) => {
+            // Get the entry from the dictionary
+            let { entry, metadata } = getEntryAndMetadata(dictionaryEntry);
 
-          // Get the entry from the dictionary
-          let { entry, metadata } = getEntryAndMetadata(dictionaryEntry);
+            // only tx strings
+            if (typeof entry !== 'string') return;
 
-          // only tx strings
-          if (typeof entry !== 'string') return;
+            // Get identifier
+            const entryId = getId(suffix);
 
-          // Get identifier
-          const entryId = getId(suffix);
+            // Skip empty strings
+            if (!entry.length) {
+              console.warn(
+                `gt-next warn: Empty string found in dictionary with id: ${entryId}`
+              );
+              return;
+            }
 
-          // Skip empty strings
-          if (!entry.length) {
-            console.warn(
-              `gt-next warn: Empty string found in dictionary with id: ${entryId}`
-            );
-            return;
-          }
-
-          // ----- CHECK CACHED TRANSLATIONS ----- //
-
-          // Serialize and hash
-          let key = '';
-          if (process.env.NODE_ENV === 'production') {
-            // TODO: calculate hashes at build time for prod
-            throw new Error('Not implemented');
-          } else {
-            key = hashJsxChildren({
+            // Calculate identifier
+            const key = hashJsxChildren({
               source: splitStringToContent(entry),
               ...(metadata?.context && { context: metadata?.context }),
               id: entryId,
             });
-          }
 
-          // If a translation already exists int our cache from earlier, add it to the translations
-          const translationEntry = translations[key];
-          if (translationEntry) {
-            // success
-            if (translationEntry.state === 'success') {
-              return (stringTranslationsById[entryId] =
-                translationEntry.target as TranslatedContent);
+            // Check cache for translations
+            const translationEntry = translations?.[key];
+            if (translationEntry) {
+              return;
             }
-            // error fallback (strings in local cache will only be success or error)
-            return;
+
+            // Translate on demand
+            const translationPromise = I18NConfig.translateContent({
+              source: splitStringToContent(entry),
+              targetLocale: locale,
+              options: { id: entryId, hash: key },
+            });
+
+            // for server-side rendering, all strings are blocking
+            try {
+              stringTranslationsById[entryId] = await translationPromise;
+            } catch (error) {
+              console.error(
+                createDictionaryStringTranslationError(entryId),
+                error
+              );
+              return;
+            }
           }
-
-          // ----- ON DEMAND TRANSLATE STRING ----- //
-          // dev only (with api key)
-
-          // Skip if dev runtime translation is disabled
-          if (!serverRuntimeTranslationEnabled) return;
-
-          // Send a request to cache for translations
-          const translationPromise = I18NConfig.translateContent({
-            source: splitStringToContent(entry),
-            targetLocale: locale,
-            options: { id: entryId, hash: key },
-          });
-
-          // for server-side rendering, all strings are blocking
-          try {
-            stringTranslationsById[entryId] = await translationPromise;
-          } catch (error) {
-            console.error(
-              createDictionaryStringTranslationError(entryId),
-              error
-            );
-            return;
-          }
-        }
-      )
-    );
+        )
+      );
+    }
   }
 
   // ---------- THE d() METHOD ---------- //
@@ -231,13 +210,47 @@ export default async function getDict(id?: string): Promise<
 
     // Render strings
     if (typeof entry === 'string') {
-      const source = stringTranslationsById[id] || splitStringToContent(entry);
-      return renderContentToString(
-        source,
-        [locale, defaultLocale],
-        variables,
-        variablesOptions
-      );
+      // Development mode
+      if (serverRuntimeTranslationEnabled) {
+        // Render logic
+        const source =
+          stringTranslationsById[id] || splitStringToContent(entry);
+        return renderContentToString(
+          source,
+          [locale, defaultLocale],
+          variables,
+          variablesOptions
+        );
+      }
+
+      // Get identifier
+      const key = hashJsxChildren({
+        source: splitStringToContent(entry),
+        ...(metadata?.context && { context: metadata?.context }),
+        id,
+      });
+
+      // Get translation
+      const translationEntry = translations?.[key];
+
+      // Render Logic
+      if (translationEntry?.state === 'success') {
+        // success
+        return renderContentToString(
+          translationEntry.target as TranslatedContent,
+          [locale, defaultLocale],
+          variables,
+          variablesOptions
+        );
+      } else {
+        // fall back to defaultLocale
+        return renderContentToString(
+          splitStringToContent(entry),
+          [locale, defaultLocale],
+          variables,
+          variablesOptions
+        );
+      }
     }
 
     // ----- JSX ----- //

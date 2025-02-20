@@ -146,7 +146,7 @@ function getDict(id) {
                 case 2:
                     // Block until cache check resolves
                     translations = _a.sent();
-                    // ----- RESOLVE TRANSLATIONS ----- //
+                    if (!serverRuntimeTranslationEnabled) return [3 /*break*/, 4];
                     // Translate all strings in sub dictionary (block until completed)
                     return [4 /*yield*/, Promise.all(Object.entries(flattenedDictionaryEntries !== null && flattenedDictionaryEntries !== void 0 ? flattenedDictionaryEntries : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
                             var _c, entry, metadata, entryId, key, translationEntry, translationPromise, _d, _e, error_1;
@@ -164,29 +164,11 @@ function getDict(id) {
                                             console.warn("gt-next warn: Empty string found in dictionary with id: ".concat(entryId));
                                             return [2 /*return*/];
                                         }
-                                        key = '';
-                                        if (process.env.NODE_ENV === 'production') {
-                                            // TODO: calculate hashes at build time for prod
-                                            throw new Error('Not implemented');
-                                        }
-                                        else {
-                                            key = (0, id_1.hashJsxChildren)(__assign(__assign({ source: (0, generaltranslation_1.splitStringToContent)(entry) }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: entryId }));
-                                        }
-                                        translationEntry = translations[key];
+                                        key = (0, id_1.hashJsxChildren)(__assign(__assign({ source: (0, generaltranslation_1.splitStringToContent)(entry) }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: entryId }));
+                                        translationEntry = translations === null || translations === void 0 ? void 0 : translations[key];
                                         if (translationEntry) {
-                                            // success
-                                            if (translationEntry.state === 'success') {
-                                                return [2 /*return*/, (stringTranslationsById[entryId] =
-                                                        translationEntry.target)];
-                                            }
-                                            // error fallback (strings in local cache will only be success or error)
                                             return [2 /*return*/];
                                         }
-                                        // ----- ON DEMAND TRANSLATE STRING ----- //
-                                        // dev only (with api key)
-                                        // Skip if dev runtime translation is disabled
-                                        if (!serverRuntimeTranslationEnabled)
-                                            return [2 /*return*/];
                                         translationPromise = I18NConfig.translateContent({
                                             source: (0, generaltranslation_1.splitStringToContent)(entry),
                                             targetLocale: locale,
@@ -210,7 +192,6 @@ function getDict(id) {
                             });
                         }); }))];
                 case 3:
-                    // ----- RESOLVE TRANSLATIONS ----- //
                     // Translate all strings in sub dictionary (block until completed)
                     _a.sent();
                     _a.label = 4;
@@ -237,8 +218,25 @@ function getDict(id) {
                         // ----- STRINGS ----- //
                         // Render strings
                         if (typeof entry === 'string') {
-                            var source = stringTranslationsById[id] || (0, generaltranslation_1.splitStringToContent)(entry);
-                            return (0, generaltranslation_1.renderContentToString)(source, [locale, defaultLocale], variables, variablesOptions);
+                            // Development mode
+                            if (serverRuntimeTranslationEnabled) {
+                                // Render logic
+                                var source = stringTranslationsById[id] || (0, generaltranslation_1.splitStringToContent)(entry);
+                                return (0, generaltranslation_1.renderContentToString)(source, [locale, defaultLocale], variables, variablesOptions);
+                            }
+                            // Get identifier
+                            var key = (0, id_1.hashJsxChildren)(__assign(__assign({ source: (0, generaltranslation_1.splitStringToContent)(entry) }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: id }));
+                            // Get translation
+                            var translationEntry = translations === null || translations === void 0 ? void 0 : translations[key];
+                            // Render Logic
+                            if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success') {
+                                // success
+                                return (0, generaltranslation_1.renderContentToString)(translationEntry.target, [locale, defaultLocale], variables, variablesOptions);
+                            }
+                            else {
+                                // fall back to defaultLocale
+                                return (0, generaltranslation_1.renderContentToString)((0, generaltranslation_1.splitStringToContent)(entry), [locale, defaultLocale], variables, variablesOptions);
+                            }
                         }
                         // ----- JSX ----- //
                         // Translate on demand

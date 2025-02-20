@@ -1,3 +1,4 @@
+import { promises as fs } from 'fs';
 import {
   Dictionary,
   DictionaryEntry,
