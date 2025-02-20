@@ -25,10 +25,9 @@ export default function useDict(
   };
 
   // Get the translation context
-  const { getDictionaryEntryTranslation: translateDictionaryEntry } =
-    useGTContext(
-      `useGT('${id}'): No context provided. You're trying to get the t() function on the client, which can only be done inside a <GTProvider>.`
-    );
+  const { translateDictionaryEntry } = useGTContext(
+    `useGT('${id}'): No context provided. You're trying to get the t() function on the client, which can only be done inside a <GTProvider>.`
+  );
 
   /**
    * @description A function that translates a dictionary entry based on its `id` and options.

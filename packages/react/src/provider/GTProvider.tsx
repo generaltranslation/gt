@@ -91,16 +91,16 @@ export default function GTProvider({
 }): React.JSX.Element {
   // ---------- SANITIZATION ---------- //
 
-  // read env
+  // Read env
   const { projectId, devApiKey } = readAuthFromEnv(_projectId, _devApiKey);
 
-  // locale standardization
+  // Locale standardization
   locales = useMemo(() => {
     locales.unshift(defaultLocale);
     return Array.from(new Set(locales));
   }, [defaultLocale, locales]);
 
-  // get locale
+  // Get locale
   const [locale, setLocale] = useDetermineLocale({
     defaultLocale,
     locales,
@@ -115,20 +115,20 @@ export default function GTProvider({
     process.env.NODE_ENV === 'development'
   );
 
-  // loadTranslation type, only custom and default for now
+  // LoadTranslation type, only custom and default for now
   const loadTranslationType: 'default' | 'custom' | 'disabled' =
     (loadTranslation && 'custom') || (cacheUrl && 'default') || 'disabled';
 
   // ---------- MEMOIZED CHECKS ---------- //
 
   useMemo(() => {
-    // check: no devApiKey in production
+    // Check: no devApiKey in production
     if (process.env.NODE_ENV === 'production' && devApiKey) {
       // prod + dev key
       throw new Error(devApiKeyProductionError);
     }
 
-    // check: projectId missing while using cache/runtime in dev
+    // Check: projectId missing while using cache/runtime in dev
     if (
       loadTranslationType !== 'custom' &&
       (cacheUrl || runtimeUrl) &&
@@ -162,7 +162,6 @@ export default function GTProvider({
       }
     }
   }, [
-    // THESE TYPES ALMOST NEVER CHANGE
     process.env.NODE_ENV,
     devApiKey,
     loadTranslationType,
@@ -175,8 +174,6 @@ export default function GTProvider({
   // ---------- FLAGS ---------- //
 
   const [translationRequired, dialectTranslationRequired] = useMemo(() => {
-    // TRANSLATION REQUIRED
-
     // User locale is not default locale or equivalent
     const translationRequired = requiresTranslation(
       defaultLocale,
@@ -187,19 +184,6 @@ export default function GTProvider({
     // User locale is not default locale but is a dialect of the same language
     const dialectTranslationRequired =
       translationRequired && isSameLanguage(defaultLocale, locale);
-
-    /*
-    // TRANSLATION ENABLED
-
-    // Translation at runtime during development is enabled
-    const runtimeTranslationEnabled = !!(projectId && runtimeUrl && devApiKey);
-
-    // Translation is enabled at all
-    const translationEnabled = !!(
-      loadTranslationType === 'custom' ||
-      (projectId && cacheUrl && loadTranslationType === 'default') ||
-      runtimeTranslationEnabled
-    );*/
 
     return [translationRequired, dialectTranslationRequired];
   }, [defaultLocale, locale, locales]);
@@ -387,7 +371,7 @@ export default function GTProvider({
 
   // ---------- TRANSLATE FUNCTION FOR DICTIONARIES ---------- //
 
-  const getDictionaryEntryTranslation = useCallback(
+  const translateDictionaryEntry = useCallback(
     (id: string, options: Record<string, any> = {}): React.ReactNode => {
       // ----- SETUP ----- //
 
@@ -489,7 +473,7 @@ export default function GTProvider({
   return (
     <GTContext.Provider
       value={{
-        getDictionaryEntryTranslation,
+        translateDictionaryEntry,
         registerContentForTranslation,
         registerJsxForTranslation,
         translateContent,

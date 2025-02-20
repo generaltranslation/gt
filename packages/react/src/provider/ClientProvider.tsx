@@ -140,7 +140,7 @@ export default function ClientProvider({
   // ---------- TRANSLATION METHODS ---------- //
 
   // for dictionaries (strings are actually already resolved, but JSX needs tx still)
-  const getDictionaryEntryTranslation = useCallback(
+  const translateDictionaryEntry = useCallback(
     (
       id: string,
       options: Record<string, any> = {}
@@ -308,7 +308,7 @@ export default function ClientProvider({
         registerJsxForTranslation,
         setLocale,
         translateContent,
-        getDictionaryEntryTranslation,
+        translateDictionaryEntry,
         locale,
         locales,
         defaultLocale,
