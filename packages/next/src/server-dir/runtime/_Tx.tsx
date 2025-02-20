@@ -16,8 +16,6 @@ async function Resolver({ children }: { children: React.ReactNode }) {
   return await children;
 }
 
-// TODO
-// WIP
 async function Tx({
   children,
   id,

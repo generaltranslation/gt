@@ -5,12 +5,15 @@ import {
 import { hashJsxChildren } from 'generaltranslation/id';
 import { useCallback } from 'react';
 import { TranslationOptions, TranslationsObject } from '../../types/types';
+import { TranslateContentCallback } from '../../types/runtime';
 
 export default function useTranslateContent(
   translations: TranslationsObject | null,
   locale: string,
   defaultLocale: string,
-  translationRequired: boolean
+  translationRequired: boolean,
+  runtimeTranslationEnabled: boolean,
+  registerContentForTranslation: TranslateContentCallback
 ): (content: string, options?: TranslationOptions) => string {
   return useCallback(
     (
@@ -57,15 +60,41 @@ export default function useTranslateContent(
       });
 
       // Check translation successful
-      const translation = translations?.[key];
-      if (translation?.state === 'success') {
-        return renderContent(translation.target, [locale, defaultLocale]);
+      const translationEntry = translations?.[key];
+      if (translationEntry?.state === 'success') {
+        return renderContent(translationEntry.target, [locale, defaultLocale]);
       }
+
+      // ----- TRANSLATE ON DEMAND ----- //
+      // develoment only
+
+      // Check if runtime translation is enabled
+      if (!runtimeTranslationEnabled) {
+        return renderContent(source, [defaultLocale]);
+      }
+
+      // Translate Content
+      registerContentForTranslation({
+        source,
+        targetLocale: locale,
+        metadata: {
+          ...(options?.context && { context: options.context }),
+          id: options?.id,
+          hash: key,
+        },
+      });
 
       // Fallback to defaultLocale
       // Note: in the future, we may add on demand translation for dev here
       return renderContent(source, [defaultLocale]);
     },
-    [translations, locale, defaultLocale, translationRequired]
+    [
+      translations,
+      locale,
+      defaultLocale,
+      translationRequired,
+      runtimeTranslationEnabled,
+      registerContentForTranslation,
+    ]
   );
 }

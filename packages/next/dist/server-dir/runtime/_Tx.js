@@ -69,8 +69,6 @@ function Resolver(_a) {
         });
     });
 }
-// TODO
-// WIP
 function Tx(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
         var I18NConfig, locale, defaultLocale, renderSettings, translationRequired, serverRuntimeTranslationEnabled, dialectTranslationRequired, taggedChildren, renderDefaultLocale, renderLoadingDefault, translations, childrenAsObjects, hash, translationEntry, translationPromise, loadingFallback;

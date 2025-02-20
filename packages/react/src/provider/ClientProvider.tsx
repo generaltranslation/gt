@@ -275,14 +275,6 @@ export default function ClientProvider({
     [dictionary, translations, locale]
   );
 
-  // Translate content function
-  const translateContent = useTranslateContent(
-    translations,
-    locale,
-    defaultLocale,
-    translationRequired
-  );
-
   // Setup runtime translation
   const { registerContentForTranslation, registerJsxForTranslation } =
     useRuntimeTranslation({
@@ -296,6 +288,16 @@ export default function ClientProvider({
       renderSettings,
       runtimeTranslationEnabled,
     });
+
+  // Translate content function
+  const translateContent = useTranslateContent(
+    translations,
+    locale,
+    defaultLocale,
+    translationRequired,
+    runtimeTranslationEnabled,
+    registerContentForTranslation
+  );
 
   return (
     <GTContext.Provider
