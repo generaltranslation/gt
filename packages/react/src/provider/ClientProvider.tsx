@@ -295,8 +295,10 @@ export default function ClientProvider({
     locale,
     defaultLocale,
     translationRequired,
+    dialectTranslationRequired,
     runtimeTranslationEnabled,
-    registerContentForTranslation
+    registerContentForTranslation,
+    renderSettings
   );
 
   return (

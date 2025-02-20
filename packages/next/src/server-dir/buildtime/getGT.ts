@@ -1,4 +1,5 @@
 import {
+  isSameLanguage,
   renderContentToString,
   splitStringToContent,
 } from 'generaltranslation';
@@ -39,6 +40,9 @@ export default async function getGT(): Promise<
   const serverRuntimeTranslationEnabled =
     I18NConfig.isServerRuntimeTranslationEnabled() &&
     process.env.NODE_ENV === 'development';
+  const renderSettings = I18NConfig.getRenderSettings();
+  const dialectTranslationRequired =
+    translationRequired && isSameLanguage(locale, defaultLocale);
 
   // ---------- THE t() METHOD ---------- //
 
@@ -116,8 +120,18 @@ export default async function getGT(): Promise<
       },
     });
 
+    // Loading translation warning
     console.warn(translationLoadingWarningLittleT);
-    return renderContent(source, [defaultLocale]);
+
+    // Loading behavior
+    if (renderSettings.method === 'replace') {
+      return renderContent(source, [defaultLocale]);
+    } else if (renderSettings.method === 'skeleton') {
+      return '';
+    }
+    return dialectTranslationRequired // default behavior
+      ? renderContent(source, [defaultLocale])
+      : '';
   };
 
   return t;

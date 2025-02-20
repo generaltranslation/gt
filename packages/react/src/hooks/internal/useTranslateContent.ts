@@ -4,7 +4,11 @@ import {
 } from 'generaltranslation';
 import { hashJsxChildren } from 'generaltranslation/id';
 import { useCallback } from 'react';
-import { TranslationOptions, TranslationsObject } from '../../types/types';
+import {
+  TranslationOptions,
+  TranslationsObject,
+  RenderMethod,
+} from '../../types/types';
 import { TranslateContentCallback } from '../../types/runtime';
 
 export default function useTranslateContent(
@@ -12,8 +16,10 @@ export default function useTranslateContent(
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
+  dialectTranslationRequired: boolean,
   runtimeTranslationEnabled: boolean,
-  registerContentForTranslation: TranslateContentCallback
+  registerContentForTranslation: TranslateContentCallback,
+  renderSettings: { method: RenderMethod; timeout?: number }
 ): (content: string, options?: TranslationOptions) => string {
   return useCallback(
     (
@@ -84,9 +90,15 @@ export default function useTranslateContent(
         },
       });
 
-      // Fallback to defaultLocale
-      // Note: in the future, we may add on demand translation for dev here
-      return renderContent(source, [defaultLocale]);
+      // Loading behavior
+      if (renderSettings.method === 'replace') {
+        return renderContent(source, [defaultLocale]);
+      } else if (renderSettings.method === 'skeleton') {
+        return '';
+      }
+      return dialectTranslationRequired // default behavior
+        ? renderContent(source, [defaultLocale])
+        : '';
     },
     [
       translations,
@@ -95,6 +107,7 @@ export default function useTranslateContent(
       translationRequired,
       runtimeTranslationEnabled,
       registerContentForTranslation,
+      dialectTranslationRequired,
     ]
   );
 }

@@ -474,8 +474,10 @@ export default function GTProvider({
     locale,
     defaultLocale,
     translationRequired,
+    dialectTranslationRequired,
     runtimeTranslationEnabled,
-    registerContentForTranslation
+    registerContentForTranslation,
+    renderSettings
   );
 
   const display = !!(
