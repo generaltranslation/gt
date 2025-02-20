@@ -160,9 +160,11 @@ export default async function scanForContent(
           usedImports,
           modified: false,
           createIds: !options.disableIds,
+          warnings,
+          file,
         };
         const wrapped = handleJsxElement(path.node, opts, isMeaningful);
-        path.replaceWith(wrapped);
+        path.replaceWith(wrapped.node);
         path.skip();
 
         // Update global counters

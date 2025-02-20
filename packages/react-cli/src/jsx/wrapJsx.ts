@@ -2,6 +2,7 @@ import * as t from '@babel/types';
 import { isStaticExpression, isStaticValue } from './evaluateJsx';
 import { ImportItem } from './parse/parseAst';
 import generate from '@babel/generator';
+import { warnTernary } from '../console/warnings';
 /**
  * Recursively wraps a JSX element with a <T> component and unique id
  * @param node - The JSX element to wrap
@@ -25,6 +26,8 @@ function wrapJsxExpression(
     idCount: number;
     usedImports: ImportItem[];
     modified: boolean;
+    warnings: string[];
+    file: string;
   },
   isMeaningful: (node: t.Node) => boolean,
   mark: boolean
@@ -62,22 +65,20 @@ function wrapJsxExpression(
     // Handle consequent
     if (t.isJSXElement(consequent)) {
       const result = handleJsxElement(consequent, options, isMeaningful);
-      // const consequentResult = wrapJsxElement(
-      //   consequent,
-      //   options,
-      //   isMeaningful,
-      //   mark
-      // );
-      // const wrapped = wrapWithT(
-      //   consequentResult.node,
-      //   options,
-      //   !consequentResult.hasMeaningfulContent
-      // );
+
       // Re-insert into parenthesized expression if necessary
       if (t.isParenthesizedExpression(expression.consequent)) {
-        expression.consequent.expression = result;
+        expression.consequent.expression = result.node;
       } else {
-        expression.consequent = result;
+        expression.consequent = result.node;
+      }
+
+      // Warn about ternary (should use branch instead)
+      console.log(result.hasMeaningfulContent, mark);
+      if (result.hasMeaningfulContent && !mark) {
+        console.log('found ternary');
+        console.log(options.warnings);
+        options.warnings.push(warnTernary(options.file));
       }
     } else if (
       t.isConditionalExpression(consequent) ||
@@ -117,22 +118,12 @@ function wrapJsxExpression(
     // Handle alternate
     if (t.isJSXElement(alternate)) {
       const result = handleJsxElement(alternate, options, isMeaningful);
-      // const alternateResult = wrapJsxElement(
-      //   alternate,
-      //   options,
-      //   isMeaningful,
-      //   mark
-      // );
-      // const wrapped = wrapWithT(
-      //   alternateResult.node,
-      //   options,
-      //   !alternateResult.hasMeaningfulContent
-      // );
+
       // Re-insert into parenthesized expression if necessary
       if (t.isParenthesizedExpression(expression.alternate)) {
-        expression.alternate.expression = result;
+        expression.alternate.expression = result.node;
       } else {
-        expression.alternate = result;
+        expression.alternate = result.node;
       }
     } else if (
       t.isConditionalExpression(alternate) ||
@@ -180,17 +171,12 @@ function wrapJsxExpression(
 
     if (t.isJSXElement(left)) {
       const result = handleJsxElement(left, options, isMeaningful);
-      // const leftResult = wrapJsxElement(left, options, isMeaningful, mark);
-      // const wrapped = wrapWithT(
-      //   leftResult.node,
-      //   options,
-      //   leftResult.hasMeaningfulContent
-      // );
+
       // Re-insert into parenthesized expression if necessary
       if (t.isParenthesizedExpression(expression.left)) {
-        expression.left.expression = result;
+        expression.left.expression = result.node;
       } else {
-        expression.left = result;
+        expression.left = result.node;
       }
     } else if (t.isLogicalExpression(left) || t.isConditionalExpression(left)) {
       // Recursively handle nested logical expressions
@@ -225,17 +211,12 @@ function wrapJsxExpression(
 
     if (t.isJSXElement(right)) {
       const result = handleJsxElement(right, options, isMeaningful);
-      // const rightResult = wrapJsxElement(right, options, isMeaningful, mark);
-      // const wrapped = wrapWithT(
-      //   rightResult.node,
-      //   options,
-      //   !rightResult.hasMeaningfulContent
-      // );
+
       // Re-insert into parenthesized expression if necessary
       if (t.isParenthesizedExpression(expression.right)) {
-        expression.right.expression = result;
+        expression.right.expression = result.node;
       } else {
-        expression.right = result;
+        expression.right = result.node;
       }
     } else if (
       t.isLogicalExpression(right) ||
@@ -305,6 +286,8 @@ export function wrapJsxElement(
     idCount: number;
     usedImports: ImportItem[];
     modified: boolean;
+    warnings: string[];
+    file: string;
   },
   isMeaningful: (node: t.Node) => boolean,
   mark: boolean
@@ -379,18 +362,27 @@ export function handleJsxElement(
     idPrefix: string;
     idCount: number;
     modified: boolean;
+    warnings: string[];
+    file: string;
   },
   isMeaningful: (node: t.Node) => boolean
-): t.JSXElement {
+): WrapResult {
   const result = wrapJsxElement(rootNode, options, isMeaningful, true);
-
+  console.log(result.hasMeaningfulContent, generate(rootNode).code);
   // Only wrap with T at the root level if there's meaningful content
   if (result.hasMeaningfulContent) {
     const output = wrapJsxElement(result.node, options, isMeaningful, false);
-    return wrapWithT(output.node, options, false);
+    const node = wrapWithT(output.node, options, false);
+    return {
+      node,
+      hasMeaningfulContent: true,
+    };
   }
 
-  return result.node;
+  return {
+    node: result.node,
+    hasMeaningfulContent: false,
+  };
 }
 
 function wrapWithT(
@@ -403,6 +395,8 @@ function wrapWithT(
     idCount: number;
     usedImports: ImportItem[];
     modified: boolean;
+    file: string;
+    warnings: string[];
   },
   mark: boolean
 ) {
@@ -446,6 +440,8 @@ function wrapExpressionWithT(
     idCount: number;
     usedImports: ImportItem[];
     modified: boolean;
+    file: string;
+    warnings: string[];
   },
   mark: boolean
 ) {
@@ -486,6 +482,8 @@ function wrapWithVar(
     VarComponent?: string;
     usedImports: ImportItem[];
     modified: boolean;
+    file: string;
+    warnings: string[];
   },
   mark: boolean
 ) {

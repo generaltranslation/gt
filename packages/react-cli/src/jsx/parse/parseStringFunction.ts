@@ -3,7 +3,10 @@ import { Updates } from '../../types';
 import { splitStringToContent } from 'generaltranslation';
 import * as t from '@babel/types';
 import { isStaticExpression } from '../evaluateJsx';
-import { warnNonStaticExpression } from '../../console/warnings';
+import {
+  warnNonStaticExpression,
+  warnTemplateLiteral,
+} from '../../console/warnings';
 import generate from '@babel/generator';
 
 export const attributes = ['id', 'context'];
@@ -49,8 +52,14 @@ export function parseStrings(
             tPath.parent.arguments.length > 0
           ) {
             const arg = tPath.parent.arguments[0];
-            if (arg.type === 'StringLiteral') {
-              const source = arg.value;
+            if (
+              arg.type === 'StringLiteral' ||
+              (t.isTemplateLiteral(arg) && arg.expressions.length === 0)
+            ) {
+              const source =
+                arg.type === 'StringLiteral'
+                  ? arg.value
+                  : arg.quasis[0].value.raw;
               // split the string into content (same as runtime behavior)
               const content = splitStringToContent(source);
 
@@ -91,6 +100,9 @@ export function parseStrings(
                 source: content,
                 metadata,
               });
+            } else if (t.isTemplateLiteral(arg)) {
+              // warn if template literal
+              errors.push(warnTemplateLiteral(file, generate(arg).code));
             }
           }
         });

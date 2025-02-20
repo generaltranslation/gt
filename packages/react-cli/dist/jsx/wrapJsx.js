@@ -32,11 +32,16 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.wrapJsxElement = wrapJsxElement;
 exports.handleJsxElement = handleJsxElement;
 const t = __importStar(require("@babel/types"));
 const evaluateJsx_1 = require("./evaluateJsx");
+const generator_1 = __importDefault(require("@babel/generator"));
+const warnings_1 = require("../console/warnings");
 function wrapJsxExpression(node, options, isMeaningful, mark) {
     const expression = t.isParenthesizedExpression(node.expression)
         ? node.expression.expression
@@ -67,23 +72,19 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
         // Handle consequent
         if (t.isJSXElement(consequent)) {
             const result = handleJsxElement(consequent, options, isMeaningful);
-            // const consequentResult = wrapJsxElement(
-            //   consequent,
-            //   options,
-            //   isMeaningful,
-            //   mark
-            // );
-            // const wrapped = wrapWithT(
-            //   consequentResult.node,
-            //   options,
-            //   !consequentResult.hasMeaningfulContent
-            // );
             // Re-insert into parenthesized expression if necessary
             if (t.isParenthesizedExpression(expression.consequent)) {
-                expression.consequent.expression = result;
+                expression.consequent.expression = result.node;
             }
             else {
-                expression.consequent = result;
+                expression.consequent = result.node;
+            }
+            // Warn about ternary (should use branch instead)
+            console.log(result.hasMeaningfulContent, mark);
+            if (result.hasMeaningfulContent && !mark) {
+                console.log('found ternary');
+                console.log(options.warnings);
+                options.warnings.push((0, warnings_1.warnTernary)(options.file));
             }
         }
         else if (t.isConditionalExpression(consequent) ||
@@ -117,23 +118,12 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
         // Handle alternate
         if (t.isJSXElement(alternate)) {
             const result = handleJsxElement(alternate, options, isMeaningful);
-            // const alternateResult = wrapJsxElement(
-            //   alternate,
-            //   options,
-            //   isMeaningful,
-            //   mark
-            // );
-            // const wrapped = wrapWithT(
-            //   alternateResult.node,
-            //   options,
-            //   !alternateResult.hasMeaningfulContent
-            // );
             // Re-insert into parenthesized expression if necessary
             if (t.isParenthesizedExpression(expression.alternate)) {
-                expression.alternate.expression = result;
+                expression.alternate.expression = result.node;
             }
             else {
-                expression.alternate = result;
+                expression.alternate = result.node;
             }
         }
         else if (t.isConditionalExpression(alternate) ||
@@ -175,18 +165,12 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
             : expression.right;
         if (t.isJSXElement(left)) {
             const result = handleJsxElement(left, options, isMeaningful);
-            // const leftResult = wrapJsxElement(left, options, isMeaningful, mark);
-            // const wrapped = wrapWithT(
-            //   leftResult.node,
-            //   options,
-            //   leftResult.hasMeaningfulContent
-            // );
             // Re-insert into parenthesized expression if necessary
             if (t.isParenthesizedExpression(expression.left)) {
-                expression.left.expression = result;
+                expression.left.expression = result.node;
             }
             else {
-                expression.left = result;
+                expression.left = result.node;
             }
         }
         else if (t.isLogicalExpression(left) || t.isConditionalExpression(left)) {
@@ -217,18 +201,12 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
         }
         if (t.isJSXElement(right)) {
             const result = handleJsxElement(right, options, isMeaningful);
-            // const rightResult = wrapJsxElement(right, options, isMeaningful, mark);
-            // const wrapped = wrapWithT(
-            //   rightResult.node,
-            //   options,
-            //   !rightResult.hasMeaningfulContent
-            // );
             // Re-insert into parenthesized expression if necessary
             if (t.isParenthesizedExpression(expression.right)) {
-                expression.right.expression = result;
+                expression.right.expression = result.node;
             }
             else {
-                expression.right = result;
+                expression.right = result.node;
             }
         }
         else if (t.isLogicalExpression(right) ||
@@ -338,12 +316,20 @@ function wrapJsxElement(node, options, isMeaningful, mark) {
  */
 function handleJsxElement(rootNode, options, isMeaningful) {
     const result = wrapJsxElement(rootNode, options, isMeaningful, true);
+    console.log(result.hasMeaningfulContent, (0, generator_1.default)(rootNode).code);
     // Only wrap with T at the root level if there's meaningful content
     if (result.hasMeaningfulContent) {
         const output = wrapJsxElement(result.node, options, isMeaningful, false);
-        return wrapWithT(output.node, options, false);
+        const node = wrapWithT(output.node, options, false);
+        return {
+            node,
+            hasMeaningfulContent: true,
+        };
     }
-    return result.node;
+    return {
+        node: result.node,
+        hasMeaningfulContent: false,
+    };
 }
 function wrapWithT(node, options, mark) {
     if (mark) {

@@ -10,6 +10,7 @@ import { CrossIcon, MessageIcon } from './icons';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { ArtifactKind } from './artifact';
+import { Var, T } from 'gt-next';
 
 export const Suggestion = ({
   suggestion,
@@ -39,39 +40,43 @@ export const Suggestion = ({
           <MessageIcon size={windowWidth && windowWidth < 768 ? 16 : 14} />
         </motion.div>
       ) : (
-        <motion.div
-          key={suggestion.id}
-          className="absolute bg-background p-3 flex flex-col gap-3 rounded-2xl border text-sm w-56 shadow-xl z-50 -right-12 md:-right-16 font-sans"
-          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: -20 }}
-          exit={{ opacity: 0, y: -10 }}
-          whileHover={{ scale: 1.05 }}
-        >
-          <div className="flex flex-row items-center justify-between">
-            <div className="flex flex-row items-center gap-2">
-              <div className="size-4 bg-muted-foreground/25 rounded-full" />
-              <div className="font-medium">Assistant</div>
-            </div>
-            <button
-              type="button"
-              className="text-xs text-gray-500 cursor-pointer"
-              onClick={() => {
-                setIsExpanded(false);
-              }}
-            >
-              <CrossIcon size={12} />
-            </button>
-          </div>
-          <div>{suggestion.description}</div>
-          <Button
-            variant="outline"
-            className="w-fit py-1.5 px-3 rounded-full"
-            onClick={onApply}
+        <T id='components.suggestion.0'>
+          <motion.div
+            key={suggestion.id}
+            className='absolute bg-background p-3 flex flex-col gap-3 rounded-2xl border text-sm w-56 shadow-xl z-50 -right-12 md:-right-16 font-sans'
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: -20 }}
+            exit={{ opacity: 0, y: -10 }}
+            whileHover={{ scale: 1.05 }}
           >
-            Apply
-          </Button>
-        </motion.div>
+            <div className='flex flex-row items-center justify-between'>
+              <div className='flex flex-row items-center gap-2'>
+                <div className='size-4 bg-muted-foreground/25 rounded-full' />
+                <div className='font-medium'>Assistant</div>
+              </div>
+              <button
+                type='button'
+                className='text-xs text-gray-500 cursor-pointer'
+                onClick={() => {
+                  setIsExpanded(false);
+                }}
+              >
+                <CrossIcon size={12} />
+              </button>
+            </div>
+            <div>
+              <Var>{suggestion.description}</Var>
+            </div>
+            <Button
+              variant='outline'
+              className='w-fit py-1.5 px-3 rounded-full'
+              onClick={onApply}
+            >
+              Apply
+            </Button>
+          </motion.div>
+        </T>
       )}
     </AnimatePresence>
   );

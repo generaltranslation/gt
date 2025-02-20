@@ -27,6 +27,8 @@ export declare function wrapJsxElement(node: t.JSXElement, options: {
     idCount: number;
     usedImports: ImportItem[];
     modified: boolean;
+    warnings: string[];
+    file: string;
 }, isMeaningful: (node: t.Node) => boolean, mark: boolean): WrapResult;
 /**
  * Wraps a JSX element with a <T> component and unique id
@@ -43,4 +45,6 @@ export declare function handleJsxElement(rootNode: t.JSXElement, options: {
     idPrefix: string;
     idCount: number;
     modified: boolean;
-}, isMeaningful: (node: t.Node) => boolean): t.JSXElement;
+    warnings: string[];
+    file: string;
+}, isMeaningful: (node: t.Node) => boolean): WrapResult;

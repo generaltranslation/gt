@@ -1,9 +1,8 @@
+import { withGTConfig } from 'gt-next/config';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  experimental: {
-    ppr: true,
-  },
+  experimental: {},
   images: {
     remotePatterns: [
       {
@@ -13,4 +12,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withGTConfig(nextConfig, {});

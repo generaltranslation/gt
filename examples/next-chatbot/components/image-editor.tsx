@@ -1,5 +1,6 @@
 import { LoaderIcon } from './icons';
 import cn from 'classnames';
+import { Var, T } from 'gt-next';
 
 interface ImageEditorProps {
   title: string;
@@ -24,14 +25,18 @@ export function ImageEditor({
       })}
     >
       {status === 'streaming' ? (
-        <div className="flex flex-row gap-4 items-center">
-          {!isInline && (
-            <div className="animate-spin">
-              <LoaderIcon />
-            </div>
-          )}
-          <div>Generating Image...</div>
-        </div>
+        <T id='components.image_editor.0'>
+          <div className='flex flex-row gap-4 items-center'>
+            <Var>
+              {!isInline && (
+                <div className='animate-spin'>
+                  <LoaderIcon />
+                </div>
+              )}
+            </Var>
+            <div>Generating Image...</div>
+          </div>
+        </T>
       ) : (
         <picture>
           <img

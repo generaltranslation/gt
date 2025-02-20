@@ -65,7 +65,7 @@ function formatFiles(filesUpdated, formatter) {
                 console.log(chalk_1.default.gray('\nCleaning up with biome...'));
                 try {
                     const { execSync } = require('child_process');
-                    execSync(`npx @biomejs/biome format --write ${filesUpdated.join(' ')}`, {
+                    execSync(`npx @biomejs/biome format --write ${filesUpdated.map((file) => `"${file}"`).join(' ')}`, {
                         stdio: ['ignore', 'inherit', 'inherit'],
                     });
                 }

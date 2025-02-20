@@ -63,3 +63,19 @@ export const warnNonStaticExpression = (
     `Change "${attrName}" to ensure this content is translated.\n`
   );
 };
+
+export const warnTemplateLiteral = (file: string, value: string) => {
+  return (
+    `Found template literal with quasis (${value}) in ${chalk.cyan(file)}. ` +
+    chalk.white(
+      'Change the template literal to a string to ensure this content is translated.\n'
+    )
+  );
+};
+
+export const warnTernary = (file: string) => {
+  return (
+    `Found ternary expression in ${chalk.cyan(file)}. ` +
+    chalk.white('A Branch component may be more appropriate here.\n')
+  );
+};

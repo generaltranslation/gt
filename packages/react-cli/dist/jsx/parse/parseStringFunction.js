@@ -74,8 +74,11 @@ function parseStrings(importName, path, updates, errors, file) {
                     if (tPath.parent.type === 'CallExpression' &&
                         tPath.parent.arguments.length > 0) {
                         const arg = tPath.parent.arguments[0];
-                        if (arg.type === 'StringLiteral') {
-                            const source = arg.value;
+                        if (arg.type === 'StringLiteral' ||
+                            (t.isTemplateLiteral(arg) && arg.expressions.length === 0)) {
+                            const source = arg.type === 'StringLiteral'
+                                ? arg.value
+                                : arg.quasis[0].value.raw;
                             // split the string into content (same as runtime behavior)
                             const content = (0, generaltranslation_1.splitStringToContent)(source);
                             // get metadata and id from options
@@ -104,6 +107,10 @@ function parseStrings(importName, path, updates, errors, file) {
                                 source: content,
                                 metadata,
                             });
+                        }
+                        else if (t.isTemplateLiteral(arg)) {
+                            // warn if template literal
+                            errors.push((0, warnings_1.warnTemplateLiteral)(file, (0, generator_1.default)(arg).code));
                         }
                     }
                 });

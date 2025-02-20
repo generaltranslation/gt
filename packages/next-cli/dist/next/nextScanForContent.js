@@ -149,9 +149,10 @@ function scanForContent(options, pkg, framework) {
                         currentPath = currentPath.parentPath;
                     }
                     // At this point, we're only processing top-level JSX elements
-                    const opts = Object.assign(Object.assign({}, importAlias), { idPrefix: relativePath, idCount: globalId, usedImports, modified: false, createIds: !options.disableIds });
+                    const opts = Object.assign(Object.assign({}, importAlias), { idPrefix: relativePath, idCount: globalId, usedImports, modified: false, createIds: !options.disableIds, warnings,
+                        file });
                     const wrapped = (0, wrapJsx_1.handleJsxElement)(path.node, opts, evaluateJsx_1.isMeaningful);
-                    path.replaceWith(wrapped);
+                    path.replaceWith(wrapped.node);
                     path.skip();
                     // Update global counters
                     modified = opts.modified;
