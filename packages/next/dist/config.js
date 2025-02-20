@@ -110,7 +110,7 @@ function withGTConfig(nextConfig, props) {
         mergedConfig.locales.unshift(mergedConfig.defaultLocale);
     }
     mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
-    // ----------- RESOLVE ANY CONFIG/TX FILES ----------- //
+    // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
     // Resolve custom locale getter functions
     var resolvedI18NFilePath = typeof mergedConfig.i18n === 'string'
         ? mergedConfig.i18n
@@ -119,13 +119,6 @@ function withGTConfig(nextConfig, props) {
     var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
         ? mergedConfig.dictionary
         : resolveConfigFilepath('dictionary');
-    // if (resolvedDictionaryFilePath) {
-    //   console.log(resolvedDictionaryFilePath);
-    //   console.log(process.cwd());
-    //   const module = import(resolvedDictionaryFilePath).then((module) => {
-    //     console.log(module);
-    //   });
-    // }
     // Resolve custom translation loader path
     var customLoadTranslationPath = typeof mergedConfig.loadTranslationPath === 'string'
         ? mergedConfig.loadTranslationPath
@@ -134,6 +127,7 @@ function withGTConfig(nextConfig, props) {
     var resolvedLocalTranslationDir = typeof mergedConfig.localTranslationsDir === 'string'
         ? mergedConfig.localTranslationsDir
         : './public/_gt';
+    // ----- RESOLVE CONFIG LOCALES ----- //
     // Check for local translations and get the list of locales
     var localLocales = [];
     if (fs_1.default.existsSync(resolvedLocalTranslationDir) &&
@@ -143,6 +137,7 @@ function withGTConfig(nextConfig, props) {
             .filter(function (file) { return file.endsWith('.json'); })
             .map(function (file) { return file.replace('.json', ''); });
     }
+    // ----- RESOLVE LOCAL TRANSLATIONS ----- //
     // When there are local translations, force custom translation loader
     // for now, we can just check if that file exists, and then assume the existance of the loaders
     if (customLoadTranslationPath &&
