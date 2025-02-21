@@ -97,45 +97,45 @@ function getGT() {
                         // Parse content
                         var source = (0, generaltranslation_1.splitStringToContent)(string);
                         // Render Method
-                        var r = function (content, locales) {
+                        var renderContent = function (content, locales) {
                             return (0, generaltranslation_1.renderContentToString)(content, locales, options.variables, options.variablesOptions);
                         };
                         // Check: translation required
                         if (!translationRequired)
-                            return r(source, [defaultLocale]);
+                            return renderContent(source, [defaultLocale]);
                         // ----- GET TRANSLATION ----- //
                         var hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })));
                         var translationEntry = translations === null || translations === void 0 ? void 0 : translations[hash];
                         // ----- RENDER TRANSLATION ----- //
                         // If a translation already exists
                         if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success')
-                            return r(translationEntry.target, [locale, defaultLocale]);
+                            return renderContent(translationEntry.target, [locale, defaultLocale]);
                         // If a translation errored
                         if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error')
-                            return r(source, [defaultLocale]);
+                            return renderContent(source, [defaultLocale]);
                         // ----- CREATE TRANSLATION ----- //
                         // Since this is buildtime string translation, it's dev only
                         if (!I18NConfig.isDevelopmentApiEnabled()) {
                             console.warn((0, createErrors_1.createStringTranslationError)(string, options === null || options === void 0 ? void 0 : options.id, 't'));
-                            return r(source, [defaultLocale]);
+                            return renderContent(source, [defaultLocale]);
                         }
                         // Translate on demand
-                        I18NConfig.translateJsx({
+                        I18NConfig.translateContent({
                             source: source,
                             targetLocale: locale,
                             options: __assign(__assign(__assign({}, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })), { hash: hash }),
-                        });
+                        }).catch(function () { }); // Error logged in I18NConfig
                         // Loading translation warning
                         console.warn(createErrors_1.translationLoadingWarning);
                         // Loading behavior
                         if (renderSettings.method === 'replace') {
-                            return r(source, [defaultLocale]);
+                            return renderContent(source, [defaultLocale]);
                         }
                         else if (renderSettings.method === 'skeleton') {
                             return '';
                         }
                         // Default is returning source, rather than returning a loading state
-                        return r(source, [defaultLocale]);
+                        return renderContent(source, [defaultLocale]);
                     };
                     return [2 /*return*/, t];
             }

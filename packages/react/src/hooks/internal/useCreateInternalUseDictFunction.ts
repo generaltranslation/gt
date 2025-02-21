@@ -1,38 +1,55 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
-    Dictionary,
-    DictionaryTranslationOptions,
-    InlineTranslationOptions,
+  Dictionary,
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
 } from '../../types/types';
-import getDictionaryEntry, { isValidDictionaryEntry } from '../../provider/helpers/getDictionaryEntry';
+import getDictionaryEntry, {
+  isValidDictionaryEntry,
+} from '../../provider/helpers/getDictionaryEntry';
 import getEntryAndMetadata from '../../provider/helpers/getEntryAndMetadata';
-import { createLibraryNoEntryWarning } from '../../messages/createMessages';
+import {
+  createInvalidDictionaryEntryWarning,
+  createNoEntryFoundWarning,
+} from '../../messages/createMessages';
 
 export default function useCreateInternalUseDictFunction({
   dictionary,
-  _internalUseGTFunction
+  _internalUseGTFunction,
 }: {
   dictionary: Dictionary;
-  _internalUseGTFunction: (string: string, options?: InlineTranslationOptions) => string
+  _internalUseGTFunction: (
+    string: string,
+    options?: InlineTranslationOptions
+  ) => string;
 }) {
   return useCallback(
     (id: string, options: DictionaryTranslationOptions = {}): string => {
-        const value = getDictionaryEntry(dictionary, id);
-        const valueIsValid = isValidDictionaryEntry(value);
-        if (!valueIsValid) {
-            console.error(createLibraryNoEntryWarning(id))
-            return '';
-        }
-        const { entry, metadata } = getEntryAndMetadata(value);
-        return _internalUseGTFunction(entry, {
-            ...metadata,
-            ...options,
-            id
-        });
+      // Get entry
+      const value = getDictionaryEntry(dictionary, id);
+
+      // Check: no entry found
+      if (!value) {
+        console.warn(createNoEntryFoundWarning(id));
+        return '';
+      }
+
+      // Check: invalid entry
+      if (!isValidDictionaryEntry(value)) {
+        console.warn(createInvalidDictionaryEntryWarning(id));
+        return '';
+      }
+
+      // Get entry and metadata
+      const { entry, metadata } = getEntryAndMetadata(value);
+
+      // Return translation
+      return _internalUseGTFunction(entry, {
+        ...metadata,
+        ...options,
+        id,
+      });
     },
-    [
-        dictionary,
-        _internalUseGTFunction
-    ]
+    [dictionary, _internalUseGTFunction]
   );
 }

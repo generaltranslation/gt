@@ -83,14 +83,22 @@ function getDict(id) {
                     t = _a.sent();
                     d = function (id, options) {
                         if (options === void 0) { options = {}; }
+                        // Get entry
                         id = getId(id);
                         var value = (0, internal_1.getDictionaryEntry)(dictionary, id);
-                        var valueIsValid = (0, internal_1.isValidDictionaryEntry)(value);
-                        if (!valueIsValid) {
-                            console.error((0, createErrors_1.createNoEntryWarning)(id));
+                        // Check: no entry found
+                        if (!value) {
+                            console.warn((0, createErrors_1.createNoEntryFoundWarning)(id));
                             return '';
                         }
+                        // Check: invalid entry
+                        if (!(0, internal_1.isValidDictionaryEntry)(value)) {
+                            console.warn((0, createErrors_1.createInvalidDictionaryEntryWarning)(id));
+                            return '';
+                        }
+                        // Get entry and metadata
                         var _a = (0, internal_1.getEntryAndMetadata)(value), entry = _a.entry, metadata = _a.metadata;
+                        // Translate
                         return t(entry, __assign(__assign(__assign({}, metadata), options), { id: id }));
                     };
                     return [2 /*return*/, d];

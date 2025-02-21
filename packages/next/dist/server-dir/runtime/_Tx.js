@@ -100,7 +100,7 @@ function Resolver(_a) {
  */
 function Tx(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, _c, defaultLocale, _d, translationRequired, dialectTranslationRequired, taggedChildren, renderDefault, childrenAsObjects, hash, translationEntry, renderTranslation, isProductionApiEnabled, isDevelopmentApiEnabled, renderSettings, translationPromise, loadingFallback;
+        var I18NConfig, _c, defaultLocale, _d, translationRequired, dialectTranslationRequired, taggedChildren, renderDefault, childrenAsObjects, hash, translationEntry, renderTranslation, renderSettings, translationPromise, loadingFallback;
         var _this = this;
         var _e;
         var children = _b.children, id = _b.id, context = _b.context, locale = _b.locale;
@@ -141,7 +141,7 @@ function Tx(_a) {
                             source: taggedChildren,
                             target: target,
                             locales: [locale, defaultLocale],
-                            renderVariable: renderVariable_1.default
+                            renderVariable: renderVariable_1.default,
                         });
                     };
                     // ----- RENDER CACHED TRANSLATIONS ----- //
@@ -152,8 +152,10 @@ function Tx(_a) {
                     if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error') {
                         return [2 /*return*/, renderDefault()];
                     }
-                    isProductionApiEnabled = I18NConfig.isProductionApiEnabled, isDevelopmentApiEnabled = I18NConfig.isDevelopmentApiEnabled;
-                    if (!isProductionApiEnabled() && !isDevelopmentApiEnabled())
+                    // ----- TRANSLATE ON DEMAND ----- //
+                    // If runtime APIs are disabled, render default
+                    if (!I18NConfig.isProductionApiEnabled() &&
+                        !I18NConfig.isDevelopmentApiEnabled())
                         return [2 /*return*/, renderDefault()];
                     renderSettings = I18NConfig.getRenderSettings();
                     translationPromise = (function () { return __awaiter(_this, void 0, void 0, function () {
@@ -185,7 +187,9 @@ function Tx(_a) {
                         loadingFallback = (0, internal_1.renderSkeleton)();
                     }
                     else {
-                        loadingFallback = dialectTranslationRequired ? renderDefault() : (0, internal_1.renderSkeleton)();
+                        loadingFallback = dialectTranslationRequired
+                            ? renderDefault()
+                            : (0, internal_1.renderSkeleton)();
                     }
                     return [2 /*return*/, ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: (0, jsx_runtime_1.jsx)(Resolver, { children: translationPromise }) }, locale))];
             }

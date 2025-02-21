@@ -7,7 +7,7 @@ import { ReactNode } from 'react';
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export default function GTProvider({ children, id, }: {
+export default function GTProvider({ children, id: prefixId, }: {
     children?: ReactNode;
     id?: string;
 }): Promise<import("react/jsx-runtime").JSX.Element>;

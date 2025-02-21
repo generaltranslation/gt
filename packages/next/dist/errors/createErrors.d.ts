@@ -9,11 +9,14 @@ export declare const createMissingCustomTranslationLoadedError: (customLoadTrans
 export declare const dictionaryDisabledError = "gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs";
 export declare const unresolvedCustomLoadTranslationError = "gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.";
 export declare const usingDefaultsWarning = "gt-next: Unable to access gt-next configuration. Using defaults.";
-export declare const createNoEntryWarning: (id: string) => string;
+export declare const createNoEntryFoundWarning: (id: string) => string;
+export declare const createInvalidDictionaryEntryWarning: (id: string) => string;
 export declare const createUnsupportedLocalesWarning: (locales: string[]) => string;
 export declare const createMismatchingHashWarning: (expectedHash: string, receivedHash: string) => string;
 export declare const projectIdMissingWarn = "gt-next: Project ID missing! Set projectId as GT_PROJECT_ID in your environment or by passing the projectId parameter to withGTConfig(). Find your project ID: generaltranslation.com/dashboard.";
 export declare const noInitGTWarn: string;
 export declare const APIKeyMissingWarn: string;
 export declare const translationLoadingWarning: string;
+export declare const runtimeTranslationTimeoutWarning = "gt-next: Runtime translation timed out.";
+export declare const dictionaryNotFoundWarning = "gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the WithGTConfig() plugin.";
 //# sourceMappingURL=createErrors.d.ts.map

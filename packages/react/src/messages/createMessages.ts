@@ -55,11 +55,16 @@ export const runtimeTranslationError = `gt-react Error: Runtime translation fail
 export const projectIdMissingWarning =
   'gt-react warn: Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
 
-export const createLibraryNoEntryWarning = (id: string) =>
-  `gt-react: No dictionary entry found for id: "${id}"`;
+export const createNoEntryFoundWarning = (id: string) =>
+  `gt-react: No valid dictionary entry found for id: "${id}"`;
 
-export const createNoEntryWarning = (id: string, prefixedId: string) =>
-  `t('${id}') finding no translation for dictionary item ${prefixedId} !`;
+export const createInvalidDictionaryEntryWarning = (id: string) =>
+  `gt-react: Invalid dictionary entry found for id: "${id}"`;
+
+export const createNoEntryTranslationWarning = (
+  id: string,
+  prefixedId: string
+) => `t('${id}') finding no translation for dictionary item ${prefixedId} !`;
 
 export const createMismatchingHashWarning = (
   expectedHash: string,
@@ -79,3 +84,5 @@ export const createUnsupportedLocalesWarning = (locales: string[]) =>
       return `${locale} (${name})`;
     })
     .join(', ')}`;
+
+export const runtimeTranslationTimeoutWarning = `gt-react: Runtime translation timed out.`;

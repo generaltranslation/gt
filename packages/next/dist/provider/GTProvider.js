@@ -85,15 +85,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = GTProvider;
 var jsx_runtime_1 = require("react/jsx-runtime");
-var internal_1 = require("gt-react/internal");
 var react_1 = require("react");
 var getI18NConfig_1 = __importDefault(require("../config-dir/getI18NConfig"));
 var getLocale_1 = __importDefault(require("../request/getLocale"));
-var generaltranslation_1 = require("generaltranslation");
 var getDictionary_1 = __importStar(require("../dictionary/getDictionary"));
 var createErrors_1 = require("../errors/createErrors");
 var ClientProviderWrapper_1 = __importDefault(require("./ClientProviderWrapper"));
-var id_1 = require("generaltranslation/id");
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -104,56 +101,67 @@ var id_1 = require("generaltranslation/id");
  */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var _c, getDefaultLocale, requiresTranslation, getCachedTranslations, isDevelopmentApiEnabled, getClientSideConfig, getLocales, translateContent, locale, defaultLocale, _d, translationRequired, dialectTranslationRequired, cachedTranslationsPromise, provisionalDictionary, dictionary, translations, promises, cachedTranslations, developmentApiEnabled, _i, _e, _f, id_2, value, _g, entry, metadata, source, context, hash;
-        var children = _b.children, id = _b.id;
-        return __generator(this, function (_h) {
-            switch (_h.label) {
+        var I18NConfig, locale, defaultLocale, _c, translationRequired, dialectTranslationRequired, cachedTranslationsPromise, dictionary, translations;
+        var children = _b.children, prefixId = _b.id;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0:
-                    _c = (0, getI18NConfig_1.default)(), getDefaultLocale = _c.getDefaultLocale, requiresTranslation = _c.requiresTranslation, getCachedTranslations = _c.getCachedTranslations, isDevelopmentApiEnabled = _c.isDevelopmentApiEnabled, getClientSideConfig = _c.getClientSideConfig, getLocales = _c.getLocales, translateContent = _c.translateContent;
+                    I18NConfig = (0, getI18NConfig_1.default)();
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    locale = _h.sent();
-                    defaultLocale = getDefaultLocale();
-                    _d = requiresTranslation(locale), translationRequired = _d[0], dialectTranslationRequired = _d[1];
-                    cachedTranslationsPromise = translationRequired ? getCachedTranslations(locale) : {};
-                    provisionalDictionary = (id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)()) || {};
+                    locale = _d.sent();
+                    defaultLocale = I18NConfig.getDefaultLocale();
+                    _c = I18NConfig.requiresTranslation(locale), translationRequired = _c[0], dialectTranslationRequired = _c[1];
+                    cachedTranslationsPromise = translationRequired
+                        ? I18NConfig.getCachedTranslations(locale)
+                        : {};
+                    dictionary = (prefixId ? (0, getDictionary_1.getDictionaryEntry)(prefixId) : (0, getDictionary_1.default)()) || {};
                     // Check provisional dictionary
-                    if ((0, react_1.isValidElement)(provisionalDictionary) ||
-                        Array.isArray(provisionalDictionary) ||
-                        typeof provisionalDictionary !== 'object') {
+                    if ((0, react_1.isValidElement)(dictionary) ||
+                        Array.isArray(dictionary) ||
+                        typeof dictionary !== 'object') {
                         // cannot be a DictionaryEntry, must be a Dictionary
-                        throw new Error((0, createErrors_1.createDictionarySubsetError)(id !== null && id !== void 0 ? id : '', '<GTProvider>'));
+                        throw new Error((0, createErrors_1.createDictionarySubsetError)(prefixId !== null && prefixId !== void 0 ? prefixId : '', '<GTProvider>'));
                     }
-                    dictionary = (0, internal_1.flattenDictionary)(provisionalDictionary);
-                    translations = {};
-                    promises = {};
-                    if (!translationRequired) return [3 /*break*/, 3];
                     return [4 /*yield*/, cachedTranslationsPromise];
                 case 2:
-                    cachedTranslations = _h.sent();
-                    developmentApiEnabled = isDevelopmentApiEnabled();
-                    for (_i = 0, _e = Object.entries(dictionary); _i < _e.length; _i++) {
-                        _f = _e[_i], id_2 = _f[0], value = _f[1];
-                        _g = (0, internal_1.getEntryAndMetadata)(value), entry = _g.entry, metadata = _g.metadata;
-                        source = (0, generaltranslation_1.splitStringToContent)(entry);
-                        context = metadata === null || metadata === void 0 ? void 0 : metadata.context;
-                        hash = (0, id_1.hashJsxChildren)(__assign({ source: source, id: id_2 }, (context && { context: context })));
-                        // If translation is cached, use it
-                        if (cachedTranslations === null || cachedTranslations === void 0 ? void 0 : cachedTranslations[hash]) {
-                            translations[hash] = cachedTranslations[hash];
-                            continue;
-                        }
-                        // If development API is enabled, fetch translation
-                        if (developmentApiEnabled) {
-                            promises[id_2] = translateContent({
-                                source: source,
-                                targetLocale: locale,
-                                options: __assign({ hash: hash, id: id_2 }, (context && { context: context })),
-                            });
-                        }
-                    }
-                    _h.label = 3;
-                case 3: return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, translationPromises: promises, locale: locale, locales: getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired }, getClientSideConfig(), { children: children })))];
+                    translations = _d.sent();
+                    // // Dictionary to pass to client
+                    // const dictionary = flattenDictionary(provisionalDictionary);
+                    // // Translations to pass to the client
+                    // const translations: TranslationsObject = {};
+                    // // Promises to pass to the client
+                    // const promises: Record<string, Promise<TranslatedChildren>> = {};
+                    // // Dev only: translate on demand
+                    // if (translationRequired) {
+                    //   // Block until translation resolves
+                    //   const cachedTranslations = await cachedTranslationsPromise;
+                    //   if (I18NConfig.isDevelopmentApiEnabled()) {
+                    //     for (const [id, value] of Object.entries(dictionary)) {
+                    //       // Calculate hash
+                    //       const { entry, metadata } = getEntryAndMetadata(value);
+                    //       const source = splitStringToContent(entry);
+                    //       const context = metadata?.context;
+                    //       const hash = hashJsxChildren({
+                    //         source,
+                    //         id,
+                    //         ...(context && { context }),
+                    //       });
+                    //       // If translation is cached, use it
+                    //       if (cachedTranslations?.[hash]) {
+                    //         translations[hash] = cachedTranslations[hash];
+                    //         continue;
+                    //       }
+                    //       // If development API is enabled, fetch translation
+                    //       promises[hash] = I18NConfig.translateContent({
+                    //         source,
+                    //         targetLocale: locale,
+                    //         options: { hash, id, ...(context && { context }) },
+                    //       });
+                    //     }
+                    //   }
+                    // }
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });
     });

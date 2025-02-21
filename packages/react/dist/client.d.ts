@@ -95,7 +95,6 @@ type ClientProviderProps = {
     children: any;
     dictionary: Dictionary;
     initialTranslations: TranslationsObject;
-    translationPromises: Record<string, Promise<TranslatedChildren>>;
     locale: string;
     locales: string[];
     _versionId?: string;
@@ -144,7 +143,7 @@ declare function renderVariable({ variableType, variableName, variableValue, var
     locales: string[];
 }): React.JSX.Element;
 
-declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
+declare function ClientProvider({ children, dictionary, initialTranslations, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.

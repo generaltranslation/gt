@@ -25,104 +25,100 @@ import { hashJsxChildren } from 'generaltranslation/id';
  */
 export default async function GTProvider({
   children,
-  id,
+  id: prefixId,
 }: {
   children?: ReactNode;
   id?: string;
 }) {
   // ---------- SETUP ---------- //
 
-  const {
-    getDefaultLocale,
-    requiresTranslation,
-    getCachedTranslations,
-    isDevelopmentApiEnabled,
-    getClientSideConfig,
-    getLocales,
-    translateContent,
-  } = getI18NConfig();
+  const I18NConfig = getI18NConfig();
   const locale = await getLocale();
-  const defaultLocale = getDefaultLocale();
+  const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired, dialectTranslationRequired] =
-    requiresTranslation(locale);
+    I18NConfig.requiresTranslation(locale);
 
   // ----- FETCH TRANSLATIONS FROM CACHE ----- //
 
   const cachedTranslationsPromise: Promise<TranslationsObject> =
-    translationRequired ? getCachedTranslations(locale) : ({} as any);
+    translationRequired
+      ? I18NConfig.getCachedTranslations(locale)
+      : ({} as any);
 
   // ---------- PROCESS DICTIONARY ---------- //
   // (While waiting for cache...)
 
   // Get dictionary subset
-  let provisionalDictionary: Dictionary | DictionaryEntry =
-    (id ? getDictionaryEntry(id) : getDictionary()) || {};
+  let dictionary: Dictionary | DictionaryEntry =
+    (prefixId ? getDictionaryEntry(prefixId) : getDictionary()) || {};
 
   // Check provisional dictionary
   if (
-    isValidElement(provisionalDictionary) ||
-    Array.isArray(provisionalDictionary) ||
-    typeof provisionalDictionary !== 'object'
+    isValidElement(dictionary) ||
+    Array.isArray(dictionary) ||
+    typeof dictionary !== 'object'
   ) {
     // cannot be a DictionaryEntry, must be a Dictionary
-    throw new Error(createDictionarySubsetError(id ?? '', '<GTProvider>'));
+    throw new Error(
+      createDictionarySubsetError(prefixId ?? '', '<GTProvider>')
+    );
   }
 
-  // Dictionary to pass to client
-  const dictionary = flattenDictionary(provisionalDictionary);
+  // Block until cache check resolves
+  const translations = await cachedTranslationsPromise;
 
-  // Translations to pass to the client
-  const translations: TranslationsObject = {};
+  // // Dictionary to pass to client
+  // const dictionary = flattenDictionary(provisionalDictionary);
 
-  // Promises to pass to the client
-  const promises: Record<string, Promise<TranslatedChildren>> = {};
+  // // Translations to pass to the client
+  // const translations: TranslationsObject = {};
 
-  if (translationRequired) {
-    // Block until translation resolves
-    const cachedTranslations = await cachedTranslationsPromise;
+  // // Promises to pass to the client
+  // const promises: Record<string, Promise<TranslatedChildren>> = {};
 
-    // Translation enabled
-    const developmentApiEnabled = isDevelopmentApiEnabled();
+  // // Dev only: translate on demand
+  // if (translationRequired) {
+  //   // Block until translation resolves
+  //   const cachedTranslations = await cachedTranslationsPromise;
 
-    for (const [id, value] of Object.entries(dictionary)) {
-      // Calculate hash
-      const { entry, metadata } = getEntryAndMetadata(value);
-      const source = splitStringToContent(entry);
-      const context = metadata?.context;
-      const hash = hashJsxChildren({
-        source,
-        id,
-        ...(context && { context }),
-      });
+  //   if (I18NConfig.isDevelopmentApiEnabled()) {
+  //     for (const [id, value] of Object.entries(dictionary)) {
+  //       // Calculate hash
+  //       const { entry, metadata } = getEntryAndMetadata(value);
+  //       const source = splitStringToContent(entry);
+  //       const context = metadata?.context;
+  //       const hash = hashJsxChildren({
+  //         source,
+  //         id,
+  //         ...(context && { context }),
+  //       });
 
-      // If translation is cached, use it
-      if (cachedTranslations?.[hash]) {
-        translations[hash] = cachedTranslations[hash];
-        continue;
-      }
+  //       // If translation is cached, use it
+  //       if (cachedTranslations?.[hash]) {
+  //         translations[hash] = cachedTranslations[hash];
+  //         continue;
+  //       }
 
-      // If development API is enabled, fetch translation
-      if (developmentApiEnabled) {
-        promises[id] = translateContent({
-          source,
-          targetLocale: locale,
-          options: { hash, id, ...(context && { context }) },
-        });
-      }
-    }
-  }
+  //       // If development API is enabled, fetch translation
+  //       promises[hash] = I18NConfig.translateContent({
+  //         source,
+  //         targetLocale: locale,
+  //         options: { hash, id, ...(context && { context }) },
+  //       });
+  //     }
+  //   }
+  // }
 
   return (
     <ClientProvider
       dictionary={dictionary}
       initialTranslations={translations}
-      translationPromises={promises}
       locale={locale}
-      locales={getLocales()}
+      locales={I18NConfig.getLocales()}
       defaultLocale={defaultLocale}
       translationRequired={translationRequired}
       dialectTranslationRequired={dialectTranslationRequired}
-      {...getClientSideConfig()}
+      {...I18NConfig.getClientSideConfig()}
     >
       {children}
     </ClientProvider>

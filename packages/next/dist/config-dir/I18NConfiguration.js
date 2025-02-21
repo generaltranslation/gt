@@ -96,13 +96,14 @@ var I18NConfiguration = /** @class */ (function () {
                 this.projectId && // projectId required because it's part of the GET request
                 this.cacheUrl));
         // IS RUNTIME TRANSLATION ENABLED
-        var runtimeApiEnabled = !!(this.runtimeUrl === defaultInitGTProps_1.default.runtimeUrl
+        var runtimeApiEnabled = !!(this.runtimeUrl ===
+            defaultInitGTProps_1.default.runtimeUrl
             ? this.projectId
             : this.runtimeUrl);
         this.developmentApiEnabled = !!(runtimeApiEnabled &&
-            (this.devApiKey && process.env.NODE_ENV === 'development'));
-        this.productionApiEnabled = !!(runtimeApiEnabled &&
-            this.apiKey);
+            this.devApiKey &&
+            process.env.NODE_ENV === 'development');
+        this.productionApiEnabled = !!(runtimeApiEnabled && this.apiKey);
         // DICTIONARY ENABLED
         this.dictionaryEnabled = _usingPlugin;
         // ----- SETUP ----- //
@@ -157,7 +158,7 @@ var I18NConfiguration = /** @class */ (function () {
             devApiKey: devApiKey,
             dictionaryEnabled: dictionaryEnabled,
             renderSettings: renderSettings,
-            runtimeTranslationEnabled: developmentApiEnabled
+            runtimeTranslationEnabled: developmentApiEnabled,
         };
     };
     // ----- LOCALES ----- //
@@ -300,7 +301,6 @@ var I18NConfiguration = /** @class */ (function () {
                         reject: reject,
                     });
                 }).catch(function (error) {
-                    console.error(error);
                     _this._translationCache.delete(cacheKey);
                     throw new Error(error);
                 });
@@ -325,7 +325,7 @@ var I18NConfiguration = /** @class */ (function () {
                     case 1:
                         _b.trys.push([1, 6, 7, 8]);
                         fetchWithAbort = function (url, options, timeout) { return __awaiter(_this, void 0, void 0, function () {
-                            var controller, timeoutId, error_2;
+                            var controller, timeoutId;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
@@ -335,19 +335,14 @@ var I18NConfiguration = /** @class */ (function () {
                                             : setTimeout(function () { return controller.abort(); }, timeout);
                                         _a.label = 1;
                                     case 1:
-                                        _a.trys.push([1, 3, 4, 5]);
+                                        _a.trys.push([1, , 3, 4]);
                                         return [4 /*yield*/, fetch(url, __assign(__assign({}, options), { signal: controller.signal }))];
                                     case 2: return [2 /*return*/, _a.sent()];
                                     case 3:
-                                        error_2 = _a.sent();
-                                        if (error_2 instanceof Error && error_2.name === 'AbortError')
-                                            throw new Error('Request timed out'); // Handle the timeout case
-                                        throw error_2; // Re-throw other errors
-                                    case 4:
                                         if (timeoutId !== undefined)
                                             clearTimeout(timeoutId); // Ensure timeout is cleared
                                         return [7 /*endfinally*/];
-                                    case 5: return [2 /*return*/];
+                                    case 4: return [2 /*return*/];
                                 }
                             });
                         }); };
@@ -415,13 +410,20 @@ var I18NConfiguration = /** @class */ (function () {
                         return [3 /*break*/, 8];
                     case 6:
                         error_1 = _b.sent();
-                        console.error(error_1);
+                        // Error logging
+                        if (error_1 instanceof Error && error_1.name === 'AbortError') {
+                            console.warn(createErrors_1.runtimeTranslationTimeoutWarning); // Warning for timeout
+                        }
+                        else {
+                            console.error(error_1);
+                        }
+                        // Reject all promises
                         batch.forEach(function (request) {
                             // record translation error
                             if (_this._translationManager) {
                                 _this._translationManager.setTranslations(request.targetLocale, request.metadata.hash, { state: 'error', error: 'Translation failed.', code: 500 });
                             }
-                            return request.reject(new internal_1.GTTranslationError('Translation failed.', 500));
+                            return request.reject(new internal_1.GTTranslationError('Translation failed:' + error_1, 500));
                         });
                         return [3 /*break*/, 8];
                     case 7:

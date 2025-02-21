@@ -20,10 +20,11 @@ export default function useCreateInternalUseGTFunction(
   dialectTranslationRequired: boolean,
   runtimeTranslationEnabled: boolean,
   registerContentForTranslation: TranslateContentCallback,
-  renderSettings: { method: RenderMethod; }
+  renderSettings: { method: RenderMethod }
 ): (string: string, options?: InlineTranslationOptions) => string {
-  return useCallback((
-      string: string,
+  return useCallback(
+    (
+      contentString: string,
       options: {
         locale?: string;
         context?: string;
@@ -38,13 +39,13 @@ export default function useCreateInternalUseGTFunction(
       // ----- SET UP ----- //
 
       // Check: reject invalid content
-      if (!string || typeof string !== 'string') return '';
+      if (!contentString || typeof contentString !== 'string') return '';
 
       // Parse content
-      const source = splitStringToContent(string);
+      const source = splitStringToContent(contentString);
 
       // Render method
-      const r = (content: Content, locales: string[]) => {
+      const renderContent = (content: Content, locales: string[]) => {
         return renderContentToString(
           content,
           locales,
@@ -54,7 +55,7 @@ export default function useCreateInternalUseGTFunction(
       };
 
       // Check: translation not required
-      if (!translationRequired) return r(source, [defaultLocale]);
+      if (!translationRequired) return renderContent(source, [defaultLocale]);
 
       // ----- CHECK TRANSLATIONS ----- //
 
@@ -69,11 +70,14 @@ export default function useCreateInternalUseGTFunction(
       const translationEntry = translations?.[hash];
 
       if (translationEntry?.state === 'success') {
-        return r(translationEntry.target as Content, [locale, defaultLocale]);
+        return renderContent(translationEntry.target as Content, [
+          locale,
+          defaultLocale,
+        ]);
       }
 
       if (translationEntry?.state === 'error') {
-        return r(source, [defaultLocale]);
+        return renderContent(source, [defaultLocale]);
       }
 
       // ----- TRANSLATE ON DEMAND ----- //
@@ -81,7 +85,7 @@ export default function useCreateInternalUseGTFunction(
 
       // Check if runtime translation is enabled
       if (!runtimeTranslationEnabled) {
-        return r(source, [defaultLocale]);
+        return renderContent(source, [defaultLocale]);
       }
 
       // Translate Content
@@ -91,18 +95,18 @@ export default function useCreateInternalUseGTFunction(
         metadata: {
           ...(options?.context && { context: options.context }),
           id: options?.id,
-          hash
+          hash: hash,
         },
       });
 
       // Loading behavior
       if (renderSettings.method === 'replace') {
-        return r(source, [defaultLocale]);
+        return renderContent(source, [defaultLocale]);
       } else if (renderSettings.method === 'skeleton') {
         return '';
       }
       return dialectTranslationRequired // default behavior
-        ? r(source, [defaultLocale])
+        ? renderContent(source, [defaultLocale])
         : '';
     },
     [

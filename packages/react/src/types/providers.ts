@@ -12,8 +12,14 @@ import { TranslateContentCallback, TranslateChildrenCallback } from './runtime';
 export type GTContextType = {
   registerContentForTranslation: TranslateContentCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
-  _internalUseGTFunction: (string: string, options?: InlineTranslationOptions) => string;
-  _internalUseDictFunction: (id: string, options?: DictionaryTranslationOptions) => string;
+  _internalUseGTFunction: (
+    string: string,
+    options?: InlineTranslationOptions
+  ) => string;
+  _internalUseDictFunction: (
+    id: string,
+    options?: DictionaryTranslationOptions
+  ) => string;
   runtimeTranslationEnabled: boolean;
   locale: string;
   locales: string[];
@@ -30,7 +36,6 @@ export type ClientProviderProps = {
   children: any;
   dictionary: Dictionary;
   initialTranslations: TranslationsObject;
-  translationPromises: Record<string, Promise<TranslatedChildren>>;
   locale: string;
   locales: string[];
   _versionId?: string;

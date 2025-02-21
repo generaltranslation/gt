@@ -112,7 +112,7 @@ function withGTConfig(nextConfig, props) {
     // Resolve dictionary filepath
     var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
         ? mergedConfig.dictionary
-        : resolveConfigFilepath('dictionary');
+        : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']);
     // Resolve custom translation loader path
     var customLoadTranslationPath = typeof mergedConfig.loadTranslationPath === 'string'
         ? mergedConfig.loadTranslationPath
@@ -212,7 +212,8 @@ exports.initGT = initGT;
  * @param {string} [cwd] - An optional current working directory path.
  * @returns {string|undefined} - The path if found; otherwise undefined.
  */
-function resolveConfigFilepath(fileName, cwd) {
+function resolveConfigFilepath(fileName, extensions, cwd) {
+    if (extensions === void 0) { extensions = ['.ts', '.js']; }
     function resolvePath(pathname) {
         var parts = [];
         if (cwd)
@@ -224,7 +225,7 @@ function resolveConfigFilepath(fileName, cwd) {
         return fs_1.default.existsSync(resolvePath(pathname));
     }
     // Check for file existence in the root and src directories with supported extensions
-    for (var _i = 0, _a = __spreadArray(__spreadArray([], withExtensions("./".concat(fileName)), true), withExtensions("./src/".concat(fileName)), true); _i < _a.length; _i++) {
+    for (var _i = 0, _a = __spreadArray(__spreadArray([], extensions.map(function (ext) { return "./".concat(fileName).concat(ext); }), true), extensions.map(function (ext) { return "./src/".concat(fileName).concat(ext); }), true); _i < _a.length; _i++) {
         var candidate = _a[_i];
         if (pathExists(candidate)) {
             return candidate;
@@ -232,18 +233,5 @@ function resolveConfigFilepath(fileName, cwd) {
     }
     // Return undefined if no file is found
     return undefined;
-}
-/**
- * Helper function to handle multiple extensions.
- *
- * @param {string} localPath - The local path to which extensions will be appended.
- * @returns {string[]} - Array of possible paths with supported TypeScript/JavaScript extensions.
- */
-function withExtensions(localPath) {
-    return [
-        "".concat(localPath, ".ts"),
-        "".concat(localPath, ".js"),
-        "".concat(localPath, ".json"),
-    ];
 }
 //# sourceMappingURL=config.js.map

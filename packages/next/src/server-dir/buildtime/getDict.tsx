@@ -2,12 +2,15 @@ import {
   DictionaryTranslationOptions,
   getDictionaryEntry,
   getEntryAndMetadata,
-  isValidDictionaryEntry
+  isValidDictionaryEntry,
 } from 'gt-react/internal';
 
 import getGT from './getGT';
 import getDictionary from '../../dictionary/getDictionary';
-import { createNoEntryWarning } from '../../errors/createErrors';
+import {
+  createInvalidDictionaryEntryWarning,
+  createNoEntryFoundWarning,
+} from '../../errors/createErrors';
 
 /**
  * Returns the dictionary access function `d()`, which is used to translate an item from the dictionary.
@@ -22,13 +25,9 @@ import { createNoEntryWarning } from '../../errors/createErrors';
  * const d = await getDict();
  * console.log(d('hello')); // Translates item 'hello'
  */
-export default async function getDict(id?: string): Promise<
-  (
-    id: string,
-    options?: DictionaryTranslationOptions
-  ) => string
-> {
-
+export default async function getDict(
+  id?: string
+): Promise<(id: string, options?: DictionaryTranslationOptions) => string> {
   const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
   };
@@ -63,19 +62,31 @@ export default async function getDict(id?: string): Promise<
     id: string,
     options: DictionaryTranslationOptions = {}
   ): string => {
+    // Get entry
     id = getId(id);
     const value = getDictionaryEntry(dictionary, id);
-    const valueIsValid = isValidDictionaryEntry(value);
-    if (!valueIsValid) {
-        console.error(createNoEntryWarning(id))
-        return '';
+
+    // Check: no entry found
+    if (!value) {
+      console.warn(createNoEntryFoundWarning(id));
+      return '';
     }
+
+    // Check: invalid entry
+    if (!isValidDictionaryEntry(value)) {
+      console.warn(createInvalidDictionaryEntryWarning(id));
+      return '';
+    }
+
+    // Get entry and metadata
     const { entry, metadata } = getEntryAndMetadata(value);
+
+    // Translate
     return t(entry, {
       ...metadata,
       ...options,
-      id
-    })
+      id,
+    });
   };
 
   return d;

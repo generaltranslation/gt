@@ -110,7 +110,7 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
   const resolvedDictionaryFilePath =
     typeof mergedConfig.dictionary === 'string'
       ? mergedConfig.dictionary
-      : resolveConfigFilepath('dictionary');
+      : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']);
 
   // Resolve custom translation loader path
   const customLoadTranslationPath =
@@ -265,6 +265,7 @@ export const initGT = (props: InitGTProps) => (nextConfig: any) =>
  */
 function resolveConfigFilepath(
   fileName: string,
+  extensions: string[] = ['.ts', '.js'],
   cwd?: string
 ): string | undefined {
   function resolvePath(pathname: string) {
@@ -280,8 +281,8 @@ function resolveConfigFilepath(
 
   // Check for file existence in the root and src directories with supported extensions
   for (const candidate of [
-    ...withExtensions(`./${fileName}`),
-    ...withExtensions(`./src/${fileName}`),
+    ...extensions.map((ext) => `./${fileName}${ext}`),
+    ...extensions.map((ext) => `./src/${fileName}${ext}`),
   ]) {
     if (pathExists(candidate)) {
       return candidate;
@@ -290,18 +291,4 @@ function resolveConfigFilepath(
 
   // Return undefined if no file is found
   return undefined;
-}
-
-/**
- * Helper function to handle multiple extensions.
- *
- * @param {string} localPath - The local path to which extensions will be appended.
- * @returns {string[]} - Array of possible paths with supported TypeScript/JavaScript extensions.
- */
-function withExtensions(localPath: string) {
-  return [
-    `${localPath}.ts`,
-    `${localPath}.js`,
-    `${localPath}.json`,
-  ];
 }

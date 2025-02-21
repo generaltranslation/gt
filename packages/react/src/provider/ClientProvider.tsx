@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { determineLocale } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/providers';
@@ -19,7 +19,6 @@ export default function ClientProvider({
   children,
   dictionary,
   initialTranslations,
-  translationPromises,
   locale: _locale,
   _versionId,
   defaultLocale,
@@ -82,43 +81,8 @@ export default function ClientProvider({
 
   // Fetch additional translations and queue them for merging
   useEffect(() => {
-    setTranslations((prev) => ({ ...prev, ...initialTranslations }));
-    let storeResult = true;
-    const resolvedTranslations: TranslationsObject = {};
-    (async () => {
-      // resolve all translation promises
-      await Promise.all(
-        Object.entries(translationPromises).map(async ([key, promise]) => {
-          let result: TranslationSuccess | TranslationError;
-          try {
-            result = { state: 'success', target: await promise };
-          } catch (error) {
-            console.error(error);
-            // set all promise ids to error in translations
-            if (error instanceof GTTranslationError) {
-              result = error.toTranslationError();
-            } else {
-              result = { state: 'error', error: 'An error occured', code: 500 };
-            }
-          }
-          resolvedTranslations[key] = result;
-        })
-      );
-      // add resolved translations to state
-      if (storeResult) {
-        setTranslations((prev) => ({
-          ...initialTranslations,
-          ...prev,
-          ...resolvedTranslations,
-        }));
-      }
-    })();
-
-    return () => {
-      // cleanup
-      storeResult = false;
-    };
-  }, [initialTranslations, translationPromises]);
+    setTranslations((prev) => ({ ...initialTranslations, ...prev }));
+  }, [initialTranslations]);
 
   // ---------- TRANSLATION METHODS ---------- //
 

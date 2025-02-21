@@ -44,8 +44,11 @@ export const unresolvedCustomLoadTranslationError = `gt-next Error: Custom trans
 export const usingDefaultsWarning =
   'gt-next: Unable to access gt-next configuration. Using defaults.';
 
-export const createNoEntryWarning = (id: string) =>
-  `gt-next: No dictionary entry found for id: "${id}"`;
+export const createNoEntryFoundWarning = (id: string) =>
+  `gt-react: No valid dictionary entry found for id: "${id}"`;
+
+export const createInvalidDictionaryEntryWarning = (id: string) =>
+  `gt-react: Invalid dictionary entry found for id: "${id}"`;
 
 export const createUnsupportedLocalesWarning = (locales: string[]) =>
   `gt-next: The following locales are currently unsupported by our service: ${locales
@@ -76,4 +79,8 @@ export const APIKeyMissingWarn =
 
 export const translationLoadingWarning =
   `gt-next: [DEV ONLY] Translations have changed since the last update. ` +
-  `In production, translations in production will be preloaded, and page will not need to be refreshed.`;
+  `Translations in production will be preloaded, and page will not need to be refreshed.`;
+
+export const runtimeTranslationTimeoutWarning = `gt-next: Runtime translation timed out.`;
+
+export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the WithGTConfig() plugin.`;

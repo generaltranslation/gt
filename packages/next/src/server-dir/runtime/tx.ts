@@ -1,5 +1,4 @@
 import {
-  isSameLanguage,
   renderContentToString,
   splitStringToContent,
 } from 'generaltranslation';
@@ -45,20 +44,19 @@ export default async function tx(
   string: string,
   options: RuntimeTranslationOptions = {}
 ): Promise<string> {
-
   if (!string || typeof string !== 'string') return '';
-  
+
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
   const locale = options.locale || (await getLocale());
   const defaultLocale = I18NConfig.getDefaultLocale();
-  const [ translationRequired ] = I18NConfig.requiresTranslation(locale);
+  const [translationRequired] = I18NConfig.requiresTranslation(locale);
   const source = splitStringToContent(string); // parse content
 
   // ----- DEFINE RENDER FUNCTION ----- //
 
-  const r = (content: any, locales: string[]) => {
+  const renderContent = (content: any, locales: string[]) => {
     return renderContentToString(
       content,
       locales,
@@ -69,7 +67,7 @@ export default async function tx(
 
   // ----- CHECK IF TRANSLATION REQUIRED ----- //
 
-  if (!translationRequired) return r(source, [defaultLocale]);
+  if (!translationRequired) return renderContent(source, [defaultLocale]);
 
   // ----- CALCULATE HASH ----- //
 
@@ -83,10 +81,10 @@ export default async function tx(
 
   const recentTranslations = I18NConfig.getRecentTranslations(locale);
   if (recentTranslations?.[hash]?.state === 'success') {
-    return r(
-      recentTranslations[hash].target, 
-      [locale, defaultLocale]
-    );
+    return renderContent(recentTranslations[hash].target, [
+      locale,
+      defaultLocale,
+    ]);
   }
 
   // ------ CREATE NEW TRANSLATION ---- //
@@ -98,9 +96,9 @@ export default async function tx(
       targetLocale: locale,
       options: { ...options, hash },
     });
-    return r(target, [locale, defaultLocale]);
+    return renderContent(target, [locale, defaultLocale]);
   } catch (error) {
     console.error(createStringTranslationError(string, options.id), error);
-    return r(source, [defaultLocale]);
+    return renderContent(source, [defaultLocale]);
   }
 }

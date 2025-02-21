@@ -1,4 +1,4 @@
-import { TranslationsObject, RenderMethod, TranslatedChildren, InlineTranslationOptions, DictionaryTranslationOptions, Dictionary } from './types';
+import { TranslationsObject, RenderMethod, InlineTranslationOptions, DictionaryTranslationOptions, Dictionary } from './types';
 import { TranslateContentCallback, TranslateChildrenCallback } from './runtime';
 export type GTContextType = {
     registerContentForTranslation: TranslateContentCallback;
@@ -23,7 +23,6 @@ export type ClientProviderProps = {
     children: any;
     dictionary: Dictionary;
     initialTranslations: TranslationsObject;
-    translationPromises: Record<string, Promise<TranslatedChildren>>;
     locale: string;
     locales: string[];
     _versionId?: string;

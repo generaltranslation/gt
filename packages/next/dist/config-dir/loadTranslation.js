@@ -43,8 +43,8 @@ function parseResult(result) {
     if (result && Object.keys(result).length) {
         // Parse response
         var parsedResult = Object.entries(result).reduce(function (translationsAcc, _a) {
-            var key = _a[0], target = _a[1];
-            translationsAcc[key] = { state: 'success', target: target };
+            var hash = _a[0], target = _a[1];
+            translationsAcc[hash] = { state: 'success', target: target };
             return translationsAcc;
         }, {});
         return parsedResult;

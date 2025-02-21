@@ -22,27 +22,21 @@ import { InlineTranslationOptions } from 'gt-react/internal';
  * console.log(t('Hello, world!')); // Translates 'Hello, world!'
  */
 export default async function getGT(): Promise<
-  (
-    string: string,
-    options?: InlineTranslationOptions
-  ) => string
+  (string: string, options?: InlineTranslationOptions) => string
 > {
-
   // ---------- SET UP ---------- //
 
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
-  const [ 
-    translationRequired
-  ] = I18NConfig.requiresTranslation(locale);
+  const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
   const translations = translationRequired
-  ? await I18NConfig.getCachedTranslations(locale)
-  : undefined;
+    ? await I18NConfig.getCachedTranslations(locale)
+    : undefined;
 
   const renderSettings = I18NConfig.getRenderSettings();
-    
+
   // ---------- THE t() METHOD ---------- //
 
   /**
@@ -55,11 +49,8 @@ export default async function getGT(): Promise<
    *
    * @example
    * t('My name is {name}', { variables: { name: 'John' } }); // Translates 'My name is {name}' and replaces {name} with 'John'
-  */
-  const t = (
-    string: string,
-    options: InlineTranslationOptions = {}
-  ) => {
+   */
+  const t = (string: string, options: InlineTranslationOptions = {}) => {
     // ----- SET UP ----- //
 
     // Validate content
@@ -69,7 +60,7 @@ export default async function getGT(): Promise<
     const source = splitStringToContent(string);
 
     // Render Method
-    const r = (content: any, locales: string[]) => {
+    const renderContent = (content: any, locales: string[]) => {
       return renderContentToString(
         content,
         locales,
@@ -79,8 +70,7 @@ export default async function getGT(): Promise<
     };
 
     // Check: translation required
-    if (!translationRequired) 
-      return r(source, [defaultLocale]);
+    if (!translationRequired) return renderContent(source, [defaultLocale]);
 
     // ----- GET TRANSLATION ----- //
 
@@ -94,24 +84,23 @@ export default async function getGT(): Promise<
     // ----- RENDER TRANSLATION ----- //
 
     // If a translation already exists
-    if (translationEntry?.state === 'success') return r(
-      translationEntry.target, [locale, defaultLocale]
-    );
+    if (translationEntry?.state === 'success')
+      return renderContent(translationEntry.target, [locale, defaultLocale]);
 
     // If a translation errored
     if (translationEntry?.state === 'error')
-      return r(source, [ defaultLocale ])
+      return renderContent(source, [defaultLocale]);
 
     // ----- CREATE TRANSLATION ----- //
     // Since this is buildtime string translation, it's dev only
 
     if (!I18NConfig.isDevelopmentApiEnabled()) {
       console.warn(createStringTranslationError(string, options?.id, 't'));
-      return r(source, [defaultLocale]);
+      return renderContent(source, [defaultLocale]);
     }
 
     // Translate on demand
-    I18NConfig.translateJsx({
+    I18NConfig.translateContent({
       source,
       targetLocale: locale,
       options: {
@@ -119,20 +108,20 @@ export default async function getGT(): Promise<
         ...(options?.id && { id: options?.id }),
         hash,
       },
-    });
+    }).catch(() => {}); // Error logged in I18NConfig
 
     // Loading translation warning
     console.warn(translationLoadingWarning);
 
     // Loading behavior
     if (renderSettings.method === 'replace') {
-      return r(source, [defaultLocale]);
+      return renderContent(source, [defaultLocale]);
     } else if (renderSettings.method === 'skeleton') {
       return '';
     }
 
     // Default is returning source, rather than returning a loading state
-    return r(source, [defaultLocale]);
+    return renderContent(source, [defaultLocale]);
   };
 
   return t;

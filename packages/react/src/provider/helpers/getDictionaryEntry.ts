@@ -1,12 +1,9 @@
 import React from 'react';
-import {
-  Dictionary,
-  DictionaryEntry,
-} from '../../types/types';
-import { createLibraryNoEntryWarning } from '../../messages/createMessages';
+import { Dictionary, DictionaryEntry } from '../../types/types';
 
-export function isValidDictionaryEntry(value: unknown): value is DictionaryEntry {
-
+export function isValidDictionaryEntry(
+  value: unknown
+): value is DictionaryEntry {
   if (typeof value === 'string') return true;
 
   if (Array.isArray(value)) {
@@ -15,15 +12,14 @@ export function isValidDictionaryEntry(value: unknown): value is DictionaryEntry
     }
     const provisionalMetadata = value?.[1];
     if (typeof provisionalMetadata === 'undefined') return true;
-    if (provisionalMetadata && typeof provisionalMetadata === 'object') return true;
+    if (provisionalMetadata && typeof provisionalMetadata === 'object')
+      return true;
   }
-  
+
   return false;
 }
 
-export default function getDictionaryEntry<
-  T extends Dictionary,
->(
+export default function getDictionaryEntry<T extends Dictionary>(
   dictionary: T,
   id: string
 ): Dictionary | DictionaryEntry | undefined {
@@ -35,7 +31,6 @@ export default function getDictionaryEntry<
       Array.isArray(current) ||
       React.isValidElement(current)
     ) {
-      console.error(createLibraryNoEntryWarning(id));
       return undefined;
     }
     current = (current as Dictionary)[key];

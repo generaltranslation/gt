@@ -1,6 +1,5 @@
 import React from 'react';
 import useGTContext from '../../provider/GTContext';
-import { createNoEntryWarning } from '../../messages/createMessages';
 import { DictionaryTranslationOptions } from '../../types/types';
 
 /**
@@ -19,7 +18,6 @@ import { DictionaryTranslationOptions } from '../../types/types';
 export default function useDict(
   id: string
 ): (id: string, options?: DictionaryTranslationOptions) => React.ReactNode {
-  
   // Create a prefix for translation keys if an id is provided
   const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
@@ -50,13 +48,9 @@ export default function useDict(
    * // Translates item in dictionary under greetings.greeting2 and replaces {name} with 'John'
    * d('greetings.greeting2', { variables: { name: 'John' } });
    */
-  function d(
-    id: string,
-    options: DictionaryTranslationOptions = {}
-  ): string {
-    // Get the prefixed ID
+  function d(id: string, options: DictionaryTranslationOptions = {}): string {
     const prefixedId = getId(id);
-    return (_internalUseDictFunction as any)(prefixedId, options);
+    return _internalUseDictFunction(prefixedId, options);
   }
 
   return d;

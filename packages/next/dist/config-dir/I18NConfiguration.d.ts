@@ -102,10 +102,7 @@ export default class I18NConfiguration {
      * @param locale - The user's locale
      * @returns True if translation is required, otherwise false
      */
-    requiresTranslation(locale: string): [
-        boolean,
-        boolean
-    ];
+    requiresTranslation(locale: string): [boolean, boolean];
     /**
      * Get the translation dictionaries for this user's locale, if they exist
      * Globally shared cache or saved locally

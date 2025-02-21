@@ -1,14 +1,8 @@
 import { useMemo } from 'react';
-import {
-  isSameLanguage,
-  requiresTranslation,
-} from 'generaltranslation';
+import { isSameLanguage, requiresTranslation } from 'generaltranslation';
 import { useCallback, useEffect, useState } from 'react';
 import { GTContext } from './GTContext';
-import {
-  RenderMethod,
-  TranslationsObject,
-} from '../types/types';
+import { RenderMethod, TranslationsObject } from '../types/types';
 import {
   Content,
   defaultCacheUrl,
@@ -252,9 +246,9 @@ export default function GTProvider({
         const parsedResult = Object.entries(result).reduce(
           (
             translationsAcc: Record<string, any>,
-            [key, target]: [string, any]
+            [hash, target]: [string, any]
           ) => {
-            translationsAcc[key] = { state: 'success', target };
+            translationsAcc[hash] = { state: 'success', target };
             return translationsAcc;
           },
           {}
@@ -300,14 +294,13 @@ export default function GTProvider({
   // ---------- USE DICT ---------- //
 
   const _internalUseDictFunction = useCreateInternalUseDictFunction({
-    dictionary, _internalUseGTFunction
+    dictionary,
+    _internalUseGTFunction,
   });
 
   // ----- RETURN ----- //
 
-  const display = !!(
-    (!translationRequired || translations) && locale
-  );
+  const display = !!((!translationRequired || translations) && locale);
 
   // hang until cache response, then render translations or loading state (when waiting on API response)
   return (

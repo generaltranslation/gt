@@ -7,7 +7,10 @@ import {
   defaultRenderSettings,
   GTTranslationError,
 } from 'gt-react/internal';
-import { createMismatchingHashWarning } from '../errors/createErrors';
+import {
+  createMismatchingHashWarning,
+  runtimeTranslationTimeoutWarning,
+} from '../errors/createErrors';
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TranslationsObject } from 'gt-react/internal';
 import defaultInitGTProps from './props/defaultInitGTProps';
@@ -112,7 +115,6 @@ export default class I18NConfiguration {
     // Other metadata
     ...metadata
   }: I18NConfigurationParams) {
-
     // ----- CLOUD INTEGRATION ----- //
 
     this.apiKey = apiKey;
@@ -126,28 +128,23 @@ export default class I18NConfiguration {
 
     this.translationEnabled = !!(
       loadTranslationType === 'custom' ||
-      (
-        loadTranslationType === 'remote' && 
+      (loadTranslationType === 'remote' &&
         this.projectId && // projectId required because it's part of the GET request
-        this.cacheUrl
-      )
+        this.cacheUrl)
     );
 
     // IS RUNTIME TRANSLATION ENABLED
-    
-    const runtimeApiEnabled = !!(
-      this.runtimeUrl === defaultInitGTProps.runtimeUrl 
-      ? this.projectId 
-      : this.runtimeUrl
-    );
+
+    const runtimeApiEnabled = !!(this.runtimeUrl ===
+    defaultInitGTProps.runtimeUrl
+      ? this.projectId
+      : this.runtimeUrl);
     this.developmentApiEnabled = !!(
       runtimeApiEnabled &&
-      (this.devApiKey && process.env.NODE_ENV === 'development')
+      this.devApiKey &&
+      process.env.NODE_ENV === 'development'
     );
-    this.productionApiEnabled = !!(
-      runtimeApiEnabled &&
-      this.apiKey
-    );
+    this.productionApiEnabled = !!(runtimeApiEnabled && this.apiKey);
 
     // DICTIONARY ENABLED
 
@@ -215,20 +212,23 @@ export default class I18NConfiguration {
    */
   getClientSideConfig() {
     const {
-      projectId, 
-      translationEnabled,
-      runtimeUrl,
-      devApiKey, developmentApiEnabled,
-      dictionaryEnabled, renderSettings
-    } = this;
-    return {
-      projectId, 
+      projectId,
       translationEnabled,
       runtimeUrl,
       devApiKey,
-      dictionaryEnabled, renderSettings,
-      runtimeTranslationEnabled: developmentApiEnabled
-    }
+      developmentApiEnabled,
+      dictionaryEnabled,
+      renderSettings,
+    } = this;
+    return {
+      projectId,
+      translationEnabled,
+      runtimeUrl,
+      devApiKey,
+      dictionaryEnabled,
+      renderSettings,
+      runtimeTranslationEnabled: developmentApiEnabled,
+    };
   }
 
   // ----- LOCALES ----- //
@@ -286,12 +286,15 @@ export default class I18NConfiguration {
    * @param locale - The user's locale
    * @returns True if translation is required, otherwise false
    */
-  requiresTranslation(locale: string): [
-    boolean, boolean
-  ] {
+  requiresTranslation(locale: string): [boolean, boolean] {
     if (!this.translationEnabled) return [false, false];
-    const translationRequired = requiresTranslation(this.defaultLocale, locale, this.locales);
-    const dialectTranslationRequired = translationRequired && isSameLanguage(locale, this.defaultLocale);
+    const translationRequired = requiresTranslation(
+      this.defaultLocale,
+      locale,
+      this.locales
+    );
+    const dialectTranslationRequired =
+      translationRequired && isSameLanguage(locale, this.defaultLocale);
     return [translationRequired, dialectTranslationRequired];
   }
 
@@ -387,7 +390,6 @@ export default class I18NConfiguration {
         });
       }
     ).catch((error) => {
-      console.error(error);
       this._translationCache.delete(cacheKey);
       throw new Error(error);
     });
@@ -415,10 +417,6 @@ export default class I18NConfiguration {
             : setTimeout(() => controller.abort(), timeout);
         try {
           return await fetch(url, { ...options, signal: controller.signal });
-        } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError')
-            throw new Error('Request timed out'); // Handle the timeout case
-          throw error; // Re-throw other errors
         } finally {
           if (timeoutId !== undefined) clearTimeout(timeoutId); // Ensure timeout is cleared
         }
@@ -498,7 +496,14 @@ export default class I18NConfiguration {
         return request.reject(new GTTranslationError(errorMsg, errorCode));
       });
     } catch (error) {
-      console.error(error);
+      // Error logging
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn(runtimeTranslationTimeoutWarning); // Warning for timeout
+      } else {
+        console.error(error);
+      }
+
+      // Reject all promises
       batch.forEach((request) => {
         // record translation error
         if (this._translationManager) {
@@ -509,7 +514,7 @@ export default class I18NConfiguration {
           );
         }
         return request.reject(
-          new GTTranslationError('Translation failed.', 500)
+          new GTTranslationError('Translation failed:' + error, 500)
         );
       });
     } finally {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   dynamicTranslationError,
   createGenericRuntimeTranslationError,
+  runtimeTranslationTimeoutWarning,
 } from '../../messages/createMessages';
 import {
   RenderMethod,
@@ -186,7 +187,7 @@ export default function useRuntimeTranslation({
         // ----- TRANSLATION LOADING ----- //
         const loadingTranslations: TranslationsObject = Object.entries(
           batchRequests
-        ).reduce((acc: TranslationsObject, [key, request]) => {
+        ).reduce((acc: TranslationsObject, [hash, request]) => {
           // loading state for jsx, render loading behavior
           acc[request.metadata.hash] = {
             state: 'loading',
@@ -210,11 +211,6 @@ export default function useRuntimeTranslation({
               : setTimeout(() => controller.abort(), timeout);
           try {
             return await fetch(url, { ...options, signal: controller.signal });
-          } catch (error) {
-            console.error('timeout!');
-            if (error instanceof Error && error.name === 'AbortError')
-              throw new Error('Request timed out'); // Handle the timeout case
-            throw error; // Re-throw other errors
           } finally {
             if (timeoutId !== undefined) clearTimeout(timeoutId); // Ensure timeout is cleared
           }
@@ -306,7 +302,11 @@ export default function useRuntimeTranslation({
         });
       } catch (error) {
         // log error
-        console.error(dynamicTranslationError, error);
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.warn(runtimeTranslationTimeoutWarning);
+        } else {
+          console.error(dynamicTranslationError, error);
+        }
 
         // add error message to all translations from this request
         requests.forEach((request) => {
