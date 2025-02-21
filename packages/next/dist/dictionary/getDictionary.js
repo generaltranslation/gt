@@ -9,9 +9,15 @@ function getDictionary() {
     if (dictionary !== undefined)
         return dictionary;
     try {
-        dictionary = require('gt-next/_dictionary').default;
+        var dictionaryFileType = process.env._GENERALTRANSLATION_DICTIONARY_FILE_TYPE;
+        if (dictionaryFileType === '.json') {
+            dictionary = require('gt-next/_dictionary');
+        }
+        else {
+            dictionary = require('gt-next/_dictionary').default;
+        }
     }
-    catch (error) {
+    catch (_a) {
         console.warn(createErrors_1.dictionaryNotFoundWarning);
     }
     return dictionary;

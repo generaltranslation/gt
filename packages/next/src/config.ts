@@ -124,6 +124,15 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
       ? mergedConfig.localTranslationsDir
       : './public/_gt';
 
+  // ----- GET DICTIONAR FILE TYPE ----- //
+  const resolvedDictionaryFilePathType = resolvedDictionaryFilePath
+    ? path.extname(resolvedDictionaryFilePath)
+    : undefined;
+
+  if (resolvedDictionaryFilePathType) {
+    mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
+  }
+
   // ----- RESOLVE CONFIG LOCALES ----- //
 
   // Check for local translations and get the list of locales
@@ -206,6 +215,10 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
     env: {
       ...nextConfig.env,
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
+      ...(resolvedDictionaryFilePathType && {
+        _GENERALTRANSLATION_DICTIONARY_FILE_TYPE:
+          resolvedDictionaryFilePathType,
+      }),
     },
     experimental: {
       ...nextConfig.experimental,

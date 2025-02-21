@@ -10,8 +10,14 @@ let dictionary: Dictionary | undefined = undefined;
 export default function getDictionary(): Dictionary | undefined {
   if (dictionary !== undefined) return dictionary;
   try {
-    dictionary = require('gt-next/_dictionary').default;
-  } catch (error) {
+    const dictionaryFileType =
+      process.env._GENERALTRANSLATION_DICTIONARY_FILE_TYPE;
+    if (dictionaryFileType === '.json') {
+      dictionary = require('gt-next/_dictionary');
+    } else {
+      dictionary = require('gt-next/_dictionary').default;
+    }
+  } catch {
     console.warn(dictionaryNotFoundWarning);
   }
   return dictionary;

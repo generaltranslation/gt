@@ -121,6 +121,13 @@ function withGTConfig(nextConfig, props) {
     var resolvedLocalTranslationDir = typeof mergedConfig.localTranslationsDir === 'string'
         ? mergedConfig.localTranslationsDir
         : './public/_gt';
+    // ----- GET DICTIONAR FILE TYPE ----- //
+    var resolvedDictionaryFilePathType = resolvedDictionaryFilePath
+        ? path_1.default.extname(resolvedDictionaryFilePath)
+        : undefined;
+    if (resolvedDictionaryFilePathType) {
+        mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
+    }
     // ----- RESOLVE CONFIG LOCALES ----- //
     // Check for local translations and get the list of locales
     var localLocales = [];
@@ -173,7 +180,9 @@ function withGTConfig(nextConfig, props) {
     }
     // ---------- STORE CONFIGURATIONS ---------- //
     var I18NConfigParams = JSON.stringify(mergedConfig);
-    return __assign(__assign({}, nextConfig), { env: __assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_b = nextConfig.experimental) === null || _b === void 0 ? void 0 : _b.turbo)
+    return __assign(__assign({}, nextConfig), { env: __assign(__assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), (resolvedDictionaryFilePathType && {
+            _GENERALTRANSLATION_DICTIONARY_FILE_TYPE: resolvedDictionaryFilePathType,
+        })), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_b = nextConfig.experimental) === null || _b === void 0 ? void 0 : _b.turbo)
             ? {
                 turbo: __assign(__assign({}, (((_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_e = (_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) === null || _e === void 0 ? void 0 : _e.resolveAlias) || {})), { 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translation': customLoadTranslationPath || '' }) }),
             }
