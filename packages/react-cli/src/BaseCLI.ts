@@ -109,12 +109,8 @@ export abstract class BaseCLI {
           './src/dictionary.js',
           './dictionary.json',
           './src/dictionary.json',
-          './dictionary.jsx',
-          './src/dictionary.jsx',
           './dictionary.ts',
           './src/dictionary.ts',
-          './dictionary.tsx',
-          './src/dictionary.tsx',
         ])
       )
       .option(

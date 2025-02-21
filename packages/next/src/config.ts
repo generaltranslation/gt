@@ -28,7 +28,6 @@ import { getSupportedLocale } from '@generaltranslation/supported-locales';
  * })
  *
  * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
- * @param {string|undefined} i18n - Optional i18n configuration file path. If a string is provided, it will be used as a path.
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [devApiKey=defaultInitGTProps.devApiKey] - API key for dev environment only.
@@ -106,12 +105,6 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
   mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
 
   // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
-
-  // Resolve custom locale getter functions
-  const resolvedI18NFilePath =
-    typeof mergedConfig.i18n === 'string'
-      ? mergedConfig.i18n
-      : resolveConfigFilepath('i18n');
 
   // Resolve dictionary filepath
   const resolvedDictionaryFilePath =
@@ -223,7 +216,6 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
               ...(nextConfig.experimental?.turbo || {}),
               resolveAlias: {
                 ...(nextConfig.experimental?.turbo?.resolveAlias || {}),
-                'gt-next/_request': resolvedI18NFilePath || '',
                 'gt-next/_dictionary': resolvedDictionaryFilePath || '',
                 'gt-next/_load-translation': customLoadTranslationPath || '',
               },
@@ -241,12 +233,6 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
         (options as any)?.turbo || process.env.TURBOPACK === '1';
 
       if (!isTurbopack) {
-        if (resolvedI18NFilePath) {
-          webpackConfig.resolve.alias['gt-next/_request'] = path.resolve(
-            webpackConfig.context,
-            resolvedI18NFilePath
-          );
-        }
         if (resolvedDictionaryFilePath) {
           webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
             webpackConfig.context,
@@ -271,7 +257,7 @@ export const initGT = (props: InitGTProps) => (nextConfig: any) =>
   withGTConfig(nextConfig, props);
 
 /**
- * Resolves a configuration filepath for i18n or dictionary files.
+ * Resolves a configuration filepath for dictionary files.
  *
  * @param {string} fileName - The base name of the config file to look for.
  * @param {string} [cwd] - An optional current working directory path.
@@ -315,8 +301,7 @@ function resolveConfigFilepath(
 function withExtensions(localPath: string) {
   return [
     `${localPath}.ts`,
-    `${localPath}.tsx`,
     `${localPath}.js`,
-    `${localPath}.jsx`,
+    `${localPath}.json`,
   ];
 }
