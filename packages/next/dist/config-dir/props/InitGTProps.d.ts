@@ -2,7 +2,6 @@ import { RenderMethod } from 'gt-react/internal';
 type InitGTProps = {
     loadTranslationType?: 'remote' | 'custom' | 'disabled';
     dictionary?: string;
-    i18n?: string;
     config?: string;
     loadTranslationPath?: string;
     apiKey?: string;

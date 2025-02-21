@@ -34,15 +34,10 @@ export default function ClientProvider({
   onLocaleChange = () => {},
   cookieName = localeCookieName,
 }: ClientProviderProps): React.JSX.Element {
-  
+  // ---------- SET UP ---------- //
+
   // ----- TRANSLATIONS STATE ----- //
 
-  /**
-   * (a) Cache has already been checked by server at this point
-   * (b) All string dictionary translations have been resolved at this point
-   * (c) JSX dictionary entries are either (1) resolved (so success/error) or (2) not resolved/not yet requested.
-   *     They will NOT be loading at this point.
-   */
   const [translations, setTranslations] = useState<TranslationsObject | null>(
     devApiKey ? null : initialTranslations
   );
@@ -83,7 +78,7 @@ export default function ClientProvider({
     window.location.reload();
   };
 
-  // ----- TRANSLATION LIFECYCLE ----- //
+  // ---------- TRANSLATION LIFECYCLE ---------- //
 
   // Fetch additional translations and queue them for merging
   useEffect(() => {
@@ -91,7 +86,7 @@ export default function ClientProvider({
     let storeResult = true;
     const resolvedTranslations: TranslationsObject = {};
     (async () => {
-      // resolve all translation promises (jsx only)
+      // resolve all translation promises
       await Promise.all(
         Object.entries(translationPromises).map(async ([key, promise]) => {
           let result: TranslationSuccess | TranslationError;
@@ -156,11 +151,13 @@ export default function ClientProvider({
   // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
 
   const _internalUseDictFunction = useCreateInternalUseDictFunction({
-    dictionary, _internalUseGTFunction
+    dictionary,
+    _internalUseGTFunction,
   });
 
-  // ------ RETURN ------ //
+  // ---------- RENDER LOGIC ---------- //
 
+  // Block rendering until all dictionary translations are resolved
   const display = !!(!translationRequired || translations) && locale;
 
   return (

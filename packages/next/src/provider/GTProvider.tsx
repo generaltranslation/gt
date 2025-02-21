@@ -30,25 +30,26 @@ export default async function GTProvider({
   children?: ReactNode;
   id?: string;
 }) {
-  
   // ---------- SETUP ---------- //
 
-  const { 
-    getDefaultLocale, requiresTranslation,
-    getCachedTranslations, isDevelopmentApiEnabled,
-    getClientSideConfig, getLocales, translateContent
+  const {
+    getDefaultLocale,
+    requiresTranslation,
+    getCachedTranslations,
+    isDevelopmentApiEnabled,
+    getClientSideConfig,
+    getLocales,
+    translateContent,
   } = getI18NConfig();
   const locale = await getLocale();
   const defaultLocale = getDefaultLocale();
-  const [ 
-    translationRequired, 
-    dialectTranslationRequired 
-  ] = requiresTranslation(locale);
+  const [translationRequired, dialectTranslationRequired] =
+    requiresTranslation(locale);
 
   // ----- FETCH TRANSLATIONS FROM CACHE ----- //
 
   const cachedTranslationsPromise: Promise<TranslationsObject> =
-    translationRequired ? getCachedTranslations(locale) : {} as any;
+    translationRequired ? getCachedTranslations(locale) : ({} as any);
 
   // ---------- PROCESS DICTIONARY ---------- //
   // (While waiting for cache...)
@@ -56,6 +57,7 @@ export default async function GTProvider({
   // Get dictionary subset
   let provisionalDictionary: Dictionary | DictionaryEntry =
     (id ? getDictionaryEntry(id) : getDictionary()) || {};
+
   // Check provisional dictionary
   if (
     isValidElement(provisionalDictionary) ||
@@ -66,32 +68,46 @@ export default async function GTProvider({
     throw new Error(createDictionarySubsetError(id ?? '', '<GTProvider>'));
   }
 
+  // Dictionary to pass to client
   const dictionary = flattenDictionary(provisionalDictionary);
 
+  // Translations to pass to the client
   const translations: TranslationsObject = {};
+
+  // Promises to pass to the client
   const promises: Record<string, Promise<TranslatedChildren>> = {};
 
   if (translationRequired) {
+    // Block until translation resolves
     const cachedTranslations = await cachedTranslationsPromise;
+
+    // Translation enabled
     const developmentApiEnabled = isDevelopmentApiEnabled();
+
     for (const [id, value] of Object.entries(dictionary)) {
+      // Calculate hash
       const { entry, metadata } = getEntryAndMetadata(value);
       const source = splitStringToContent(entry);
       const context = metadata?.context;
       const hash = hashJsxChildren({
-        source, id,
-        ...(context && { context })
+        source,
+        id,
+        ...(context && { context }),
       });
+
+      // If translation is cached, use it
       if (cachedTranslations?.[hash]) {
         translations[hash] = cachedTranslations[hash];
         continue;
       }
+
+      // If development API is enabled, fetch translation
       if (developmentApiEnabled) {
         promises[id] = translateContent({
           source,
           targetLocale: locale,
-          options: { hash, id, ...(context && { context })}
-        })
+          options: { hash, id, ...(context && { context }) },
+        });
       }
     }
   }

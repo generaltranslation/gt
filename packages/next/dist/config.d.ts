@@ -15,7 +15,6 @@ import InitGTProps from './config-dir/props/InitGTProps';
  * })
  *
  * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
- * @param {string|undefined} i18n - Optional i18n configuration file path. If a string is provided, it will be used as a path.
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [devApiKey=defaultInitGTProps.devApiKey] - API key for dev environment only.

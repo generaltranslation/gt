@@ -138,15 +138,17 @@ function GTProvider(_a) {
                         source = (0, generaltranslation_1.splitStringToContent)(entry);
                         context = metadata === null || metadata === void 0 ? void 0 : metadata.context;
                         hash = (0, id_1.hashJsxChildren)(__assign({ source: source, id: id_2 }, (context && { context: context })));
+                        // If translation is cached, use it
                         if (cachedTranslations === null || cachedTranslations === void 0 ? void 0 : cachedTranslations[hash]) {
                             translations[hash] = cachedTranslations[hash];
                             continue;
                         }
+                        // If development API is enabled, fetch translation
                         if (developmentApiEnabled) {
                             promises[id_2] = translateContent({
                                 source: source,
                                 targetLocale: locale,
-                                options: __assign({ hash: hash, id: id_2 }, (context && { context: context }))
+                                options: __assign({ hash: hash, id: id_2 }, (context && { context: context })),
                             });
                         }
                     }

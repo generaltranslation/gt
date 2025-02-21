@@ -46,7 +46,6 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  * })
  *
  * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
- * @param {string|undefined} i18n - Optional i18n configuration file path. If a string is provided, it will be used as a path.
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [devApiKey=defaultInitGTProps.devApiKey] - API key for dev environment only.
@@ -110,10 +109,6 @@ function withGTConfig(nextConfig, props) {
     }
     mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
     // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
-    // Resolve custom locale getter functions
-    var resolvedI18NFilePath = typeof mergedConfig.i18n === 'string'
-        ? mergedConfig.i18n
-        : resolveConfigFilepath('i18n');
     // Resolve dictionary filepath
     var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
         ? mergedConfig.dictionary
@@ -180,7 +175,7 @@ function withGTConfig(nextConfig, props) {
     var I18NConfigParams = JSON.stringify(mergedConfig);
     return __assign(__assign({}, nextConfig), { env: __assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_b = nextConfig.experimental) === null || _b === void 0 ? void 0 : _b.turbo)
             ? {
-                turbo: __assign(__assign({}, (((_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_e = (_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) === null || _e === void 0 ? void 0 : _e.resolveAlias) || {})), { 'gt-next/_request': resolvedI18NFilePath || '', 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translation': customLoadTranslationPath || '' }) }),
+                turbo: __assign(__assign({}, (((_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_e = (_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) === null || _e === void 0 ? void 0 : _e.resolveAlias) || {})), { 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translation': customLoadTranslationPath || '' }) }),
             }
             : {})), webpack: function webpack() {
             var _a = [];
@@ -191,9 +186,6 @@ function withGTConfig(nextConfig, props) {
             // Only apply webpack aliases if we're using webpack (not Turbopack)
             var isTurbopack = (options === null || options === void 0 ? void 0 : options.turbo) || process.env.TURBOPACK === '1';
             if (!isTurbopack) {
-                if (resolvedI18NFilePath) {
-                    webpackConfig.resolve.alias['gt-next/_request'] = path_1.default.resolve(webpackConfig.context, resolvedI18NFilePath);
-                }
                 if (resolvedDictionaryFilePath) {
                     webpackConfig.resolve.alias['gt-next/_dictionary'] = path_1.default.resolve(webpackConfig.context, resolvedDictionaryFilePath);
                 }
@@ -214,7 +206,7 @@ var initGT = function (props) { return function (nextConfig) {
 }; };
 exports.initGT = initGT;
 /**
- * Resolves a configuration filepath for i18n or dictionary files.
+ * Resolves a configuration filepath for dictionary files.
  *
  * @param {string} fileName - The base name of the config file to look for.
  * @param {string} [cwd] - An optional current working directory path.
@@ -250,9 +242,8 @@ function resolveConfigFilepath(fileName, cwd) {
 function withExtensions(localPath) {
     return [
         "".concat(localPath, ".ts"),
-        "".concat(localPath, ".tsx"),
         "".concat(localPath, ".js"),
-        "".concat(localPath, ".jsx"),
+        "".concat(localPath, ".json"),
     ];
 }
 //# sourceMappingURL=config.js.map
