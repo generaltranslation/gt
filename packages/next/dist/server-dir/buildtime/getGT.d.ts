@@ -1,6 +1,6 @@
-import { TranslationOptions } from 'gt-react/internal';
+import { InlineTranslationOptions } from 'gt-react/internal';
 /**
- * getGT() returns a function that translates a string.
+ * getGT() returns a function that translates a string, being marked as translated at build time.
  *
  * @returns A promise of the t() function used for translating strings
  *
@@ -8,7 +8,5 @@ import { TranslationOptions } from 'gt-react/internal';
  * const t = await getGT();
  * console.log(t('Hello, world!')); // Translates 'Hello, world!'
  */
-export default function getGT(): Promise<(content: string, options?: {
-    locale?: string;
-} & TranslationOptions) => string>;
+export default function getGT(): Promise<(string: string, options?: InlineTranslationOptions) => string>;
 //# sourceMappingURL=getGT.d.ts.map

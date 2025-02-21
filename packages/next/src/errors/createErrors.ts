@@ -9,11 +9,11 @@ export const customLoadTranslationError =
   'gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.';
 
 export const createStringTranslationError = (
-  content: string,
+  string: string,
   id?: string,
   functionName = 'tx'
 ) =>
-  `gt-next string translation error. ${functionName}("${content}")${
+  `gt-next string translation error. ${functionName}("${string}")${
     id ? ` with id "${id}"` : ''
   } could not locate translation.`;
 
@@ -74,7 +74,6 @@ export const APIKeyMissingWarn =
   `Find your Development API key: generaltranslation.com/dashboard.  ` +
   `(Or, disable this warning message by setting runtimeUrl to an empty string which disables runtime translation.)`;
 
-export const translationLoadingWarningLittleT =
-  `gt-next: [DEV ONLY] Translation is loading for t(). ` +
-  `Please refresh the page to see the translated content. ` +
+export const translationLoadingWarning =
+  `gt-next: [DEV ONLY] Translations have changed since the last update. ` +
   `In production, translations in production will be preloaded, and page will not need to be refreshed.`;

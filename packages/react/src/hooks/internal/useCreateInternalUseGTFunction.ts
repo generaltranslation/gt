@@ -5,13 +5,14 @@ import {
 import { hashJsxChildren } from 'generaltranslation/id';
 import { useCallback } from 'react';
 import {
-  TranslationOptions,
+  InlineTranslationOptions,
   TranslationsObject,
   RenderMethod,
 } from '../../types/types';
 import { TranslateContentCallback } from '../../types/runtime';
+import { Content } from 'generaltranslation/internal';
 
-export default function useTranslateContent(
+export default function useCreateInternalUseGTFunction(
   translations: TranslationsObject | null,
   locale: string,
   defaultLocale: string,
@@ -19,11 +20,10 @@ export default function useTranslateContent(
   dialectTranslationRequired: boolean,
   runtimeTranslationEnabled: boolean,
   registerContentForTranslation: TranslateContentCallback,
-  renderSettings: { method: RenderMethod; timeout?: number }
-): (content: string, options?: TranslationOptions) => string {
-  return useCallback(
-    (
-      content: string,
+  renderSettings: { method: RenderMethod; }
+): (string: string, options?: InlineTranslationOptions) => string {
+  return useCallback((
+      string: string,
       options: {
         locale?: string;
         context?: string;
@@ -38,13 +38,13 @@ export default function useTranslateContent(
       // ----- SET UP ----- //
 
       // Check: reject invalid content
-      if (!content || typeof content !== 'string') return '';
+      if (!string || typeof string !== 'string') return '';
 
       // Parse content
-      const source = splitStringToContent(content);
+      const source = splitStringToContent(string);
 
       // Render method
-      const renderContent = (content: any, locales: string[]) => {
+      const r = (content: Content, locales: string[]) => {
         return renderContentToString(
           content,
           locales,
@@ -54,21 +54,26 @@ export default function useTranslateContent(
       };
 
       // Check: translation not required
-      if (!translationRequired) return renderContent(source, [defaultLocale]);
+      if (!translationRequired) return r(source, [defaultLocale]);
 
       // ----- CHECK TRANSLATIONS ----- //
 
-      // Get key
-      const key = hashJsxChildren({
+      // Get hash
+      const hash = hashJsxChildren({
         source,
         ...(options?.context && { context: options.context }),
         ...(options?.id && { id: options.id }),
       });
 
       // Check translation successful
-      const translationEntry = translations?.[key];
+      const translationEntry = translations?.[hash];
+
       if (translationEntry?.state === 'success') {
-        return renderContent(translationEntry.target, [locale, defaultLocale]);
+        return r(translationEntry.target as Content, [locale, defaultLocale]);
+      }
+
+      if (translationEntry?.state === 'error') {
+        return r(source, [defaultLocale]);
       }
 
       // ----- TRANSLATE ON DEMAND ----- //
@@ -76,7 +81,7 @@ export default function useTranslateContent(
 
       // Check if runtime translation is enabled
       if (!runtimeTranslationEnabled) {
-        return renderContent(source, [defaultLocale]);
+        return r(source, [defaultLocale]);
       }
 
       // Translate Content
@@ -86,18 +91,18 @@ export default function useTranslateContent(
         metadata: {
           ...(options?.context && { context: options.context }),
           id: options?.id,
-          hash: key,
+          hash
         },
       });
 
       // Loading behavior
       if (renderSettings.method === 'replace') {
-        return renderContent(source, [defaultLocale]);
+        return r(source, [defaultLocale]);
       } else if (renderSettings.method === 'skeleton') {
         return '';
       }
       return dialectTranslationRequired // default behavior
-        ? renderContent(source, [defaultLocale])
+        ? r(source, [defaultLocale])
         : '';
     },
     [

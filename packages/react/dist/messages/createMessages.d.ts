@@ -2,7 +2,6 @@ export declare const projectIdMissingError = "gt-react Error: General Translatio
 export declare const devApiKeyProductionError = "gt-react Error: Production environments cannot include a development api key.";
 export declare const createNoAuthError = "gt-react Error: Configuration is missing a projectId and/or devApiKey. Please add these values to your environment or pass them to the <GTProvider> directly.";
 export declare const createPluralMissingError: (children: any) => string;
-export declare const createStringTranslationError: (content: string, id?: string) => string;
 export declare const createClientSideTDictionaryCollisionError: (id: string) => string;
 export declare const createClientSideTHydrationError: (id: string) => string;
 export declare const createNestedDataGTError: (child: any) => string;
@@ -15,7 +14,6 @@ export declare const runtimeTranslationError = "gt-react Error: Runtime translat
 export declare const projectIdMissingWarning = "gt-react warn: Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.";
 export declare const createLibraryNoEntryWarning: (id: string) => string;
 export declare const createNoEntryWarning: (id: string, prefixedId: string) => string;
-export declare const createInvalidElementEntryWarning: (id: string, prefixedId: string) => string;
 export declare const createMismatchingHashWarning: (expectedHash: string, receivedHash: string) => string;
 export declare const APIKeyMissingWarn: string;
 export declare const createUnsupportedLocalesWarning: (locales: string[]) => string;

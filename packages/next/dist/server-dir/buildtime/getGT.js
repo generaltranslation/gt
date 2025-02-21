@@ -57,7 +57,7 @@ var server_1 = require("../../server");
 var id_1 = require("generaltranslation/id");
 var createErrors_1 = require("../../errors/createErrors");
 /**
- * getGT() returns a function that translates a string.
+ * getGT() returns a function that translates a string, being marked as translated at build time.
  *
  * @returns A promise of the t() function used for translating strings
  *
@@ -67,7 +67,7 @@ var createErrors_1 = require("../../errors/createErrors");
  */
 function getGT() {
     return __awaiter(this, void 0, void 0, function () {
-        var I18NConfig, locale, defaultLocale, translationRequired, translations, _a, serverRuntimeTranslationEnabled, renderSettings, dialectTranslationRequired, t;
+        var I18NConfig, locale, defaultLocale, translationRequired, translations, _a, renderSettings, t;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -76,7 +76,7 @@ function getGT() {
                 case 1:
                     locale = _b.sent();
                     defaultLocale = I18NConfig.getDefaultLocale();
-                    translationRequired = I18NConfig.requiresTranslation(locale);
+                    translationRequired = I18NConfig.requiresTranslation(locale)[0];
                     if (!translationRequired) return [3 /*break*/, 3];
                     return [4 /*yield*/, I18NConfig.getCachedTranslations(locale)];
                 case 2:
@@ -87,58 +87,55 @@ function getGT() {
                     _b.label = 4;
                 case 4:
                     translations = _a;
-                    serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled() &&
-                        process.env.NODE_ENV === 'development';
                     renderSettings = I18NConfig.getRenderSettings();
-                    dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, defaultLocale);
-                    t = function (content, options) {
+                    t = function (string, options) {
                         // ----- SET UP ----- //
                         if (options === void 0) { options = {}; }
                         // Validate content
-                        if (!content || typeof content !== 'string')
+                        if (!string || typeof string !== 'string')
                             return '';
                         // Parse content
-                        var source = (0, generaltranslation_1.splitStringToContent)(content);
+                        var source = (0, generaltranslation_1.splitStringToContent)(string);
                         // Render Method
-                        var renderContent = function (content, locales) {
+                        var r = function (content, locales) {
                             return (0, generaltranslation_1.renderContentToString)(content, locales, options.variables, options.variablesOptions);
                         };
                         // Check: translation required
                         if (!translationRequired)
-                            return renderContent(source, [defaultLocale]);
+                            return r(source, [defaultLocale]);
                         // ----- GET TRANSLATION ----- //
-                        var key = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })));
-                        var translationEntry = translations === null || translations === void 0 ? void 0 : translations[key];
+                        var hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })));
+                        var translationEntry = translations === null || translations === void 0 ? void 0 : translations[hash];
                         // ----- RENDER TRANSLATION ----- //
-                        // Render translation
-                        if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success') {
-                            return renderContent(translationEntry.target, [locale, defaultLocale]);
+                        // If a translation already exists
+                        if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success')
+                            return r(translationEntry.target, [locale, defaultLocale]);
+                        // If a translation errored
+                        if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error')
+                            return r(source, [defaultLocale]);
+                        // ----- CREATE TRANSLATION ----- //
+                        // Since this is buildtime string translation, it's dev only
+                        if (!I18NConfig.isDevelopmentApiEnabled()) {
+                            console.warn((0, createErrors_1.createStringTranslationError)(string, options === null || options === void 0 ? void 0 : options.id, 't'));
+                            return r(source, [defaultLocale]);
                         }
-                        // Fallback to defaultLocale if not found
-                        if (!serverRuntimeTranslationEnabled) {
-                            console.warn((0, createErrors_1.createStringTranslationError)(content, options === null || options === void 0 ? void 0 : options.id, 't'));
-                            return renderContent(source, [defaultLocale]);
-                        }
-                        // ----- ON DEMAND TRANSLATION ----- //
-                        // Dev only
                         // Translate on demand
-                        I18NConfig.translateChildren({
+                        I18NConfig.translateJsx({
                             source: source,
                             targetLocale: locale,
-                            options: __assign(__assign(__assign({}, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })), { hash: key }),
+                            options: __assign(__assign(__assign({}, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })), { hash: hash }),
                         });
                         // Loading translation warning
-                        console.warn(createErrors_1.translationLoadingWarningLittleT);
+                        console.warn(createErrors_1.translationLoadingWarning);
                         // Loading behavior
                         if (renderSettings.method === 'replace') {
-                            return renderContent(source, [defaultLocale]);
+                            return r(source, [defaultLocale]);
                         }
                         else if (renderSettings.method === 'skeleton') {
                             return '';
                         }
-                        return dialectTranslationRequired // default behavior
-                            ? renderContent(source, [defaultLocale])
-                            : '';
+                        // Default is returning source, rather than returning a loading state
+                        return r(source, [defaultLocale]);
                     };
                     return [2 /*return*/, t];
             }

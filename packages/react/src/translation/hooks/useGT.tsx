@@ -1,5 +1,5 @@
 import useGTContext from '../../provider/GTContext';
-import { TranslationOptions } from '../../types/types';
+import { InlineTranslationOptions } from '../../types/types';
 
 /**
  * Gets the translation function `t` provided by `<GTProvider>`.
@@ -19,20 +19,20 @@ import { TranslationOptions } from '../../types/types';
  *
  */
 export default function useGT() {
-  const { translateContent } = useGTContext(
+  const { _internalUseGTFunction } = useGTContext(
     `useGT(): No context provided. You're trying to get the t() function from the useGT() hook, which can be invoked within a <GTProvider>.`
   );
 
   /**
-   * @param {string} content String to translate
-   * @param {TranslationOptions} options Optional options for the translation and variable insertion
+   * @param {string} string String to translate
+   * @param {InlineTranslationOptions} options Options for the translation and variable insertion
    * @returns {string} A translated string.
    */
-  function t(content: string = '', options: TranslationOptions = {}): string {
-    if (translateContent) {
-      return translateContent(content, options);
-    }
-    return '';
+  function t(
+    string: string, 
+    options: InlineTranslationOptions = {}
+  ): string {
+    return (_internalUseGTFunction as any)(string, options);
   }
 
   return t;

@@ -1,39 +1,16 @@
 import * as React$1 from 'react';
-import React__default, { ReactElement } from 'react';
+import React__default from 'react';
 import * as react_jsx_runtime from 'react/jsx-runtime';
 
-type Child = React__default.ReactNode;
-type Children = Child[] | Child;
-type GTProp = {
-    id: number;
-    transformation?: string;
-    children?: Children;
-} & Record<string, any>;
-type TaggedChild = React__default.ReactNode | TaggedElement;
-type TaggedChildren = TaggedChild[] | TaggedChild;
-type TaggedElementProps = Record<string, any> & {
-    'data-_gt': GTProp;
-};
-type TaggedElement = React__default.ReactElement<TaggedElementProps>;
-type TaggedEntry = string | TaggedChildren;
-type TaggedDictionaryEntry = TaggedEntry | [TaggedEntry] | [TaggedEntry, Metadata];
-type FlattenedTaggedDictionary = {
-    [key: string]: TaggedDictionaryEntry;
-};
-type Entry = string | ReactElement;
+type Entry = string;
 type Metadata = {
-    singular?: Entry;
-    plural?: Entry;
-    zero?: Entry;
-    dual?: Entry;
-    one?: Entry;
-    two?: Entry;
-    few?: Entry;
-    many?: Entry;
-    other?: Entry;
     context?: string;
     variablesOptions?: Record<string, any>;
     [key: string]: any;
+};
+type DictionaryEntry = Entry | [Entry] | [Entry, Metadata];
+type Dictionary = {
+    [key: string]: Dictionary | DictionaryEntry;
 };
 type Variable = {
     key: string;
@@ -69,12 +46,14 @@ type TranslationsObject = {
     [key: string]: TranslationSuccess | TranslationLoading | TranslationError;
 };
 type RenderMethod = 'skeleton' | 'replace' | 'default';
-type TranslationOptions = {
-    context?: string;
+type DictionaryTranslationOptions = {
     variables?: Record<string, any>;
-    variableOptions?: Record<string, Intl.NumberFormatOptions | Intl.DateTimeFormatOptions>;
-    [key: string]: any;
+    variablesOptions?: Record<string, Intl.NumberFormatOptions | Intl.DateTimeFormatOptions>;
 };
+type InlineTranslationOptions = {
+    context?: string;
+    id?: string;
+} & DictionaryTranslationOptions;
 
 type TranslateContentCallback = (params: {
     source: any;
@@ -96,8 +75,8 @@ type TranslateChildrenCallback = (params: {
 type GTContextType = {
     registerContentForTranslation: TranslateContentCallback;
     registerJsxForTranslation: TranslateChildrenCallback;
-    translateContent: (content: string, options: TranslationOptions) => string;
-    translateEntry: (id: string, options?: TranslationOptions) => React.ReactNode;
+    _internalUseGTFunction: (string: string, options?: InlineTranslationOptions) => string;
+    _internalUseDictFunction: (id: string, options?: DictionaryTranslationOptions) => string;
     runtimeTranslationEnabled: boolean;
     locale: string;
     locales: string[];
@@ -114,7 +93,7 @@ type GTContextType = {
 };
 type ClientProviderProps = {
     children: any;
-    dictionary: FlattenedTaggedDictionary;
+    dictionary: Dictionary;
     initialTranslations: TranslationsObject;
     translationPromises: Record<string, Promise<TranslatedChildren>>;
     locale: string;
@@ -124,7 +103,6 @@ type ClientProviderProps = {
     defaultLocale: string;
     translationRequired: boolean;
     dialectTranslationRequired: boolean;
-    requiredPrefix: string | undefined;
     renderSettings: {
         method: RenderMethod;
         timeout?: number;
@@ -166,7 +144,7 @@ declare function renderVariable({ variableType, variableName, variableValue, var
     locales: string[];
 }): React.JSX.Element;
 
-declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
+declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -248,7 +226,7 @@ declare namespace Plural {
  * </>);
  *
  */
-declare function useGT(): (content?: string, options?: TranslationOptions) => string;
+declare function useGT(): (string: string, options?: InlineTranslationOptions) => string;
 
 /**
  * Retrieves the application's default locale from the `<GTProvider>` context.
@@ -276,7 +254,7 @@ declare function useDefaultLocale(): string;
  * const d = useDict();
  * console.log(d('hello')); // Translates item 'hello'
  */
-declare function useDict(id?: string): (id: string, options?: TranslationOptions) => React__default.ReactNode;
+declare function useDict(id: string): (id: string, options?: DictionaryTranslationOptions) => React__default.ReactNode;
 
 /**
  * Retrieves the user's locale from the `<GTProvider>` context.
@@ -290,37 +268,35 @@ declare function useDict(id?: string): (id: string, options?: TranslationOptions
 declare function useLocale(): string;
 
 /**
- * Translation component that handles rendering translated content, including plural forms.
- * Used with the required `id` parameter instead of `const t = useGT()`.
- *
- * @param {string} [id] - Required identifier for the translation string.
- * @param {React.ReactNode} children - The content to be translated or displayed.
- * @param {any} [context] - Additional context used for translation.
- * @param {Object} [props] - Additional props for the component.
- * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
- *
- * @throws {Error} If a plural translation is requested but the `n` option is not provided.
+ * Build-time translation component that renders its children in the user's given locale.
  *
  * @example
  * ```jsx
  * // Basic usage:
  * <T id="welcome_message">
- *  Hello, <Var name="name">{name}</Var>!
+ *  Hello, <Var name="name" value={firstname}>!
  * </T>
  * ```
  *
  * @example
  * ```jsx
- * // Using plural translations:
+ * // Translating a plural
  * <T id="item_count">
- *  <Plural n={n} singular={<>You have <Num value={n}/> item</>}>
- *      You have <Num value={n}/> items
+ *  <Plural n={3} singular={<>You have <Num value={n}/> item.</>}>
+ *      You have <Num value={n}/> items.
  *  </Plural>
  * </T>
  * ```
  *
+ * @param {React.ReactNode} children - The content to be translated or displayed.
+ * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
+ * @param {any} [context] - Additional context for translation key generation.
+ *
+ * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
+ *
+ * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
-declare function T({ children, id, ...props }: {
+declare function T({ children, id, context }: {
     children: any;
     id?: string;
     context?: string;

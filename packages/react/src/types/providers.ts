@@ -1,9 +1,10 @@
 import {
   TranslationsObject,
   RenderMethod,
-  FlattenedTaggedDictionary,
   TranslatedChildren,
-  TranslationOptions,
+  InlineTranslationOptions,
+  DictionaryTranslationOptions,
+  Dictionary,
 } from './types';
 
 import { TranslateContentCallback, TranslateChildrenCallback } from './runtime';
@@ -11,8 +12,8 @@ import { TranslateContentCallback, TranslateChildrenCallback } from './runtime';
 export type GTContextType = {
   registerContentForTranslation: TranslateContentCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
-  translateContent: (content: string, options: TranslationOptions) => string;
-  translateEntry: (id: string, options?: TranslationOptions) => React.ReactNode;
+  _internalUseGTFunction: (string: string, options?: InlineTranslationOptions) => string;
+  _internalUseDictFunction: (id: string, options?: DictionaryTranslationOptions) => string;
   runtimeTranslationEnabled: boolean;
   locale: string;
   locales: string[];
@@ -27,7 +28,7 @@ export type GTContextType = {
 
 export type ClientProviderProps = {
   children: any;
-  dictionary: FlattenedTaggedDictionary;
+  dictionary: Dictionary;
   initialTranslations: TranslationsObject;
   translationPromises: Record<string, Promise<TranslatedChildren>>;
   locale: string;
@@ -37,7 +38,6 @@ export type ClientProviderProps = {
   defaultLocale: string;
   translationRequired: boolean;
   dialectTranslationRequired: boolean;
-  requiredPrefix: string | undefined;
   renderSettings: {
     method: RenderMethod;
     timeout?: number;

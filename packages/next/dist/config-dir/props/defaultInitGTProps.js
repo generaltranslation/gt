@@ -44,7 +44,6 @@ var defaultInitGTProps = {
     loadTranslationType: 'remote',
     runtimeUrl: internal_1.defaultRuntimeApiUrl,
     cacheUrl: internal_1.defaultCacheUrl,
-    cacheExpiryTime: 60000,
     defaultLocale: internal_1.libraryDefaultLocale,
     getLocale: function () { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
         return [2 /*return*/, internal_1.libraryDefaultLocale];

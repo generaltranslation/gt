@@ -13,7 +13,6 @@ import {
   TaggedElement,
   TaggedElementProps,
 } from '../types/types';
-import { lazy } from 'react';
 
 export default function addGTIdentifier(
   children: Children,
@@ -98,6 +97,7 @@ export default function addGTIdentifier(
       newProps.children = handleChildren(props.children as Children);
     }
     if (child.type === React.Fragment) {
+      newProps['data-_gt'].transformation === "fragment";
       const fragment = (
         <span style={{ all: 'unset', display: 'contents' }} {...newProps} />
       );

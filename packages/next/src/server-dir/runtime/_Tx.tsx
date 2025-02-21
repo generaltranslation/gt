@@ -2,13 +2,14 @@ import getI18NConfig from '../../config-dir/getI18NConfig';
 import getLocale from '../../request/getLocale';
 import { Suspense } from 'react';
 import {
+  addGTIdentifier,
   renderDefaultChildren,
   renderSkeleton,
   renderTranslatedChildren,
+  TranslatedChildren,
   writeChildrenAsObjects,
 } from 'gt-react/internal';
 import renderVariable from '../variables/renderVariable';
-import { isSameLanguage } from 'generaltranslation';
 import React from 'react';
 import { hashJsxChildren } from 'generaltranslation/id';
 
@@ -16,51 +17,70 @@ async function Resolver({ children }: { children: React.ReactNode }) {
   return await children;
 }
 
+/**
+ * Runtime translation component that renders its children in the user's given locale.
+ * Can only be used in server components.
+ *
+ * @example
+ * ```jsx
+ * // Basic usage:
+ * <Tx id="welcome_message">
+ *  Hello, <Var name="name" value={firstname}>!
+ * </Tx>
+ * ```
+ *
+ * @example
+ * ```jsx
+ * // Translating a plural
+ * <T id="item_count">
+ *  <Plural n={3} singular={<>You have <Num value={n}/> item.</>}>
+ *      You have <Num value={n}/> items.
+ *  </Plural>
+ * </T>
+ * ```
+ *
+ * @param {React.ReactNode} children - The content to be translated or displayed.
+ * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
+ * @param {any} [context] - Additional context for translation key generation.
+ * 
+ * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
+ *
+ * @throws {Error} If a plural translation is requested but the `n` option is not provided.
+ */
 async function Tx({
   children,
   id,
   context,
-  variables,
-  variablesOptions,
+  locale,
 }: {
   children: any;
   id?: string;
   context?: string;
-  [key: string]: any;
+  locale?: string;
 }): Promise<any> {
-  if (!children) return;
 
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
-  const locale = await getLocale();
+  locale ||= await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
-  const renderSettings = I18NConfig.getRenderSettings();
-  const translationRequired = I18NConfig.requiresTranslation(locale);
-  const serverRuntimeTranslationEnabled =
-    I18NConfig.isServerRuntimeTranslationEnabled();
-  const dialectTranslationRequired =
-    translationRequired && isSameLanguage(locale, defaultLocale);
+  const [
+    translationRequired, dialectTranslationRequired
+  ] = I18NConfig.requiresTranslation(locale);
 
-  // Gets tagged children with GT identifiers
-  const taggedChildren = I18NConfig.addGTIdentifier(children);
+  // ----- TAG CHILDREN ----- //
 
-  // ----- RENDER METHODS ----- //
+  const taggedChildren = addGTIdentifier(children);
+
+  // ----- RENDERING FUNCTION #1: CONTENT IN DEFAULT LOCALE ----- //
 
   // render in default language
-  const renderDefaultLocale = () => {
+  const renderDefault = () => {
     return renderDefaultChildren({
       children: taggedChildren,
-      variables,
-      variablesOptions,
       defaultLocale,
       renderVariable,
     });
-  };
-
-  const renderLoadingDefault = () => {
-    if (dialectTranslationRequired) return renderDefaultLocale();
-    return renderSkeleton();
   };
 
   // ----- CHECK TRANSLATIONS REQUIRED ----- //
@@ -69,13 +89,10 @@ async function Tx({
   // The dictionary wraps text in this <T> component
   // Thus, we need to also handle variables
   if (!translationRequired) {
-    return renderDefaultLocale();
+    return renderDefault();
   }
 
-  // ----- CHECK CACHED TRANSLATIONS ----- //
-
-  // Check locally cached translations
-  const translations = I18NConfig.getRecentTranslations(locale);
+  // ----- CHECK LOCALLY CACHED TRANSLATIONS ----- //
 
   // Turns tagged children into objects
   // The hash is used to identify the translation
@@ -86,67 +103,72 @@ async function Tx({
     ...(id && { id }),
   });
 
-  // Gets the translation entry
-  const translationEntry = translations?.[hash];
+  // Get the translation entry object
+  const translationEntry = I18NConfig.getRecentTranslations(locale)?.[hash];
+
+  // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
+
+  const renderTranslation = (target: TranslatedChildren) => {
+    return renderTranslatedChildren({
+      source: taggedChildren,
+      target, 
+      locales: [locale, defaultLocale],
+      renderVariable
+    });
+  }
 
   // ----- RENDER CACHED TRANSLATIONS ----- //
 
   // if we have a cached translation, render it
   if (translationEntry?.state === 'success') {
-    return renderTranslatedChildren({
-      source: taggedChildren,
-      target: translationEntry.target,
-      variables,
-      variablesOptions,
-      locales: [locale, defaultLocale],
-      renderVariable,
-    });
-  } else if (
-    translationEntry?.state === 'error' || // fallback to default if error
-    !serverRuntimeTranslationEnabled // fallback to default if runtime translation is disabled (loading should never happen here)
-  ) {
-    return renderDefaultLocale();
+    return renderTranslation(translationEntry.target);
+  } 
+
+  if (translationEntry?.state === 'error') {
+    return renderDefault();
   }
 
   // ----- TRANSLATE ON DEMAND ----- //
 
-  // On-demand translation request sent
-  // (no entry has been found, this means that the translation is either (1) loading or (2) missing)
-  const translationPromise = I18NConfig.translateChildren({
-    // do on demand translation
-    source: childrenAsObjects,
-    targetLocale: locale,
-    options: {
-      ...(id && { id }),
-      hash,
-      ...(context && { context }),
-      ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
-    },
-  })
-    .then((translation) => {
-      // render the translation
-      return renderTranslatedChildren({
-        source: taggedChildren,
-        target: translation,
-        variables,
-        variablesOptions,
-        locales: [locale, defaultLocale],
-        renderVariable,
-      });
-    })
-    .catch(() => {
-      // render the default locale if there is an error instead
-      return renderDefaultLocale();
-    });
+  // If runtime APIs are disabled, render default
+  const {
+    isProductionApiEnabled, isDevelopmentApiEnabled
+  } = I18NConfig;
+  if (!isProductionApiEnabled() && !isDevelopmentApiEnabled()) return renderDefault();
 
-  // Loading behavior
-  let loadingFallback; // Blank screen
+  // Get render settings
+  const renderSettings = I18NConfig.getRenderSettings();
+
+  // Send on-demand translation request
+  // (no entry has been found, this means that the translation is either (1) loading or (2) missing)
+  const translationPromise = (async () => {
+    try {
+      const target = await I18NConfig.translateJsx({
+        // do on demand translation
+        source: childrenAsObjects,
+        targetLocale: locale,
+        options: {
+          ...(id && { id }),
+          hash,
+          ...(context && { context }),
+          ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
+        },
+      });
+      return renderTranslation(target);
+    } catch {
+      return renderDefault();
+    }
+  })();
+  
+  // ----- DEFINE LOADING BEHAVIOR ----- //
+
+  let loadingFallback; 
   if (renderSettings.method === 'replace') {
-    loadingFallback = renderDefaultLocale();
+    loadingFallback = renderDefault();
   } else if (renderSettings.method === 'skeleton') {
     loadingFallback = renderSkeleton();
   } else {
-    loadingFallback = renderLoadingDefault();
+    loadingFallback = dialectTranslationRequired ? renderDefault() : renderSkeleton();
   }
 
   return (

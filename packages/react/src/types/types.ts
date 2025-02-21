@@ -13,40 +13,20 @@ export type TaggedChild = React.ReactNode | TaggedElement;
 export type TaggedChildren = TaggedChild[] | TaggedChild;
 export type TaggedElementProps = Record<string, any> & { 'data-_gt': GTProp };
 export type TaggedElement = React.ReactElement<TaggedElementProps>;
-
-export type TaggedEntry = string | TaggedChildren;
-export type TaggedDictionaryEntry =
-  | TaggedEntry
-  | [TaggedEntry]
-  | [TaggedEntry, Metadata];
-export type TaggedDictionary = {
-  [key: string]: TaggedDictionary | TaggedDictionaryEntry;
-};
-export type FlattenedTaggedDictionary = {
-  [key: string]: TaggedDictionaryEntry;
-};
+export type TaggedEntry = Content | TaggedChildren;
 
 export type FlattenedContentDictionary = Record<
   string,
   { hash: string; source: Content; metadata?: Record<string, any> }
 >;
 
-export type Entry = string | ReactElement;
+export type Entry = string;
 export type Metadata = {
-  singular?: Entry;
-  plural?: Entry;
-  zero?: Entry;
-  dual?: Entry;
-  one?: Entry;
-  two?: Entry;
-  few?: Entry;
-  many?: Entry;
-  other?: Entry;
   context?: string;
   variablesOptions?: Record<string, any>;
   [key: string]: any;
 };
-export type DictionaryEntry = Entry | [Entry] | [Entry, Metadata];
+export type DictionaryEntry = Entry | [ Entry ] | [Entry, Metadata];
 export type Dictionary = {
   [key: string]: Dictionary | DictionaryEntry;
 };
@@ -99,15 +79,20 @@ export type LocalesTranslations = {
 
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 
-export type TranslationOptions = {
-  context?: string;
+export type DictionaryTranslationOptions = {
   variables?: Record<string, any>;
-  variableOptions?: Record<
+  variablesOptions?: Record<
     string,
     Intl.NumberFormatOptions | Intl.DateTimeFormatOptions
   >;
-  [key: string]: any;
 };
+export type InlineTranslationOptions = {
+  context?: string;
+  id?: string;
+} & DictionaryTranslationOptions;
+export type RuntimeTranslationOptions = {
+  locale?: string;
+} & InlineTranslationOptions;
 
 export class GTTranslationError extends Error {
   constructor(

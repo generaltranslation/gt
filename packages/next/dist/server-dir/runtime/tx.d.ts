@@ -1,4 +1,4 @@
-import { TranslationOptions } from 'gt-react/internal';
+import { RuntimeTranslationOptions } from 'gt-react/internal';
 /**
  * Translates the provided content string based on the specified locale and options.
  * If no translation is required, it renders the content as is. Otherwise, it fetches the
@@ -31,7 +31,5 @@ import { TranslationOptions } from 'gt-react/internal';
  * // Using variables in the content string
  * const translation = await tx("The price is {price}", { locale: 'es-MX', variables: { price: 29.99 } });
  */
-export default function tx(content: string, options?: {
-    locale?: string;
-} & TranslationOptions): Promise<string>;
+export default function tx(string: string, options?: RuntimeTranslationOptions): Promise<string>;
 //# sourceMappingURL=tx.d.ts.map

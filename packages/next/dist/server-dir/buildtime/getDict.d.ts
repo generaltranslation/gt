@@ -1,5 +1,4 @@
-import { TranslationOptions } from 'gt-react/internal';
-import React from 'react';
+import { DictionaryTranslationOptions } from 'gt-react/internal';
 /**
  * Returns the dictionary access function `d()`, which is used to translate an item from the dictionary.
  *
@@ -13,7 +12,5 @@ import React from 'react';
  * const d = await getDict();
  * console.log(d('hello')); // Translates item 'hello'
  */
-export default function getDict(id?: string): Promise<(id: string, options?: {
-    locale?: string;
-} & TranslationOptions) => React.ReactNode>;
+export default function getDict(id?: string): Promise<(id: string, options?: DictionaryTranslationOptions) => string>;
 //# sourceMappingURL=getDict.d.ts.map

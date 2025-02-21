@@ -1,7 +1,7 @@
-import { FlattenedTaggedDictionary, TranslationsObject } from '../../types/types';
+import { Dictionary, TranslationsObject } from '../../types/types';
 import React from 'react';
 export default function useTranslateEntryFromServer({ dictionary, translations, locale, renderSettings, runtimeTranslationEnabled, translationRequired, dialectTranslationRequired, locales, defaultLocale, }: {
-    dictionary: FlattenedTaggedDictionary;
+    dictionary: Dictionary;
     translations: TranslationsObject | null;
     locale: string;
     translationRequired: boolean;

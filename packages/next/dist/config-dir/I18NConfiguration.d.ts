@@ -1,6 +1,6 @@
-import { RenderMethod, TranslatedChildren, TranslatedContent, Children } from 'gt-react/internal';
+import { RenderMethod, TranslatedChildren, TranslatedContent } from 'gt-react/internal';
 import { Content, JsxChildren } from 'generaltranslation/internal';
-import { TaggedChildren, TranslationsObject } from 'gt-react/internal';
+import { TranslationsObject } from 'gt-react/internal';
 type I18NConfigurationParams = {
     apiKey?: string;
     devApiKey?: string;
@@ -8,7 +8,6 @@ type I18NConfigurationParams = {
     runtimeUrl: string | undefined;
     cacheUrl: string | null;
     loadTranslationType: 'remote' | 'custom' | 'disabled';
-    cacheExpiryTime?: number;
     defaultLocale: string;
     locales: string[];
     renderSettings: {
@@ -23,9 +22,9 @@ type I18NConfigurationParams = {
 };
 export default class I18NConfiguration {
     translationEnabled: boolean;
-    serverRuntimeTranslationEnabled: boolean;
-    clientRuntimeTranslationEnabled: boolean;
-    loadTranslationEnabled: boolean;
+    developmentApiEnabled: boolean;
+    productionApiEnabled: boolean;
+    dictionaryEnabled: boolean;
     projectId?: string;
     apiKey?: string;
     devApiKey?: string;
@@ -46,20 +45,31 @@ export default class I18NConfiguration {
     private _queue;
     private _activeRequests;
     private _translationCache;
-    private _taggedDictionary;
-    private _template;
-    private _usingPlugin;
-    constructor({ apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, loadTranslationType, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, _usingPlugin, ...metadata }: I18NConfigurationParams);
+    constructor({ apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, loadTranslationType, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, _usingPlugin, ...metadata }: I18NConfigurationParams);
+    /**
+     * Get the rendering instructions
+     * @returns An object containing the current method and timeout.
+     * As of 1/22/25: method is "skeleton", "replace", "default".
+     * Timeout is a number or null, representing no assigned timeout.
+     */
+    getRenderSettings(): {
+        method: RenderMethod;
+        timeout?: number;
+    };
     /**
      * Gets config for dynamic translation on the client side.
      */
     getClientSideConfig(): {
         projectId: string | undefined;
-        devApiKey: string | undefined;
-        runtimeUrl: string | undefined;
         translationEnabled: boolean;
-        runtimeTranslationEnabled: boolean;
+        runtimeUrl: string | undefined;
+        devApiKey: string | undefined;
         dictionaryEnabled: boolean;
+        renderSettings: {
+            method: RenderMethod;
+            timeout?: number;
+        };
+        runtimeTranslationEnabled: boolean;
     };
     /**
      * Gets the application's default locale
@@ -72,40 +82,30 @@ export default class I18NConfiguration {
      */
     getLocales(): string[];
     /**
+     * @returns true if build time translation is enabled
+     */
+    isTranslationEnabled(): boolean;
+    /**
      * @returns true if dictionaries are enabled
      */
     isDictionaryEnabled(): boolean;
     /**
-     * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
+     * @returns true if development runtime translation API is enabled
      */
-    isTranslationEnabled(): boolean;
+    isDevelopmentApiEnabled(): boolean;
     /**
-     * Runtime translation is enabled on server side
-     * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
+     * @returns true if production runtime translation API is enabled
      */
-    isServerRuntimeTranslationEnabled(): boolean;
-    /**
-     * Runtime translation for clientside
-     * @returns {boolean} A boolean indicating whether the client runtime translation is enabled
-     */
-    isClientRuntimeTranslationEnabled(): boolean;
-    /**
-     * Get the rendering instructions
-     * @returns An object containing the current method and timeout.
-     * As of 1/22/25: method is "skeleton", "replace", "default".
-     * Timeout is a number or null, representing no assigned timeout.
-     */
-    getRenderSettings(): {
-        method: RenderMethod;
-        timeout?: number;
-    };
+    isProductionApiEnabled(): boolean;
     /**
      * Check if translation is required based on the user's locale
      * @param locale - The user's locale
      * @returns True if translation is required, otherwise false
      */
-    requiresTranslation(locale: string): boolean;
-    addGTIdentifier(children: Children): TaggedChildren;
+    requiresTranslation(locale: string): [
+        boolean,
+        boolean
+    ];
     /**
      * Get the translation dictionaries for this user's locale, if they exist
      * Globally shared cache or saved locally
@@ -114,7 +114,7 @@ export default class I18NConfiguration {
      */
     getCachedTranslations(locale: string): Promise<TranslationsObject>;
     /**
-     * Retrieves translations for a given locale which are already cached locally
+     * Synchronously retrieves translations for a given locale which are already cached locally
      * @param {string} locale - The locale code.
      * @returns {TranslationsObject} The translations data or an empty object if not found.
      */
@@ -136,7 +136,7 @@ export default class I18NConfiguration {
      * @param params - Parameters for translation
      * @returns A promise that resolves when translation is complete
      */
-    translateChildren(params: {
+    translateJsx(params: {
         source: JsxChildren;
         targetLocale: string;
         options: {

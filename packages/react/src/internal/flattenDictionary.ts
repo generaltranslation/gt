@@ -1,4 +1,3 @@
-import React from 'react';
 import { Dictionary, FlattenedDictionary } from '../types/types';
 
 const createDuplicateKeyError = (key: string) =>
@@ -23,8 +22,7 @@ export default function flattenDictionary(
       if (
         typeof dictionary[key] === 'object' &&
         dictionary[key] !== null &&
-        !Array.isArray(dictionary[key]) &&
-        !React.isValidElement(dictionary[key])
+        !Array.isArray(dictionary[key])
       ) {
         const nestedFlattened = flattenDictionary(dictionary[key], newKey);
         for (const flatKey in nestedFlattened) {

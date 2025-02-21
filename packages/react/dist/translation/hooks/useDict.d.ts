@@ -1,5 +1,5 @@
 import React from 'react';
-import { TranslationOptions } from '../../types/types';
+import { DictionaryTranslationOptions } from '../../types/types';
 /**
  * Gets the dictionary access function `d` provided by `<GTProvider>`.
  *
@@ -13,5 +13,5 @@ import { TranslationOptions } from '../../types/types';
  * const d = useDict();
  * console.log(d('hello')); // Translates item 'hello'
  */
-export default function useDict(id?: string): (id: string, options?: TranslationOptions) => React.ReactNode;
+export default function useDict(id: string): (id: string, options?: DictionaryTranslationOptions) => React.ReactNode;
 //# sourceMappingURL=useDict.d.ts.map

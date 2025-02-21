@@ -1,36 +1,34 @@
 import React from 'react';
 /**
- * Translation component that handles rendering translated content, including plural forms.
- * Used with the required `id` parameter instead of `const t = useGT()`.
- *
- * @param {string} [id] - Required identifier for the translation string.
- * @param {React.ReactNode} children - The content to be translated or displayed.
- * @param {any} [context] - Additional context used for translation.
- * @param {Object} [props] - Additional props for the component.
- * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
- *
- * @throws {Error} If a plural translation is requested but the `n` option is not provided.
+ * Build-time translation component that renders its children in the user's given locale.
  *
  * @example
  * ```jsx
  * // Basic usage:
  * <T id="welcome_message">
- *  Hello, <Var name="name">{name}</Var>!
+ *  Hello, <Var name="name" value={firstname}>!
  * </T>
  * ```
  *
  * @example
  * ```jsx
- * // Using plural translations:
+ * // Translating a plural
  * <T id="item_count">
- *  <Plural n={n} singular={<>You have <Num value={n}/> item</>}>
- *      You have <Num value={n}/> items
+ *  <Plural n={3} singular={<>You have <Num value={n}/> item.</>}>
+ *      You have <Num value={n}/> items.
  *  </Plural>
  * </T>
  * ```
  *
+ * @param {React.ReactNode} children - The content to be translated or displayed.
+ * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
+ * @param {any} [context] - Additional context for translation key generation.
+ *
+ * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
+ *
+ * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
-declare function T({ children, id, ...props }: {
+declare function T({ children, id, context }: {
     children: any;
     id?: string;
     context?: string;

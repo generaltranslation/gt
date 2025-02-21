@@ -88,15 +88,15 @@ var id_1 = require("generaltranslation/id");
  * // Using variables in the content string
  * const translation = await tx("The price is {price}", { locale: 'es-MX', variables: { price: 29.99 } });
  */
-function tx(content_1) {
-    return __awaiter(this, arguments, void 0, function (content, options) {
-        var I18NConfig, locale, _a, defaultLocale, translationRequired, source, renderContent, hash, recentTranslations, target, error_1;
+function tx(string_1) {
+    return __awaiter(this, arguments, void 0, function (string, options) {
+        var I18NConfig, locale, _a, defaultLocale, translationRequired, source, r, hash, recentTranslations, target, error_1;
         var _b;
         if (options === void 0) { options = {}; }
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
-                    if (!content || typeof content !== 'string')
+                    if (!string || typeof string !== 'string')
                         return [2 /*return*/, ''];
                     I18NConfig = (0, getI18NConfig_1.default)();
                     _a = options.locale;
@@ -108,22 +108,18 @@ function tx(content_1) {
                 case 2:
                     locale = _a;
                     defaultLocale = I18NConfig.getDefaultLocale();
-                    translationRequired = I18NConfig.requiresTranslation(locale);
-                    source = (0, generaltranslation_1.splitStringToContent)(content);
-                    renderContent = function (content, locales) {
+                    translationRequired = I18NConfig.requiresTranslation(locale)[0];
+                    source = (0, generaltranslation_1.splitStringToContent)(string);
+                    r = function (content, locales) {
                         return (0, generaltranslation_1.renderContentToString)(content, locales, options.variables, options.variablesOptions);
                     };
-                    // ----- RENDER LOGIC ----- //
-                    // translation required
-                    if (!translationRequired || !I18NConfig.isServerRuntimeTranslationEnabled())
-                        return [2 /*return*/, renderContent(source, [defaultLocale])];
+                    // ----- CHECK IF TRANSLATION REQUIRED ----- //
+                    if (!translationRequired)
+                        return [2 /*return*/, r(source, [defaultLocale])];
                     hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options.id })));
                     recentTranslations = I18NConfig.getRecentTranslations(locale);
                     if (((_b = recentTranslations === null || recentTranslations === void 0 ? void 0 : recentTranslations[hash]) === null || _b === void 0 ? void 0 : _b.state) === 'success') {
-                        return [2 /*return*/, renderContent(recentTranslations[hash].target, [
-                                locale,
-                                defaultLocale,
-                            ])];
+                        return [2 /*return*/, r(recentTranslations[hash].target, [locale, defaultLocale])];
                     }
                     _c.label = 3;
                 case 3:
@@ -135,11 +131,11 @@ function tx(content_1) {
                         })];
                 case 4:
                     target = _c.sent();
-                    return [2 /*return*/, renderContent(target, [locale, defaultLocale])];
+                    return [2 /*return*/, r(target, [locale, defaultLocale])];
                 case 5:
                     error_1 = _c.sent();
-                    console.error((0, createErrors_1.createStringTranslationError)(content, options.id), error_1);
-                    return [2 /*return*/, renderContent(source, [defaultLocale])];
+                    console.error((0, createErrors_1.createStringTranslationError)(string, options.id), error_1);
+                    return [2 /*return*/, r(source, [defaultLocale])];
                 case 6: return [2 /*return*/];
             }
         });

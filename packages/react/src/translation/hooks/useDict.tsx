@@ -1,7 +1,7 @@
 import React from 'react';
 import useGTContext from '../../provider/GTContext';
 import { createNoEntryWarning } from '../../messages/createMessages';
-import { TranslationOptions } from '../../types/types';
+import { DictionaryTranslationOptions } from '../../types/types';
 
 /**
  * Gets the dictionary access function `d` provided by `<GTProvider>`.
@@ -17,22 +17,23 @@ import { TranslationOptions } from '../../types/types';
  * console.log(d('hello')); // Translates item 'hello'
  */
 export default function useDict(
-  id: string = ''
-): (id: string, options?: TranslationOptions) => React.ReactNode {
+  id: string
+): (id: string, options?: DictionaryTranslationOptions) => React.ReactNode {
+  
   // Create a prefix for translation keys if an id is provided
   const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
   };
 
   // Get the translation context
-  const { translateEntry } = useGTContext(
+  const { _internalUseDictFunction } = useGTContext(
     `useGT('${id}'): No context provided. You're trying to get the t() function on the client, which can only be done inside a <GTProvider>.`
   );
 
   /**
    * @description A function that translates a dictionary entry based on its `id` and options.
    * @param {string} id The identifier of the dictionary entry to translate.
-   * @param { TranslationOptions} options for translating strings.
+   * @param {DictionaryTranslationOptions} options for translating strings.
    * @returns The translated version of the dictionary entry.
    *
    * @example
@@ -50,19 +51,12 @@ export default function useDict(
    * d('greetings.greeting2', { variables: { name: 'John' } });
    */
   function d(
-    id: string = '',
-    options: TranslationOptions = {}
-  ): React.ReactNode {
+    id: string,
+    options: DictionaryTranslationOptions = {}
+  ): string {
     // Get the prefixed ID
     const prefixedId = getId(id);
-
-    // Get the translation
-    if (translateEntry) {
-      const translation = translateEntry(prefixedId, options);
-      if (translation === undefined || translation === null)
-        console.warn(createNoEntryWarning(id, prefixedId));
-      return translation;
-    }
+    return (_internalUseDictFunction as any)(prefixedId, options);
   }
 
   return d;

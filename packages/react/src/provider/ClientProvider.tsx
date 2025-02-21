@@ -11,8 +11,8 @@ import {
 } from '../types/types';
 import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { localeCookieName } from 'generaltranslation/internal';
-import useTranslateContent from '../hooks/internal/useTranslateContent';
-import useTranslateEntryFromServer from '../hooks/internal/useTranslateEntryFromServer';
+import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
+import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -26,7 +26,6 @@ export default function ClientProvider({
   translationRequired,
   dialectTranslationRequired,
   locales = [],
-  requiredPrefix,
   renderSettings,
   projectId,
   devApiKey,
@@ -35,6 +34,7 @@ export default function ClientProvider({
   onLocaleChange = () => {},
   cookieName = localeCookieName,
 }: ClientProviderProps): React.JSX.Element {
+  
   // ----- TRANSLATIONS STATE ----- //
 
   /**
@@ -127,20 +127,6 @@ export default function ClientProvider({
 
   // ---------- TRANSLATION METHODS ---------- //
 
-  // for dictionaries (strings are actually already resolved, but JSX needs tx still)
-  const translateEntry = useTranslateEntryFromServer({
-    dictionary,
-    translations,
-    locale,
-    renderSettings,
-    runtimeTranslationEnabled,
-    translationRequired,
-    dialectTranslationRequired,
-    locales,
-    defaultLocale,
-  });
-
-  // Setup runtime translation
   const { registerContentForTranslation, registerJsxForTranslation } =
     useRuntimeTranslation({
       locale: locale,
@@ -154,8 +140,9 @@ export default function ClientProvider({
       runtimeTranslationEnabled,
     });
 
-  // Translate content function
-  const translateContent = useTranslateContent(
+  // ---------- USE GT() TRANSLATION ---------- //
+
+  const _internalUseGTFunction = useCreateInternalUseGTFunction(
     translations,
     locale,
     defaultLocale,
@@ -166,14 +153,24 @@ export default function ClientProvider({
     renderSettings
   );
 
+  // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
+
+  const _internalUseDictFunction = useCreateInternalUseDictFunction({
+    dictionary, _internalUseGTFunction
+  });
+
+  // ------ RETURN ------ //
+
+  const display = !!(!translationRequired || translations) && locale;
+
   return (
     <GTContext.Provider
       value={{
         registerContentForTranslation,
         registerJsxForTranslation,
         setLocale,
-        translateContent,
-        translateEntry,
+        _internalUseGTFunction,
+        _internalUseDictFunction,
         locale,
         locales,
         defaultLocale,
@@ -184,7 +181,7 @@ export default function ClientProvider({
         runtimeTranslationEnabled,
       }}
     >
-      {(!translationRequired || translations) && children}
+      {display && children}
     </GTContext.Provider>
   );
 }

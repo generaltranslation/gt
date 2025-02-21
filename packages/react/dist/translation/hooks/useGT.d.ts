@@ -1,4 +1,4 @@
-import { TranslationOptions } from '../../types/types';
+import { InlineTranslationOptions } from '../../types/types';
 /**
  * Gets the translation function `t` provided by `<GTProvider>`.
  *
@@ -16,5 +16,5 @@ import { TranslationOptions } from '../../types/types';
  * </>);
  *
  */
-export default function useGT(): (content?: string, options?: TranslationOptions) => string;
+export default function useGT(): (string: string, options?: InlineTranslationOptions) => string;
 //# sourceMappingURL=useGT.d.ts.map

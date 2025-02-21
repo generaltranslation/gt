@@ -56,7 +56,6 @@ var getLocale_1 = __importDefault(require("../../request/getLocale"));
 var react_1 = require("react");
 var internal_1 = require("gt-react/internal");
 var renderVariable_1 = __importDefault(require("../variables/renderVariable"));
-var generaltranslation_1 = require("generaltranslation");
 var id_1 = require("generaltranslation/id");
 function Resolver(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
@@ -70,7 +69,7 @@ function Resolver(_a) {
     });
 }
 /**
- * Translation component that renders its children translated into the user's given locale.
+ * Build-time translation component that renders its children in the user's given locale.
  *
  * @example
  * ```jsx
@@ -90,121 +89,101 @@ function Resolver(_a) {
  * </T>
  * ```
  *
- * When used on the server-side, can create translations on demand.
- * If you need to ensure server-side usage import from `'gt-next/server'`.
- *
- * When used on the client-side, will throw an error if no `id` prop is provided.
- *
- * By default, General Translation saves the translation in a remote cache if an `id` option is passed.
- *
  * @param {React.ReactNode} children - The content to be translated or displayed.
  * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
- * @param {Object} [renderSettings] - Optional settings controlling how fallback content is rendered during translation.
- * @param {"skeleton" | "replace" | "default"} [renderSettings.method] - Specifies the rendering method:
- *  - "skeleton": show a placeholder while translation is loading.
- *  - "replace": show the default content as a fallback while the translation is loading.
- *  - "default": behave like skeleton unless language is same (ie en-GB vs en-US), then behave like replace
- * @param {number | null} [renderSettings.timeout] - Optional timeout for translation loading.
  * @param {any} [context] - Additional context for translation key generation.
- * @param {Object} [props] - Additional props for the component.
+ *
  * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
  *
  * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
 function T(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, renderSettings, translationRequired, serverRuntimeTranslationEnabled, dialectTranslationRequired, taggedChildren, renderDefaultLocale, renderLoadingDefault, translationsPromise, childrenAsObjects, hash, translations, translationEntry, translationPromise, loadingFallback;
-        var children = _b.children, id = _b.id, context = _b.context, variables = _b.variables, variablesOptions = _b.variablesOptions;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var I18NConfig, locale, defaultLocale, _c, translationRequired, dialectTranslationRequired, taggedChildren, renderDefault, translationsPromise, childrenAsObjects, hash, translationEntry, renderTranslation, renderSettings, translationPromise, loadingFallback;
+        var _this = this;
+        var _d;
+        var children = _b.children, id = _b.id, context = _b.context;
+        return __generator(this, function (_e) {
+            switch (_e.label) {
                 case 0:
-                    if (!children)
-                        return [2 /*return*/];
                     I18NConfig = (0, getI18NConfig_1.default)();
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    locale = _c.sent();
+                    locale = _e.sent();
                     defaultLocale = I18NConfig.getDefaultLocale();
-                    renderSettings = I18NConfig.getRenderSettings();
-                    translationRequired = I18NConfig.requiresTranslation(locale);
-                    serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled() &&
-                        process.env.NODE_ENV === 'development';
-                    dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, defaultLocale);
-                    taggedChildren = I18NConfig.addGTIdentifier(children);
-                    renderDefaultLocale = function () {
+                    _c = I18NConfig.requiresTranslation(locale), translationRequired = _c[0], dialectTranslationRequired = _c[1];
+                    taggedChildren = (0, internal_1.addGTIdentifier)(children);
+                    renderDefault = function () {
                         return (0, internal_1.renderDefaultChildren)({
                             children: taggedChildren,
-                            variables: variables,
-                            variablesOptions: variablesOptions,
                             defaultLocale: defaultLocale,
                             renderVariable: renderVariable_1.default,
                         });
-                    };
-                    renderLoadingDefault = function () {
-                        if (dialectTranslationRequired)
-                            return renderDefaultLocale();
-                        return (0, internal_1.renderSkeleton)();
                     };
                     // ----- CHECK TRANSLATIONS REQUIRED ----- //
                     // If no translation is required, render the default children
                     // The dictionary wraps text in this <T> component
                     // Thus, we need to also handle variables
                     if (!translationRequired) {
-                        return [2 /*return*/, renderDefaultLocale()];
+                        return [2 /*return*/, renderDefault()];
                     }
                     translationsPromise = I18NConfig.getCachedTranslations(locale);
                     childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedChildren);
                     hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: childrenAsObjects }, (context && { context: context })), (id && { id: id })));
                     return [4 /*yield*/, translationsPromise];
                 case 2:
-                    translations = _c.sent();
-                    translationEntry = translations === null || translations === void 0 ? void 0 : translations[hash];
+                    translationEntry = (_d = (_e.sent())) === null || _d === void 0 ? void 0 : _d[hash];
+                    renderTranslation = function (target) {
+                        return (0, internal_1.renderTranslatedChildren)({
+                            source: taggedChildren,
+                            target: target,
+                            locales: [locale, defaultLocale],
+                            renderVariable: renderVariable_1.default
+                        });
+                    };
                     // ----- RENDER CACHED TRANSLATIONS ----- //
                     // if we have a cached translation, render it
                     if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success') {
-                        return [2 /*return*/, (0, internal_1.renderTranslatedChildren)({
-                                source: taggedChildren,
-                                target: translationEntry.target,
-                                variables: variables,
-                                variablesOptions: variablesOptions,
-                                locales: [locale, defaultLocale],
-                                renderVariable: renderVariable_1.default,
-                            })];
+                        return [2 /*return*/, renderTranslation(translationEntry.target)];
                     }
-                    else if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error' || // fallback to default if error
-                        !serverRuntimeTranslationEnabled // fallback to default if runtime translation is disabled (loading should never happen here)
-                    ) {
-                        return [2 /*return*/, renderDefaultLocale()];
+                    if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error') {
+                        return [2 /*return*/, renderDefault()];
                     }
-                    translationPromise = I18NConfig.translateChildren({
-                        // do on demand translation
-                        source: childrenAsObjects,
-                        targetLocale: locale,
-                        options: __assign(__assign(__assign(__assign({}, (id && { id: id })), { hash: hash }), (context && { context: context })), (renderSettings.timeout && { timeout: renderSettings.timeout })),
-                    })
-                        .then(function (translation) {
-                        // render the translation
-                        return (0, internal_1.renderTranslatedChildren)({
-                            source: taggedChildren,
-                            target: translation,
-                            variables: variables,
-                            variablesOptions: variablesOptions,
-                            locales: [locale, defaultLocale],
-                            renderVariable: renderVariable_1.default,
+                    // ----- TRANSLATE ON DEMAND ----- //
+                    // Since this is the buildtime translation component <T>, this is dev-only
+                    if (!I18NConfig.isDevelopmentApiEnabled())
+                        return [2 /*return*/, renderDefault()];
+                    renderSettings = I18NConfig.getRenderSettings();
+                    translationPromise = (function () { return __awaiter(_this, void 0, void 0, function () {
+                        var target, _a;
+                        return __generator(this, function (_b) {
+                            switch (_b.label) {
+                                case 0:
+                                    _b.trys.push([0, 2, , 3]);
+                                    return [4 /*yield*/, I18NConfig.translateJsx({
+                                            // do on demand translation
+                                            source: childrenAsObjects,
+                                            targetLocale: locale,
+                                            options: __assign(__assign(__assign(__assign({}, (id && { id: id })), { hash: hash }), (context && { context: context })), (renderSettings.timeout && { timeout: renderSettings.timeout })),
+                                        })];
+                                case 1:
+                                    target = _b.sent();
+                                    return [2 /*return*/, renderTranslation(target)];
+                                case 2:
+                                    _a = _b.sent();
+                                    return [2 /*return*/, renderDefault()];
+                                case 3: return [2 /*return*/];
+                            }
                         });
-                    })
-                        .catch(function () {
-                        // render the default locale if there is an error instead
-                        return renderDefaultLocale();
-                    });
+                    }); })();
                     if (renderSettings.method === 'replace') {
-                        loadingFallback = renderDefaultLocale();
+                        loadingFallback = renderDefault();
                     }
                     else if (renderSettings.method === 'skeleton') {
                         loadingFallback = (0, internal_1.renderSkeleton)();
                     }
                     else {
-                        loadingFallback = renderLoadingDefault();
+                        loadingFallback = dialectTranslationRequired ? renderDefault() : (0, internal_1.renderSkeleton)();
                     }
                     return [2 /*return*/, ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: (0, jsx_runtime_1.jsx)(Resolver, { children: translationPromise }) }, locale))];
             }

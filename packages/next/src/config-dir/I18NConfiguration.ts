@@ -1,17 +1,16 @@
-import { requiresTranslation } from 'generaltranslation';
+import { isSameLanguage, requiresTranslation } from 'generaltranslation';
 import translationManager, { TranslationManager } from './TranslationManager';
 import {
-  addGTIdentifier,
   RenderMethod,
   TranslatedChildren,
   TranslatedContent,
-  Children,
   defaultRenderSettings,
   GTTranslationError,
 } from 'gt-react/internal';
 import { createMismatchingHashWarning } from '../errors/createErrors';
 import { Content, JsxChildren } from 'generaltranslation/internal';
-import { TaggedChildren, TranslationsObject } from 'gt-react/internal';
+import { TranslationsObject } from 'gt-react/internal';
+import defaultInitGTProps from './props/defaultInitGTProps';
 type I18NConfigurationParams = {
   apiKey?: string;
   devApiKey?: string;
@@ -19,7 +18,6 @@ type I18NConfigurationParams = {
   runtimeUrl: string | undefined;
   cacheUrl: string | null;
   loadTranslationType: 'remote' | 'custom' | 'disabled';
-  cacheExpiryTime?: number;
   defaultLocale: string;
   locales: string[];
   renderSettings: {
@@ -58,9 +56,9 @@ type QueueEntry =
 export default class I18NConfiguration {
   // Feature flags
   translationEnabled: boolean;
-  serverRuntimeTranslationEnabled: boolean;
-  clientRuntimeTranslationEnabled: boolean;
-  loadTranslationEnabled: boolean = true;
+  developmentApiEnabled: boolean;
+  productionApiEnabled: boolean;
+  dictionaryEnabled: boolean;
   // Cloud integration
   projectId?: string;
   apiKey?: string;
@@ -88,11 +86,6 @@ export default class I18NConfiguration {
   private _activeRequests: number;
   // Cache for ongoing translation requests
   private _translationCache: Map<string, Promise<any>>;
-  // Processed dictionary
-  private _taggedDictionary: Map<string, any>;
-  private _template: Map<string, { [hash: string]: TranslatedChildren }>;
-  // Internal
-  private _usingPlugin: boolean;
 
   constructor({
     // Cloud integration
@@ -102,7 +95,6 @@ export default class I18NConfiguration {
     _versionId,
     runtimeUrl,
     cacheUrl,
-    cacheExpiryTime,
     loadTranslationType,
     // Locale info
     defaultLocale,
@@ -120,6 +112,7 @@ export default class I18NConfiguration {
     // Other metadata
     ...metadata
   }: I18NConfigurationParams) {
+
     // ----- CLOUD INTEGRATION ----- //
 
     this.apiKey = apiKey;
@@ -129,28 +122,38 @@ export default class I18NConfiguration {
     this.cacheUrl = cacheUrl;
     this._versionId = _versionId; // version id for the dictionary
 
-    // ----- FEATURE FLAGS ----- //
+    // IS BUILDTIME TRANSLATION ENABLED
 
-    // runtime translations
-    const _runtimeTranslation = !!(
-      this.projectId &&
-      this.runtimeUrl &&
-      (this.apiKey ||
-        (this.devApiKey && process.env.NODE_ENV === 'development'))
-    );
-    // translation loader
-    this.loadTranslationEnabled = !!(
+    this.translationEnabled = !!(
       loadTranslationType === 'custom' ||
-      (loadTranslationType === 'remote' && this.projectId && this.cacheUrl)
+      (
+        loadTranslationType === 'remote' && 
+        this.projectId && // projectId required because it's part of the GET request
+        this.cacheUrl
+      )
     );
-    this.translationEnabled =
-      this.loadTranslationEnabled || _runtimeTranslation; // two types of tx: loader (remote/custom) and runtime
-    // When we add <TX> for both client and server, there will not be discrepancy between server and client
-    this.serverRuntimeTranslationEnabled = _runtimeTranslation;
-    this.clientRuntimeTranslationEnabled =
-      _runtimeTranslation && !!this.devApiKey;
 
-    // ----- OTHER SETUP ----- //
+    // IS RUNTIME TRANSLATION ENABLED
+    
+    const runtimeApiEnabled = !!(
+      this.runtimeUrl === defaultInitGTProps.runtimeUrl 
+      ? this.projectId 
+      : this.runtimeUrl
+    );
+    this.developmentApiEnabled = !!(
+      runtimeApiEnabled &&
+      (this.devApiKey && process.env.NODE_ENV === 'development')
+    );
+    this.productionApiEnabled = !!(
+      runtimeApiEnabled &&
+      this.apiKey
+    );
+
+    // DICTIONARY ENABLED
+
+    this.dictionaryEnabled = _usingPlugin;
+
+    // ----- SETUP ----- //
 
     // Locales
     this.defaultLocale = defaultLocale;
@@ -179,13 +182,9 @@ export default class I18NConfiguration {
     this._translationManager.setConfig({
       cacheUrl,
       projectId,
-      cacheExpiryTime,
-      loadTranslationEnabled: this.loadTranslationEnabled,
+      translationEnabled: this.translationEnabled,
       _versionId,
     });
-    // Cache of hashes to speed up <GTProvider>
-    this._taggedDictionary = new Map();
-    this._template = new Map();
     // Batching
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.maxBatchSize = maxBatchSize;
@@ -194,23 +193,45 @@ export default class I18NConfiguration {
     this._activeRequests = 0;
     this._translationCache = new Map(); // cache for ongoing promises, so things aren't translated twice
     this._startBatching();
-    // Internal
-    this._usingPlugin = _usingPlugin;
+  }
+
+  // ------ CONFIG ----- //
+
+  /**
+   * Get the rendering instructions
+   * @returns An object containing the current method and timeout.
+   * As of 1/22/25: method is "skeleton", "replace", "default".
+   * Timeout is a number or null, representing no assigned timeout.
+   */
+  getRenderSettings(): {
+    method: RenderMethod;
+    timeout?: number;
+  } {
+    return this.renderSettings;
   }
 
   /**
    * Gets config for dynamic translation on the client side.
    */
   getClientSideConfig() {
+    const {
+      projectId, 
+      translationEnabled,
+      runtimeUrl,
+      devApiKey, developmentApiEnabled,
+      dictionaryEnabled, renderSettings
+    } = this;
     return {
-      projectId: this.projectId,
-      devApiKey: this.devApiKey,
-      runtimeUrl: this.runtimeUrl,
-      translationEnabled: this.translationEnabled,
-      runtimeTranslationEnabled: this.clientRuntimeTranslationEnabled,
-      dictionaryEnabled: this.isDictionaryEnabled(),
-    };
+      projectId, 
+      translationEnabled,
+      runtimeUrl,
+      devApiKey,
+      dictionaryEnabled, renderSettings,
+      runtimeTranslationEnabled: developmentApiEnabled
+    }
   }
+
+  // ----- LOCALES ----- //
 
   /**
    * Gets the application's default locale
@@ -228,64 +249,53 @@ export default class I18NConfiguration {
     return this.locales;
   }
 
-  /**
-   * @returns true if dictionaries are enabled
-   */
-  isDictionaryEnabled(): boolean {
-    return this._usingPlugin;
-  }
+  // ----- FEATURE FLAGS ----- //
 
   /**
-   * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
+   * @returns true if build time translation is enabled
    */
   isTranslationEnabled(): boolean {
     return this.translationEnabled;
   }
 
   /**
-   * Runtime translation is enabled on server side
-   * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
+   * @returns true if dictionaries are enabled
    */
-  isServerRuntimeTranslationEnabled(): boolean {
-    return this.serverRuntimeTranslationEnabled;
+  isDictionaryEnabled(): boolean {
+    return this.dictionaryEnabled;
   }
 
   /**
-   * Runtime translation for clientside
-   * @returns {boolean} A boolean indicating whether the client runtime translation is enabled
+   * @returns true if development runtime translation API is enabled
    */
-  isClientRuntimeTranslationEnabled(): boolean {
-    return this.clientRuntimeTranslationEnabled;
+  isDevelopmentApiEnabled(): boolean {
+    return this.developmentApiEnabled;
   }
 
   /**
-   * Get the rendering instructions
-   * @returns An object containing the current method and timeout.
-   * As of 1/22/25: method is "skeleton", "replace", "default".
-   * Timeout is a number or null, representing no assigned timeout.
+   * @returns true if production runtime translation API is enabled
    */
-  getRenderSettings(): {
-    method: RenderMethod;
-    timeout?: number;
-  } {
-    return this.renderSettings;
+  isProductionApiEnabled(): boolean {
+    return this.productionApiEnabled;
   }
+
+  // ----- UTILITY FUNCTIONS ----- //
 
   /**
    * Check if translation is required based on the user's locale
    * @param locale - The user's locale
    * @returns True if translation is required, otherwise false
    */
-  requiresTranslation(locale: string): boolean {
-    return (
-      this.isTranslationEnabled() &&
-      requiresTranslation(this.defaultLocale, locale, this.locales)
-    );
+  requiresTranslation(locale: string): [
+    boolean, boolean
+  ] {
+    if (!this.translationEnabled) return [false, false];
+    const translationRequired = requiresTranslation(this.defaultLocale, locale, this.locales);
+    const dialectTranslationRequired = translationRequired && isSameLanguage(locale, this.defaultLocale);
+    return [translationRequired, dialectTranslationRequired];
   }
 
-  addGTIdentifier(children: Children): TaggedChildren {
-    return addGTIdentifier(children);
-  }
+  // ----- CACHED TRANSLATIONS ----- //
 
   /**
    * Get the translation dictionaries for this user's locale, if they exist
@@ -300,13 +310,15 @@ export default class I18NConfiguration {
   }
 
   /**
-   * Retrieves translations for a given locale which are already cached locally
+   * Synchronously retrieves translations for a given locale which are already cached locally
    * @param {string} locale - The locale code.
    * @returns {TranslationsObject} The translations data or an empty object if not found.
    */
   getRecentTranslations(locale: string): TranslationsObject {
     return this._translationManager?.getRecentTranslations(locale) || {};
   }
+
+  // ----- RUNTIME TRANSLATION ----- //
 
   /**
    * Translate content into language associated with a given locale
@@ -349,7 +361,7 @@ export default class I18NConfiguration {
    * @param params - Parameters for translation
    * @returns A promise that resolves when translation is complete
    */
-  async translateChildren(params: {
+  async translateJsx(params: {
     source: JsxChildren;
     targetLocale: string;
     options: { hash: string } & Record<string, any>;

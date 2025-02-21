@@ -1,21 +1,14 @@
 import { useMemo } from 'react';
 import {
   isSameLanguage,
-  renderContentToString,
   requiresTranslation,
-  splitStringToContent,
 } from 'generaltranslation';
 import { useCallback, useEffect, useState } from 'react';
 import { GTContext } from './GTContext';
 import {
-  DictionaryEntry,
   RenderMethod,
-  TranslatedContent,
   TranslationsObject,
 } from '../types/types';
-import getDictionaryEntry from './helpers/getDictionaryEntry';
-import { flattenDictionary } from '../internal';
-import getEntryAndMetadata from './helpers/getEntryAndMetadata';
 import {
   Content,
   defaultCacheUrl,
@@ -31,14 +24,12 @@ import {
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
-import { hashJsxChildren } from 'generaltranslation/id';
 import React from 'react';
-import T from '../translation/inline/T';
 import useDetermineLocale from '../hooks/internal/useDetermineLocale';
 import { readAuthFromEnv } from '../utils/utils';
 import fetchTranslations from '../utils/fetchTranslations';
-import useTranslateContent from '../hooks/internal/useTranslateContent';
-import useTranslateEntry from '../hooks/internal/useTranslateEntry';
+import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
+import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -293,99 +284,9 @@ export default function GTProvider({
     _versionId,
   ]);
 
-  // ---------- TRANSLATE STRINGS IN THE DICTIONARY ---------- //
-  // must block until load complete
+  // ---------- USE GT ---------- //
 
-  const [
-    // Flatten dictionaries for processing
-    flattenedDictionary,
-    // Get any string entries which might need to be translateds
-    // because we need to delay page load if so
-    flattenedDictionaryContentEntries,
-  ] = useMemo(() => {
-    const flattenedDictionary = flattenDictionary(dictionary);
-    const flattenedDictionaryContentEntries: Record<
-      string,
-      { hash: string; source: Content; metadata?: Record<string, any> }
-    > = {};
-    for (const [id, entryWithMetadata] of Object.entries(flattenedDictionary)) {
-      const { entry, metadata } = getEntryAndMetadata(entryWithMetadata);
-      if (typeof entry === 'string') {
-        // Continue if entry is an empty string
-        if (!entry.length) {
-          console.warn(
-            `gt-react warn: Empty string found in dictionary with id: ${id}`
-          );
-          continue;
-        }
-        const context = metadata?.context;
-        const source = splitStringToContent(entry as string);
-        const hash = hashJsxChildren({
-          source,
-          ...(context && { context }),
-          id,
-        });
-        flattenedDictionaryContentEntries[id] = { source, hash, metadata };
-      }
-    }
-    return [flattenedDictionary, flattenedDictionaryContentEntries];
-  }, [dictionary]);
-
-  // Memoize check for strings resolving
-  const stringTranslationsResolved = useMemo(() => {
-    // Skip unnecessary processing if translation not required
-    // Or translations not resolved yet
-    if (!translationRequired || !translations || !runtimeTranslationEnabled)
-      return true;
-
-    // Filter out any entries whose translations are loading/resolved
-    let stringTranslationsResolved = true;
-    for (const [id, { hash, source, metadata }] of Object.entries(
-      flattenedDictionaryContentEntries
-    )) {
-      if (translations?.[hash]) {
-        if (translations[hash].state === 'loading') {
-          stringTranslationsResolved = false;
-        }
-        continue;
-      }
-      registerContentForTranslation({
-        source,
-        targetLocale: locale,
-        metadata: {
-          ...metadata,
-          id,
-          hash,
-        },
-      });
-      stringTranslationsResolved = false;
-    }
-
-    return stringTranslationsResolved;
-  }, [
-    translationRequired,
-    runtimeTranslationEnabled,
-    flattenedDictionaryContentEntries,
-    locale,
-    translations,
-  ]);
-
-  // ---------- TRANSLATE FUNCTION FOR DICTIONARIES ---------- //
-
-  const translateEntry = useTranslateEntry({
-    dictionary,
-    translations,
-    translationRequired,
-    locale,
-    defaultLocale,
-    flattenedDictionary,
-    flattenedDictionaryContentEntries,
-    locales,
-  });
-
-  // ---------- ON-DEMAND STRING TRANSLATION ---------- //
-
-  const translateContent = useTranslateContent(
+  const _internalUseGTFunction = useCreateInternalUseGTFunction(
     translations,
     locale,
     defaultLocale,
@@ -396,19 +297,26 @@ export default function GTProvider({
     renderSettings
   );
 
+  // ---------- USE DICT ---------- //
+
+  const _internalUseDictFunction = useCreateInternalUseDictFunction({
+    dictionary, _internalUseGTFunction
+  });
+
+  // ----- RETURN ----- //
+
   const display = !!(
-    (!translationRequired || (stringTranslationsResolved && translations)) &&
-    locale
+    (!translationRequired || translations) && locale
   );
 
   // hang until cache response, then render translations or loading state (when waiting on API response)
   return (
     <GTContext.Provider
       value={{
-        translateEntry,
         registerContentForTranslation,
         registerJsxForTranslation,
-        translateContent,
+        _internalUseGTFunction,
+        _internalUseDictFunction,
         runtimeTranslationEnabled,
         locale,
         locales,

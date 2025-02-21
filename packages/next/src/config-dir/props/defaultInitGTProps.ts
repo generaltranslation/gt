@@ -11,7 +11,6 @@ const defaultInitGTProps = {
   loadTranslationType: 'remote',
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
-  cacheExpiryTime: 60000,
   defaultLocale: libraryDefaultLocale,
   getLocale: async () => libraryDefaultLocale,
   locales: [] as string[],

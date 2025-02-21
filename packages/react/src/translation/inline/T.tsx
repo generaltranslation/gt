@@ -10,40 +10,38 @@ import renderSkeleton from '../../provider/rendering/renderSkeleton';
 import { TranslatedChildren } from '../../types/types';
 
 /**
- * Translation component that handles rendering translated content, including plural forms.
- * Used with the required `id` parameter instead of `const t = useGT()`.
- *
- * @param {string} [id] - Required identifier for the translation string.
- * @param {React.ReactNode} children - The content to be translated or displayed.
- * @param {any} [context] - Additional context used for translation.
- * @param {Object} [props] - Additional props for the component.
- * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
- *
- * @throws {Error} If a plural translation is requested but the `n` option is not provided.
+ * Build-time translation component that renders its children in the user's given locale.
  *
  * @example
  * ```jsx
  * // Basic usage:
  * <T id="welcome_message">
- *  Hello, <Var name="name">{name}</Var>!
+ *  Hello, <Var name="name" value={firstname}>!
  * </T>
  * ```
  *
  * @example
  * ```jsx
- * // Using plural translations:
+ * // Translating a plural
  * <T id="item_count">
- *  <Plural n={n} singular={<>You have <Num value={n}/> item</>}>
- *      You have <Num value={n}/> items
+ *  <Plural n={3} singular={<>You have <Num value={n}/> item.</>}>
+ *      You have <Num value={n}/> items.
  *  </Plural>
  * </T>
  * ```
  *
+ * @param {React.ReactNode} children - The content to be translated or displayed.
+ * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
+ * @param {any} [context] - Additional context for translation key generation.
+ * 
+ * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
+ *
+ * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
 function T({
   children,
   id,
-  ...props
+  context
 }: {
   children: any;
   id?: string;
@@ -51,8 +49,6 @@ function T({
   [key: string]: any;
 }): React.JSX.Element | undefined {
   if (!children) return undefined;
-
-  const { variables, variablesOptions } = props;
 
   const {
     translations,
@@ -70,7 +66,6 @@ function T({
   // ----- FETCH TRANSLATION ----- //
 
   // Calculate necessary info for fetching translation / generating translation
-  const context = props.context;
   const [childrenAsObjects, hash] = useMemo(() => {
     if (translationRequired) {
       const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
@@ -125,32 +120,21 @@ function T({
   // ----- RENDER METHODS ----- //
 
   // for default/fallback rendering
-  const renderDefaultLocale = () => {
+  const renderDefault = () => {
     return renderDefaultChildren({
       children: taggedChildren,
-      variables,
-      variablesOptions,
       defaultLocale,
       renderVariable,
     });
-  };
-
-  const renderLoadingDefault = () => {
-    if (dialectTranslationRequired) {
-      return renderDefaultLocale();
-    }
-    return renderSkeleton();
   };
 
   const renderTranslation = (target: TranslatedChildren) => {
     return renderTranslatedChildren({
       source: taggedChildren,
       target,
-      variables,
-      variablesOptions,
       locales: [locale, defaultLocale],
       renderVariable,
-    }) as React.JSX.Element;
+    });
   };
 
   // ----- RENDER BEHAVIOR ----- //
@@ -162,7 +146,7 @@ function T({
     (translations && !translation && !runtimeTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
     translation?.state === 'error' // error fetching translation
   ) {
-    return <React.Fragment>{renderDefaultLocale()}</React.Fragment>;
+    return <>{renderDefault()}</>;
   }
 
   // loading behavior (checking cache or fetching runtime translation)
@@ -171,17 +155,17 @@ function T({
     if (renderSettings.method === 'skeleton') {
       loadingFallback = renderSkeleton();
     } else if (renderSettings.method === 'replace') {
-      loadingFallback = renderDefaultLocale();
+      loadingFallback = renderDefault();
     } else {
       // default
-      loadingFallback = renderLoadingDefault();
+      loadingFallback = dialectTranslationRequired ? renderDefault() : renderSkeleton();
     }
-    return <React.Fragment>{loadingFallback}</React.Fragment>;
+    return <>{loadingFallback}</>;
   }
 
   // render translated content
   return (
-    <React.Fragment>{renderTranslation(translation.target)}</React.Fragment>
+    <>{renderTranslation(translation.target)}</>
   );
 }
 

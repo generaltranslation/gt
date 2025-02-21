@@ -14,11 +14,6 @@ export const createNoAuthError =
 export const createPluralMissingError = (children: any) =>
   `<Plural> component with children "${children}" requires "n" option.`;
 
-export const createStringTranslationError = (content: string, id?: string) =>
-  `gt-next string translation error. tx("${content}")${
-    id ? ` with id "${id}"` : ''
-  } failed.`;
-
 export const createClientSideTDictionaryCollisionError = (id: string) =>
   `<T id="${id}">, "${id}" is also used as a key in the dictionary. Don't give <T> components the same ID as dictionary entries.`;
 
@@ -65,12 +60,6 @@ export const createLibraryNoEntryWarning = (id: string) =>
 
 export const createNoEntryWarning = (id: string, prefixedId: string) =>
   `t('${id}') finding no translation for dictionary item ${prefixedId} !`;
-
-export const createInvalidElementEntryWarning = (
-  id: string,
-  prefixedId: string
-) =>
-  `t('${id}') invalid dictionary entry for ${prefixedId} ! useElement() can only be used to render JSX elements. Strings and other types are not allowed.`;
 
 export const createMismatchingHashWarning = (
   expectedHash: string,

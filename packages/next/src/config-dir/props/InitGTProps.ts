@@ -13,7 +13,6 @@ type InitGTProps = {
   projectId?: string;
   runtimeUrl?: string | null;
   cacheUrl?: string | null;
-  cacheExpiryTime?: number;
   // Locale info
   locales?: string[];
   defaultLocale?: string;

@@ -7,7 +7,7 @@ import getI18NConfig from '../../config-dir/getI18NConfig';
 import getLocale from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
 import { hashJsxChildren } from 'generaltranslation/id';
-import { TranslationOptions } from 'gt-react/internal';
+import { RuntimeTranslationOptions } from 'gt-react/internal';
 
 /**
  * Translates the provided content string based on the specified locale and options.
@@ -42,23 +42,23 @@ import { TranslationOptions } from 'gt-react/internal';
  * const translation = await tx("The price is {price}", { locale: 'es-MX', variables: { price: 29.99 } });
  */
 export default async function tx(
-  content: string,
-  options: {
-    locale?: string;
-  } & TranslationOptions = {}
+  string: string,
+  options: RuntimeTranslationOptions = {}
 ): Promise<string> {
-  if (!content || typeof content !== 'string') return '';
+
+  if (!string || typeof string !== 'string') return '';
+  
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
   const locale = options.locale || (await getLocale());
   const defaultLocale = I18NConfig.getDefaultLocale();
-  const translationRequired = I18NConfig.requiresTranslation(locale);
-  const source = splitStringToContent(content); // parse content
+  const [ translationRequired ] = I18NConfig.requiresTranslation(locale);
+  const source = splitStringToContent(string); // parse content
 
-  // ----- RENDER METHOD ----- //
+  // ----- DEFINE RENDER FUNCTION ----- //
 
-  const renderContent = (content: any, locales: string[]) => {
+  const r = (content: any, locales: string[]) => {
     return renderContentToString(
       content,
       locales,
@@ -67,26 +67,29 @@ export default async function tx(
     );
   };
 
-  // ----- RENDER LOGIC ----- //
-  // translation required
-  if (!translationRequired || !I18NConfig.isServerRuntimeTranslationEnabled())
-    return renderContent(source, [defaultLocale]);
+  // ----- CHECK IF TRANSLATION REQUIRED ----- //
 
-  // get hash
+  if (!translationRequired) return r(source, [defaultLocale]);
+
+  // ----- CALCULATE HASH ----- //
+
   const hash = hashJsxChildren({
     source,
     ...(options?.context && { context: options.context }),
     ...(options?.id && { id: options.id }),
   });
 
-  // Check local cache
+  // ----- CHECK LOCAL CACHE ----- //
+
   const recentTranslations = I18NConfig.getRecentTranslations(locale);
   if (recentTranslations?.[hash]?.state === 'success') {
-    return renderContent(recentTranslations[hash].target, [
-      locale,
-      defaultLocale,
-    ]);
+    return r(
+      recentTranslations[hash].target, 
+      [locale, defaultLocale]
+    );
   }
+
+  // ------ CREATE NEW TRANSLATION ---- //
 
   // New translation required
   try {
@@ -95,9 +98,9 @@ export default async function tx(
       targetLocale: locale,
       options: { ...options, hash },
     });
-    return renderContent(target, [locale, defaultLocale]);
+    return r(target, [locale, defaultLocale]);
   } catch (error) {
-    console.error(createStringTranslationError(content, options.id), error);
-    return renderContent(source, [defaultLocale]);
+    console.error(createStringTranslationError(string, options.id), error);
+    return r(source, [defaultLocale]);
   }
 }

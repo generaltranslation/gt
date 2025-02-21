@@ -65,12 +65,13 @@ var generaltranslation_1 = require("generaltranslation");
 var TranslationManager_1 = __importDefault(require("./TranslationManager"));
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
+var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         // ----- CLOUD INTEGRATION ----- //
         var 
         // Cloud integration
-        apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, loadTranslationType = _a.loadTranslationType, 
+        apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, loadTranslationType = _a.loadTranslationType, 
         // Locale info
         defaultLocale = _a.defaultLocale, locales = _a.locales, 
         // Render method
@@ -82,30 +83,29 @@ var I18NConfiguration = /** @class */ (function () {
         // Internal
         _usingPlugin = _a._usingPlugin, 
         // Other metadata
-        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "loadTranslationType", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "_usingPlugin"]);
-        this.loadTranslationEnabled = true;
+        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "loadTranslationType", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "_usingPlugin"]);
         this.apiKey = apiKey;
         this.devApiKey = devApiKey;
         this.projectId = projectId;
         this.runtimeUrl = runtimeUrl;
         this.cacheUrl = cacheUrl;
         this._versionId = _versionId; // version id for the dictionary
-        // ----- FEATURE FLAGS ----- //
-        // runtime translations
-        var _runtimeTranslation = !!(this.projectId &&
-            this.runtimeUrl &&
-            (this.apiKey ||
-                (this.devApiKey && process.env.NODE_ENV === 'development')));
-        // translation loader
-        this.loadTranslationEnabled = !!(loadTranslationType === 'custom' ||
-            (loadTranslationType === 'remote' && this.projectId && this.cacheUrl));
-        this.translationEnabled =
-            this.loadTranslationEnabled || _runtimeTranslation; // two types of tx: loader (remote/custom) and runtime
-        // When we add <TX> for both client and server, there will not be discrepancy between server and client
-        this.serverRuntimeTranslationEnabled = _runtimeTranslation;
-        this.clientRuntimeTranslationEnabled =
-            _runtimeTranslation && !!this.devApiKey;
-        // ----- OTHER SETUP ----- //
+        // IS BUILDTIME TRANSLATION ENABLED
+        this.translationEnabled = !!(loadTranslationType === 'custom' ||
+            (loadTranslationType === 'remote' &&
+                this.projectId && // projectId required because it's part of the GET request
+                this.cacheUrl));
+        // IS RUNTIME TRANSLATION ENABLED
+        var runtimeApiEnabled = !!(this.runtimeUrl === defaultInitGTProps_1.default.runtimeUrl
+            ? this.projectId
+            : this.runtimeUrl);
+        this.developmentApiEnabled = !!(runtimeApiEnabled &&
+            (this.devApiKey && process.env.NODE_ENV === 'development'));
+        this.productionApiEnabled = !!(runtimeApiEnabled &&
+            this.apiKey);
+        // DICTIONARY ENABLED
+        this.dictionaryEnabled = _usingPlugin;
+        // ----- SETUP ----- //
         // Locales
         this.defaultLocale = defaultLocale;
         this.locales = locales;
@@ -123,13 +123,9 @@ var I18NConfiguration = /** @class */ (function () {
         this._translationManager.setConfig({
             cacheUrl: cacheUrl,
             projectId: projectId,
-            cacheExpiryTime: cacheExpiryTime,
-            loadTranslationEnabled: this.loadTranslationEnabled,
+            translationEnabled: this.translationEnabled,
             _versionId: _versionId,
         });
-        // Cache of hashes to speed up <GTProvider>
-        this._taggedDictionary = new Map();
-        this._template = new Map();
         // Batching
         this.maxConcurrentRequests = maxConcurrentRequests;
         this.maxBatchSize = maxBatchSize;
@@ -138,22 +134,33 @@ var I18NConfiguration = /** @class */ (function () {
         this._activeRequests = 0;
         this._translationCache = new Map(); // cache for ongoing promises, so things aren't translated twice
         this._startBatching();
-        // Internal
-        this._usingPlugin = _usingPlugin;
     }
+    // ------ CONFIG ----- //
+    /**
+     * Get the rendering instructions
+     * @returns An object containing the current method and timeout.
+     * As of 1/22/25: method is "skeleton", "replace", "default".
+     * Timeout is a number or null, representing no assigned timeout.
+     */
+    I18NConfiguration.prototype.getRenderSettings = function () {
+        return this.renderSettings;
+    };
     /**
      * Gets config for dynamic translation on the client side.
      */
     I18NConfiguration.prototype.getClientSideConfig = function () {
+        var _a = this, projectId = _a.projectId, translationEnabled = _a.translationEnabled, runtimeUrl = _a.runtimeUrl, devApiKey = _a.devApiKey, developmentApiEnabled = _a.developmentApiEnabled, dictionaryEnabled = _a.dictionaryEnabled, renderSettings = _a.renderSettings;
         return {
-            projectId: this.projectId,
-            devApiKey: this.devApiKey,
-            runtimeUrl: this.runtimeUrl,
-            translationEnabled: this.translationEnabled,
-            runtimeTranslationEnabled: this.clientRuntimeTranslationEnabled,
-            dictionaryEnabled: this.isDictionaryEnabled(),
+            projectId: projectId,
+            translationEnabled: translationEnabled,
+            runtimeUrl: runtimeUrl,
+            devApiKey: devApiKey,
+            dictionaryEnabled: dictionaryEnabled,
+            renderSettings: renderSettings,
+            runtimeTranslationEnabled: developmentApiEnabled
         };
     };
+    // ----- LOCALES ----- //
     /**
      * Gets the application's default locale
      * @returns {string} A BCP-47 locale tag
@@ -168,53 +175,45 @@ var I18NConfiguration = /** @class */ (function () {
     I18NConfiguration.prototype.getLocales = function () {
         return this.locales;
     };
+    // ----- FEATURE FLAGS ----- //
     /**
-     * @returns true if dictionaries are enabled
-     */
-    I18NConfiguration.prototype.isDictionaryEnabled = function () {
-        return this._usingPlugin;
-    };
-    /**
-     * @returns A boolean indicating whether automatic translation is enabled or disabled for this config
+     * @returns true if build time translation is enabled
      */
     I18NConfiguration.prototype.isTranslationEnabled = function () {
         return this.translationEnabled;
     };
     /**
-     * Runtime translation is enabled on server side
-     * @returns {boolean} A boolean indicating whether the dev runtime translation is enabled
+     * @returns true if dictionaries are enabled
      */
-    I18NConfiguration.prototype.isServerRuntimeTranslationEnabled = function () {
-        return this.serverRuntimeTranslationEnabled;
+    I18NConfiguration.prototype.isDictionaryEnabled = function () {
+        return this.dictionaryEnabled;
     };
     /**
-     * Runtime translation for clientside
-     * @returns {boolean} A boolean indicating whether the client runtime translation is enabled
+     * @returns true if development runtime translation API is enabled
      */
-    I18NConfiguration.prototype.isClientRuntimeTranslationEnabled = function () {
-        return this.clientRuntimeTranslationEnabled;
+    I18NConfiguration.prototype.isDevelopmentApiEnabled = function () {
+        return this.developmentApiEnabled;
     };
     /**
-     * Get the rendering instructions
-     * @returns An object containing the current method and timeout.
-     * As of 1/22/25: method is "skeleton", "replace", "default".
-     * Timeout is a number or null, representing no assigned timeout.
+     * @returns true if production runtime translation API is enabled
      */
-    I18NConfiguration.prototype.getRenderSettings = function () {
-        return this.renderSettings;
+    I18NConfiguration.prototype.isProductionApiEnabled = function () {
+        return this.productionApiEnabled;
     };
+    // ----- UTILITY FUNCTIONS ----- //
     /**
      * Check if translation is required based on the user's locale
      * @param locale - The user's locale
      * @returns True if translation is required, otherwise false
      */
     I18NConfiguration.prototype.requiresTranslation = function (locale) {
-        return (this.isTranslationEnabled() &&
-            (0, generaltranslation_1.requiresTranslation)(this.defaultLocale, locale, this.locales));
+        if (!this.translationEnabled)
+            return [false, false];
+        var translationRequired = (0, generaltranslation_1.requiresTranslation)(this.defaultLocale, locale, this.locales);
+        var dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, this.defaultLocale);
+        return [translationRequired, dialectTranslationRequired];
     };
-    I18NConfiguration.prototype.addGTIdentifier = function (children) {
-        return (0, internal_1.addGTIdentifier)(children);
-    };
+    // ----- CACHED TRANSLATIONS ----- //
     /**
      * Get the translation dictionaries for this user's locale, if they exist
      * Globally shared cache or saved locally
@@ -233,7 +232,7 @@ var I18NConfiguration = /** @class */ (function () {
         });
     };
     /**
-     * Retrieves translations for a given locale which are already cached locally
+     * Synchronously retrieves translations for a given locale which are already cached locally
      * @param {string} locale - The locale code.
      * @returns {TranslationsObject} The translations data or an empty object if not found.
      */
@@ -241,6 +240,7 @@ var I18NConfiguration = /** @class */ (function () {
         var _a;
         return ((_a = this._translationManager) === null || _a === void 0 ? void 0 : _a.getRecentTranslations(locale)) || {};
     };
+    // ----- RUNTIME TRANSLATION ----- //
     /**
      * Translate content into language associated with a given locale
      * @param params - Parameters for translation
@@ -279,7 +279,7 @@ var I18NConfiguration = /** @class */ (function () {
      * @param params - Parameters for translation
      * @returns A promise that resolves when translation is complete
      */
-    I18NConfiguration.prototype.translateChildren = function (params) {
+    I18NConfiguration.prototype.translateJsx = function (params) {
         return __awaiter(this, void 0, void 0, function () {
             var source, targetLocale, options, cacheKey, translationPromise;
             var _this = this;

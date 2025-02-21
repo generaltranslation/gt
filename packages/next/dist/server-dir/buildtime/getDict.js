@@ -10,39 +10,6 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -84,16 +51,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getDict;
-var jsx_runtime_1 = require("react/jsx-runtime");
 var internal_1 = require("gt-react/internal");
-var T_1 = __importDefault(require("./T"));
-var getDictionary_1 = __importStar(require("../../dictionary/getDictionary"));
-var getLocale_1 = __importDefault(require("../../request/getLocale"));
-var getI18NConfig_1 = __importDefault(require("../../config-dir/getI18NConfig"));
-var generaltranslation_1 = require("generaltranslation");
+var getGT_1 = __importDefault(require("./getGT"));
+var getDictionary_1 = __importDefault(require("../../dictionary/getDictionary"));
 var createErrors_1 = require("../../errors/createErrors");
-var react_1 = require("react");
-var id_1 = require("generaltranslation/id");
 /**
  * Returns the dictionary access function `d()`, which is used to translate an item from the dictionary.
  *
@@ -109,138 +70,28 @@ var id_1 = require("generaltranslation/id");
  */
 function getDict(id) {
     return __awaiter(this, void 0, void 0, function () {
-        var getId, I18NConfig, defaultLocale, locale, translationRequired, serverRuntimeTranslationEnabled, stringTranslationsById, translations, translationsPromise, dictionarySubset, flattenedDictionaryEntries, d;
-        var _this = this;
+        var getId, dictionary, t, d;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     getId = function (suffix) {
                         return id ? "".concat(id, ".").concat(suffix) : suffix;
                     };
-                    I18NConfig = (0, getI18NConfig_1.default)();
-                    if (!I18NConfig.isDictionaryEnabled()) {
-                        if (process.env.NODE_ENV === 'production') {
-                            console.error(createErrors_1.dictionaryDisabledError);
-                            return [2 /*return*/, function () { return undefined; }];
-                        }
-                        else {
-                            throw new Error(createErrors_1.dictionaryDisabledError);
-                        }
-                    }
-                    defaultLocale = I18NConfig.getDefaultLocale();
-                    return [4 /*yield*/, (0, getLocale_1.default)()];
+                    dictionary = (0, getDictionary_1.default)() || {};
+                    return [4 /*yield*/, (0, getGT_1.default)()];
                 case 1:
-                    locale = _a.sent();
-                    translationRequired = I18NConfig.requiresTranslation(locale);
-                    serverRuntimeTranslationEnabled = I18NConfig.isServerRuntimeTranslationEnabled() &&
-                        process.env.NODE_ENV === 'development';
-                    stringTranslationsById = {};
-                    if (!translationRequired) return [3 /*break*/, 4];
-                    translationsPromise = I18NConfig.getCachedTranslations(locale);
-                    dictionarySubset = (id ? (0, getDictionary_1.getDictionaryEntry)(id) : (0, getDictionary_1.default)()) || {};
-                    if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
-                        // check that it is a Dictionary, not a Dictionary Entry
-                        throw new Error((0, createErrors_1.createDictionarySubsetError)(id !== null && id !== void 0 ? id : '', 'getDict'));
-                    flattenedDictionaryEntries = (0, internal_1.flattenDictionary)(dictionarySubset);
-                    return [4 /*yield*/, translationsPromise];
-                case 2:
-                    // Block until cache check resolves
-                    translations = _a.sent();
-                    if (!serverRuntimeTranslationEnabled) return [3 /*break*/, 4];
-                    // Translate all strings in sub dictionary (block until completed)
-                    return [4 /*yield*/, Promise.all(Object.entries(flattenedDictionaryEntries !== null && flattenedDictionaryEntries !== void 0 ? flattenedDictionaryEntries : {}).map(function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
-                            var _c, entry, metadata, entryId, key, translationEntry, translationPromise, _d, _e, error_1;
-                            var suffix = _b[0], dictionaryEntry = _b[1];
-                            return __generator(this, function (_f) {
-                                switch (_f.label) {
-                                    case 0:
-                                        _c = (0, internal_1.getEntryAndMetadata)(dictionaryEntry), entry = _c.entry, metadata = _c.metadata;
-                                        // only tx strings
-                                        if (typeof entry !== 'string')
-                                            return [2 /*return*/];
-                                        entryId = getId(suffix);
-                                        // Skip empty strings
-                                        if (!entry.length) {
-                                            console.warn("gt-next warn: Empty string found in dictionary with id: ".concat(entryId));
-                                            return [2 /*return*/];
-                                        }
-                                        key = (0, id_1.hashJsxChildren)(__assign(__assign({ source: (0, generaltranslation_1.splitStringToContent)(entry) }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: entryId }));
-                                        translationEntry = translations === null || translations === void 0 ? void 0 : translations[key];
-                                        if (translationEntry) {
-                                            return [2 /*return*/];
-                                        }
-                                        translationPromise = I18NConfig.translateContent({
-                                            source: (0, generaltranslation_1.splitStringToContent)(entry),
-                                            targetLocale: locale,
-                                            options: { id: entryId, hash: key },
-                                        });
-                                        _f.label = 1;
-                                    case 1:
-                                        _f.trys.push([1, 3, , 4]);
-                                        _d = stringTranslationsById;
-                                        _e = entryId;
-                                        return [4 /*yield*/, translationPromise];
-                                    case 2:
-                                        _d[_e] = _f.sent();
-                                        return [3 /*break*/, 4];
-                                    case 3:
-                                        error_1 = _f.sent();
-                                        console.error((0, createErrors_1.createDictionaryStringTranslationError)(entryId), error_1);
-                                        return [2 /*return*/];
-                                    case 4: return [2 /*return*/];
-                                }
-                            });
-                        }); }))];
-                case 3:
-                    // Translate all strings in sub dictionary (block until completed)
-                    _a.sent();
-                    _a.label = 4;
-                case 4:
+                    t = _a.sent();
                     d = function (id, options) {
-                        // ----- SET UP ----- //
                         if (options === void 0) { options = {}; }
-                        // Get entry
                         id = getId(id);
-                        var dictionaryEntry = (0, getDictionary_1.getDictionaryEntry)(id);
-                        if (dictionaryEntry === undefined ||
-                            dictionaryEntry === null || // no entry found
-                            (typeof dictionaryEntry === 'object' &&
-                                !(0, react_1.isValidElement)(dictionaryEntry) &&
-                                !Array.isArray(dictionaryEntry)) // make sure is DictionaryEntry, not Dictionary
-                        ) {
-                            console.warn((0, createErrors_1.createNoEntryWarning)(id));
-                            return undefined;
+                        var value = (0, internal_1.getDictionaryEntry)(dictionary, id);
+                        var valueIsValid = (0, internal_1.isValidDictionaryEntry)(value);
+                        if (!valueIsValid) {
+                            console.error((0, createErrors_1.createNoEntryWarning)(id));
+                            return '';
                         }
-                        var _a = (0, internal_1.getEntryAndMetadata)(dictionaryEntry), entry = _a.entry, metadata = _a.metadata;
-                        // Get variables and variable options
-                        var variables = options;
-                        var variablesOptions = metadata === null || metadata === void 0 ? void 0 : metadata.variablesOptions;
-                        // ----- STRINGS ----- //
-                        // Render strings
-                        if (typeof entry === 'string') {
-                            // Development mode
-                            if (serverRuntimeTranslationEnabled) {
-                                // Render logic
-                                var source = stringTranslationsById[id] || (0, generaltranslation_1.splitStringToContent)(entry);
-                                return (0, generaltranslation_1.renderContentToString)(source, [locale, defaultLocale], variables, variablesOptions);
-                            }
-                            // Get identifier
-                            var key = (0, id_1.hashJsxChildren)(__assign(__assign({ source: (0, generaltranslation_1.splitStringToContent)(entry) }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: id }));
-                            // Get translation
-                            var translationEntry = translations === null || translations === void 0 ? void 0 : translations[key];
-                            // Render Logic
-                            if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success') {
-                                // success
-                                return (0, generaltranslation_1.renderContentToString)(translationEntry.target, [locale, defaultLocale], variables, variablesOptions);
-                            }
-                            else {
-                                // fall back to defaultLocale
-                                return (0, generaltranslation_1.renderContentToString)((0, generaltranslation_1.splitStringToContent)(entry), [locale, defaultLocale], variables, variablesOptions);
-                            }
-                        }
-                        // ----- JSX ----- //
-                        // Translate on demand
-                        return ((0, jsx_runtime_1.jsx)(T_1.default, __assign({ id: id, variables: variables, variablesOptions: variablesOptions }, metadata, { children: entry })));
+                        var _a = (0, internal_1.getEntryAndMetadata)(value), entry = _a.entry, metadata = _a.metadata;
+                        return t(entry, __assign(__assign(__assign({}, metadata), options), { id: id }));
                     };
                     return [2 /*return*/, d];
             }

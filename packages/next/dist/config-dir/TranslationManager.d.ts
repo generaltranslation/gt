@@ -4,14 +4,12 @@ import { TranslationsObject, TranslationLoading, TranslationError, TranslationSu
  * @typedef {object} TranslationManagerConfig
  * @property {string} cacheUrl - The URL of the remote cache.
  * @property {string} projectId - The project identifier for translations.
- * @property {number} [cacheExpiryTime=60000] - The cache expiration time in milliseconds.
  */
 export type TranslationManagerConfig = {
     cacheUrl?: string | null;
     projectId?: string;
-    cacheExpiryTime?: number;
     _versionId?: string;
-    loadTranslationEnabled: boolean;
+    translationEnabled: boolean;
 };
 /**
  * Manages remote translations.
@@ -21,7 +19,6 @@ export declare class TranslationManager {
     private translationsMap;
     private fetchPromises;
     private requestedTranslations;
-    private lastFetchTime;
     /**
      * Creates an instance of TranslationManager.
      * @constructor
@@ -39,30 +36,22 @@ export declare class TranslationManager {
      */
     private _fetchTranslations;
     /**
-     * Checks if translations are expired based on the configured TTL.
-     * @param {string} reference - The translation reference.
-     * @returns {boolean} True if expired, false otherwise.
-     */
-    private _isExpired;
-    /**
      * Retrieves translations for a given locale from the remote or local cache.
      * @param {string} locale - The locale code.
-     * @returns {Promise<TranslationsObject | undefined>} The translations data or null if not found.
+     * @returns {Promise<TranslationsObject | undefined>} The translations data or undefined if not found.
      */
     getCachedTranslations(locale: string): Promise<TranslationsObject | undefined>;
     /**
-     * Retrieves translations for a given locale which are already cached locally
+     * Retrieves translations for a given locale which are already cached locally.
      * @param {string} locale - The locale code.
-     * @returns {Promise<TranslationsObject | undefined>} The translations data or null if not found.
+     * @returns {TranslationsObject | undefined} The translations data or undefined if not found.
      */
     getRecentTranslations(locale: string): TranslationsObject | undefined;
     /**
      * Sets a new translation entry.
      * @param {string} locale - The locale code.
      * @param {string} hash - The key for the new entry.
-     * @param {string} [id=hash] - The id for the new entry, defaults to key if not provided.
-     * @param {any} translation - The translation value.
-     * @param {boolean} [isRuntimeTranslation=true] - Whether the translation was a runtime translation.
+     * @param {TranslationSuccess | TranslationLoading | TranslationError} translation - The translation value.
      * @returns {boolean} True if the entry was set successfully, false otherwise.
      */
     setTranslations(locale: string, hash: string, translation: TranslationSuccess | TranslationLoading | TranslationError): boolean;
