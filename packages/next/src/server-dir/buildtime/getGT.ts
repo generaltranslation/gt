@@ -113,7 +113,7 @@ export default async function getGT(): Promise<
     I18NConfig.translateChildren({
       source,
       targetLocale: locale,
-      metadata: {
+      options: {
         ...(options?.context && { context: options?.context }),
         ...(options?.id && { id: options?.id }),
         hash: key,

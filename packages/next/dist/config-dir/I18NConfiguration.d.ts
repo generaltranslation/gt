@@ -139,7 +139,7 @@ export default class I18NConfiguration {
     translateChildren(params: {
         source: JsxChildren;
         targetLocale: string;
-        metadata: {
+        options: {
             hash: string;
         } & Record<string, any>;
     }): Promise<TranslatedChildren>;

@@ -116,7 +116,7 @@ async function Tx({
     // do on demand translation
     source: childrenAsObjects,
     targetLocale: locale,
-    metadata: {
+    options: {
       ...(id && { id }),
       hash,
       ...(context && { context }),

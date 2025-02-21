@@ -13,6 +13,7 @@ import {
   TaggedElement,
   TaggedElementProps,
 } from '../types/types';
+import { lazy } from 'react';
 
 export default function addGTIdentifier(
   children: Children,
@@ -82,7 +83,10 @@ export default function addGTIdentifier(
   };
 
   function handleSingleChildElement(child: ReactElement<any>): TaggedElement {
-    const { props } = child;
+    const { props, type } = child;
+
+    console.log('TYPE:', type);
+
     if (props['data-_gt']) throw new Error(createNestedDataGTError(child));
     // Create new props for the element, including the GT identifier and a key
     let generaltranslation: GTProp = createGTProp(child);

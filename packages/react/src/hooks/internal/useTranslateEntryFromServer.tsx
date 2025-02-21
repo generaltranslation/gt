@@ -66,7 +66,8 @@ export default function useTranslateEntryFromServer({
       const variablesOptions = metadata?.variablesOptions;
 
       // Get the translation entry
-      const translationEntry = translations?.[metadata?.hash];
+      const key = metadata?.hash;
+      const translationEntry = translations?.[key];
 
       // ---------- HANDLE STRINGS ---------- //
 
@@ -79,16 +80,13 @@ export default function useTranslateEntryFromServer({
           return entry;
         }
 
-        // Split string to content
-        const source = splitStringToContent(entry);
-
         // Error handling
         if (
           !translationRequired || // If no translation required
           translationEntry?.state !== 'success' // If translation was unsuccessful
         ) {
           return renderContentToString(
-            source,
+            splitStringToContent(entry),
             locales,
             variables,
             variablesOptions
@@ -150,7 +148,9 @@ export default function useTranslateEntryFromServer({
       // ----- RENDER BEHAVIOR ----- //
 
       // Success
+      console.log(entry);
       if (translationEntry?.state === 'success') {
+        // console.log(translationEntry.target);
         return (
           <React.Fragment>
             {renderTranslation(translationEntry.target)}

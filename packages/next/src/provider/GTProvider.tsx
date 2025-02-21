@@ -8,6 +8,8 @@ import {
   GTTranslationError,
   TranslationError,
   writeChildrenAsObjects,
+  TranslationSuccess,
+  TranslationLoading,
 } from 'gt-react/internal';
 import { ReactNode } from 'react';
 import getI18NConfig from '../config-dir/getI18NConfig';
@@ -34,10 +36,14 @@ export default async function GTProvider({
   children?: ReactNode;
   id?: string;
 }) {
-  // Set up
+  // ---------- SETUP ---------- //
+
+  // Calculate the ID with prefix
   const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
   };
+
+  // Setup
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
@@ -46,192 +52,277 @@ export default async function GTProvider({
     translationRequired && isSameLanguage(locale, defaultLocale);
   const serverRuntimeTranslationEnabled =
     I18NConfig.isServerRuntimeTranslationEnabled() &&
-    process.env.NODE_ENV === 'development'; // runtime translation enabled in dev
+    process.env.NODE_ENV === 'development';
 
   // Start fetching translations from cache
   const translationsPromise =
     translationRequired && I18NConfig.getCachedTranslations(locale);
 
-  // Flatten dictionaries for processing while waiting for translations
+  // ---------- FORMAT DICTIONARIES ---------- //
+  // (While waiting for cache...)
+
+  // Get dictionary subset
   const dictionarySubset: Dictionary | DictionaryEntry =
     (id ? getDictionaryEntry(id) : getDictionary()) || {};
-  if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset))
+  if (typeof dictionarySubset !== 'object' || Array.isArray(dictionarySubset)) {
     // cannot be a DictionaryEntry, must be a Dictionary
     throw new Error(createDictionarySubsetError(id ?? '', '<GTProvider>'));
+  }
+
+  // Flatten dictionaries for processing while waiting for translations
   const flattenedDictionarySubset = flattenDictionary(
     dictionarySubset as Dictionary
   );
+
+  // ---------- POPULATE DICTIONARY ---------- //
+  // (While waiting for cache...)
+
+  const dictionary: FlattenedTaggedDictionary = {};
+  const processedDictionary: Record<string, any> = {};
+
+  Object.entries(flattenedDictionarySubset ?? {}).map(
+    ([suffix, dictionaryEntry]) => {
+      // ----- SETUP ----- //
+
+      // Reject bad dictionary entries
+      if (!dictionaryEntry) return;
+
+      // Get the entry from the dictionary
+      const entryId = getId(suffix);
+      let { entry, metadata } = getEntryAndMetadata(dictionaryEntry);
+
+      // ---- ADD TO DICTIONARY ---- //
+
+      // Process input
+      let source, type;
+      if (typeof entry === 'string') {
+        type = 'content';
+        source = splitStringToContent(entry);
+      } else {
+        type = 'jsx';
+        const taggedChildren = I18NConfig.addGTIdentifier(entry); // Tagging has to be done serverside for streaming purposes (fragments)
+        source = writeChildrenAsObjects(taggedChildren);
+        entry = taggedChildren;
+        console.log(taggedChildren);
+      }
+
+      // Get identifier
+      // TODO: is it possible to perform this on the client side?
+      const key = hashJsxChildren({
+        source,
+        ...(metadata?.context && { context: metadata.context }),
+        id: entryId,
+      });
+
+      // Add to client dictionary
+      dictionary[entryId] = [entry, { ...metadata, hash: key }];
+
+      // For server runtime translation
+      if (serverRuntimeTranslationEnabled && translationRequired) {
+        processedDictionary[key] = {
+          type,
+          source,
+          targetLocale: locale,
+          options: {
+            id: entryId,
+            hash: key,
+            ...{ context: metadata?.context },
+          },
+        };
+      }
+    }
+  );
+
+  // ---------- CHECK CACHE FOR TRANSLATIONS ---------- //
 
   // Block until cache check resolves
   const translations: TranslationsObject = translationsPromise
     ? await translationsPromise
     : {};
-  const dictionary: FlattenedTaggedDictionary = {};
+
+  // ---------- TRANSLATE DICTIONARY ON DEMAND ---------- //
+
+  // Record for passing unresolved translations to the client
   const promises: Record<string, Promise<TranslatedChildren>> = {};
 
-  // ---- POPULATE DICTONARY + TRANSLATE DICTIONARY ON DEMAND ---- //
-  /**
-   * Populate dictionaries
-   *
-   * On demand tx (dev only):
-   * Strings Entries: hang until translation resolves
-   * JSX Entries: pass directly to client (translation will be performed on demand)
-   *
-   */
-
-  await Promise.all(
-    Object.entries(flattenedDictionarySubset ?? {}).map(
-      async ([suffix, dictionaryEntry]) => {
-        // reject bad dictionary entries (we handle empty strings later)
-        if (!dictionaryEntry && dictionaryEntry !== '') return;
-
-        // Get the entry from the dictionary
-        const entryId = getId(suffix);
-        let { entry, metadata } = getEntryAndMetadata(dictionaryEntry);
-
-        // ---- POPULATE DICTIONARY JSX ---- //
-        if (typeof entry !== 'string') {
-          // Populating the dictionary that we will pass to the client
-          const taggedChildren = I18NConfig.addGTIdentifier(entry);
-          const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-          const key = hashJsxChildren({
-            source: childrenAsObjects,
-            ...(metadata?.context && { context: metadata.context }),
-            id: entryId,
-          });
-          dictionary[entryId] = [
-            taggedChildren as Entry,
-            { ...metadata, hash: key },
-          ];
-
-          // ----- TRANSLATE JSX ON DEMAND ----- //
-
-          // dev only (with api key) skip if:
-          if (
-            !translationRequired || // no translation required
-            !serverRuntimeTranslationEnabled // dev runtime translation disabled
-          ) {
-            return;
-          }
-
-          // get tx entry and key
+  if (serverRuntimeTranslationEnabled && translationRequired) {
+    await Promise.all(
+      Object.entries(processedDictionary).map(
+        async ([key, { type, ...data }]) => {
+          // Check if translation exists
           const translationEntry = translations?.[key];
-
-          // skip if translation already exists
           if (translationEntry) {
             return;
           }
 
-          // Perform on-demand translation
-          translations[key] = { state: 'loading' };
-          const translationPromise = I18NConfig.translateChildren({
-            source: childrenAsObjects,
-            targetLocale: locale,
-            metadata: {
-              ...metadata,
-              id: entryId,
-              hash: key,
-            },
-          })
-            .then((result) => {
-              translations[key] = {
+          // Translation result handling
+          let result:
+            | TranslationSuccess
+            | TranslationError
+            | TranslationLoading;
+          try {
+            if (type === 'content') {
+              // Block until translation resolves
+              result = {
                 state: 'success',
-                target: result,
+                target: await I18NConfig.translateContent(data),
               };
-              return result;
-            })
-            .catch((error) => {
-              if (error instanceof GTTranslationError) {
-                error = error.toTranslationError();
-              } else {
-                error = {
-                  state: 'error',
-                  error: 'An error occured',
-                  code: 500,
-                };
-              }
-              return error;
-            });
-
-          // record translations as loading and record the promises to use on client-side
-          promises[key] = translationPromise;
-          return;
-        }
-
-        // ---- POPULATE DICTIONARY STRINGS ---- //
-
-        // Serialize and hash string entry
-        const content = splitStringToContent(entry);
-        const key = hashJsxChildren({
-          source: content,
-          ...(metadata?.context && { context: metadata?.context }),
-          id: entryId,
-        });
-
-        // Add to client dictionary
-        dictionary[entryId] = [entry, { ...metadata, hash: key }];
-
-        // ----- TRANSLATE STRINGS ON DEMAND ----- //
-
-        // dev only (with api key) skip if:
-        if (
-          !translationRequired || // no translation required
-          !serverRuntimeTranslationEnabled // dev runtime translation disabled
-        ) {
-          return;
-        }
-
-        // get tx entry and key
-        const translationEntry = translations?.[key];
-
-        // skip if translation already exists
-        if (translationEntry) {
-          return;
-        }
-
-        // Reject empty strings
-        if (!entry.length) {
-          translations[key] = {
-            state: 'error',
-            error: 'Empty strings are not allowed for translation.',
-            code: 400,
-          };
-          return;
-        }
-
-        // Perform on-demand translation
-        try {
-          // wait for the translation to resolve, we cannot pass our translations to
-          // the client until all string translations are resolved
-          const translation = await I18NConfig.translateContent({
-            source: content,
-            targetLocale: locale,
-            options: {
-              id: entryId,
-              hash: key,
-              ...{ context: metadata?.context },
-            },
-          });
-
-          // overwriting any old translations, this is most recent on demand, so should be most accurate
-          translations[key] = {
-            state: 'success',
-            target: translation,
-          };
-        } catch (error) {
-          console.error(error);
-          // set all promise ids to error in translations
-          let result;
-          if (error instanceof GTTranslationError) {
-            result = error.toTranslationError();
-          } else {
-            result = { state: 'error', error: 'An error occured', code: 500 };
+            } else {
+              // Record translation promise to pass to client for streaming
+              promises[key] = I18NConfig.translateChildren(data).then(
+                (result) => {
+                  // Add to translations locally
+                  // TODO: is this necessary?
+                  translations[key] = {
+                    state: 'success',
+                    target: result,
+                  };
+                  return result;
+                }
+              );
+              // Mark translation as loading
+              result = { state: 'loading' };
+            }
+          } catch (error) {
+            // Parse error
+            if (error instanceof GTTranslationError) {
+              result = error.toTranslationError();
+            } else {
+              result = { state: 'error', error: 'An error occured', code: 500 };
+            }
           }
-          translations[key] = result as TranslationError;
+          translations[key] = result;
         }
-      }
-    )
-  );
+      )
+    );
+  }
+
+  // await Promise.all(
+  //   Object.entries(flattenedDictionarySubset ?? {}).map(
+  //     async ([suffix, dictionaryEntry]) => {
+  //       // reject bad dictionary entries (we handle empty strings later)
+  //       if (!dictionaryEntry && dictionaryEntry !== '') return;
+
+  //       // Get the entry from the dictionary
+  //       const entryId = getId(suffix);
+  //       let { entry, metadata } = getEntryAndMetadata(dictionaryEntry);
+
+  //       // ----- JSX ----- //
+  //       if (typeof entry !== 'string') {
+  //         // ----- TRANSLATE JSX ON DEMAND ----- //
+
+  //         // dev only (with api key) skip if:
+  //         if (
+  //           !translationRequired || // no translation required
+  //           !serverRuntimeTranslationEnabled // dev runtime translation disabled
+  //         ) {
+  //           return;
+  //         }
+
+  //         // get tx entry and key
+  //         const translationEntry = translations?.[key];
+
+  //         // skip if translation already exists
+  //         if (translationEntry) {
+  //           return;
+  //         }
+
+  //         // Perform on-demand translation
+  //         translations[key] = { state: 'loading' };
+  //         const translationPromise = I18NConfig.translateChildren({
+  //           source: childrenAsObjects,
+  //           targetLocale: locale,
+  //           metadata: {
+  //             ...metadata,
+  //             id: entryId,
+  //             hash: key,
+  //           },
+  //         })
+  //           .then((result) => {
+  //             translations[key] = {
+  //               state: 'success',
+  //               target: result,
+  //             };
+  //             return result;
+  //           })
+  //           .catch((error) => {
+  //             if (error instanceof GTTranslationError) {
+  //               error = error.toTranslationError();
+  //             } else {
+  //               error = {
+  //                 state: 'error',
+  //                 error: 'An error occured',
+  //                 code: 500,
+  //               };
+  //             }
+  //             return error;
+  //           });
+
+  //         // record translations as loading and record the promises to use on client-side
+  //         promises[key] = translationPromise;
+  //         return;
+  //       }
+  //       // ----- TRANSLATE STRINGS ON DEMAND ----- //
+
+  //       // dev only (with api key) skip if:
+  //       if (
+  //         !translationRequired || // no translation required
+  //         !serverRuntimeTranslationEnabled // dev runtime translation disabled
+  //       ) {
+  //         return;
+  //       }
+
+  //       // get tx entry and key
+  //       const translationEntry = translations?.[key];
+
+  //       // skip if translation already exists
+  //       if (translationEntry) {
+  //         return;
+  //       }
+
+  //       // Reject empty strings
+  //       if (!entry.length) {
+  //         translations[key] = {
+  //           state: 'error',
+  //           error: 'Empty strings are not allowed for translation.',
+  //           code: 400,
+  //         };
+  //         return;
+  //       }
+
+  //       // Perform on-demand translation
+  //       try {
+  //         // wait for the translation to resolve, we cannot pass our translations to
+  //         // the client until all string translations are resolved
+  //         const translation = await I18NConfig.translateContent({
+  //           source: content,
+  //           targetLocale: locale,
+  //           options: {
+  //             id: entryId,
+  //             hash: key,
+  //             ...{ context: metadata?.context },
+  //           },
+  //         });
+
+  //         // overwriting any old translations, this is most recent on demand, so should be most accurate
+  //         translations[key] = {
+  //           state: 'success',
+  //           target: translation,
+  //         };
+  //       } catch (error) {
+  //         console.error(error);
+  //         // set all promise ids to error in translations
+  //         let result;
+  //         if (error instanceof GTTranslationError) {
+  //           result = error.toTranslationError();
+  //         } else {
+  //           result = { state: 'error', error: 'An error occured', code: 500 };
+  //         }
+  //         translations[key] = result as TranslationError;
+  //       }
+  //     }
+  //   )
+  // );
 
   return (
     <ClientProvider

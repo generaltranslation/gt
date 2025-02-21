@@ -180,7 +180,7 @@ function T(_a) {
                         // do on demand translation
                         source: childrenAsObjects,
                         targetLocale: locale,
-                        metadata: __assign(__assign(__assign(__assign({}, (id && { id: id })), { hash: hash }), (context && { context: context })), (renderSettings.timeout && { timeout: renderSettings.timeout })),
+                        options: __assign(__assign(__assign(__assign({}, (id && { id: id })), { hash: hash }), (context && { context: context })), (renderSettings.timeout && { timeout: renderSettings.timeout })),
                     })
                         .then(function (translation) {
                         // render the translation

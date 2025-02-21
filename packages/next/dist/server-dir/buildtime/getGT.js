@@ -125,7 +125,7 @@ function getGT() {
                         I18NConfig.translateChildren({
                             source: source,
                             targetLocale: locale,
-                            metadata: __assign(__assign(__assign({}, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })), { hash: key }),
+                            options: __assign(__assign(__assign({}, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })), { hash: key }),
                         });
                         // Loading translation warning
                         console.warn(createErrors_1.translationLoadingWarningLittleT);

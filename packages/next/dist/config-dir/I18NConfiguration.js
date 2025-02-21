@@ -281,11 +281,11 @@ var I18NConfiguration = /** @class */ (function () {
      */
     I18NConfiguration.prototype.translateChildren = function (params) {
         return __awaiter(this, void 0, void 0, function () {
-            var source, targetLocale, metadata, cacheKey, translationPromise;
+            var source, targetLocale, options, cacheKey, translationPromise;
             var _this = this;
             return __generator(this, function (_a) {
-                source = params.source, targetLocale = params.targetLocale, metadata = params.metadata;
-                cacheKey = constructCacheKey(targetLocale, metadata);
+                source = params.source, targetLocale = params.targetLocale, options = params.options;
+                cacheKey = constructCacheKey(targetLocale, options);
                 if (this._translationCache.has(cacheKey)) {
                     return [2 /*return*/, this._translationCache.get(cacheKey)];
                 }
@@ -295,7 +295,7 @@ var I18NConfiguration = /** @class */ (function () {
                         type: 'jsx',
                         source: source,
                         targetLocale: targetLocale,
-                        metadata: metadata,
+                        metadata: options,
                         resolve: resolve,
                         reject: reject,
                     });

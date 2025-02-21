@@ -352,11 +352,11 @@ export default class I18NConfiguration {
   async translateChildren(params: {
     source: JsxChildren;
     targetLocale: string;
-    metadata: { hash: string } & Record<string, any>;
+    options: { hash: string } & Record<string, any>;
   }): Promise<TranslatedChildren> {
     // In memory cache to make sure the same translation isn't requested twice
-    const { source, targetLocale, metadata } = params;
-    const cacheKey = constructCacheKey(targetLocale, metadata);
+    const { source, targetLocale, options } = params;
+    const cacheKey = constructCacheKey(targetLocale, options);
     if (this._translationCache.has(cacheKey)) {
       return this._translationCache.get(cacheKey);
     }
@@ -369,7 +369,7 @@ export default class I18NConfiguration {
           type: 'jsx',
           source,
           targetLocale,
-          metadata,
+          metadata: options,
           resolve,
           reject,
         });
