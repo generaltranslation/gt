@@ -69,6 +69,7 @@ function T({
   const [childrenAsObjects, hash] = useMemo(() => {
     if (translationRequired) {
       const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+      console.log(taggedChildren)
       const hash: string = hashJsxChildren({
         source: childrenAsObjects,
         ...(context && { context }),
@@ -80,8 +81,10 @@ function T({
     }
   }, [context, taggedChildren, translationRequired, children]);
 
+  console.log(JSON.stringify(childrenAsObjects))
   // get translation entry
   const translationEntry = translations?.[hash];
+
   // Do dev translation if required
   useEffect(() => {
     // skip if:

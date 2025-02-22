@@ -77,6 +77,8 @@ export default async function createInlineUpdates(
       'DateTime',
       'Currency',
       'Num',
+      'Branch',
+      'Plural'
     ];
     const importAliases: Record<string, string> = {};
     // handle imports & alias & handle string functions

@@ -60,29 +60,16 @@ function createDictionaryUpdates(options, esbuildConfig) {
         for (const id of Object.keys(dictionary)) {
             let { entry, metadata: props, // context, etc.
              } = (0, internal_1.getEntryAndMetadata)(dictionary[id]);
-            const taggedEntry = (0, internal_1.addGTIdentifier)(entry);
-            const entryAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedEntry);
+            const source = (0, generaltranslation_1.splitStringToContent)(entry);
             const context = props === null || props === void 0 ? void 0 : props.context;
-            if (typeof entry === 'string') {
-                const metadata = Object.assign(Object.assign({ id }, (context && { context })), { 
-                    // This hash isn't actually used by the GT API, just for consistency sake
-                    hash: (0, id_1.hashJsxChildren)(Object.assign(Object.assign({ source: (0, generaltranslation_1.splitStringToContent)(entry) }, (context && { context })), (id && { id }))) });
-                updates.push({
-                    type: 'content',
-                    source: (0, generaltranslation_1.splitStringToContent)(entry),
-                    metadata,
-                });
-            }
-            else {
-                const metadata = Object.assign(Object.assign({ id }, (context && { context })), { 
-                    // This hash isn't actually used by the GT API, just for consistency sake
-                    hash: (0, id_1.hashJsxChildren)(Object.assign(Object.assign({ source: entryAsObjects }, (context && { context })), (id && { id }))) });
-                updates.push({
-                    type: 'jsx',
-                    source: entryAsObjects,
-                    metadata,
-                });
-            }
+            const metadata = Object.assign(Object.assign({ id }, (context && { context })), { 
+                // This hash isn't actually used by the GT API, just for consistency sake
+                hash: (0, id_1.hashJsxChildren)(Object.assign(Object.assign({ source }, (context && { context })), (id && { id }))) });
+            updates.push({
+                type: 'content',
+                source,
+                metadata,
+            });
         }
         return updates;
     });
