@@ -19,7 +19,7 @@
     "url": "git+https://github.com/General-Translation/gt-libraries.git"
   },
   "peerDependencies": {
-    "gt-next": "^5.2.0-alpha.3",
+    "gt-next": "^5.2.0-alpha.5",
     "next": ">=13.0.0 <16.0.0",
     "react": ">=16.8.0 <20.0.0",
     "react-dom": ">=16.8.0 <20.0.0"
@@ -52,7 +52,7 @@
     "@types/node": "^22.5.1",
     "@types/react": "^18.3.4",
     "esm": "^3.2.25",
-    "gt-next": "^5.2.0-alpha.3",
+    "gt-next": "^5.2.0-alpha.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4"
   }

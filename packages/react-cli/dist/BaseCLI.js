@@ -114,12 +114,8 @@ class BaseCLI {
             './src/dictionary.js',
             './dictionary.json',
             './src/dictionary.json',
-            './dictionary.jsx',
-            './src/dictionary.jsx',
             './dictionary.ts',
             './src/dictionary.ts',
-            './dictionary.tsx',
-            './src/dictionary.tsx',
         ]))
             .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
             .option('--default-language, --default-locale <locale>', 'Default locale (e.g., en)')

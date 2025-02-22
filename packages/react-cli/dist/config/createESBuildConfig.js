@@ -24,9 +24,7 @@ function createESBuildConfig(config = {}) {
         target: 'es2021',
         loader: {
             '.js': 'jsx',
-            '.jsx': 'jsx',
             '.ts': 'ts',
-            '.tsx': 'tsx',
             '.css': 'css', // Add CSS loader
         },
         sourcemap: 'inline',
@@ -97,7 +95,7 @@ function createESBuildConfig(config = {}) {
                         for (const [aliasKey, aliasPath] of Object.entries(aliases)) {
                             if (args.path.startsWith(`${aliasKey}/`)) {
                                 const resolvedPath = path_1.default.resolve(aliasPath, args.path.slice(aliasKey.length + 1));
-                                const extensions = ['.js', '.jsx', '.ts', '.tsx', '.css']; // Add .css to extensions
+                                const extensions = ['.js', '.ts', '.css']; // Add .css to extensions
                                 function resolveWithExtensions(basePath) {
                                     for (const ext of extensions) {
                                         const fullPath = `${basePath}${ext}`;
