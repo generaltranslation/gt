@@ -13,12 +13,16 @@ function getDictionary() {
         if (dictionaryFileType === '.json') {
             dictionary = require('gt-next/_dictionary');
         }
-        else {
+        else if (dictionaryFileType === '.ts' || dictionaryFileType === '.js') {
             dictionary = require('gt-next/_dictionary').default;
+        }
+        else {
+            console.warn(createErrors_1.dictionaryNotFoundWarning);
+            dictionary = {};
         }
     }
     catch (_a) {
-        console.warn(createErrors_1.dictionaryNotFoundWarning);
+        dictionary = {};
     }
     return dictionary;
 }

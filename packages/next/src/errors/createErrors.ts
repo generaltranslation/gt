@@ -83,4 +83,4 @@ export const translationLoadingWarning =
 
 export const runtimeTranslationTimeoutWarning = `gt-next: Runtime translation timed out.`;
 
-export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the WithGTConfig() plugin.`;
+export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the withGTConfig() plugin.`;

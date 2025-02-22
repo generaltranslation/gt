@@ -14,11 +14,14 @@ export default function getDictionary(): Dictionary | undefined {
       process.env._GENERALTRANSLATION_DICTIONARY_FILE_TYPE;
     if (dictionaryFileType === '.json') {
       dictionary = require('gt-next/_dictionary');
-    } else {
+    } else if (dictionaryFileType === '.ts' || dictionaryFileType === '.js') {
       dictionary = require('gt-next/_dictionary').default;
+    } else {
+      console.warn(dictionaryNotFoundWarning);
+      dictionary = {};
     }
   } catch {
-    console.warn(dictionaryNotFoundWarning);
+    dictionary = {};
   }
   return dictionary;
 }

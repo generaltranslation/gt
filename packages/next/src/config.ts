@@ -50,7 +50,7 @@ import { getSupportedLocale } from '@generaltranslation/supported-locales';
  *
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  */
-export function withGTConfig(nextConfig: any = {}, props: InitGTProps) {
+export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
   // ---------- LOAD GT CONFIG FILE ---------- //
   let loadedConfig: Partial<InitGTProps> = {};
   const configPath = props.config || defaultInitGTProps.config;

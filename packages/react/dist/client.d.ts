@@ -295,7 +295,7 @@ declare function useLocale(): string;
  *
  * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
-declare function T({ children, id, context }: {
+declare function T({ children, id, context, }: {
     children: any;
     id?: string;
     context?: string;

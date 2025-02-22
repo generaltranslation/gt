@@ -65,5 +65,5 @@ exports.APIKeyMissingWarn = "gt-next: A Development API key is required for runt
 exports.translationLoadingWarning = "gt-next: [DEV ONLY] Translations have changed since the last update. " +
     "Translations in production will be preloaded, and page will not need to be refreshed.";
 exports.runtimeTranslationTimeoutWarning = "gt-next: Runtime translation timed out.";
-exports.dictionaryNotFoundWarning = "gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the WithGTConfig() plugin.";
+exports.dictionaryNotFoundWarning = "gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the withGTConfig() plugin.";
 //# sourceMappingURL=createErrors.js.map

@@ -71,6 +71,7 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
 function withGTConfig(nextConfig, props) {
     var _a, _b, _c, _d, _e;
     if (nextConfig === void 0) { nextConfig = {}; }
+    if (props === void 0) { props = {}; }
     // ---------- LOAD GT CONFIG FILE ---------- //
     var loadedConfig = {};
     var configPath = props.config || defaultInitGTProps_1.default.config;

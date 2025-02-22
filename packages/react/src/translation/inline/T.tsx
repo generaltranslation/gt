@@ -33,7 +33,7 @@ import { TranslatedChildren } from '../../types/types';
  * @param {React.ReactNode} children - The content to be translated or displayed.
  * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
  * @param {any} [context] - Additional context for translation key generation.
- * 
+ *
  * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
  *
  * @throws {Error} If a plural translation is requested but the `n` option is not provided.
@@ -41,7 +41,7 @@ import { TranslatedChildren } from '../../types/types';
 function T({
   children,
   id,
-  context
+  context,
 }: {
   children: any;
   id?: string;
@@ -81,7 +81,7 @@ function T({
   }, [context, taggedChildren, translationRequired, children]);
 
   // get translation entry
-  const translation = translations?.[hash];
+  const translationEntry = translations?.[hash];
   // Do dev translation if required
   useEffect(() => {
     // skip if:
@@ -90,7 +90,7 @@ function T({
       !translationRequired || // no translation required
       !translations || // cache not checked yet
       !locale || // locale not loaded
-      translation // translation exists
+      translationEntry // translation exists
     ) {
       return;
     }
@@ -108,7 +108,7 @@ function T({
   }, [
     runtimeTranslationEnabled,
     translations,
-    translation,
+    translationEntry,
     translationRequired,
     id,
     hash,
@@ -143,14 +143,14 @@ function T({
   if (
     !translationRequired || // no translation required
     // !translationEnabled || // translation not enabled
-    (translations && !translation && !runtimeTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
-    translation?.state === 'error' // error fetching translation
+    (translations && !translationEntry && !runtimeTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
+    translationEntry?.state === 'error' // error fetching translation
   ) {
     return <>{renderDefault()}</>;
   }
 
   // loading behavior (checking cache or fetching runtime translation)
-  if (!translation || translation?.state === 'loading') {
+  if (!translationEntry || translationEntry?.state === 'loading') {
     let loadingFallback;
     if (renderSettings.method === 'skeleton') {
       loadingFallback = renderSkeleton();
@@ -158,15 +158,15 @@ function T({
       loadingFallback = renderDefault();
     } else {
       // default
-      loadingFallback = dialectTranslationRequired ? renderDefault() : renderSkeleton();
+      loadingFallback = dialectTranslationRequired
+        ? renderDefault()
+        : renderSkeleton();
     }
     return <>{loadingFallback}</>;
   }
 
   // render translated content
-  return (
-    <>{renderTranslation(translation.target)}</>
-  );
+  return <>{renderTranslation(translationEntry.target)}</>;
 }
 
 T.gtTransformation = 'translate-client';

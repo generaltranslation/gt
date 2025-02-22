@@ -37,6 +37,6 @@ import InitGTProps from './config-dir/props/InitGTProps';
  *
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  */
-export declare function withGTConfig(nextConfig: any | undefined, props: InitGTProps): any;
+export declare function withGTConfig(nextConfig?: any, props?: InitGTProps): any;
 export declare const initGT: (props: InitGTProps) => (nextConfig: any) => any;
 //# sourceMappingURL=config.d.ts.map
