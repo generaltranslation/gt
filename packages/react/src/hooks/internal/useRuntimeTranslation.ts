@@ -210,7 +210,11 @@ export default function useRuntimeTranslation({
               ? undefined
               : setTimeout(() => controller.abort(), timeout);
           try {
-            return await fetch(url, { ...options, signal: controller.signal });
+            const res = await fetch(url, {
+              ...options,
+              signal: controller.signal,
+            });
+            return res;
           } finally {
             if (timeoutId !== undefined) clearTimeout(timeoutId); // Ensure timeout is cleared
           }
@@ -337,8 +341,6 @@ export default function useRuntimeTranslation({
       globalMetadata,
       versionId,
       renderSettings.timeout,
-      dynamicTranslationError,
-      createGenericRuntimeTranslationError,
     ]
   );
 

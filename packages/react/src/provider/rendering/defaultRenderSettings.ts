@@ -6,11 +6,11 @@ function shouldApplyTimeout() {
   );
 }
 
-// Apply an 8 second timeout for non dev/testign environments
+// Apply an 8 second timeout for non dev/testing environments
 export const defaultRenderSettings: {
   method: RenderMethod;
   timeout: number;
 } = {
   method: 'default',
-  timeout: shouldApplyTimeout() ? 8000 : 12000
+  timeout: shouldApplyTimeout() ? 8000 : 1000000000,
 } as const;

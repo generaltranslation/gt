@@ -3,12 +3,7 @@ import React, { use, useEffect, useState } from 'react';
 import { determineLocale } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/providers';
-import {
-  GTTranslationError,
-  TranslationError,
-  TranslationsObject,
-  TranslationSuccess,
-} from '../types/types';
+import { TranslationsObject } from '../types/types';
 import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { localeCookieName } from 'generaltranslation/internal';
 import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
