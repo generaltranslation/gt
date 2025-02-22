@@ -68,14 +68,14 @@ export function buildJSXTree(
     }
 
     // Convert from alias to original name
-    typeName = importAliases[typeName ?? ''];
+    const alias = importAliases[typeName ?? ''];
     // If this JSXElement is one of the recognized variable components,
-    const elementIsVariable = VARIABLE_COMPONENTS.includes(typeName);
+    const elementIsVariable = VARIABLE_COMPONENTS.includes(alias);
 
     const props: { [key: string]: any } = {};
 
-    const elementIsPlural = typeName === 'Plural';
-    const elementIsBranch = typeName === 'Branch';
+    const elementIsPlural = alias === 'Plural';
+    const elementIsBranch = alias === 'Branch';
 
     element.openingElement.attributes.forEach((attr) => {
       if (t.isJSXAttribute(attr)) {
