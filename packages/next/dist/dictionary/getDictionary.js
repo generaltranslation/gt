@@ -8,8 +8,8 @@ var dictionary = undefined;
 function getDictionary() {
     if (dictionary !== undefined)
         return dictionary;
+    var dictionaryFileType = process.env._GENERALTRANSLATION_DICTIONARY_FILE_TYPE;
     try {
-        var dictionaryFileType = process.env._GENERALTRANSLATION_DICTIONARY_FILE_TYPE;
         if (dictionaryFileType === '.json') {
             dictionary = require('gt-next/_dictionary');
         }
@@ -17,11 +17,13 @@ function getDictionary() {
             dictionary = require('gt-next/_dictionary').default;
         }
         else {
-            console.warn(createErrors_1.dictionaryNotFoundWarning);
             dictionary = {};
         }
     }
     catch (_a) {
+        if (dictionaryFileType) {
+            console.warn(createErrors_1.dictionaryNotFoundWarning);
+        }
         dictionary = {};
     }
     return dictionary;
