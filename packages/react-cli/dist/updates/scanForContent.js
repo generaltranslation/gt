@@ -113,6 +113,7 @@ function scanForContent(options, pkg, framework) {
             let globalId = 0;
             (0, traverse_1.default)(ast, {
                 JSXElement(path) {
+                    var _a;
                     if (framework === 'next-pages' &&
                         options.addGTProvider &&
                         (baseFileName === '_app.tsx' || baseFileName === '_app.jsx')) {
@@ -150,21 +151,17 @@ function scanForContent(options, pkg, framework) {
                     }
                     // Check if this JSX element has any JSX element ancestors
                     let currentPath = path;
-                    while (currentPath.parentPath) {
-                        if (t.isJSXElement(currentPath.parentPath.node)) {
-                            // If we found a JSX parent, skip processing this node
-                            return;
-                        }
-                        currentPath = currentPath.parentPath;
+                    if (t.isJSXElement((_a = currentPath.parentPath) === null || _a === void 0 ? void 0 : _a.node)) {
+                        // If we found a JSX parent, skip processing this node
+                        return;
                     }
                     // At this point, we're only processing top-level JSX elements
                     const opts = Object.assign(Object.assign({}, importAlias), { idPrefix: relativePath, idCount: globalId, usedImports, modified: false, createIds: !options.disableIds, warnings,
                         file });
                     const wrapped = (0, wrapJsx_1.handleJsxElement)(path.node, opts, evaluateJsx_1.isMeaningful);
                     path.replaceWith(wrapped.node);
-                    path.skip();
                     // Update global counters
-                    modified = opts.modified;
+                    modified = modified || opts.modified;
                     globalId = opts.idCount;
                 },
             });

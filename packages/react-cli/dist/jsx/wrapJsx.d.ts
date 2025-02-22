@@ -11,6 +11,7 @@ import { ImportItem } from './parse/parseAst';
 export interface WrapResult {
     node: t.JSXElement | t.JSXFragment;
     hasMeaningfulContent: boolean;
+    wrappedInT: boolean;
 }
 /**
  * Recursively traverse a JSX element and wrap variables with a <Var> component

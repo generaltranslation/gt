@@ -32,15 +32,11 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.wrapJsxElement = wrapJsxElement;
 exports.handleJsxElement = handleJsxElement;
 const t = __importStar(require("@babel/types"));
 const evaluateJsx_1 = require("./evaluateJsx");
-const generator_1 = __importDefault(require("@babel/generator"));
 const warnings_1 = require("../console/warnings");
 function wrapJsxExpression(node, options, isMeaningful, mark) {
     const expression = t.isParenthesizedExpression(node.expression)
@@ -59,6 +55,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
         return {
             node,
             hasMeaningfulContent: result.hasMeaningfulContent,
+            wrappedInT: result.wrappedInT,
         };
     }
     // Handle conditional expressions (ternary)
@@ -80,10 +77,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                 expression.consequent = result.node;
             }
             // Warn about ternary (should use branch instead)
-            console.log(result.hasMeaningfulContent, mark);
-            if (result.hasMeaningfulContent && !mark) {
-                console.log('found ternary');
-                console.log(options.warnings);
+            if (result.wrappedInT && !mark) {
                 options.warnings.push((0, warnings_1.warnTernary)(options.file));
             }
         }
@@ -244,12 +238,14 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
         return {
             node: wrapWithVar(node, options, mark),
             hasMeaningfulContent: false,
+            wrappedInT: false,
         };
     }
     // If it's a static expression, check if it's meaningful
     return {
         node,
         hasMeaningfulContent: false,
+        wrappedInT: false,
     };
 }
 /**
@@ -272,20 +268,24 @@ function wrapJsxElement(node, options, isMeaningful, mark) {
                 return {
                     node,
                     hasMeaningfulContent: false,
+                    wrappedInT: name.name === TComponentName,
                 };
             }
         }
         // Process children recursively (DFS postorder)
         let hasMeaningfulContent = false;
+        let wrappedInT = false;
         const processedChildren = node.children.map((child) => {
             if (t.isJSXElement(child) || t.isJSXFragment(child)) {
                 const result = wrapJsxElement(child, options, isMeaningful, mark);
                 hasMeaningfulContent =
                     hasMeaningfulContent || result.hasMeaningfulContent;
+                wrappedInT = wrappedInT || result.wrappedInT;
                 return result.node;
             }
             if (t.isJSXExpressionContainer(child)) {
                 const result = wrapJsxExpression(child, options, isMeaningful, mark);
+                wrappedInT = wrappedInT || result.wrappedInT;
                 // Expressions are never meaningful because they will either:
                 // 1. be sub-wrapped in a T (if they contain meaningful content)
                 // 2. be wrapped in a Var (if they are not static)
@@ -301,12 +301,14 @@ function wrapJsxElement(node, options, isMeaningful, mark) {
         return {
             node,
             hasMeaningfulContent: hasMeaningfulContent,
+            wrappedInT: wrappedInT,
         };
     }
     // For any other node types, return as-is
     return {
         node,
         hasMeaningfulContent: false,
+        wrappedInT: false,
     };
 }
 /**
@@ -318,7 +320,6 @@ function wrapJsxElement(node, options, isMeaningful, mark) {
  */
 function handleJsxElement(rootNode, options, isMeaningful) {
     const result = wrapJsxElement(rootNode, options, isMeaningful, true);
-    console.log(result.hasMeaningfulContent, (0, generator_1.default)(rootNode).code);
     // Only wrap with T at the root level if there's meaningful content
     if (result.hasMeaningfulContent) {
         const output = wrapJsxElement(result.node, options, isMeaningful, false);
@@ -326,11 +327,13 @@ function handleJsxElement(rootNode, options, isMeaningful) {
         return {
             node,
             hasMeaningfulContent: true,
+            wrappedInT: true,
         };
     }
     return {
         node: result.node,
         hasMeaningfulContent: false,
+        wrappedInT: result.wrappedInT,
     };
 }
 function wrapWithT(node, options, mark) {

@@ -141,15 +141,11 @@ export default async function scanForContent(
           path.skip();
           return;
         }
-
         // Check if this JSX element has any JSX element ancestors
         let currentPath: NodePath = path;
-        while (currentPath.parentPath) {
-          if (t.isJSXElement(currentPath.parentPath.node)) {
-            // If we found a JSX parent, skip processing this node
-            return;
-          }
-          currentPath = currentPath.parentPath;
+        if (t.isJSXElement(currentPath.parentPath?.node)) {
+          // If we found a JSX parent, skip processing this node
+          return;
         }
 
         // At this point, we're only processing top-level JSX elements
@@ -165,10 +161,9 @@ export default async function scanForContent(
         };
         const wrapped = handleJsxElement(path.node, opts, isMeaningful);
         path.replaceWith(wrapped.node);
-        path.skip();
 
         // Update global counters
-        modified = opts.modified;
+        modified = modified || opts.modified;
         globalId = opts.idCount;
       },
     });
