@@ -77,7 +77,8 @@ function createInlineUpdates(options, pkg) {
                 'DateTime',
                 'Currency',
                 'Num',
-                'Branch'
+                'Branch',
+                'Plural'
             ];
             const importAliases = {};
             // handle imports & alias & handle string functions
@@ -135,7 +136,6 @@ function createInlineUpdates(options, pkg) {
             const hash = (0, id_1.hashJsxChildren)(Object.assign(Object.assign({ source: update.source }, (context && { context })), (update.metadata.id && { id: update.metadata.id })));
             update.metadata.hash = hash;
         })));
-        console.log(JSON.stringify(updates));
         return { updates, errors };
     });
 }
