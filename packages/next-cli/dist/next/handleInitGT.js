@@ -66,7 +66,42 @@ function handleInitGT(filepath) {
                 createParenthesizedExpressions: true,
             });
             const needsCJS = filepath.endsWith('.js');
-            // Add appropriate import statement for withGTConfig based on module type
+            // Check if withGTConfig or initGT is already imported/required
+            let hasGTConfig = false;
+            let hasInitGT = false;
+            (0, traverse_1.default)(ast, {
+                ImportDeclaration(path) {
+                    if (path.node.source.value === 'gt-next/config') {
+                        path.node.specifiers.forEach((spec) => {
+                            if (t.isImportSpecifier(spec)) {
+                                if (spec.local.name === 'withGTConfig')
+                                    hasGTConfig = true;
+                                if (spec.local.name === 'initGT')
+                                    hasInitGT = true;
+                            }
+                        });
+                    }
+                },
+                VariableDeclaration(path) {
+                    path.node.declarations.forEach((dec) => {
+                        if (t.isVariableDeclarator(dec) &&
+                            t.isCallExpression(dec.init) &&
+                            t.isIdentifier(dec.init.callee, { name: 'require' }) &&
+                            t.isStringLiteral(dec.init.arguments[0], {
+                                value: 'gt-next/config',
+                            })) {
+                            if (t.isIdentifier(dec.id, { name: 'withGTConfig' }))
+                                hasGTConfig = true;
+                            if (t.isIdentifier(dec.id, { name: 'initGT' }))
+                                hasInitGT = true;
+                        }
+                    });
+                },
+            });
+            // Return early if either withGTConfig or initGT is already present
+            if (hasGTConfig || hasInitGT) {
+                return { errors, filesUpdated, warnings };
+            }
             ast.program.body.unshift(needsCJS
                 ? t.variableDeclaration('const', [
                     t.variableDeclarator(t.identifier('withGTConfig'), t.memberExpression(t.callExpression(t.identifier('require'), [

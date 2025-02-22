@@ -36,6 +36,7 @@ export type WrapOptions = {
   config: string;
   disableIds: boolean;
   disableFormatting: boolean;
+  addGTProvider: boolean;
 };
 
 export type SetupOptions = {
@@ -44,6 +45,13 @@ export type SetupOptions = {
 };
 
 export type Framework = 'gt-next' | 'gt-react';
+
+export type SupportedFrameworks =
+  | 'next-app'
+  | 'next-pages'
+  | 'vite'
+  | 'react'
+  | 'gatsby';
 
 export interface ContentScanner {
   scanForContent(

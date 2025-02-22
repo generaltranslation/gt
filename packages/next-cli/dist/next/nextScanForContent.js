@@ -72,8 +72,8 @@ const IMPORT_MAP = {
  * @param options - The options object
  * @returns An object containing the updates and errors
  */
-function scanForContent(options_1, framework_1) {
-    return __awaiter(this, arguments, void 0, function* (options, framework, addGTProvider = false) {
+function scanForContent(options, pkg, framework) {
+    return __awaiter(this, void 0, void 0, function* () {
         const errors = [];
         const warnings = [];
         const srcDirectory = options.src || ['./'];
@@ -99,7 +99,7 @@ function scanForContent(options_1, framework_1) {
             }
             let modified = false;
             let usedImports = [];
-            let { importAlias, initialImports } = (0, parseAst_1.generateImportMap)(ast, framework);
+            let { importAlias, initialImports } = (0, parseAst_1.generateImportMap)(ast, pkg);
             // If the file already has a T import, skip processing it
             if (initialImports.includes(IMPORT_MAP.T.name)) {
                 continue;
@@ -107,8 +107,9 @@ function scanForContent(options_1, framework_1) {
             let globalId = 0;
             (0, traverse_1.default)(ast, {
                 JSXElement(path) {
-                    if (framework === 'gt-next' &&
-                        addGTProvider &&
+                    var _a;
+                    if (pkg === 'gt-next' &&
+                        options.addGTProvider &&
                         (0, utils_1.isHtmlElement)(path.node.openingElement)) {
                         // Find the body element in the HTML children
                         const bodyElement = path.node.children.find((child) => t.isJSXElement(child) && (0, utils_1.isBodyElement)(child.openingElement));
@@ -117,7 +118,7 @@ function scanForContent(options_1, framework_1) {
                             return;
                         }
                         // Skip if body already has GTProvider
-                        if ((0, utils_1.hasGTProviderChild)(bodyElement.children)) {
+                        if ((0, utils_1.hasGTProviderChild)(bodyElement)) {
                             return;
                         }
                         // Handle lang attribute for html tag
@@ -141,20 +142,17 @@ function scanForContent(options_1, framework_1) {
                     }
                     // Check if this JSX element has any JSX element ancestors
                     let currentPath = path;
-                    while (currentPath.parentPath) {
-                        if (t.isJSXElement(currentPath.parentPath.node)) {
-                            // If we found a JSX parent, skip processing this node
-                            return;
-                        }
-                        currentPath = currentPath.parentPath;
+                    if (t.isJSXElement((_a = currentPath.parentPath) === null || _a === void 0 ? void 0 : _a.node)) {
+                        // If we found a JSX parent, skip processing this node
+                        return;
                     }
                     // At this point, we're only processing top-level JSX elements
-                    const opts = Object.assign(Object.assign({}, importAlias), { idPrefix: relativePath, idCount: globalId, usedImports, modified: false, createIds: !options.disableIds });
+                    const opts = Object.assign(Object.assign({}, importAlias), { idPrefix: relativePath, idCount: globalId, usedImports, modified: false, createIds: !options.disableIds, warnings,
+                        file });
                     const wrapped = (0, wrapJsx_1.handleJsxElement)(path.node, opts, evaluateJsx_1.isMeaningful);
-                    path.replaceWith(wrapped);
-                    path.skip();
+                    path.replaceWith(wrapped.node);
                     // Update global counters
-                    modified = opts.modified;
+                    modified = modified || opts.modified;
                     globalId = opts.idCount;
                 },
             });

@@ -1,19 +1,20 @@
 import { BaseCLI } from './BaseCLI';
-import { WrapOptions, Options, Updates } from './types';
+import { WrapOptions, Options, Updates, SupportedFrameworks } from './types';
 
 import scanForContent from './updates/scanForContent';
 import createDictionaryUpdates from './updates/createDictionaryUpdates';
 import createInlineUpdates from './updates/createInlineUpdates';
 
-const framework = 'gt-react';
+const pkg = 'gt-react';
 export class ReactCLI extends BaseCLI {
   constructor() {
-    super(framework);
+    super();
   }
   protected scanForContent(
-    options: WrapOptions
+    options: WrapOptions,
+    framework: SupportedFrameworks
   ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
-    return scanForContent(options, framework);
+    return scanForContent(options, pkg, framework);
   }
 
   protected createDictionaryUpdates(
@@ -26,7 +27,7 @@ export class ReactCLI extends BaseCLI {
   protected createInlineUpdates(
     options: Options
   ): Promise<{ updates: Updates; errors: string[] }> {
-    return createInlineUpdates(options);
+    return createInlineUpdates(options, pkg);
   }
 }
 

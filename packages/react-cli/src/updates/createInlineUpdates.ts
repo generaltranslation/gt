@@ -7,9 +7,12 @@ import traverse from '@babel/traverse';
 
 import { hashJsxChildren } from 'generaltranslation/id';
 import { parseJSXElement } from '../jsx/parseJsx';
+import { parseStrings } from '../jsx/parse/parseStringFunction';
+import { extractImportName } from '../jsx/parse/parseAst';
 
 export default async function createInlineUpdates(
-  options: Options
+  options: Options,
+  pkg: 'gt-react' | 'gt-next'
 ): Promise<{ updates: Updates; errors: string[] }> {
   const updates: Updates = [];
 
@@ -66,9 +69,71 @@ export default async function createInlineUpdates(
       continue;
     }
 
+    const translationFuncs = [
+      'useGT',
+      'getGT',
+      'T',
+      'Var',
+      'DateTime',
+      'Currency',
+      'Num',
+    ];
+    const importAliases: Record<string, string> = {};
+    // handle imports & alias & handle string functions
+    traverse(ast, {
+      ImportDeclaration(path) {
+        if (path.node.source.value.startsWith(pkg)) {
+          const importName = extractImportName(
+            path.node,
+            pkg,
+            translationFuncs
+          );
+          for (const name of importName) {
+            if (name.original === 'useGT' || name.original === 'getGT') {
+              parseStrings(name.local, path, updates, errors, file);
+            } else {
+              importAliases[name.local] = name.original;
+            }
+          }
+        }
+      },
+      VariableDeclarator(path) {
+        // Check if the init is a require call
+        if (
+          path.node.init?.type === 'CallExpression' &&
+          path.node.init.callee.type === 'Identifier' &&
+          path.node.init.callee.name === 'require'
+        ) {
+          // Check if it's requiring our package
+          const args = path.node.init.arguments;
+          if (
+            args.length === 1 &&
+            args[0].type === 'StringLiteral' &&
+            args[0].value.startsWith(pkg)
+          ) {
+            const parentPath = path.parentPath;
+            if (parentPath.isVariableDeclaration()) {
+              const importName = extractImportName(
+                parentPath.node,
+                pkg,
+                translationFuncs
+              );
+              for (const name of importName) {
+                if (name.original === 'useGT' || name.original === 'getGT') {
+                  parseStrings(name.local, parentPath, updates, errors, file);
+                } else {
+                  importAliases[name.local] = name.original;
+                }
+              }
+            }
+          }
+        }
+      },
+    });
+    // Parse <T> components
     traverse(ast, {
       JSXElement(path) {
-        parseJSXElement(path.node, updates, errors, file);
+        parseJSXElement(importAliases, path.node, updates, errors, file);
       },
     });
   }
@@ -77,18 +142,11 @@ export default async function createInlineUpdates(
   await Promise.all(
     updates.map(async (update) => {
       const context = update.metadata.context;
-      const hash = hashJsxChildren(
-        context
-          ? {
-              source: update.source,
-              context,
-              ...(update.metadata.id && { id: update.metadata.id }),
-            }
-          : {
-              source: update.source,
-              ...(update.metadata.id && { id: update.metadata.id }),
-            }
-      );
+      const hash = hashJsxChildren({
+        source: update.source,
+        ...(context && { context }),
+        ...(update.metadata.id && { id: update.metadata.id }),
+      });
       update.metadata.hash = hash;
     })
   );

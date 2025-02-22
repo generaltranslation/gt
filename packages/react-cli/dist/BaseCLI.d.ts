@@ -1,8 +1,7 @@
-import { Options, SetupOptions, Updates, WrapOptions } from './types';
+import { Options, SetupOptions, SupportedFrameworks, Updates, WrapOptions } from './types';
 export declare abstract class BaseCLI {
-    private framework;
-    protected constructor(framework: 'gt-next' | 'gt-react');
-    protected abstract scanForContent(options: WrapOptions): Promise<{
+    protected constructor();
+    protected abstract scanForContent(options: WrapOptions, framework: SupportedFrameworks): Promise<{
         errors: string[];
         filesUpdated: string[];
         warnings: string[];

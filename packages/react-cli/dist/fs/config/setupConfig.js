@@ -33,4 +33,5 @@ function createConfig(configFilepath, projectId, defaultLocale) {
     catch (error) {
         console.error(`An error occurred while updating ${configFilepath}:`, error);
     }
+    return configFilepath;
 }

@@ -50,8 +50,8 @@ function isBodyElement(element) {
         element.name.name.toLowerCase() === 'body');
 }
 // Helper function to check if the <body> element has a <GTProvider> child
-function hasGTProviderChild(children) {
-    return children.some((child) => t.isJSXElement(child) &&
+function hasGTProviderChild(element) {
+    return element.children.some((child) => t.isJSXElement(child) &&
         t.isJSXIdentifier(child.openingElement.name) &&
         child.openingElement.name.name === 'GTProvider');
 }

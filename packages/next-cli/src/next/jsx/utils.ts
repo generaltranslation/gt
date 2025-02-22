@@ -19,10 +19,8 @@ export function isBodyElement(element: t.JSXOpeningElement): boolean {
 }
 
 // Helper function to check if the <body> element has a <GTProvider> child
-export function hasGTProviderChild(
-  children: t.JSXElement['children']
-): boolean {
-  return children.some(
+export function hasGTProviderChild(element: t.JSXElement): boolean {
+  return element.children.some(
     (child) =>
       t.isJSXElement(child) &&
       t.isJSXIdentifier(child.openingElement.name) &&

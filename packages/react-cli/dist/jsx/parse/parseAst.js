@@ -41,6 +41,7 @@ exports.generateImports = generateImports;
 exports.generateImportMap = generateImportMap;
 exports.insertImports = insertImports;
 exports.createImports = createImports;
+exports.extractImportName = extractImportName;
 const traverse_1 = __importDefault(require("@babel/traverse"));
 const babel = __importStar(require("@babel/types"));
 function determineModuleType(ast) {
@@ -61,21 +62,36 @@ function determineModuleType(ast) {
 function generateImports(needsImport, isESM, importMap) {
     // Group imports by their source
     const importsBySource = needsImport.reduce((acc, imp) => {
-        const importInfo = importMap[imp];
-        const source = importInfo.source;
-        if (!acc[source])
-            acc[source] = [];
-        acc[source].push({ local: imp, imported: importInfo.name });
+        if (typeof imp === 'string') {
+            // Handle standard GT component imports
+            const importInfo = importMap[imp];
+            const source = importInfo.source;
+            if (!acc[source])
+                acc[source] = [];
+            acc[source].push({ local: imp, imported: importInfo.name });
+        }
+        else {
+            // Handle custom imports (like config)
+            const source = imp.source;
+            if (!acc[source])
+                acc[source] = [];
+            acc[source].push({ local: imp.local, imported: imp.imported });
+        }
         return acc;
     }, {});
     // Generate import nodes for each source
     const importNodes = Object.entries(importsBySource).map(([source, imports]) => {
         if (isESM) {
-            return babel.importDeclaration(imports.map((imp) => babel.importSpecifier(babel.identifier(imp.imported), babel.identifier(imp.local))), babel.stringLiteral(source));
+            return babel.importDeclaration(imports.map((imp) => imp.imported === 'default'
+                ? babel.importDefaultSpecifier(babel.identifier(imp.local))
+                : babel.importSpecifier(babel.identifier(imp.local), babel.identifier(imp.imported))), babel.stringLiteral(source));
         }
         else {
+            // For CommonJS, handle default imports differently
             return babel.variableDeclaration('const', [
-                babel.variableDeclarator(babel.objectPattern(imports.map((imp) => babel.objectProperty(babel.identifier(imp.local), babel.identifier(imp.imported), false, imp.local === imp.imported))), babel.callExpression(babel.identifier('require'), [
+                babel.variableDeclarator(imports.some((imp) => imp.imported === 'default')
+                    ? babel.identifier(imports[0].local)
+                    : babel.objectPattern(imports.map((imp) => babel.objectProperty(babel.identifier(imp.local), babel.identifier(imp.imported), false, imp.local === imp.imported))), babel.callExpression(babel.identifier('require'), [
                     babel.stringLiteral(source),
                 ])),
             ]);
@@ -83,29 +99,125 @@ function generateImports(needsImport, isESM, importMap) {
     });
     return importNodes;
 }
-function generateImportMap(ast, framework) {
+/*
+ * This function traverses the AST and records the relevant imports for the pkg.
+ * It also records the import aliases for the T and Var components. (in case of conflicts)
+ */
+function generateImportMap(ast, pkg) {
     let importAlias = { TComponent: 'T', VarComponent: 'Var' };
     // Check existing imports
     let initialImports = [];
     (0, traverse_1.default)(ast, {
         ImportDeclaration(path) {
             const source = path.node.source.value;
-            if (source === framework) {
+            if (source === pkg) {
                 initialImports = [
                     ...initialImports,
-                    ...path.node.specifiers.map((spec) => spec.local.name),
+                    ...path.node.specifiers.map((spec) => {
+                        // For named imports (import { x as y }), use the original name
+                        if (babel.isImportSpecifier(spec)) {
+                            return babel.isIdentifier(spec.imported)
+                                ? spec.imported.name
+                                : spec.imported.value;
+                        }
+                        // For default imports, fall back to local name
+                        return spec.local.name;
+                    }),
                 ];
             }
             // Check for conflicting imports only if they're not from gt libraries
-            if (source !== framework) {
+            if (source !== pkg) {
                 path.node.specifiers.forEach((spec) => {
-                    if (babel.isImportSpecifier(spec)) {
+                    if (babel.isImportSpecifier(spec) ||
+                        babel.isImportDefaultSpecifier(spec)) {
                         if (spec.local.name === 'T')
                             importAlias.TComponent = 'GTT';
                         if (spec.local.name === 'Var')
                             importAlias.VarComponent = 'GTVar';
                     }
                 });
+            }
+        },
+        VariableDeclaration(path) {
+            const declaration = path.node.declarations[0];
+            if (!declaration)
+                return;
+            // Handle const { T, Var } = require('pkg')
+            if (babel.isCallExpression(declaration.init) &&
+                babel.isIdentifier(declaration.init.callee) &&
+                declaration.init.callee.name === 'require' &&
+                babel.isStringLiteral(declaration.init.arguments[0]) &&
+                declaration.init.arguments[0].value === pkg &&
+                babel.isObjectPattern(declaration.id)) {
+                initialImports = [
+                    ...initialImports,
+                    ...declaration.id.properties
+                        .map((prop) => {
+                        if (babel.isObjectProperty(prop) &&
+                            babel.isIdentifier(prop.key)) {
+                            return prop.key.name;
+                        }
+                        return '';
+                    })
+                        .filter(Boolean),
+                ];
+            }
+            // Handle const temp = require('pkg') followed by const { T, Var } = temp
+            if (babel.isCallExpression(declaration.init) &&
+                babel.isIdentifier(declaration.init.callee) &&
+                declaration.init.callee.name === 'require' &&
+                babel.isStringLiteral(declaration.init.arguments[0]) &&
+                declaration.init.arguments[0].value === pkg &&
+                babel.isIdentifier(declaration.id)) {
+                const requireVarName = declaration.id.name;
+                const parentBody = babel.isProgram(path.parent) || babel.isBlockStatement(path.parent)
+                    ? path.parent.body
+                    : [];
+                // Look for subsequent destructuring
+                for (const node of parentBody) {
+                    if (babel.isVariableDeclaration(node) &&
+                        node.declarations[0] &&
+                        babel.isObjectPattern(node.declarations[0].id) &&
+                        babel.isMemberExpression(node.declarations[0].init) &&
+                        babel.isIdentifier(node.declarations[0].init.object) &&
+                        node.declarations[0].init.object.name === requireVarName) {
+                        initialImports = [
+                            ...initialImports,
+                            ...node.declarations[0].id.properties
+                                .map((prop) => {
+                                if (babel.isObjectProperty(prop) &&
+                                    babel.isIdentifier(prop.key)) {
+                                    return prop.key.name;
+                                }
+                                return '';
+                            })
+                                .filter(Boolean),
+                        ];
+                    }
+                }
+            }
+            // Check for conflicting requires
+            if (babel.isCallExpression(declaration.init) &&
+                babel.isIdentifier(declaration.init.callee) &&
+                declaration.init.callee.name === 'require' &&
+                babel.isStringLiteral(declaration.init.arguments[0]) &&
+                declaration.init.arguments[0].value !== pkg &&
+                babel.isObjectPattern(declaration.id)) {
+                declaration.id.properties.forEach((prop) => {
+                    if (babel.isObjectProperty(prop) && babel.isIdentifier(prop.value)) {
+                        if (prop.value.name === 'T')
+                            importAlias.TComponent = 'GTT';
+                        if (prop.value.name === 'Var')
+                            importAlias.VarComponent = 'GTVar';
+                    }
+                });
+            }
+            // Add check for intermediate variable conflict
+            if (babel.isIdentifier(declaration.id)) {
+                if (declaration.id.name === 'T')
+                    importAlias.TComponent = 'GTT';
+                if (declaration.id.name === 'Var')
+                    importAlias.VarComponent = 'GTVar';
             }
         },
     });
@@ -128,4 +240,81 @@ function createImports(ast, needsImport, importMap) {
     const isESM = determineModuleType(ast);
     const importNodes = generateImports(needsImport, isESM, importMap);
     insertImports(ast, importNodes);
+}
+function extractImportName(node, pkg, translationFuncs) {
+    var _a, _b, _c, _d, _e, _f;
+    const results = [];
+    if (node.type === 'ImportDeclaration') {
+        // Handle ES6 imports
+        if (node.source.value.startsWith(pkg)) {
+            for (const specifier of node.specifiers) {
+                if (specifier.type === 'ImportSpecifier' &&
+                    'name' in specifier.imported &&
+                    translationFuncs.includes(specifier.imported.name)) {
+                    results.push({
+                        local: specifier.local.name,
+                        original: specifier.imported.name,
+                    });
+                }
+            }
+        }
+    }
+    else if (node.type === 'VariableDeclaration') {
+        // Handle CJS requires
+        for (const declaration of node.declarations) {
+            // Handle direct require with destructuring
+            if (((_a = declaration.init) === null || _a === void 0 ? void 0 : _a.type) === 'CallExpression' &&
+                declaration.init.callee.type === 'Identifier' &&
+                declaration.init.callee.name === 'require' &&
+                ((_b = declaration.init.arguments[0]) === null || _b === void 0 ? void 0 : _b.type) === 'StringLiteral' &&
+                declaration.init.arguments[0].value.startsWith(pkg)) {
+                // Handle destructuring case: const { T } = require('gt-next')
+                if (declaration.id.type === 'ObjectPattern') {
+                    for (const prop of declaration.id.properties) {
+                        if (prop.type === 'ObjectProperty' &&
+                            prop.key.type === 'Identifier' &&
+                            translationFuncs.includes(prop.key.name) &&
+                            prop.value.type === 'Identifier') {
+                            results.push({
+                                local: prop.value.name,
+                                original: prop.key.name,
+                            });
+                        }
+                    }
+                }
+                // Handle intermediate variable case: const temp = require('gt-next')
+                else if (declaration.id.type === 'Identifier') {
+                    const requireVarName = declaration.id.name;
+                    const parentBody = (_c = node.parent) === null || _c === void 0 ? void 0 : _c.body;
+                    if (parentBody) {
+                        for (let i = 0; i < parentBody.length; i++) {
+                            const stmt = parentBody[i];
+                            if (stmt.type === 'VariableDeclaration' &&
+                                ((_e = (_d = stmt.declarations[0]) === null || _d === void 0 ? void 0 : _d.init) === null || _e === void 0 ? void 0 : _e.type) === 'MemberExpression' &&
+                                stmt.declarations[0].init.object.type === 'Identifier' &&
+                                stmt.declarations[0].init.object.name === requireVarName &&
+                                stmt.declarations[0].init.property.type === 'Identifier' &&
+                                translationFuncs.includes(stmt.declarations[0].init.property.name)) {
+                                results.push({
+                                    local: stmt.declarations[0].id.name,
+                                    original: stmt.declarations[0].init.property.name,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            // Handle member expression assignment: const TranslateFunc = temp.T
+            if (((_f = declaration.init) === null || _f === void 0 ? void 0 : _f.type) === 'MemberExpression' &&
+                declaration.init.property.type === 'Identifier' &&
+                translationFuncs.includes(declaration.init.property.name) &&
+                declaration.id.type === 'Identifier') {
+                results.push({
+                    local: declaration.id.name,
+                    original: declaration.init.property.name,
+                });
+            }
+        }
+    }
+    return results;
 }
