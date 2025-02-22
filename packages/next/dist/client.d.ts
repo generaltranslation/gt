@@ -1,3 +1,3 @@
-import { useGT, useDefaultLocale, useLocale, LocaleSelector, GTProvider } from 'gt-react/client';
-export { GTProvider as GTClientProvider, useGT, useDefaultLocale, useLocale, LocaleSelector, };
+import { T, useGT, useDict, useLocale, useDefaultLocale, LocaleSelector, GTProvider } from 'gt-react/client';
+export { GTProvider as GTClientProvider, T, useGT, useLocale, useDefaultLocale, useDict, LocaleSelector };
 //# sourceMappingURL=client.d.ts.map

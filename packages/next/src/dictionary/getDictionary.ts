@@ -3,14 +3,26 @@ import {
   DictionaryEntry,
   getDictionaryEntry as getEntry,
 } from 'gt-react/internal';
+import { dictionaryNotFoundWarning } from '../errors/createErrors';
 
 let dictionary: Dictionary | undefined = undefined;
 
 export default function getDictionary(): Dictionary | undefined {
-  if (dictionary) return dictionary;
+  if (dictionary !== undefined) return dictionary;
+  const dictionaryFileType =
+    process.env._GENERALTRANSLATION_DICTIONARY_FILE_TYPE;
   try {
-    dictionary = require('gt-next/_dictionary').default;
-  } catch (error) {
+    if (dictionaryFileType === '.json') {
+      dictionary = require('gt-next/_dictionary');
+    } else if (dictionaryFileType === '.ts' || dictionaryFileType === '.js') {
+      dictionary = require('gt-next/_dictionary').default;
+    } else {
+      dictionary = {};
+    }
+  } catch {
+    if (dictionaryFileType) {
+      console.warn(dictionaryNotFoundWarning);
+    }
     dictionary = {};
   }
   return dictionary;

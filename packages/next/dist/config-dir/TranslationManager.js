@@ -52,7 +52,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TranslationManager = void 0;
 var generaltranslation_1 = require("generaltranslation");
-var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
 var internal_1 = require("generaltranslation/internal");
 var loadTranslation_1 = __importDefault(require("./loadTranslation"));
 /**
@@ -67,14 +66,12 @@ var TranslationManager = /** @class */ (function () {
         this.config = {
             cacheUrl: internal_1.defaultCacheUrl,
             projectId: '',
-            cacheExpiryTime: defaultInitGTProps_1.default.cacheExpiryTime, // default to 60 seconds
             _versionId: undefined,
-            loadTranslationEnabled: true,
+            translationEnabled: true,
         };
         this.translationsMap = new Map();
         this.fetchPromises = new Map();
         this.requestedTranslations = new Map();
-        this.lastFetchTime = new Map();
     }
     /**
      * Sets the configuration for the TranslationManager.
@@ -94,39 +91,20 @@ var TranslationManager = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        // Return if loader is disabled
-                        if (!this.config.loadTranslationEnabled)
+                        if (!this.config.translationEnabled)
                             return [2 /*return*/, undefined];
                         return [4 /*yield*/, (0, loadTranslation_1.default)(__assign(__assign(__assign({ targetLocale: reference }, (this.config._versionId && { _versionId: this.config._versionId })), (this.config.cacheUrl && { cacheUrl: this.config.cacheUrl })), (this.config.projectId && { projectId: this.config.projectId })))];
                     case 1:
                         result = _a.sent();
-                        // Record our fetch time
-                        if (result)
-                            this.lastFetchTime.set(reference, Date.now());
-                        // return
                         return [2 /*return*/, result];
                 }
             });
         });
     };
     /**
-     * Checks if translations are expired based on the configured TTL.
-     * @param {string} reference - The translation reference.
-     * @returns {boolean} True if expired, false otherwise.
-     */
-    TranslationManager.prototype._isExpired = function (reference) {
-        var _a;
-        var fetchTime = this.lastFetchTime.get(reference);
-        if (!fetchTime)
-            return true;
-        var now = Date.now();
-        var expiryTime = (_a = this.config.cacheExpiryTime) !== null && _a !== void 0 ? _a : defaultInitGTProps_1.default.cacheExpiryTime;
-        return now - fetchTime > expiryTime;
-    };
-    /**
      * Retrieves translations for a given locale from the remote or local cache.
      * @param {string} locale - The locale code.
-     * @returns {Promise<TranslationsObject | undefined>} The translations data or null if not found.
+     * @returns {Promise<TranslationsObject | undefined>} The translations data or undefined if not found.
      */
     TranslationManager.prototype.getCachedTranslations = function (locale) {
         return __awaiter(this, void 0, void 0, function () {
@@ -135,8 +113,8 @@ var TranslationManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         reference = (0, generaltranslation_1.standardizeLocale)(locale);
-                        // If we have cached translations locally and they are not expired, return them
-                        if (this.translationsMap.has(reference) && !this._isExpired(reference)) {
+                        // Return cached translations if available (no expiry check)
+                        if (this.translationsMap.has(reference)) {
                             return [2 /*return*/, this.translationsMap.get(reference)];
                         }
                         if (!this.fetchPromises.has(reference)) return [3 /*break*/, 2];
@@ -149,7 +127,7 @@ var TranslationManager = /** @class */ (function () {
                     case 3:
                         retrievedTranslations = _a.sent();
                         this.fetchPromises.delete(reference);
-                        // Populate our record of translations
+                        // Cache the retrieved translations
                         if (retrievedTranslations) {
                             this.translationsMap.set(reference, retrievedTranslations);
                         }
@@ -159,22 +137,19 @@ var TranslationManager = /** @class */ (function () {
         });
     };
     /**
-     * Retrieves translations for a given locale which are already cached locally
+     * Retrieves translations for a given locale which are already cached locally.
      * @param {string} locale - The locale code.
-     * @returns {Promise<TranslationsObject | undefined>} The translations data or null if not found.
+     * @returns {TranslationsObject | undefined} The translations data or undefined if not found.
      */
     TranslationManager.prototype.getRecentTranslations = function (locale) {
         var reference = (0, generaltranslation_1.standardizeLocale)(locale);
-        // Return locally cached translations (if they exist for the locale)
         return this.translationsMap.get(reference);
     };
     /**
      * Sets a new translation entry.
      * @param {string} locale - The locale code.
      * @param {string} hash - The key for the new entry.
-     * @param {string} [id=hash] - The id for the new entry, defaults to key if not provided.
-     * @param {any} translation - The translation value.
-     * @param {boolean} [isRuntimeTranslation=true] - Whether the translation was a runtime translation.
+     * @param {TranslationSuccess | TranslationLoading | TranslationError} translation - The translation value.
      * @returns {boolean} True if the entry was set successfully, false otherwise.
      */
     TranslationManager.prototype.setTranslations = function (locale, hash, translation) {
@@ -184,8 +159,6 @@ var TranslationManager = /** @class */ (function () {
         var reference = (0, generaltranslation_1.standardizeLocale)(locale);
         var currentTranslations = this.translationsMap.get(reference) || {};
         this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[hash] = translation, _a)));
-        // Reset the fetch time since we just manually updated the translation
-        this.lastFetchTime.set(reference, Date.now());
         return true;
     };
     /**

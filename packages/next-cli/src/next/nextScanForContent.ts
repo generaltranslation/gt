@@ -1,6 +1,11 @@
 import fs from 'fs';
 import path from 'path';
-import { Options, Updates, WrapOptions } from 'gt-react-cli/types';
+import {
+  Options,
+  SupportedFrameworks,
+  Updates,
+  WrapOptions,
+} from 'gt-react-cli/types';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
@@ -41,8 +46,8 @@ const IMPORT_MAP = {
  */
 export default async function scanForContent(
   options: WrapOptions,
-  framework: 'gt-next',
-  addGTProvider: boolean = false
+  pkg: 'gt-next' | 'gt-react',
+  framework: SupportedFrameworks
 ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -74,7 +79,7 @@ export default async function scanForContent(
     let modified = false;
     let usedImports: string[] = [];
 
-    let { importAlias, initialImports } = generateImportMap(ast, framework);
+    let { importAlias, initialImports } = generateImportMap(ast, pkg);
 
     // If the file already has a T import, skip processing it
     if (initialImports.includes(IMPORT_MAP.T.name)) {
@@ -85,8 +90,8 @@ export default async function scanForContent(
     traverse(ast, {
       JSXElement(path) {
         if (
-          framework === 'gt-next' &&
-          addGTProvider &&
+          pkg === 'gt-next' &&
+          options.addGTProvider &&
           isHtmlElement(path.node.openingElement)
         ) {
           // Find the body element in the HTML children
@@ -103,7 +108,7 @@ export default async function scanForContent(
           }
 
           // Skip if body already has GTProvider
-          if (hasGTProviderChild(bodyElement.children)) {
+          if (hasGTProviderChild(bodyElement)) {
             return;
           }
 
@@ -136,15 +141,11 @@ export default async function scanForContent(
           path.skip();
           return;
         }
-
         // Check if this JSX element has any JSX element ancestors
         let currentPath: NodePath = path;
-        while (currentPath.parentPath) {
-          if (t.isJSXElement(currentPath.parentPath.node)) {
-            // If we found a JSX parent, skip processing this node
-            return;
-          }
-          currentPath = currentPath.parentPath;
+        if (t.isJSXElement(currentPath.parentPath?.node)) {
+          // If we found a JSX parent, skip processing this node
+          return;
         }
 
         // At this point, we're only processing top-level JSX elements
@@ -155,13 +156,14 @@ export default async function scanForContent(
           usedImports,
           modified: false,
           createIds: !options.disableIds,
+          warnings,
+          file,
         };
         const wrapped = handleJsxElement(path.node, opts, isMeaningful);
-        path.replaceWith(wrapped);
-        path.skip();
+        path.replaceWith(wrapped.node);
 
         // Update global counters
-        modified = opts.modified;
+        modified = modified || opts.modified;
         globalId = opts.idCount;
       },
     });

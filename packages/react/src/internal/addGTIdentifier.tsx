@@ -83,6 +83,7 @@ export default function addGTIdentifier(
 
   function handleSingleChildElement(child: ReactElement<any>): TaggedElement {
     const { props } = child;
+
     if (props['data-_gt']) throw new Error(createNestedDataGTError(child));
     // Create new props for the element, including the GT identifier and a key
     let generaltranslation: GTProp = createGTProp(child);
@@ -94,6 +95,7 @@ export default function addGTIdentifier(
       newProps.children = handleChildren(props.children as Children);
     }
     if (child.type === React.Fragment) {
+      newProps['data-_gt'].transformation === 'fragment';
       const fragment = (
         <span style={{ all: 'unset', display: 'contents' }} {...newProps} />
       );

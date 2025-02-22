@@ -1,39 +1,16 @@
 import * as React$1 from 'react';
-import React__default, { ReactElement } from 'react';
+import React__default from 'react';
 import * as react_jsx_runtime from 'react/jsx-runtime';
 
-type Child = React__default.ReactNode;
-type Children = Child[] | Child;
-type GTProp = {
-    id: number;
-    transformation?: string;
-    children?: Children;
-} & Record<string, any>;
-type TaggedChild = React__default.ReactNode | TaggedElement;
-type TaggedChildren = TaggedChild[] | TaggedChild;
-type TaggedElementProps = Record<string, any> & {
-    'data-_gt': GTProp;
-};
-type TaggedElement = React__default.ReactElement<TaggedElementProps>;
-type TaggedEntry = string | TaggedChildren;
-type TaggedDictionaryEntry = TaggedEntry | [TaggedEntry] | [TaggedEntry, Metadata];
-type FlattenedTaggedDictionary = {
-    [key: string]: TaggedDictionaryEntry;
-};
-type Entry = string | ReactElement;
+type Entry = string;
 type Metadata = {
-    singular?: Entry;
-    plural?: Entry;
-    zero?: Entry;
-    dual?: Entry;
-    one?: Entry;
-    two?: Entry;
-    few?: Entry;
-    many?: Entry;
-    other?: Entry;
     context?: string;
     variablesOptions?: Record<string, any>;
     [key: string]: any;
+};
+type DictionaryEntry = Entry | [Entry] | [Entry, Metadata];
+type Dictionary = {
+    [key: string]: Dictionary | DictionaryEntry;
 };
 type Variable = {
     key: string;
@@ -69,6 +46,15 @@ type TranslationsObject = {
     [key: string]: TranslationSuccess | TranslationLoading | TranslationError;
 };
 type RenderMethod = 'skeleton' | 'replace' | 'default';
+type DictionaryTranslationOptions = {
+    variables?: Record<string, any>;
+    variablesOptions?: Record<string, Intl.NumberFormatOptions | Intl.DateTimeFormatOptions>;
+};
+type InlineTranslationOptions = {
+    context?: string;
+    id?: string;
+} & DictionaryTranslationOptions;
+
 type TranslateContentCallback = (params: {
     source: any;
     targetLocale: string;
@@ -76,7 +62,7 @@ type TranslateContentCallback = (params: {
         hash: string;
         context?: string;
     } & Record<string, any>;
-}) => Promise<void>;
+}) => Promise<TranslationSuccess | TranslationLoading | TranslationError>;
 type TranslateChildrenCallback = (params: {
     source: any;
     targetLocale: string;
@@ -84,12 +70,14 @@ type TranslateChildrenCallback = (params: {
         hash: string;
         context?: string;
     } & Record<string, any>;
-}) => Promise<void>;
+}) => Promise<TranslationSuccess | TranslationLoading | TranslationError>;
+
 type GTContextType = {
-    translateDictionaryEntry: (id: string, options?: Record<string, any>) => React__default.ReactNode;
     registerContentForTranslation: TranslateContentCallback;
     registerJsxForTranslation: TranslateChildrenCallback;
-    developmentTranslationEnabled: boolean;
+    _internalUseGTFunction: (string: string, options?: InlineTranslationOptions) => string;
+    _internalUseDictFunction: (id: string, options?: DictionaryTranslationOptions) => string;
+    runtimeTranslationEnabled: boolean;
     locale: string;
     locales: string[];
     setLocale: (locale: string) => void;
@@ -105,9 +93,8 @@ type GTContextType = {
 };
 type ClientProviderProps = {
     children: any;
-    dictionary: FlattenedTaggedDictionary;
+    dictionary: Dictionary;
     initialTranslations: TranslationsObject;
-    translationPromises: Record<string, Promise<TranslatedChildren>>;
     locale: string;
     locales: string[];
     _versionId?: string;
@@ -115,12 +102,11 @@ type ClientProviderProps = {
     defaultLocale: string;
     translationRequired: boolean;
     dialectTranslationRequired: boolean;
-    requiredPrefix: string | undefined;
     renderSettings: {
         method: RenderMethod;
         timeout?: number;
     };
-    developmentTranslationEnabled: boolean;
+    runtimeTranslationEnabled: boolean;
     projectId?: string;
     devApiKey?: string;
     runtimeUrl?: string | null;
@@ -157,7 +143,7 @@ declare function renderVariable({ variableType, variableName, variableValue, var
     locales: string[];
 }): React.JSX.Element;
 
-declare function ClientProvider({ children, dictionary, initialTranslations, translationPromises, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, requiredPrefix, renderSettings, projectId, devApiKey, runtimeUrl, developmentTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
+declare function ClientProvider({ children, dictionary, initialTranslations, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -223,6 +209,25 @@ declare namespace Plural {
 }
 
 /**
+ * Gets the translation function `t` provided by `<GTProvider>`.
+ *
+ * @returns {Function} A translation function that accepts a key string and returns the translated value.
+ *
+ * @example
+ * const t = useGT();
+ * console.log(t('To be or not to be...'));
+ *
+ * const t = useGT();
+ * return (<>
+ *  {
+ *     t('My name is {customName}', { variables: { customName: "Brian" } } )
+ *  }
+ * </>);
+ *
+ */
+declare function useGT(): (string: string, options?: InlineTranslationOptions) => string;
+
+/**
  * Retrieves the application's default locale from the `<GTProvider>` context.
  *
  * If no default locale is passed to the `<GTProvider>`, it defaults to providing 'en'.
@@ -236,19 +241,19 @@ declare namespace Plural {
 declare function useDefaultLocale(): string;
 
 /**
- * Gets the translation function `t` provided by `<GTProvider>`.
+ * Gets the dictionary access function `d` provided by `<GTProvider>`.
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
  *
  * @example
- * const t = useGT('user');
- * console.log(t('name')); // Translates item 'user.name'
+ * const d = useDict('user');
+ * console.log(d('name')); // Translates item 'user.name'
  *
- * const t = useGT();
- * console.log(t('hello')); // Translates item 'hello'
+ * const d = useDict();
+ * console.log(d('hello')); // Translates item 'hello'
  */
-declare function useGT(id?: string): (id: string, options?: Record<string, any>) => React__default.ReactNode;
+declare function useDict(id?: string): (id: string, options?: DictionaryTranslationOptions) => React__default.ReactNode;
 
 /**
  * Retrieves the user's locale from the `<GTProvider>` context.
@@ -262,37 +267,35 @@ declare function useGT(id?: string): (id: string, options?: Record<string, any>)
 declare function useLocale(): string;
 
 /**
- * Translation component that handles rendering translated content, including plural forms.
- * Used with the required `id` parameter instead of `const t = useGT()`.
- *
- * @param {string} [id] - Required identifier for the translation string.
- * @param {React.ReactNode} children - The content to be translated or displayed.
- * @param {any} [context] - Additional context used for translation.
- * @param {Object} [props] - Additional props for the component.
- * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
- *
- * @throws {Error} If a plural translation is requested but the `n` option is not provided.
+ * Build-time translation component that renders its children in the user's given locale.
  *
  * @example
  * ```jsx
  * // Basic usage:
  * <T id="welcome_message">
- *  Hello, <Var name="name">{name}</Var>!
+ *  Hello, <Var name="name" value={firstname}>!
  * </T>
  * ```
  *
  * @example
  * ```jsx
- * // Using plural translations:
+ * // Translating a plural
  * <T id="item_count">
- *  <Plural n={n} singular={<>You have <Num value={n}/> item</>}>
- *      You have <Num value={n}/> items
+ *  <Plural n={3} singular={<>You have <Num value={n}/> item.</>}>
+ *      You have <Num value={n}/> items.
  *  </Plural>
  * </T>
  * ```
  *
+ * @param {React.ReactNode} children - The content to be translated or displayed.
+ * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
+ * @param {any} [context] - Additional context for translation key generation.
+ *
+ * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
+ *
+ * @throws {Error} If a plural translation is requested but the `n` option is not provided.
  */
-declare function T({ children, id, ...props }: {
+declare function T({ children, id, context, }: {
     children: any;
     id?: string;
     context?: string;
@@ -419,13 +422,9 @@ declare namespace Num {
  *
  * @example Dictionary Usage:
  * ```jsx
- *  // dictionary.jsx
+ *  // dictionary.js
  *  const dictionary = {
- *      user: (
- *          <>
- *              Hello, <Var name="user-name" />! Your dog's name is <Var name="dog-name"/>.
- *          </>
- *      ),
+ *      user: "Hello {user-name}! Your dog's name is {dog-name}",
  *  }
  *
  *  // component.jsx
@@ -459,7 +458,7 @@ declare namespace Var {
  * @param {string[]} locales - The list of supported locales. By default this is the user's list of supported locales from the `<GTProvider>` context.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
-declare function LocaleSelector({ locales, }: {
+declare function LocaleSelector({ locales, ...props }: {
     locales?: string[];
 }): React__default.ReactElement | null;
 
@@ -500,4 +499,4 @@ declare function GTProvider({ children, projectId: _projectId, devApiKey: _devAp
     [key: string]: any;
 }): React__default.JSX.Element;
 
-export { Branch, ClientProvider, Currency, DateTime, GTContext, GTProvider, LocaleSelector, Num, Plural, T, Var, renderVariable, useDefaultLocale, useGT, useLocale, useRuntimeTranslation };
+export { Branch, ClientProvider, Currency, DateTime, GTContext, GTProvider, LocaleSelector, Num, Plural, T, Var, renderVariable, useDefaultLocale, useDict, useGT, useLocale, useRuntimeTranslation };

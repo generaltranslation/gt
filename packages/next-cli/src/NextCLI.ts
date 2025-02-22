@@ -4,8 +4,12 @@ import {
   Options,
   Updates,
   SetupOptions,
+  SupportedFrameworks,
 } from 'gt-react-cli/types';
-import { displayInitializingText } from 'gt-react-cli/console/console';
+import {
+  displayAsciiTitle,
+  displayInitializingText,
+} from 'gt-react-cli/console/console';
 import chalk from 'chalk';
 import { select } from '@inquirer/prompts';
 import createConfig from 'gt-react-cli/fs/config/setupConfig';
@@ -15,16 +19,16 @@ import scanForContent from './next/nextScanForContent';
 import createDictionaryUpdates from 'gt-react-cli/updates/createDictionaryUpdates';
 import createInlineUpdates from 'gt-react-cli/updates/createInlineUpdates';
 import handleInitGT from './next/handleInitGT';
-const framework = 'gt-next';
+const pkg = 'gt-next';
 export class NextCLI extends BaseCLI {
   constructor() {
-    super(framework);
+    super();
   }
   protected scanForContent(
     options: WrapOptions,
-    addGTProvider: boolean = false
+    framework: SupportedFrameworks
   ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
-    return scanForContent(options, framework, addGTProvider);
+    return scanForContent(options, pkg, framework);
   }
 
   protected createDictionaryUpdates(
@@ -37,10 +41,11 @@ export class NextCLI extends BaseCLI {
   protected createInlineUpdates(
     options: Options
   ): Promise<{ updates: Updates; errors: string[] }> {
-    return createInlineUpdates(options);
+    return createInlineUpdates(options, pkg);
   }
 
   protected async handleSetupCommand(options: SetupOptions): Promise<void> {
+    displayAsciiTitle();
     displayInitializingText();
 
     // Ask user for confirmation using inquirer
@@ -61,9 +66,25 @@ export class NextCLI extends BaseCLI {
       console.log(chalk.gray('\nOperation cancelled.'));
       process.exit(0);
     }
-
+    const routerType = await select({
+      message: 'Are you using the Next.js App router or the Pages router?',
+      choices: [
+        { value: 'app', name: 'App Router' },
+        { value: 'pages', name: 'Pages Router' },
+      ],
+      default: 'app',
+    });
+    if (routerType === 'pages') {
+      console.log(
+        chalk.red(
+          '\nPlease use gt-react and gt-react-cli instead. gt-next is currently not supported for the Pages router.'
+        )
+      );
+      process.exit(0);
+    }
     const addGTProvider = await select({
-      message: 'Do you want to automatically add the GTProvider component?',
+      message:
+        'Do you want the setup tool to automatically add the GTProvider component?',
       choices: [
         { value: true, name: 'Yes' },
         { value: false, name: 'No' },
@@ -108,12 +129,13 @@ export class NextCLI extends BaseCLI {
       ...options,
       disableIds: !includeTId,
       disableFormatting: true,
+      addGTProvider,
     };
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
     const { errors, filesUpdated, warnings } = await this.scanForContent(
       mergeOptions,
-      addGTProvider
+      'next-app'
     );
 
     if (addWithGTConfig) {
@@ -153,14 +175,14 @@ export class NextCLI extends BaseCLI {
       );
     }
     // Stage only the modified files
-    const { execSync } = require('child_process');
-    for (const file of filesUpdated) {
-      await execSync(`git add "${file}"`);
-    }
+    // const { execSync } = require('child_process');
+    // for (const file of filesUpdated) {
+    //   await execSync(`git add "${file}"`);
+    // }
 
     const formatter = await detectFormatter();
 
-    if (!formatter) {
+    if (!formatter || filesUpdated.length === 0) {
       return;
     }
 

@@ -46,14 +46,12 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
  * })
  *
  * @param {string|undefined} config - Optional config filepath (defaults to './gt.config.json'). If a file is found, it will be parsed for GT config variables.
- * @param {string|undefined} i18n - Optional i18n configuration file path. If a string is provided, it will be used as a path.
  * @param {string|undefined} dictionary - Optional dictionary configuration file path. If a string is provided, it will be used as a path.
  * @param {string} [apiKey=defaultInitGTProps.apiKey] - API key for the GeneralTranslation service. Required if using the default GT base URL.
  * @param {string} [devApiKey=defaultInitGTProps.devApiKey] - API key for dev environment only.
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
  * @param {string|null} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations. Set to null to disable.
  * @param {string|null} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations. Set to null to disable.
- * @param {number} [cacheExpiryTime=defaultInitGTProps.cacheExpiryTime] - How long to cache translations in memory (milliseconds).
  * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
  * @param {string[]|undefined} - Whether to use local translations.
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
@@ -73,6 +71,7 @@ var supported_locales_1 = require("@generaltranslation/supported-locales");
 function withGTConfig(nextConfig, props) {
     var _a, _b, _c, _d, _e;
     if (nextConfig === void 0) { nextConfig = {}; }
+    if (props === void 0) { props = {}; }
     // ---------- LOAD GT CONFIG FILE ---------- //
     var loadedConfig = {};
     var configPath = props.config || defaultInitGTProps_1.default.config;
@@ -110,15 +109,11 @@ function withGTConfig(nextConfig, props) {
         mergedConfig.locales.unshift(mergedConfig.defaultLocale);
     }
     mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
-    // ----------- RESOLVE ANY CONFIG/TX FILES ----------- //
-    // Resolve custom locale getter functions
-    var resolvedI18NFilePath = typeof mergedConfig.i18n === 'string'
-        ? mergedConfig.i18n
-        : resolveConfigFilepath('i18n');
+    // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
     // Resolve dictionary filepath
     var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
         ? mergedConfig.dictionary
-        : resolveConfigFilepath('dictionary');
+        : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']);
     // Resolve custom translation loader path
     var customLoadTranslationPath = typeof mergedConfig.loadTranslationPath === 'string'
         ? mergedConfig.loadTranslationPath
@@ -127,6 +122,14 @@ function withGTConfig(nextConfig, props) {
     var resolvedLocalTranslationDir = typeof mergedConfig.localTranslationsDir === 'string'
         ? mergedConfig.localTranslationsDir
         : './public/_gt';
+    // ----- GET DICTIONAR FILE TYPE ----- //
+    var resolvedDictionaryFilePathType = resolvedDictionaryFilePath
+        ? path_1.default.extname(resolvedDictionaryFilePath)
+        : undefined;
+    if (resolvedDictionaryFilePathType) {
+        mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
+    }
+    // ----- RESOLVE CONFIG LOCALES ----- //
     // Check for local translations and get the list of locales
     var localLocales = [];
     if (fs_1.default.existsSync(resolvedLocalTranslationDir) &&
@@ -136,6 +139,7 @@ function withGTConfig(nextConfig, props) {
             .filter(function (file) { return file.endsWith('.json'); })
             .map(function (file) { return file.replace('.json', ''); });
     }
+    // ----- RESOLVE LOCAL TRANSLATIONS ----- //
     // When there are local translations, force custom translation loader
     // for now, we can just check if that file exists, and then assume the existance of the loaders
     if (customLoadTranslationPath &&
@@ -177,9 +181,11 @@ function withGTConfig(nextConfig, props) {
     }
     // ---------- STORE CONFIGURATIONS ---------- //
     var I18NConfigParams = JSON.stringify(mergedConfig);
-    return __assign(__assign({}, nextConfig), { env: __assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_b = nextConfig.experimental) === null || _b === void 0 ? void 0 : _b.turbo)
+    return __assign(__assign({}, nextConfig), { env: __assign(__assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), (resolvedDictionaryFilePathType && {
+            _GENERALTRANSLATION_DICTIONARY_FILE_TYPE: resolvedDictionaryFilePathType,
+        })), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_b = nextConfig.experimental) === null || _b === void 0 ? void 0 : _b.turbo)
             ? {
-                turbo: __assign(__assign({}, (((_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_e = (_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) === null || _e === void 0 ? void 0 : _e.resolveAlias) || {})), { 'gt-next/_request': resolvedI18NFilePath || '', 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translation': customLoadTranslationPath || '' }) }),
+                turbo: __assign(__assign({}, (((_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_e = (_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) === null || _e === void 0 ? void 0 : _e.resolveAlias) || {})), { 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translation': customLoadTranslationPath || '' }) }),
             }
             : {})), webpack: function webpack() {
             var _a = [];
@@ -190,9 +196,6 @@ function withGTConfig(nextConfig, props) {
             // Only apply webpack aliases if we're using webpack (not Turbopack)
             var isTurbopack = (options === null || options === void 0 ? void 0 : options.turbo) || process.env.TURBOPACK === '1';
             if (!isTurbopack) {
-                if (resolvedI18NFilePath) {
-                    webpackConfig.resolve.alias['gt-next/_request'] = path_1.default.resolve(webpackConfig.context, resolvedI18NFilePath);
-                }
                 if (resolvedDictionaryFilePath) {
                     webpackConfig.resolve.alias['gt-next/_dictionary'] = path_1.default.resolve(webpackConfig.context, resolvedDictionaryFilePath);
                 }
@@ -213,13 +216,14 @@ var initGT = function (props) { return function (nextConfig) {
 }; };
 exports.initGT = initGT;
 /**
- * Resolves a configuration filepath for i18n or dictionary files.
+ * Resolves a configuration filepath for dictionary files.
  *
  * @param {string} fileName - The base name of the config file to look for.
  * @param {string} [cwd] - An optional current working directory path.
  * @returns {string|undefined} - The path if found; otherwise undefined.
  */
-function resolveConfigFilepath(fileName, cwd) {
+function resolveConfigFilepath(fileName, extensions, cwd) {
+    if (extensions === void 0) { extensions = ['.ts', '.js']; }
     function resolvePath(pathname) {
         var parts = [];
         if (cwd)
@@ -231,7 +235,7 @@ function resolveConfigFilepath(fileName, cwd) {
         return fs_1.default.existsSync(resolvePath(pathname));
     }
     // Check for file existence in the root and src directories with supported extensions
-    for (var _i = 0, _a = __spreadArray(__spreadArray([], withExtensions("./".concat(fileName)), true), withExtensions("./src/".concat(fileName)), true); _i < _a.length; _i++) {
+    for (var _i = 0, _a = __spreadArray(__spreadArray([], extensions.map(function (ext) { return "./".concat(fileName).concat(ext); }), true), extensions.map(function (ext) { return "./src/".concat(fileName).concat(ext); }), true); _i < _a.length; _i++) {
         var candidate = _a[_i];
         if (pathExists(candidate)) {
             return candidate;
@@ -239,19 +243,5 @@ function resolveConfigFilepath(fileName, cwd) {
     }
     // Return undefined if no file is found
     return undefined;
-}
-/**
- * Helper function to handle multiple extensions.
- *
- * @param {string} localPath - The local path to which extensions will be appended.
- * @returns {string[]} - Array of possible paths with supported TypeScript/JavaScript extensions.
- */
-function withExtensions(localPath) {
-    return [
-        "".concat(localPath, ".ts"),
-        "".concat(localPath, ".tsx"),
-        "".concat(localPath, ".js"),
-        "".concat(localPath, ".jsx"),
-    ];
 }
 //# sourceMappingURL=config.js.map

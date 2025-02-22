@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.warnHasUnwrappedExpression = exports.warnNoId = exports.warnVariableProp = exports.warnApiKeyInConfig = void 0;
+exports.warnTernary = exports.warnTemplateLiteral = exports.warnNonStaticExpression = exports.warnHasUnwrappedExpression = exports.warnNoId = exports.warnVariableProp = exports.warnApiKeyInConfig = void 0;
 const chalk_1 = __importDefault(require("chalk"));
 const warnApiKeyInConfig = (optionsFilepath) => {
     console.warn(chalk_1.default.red('ERROR: ') +
@@ -30,3 +30,18 @@ const warnHasUnwrappedExpression = (file, id, unwrappedExpressions) => {
         chalk_1.default.white(') to translate this properly.\n'));
 };
 exports.warnHasUnwrappedExpression = warnHasUnwrappedExpression;
+const warnNonStaticExpression = (file, attrName, value) => {
+    return (`Found non-static expression in ${chalk_1.default.cyan(file)} for attribute ${attrName}: "${chalk_1.default.white(value)}". ` +
+        `Change "${attrName}" to ensure this content is translated.\n`);
+};
+exports.warnNonStaticExpression = warnNonStaticExpression;
+const warnTemplateLiteral = (file, value) => {
+    return (`Found template literal with quasis (${value}) in ${chalk_1.default.cyan(file)}. ` +
+        chalk_1.default.white('Change the template literal to a string to ensure this content is translated.\n'));
+};
+exports.warnTemplateLiteral = warnTemplateLiteral;
+const warnTernary = (file) => {
+    return (`Found ternary expression in ${chalk_1.default.cyan(file)}. ` +
+        chalk_1.default.white('A Branch component may be more appropriate here.\n'));
+};
+exports.warnTernary = warnTernary;

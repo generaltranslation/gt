@@ -19,13 +19,9 @@ import React from 'react';
  *
  * @example Dictionary Usage:
  * ```jsx
- *  // dictionary.jsx
+ *  // dictionary.js
  *  const dictionary = {
- *      user: (
- *          <>
- *              Hello, <Var name="user-name" />! Your dog's name is <Var name="dog-name"/>.
- *          </>
- *      ),
+ *      user: "Hello {user-name}! Your dog's name is {dog-name}",
  *  }
  *
  *  // component.jsx

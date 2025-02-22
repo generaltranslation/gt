@@ -20,8 +20,8 @@ function parseResult(result: any): TranslationsObject | undefined {
   if (result && Object.keys(result).length) {
     // Parse response
     const parsedResult: TranslationsObject = Object.entries(result).reduce(
-      (translationsAcc: TranslationsObject, [key, target]: [string, any]) => {
-        translationsAcc[key] = { state: 'success', target };
+      (translationsAcc: TranslationsObject, [hash, target]: [string, any]) => {
+        translationsAcc[hash] = { state: 'success', target };
         return translationsAcc;
       },
       {}

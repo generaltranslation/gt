@@ -8,10 +8,14 @@ export const remoteTranslationsError =
 export const customLoadTranslationError =
   'gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.';
 
-export const createStringTranslationError = (content: string, id?: string) =>
-  `gt-next string translation error. tx("${content}")${
+export const createStringTranslationError = (
+  string: string,
+  id?: string,
+  functionName = 'tx'
+) =>
+  `gt-next string translation error. ${functionName}("${string}")${
     id ? ` with id "${id}"` : ''
-  } failed.`;
+  } could not locate translation.`;
 
 export const createDictionaryStringTranslationError = (id: string) =>
   `gt-next Error: string translation error. Translation from dictionary with id: ${id} failed.`;
@@ -40,8 +44,11 @@ export const unresolvedCustomLoadTranslationError = `gt-next Error: Custom trans
 export const usingDefaultsWarning =
   'gt-next: Unable to access gt-next configuration. Using defaults.';
 
-export const createNoEntryWarning = (id: string) =>
-  `gt-next: No dictionary entry found for id: "${id}"`;
+export const createNoEntryFoundWarning = (id: string) =>
+  `gt-react: No valid dictionary entry found for id: "${id}"`;
+
+export const createInvalidDictionaryEntryWarning = (id: string) =>
+  `gt-react: Invalid dictionary entry found for id: "${id}"`;
 
 export const createUnsupportedLocalesWarning = (locales: string[]) =>
   `gt-next: The following locales are currently unsupported by our service: ${locales
@@ -69,3 +76,11 @@ export const APIKeyMissingWarn =
   `gt-next: A Development API key is required for runtime translation!  ` +
   `Find your Development API key: generaltranslation.com/dashboard.  ` +
   `(Or, disable this warning message by setting runtimeUrl to an empty string which disables runtime translation.)`;
+
+export const translationLoadingWarning =
+  `gt-next: [DEV ONLY] Translations have changed since the last update. ` +
+  `Translations in production will be preloaded, and page will not need to be refreshed.`;
+
+export const runtimeTranslationTimeoutWarning = `gt-next: Runtime translation timed out.`;
+
+export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the withGTConfig() plugin.`;

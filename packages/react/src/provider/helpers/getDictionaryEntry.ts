@@ -1,19 +1,28 @@
 import React from 'react';
-import {
-  Dictionary,
-  DictionaryEntry,
-  FlattenedDictionary,
-} from '../../types/types';
-import { createLibraryNoEntryWarning } from '../../messages/createMessages';
+import { Dictionary, DictionaryEntry } from '../../types/types';
 
-export default function getDictionaryEntry<
-  T extends Dictionary | FlattenedDictionary,
->(
+export function isValidDictionaryEntry(
+  value: unknown
+): value is DictionaryEntry {
+  if (typeof value === 'string') return true;
+
+  if (Array.isArray(value)) {
+    if (typeof value?.[0] !== 'string') {
+      return false;
+    }
+    const provisionalMetadata = value?.[1];
+    if (typeof provisionalMetadata === 'undefined') return true;
+    if (provisionalMetadata && typeof provisionalMetadata === 'object')
+      return true;
+  }
+
+  return false;
+}
+
+export default function getDictionaryEntry<T extends Dictionary>(
   dictionary: T,
   id: string
-): T extends FlattenedDictionary
-  ? DictionaryEntry | undefined
-  : Dictionary | DictionaryEntry | undefined {
+): Dictionary | DictionaryEntry | undefined {
   let current: Dictionary | DictionaryEntry = dictionary;
   let dictionaryPath = id.split('.');
   for (const key of dictionaryPath) {
@@ -22,12 +31,9 @@ export default function getDictionaryEntry<
       Array.isArray(current) ||
       React.isValidElement(current)
     ) {
-      console.error(createLibraryNoEntryWarning(id));
       return undefined;
     }
     current = (current as Dictionary)[key];
   }
-  return current as T extends FlattenedDictionary
-    ? DictionaryEntry | undefined
-    : Dictionary | DictionaryEntry | undefined;
+  return current;
 }

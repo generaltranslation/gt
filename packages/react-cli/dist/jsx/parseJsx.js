@@ -56,7 +56,7 @@ const VARIABLE_COMPONENTS = ['Var', 'DateTime', 'Currency', 'Num'];
  * @param file - The file name
  * @returns The built JSX tree
  */
-function buildJSXTree(node, unwrappedExpressions, updates, errors, file) {
+function buildJSXTree(importAliases, node, unwrappedExpressions, updates, errors, file) {
     if (t.isJSXExpressionContainer(node)) {
         const expr = node.expression;
         const staticAnalysis = (0, evaluateJsx_1.isStaticExpression)(expr);
@@ -91,11 +91,13 @@ function buildJSXTree(node, unwrappedExpressions, updates, errors, file) {
         else {
             typeName = null;
         }
+        // Convert from alias to original name
+        const alias = importAliases[typeName !== null && typeName !== void 0 ? typeName : ''];
         // If this JSXElement is one of the recognized variable components,
-        const elementIsVariable = VARIABLE_COMPONENTS.includes(typeName !== null && typeName !== void 0 ? typeName : '');
+        const elementIsVariable = VARIABLE_COMPONENTS.includes(alias);
         const props = {};
-        const elementIsPlural = typeName === 'Plural';
-        const elementIsBranch = typeName === 'Branch';
+        const elementIsPlural = alias === 'Plural';
+        const elementIsBranch = alias === 'Branch';
         element.openingElement.attributes.forEach((attr) => {
             if (t.isJSXAttribute(attr)) {
                 const attrName = attr.name.name;
@@ -113,20 +115,20 @@ function buildJSXTree(node, unwrappedExpressions, updates, errors, file) {
                                 unwrappedExpressions.push((0, generator_1.default)(attr.value).code);
                             }
                         }
-                        attrValue = buildJSXTree(attr.value.expression, unwrappedExpressions, updates, errors, file);
+                        attrValue = buildJSXTree(importAliases, attr.value.expression, unwrappedExpressions, updates, errors, file);
                     }
                 }
                 props[attrName] = attrValue;
             }
         });
         if (elementIsVariable) {
-            parseJSXElement(element, updates, errors, file);
+            parseJSXElement(importAliases, element, updates, errors, file);
             return {
                 type: typeName,
                 props,
             };
         }
-        const children = element.children.map((child) => buildJSXTree(child, unwrappedExpressions, updates, errors, file));
+        const children = element.children.map((child) => buildJSXTree(importAliases, child, unwrappedExpressions, updates, errors, file));
         if (children.length === 1) {
             props.children = children[0];
         }
@@ -141,7 +143,7 @@ function buildJSXTree(node, unwrappedExpressions, updates, errors, file) {
     // If it's a JSX fragment
     else if (t.isJSXFragment(node)) {
         const children = node.children
-            .map((child) => buildJSXTree(child, unwrappedExpressions, updates, errors, file))
+            .map((child) => buildJSXTree(importAliases, child, unwrappedExpressions, updates, errors, file))
             .filter((child) => child !== null && child !== '');
         return {
             type: '',
@@ -169,11 +171,11 @@ function buildJSXTree(node, unwrappedExpressions, updates, errors, file) {
 }
 // end buildJSXTree
 // Parses a JSX element and adds it to the updates array
-function parseJSXElement(node, updates, errors, file) {
+function parseJSXElement(importAliases, node, updates, errors, file) {
     const openingElement = node.openingElement;
     const name = openingElement.name;
     // Only proceed if it's <T> ...
-    if (name.type === 'JSXIdentifier' && name.name === 'T') {
+    if (name.type === 'JSXIdentifier' && importAliases[name.name] === 'T') {
         const componentObj = { props: {} };
         // We'll track this flag to know if any unwrapped {variable} is found in children
         const unwrappedExpressions = [];
@@ -206,7 +208,7 @@ function parseJSXElement(node, updates, errors, file) {
             }
         });
         // Build the JSX tree for this component
-        const initialTree = buildJSXTree(node, unwrappedExpressions, updates, errors, file).props.children;
+        const initialTree = buildJSXTree(importAliases, node, unwrappedExpressions, updates, errors, file).props.children;
         const whitespaceHandledTree = (0, trimJsxStringChildren_1.handleChildrenWhitespace)(initialTree);
         const tree = (0, addGTIdentifierToSyntaxTree_1.default)(whitespaceHandledTree);
         componentObj.tree = tree.length === 1 ? tree[0] : tree;

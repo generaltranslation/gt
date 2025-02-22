@@ -1,6 +1,6 @@
-import { DictionaryEntry, Entry, Metadata, TaggedDictionaryEntry, TaggedEntry } from '../../types/types';
-export default function getEntryAndMetadata(value: DictionaryEntry | TaggedDictionaryEntry): {
-    entry: Entry | TaggedEntry;
+import { DictionaryEntry, Metadata } from '../../types/types';
+export default function getEntryAndMetadata(value: DictionaryEntry): {
+    entry: string;
     metadata?: Metadata;
 };
 //# sourceMappingURL=getEntryAndMetadata.d.ts.map

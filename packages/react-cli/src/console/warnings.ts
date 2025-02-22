@@ -50,3 +50,32 @@ export const warnHasUnwrappedExpression = (
     chalk.white(') to translate this properly.\n')
   );
 };
+
+export const warnNonStaticExpression = (
+  file: string,
+  attrName: string,
+  value: string
+) => {
+  return (
+    `Found non-static expression in ${chalk.cyan(
+      file
+    )} for attribute ${attrName}: "${chalk.white(value)}". ` +
+    `Change "${attrName}" to ensure this content is translated.\n`
+  );
+};
+
+export const warnTemplateLiteral = (file: string, value: string) => {
+  return (
+    `Found template literal with quasis (${value}) in ${chalk.cyan(file)}. ` +
+    chalk.white(
+      'Change the template literal to a string to ensure this content is translated.\n'
+    )
+  );
+};
+
+export const warnTernary = (file: string) => {
+  return (
+    `Found ternary expression in ${chalk.cyan(file)}. ` +
+    chalk.white('A Branch component may be more appropriate here.\n')
+  );
+};

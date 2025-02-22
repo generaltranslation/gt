@@ -1,8 +1,8 @@
 import React from 'react';
-import useSetLocale from '../hooks/useSetLocale';
 import useLocale from '../hooks/useLocale';
 import useLocales from '../hooks/useLocales';
 import { getLocaleProperties } from 'generaltranslation';
+import useSetLocale from '../hooks/useSetLocale';
 
 /**
  * Capitalizes the first letter of a language name if applicable.
@@ -25,6 +25,7 @@ function capitalizeLanguageName(language: string): string {
  */
 export default function LocaleSelector({
   locales = useLocales().sort(),
+  ...props
 }: {
   locales?: string[];
 }): React.ReactElement | null {
@@ -39,6 +40,7 @@ export default function LocaleSelector({
 
   return (
     <select
+      {...props}
       // Fallback to an empty string if currentLocale is undefined
       value={locale || ''}
       onChange={(e) => setLocale(e.target.value)}

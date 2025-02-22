@@ -60,7 +60,7 @@ export async function formatFiles(
       try {
         const { execSync } = require('child_process');
         execSync(
-          `npx @biomejs/biome format --write ${filesUpdated.join(' ')}`,
+          `npx @biomejs/biome format --write ${filesUpdated.map((file) => `"${file}"`).join(' ')}`,
           {
             stdio: ['ignore', 'inherit', 'inherit'],
           }

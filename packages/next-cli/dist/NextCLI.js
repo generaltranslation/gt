@@ -26,22 +26,23 @@ const nextScanForContent_1 = __importDefault(require("./next/nextScanForContent"
 const createDictionaryUpdates_1 = __importDefault(require("gt-react-cli/updates/createDictionaryUpdates"));
 const createInlineUpdates_1 = __importDefault(require("gt-react-cli/updates/createInlineUpdates"));
 const handleInitGT_1 = __importDefault(require("./next/handleInitGT"));
-const framework = 'gt-next';
+const pkg = 'gt-next';
 class NextCLI extends gt_react_cli_1.BaseCLI {
     constructor() {
-        super(framework);
+        super();
     }
-    scanForContent(options, addGTProvider = false) {
-        return (0, nextScanForContent_1.default)(options, framework, addGTProvider);
+    scanForContent(options, framework) {
+        return (0, nextScanForContent_1.default)(options, pkg, framework);
     }
     createDictionaryUpdates(options, esbuildConfig) {
         return (0, createDictionaryUpdates_1.default)(options, esbuildConfig);
     }
     createInlineUpdates(options) {
-        return (0, createInlineUpdates_1.default)(options);
+        return (0, createInlineUpdates_1.default)(options, pkg);
     }
     handleSetupCommand(options) {
         return __awaiter(this, void 0, void 0, function* () {
+            (0, console_1.displayAsciiTitle)();
             (0, console_1.displayInitializingText)();
             // Ask user for confirmation using inquirer
             const answer = yield (0, prompts_1.select)({
@@ -58,8 +59,20 @@ class NextCLI extends gt_react_cli_1.BaseCLI {
                 console.log(chalk_1.default.gray('\nOperation cancelled.'));
                 process.exit(0);
             }
+            const routerType = yield (0, prompts_1.select)({
+                message: 'Are you using the Next.js App router or the Pages router?',
+                choices: [
+                    { value: 'app', name: 'App Router' },
+                    { value: 'pages', name: 'Pages Router' },
+                ],
+                default: 'app',
+            });
+            if (routerType === 'pages') {
+                console.log(chalk_1.default.red('\nPlease use gt-react and gt-react-cli instead. gt-next is currently not supported for the Pages router.'));
+                process.exit(0);
+            }
             const addGTProvider = yield (0, prompts_1.select)({
-                message: 'Do you want to automatically add the GTProvider component?',
+                message: 'Do you want the setup tool to automatically add the GTProvider component?',
                 choices: [
                     { value: true, name: 'Yes' },
                     { value: false, name: 'No' },
@@ -77,8 +90,8 @@ class NextCLI extends gt_react_cli_1.BaseCLI {
                 console.log(chalk_1.default.red('No next.config.js file found.'));
                 process.exit(0);
             }
-            const addInitGT = yield (0, prompts_1.select)({
-                message: `Do you want to automatically add initGT() to your ${nextConfigPath}?`,
+            const addWithGTConfig = yield (0, prompts_1.select)({
+                message: `Do you want to automatically add withGTConfig() to your ${nextConfigPath}?`,
                 choices: [
                     { value: true, name: 'Yes' },
                     { value: false, name: 'No' },
@@ -97,11 +110,11 @@ class NextCLI extends gt_react_cli_1.BaseCLI {
             if (!options.config)
                 (0, setupConfig_1.default)('gt.config.json', process.env.GT_PROJECT_ID, '');
             // ----- //
-            const mergeOptions = Object.assign(Object.assign({}, options), { disableIds: !includeTId, disableFormatting: true });
+            const mergeOptions = Object.assign(Object.assign({}, options), { disableIds: !includeTId, disableFormatting: true, addGTProvider });
             // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-            const { errors, filesUpdated, warnings } = yield this.scanForContent(mergeOptions, addGTProvider);
-            if (addInitGT) {
-                // Add the initGT() function to the next.config.js file
+            const { errors, filesUpdated, warnings } = yield this.scanForContent(mergeOptions, 'next-app');
+            if (addWithGTConfig) {
+                // Add the withGTConfig() function to the next.config.js file
                 const { errors: initGTErrors, filesUpdated: initGTFilesUpdated } = yield (0, handleInitGT_1.default)(nextConfigPath);
                 // merge errors and files
                 errors.push(...initGTErrors);
@@ -122,12 +135,12 @@ class NextCLI extends gt_react_cli_1.BaseCLI {
                 console.log(warnings.map((warning) => `${chalk_1.default.yellow('-')} ${warning}`).join('\n'));
             }
             // Stage only the modified files
-            const { execSync } = require('child_process');
-            for (const file of filesUpdated) {
-                yield execSync(`git add "${file}"`);
-            }
+            // const { execSync } = require('child_process');
+            // for (const file of filesUpdated) {
+            //   await execSync(`git add "${file}"`);
+            // }
             const formatter = yield (0, postProcess_1.detectFormatter)();
-            if (!formatter) {
+            if (!formatter || filesUpdated.length === 0) {
                 return;
             }
             const applyFormatting = yield (0, prompts_1.select)({

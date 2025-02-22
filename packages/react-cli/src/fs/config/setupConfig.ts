@@ -16,7 +16,7 @@ export default function createConfig(
   configFilepath: string,
   projectId?: string,
   defaultLocale?: string
-): void {
+): string {
   // Filter out empty string values from the config object
   const newContent = {
     ...(projectId && { projectId }),
@@ -44,4 +44,5 @@ export default function createConfig(
   } catch (error) {
     console.error(`An error occurred while updating ${configFilepath}:`, error);
   }
+  return configFilepath;
 }

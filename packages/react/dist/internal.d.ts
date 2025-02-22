@@ -2,7 +2,7 @@ import flattenDictionary from './internal/flattenDictionary';
 import addGTIdentifier from './internal/addGTIdentifier';
 import writeChildrenAsObjects from './internal/writeChildrenAsObjects';
 import getPluralBranch from './branches/plurals/getPluralBranch';
-import getDictionaryEntry from './provider/helpers/getDictionaryEntry';
+import getDictionaryEntry, { isValidDictionaryEntry } from './provider/helpers/getDictionaryEntry';
 import getEntryAndMetadata from './provider/helpers/getEntryAndMetadata';
 import getVariableProps from './variables/_getVariableProps';
 import isVariableObject from './provider/helpers/isVariableObject';
@@ -11,6 +11,7 @@ import renderDefaultChildren from './provider/rendering/renderDefaultChildren';
 import renderTranslatedChildren from './provider/rendering/renderTranslatedChildren';
 import { defaultRenderSettings } from './provider/rendering/defaultRenderSettings';
 import renderSkeleton from './provider/rendering/renderSkeleton';
-import { Dictionary, RenderMethod, TranslatedChildren, TranslatedContent, TranslationError, TranslationsObject, DictionaryEntry, TranslationSuccess, GTContextType, TranslationLoading, TaggedChildren, Children, FlattenedDictionary, Metadata, Child, GTProp, Entry, FlattenedTaggedDictionary, GTTranslationError, TaggedDictionary, TaggedDictionaryEntry, TaggedEntry, ClientProviderProps } from './types/types';
-export { addGTIdentifier, writeChildrenAsObjects, isVariableObject, Dictionary, flattenDictionary, getDictionaryEntry, getVariableProps, DictionaryEntry, FlattenedDictionary, FlattenedTaggedDictionary, GTTranslationError, TaggedEntry, TaggedDictionaryEntry, TaggedDictionary, Metadata, getPluralBranch, getEntryAndMetadata, getVariableName, getFallbackVariableName, renderDefaultChildren, renderTranslatedChildren, renderSkeleton, RenderMethod, defaultRenderSettings, TaggedChildren, Children, Child, GTProp, Entry, TranslatedChildren, TranslatedContent, TranslationsObject, TranslationLoading, TranslationError, TranslationSuccess, GTContextType, ClientProviderProps, };
+import { Dictionary, RenderMethod, TranslatedChildren, TranslatedContent, TranslationError, TranslationsObject, DictionaryEntry, TranslationSuccess, TranslationLoading, Children, FlattenedDictionary, Metadata, Child, GTProp, Entry, GTTranslationError, DictionaryTranslationOptions, InlineTranslationOptions, RuntimeTranslationOptions } from './types/types';
+import { GTContextType, ClientProviderProps } from './types/providers';
+export { addGTIdentifier, writeChildrenAsObjects, isVariableObject, Dictionary, flattenDictionary, getDictionaryEntry, isValidDictionaryEntry, getVariableProps, DictionaryEntry, FlattenedDictionary, GTTranslationError, Metadata, getPluralBranch, getEntryAndMetadata, getVariableName, getFallbackVariableName, renderDefaultChildren, renderTranslatedChildren, renderSkeleton, RenderMethod, defaultRenderSettings, Children, Child, GTProp, Entry, TranslatedChildren, TranslatedContent, TranslationsObject, TranslationLoading, TranslationError, TranslationSuccess, GTContextType, ClientProviderProps, DictionaryTranslationOptions, InlineTranslationOptions, RuntimeTranslationOptions };
 //# sourceMappingURL=internal.d.ts.map

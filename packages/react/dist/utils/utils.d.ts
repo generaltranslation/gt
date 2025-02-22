@@ -1,5 +1,4 @@
-import { TaggedElement, TranslatedContent } from '../types/types';
-export declare function isTranslatedContent(target: unknown): target is TranslatedContent;
+import { TaggedElement } from '../types/types';
 export declare function isValidTaggedElement(target: unknown): target is TaggedElement;
 export declare function readAuthFromEnv(projectId?: string, devApiKey?: string): {
     projectId: string;

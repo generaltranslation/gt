@@ -4,7 +4,6 @@ declare const defaultInitGTProps: {
     readonly loadTranslationType: "remote";
     readonly runtimeUrl: "https://runtime.gtx.dev";
     readonly cacheUrl: "https://cdn.gtx.dev";
-    readonly cacheExpiryTime: 60000;
     readonly defaultLocale: "en-US";
     readonly getLocale: () => Promise<"en-US">;
     readonly locales: string[];

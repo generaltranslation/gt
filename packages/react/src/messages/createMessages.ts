@@ -14,11 +14,6 @@ export const createNoAuthError =
 export const createPluralMissingError = (children: any) =>
   `<Plural> component with children "${children}" requires "n" option.`;
 
-export const createStringTranslationError = (content: string, id?: string) =>
-  `gt-next string translation error. tx("${content}")${
-    id ? ` with id "${id}"` : ''
-  } failed.`;
-
 export const createClientSideTDictionaryCollisionError = (id: string) =>
   `<T id="${id}">, "${id}" is also used as a key in the dictionary. Don't give <T> components the same ID as dictionary entries.`;
 
@@ -53,22 +48,23 @@ export const dictionaryDisabledError =
   `This is likely because the server cannot access the dictionary upstream. ` +
   `For example, if you are using gt-next, make sure that you have added the withGTConfig() plugin to your app and that the dictionary exists.`;
 
+export const runtimeTranslationError = `gt-react Error: Runtime translation failed: `;
+
 // ---- WARNINGS ---- //
 
 export const projectIdMissingWarning =
   'gt-react warn: Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
 
-export const createLibraryNoEntryWarning = (id: string) =>
-  `gt-react: No dictionary entry found for id: "${id}"`;
+export const createNoEntryFoundWarning = (id: string) =>
+  `gt-react: No valid dictionary entry found for id: "${id}"`;
 
-export const createNoEntryWarning = (id: string, prefixedId: string) =>
-  `t('${id}') finding no translation for dictionary item ${prefixedId} !`;
+export const createInvalidDictionaryEntryWarning = (id: string) =>
+  `gt-react: Invalid dictionary entry found for id: "${id}"`;
 
-export const createInvalidElementEntryWarning = (
+export const createNoEntryTranslationWarning = (
   id: string,
   prefixedId: string
-) =>
-  `t('${id}') invalid dictionary entry for ${prefixedId} ! useElement() can only be used to render JSX elements. Strings and other types are not allowed.`;
+) => `t('${id}') finding no translation for dictionary item ${prefixedId} !`;
 
 export const createMismatchingHashWarning = (
   expectedHash: string,
@@ -88,3 +84,5 @@ export const createUnsupportedLocalesWarning = (locales: string[]) =>
       return `${locale} (${name})`;
     })
     .join(', ')}`;
+
+export const runtimeTranslationTimeoutWarning = `gt-react: Runtime translation timed out.`;

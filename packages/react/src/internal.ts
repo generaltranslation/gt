@@ -2,7 +2,7 @@ import flattenDictionary from './internal/flattenDictionary';
 import addGTIdentifier from './internal/addGTIdentifier';
 import writeChildrenAsObjects from './internal/writeChildrenAsObjects';
 import getPluralBranch from './branches/plurals/getPluralBranch';
-import getDictionaryEntry from './provider/helpers/getDictionaryEntry';
+import getDictionaryEntry, { isValidDictionaryEntry } from './provider/helpers/getDictionaryEntry';
 import getEntryAndMetadata from './provider/helpers/getEntryAndMetadata';
 import getVariableProps from './variables/_getVariableProps';
 import isVariableObject from './provider/helpers/isVariableObject';
@@ -22,22 +22,21 @@ import {
   TranslationsObject,
   DictionaryEntry,
   TranslationSuccess,
-  GTContextType,
   TranslationLoading,
-  TaggedChildren,
   Children,
   FlattenedDictionary,
   Metadata,
   Child,
   GTProp,
   Entry,
-  FlattenedTaggedDictionary,
   GTTranslationError,
-  TaggedDictionary,
-  TaggedDictionaryEntry,
-  TaggedEntry,
-  ClientProviderProps,
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions
 } from './types/types';
+
+import { GTContextType, ClientProviderProps } from './types/providers';
+
 export {
   addGTIdentifier,
   writeChildrenAsObjects,
@@ -45,14 +44,11 @@ export {
   Dictionary,
   flattenDictionary,
   getDictionaryEntry,
+  isValidDictionaryEntry,
   getVariableProps,
   DictionaryEntry,
   FlattenedDictionary,
-  FlattenedTaggedDictionary,
   GTTranslationError,
-  TaggedEntry,
-  TaggedDictionaryEntry,
-  TaggedDictionary,
   Metadata,
   getPluralBranch,
   getEntryAndMetadata,
@@ -63,7 +59,6 @@ export {
   renderSkeleton,
   RenderMethod,
   defaultRenderSettings,
-  TaggedChildren,
   Children,
   Child,
   GTProp,
@@ -76,4 +71,7 @@ export {
   TranslationSuccess,
   GTContextType,
   ClientProviderProps,
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions
 };

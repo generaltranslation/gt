@@ -5,7 +5,6 @@ type InitGTProps = {
   loadTranslationType?: 'remote' | 'custom' | 'disabled'; // remote: CDN, custom: uknown, disabled: no fetch
   // Request scoped filepath
   dictionary?: string;
-  i18n?: string;
   config?: string;
   loadTranslationPath?: string;
   // Cloud integration
@@ -13,7 +12,6 @@ type InitGTProps = {
   projectId?: string;
   runtimeUrl?: string | null;
   cacheUrl?: string | null;
-  cacheExpiryTime?: number;
   // Locale info
   locales?: string[];
   defaultLocale?: string;

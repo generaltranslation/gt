@@ -72,44 +72,24 @@ export default async function createDictionaryUpdates(
       entry,
       metadata: props, // context, etc.
     } = getEntryAndMetadata(dictionary[id]);
-    const taggedEntry = addGTIdentifier(entry);
 
-    const entryAsObjects = writeChildrenAsObjects(taggedEntry);
+    const source = splitStringToContent(entry);
     const context = props?.context;
-
-    if (typeof entry === 'string') {
-      const metadata: Record<string, any> = {
-        id,
+    const metadata: Record<string, any> = {
+      id,
+      ...(context && { context }),
+      // This hash isn't actually used by the GT API, just for consistency sake
+      hash: hashJsxChildren({
+        source,
         ...(context && { context }),
-        // This hash isn't actually used by the GT API, just for consistency sake
-        hash: hashJsxChildren({
-          source: splitStringToContent(entry),
-          ...(context && { context }),
-          ...(id && { id }),
-        }),
-      };
-      updates.push({
-        type: 'content',
-        source: splitStringToContent(entry),
-        metadata,
-      });
-    } else {
-      const metadata: Record<string, any> = {
-        id,
-        ...(context && { context }),
-        // This hash isn't actually used by the GT API, just for consistency sake
-        hash: hashJsxChildren({
-          source: entryAsObjects,
-          ...(context && { context }),
-          ...(id && { id }),
-        }),
-      };
-      updates.push({
-        type: 'jsx',
-        source: entryAsObjects,
-        metadata,
-      });
-    }
+        ...(id && { id }),
+      }),
+    };
+    updates.push({
+      type: 'content',
+      source,
+      metadata,
+    });
   }
 
   return updates;

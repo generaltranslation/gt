@@ -2,14 +2,12 @@ import {
   DictionaryEntry,
   Entry,
   Metadata,
-  TaggedDictionaryEntry,
-  TaggedEntry,
 } from '../../types/types';
 
 export default function getEntryAndMetadata(
-  value: DictionaryEntry | TaggedDictionaryEntry
+  value: DictionaryEntry
 ): {
-  entry: Entry | TaggedEntry;
+  entry: string;
   metadata?: Metadata;
 } {
   if (Array.isArray(value)) {
@@ -20,5 +18,5 @@ export default function getEntryAndMetadata(
       return { entry: value[0], metadata: value[1] as Metadata };
     }
   }
-  return { entry: value as Entry | TaggedEntry };
+  return { entry: value };
 }

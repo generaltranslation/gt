@@ -3,6 +3,7 @@ const supportedLocales = {
   am: ['am'], // Amharic
   ar: [
     // Arabic
+    'ar',
     'ar-AE', // United Arab Emirates
     'ar-EG', // Egypt
     'ar-LB', // Lebanon
@@ -10,11 +11,7 @@ const supportedLocales = {
     'ar-SA', // Saudi Arabia
   ],
   bg: ['bg'], // Bulgarian
-  bn: [
-    // Bengali
-    'bn-BD', // Bangladesh
-    'bn-IN', // India
-  ],
+  bn: ['bn'], // Bengali
   bs: ['bs'], // Bosnian
   ca: ['ca'], // Catalan
   cs: ['cs'], // Czech
@@ -23,16 +20,19 @@ const supportedLocales = {
   de: [
     // German
     'de',
+    'de-DE', // Germany
     'de-AT', // Austria
     'de-CH', // Switzerland
   ],
   el: [
     // Greek
     'el',
+    'el-EL', // Greek
     'el-CY', // Cyprus
   ],
   en: [
     // English
+    'en',
     'en-AU', // Australia
     'en-CA', // Canada
     'en-GB', // United Kingdom
@@ -41,7 +41,8 @@ const supportedLocales = {
   ],
   es: [
     // Spanish
-    'es', // Spain
+    'es',
+    'es-ES', // Spain
     'es-419', // Latin America
     'es-AR', // Argentina
     'es-CL', // Chile
@@ -57,7 +58,8 @@ const supportedLocales = {
   fil: ['fil'], // Filipino
   fr: [
     // French
-    'fr', // France
+    'fr',
+    'fr-FR', // France
     'fr-BE', // Belgium
     'fr-CM', // Cameroon
     'fr-CA', // Canada
@@ -74,8 +76,9 @@ const supportedLocales = {
   is: ['is'], // Icelandic
   it: [
     // Italian
-    'it-CH', // Switzerland
+    'it',
     'it-IT', // Italy
+    'it-CH', // Switzerland
   ],
   ja: ['ja'], // Japanese
   ka: ['ka'], // Georgian
@@ -93,7 +96,8 @@ const supportedLocales = {
   my: ['my'], // Burmese
   nl: [
     // Dutch
-    'nl', // Netherlands
+    'nl', 
+    'nl-NL', // Netherlands
     'nl-BE', // Belgium
   ],
   no: ['no'], // Norwegian
@@ -101,6 +105,7 @@ const supportedLocales = {
   pl: ['pl'], // Polish
   pt: [
     // Portuguese
+    'pt',
     'pt-BR', // Brazil
     'pt-PT', // Portugal
   ],
@@ -114,6 +119,7 @@ const supportedLocales = {
   sv: ['sv'], // Swedish
   sw: [
     // Swahili
+    'sw',
     'sw-KE', // Kenya
     'sw-TZ', // Tanzania
   ],
@@ -127,7 +133,8 @@ const supportedLocales = {
   vi: ['vi'], // Vietnamese
   zh: [
     // Chinese
-    'zh', // China
+    'zh',
+    'zh-CN', // China
     'zh-HK', // Hong Kong
     'zh-SG', // Singapore
     'zh-TW', // Taiwan
