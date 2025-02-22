@@ -16,7 +16,7 @@ import { DictionaryTranslationOptions } from '../../types/types';
  * console.log(d('hello')); // Translates item 'hello'
  */
 export default function useDict(
-  id: string
+  id?: string
 ): (id: string, options?: DictionaryTranslationOptions) => React.ReactNode {
   // Create a prefix for translation keys if an id is provided
   const getId = (suffix: string) => {
