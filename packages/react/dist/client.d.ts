@@ -253,7 +253,7 @@ declare function useDefaultLocale(): string;
  * const d = useDict();
  * console.log(d('hello')); // Translates item 'hello'
  */
-declare function useDict(id: string): (id: string, options?: DictionaryTranslationOptions) => React__default.ReactNode;
+declare function useDict(id?: string): (id: string, options?: DictionaryTranslationOptions) => React__default.ReactNode;
 
 /**
  * Retrieves the user's locale from the `<GTProvider>` context.
