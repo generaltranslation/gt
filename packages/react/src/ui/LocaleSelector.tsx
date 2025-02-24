@@ -24,7 +24,7 @@ function capitalizeLanguageName(language: string): string {
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
 export default function LocaleSelector({
-  locales = useLocales().sort(),
+  locales = useLocales(),
   ...props
 }: {
   locales?: string[];
@@ -37,6 +37,15 @@ export default function LocaleSelector({
   if (!locales || locales.length === 0 || !setLocale) {
     return null;
   }
+
+  // Sort locales
+  // TODO: circle back to this
+  locales.sort((a, b) =>
+    new Intl.Collator('en-US').compare(
+      getLocaleProperties(a).nativeNameWithRegionCode,
+      getLocaleProperties(b).nativeNameWithRegionCode
+    )
+  );
 
   return (
     <select

@@ -53,13 +53,13 @@ export const runtimeTranslationError = `gt-react Error: Runtime translation fail
 // ---- WARNINGS ---- //
 
 export const projectIdMissingWarning =
-  'gt-react warn: Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
+  'gt-react: Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
 
 export const createNoEntryFoundWarning = (id: string) =>
-  `gt-react: No valid dictionary entry found for id: "${id}"`;
+  `No valid dictionary entry found for id: "${id}"`;
 
 export const createInvalidDictionaryEntryWarning = (id: string) =>
-  `gt-react: Invalid dictionary entry found for id: "${id}"`;
+  `Invalid dictionary entry found for id: "${id}"`;
 
 export const createNoEntryTranslationWarning = (
   id: string,
