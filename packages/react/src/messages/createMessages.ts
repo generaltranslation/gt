@@ -86,3 +86,14 @@ export const createUnsupportedLocalesWarning = (locales: string[]) =>
     .join(', ')}`;
 
 export const runtimeTranslationTimeoutWarning = `gt-react: Runtime translation timed out.`;
+
+export const createUnsupportedLocaleWarning = (
+  validatedLocale: string,
+  newLocale: string
+) => {
+  return (
+    `You are trying to switch to "${newLocale}" which is not supported.  ` +
+    `Update the list of supported locales through your dashboard or your gt.config.json file if you are using a config file. ` +
+    `Falling back to "${validatedLocale}".`
+  );
+};

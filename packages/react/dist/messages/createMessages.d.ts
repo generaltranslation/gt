@@ -19,4 +19,5 @@ export declare const createMismatchingHashWarning: (expectedHash: string, receiv
 export declare const APIKeyMissingWarn: string;
 export declare const createUnsupportedLocalesWarning: (locales: string[]) => string;
 export declare const runtimeTranslationTimeoutWarning = "gt-react: Runtime translation timed out.";
+export declare const createUnsupportedLocaleWarning: (validatedLocale: string, newLocale: string) => string;
 //# sourceMappingURL=createMessages.d.ts.map
