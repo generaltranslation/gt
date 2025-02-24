@@ -5,7 +5,7 @@ import { Dispatch, memo, SetStateAction, useState } from 'react';
 import { ArtifactActionContext } from './create-artifact';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-
+import { useGT } from 'gt-next/client';
 interface ArtifactActionsProps {
   artifact: UIArtifact;
   handleVersionChange: (type: 'next' | 'prev' | 'toggle' | 'latest') => void;
@@ -26,9 +26,9 @@ function PureArtifactActions({
   setMetadata,
 }: ArtifactActionsProps) {
   const [isLoading, setIsLoading] = useState(false);
-
+  const t = useGT();
   const artifactDefinition = artifactDefinitions.find(
-    (definition) => definition.kind === artifact.kind,
+    (definition) => definition.kind === artifact.kind
   );
 
   if (!artifactDefinition) {
@@ -46,12 +46,12 @@ function PureArtifactActions({
   };
 
   return (
-    <div className="flex flex-row gap-1">
+    <div className='flex flex-row gap-1'>
       {artifactDefinition.actions.map((action) => (
         <Tooltip key={action.description}>
           <TooltipTrigger asChild>
             <Button
-              variant="outline"
+              variant='outline'
               className={cn('h-fit dark:hover:bg-zinc-700', {
                 'p-2': !action.label,
                 'py-1.5 px-2': action.label,
@@ -62,7 +62,7 @@ function PureArtifactActions({
                 try {
                   await Promise.resolve(action.onClick(actionContext));
                 } catch (error) {
-                  toast.error('Failed to execute action');
+                  toast.error(t('Failed to execute action'));
                 } finally {
                   setIsLoading(false);
                 }
@@ -96,5 +96,5 @@ export const ArtifactActions = memo(
     if (prevProps.artifact.content !== nextProps.artifact.content) return false;
 
     return true;
-  },
+  }
 );
