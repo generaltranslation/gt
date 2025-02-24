@@ -33,22 +33,22 @@ export function MessageReasoning({
   };
 
   return (
-    <div className='flex flex-col'>
+    <div className="flex flex-col">
       {isLoading ? (
-        <T id='components.message_reasoning.0'>
-          <div className='flex flex-row gap-2 items-center'>
-            <div className='font-medium'>Reasoning</div>
-            <div className='animate-spin'>
+        <T id="components.message_reasoning.0">
+          <div className="flex flex-row gap-2 items-center">
+            <div className="font-medium">Reasoning</div>
+            <div className="animate-spin">
               <LoaderIcon />
             </div>
           </div>
         </T>
       ) : (
-        <T id='components.message_reasoning.1'>
-          <div className='flex flex-row gap-2 items-center'>
-            <div className='font-medium'>Reasoned for a few seconds</div>
+        <T id="components.message_reasoning.1">
+          <div className="flex flex-row gap-2 items-center">
+            <div className="font-medium">Reasoned for a few seconds</div>
             <div
-              className='cursor-pointer'
+              className="cursor-pointer"
               onClick={() => {
                 setIsExpanded(!isExpanded);
               }}
@@ -62,14 +62,14 @@ export function MessageReasoning({
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
-            key='content'
-            initial='collapsed'
-            animate='expanded'
-            exit='collapsed'
+            key="content"
+            initial="collapsed"
+            animate="expanded"
+            exit="collapsed"
             variants={variants}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             style={{ overflow: 'hidden' }}
-            className='pl-4 text-zinc-600 dark:text-zinc-400 border-l flex flex-col gap-4'
+            className="pl-4 text-zinc-600 dark:text-zinc-400 border-l flex flex-col gap-4"
           >
             <Markdown>{reasoning}</Markdown>
           </motion.div>

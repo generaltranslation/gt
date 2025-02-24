@@ -25,11 +25,11 @@ export function ImageEditor({
       })}
     >
       {status === 'streaming' ? (
-        <T id='components.image_editor.0'>
-          <div className='flex flex-row gap-4 items-center'>
+        <T id="components.image_editor.0">
+          <div className="flex flex-row gap-4 items-center">
             <Var>
               {!isInline && (
-                <div className='animate-spin'>
+                <div className="animate-spin">
                   <LoaderIcon />
                 </div>
               )}

@@ -12,10 +12,10 @@ export type MessageEditorProps = {
   message: Message;
   setMode: Dispatch<SetStateAction<'view' | 'edit'>>;
   setMessages: (
-    messages: Message[] | ((messages: Message[]) => Message[])
+    messages: Message[] | ((messages: Message[]) => Message[]),
   ) => void;
   reload: (
-    chatRequestOptions?: ChatRequestOptions
+    chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
 };
 
@@ -49,19 +49,19 @@ export function MessageEditor({
   };
 
   return (
-    <T id='components.message_editor.2'>
-      <div className='flex flex-col gap-2 w-full'>
+    <T id="components.message_editor.2">
+      <div className="flex flex-col gap-2 w-full">
         <Textarea
           ref={textareaRef}
-          className='bg-transparent outline-none overflow-hidden resize-none !text-base rounded-xl w-full'
+          className="bg-transparent outline-none overflow-hidden resize-none !text-base rounded-xl w-full"
           value={draftContent}
           onChange={handleInput}
         />
 
-        <div className='flex flex-row gap-2 justify-end'>
+        <div className="flex flex-row gap-2 justify-end">
           <Button
-            variant='outline'
-            className='h-fit py-2 px-3'
+            variant="outline"
+            className="h-fit py-2 px-3"
             onClick={() => {
               setMode('view');
             }}
@@ -69,8 +69,8 @@ export function MessageEditor({
             Cancel
           </Button>
           <Button
-            variant='default'
-            className='h-fit py-2 px-3'
+            variant="default"
+            className="h-fit py-2 px-3"
             disabled={isSubmitting}
             onClick={async () => {
               setIsSubmitting(true);
@@ -100,9 +100,9 @@ export function MessageEditor({
           >
             <Var>
               {isSubmitting ? (
-                <T id='components.message_editor.0'>{'Sending...'}</T>
+                <T id="components.message_editor.0">{'Sending...'}</T>
               ) : (
-                <T id='components.message_editor.1'>{'Send'}</T>
+                <T id="components.message_editor.1">{'Send'}</T>
               )}
             </Var>
           </Button>
