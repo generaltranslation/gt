@@ -59,6 +59,13 @@ export default withGTConfig(nextConfig, {
 });
 ```
 
+5. Wrap strings with `t`:
+
+```ts
+const t = useGT();
+t('Hello, world!');
+```
+
 6. (optional) Create a `.local.env` file and populate it with `GT_PROJECT_ID` and `GT_API_KEY`
    - These environment variables are needed for local translations during development. The `GT_API_KEY` should be a **development** API key. A separate **production API Key** is needed for subsequent steps when deploying to production.
 7. `npm run dev`
