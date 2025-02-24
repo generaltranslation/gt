@@ -13,7 +13,7 @@ export const myProvider = customProvider({
     'chat-model-small': openai('gpt-4o-mini'),
     'chat-model-large': openai('gpt-4o'),
     'chat-model-reasoning': wrapLanguageModel({
-      model: fireworks('accounts/fireworks/models/deepseek-r1'),
+      model: openai('o3-mini'),
       middleware: extractReasoningMiddleware({ tagName: 'think' }),
     }),
     'title-model': openai('gpt-4-turbo'),
