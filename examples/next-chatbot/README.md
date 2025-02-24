@@ -4,7 +4,7 @@ This is an example project showcasing a multilingual AI Chatbot using `gt-next`.
 
 This project was using the [Vercel AI Chatbot Template](https://github.com/vercel/ai-chatbot).
 
-[See it live here](https://next-chatbot-example.vercel.app/).
+[See it live here](https://example-ai-chatbot-ten.vercel.app/).
 
 Change your browser language to see the translations in action.
 
