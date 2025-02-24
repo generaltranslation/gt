@@ -37,14 +37,14 @@ export function PureMessageActions({
     return null;
 
   return (
-    <T id='components.message_actions.0'>
+    <T id="components.message_actions.0">
       <TooltipProvider delayDuration={0}>
-        <div className='flex flex-row gap-2'>
+        <div className="flex flex-row gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                className='py-1 px-2 h-fit text-muted-foreground'
-                variant='outline'
+                className="py-1 px-2 h-fit text-muted-foreground"
+                variant="outline"
                 onClick={async () => {
                   await copyToClipboard(message.content as string);
                   toast.success('Copied to clipboard!');
@@ -59,9 +59,9 @@ export function PureMessageActions({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                className='py-1 px-2 h-fit text-muted-foreground !pointer-events-auto'
+                className="py-1 px-2 h-fit text-muted-foreground !pointer-events-auto"
                 disabled={vote?.isUpvoted}
-                variant='outline'
+                variant="outline"
                 onClick={async () => {
                   const upvote = fetch('/api/vote', {
                     method: 'PATCH',
@@ -81,7 +81,7 @@ export function PureMessageActions({
                           if (!currentVotes) return [];
 
                           const votesWithoutCurrent = currentVotes.filter(
-                            (vote) => vote.messageId !== message.id
+                            (vote) => vote.messageId !== message.id,
                           );
 
                           return [
@@ -93,7 +93,7 @@ export function PureMessageActions({
                             },
                           ];
                         },
-                        { revalidate: false }
+                        { revalidate: false },
                       );
 
                       return 'Upvoted Response!';
@@ -111,8 +111,8 @@ export function PureMessageActions({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                className='py-1 px-2 h-fit text-muted-foreground !pointer-events-auto'
-                variant='outline'
+                className="py-1 px-2 h-fit text-muted-foreground !pointer-events-auto"
+                variant="outline"
                 disabled={vote && !vote.isUpvoted}
                 onClick={async () => {
                   const downvote = fetch('/api/vote', {
@@ -133,7 +133,7 @@ export function PureMessageActions({
                           if (!currentVotes) return [];
 
                           const votesWithoutCurrent = currentVotes.filter(
-                            (vote) => vote.messageId !== message.id
+                            (vote) => vote.messageId !== message.id,
                           );
 
                           return [
@@ -145,7 +145,7 @@ export function PureMessageActions({
                             },
                           ];
                         },
-                        { revalidate: false }
+                        { revalidate: false },
                       );
 
                       return 'Downvoted Response!';
@@ -172,5 +172,5 @@ export const MessageActions = memo(
     if (prevProps.isLoading !== nextProps.isLoading) return false;
 
     return true;
-  }
+  },
 );

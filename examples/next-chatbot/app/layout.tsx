@@ -56,15 +56,15 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className='antialiased'>
+      <body className="antialiased">
         <GTProvider>
           <ThemeProvider
-            attribute='class'
-            defaultTheme='system'
+            attribute="class"
+            defaultTheme="system"
             enableSystem
             disableTransitionOnChange
           >
-            <Toaster position='top-center' />
+            <Toaster position="top-center" />
             {children}
           </ThemeProvider>
         </GTProvider>
