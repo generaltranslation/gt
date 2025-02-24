@@ -1,85 +1,61 @@
+<a href="https://chat.vercel.ai/">
+  <img alt="Next.js 14 and App Router-ready AI chatbot." src="app/(chat)/opengraph-image.png">
+  <h1 align="center">Next.js AI Chatbot</h1>
+</a>
+
 <p align="center">
-  <a href="https://generaltranslation.com" target="_blank">
-    <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation" width="100" height="100">
-  </a>
+  An Open-Source AI Chatbot Template Built With Next.js and the AI SDK by Vercel.
 </p>
 
-# General Translation Libraries
-
-This monorepo contains the libraries for General Translation, a next-generation translation platform for Next.js and React applications.
-
-Get started with General Translation at [generaltranslation.com](https://generaltranslation.com)!
-
-Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](https://generaltranslation.com/docs).
+<p align="center">
+  <a href="#features"><strong>Features</strong></a> ·
+  <a href="#model-providers"><strong>Model Providers</strong></a> ·
+  <a href="#deploy-your-own"><strong>Deploy Your Own</strong></a> ·
+  <a href="#running-locally"><strong>Running locally</strong></a>
+</p>
+<br/>
 
 ## Features
 
-### ⚛️ Translate entire React components, not just strings
+- [Next.js](https://nextjs.org) App Router
+  - Advanced routing for seamless navigation and performance
+  - React Server Components (RSCs) and Server Actions for server-side rendering and increased performance
+- [AI SDK](https://sdk.vercel.ai/docs)
+  - Unified API for generating text, structured objects, and tool calls with LLMs
+  - Hooks for building dynamic chat and generative user interfaces
+  - Supports OpenAI (default), Anthropic, Cohere, and other model providers
+- [shadcn/ui](https://ui.shadcn.com)
+  - Styling with [Tailwind CSS](https://tailwindcss.com)
+  - Component primitives from [Radix UI](https://radix-ui.com) for accessibility and flexibility
+- Data Persistence
+  - [Vercel Postgres powered by Neon](https://vercel.com/storage/postgres) for saving chat history and user data
+  - [Vercel Blob](https://vercel.com/storage/blob) for efficient file storage
+- [NextAuth.js](https://github.com/nextauthjs/next-auth)
+  - Simple and secure authentication
 
-- A single opening and closing `<T>` component is all you need to translate an entire React component.
-- No need for complex refactoring or messy function calls.
+## Model Providers
 
-```tsx
-export default function Page() {
-  return (
-    <T>
-      <p>You can write any JSX as children of the {'<T>'} component.</p>
-      <p>
-        For example, you could write a <a href='/'>link</a> and have the text be
-        translated in context.
-      </p>
-      <div>
-        <div>
-          <p>Even deeply nested components are translated in context.</p>
-          <button>Click me!</button>
-        </div>
-      </div>
-    </T>
-  );
-}
-```
+This template ships with OpenAI `gpt-4o` as the default. However, with the [AI SDK](https://sdk.vercel.ai/docs), you can switch LLM providers to [OpenAI](https://openai.com), [Anthropic](https://anthropic.com), [Cohere](https://cohere.com/), and [many more](https://sdk.vercel.ai/providers/ai-sdk-providers) with just a few lines of code.
 
-### 🧠 AI-powered translations
+## Deploy Your Own
 
-- Translations are created in seconds.
-- UI and HTML elements are translated in context by state of the art AI models.
-- HTML content are re-arranged and customized according to the language.
+You can deploy your own version of the Next.js AI Chatbot to Vercel with one click:
 
-### 🔧 Developer-friendly
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FGeneral-Translation%2Fexample-ai-chatbot&env=AUTH_SECRET,OPENAI_API_KEY&envDescription=Learn%20more%20about%20how%20to%20get%20the%20API%20Keys%20for%20the%20application&envLink=https%3A%2F%2Fgithub.com%2FGeneral-Translation%2Fexample-ai-chatbot%2Fblob%2Fmain%2F.env.example&demo-title=AI%20Chatbot&demo-description=An%20Open-Source%20AI%20Chatbot%20Template%20Built%20With%20Next.js%20and%20the%20AI%20SDK%20by%20Vercel.&demo-url=https%3A%2F%2Fchat.vercel.ai&stores=%5B%7B%22type%22:%22postgres%22%7D,%7B%22type%22:%22blob%22%7D%5D)
 
-- Setup is simple and can be done in minutes, no need for complex refactoring.
-- Never have to worry about localization while coding, ever again.
-- No more wasting time managing translation keys like `t('menu.header.title')`.
-  - Just write everything in-line!
+## Running locally
 
-## Examples
+You will need to use the environment variables [defined in `.env.example`](.env.example) to run Next.js AI Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env` file is all that is necessary.
 
-See the [examples](examples) directory for some example projects that use our libraries. We currently support React and Next.js.
+> Note: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various OpenAI and authentication provider accounts.
 
-## Libraries
-
-See the below for links to the relevant libraries:
-
-- [gt-next](packages/next/README.md): Automatic i18n for Next.js
-- [gt-react](packages/react/README.md): Automatic i18n for React
-- [generaltranslation](packages/core/README.md): Core library for General Translation
-- [supported-locales](packages/supported-locales/README.md): Currently supported locales
-- [gt-react-cli](packages/react-cli/README.md): CLI tool for React apps
-- [gt-next-cli](packages/next-cli/README.md): CLI tool for Next.js apps
-
-## Installation
-
-Any of the libraries can be installed via npm, yarn, pnpm, or bun.
-
-For example, to install `gt-next`:
+1. Install Vercel CLI: `npm i -g vercel`
+2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
+3. Download your environment variables: `vercel env pull`
 
 ```bash
-npm install gt-next
-yarn add gt-next
+pnpm install
+pnpm dev
 ```
 
-Usage of the libraries is documented on our [docs](https://generaltranslation.com/docs).
-
-## Contributing
-
-We welcome any contributions to our libraries. Please submit a pull request!
+Your app template should now be running on [localhost:3000](http://localhost:3000/).
