@@ -34,11 +34,11 @@ exports.unresolvedCustomLoadTranslationError = "gt-next Error: Custom translatio
 // ---- WARNINGS ---- //
 exports.usingDefaultsWarning = 'gt-next: Unable to access gt-next configuration. Using defaults.';
 var createNoEntryFoundWarning = function (id) {
-    return "gt-react: No valid dictionary entry found for id: \"".concat(id, "\"");
+    return "gt-next: No valid dictionary entry found for id: \"".concat(id, "\"");
 };
 exports.createNoEntryFoundWarning = createNoEntryFoundWarning;
 var createInvalidDictionaryEntryWarning = function (id) {
-    return "gt-react: Invalid dictionary entry found for id: \"".concat(id, "\"");
+    return "gt-next: Invalid dictionary entry found for id: \"".concat(id, "\"");
 };
 exports.createInvalidDictionaryEntryWarning = createInvalidDictionaryEntryWarning;
 var createUnsupportedLocalesWarning = function (locales) {

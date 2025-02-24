@@ -45,10 +45,10 @@ export const usingDefaultsWarning =
   'gt-next: Unable to access gt-next configuration. Using defaults.';
 
 export const createNoEntryFoundWarning = (id: string) =>
-  `gt-react: No valid dictionary entry found for id: "${id}"`;
+  `gt-next: No valid dictionary entry found for id: "${id}"`;
 
 export const createInvalidDictionaryEntryWarning = (id: string) =>
-  `gt-react: Invalid dictionary entry found for id: "${id}"`;
+  `gt-next: Invalid dictionary entry found for id: "${id}"`;
 
 export const createUnsupportedLocalesWarning = (locales: string[]) =>
   `gt-next: The following locales are currently unsupported by our service: ${locales
