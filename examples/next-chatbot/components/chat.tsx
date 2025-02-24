@@ -16,6 +16,7 @@ import { VisibilityType } from './visibility-selector';
 import { useArtifactSelector } from '@/hooks/use-artifact';
 import { toast } from 'sonner';
 import { useGT } from 'gt-next/client';
+
 export function Chat({
   id,
   initialMessages,
