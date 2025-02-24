@@ -8,6 +8,7 @@ import {
   SupportedFrameworks,
   Updates,
   WrapOptions,
+  GenerateSourceOptions,
 } from './types';
 import {
   displayAsciiTitle,
@@ -30,7 +31,8 @@ import updateConfig from './fs/config/updateConfig';
 import createConfig from './fs/config/setupConfig';
 import fs from 'fs';
 import { detectFormatter, formatFiles } from './hooks/postProcess';
-import saveTranslations from './fs/saveTranslations';
+import saveTranslations, { saveSourceFile } from './fs/saveTranslations';
+import path from 'path';
 function resolveProjectId(): string | undefined {
   const CANDIDATES = [
     process.env.GT_PROJECT_ID, // any server side, Remix
@@ -71,6 +73,7 @@ export abstract class BaseCLI {
     this.setupTranslateCommand();
     this.setupSetupCommand();
     this.setupScanCommand();
+    this.setupGenerateSourceCommand();
     program.parse();
   }
 
@@ -162,6 +165,41 @@ export abstract class BaseCLI {
       .action((options: Options) => this.handleTranslateCommand(options));
   }
 
+  private setupGenerateSourceCommand(): void {
+    program
+      .command('generate')
+      .description(
+        'Generate a translation file for the source locale. The -t flag must be provided. This command should be used if you are handling your own translations.'
+      )
+      .option(
+        '--src <paths...>',
+        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
+        findFilepaths(['./src', './app', './pages', './components'])
+      )
+      .option(
+        '--default-language, --default-locale <locale>',
+        'Source locale (e.g., en)',
+        'en'
+      )
+      .option(
+        '--inline',
+        'Include inline <T> tags in addition to dictionary file',
+        true
+      )
+      .option(
+        '--ignore-errors',
+        'Ignore errors encountered while scanning for <T> tags',
+        false
+      )
+      .option(
+        '-t, --translations-dir, --translation-dir <path>',
+        'Path to directory where translations will be saved. If this flag is not provided, translations will not be saved locally.'
+      )
+      .action((options: GenerateSourceOptions) =>
+        this.handleGenerateSourceCommand(options)
+      );
+  }
+
   private setupSetupCommand(): void {
     program
       .command('setup')
@@ -204,6 +242,58 @@ export abstract class BaseCLI {
         false
       )
       .action((options: WrapOptions) => this.handleScanCommand(options));
+  }
+
+  protected async handleGenerateSourceCommand(
+    options: GenerateSourceOptions
+  ): Promise<void> {
+    displayAsciiTitle();
+    displayInitializingText();
+    const { updates, errors } = await this.createUpdates(options);
+
+    if (errors.length > 0) {
+      if (options.ignoreErrors) {
+        console.log(
+          chalk.red(
+            `CLI tool encountered errors while scanning for ${chalk.green(
+              '<T>'
+            )} tags.\n`
+          )
+        );
+        console.log(
+          errors
+            .map((error) => chalk.yellow('• Warning: ') + error + '\n')
+            .join(''),
+          chalk.white(
+            `These ${chalk.green('<T>')} components will not be translated.\n`
+          )
+        );
+      } else {
+        console.log(
+          chalk.red(
+            `CLI tool encountered errors while scanning for ${chalk.green(
+              '<T>'
+            )} tags.\n`
+          )
+        );
+        console.log(
+          chalk.gray('To ignore these errors, re-run with --ignore-errors\n\n'),
+          errors.map((error) => chalk.red('• Error: ') + error + '\n').join('')
+        );
+        process.exit(1);
+      }
+    }
+    // Save source file if translationsDir exists
+    if (options.translationsDir) {
+      console.log();
+      saveSourceFile(
+        path.join(
+          options.translationsDir,
+          `${options.defaultLocale || 'en'}.json`
+        ),
+        updates
+      );
+    }
   }
 
   protected async handleScanCommand(options: WrapOptions): Promise<void> {
@@ -452,24 +542,13 @@ export abstract class BaseCLI {
       );
     }
 
-    // Error if no API key at this point
-    if (!options.apiKey)
-      throw new Error(
-        'No General Translation API key found. Use the --api-key flag to provide one.'
-      );
     // Warn if apiKey is present in gt.config.json
     if (gtConfig.apiKey) {
       warnApiKeyInConfig(options.config);
       process.exit(1);
     }
 
-    // Error if no API key at this point
-    if (!options.projectId)
-      throw new Error(
-        'No General Translation Project ID found. Use the --project-id flag to provide one.'
-      );
-
-    displayProjectId(options.projectId);
+    if (options.projectId) displayProjectId(options.projectId);
 
     // Check locales
     if (options.defaultLocale && !isValidLocale(options.defaultLocale))
@@ -506,68 +585,12 @@ export abstract class BaseCLI {
 
     // if there's no existing config file, creates one
     // does not include the API key to avoid exposing it
-    const { apiKey, projectId, defaultLocale, ...rest } = options;
+    const { projectId, defaultLocale, ...rest } = options;
     if (!options.config)
       createConfig('gt.config.json', projectId, defaultLocale);
 
     // ---- CREATING UPDATES ---- //
-
-    let updates: Updates = [];
-    let errors: string[] = [];
-
-    // Parse dictionary with esbuildConfig
-    if (options.dictionary) {
-      let esbuildConfig;
-      if (options.jsconfig) {
-        const jsconfig = loadJSON(options.jsconfig);
-        if (!jsconfig)
-          throw new Error(
-            `Failed to resolve jsconfig.json or tsconfig.json at provided filepath: "${options.jsconfig}"`
-          );
-        esbuildConfig = createESBuildConfig(jsconfig);
-      } else {
-        esbuildConfig = createESBuildConfig({});
-      }
-      updates = [
-        ...updates,
-        ...(await this.createDictionaryUpdates(options as any, esbuildConfig)),
-      ];
-    }
-
-    // Scan through project for <T> tags
-    if (options.inline) {
-      const { updates: newUpdates, errors: newErrors } =
-        await this.createInlineUpdates(options);
-      errors = [...errors, ...newErrors];
-      updates = [...updates, ...newUpdates];
-    }
-
-    // Metadata addition and validation
-    const idHashMap = new Map<string, string>();
-    const duplicateIds = new Set<string>();
-
-    updates = updates.map((update) => {
-      if (!update.metadata.id) return update;
-      const existingHash = idHashMap.get(update.metadata.id);
-      if (existingHash) {
-        if (existingHash !== update.metadata.hash) {
-          errors.push(
-            `Hashes don't match on two components with the same id: ${chalk.blue(
-              update.metadata.id
-            )}. Check your ${chalk.green(
-              '<T>'
-            )} tags and dictionary entries and make sure you're not accidentally duplicating IDs.`
-          );
-          duplicateIds.add(update.metadata.id);
-        }
-      } else {
-        idHashMap.set(update.metadata.id, update.metadata.hash);
-      }
-      return update;
-    });
-
-    // Filter out updates with duplicate IDs
-    updates = updates.filter((update) => !duplicateIds.has(update.metadata.id));
+    const { updates, errors } = await this.createUpdates(options);
 
     if (errors.length > 0) {
       if (options.ignoreErrors) {
@@ -608,7 +631,18 @@ export abstract class BaseCLI {
 
     // Send updates to General Translation API
     if (updates.length) {
-      const { projectId, defaultLocale } = options;
+      // Error if no API key at this point
+      if (!options.apiKey)
+        throw new Error(
+          'No General Translation API key found. Use the --api-key flag to provide one.'
+        );
+      // Error if no projectId at this point
+      if (!options.projectId)
+        throw new Error(
+          'No General Translation Project ID found. Use the --project-id flag to provide one.'
+        );
+
+      const { apiKey, projectId, defaultLocale } = options;
       const globalMetadata = {
         ...(projectId && { projectId }),
         ...(defaultLocale && { sourceLocale: defaultLocale }),
@@ -698,5 +732,67 @@ export abstract class BaseCLI {
     } else {
       throw new Error(noTranslationsError);
     }
+  }
+
+  protected async createUpdates(
+    options: Options | GenerateSourceOptions
+  ): Promise<{ updates: Updates; errors: string[] }> {
+    let updates: Updates = [];
+    let errors: string[] = [];
+
+    // Parse dictionary with esbuildConfig
+    if (options.dictionary) {
+      let esbuildConfig;
+      if (options.jsconfig) {
+        const jsconfig = loadJSON(options.jsconfig);
+        if (!jsconfig)
+          throw new Error(
+            `Failed to resolve jsconfig.json or tsconfig.json at provided filepath: "${options.jsconfig}"`
+          );
+        esbuildConfig = createESBuildConfig(jsconfig);
+      } else {
+        esbuildConfig = createESBuildConfig({});
+      }
+      updates = [
+        ...updates,
+        ...(await this.createDictionaryUpdates(options as any, esbuildConfig)),
+      ];
+    }
+
+    // Scan through project for <T> tags
+    if (options.inline) {
+      const { updates: newUpdates, errors: newErrors } =
+        await this.createInlineUpdates(options as any);
+      errors = [...errors, ...newErrors];
+      updates = [...updates, ...newUpdates];
+    }
+
+    // Metadata addition and validation
+    const idHashMap = new Map<string, string>();
+    const duplicateIds = new Set<string>();
+
+    updates = updates.map((update) => {
+      if (!update.metadata.id) return update;
+      const existingHash = idHashMap.get(update.metadata.id);
+      if (existingHash) {
+        if (existingHash !== update.metadata.hash) {
+          errors.push(
+            `Hashes don't match on two components with the same id: ${chalk.blue(
+              update.metadata.id
+            )}. Check your ${chalk.green(
+              '<T>'
+            )} tags and dictionary entries and make sure you're not accidentally duplicating IDs.`
+          );
+          duplicateIds.add(update.metadata.id);
+        }
+      } else {
+        idHashMap.set(update.metadata.id, update.metadata.hash);
+      }
+      return update;
+    });
+
+    // Filter out updates with duplicate IDs
+    updates = updates.filter((update) => !duplicateIds.has(update.metadata.id));
+    return { updates, errors };
   }
 }

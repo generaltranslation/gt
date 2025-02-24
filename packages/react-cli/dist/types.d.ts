@@ -37,6 +37,16 @@ export type SetupOptions = {
     src: string[];
     config: string;
 };
+export type GenerateSourceOptions = {
+    src: string[];
+    config: string;
+    translationsDir: string;
+    defaultLocale: string;
+    dictionary?: string;
+    jsconfig?: string;
+    inline?: boolean;
+    ignoreErrors: boolean;
+};
 export type Framework = 'gt-next' | 'gt-react';
 export type SupportedFrameworks = 'next-app' | 'next-pages' | 'vite' | 'react' | 'gatsby';
 export interface ContentScanner {

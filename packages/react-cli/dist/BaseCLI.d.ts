@@ -1,4 +1,4 @@
-import { Options, SetupOptions, SupportedFrameworks, Updates, WrapOptions } from './types';
+import { Options, SetupOptions, SupportedFrameworks, Updates, WrapOptions, GenerateSourceOptions } from './types';
 export declare abstract class BaseCLI {
     protected constructor();
     protected abstract scanForContent(options: WrapOptions, framework: SupportedFrameworks): Promise<{
@@ -13,9 +13,15 @@ export declare abstract class BaseCLI {
     }>;
     initialize(): void;
     private setupTranslateCommand;
+    private setupGenerateSourceCommand;
     private setupSetupCommand;
     private setupScanCommand;
+    protected handleGenerateSourceCommand(options: GenerateSourceOptions): Promise<void>;
     protected handleScanCommand(options: WrapOptions): Promise<void>;
     protected handleSetupCommand(options: SetupOptions): Promise<void>;
     protected handleTranslateCommand(initOptions: Options): Promise<void>;
+    protected createUpdates(options: Options | GenerateSourceOptions): Promise<{
+        updates: Updates;
+        errors: string[];
+    }>;
 }

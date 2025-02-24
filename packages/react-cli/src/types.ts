@@ -44,6 +44,17 @@ export type SetupOptions = {
   config: string;
 };
 
+export type GenerateSourceOptions = {
+  src: string[];
+  config: string;
+  translationsDir: string;
+  defaultLocale: string;
+  dictionary?: string;
+  jsconfig?: string;
+  inline?: boolean;
+  ignoreErrors: boolean;
+};
+
 export type Framework = 'gt-next' | 'gt-react';
 
 export type SupportedFrameworks =
