@@ -138,6 +138,15 @@ class BaseCLI {
             .command('generate')
             .description('Generate a translation file for the source locale. The -t flag must be provided. This command should be used if you are handling your own translations.')
             .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
+            .option('--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file', (0, findFilepath_1.default)(['./tsconfig.json', './jsconfig.json']))
+            .option('--dictionary <path>', 'Path to dictionary file', (0, findFilepath_1.default)([
+            './dictionary.js',
+            './src/dictionary.js',
+            './dictionary.json',
+            './src/dictionary.json',
+            './dictionary.ts',
+            './src/dictionary.ts',
+        ]))
             .option('--default-language, --default-locale <locale>', 'Source locale (e.g., en)', 'en')
             .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
             .option('--ignore-errors', 'Ignore errors encountered while scanning for <T> tags', false)

@@ -177,6 +177,23 @@ export abstract class BaseCLI {
         findFilepaths(['./src', './app', './pages', './components'])
       )
       .option(
+        '--tsconfig, --jsconfig <path>',
+        'Path to jsconfig or tsconfig file',
+        findFilepath(['./tsconfig.json', './jsconfig.json'])
+      )
+      .option(
+        '--dictionary <path>',
+        'Path to dictionary file',
+        findFilepath([
+          './dictionary.js',
+          './src/dictionary.js',
+          './dictionary.json',
+          './src/dictionary.json',
+          './dictionary.ts',
+          './src/dictionary.ts',
+        ])
+      )
+      .option(
         '--default-language, --default-locale <locale>',
         'Source locale (e.g., en)',
         'en'
