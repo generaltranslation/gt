@@ -80,8 +80,6 @@ function T({
     }
   }, [context, taggedChildren, translationRequired, children]);
 
-  console.log('hash', hash); // debug
-
   // get translation entry
   const translationEntry = translations?.[hash];
 
