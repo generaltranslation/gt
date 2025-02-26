@@ -2,9 +2,7 @@
   "name": "gt-react-cli",
   "version": "2.2.4",
   "main": "dist/index.js",
-  "bin": {
-    "gt-react-cli": "dist/main.js"
-  },
+  "bin": "dist/main.js",
   "scripts": {
     "build": "tsc",
     "build-push-publish": "rm -rf dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;",

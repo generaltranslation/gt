@@ -2,9 +2,7 @@
   "name": "gt-next-cli",
   "version": "2.1.4",
   "main": "dist/main.js",
-  "bin": {
-    "gt-next-cli": "dist/main.js"
-  },
+  "bin": "dist/main.js",
   "scripts": {
     "build": "tsc",
     "build-push-publish": "rm -rf dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;",

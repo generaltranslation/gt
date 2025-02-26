@@ -5,6 +5,8 @@
 interface ImportMetaEnv {
   readonly VITE_GT_PROJECT_ID: string;
   readonly VITE_GT_API_KEY: string;
+  readonly REDWOOD_ENV_GT_PROJECT_ID: string;
+  readonly REDWOOD_ENV_GT_API_KEY: string;
 }
 
 interface ImportMeta {

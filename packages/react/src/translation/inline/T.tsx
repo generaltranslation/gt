@@ -80,6 +80,8 @@ function T({
     }
   }, [context, taggedChildren, translationRequired, children]);
 
+  console.log('hash', hash); // debug
+
   // get translation entry
   const translationEntry = translations?.[hash];
 
@@ -140,7 +142,7 @@ function T({
 
   // ----- RENDER BEHAVIOR ----- //
 
-  // fallback if:
+  // Fallback if:
   if (
     !translationRequired || // no translation required
     // !translationEnabled || // translation not enabled
@@ -150,7 +152,7 @@ function T({
     return <>{renderDefault()}</>;
   }
 
-  // loading behavior (checking cache or fetching runtime translation)
+  // Loading behavior (checking cache or fetching runtime translation)
   if (!translationEntry || translationEntry?.state === 'loading') {
     let loadingFallback;
     if (renderSettings.method === 'skeleton') {
@@ -166,7 +168,7 @@ function T({
     return <>{loadingFallback}</>;
   }
 
-  // render translated content
+  // Render translated content
   return <>{renderTranslation(translationEntry.target)}</>;
 }
 
