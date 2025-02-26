@@ -42,6 +42,14 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
     const expression = t.isParenthesizedExpression(node.expression)
         ? node.expression.expression
         : node.expression;
+    // Ignore all template literals - they should not be counted as meaningful
+    if (t.isTemplateLiteral(expression)) {
+        return {
+            node,
+            hasMeaningfulContent: false,
+            wrappedInT: false,
+        };
+    }
     // Handle both JSX Elements and Fragments
     if (t.isJSXElement(expression) || t.isJSXFragment(expression)) {
         const result = wrapJsxElement(expression, options, isMeaningful, mark);
@@ -97,6 +105,10 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                 }
             }
         }
+        else if (t.isTemplateLiteral(consequent)) {
+            // Ignore template literals in consequent
+            // Do nothing - don't wrap them
+        }
         else {
             if ((0, evaluateJsx_1.isStaticValue)(consequent)) {
                 const wrapped = wrapExpressionWithT(consequent, options, false);
@@ -135,6 +147,10 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                     expression.alternate = alternateResult.node.expression;
                 }
             }
+        }
+        else if (t.isTemplateLiteral(alternate)) {
+            // Ignore template literals in alternate
+            // Do nothing - don't wrap them
         }
         else {
             if ((0, evaluateJsx_1.isStaticValue)(alternate)) {
@@ -180,6 +196,10 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                     expression.left = leftResult.node.expression;
                 }
             }
+        }
+        else if (t.isTemplateLiteral(left)) {
+            // Ignore template literals in left side of logical expression
+            // Do nothing - don't wrap them
         }
         else {
             if ((0, evaluateJsx_1.isStaticValue)(left) && expression.operator !== '&&') {
