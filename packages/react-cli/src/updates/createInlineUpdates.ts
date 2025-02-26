@@ -152,7 +152,6 @@ export default async function createInlineUpdates(
       update.metadata.hash = hash;
     })
   );
-  console.log('updates', updates);
 
   return { updates, errors };
 }
