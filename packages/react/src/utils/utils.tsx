@@ -31,12 +31,14 @@ export function readAuthFromEnv(
           process.env.REACT_APP_GT_PROJECT_ID ||
           process.env.NEXT_PUBLIC_GT_PROJECT_ID ||
           process.env.GATSBY_GT_PROJECT_ID ||
+          process.env.REDWOOD_ENV_GT_PROJECT_ID ||
           '',
         devApiKey:
           devApiKey ||
           process.env.REACT_APP_GT_API_KEY ||
           process.env.NEXT_PUBLIC_GT_API_KEY ||
-          process.env.GATSBY_GT_API_KEY,
+          process.env.GATSBY_GT_API_KEY ||
+          process.env.REDWOOD_ENV_GT_API_KEY,
       };
   } catch (e) {
     console.error(e);
