@@ -39,18 +39,23 @@ export default function Page() {
 }
 ```
 
-### 🧠 AI-powered translations
+### 🔎 Includes features from existing libraries
 
-- Translations are created in seconds.
-- UI and HTML elements are translated in context by state of the art AI models.
-- HTML content are re-arranged and customized according to the language.
+- GT libraries also support the same features as existing libraries like `i18next`, `react-intl`, and `next-intl`.
+- Features such as dictionaries, plurals, currencies, and automatic routing are all supported.
 
 ### 🔧 Developer-friendly
 
-- Setup is simple and can be done in minutes, no need for complex refactoring.
-- Never have to worry about localization while coding, ever again.
+- Setup is simple and can be done in minutes.
+- All GT libraries are open-source and work standalone.
 - No more wasting time managing translation keys like `t('menu.header.title')`.
   - Just write everything in-line!
+
+### 🧠 Free AI-powered translation service
+
+- Our free AI-powered translation service allows you to create translations for your app in seconds.
+- HTML content is re-arranged and customized according to the language.
+- Translations are generated on-demand, so you can view them in real-time in development.
 
 ## Examples
 
