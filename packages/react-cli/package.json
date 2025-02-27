@@ -1,6 +1,6 @@
 {
   "name": "gt-react-cli",
-  "version": "2.2.6",
+  "version": "2.2.7",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "scripts": {
