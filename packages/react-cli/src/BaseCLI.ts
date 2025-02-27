@@ -407,6 +407,7 @@ export abstract class BaseCLI {
         { value: 'vite', name: chalk.green('Vite') },
         { value: 'gatsby', name: chalk.magenta('Gatsby') },
         { value: 'react', name: chalk.yellow('React') },
+        { value: 'redwood', name: chalk.red('RedwoodJS') },
         { value: 'other', name: chalk.gray('Other') },
       ],
       default: 'next',

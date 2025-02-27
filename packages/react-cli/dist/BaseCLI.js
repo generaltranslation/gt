@@ -264,6 +264,7 @@ class BaseCLI {
                     { value: 'vite', name: chalk_1.default.green('Vite') },
                     { value: 'gatsby', name: chalk_1.default.magenta('Gatsby') },
                     { value: 'react', name: chalk_1.default.yellow('React') },
+                    { value: 'redwood', name: chalk_1.default.red('RedwoodJS') },
                     { value: 'other', name: chalk_1.default.gray('Other') },
                 ],
                 default: 'next',
