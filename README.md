@@ -58,7 +58,7 @@ See the [examples](examples) directory for some example projects that use our li
 
 Simple interface for native pluralization and conditional logic:
 
-```js
+```tsx
 <Plural
   n={count}
   singular={<>There is {count} item</>}
@@ -68,7 +68,7 @@ Simple interface for native pluralization and conditional logic:
 
 Support for translation at runtime:
 
-```js
+```tsx
 export default function Comment() {
   const comment = await getComment();
 
