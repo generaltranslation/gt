@@ -43,7 +43,7 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
         ? node.expression.expression
         : node.expression;
     // Ignore all template literals - they should not be counted as meaningful
-    if (t.isTemplateLiteral(expression)) {
+    if (t.isTemplateLiteral(expression) && expression.expressions.length > 0) {
         return {
             node,
             hasMeaningfulContent: false,
@@ -105,9 +105,10 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                 }
             }
         }
-        else if (t.isTemplateLiteral(consequent)) {
-            // Ignore template literals in consequent
-            // Do nothing - don't wrap them
+        else if (t.isTemplateLiteral(consequent) &&
+            consequent.expressions.length > 0) {
+            // Ignore template literals in consequent with expressions (${}), don't wrap them
+            // Do nothing
         }
         else {
             if ((0, evaluateJsx_1.isStaticValue)(consequent)) {
@@ -148,9 +149,10 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                 }
             }
         }
-        else if (t.isTemplateLiteral(alternate)) {
-            // Ignore template literals in alternate
-            // Do nothing - don't wrap them
+        else if (t.isTemplateLiteral(alternate) &&
+            alternate.expressions.length > 0) {
+            // Ignore template literals in alternate with expressions (${}), don't wrap them
+            // Do nothing
         }
         else {
             if ((0, evaluateJsx_1.isStaticValue)(alternate)) {
@@ -197,8 +199,8 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                 }
             }
         }
-        else if (t.isTemplateLiteral(left)) {
-            // Ignore template literals in left side of logical expression
+        else if (t.isTemplateLiteral(left) && left.expressions.length > 0) {
+            // Ignore template literals with expressions (${}) in left side of logical expression
             // Do nothing - don't wrap them
         }
         else {
@@ -237,6 +239,10 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                     expression.right = rightResult.node.expression;
                 }
             }
+        }
+        else if (t.isTemplateLiteral(right) && right.expressions.length > 0) {
+            // Ignore template literals with expressions (${}) in right side of logical expression
+            // Do nothing - don't wrap them
         }
         else {
             if ((0, evaluateJsx_1.isStaticValue)(right)) {

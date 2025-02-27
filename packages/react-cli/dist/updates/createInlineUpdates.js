@@ -136,7 +136,6 @@ function createInlineUpdates(options, pkg) {
             const hash = (0, id_1.hashJsxChildren)(Object.assign(Object.assign({ source: update.source }, (context && { context })), (update.metadata.id && { id: update.metadata.id })));
             update.metadata.hash = hash;
         })));
-        console.log('updates', updates);
         return { updates, errors };
     });
 }
