@@ -16,10 +16,10 @@ Full documentation, including guides, examples, and API references, can be found
 
 ### ⚛️ Translate entire React components, not just strings
 
-- A single opening and closing `<T>` component is all you need to translate an entire React component.
+- Just wrap your content in a `<T>` component!
 - No need for complex refactoring or messy function calls.
 
-```tsx
+```js
 export default function Page() {
   return (
     <T>
@@ -55,6 +55,46 @@ export default function Page() {
 ## Examples
 
 See the [examples](examples) directory for some example projects that use our libraries. We currently support React and Next.js.
+
+Simple interface for native pluralization and conditional logic:
+
+```js
+<Plural
+  n={count}
+  singular={<>There is {count} item</>}
+  plural={<>There are {count} items</>}
+/>
+```
+
+Support for translation at runtime:
+
+```js
+export default function Comment() {
+  const comment = await getComment();
+
+  return (
+    <h1>Author: {comment.author}</h1>
+    <Tx>
+      <p>{comment.content}</p>
+    </Tx>
+  );
+}
+```
+
+Intuitive i18n formatting syntax:
+
+```tsx
+return (
+  <T>
+    <h1> Your account information: </h1>
+    Account balance: <Currency>{account.bal}</Currency> // Currency Formatting
+    <br />
+    Updated at: <DateTime>{account.updateTime}</DateTime> // Datetime Formatting
+    <br />
+    Transactions this month: <Num>{account.txCount}</Num> // Number Formatting
+  </T>
+);
+```
 
 ## Libraries
 
