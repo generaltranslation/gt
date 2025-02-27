@@ -463,7 +463,7 @@ declare function LocaleSelector({ locales, compare, ...props }: {
     locales?: string[];
     compare?: (a: string, b: string) => number;
     [key: string]: any;
-}): React__default.ReactElement | null;
+}): React__default.JSX.Element | null;
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.

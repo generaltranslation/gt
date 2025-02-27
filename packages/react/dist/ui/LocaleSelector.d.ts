@@ -9,5 +9,5 @@ export default function LocaleSelector({ locales, compare, ...props }: {
     locales?: string[];
     compare?: (a: string, b: string) => number;
     [key: string]: any;
-}): React.ReactElement | null;
+}): React.JSX.Element | null;
 //# sourceMappingURL=LocaleSelector.d.ts.map

@@ -36,7 +36,7 @@ export default function LocaleSelector({
   locales?: string[];
   compare?: (a: string, b: string) => number;
   [key: string]: any;
-}): React.ReactElement | null {
+}): React.JSX.Element | null {
   // Retrieve the locale, locales, and setLocale function
   const locale = useLocale();
   const setLocale = useSetLocale();
