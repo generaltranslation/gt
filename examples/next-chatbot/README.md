@@ -47,7 +47,7 @@ npm install
 
 Here is a list of steps done to reach this repo state:
 
-1. `npx create-next-app@latest`
+1. `git clone -b base https://github.com/General-Translation/ai-chatbot.git && cd ai-chatbot`
 2. `npm install gt-next gt-next-cli`
 3. `npx gt-next-cli setup`
 4. Add locales to the `next.config.ts` file:

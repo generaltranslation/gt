@@ -42,6 +42,14 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
     const expression = t.isParenthesizedExpression(node.expression)
         ? node.expression.expression
         : node.expression;
+    // Ignore all template literals - they should not be counted as meaningful
+    if (t.isTemplateLiteral(expression) && expression.expressions.length > 0) {
+        return {
+            node,
+            hasMeaningfulContent: false,
+            wrappedInT: false,
+        };
+    }
     // Handle both JSX Elements and Fragments
     if (t.isJSXElement(expression) || t.isJSXFragment(expression)) {
         const result = wrapJsxElement(expression, options, isMeaningful, mark);
@@ -97,6 +105,11 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                 }
             }
         }
+        else if (t.isTemplateLiteral(consequent) &&
+            consequent.expressions.length > 0) {
+            // Ignore template literals in consequent with expressions (${}), don't wrap them
+            // Do nothing
+        }
         else {
             if ((0, evaluateJsx_1.isStaticValue)(consequent)) {
                 const wrapped = wrapExpressionWithT(consequent, options, false);
@@ -135,6 +148,11 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                     expression.alternate = alternateResult.node.expression;
                 }
             }
+        }
+        else if (t.isTemplateLiteral(alternate) &&
+            alternate.expressions.length > 0) {
+            // Ignore template literals in alternate with expressions (${}), don't wrap them
+            // Do nothing
         }
         else {
             if ((0, evaluateJsx_1.isStaticValue)(alternate)) {
@@ -181,6 +199,10 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                 }
             }
         }
+        else if (t.isTemplateLiteral(left) && left.expressions.length > 0) {
+            // Ignore template literals with expressions (${}) in left side of logical expression
+            // Do nothing - don't wrap them
+        }
         else {
             if ((0, evaluateJsx_1.isStaticValue)(left) && expression.operator !== '&&') {
                 const wrapped = wrapExpressionWithT(left, options, false);
@@ -217,6 +239,10 @@ function wrapJsxExpression(node, options, isMeaningful, mark) {
                     expression.right = rightResult.node.expression;
                 }
             }
+        }
+        else if (t.isTemplateLiteral(right) && right.expressions.length > 0) {
+            // Ignore template literals with expressions (${}) in right side of logical expression
+            // Do nothing - don't wrap them
         }
         else {
             if ((0, evaluateJsx_1.isStaticValue)(right)) {

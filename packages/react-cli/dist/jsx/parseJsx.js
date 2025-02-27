@@ -58,6 +58,10 @@ const VARIABLE_COMPONENTS = ['Var', 'DateTime', 'Currency', 'Num'];
  */
 function buildJSXTree(importAliases, node, unwrappedExpressions, updates, errors, file) {
     if (t.isJSXExpressionContainer(node)) {
+        // Skip JSX comments
+        if (t.isJSXEmptyExpression(node.expression)) {
+            return null;
+        }
         const expr = node.expression;
         const staticAnalysis = (0, evaluateJsx_1.isStaticExpression)(expr);
         if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
@@ -128,7 +132,9 @@ function buildJSXTree(importAliases, node, unwrappedExpressions, updates, errors
                 props,
             };
         }
-        const children = element.children.map((child) => buildJSXTree(importAliases, child, unwrappedExpressions, updates, errors, file));
+        const children = element.children
+            .map((child) => buildJSXTree(importAliases, child, unwrappedExpressions, updates, errors, file))
+            .filter((child) => child !== null && child !== '');
         if (children.length === 1) {
             props.children = children[0];
         }
