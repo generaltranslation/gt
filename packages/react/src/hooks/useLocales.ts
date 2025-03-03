@@ -11,6 +11,6 @@ import useGTContext from '../provider/GTContext';
  */
 export default function useLocales(): string[] {
   return useGTContext(
-    "useLocales(): Unable to access user's locale outside of a <GTProvider>"
+    'useLocales(): Unable to access configured locales outside of a <GTProvider>'
   ).locales;
 }

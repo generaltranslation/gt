@@ -356,7 +356,7 @@
   dependencies:
     "@types/json-schema" "^7.0.15"
 
-"@eslint/eslintrc@^3.2.0":
+"@eslint/eslintrc@^3", "@eslint/eslintrc@^3.2.0":
   version "3.2.0"
   resolved "https://registry.npmjs.org/@eslint/eslintrc/-/eslintrc-3.2.0.tgz"
   integrity sha512-grOjVNN8P3hjJn/eIETF1wwd12DdnwFDoyceUJLYYdkpbwq3nLi+4fqrTAONx7XDALqlL220wC/RHSC/QTI/0w==
@@ -371,7 +371,7 @@
     minimatch "^3.1.2"
     strip-json-comments "^3.1.1"
 
-"@eslint/js@9.20.0":
+"@eslint/js@^9.19.0", "@eslint/js@9.20.0":
   version "9.20.0"
   resolved "https://registry.npmjs.org/@eslint/js/-/js-9.20.0.tgz"
   integrity sha512-iZA07H9io9Wn836aVTytRaNqh00Sad+EamwOVJT12GTLw1VGMFV/4JaME+JjLtr9fiGaoWgYnS54wrfWsSs4oQ==
@@ -806,7 +806,7 @@
   dependencies:
     "@types/node" "*"
 
-"@types/node@*", "@types/node@^20.14.9", "@types/node@>=18", "@types/node@>=20.0.0 <23.0.0":
+"@types/node@*", "@types/node@^20", "@types/node@^20.14.9", "@types/node@^22.8.6", "@types/node@>=18", "@types/node@>=20.0.0 <23.0.0":
   version "20.17.16"
   resolved "https://registry.npmjs.org/@types/node/-/node-20.17.16.tgz"
   integrity sha512-vOTpLduLkZXePLxHiHsBLp98mHGnl8RptV4YAO3HfKO5UHjDvySGbxKtpYfy8Sx5+WKcgc45qNreJJRVM3L6mw==
@@ -821,9 +821,9 @@
     undici-types "~6.20.0"
 
 "@types/node@^22.5.1":
-  version "22.12.0"
-  resolved "https://registry.npmjs.org/@types/node/-/node-22.12.0.tgz"
-  integrity sha512-Fll2FZ1riMjNmlmJOdAyY5pUbkftXslB5DgEzlIuNaiWhXd00FhWxVC/r4yV/4wBb9JfImTu+jiSvXTkJ7F/gA==
+  version "22.13.0"
+  resolved "https://registry.npmjs.org/@types/node/-/node-22.13.0.tgz"
+  integrity sha512-ClIbNe36lawluuvq3+YYhnIN2CELi+6q8NpnM7PYp4hBn/TatfboPgVSm2rwKRfnV2M+Ty9GWDFI64KEe+kysA==
   dependencies:
     undici-types "~6.20.0"
 
@@ -832,10 +832,17 @@
   resolved "https://registry.npmjs.org/@types/prop-types/-/prop-types-15.7.14.tgz"
   integrity sha512-gNMvNH49DJ7OJYv+KAKn0Xp45p8PLl6zo2YnvDIbTd4J6MER2BmWN49TG7n9LvkyihINxeKW8+3bfS2yDC9dzQ==
 
-"@types/react-dom@>=18.0.0 <20.0.0":
+"@types/react-dom@^18", "@types/react-dom@^19", "@types/react-dom@^19.0.3", "@types/react-dom@>=18.0.0 <20.0.0":
   version "19.0.3"
   resolved "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.0.3.tgz"
   integrity sha512-0Knk+HJiMP/qOZgMyNFamlIjw9OFCsyC2ZbigmEEyXXixgre6IQpm/4V+r3qH4GC1JPvRJKInw+on2rV6YZLeA==
+
+"@types/react@^18", "@types/react@^19", "@types/react@^19.0.0", "@types/react@^19.0.8", "@types/react@>=18.0.0 <20.0.0":
+  version "19.0.8"
+  resolved "https://registry.npmjs.org/@types/react/-/react-19.0.8.tgz"
+  integrity sha512-9P/o1IGdfmQxrujGbIMDyYaaCykhLKc0NGCtYcECNUr9UAaDe4gwvV9bR6tvd5Br1SG0j+PBpbKr2UYY8CwqSw==
+  dependencies:
+    csstype "^3.0.2"
 
 "@types/react@^18.3.4":
   version "18.3.18"
@@ -843,13 +850,6 @@
   integrity sha512-t4yC+vtgnkYjNSKlFx1jkAhH8LgTo2N/7Qvi83kdEaUtMDiwpbLAktKDaAMlRcJ5eSxZkH74eEGt1ky31d7kfQ==
   dependencies:
     "@types/prop-types" "*"
-    csstype "^3.0.2"
-
-"@types/react@^19.0.0", "@types/react@>=18.0.0 <20.0.0":
-  version "19.0.8"
-  resolved "https://registry.npmjs.org/@types/react/-/react-19.0.8.tgz"
-  integrity sha512-9P/o1IGdfmQxrujGbIMDyYaaCykhLKc0NGCtYcECNUr9UAaDe4gwvV9bR6tvd5Br1SG0j+PBpbKr2UYY8CwqSw==
-  dependencies:
     csstype "^3.0.2"
 
 "@types/resolve@1.20.2":
@@ -1733,7 +1733,7 @@ eslint-visitor-keys@^4.2.0:
   resolved "https://registry.npmjs.org/eslint-visitor-keys/-/eslint-visitor-keys-4.2.0.tgz"
   integrity sha512-UyLnSehNt62FFhSwjZlHmeokpRK59rcz29j+F1/aDgbkbRTk7wIc9XzdoasMUbRNKDM0qQt/+BJ4BrpFeABemw==
 
-"eslint@^6.0.0 || ^7.0.0 || >=8.0.0", eslint@^9.20.0:
+"eslint@^6.0.0 || ^7.0.0 || >=8.0.0", eslint@^8.57.0, eslint@^9, eslint@^9.19.0, eslint@^9.20.0:
   version "9.20.1"
   resolved "https://registry.npmjs.org/eslint/-/eslint-9.20.1.tgz"
   integrity sha512-m1mM33o6dBUjxl2qb6wv6nGNwCAsns1eKtaQ4l/NPHeTvhiUPbtdfMyktxN4B3fgHIgsYh1VT3V9txblpQHq+g==
@@ -1965,7 +1965,7 @@ glob-to-regexp@^0.4.1:
   resolved "https://registry.npmjs.org/glob-to-regexp/-/glob-to-regexp-0.4.1.tgz"
   integrity sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw==
 
-globals@^11.1.0:
+globals@^11.1.0, globals@^15.14.0:
   version "11.12.0"
   resolved "https://registry.npmjs.org/globals/-/globals-11.12.0.tgz"
   integrity sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA==
@@ -1985,16 +1985,31 @@ graceful-fs@^4.1.2, graceful-fs@^4.2.11, graceful-fs@^4.2.4:
   resolved "https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz"
   integrity sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==
 
-"gt-next@file:/Users/ernestmccarter/Documents/Work/GT/dev/gt-libraries/packages/next":
+gt-next-cli@^2.1.2, gt-next-cli@^2.1.4, "gt-next-cli@file:/Users/ernestmccarter/Documents/Work/GT/dev/gt-libraries/packages/next-cli":
+  version "2.1.6"
+  resolved "file:packages/next-cli"
+  dependencies:
+    "@babel/generator" "^7.25.7"
+    "@babel/parser" "^7.25.7"
+    "@babel/plugin-transform-react-jsx" "^7.25.9"
+    "@babel/traverse" "^7.25.7"
+    "@inquirer/prompts" "^7.2.4"
+    chalk "^4.1.2"
+    commander "^12.1.0"
+    dotenv "^16.4.5"
+    esbuild "^0.23.1"
+    gt-react-cli "^2.2.5"
+
+gt-next@^5.1.2, gt-next@^5.2.0, gt-next@^5.2.1, "gt-next@file:/Users/ernestmccarter/Documents/Work/GT/dev/gt-libraries/packages/next":
   version "5.2.2"
   resolved "file:packages/next"
   dependencies:
     "@generaltranslation/supported-locales" "^2.0.6"
     generaltranslation "^6.2.0"
-    gt-react "^9.2.1"
+    gt-react "^9.2.2"
 
-"gt-react-cli@file:/Users/ernestmccarter/Documents/Work/GT/dev/gt-libraries/packages/react-cli":
-  version "2.2.5"
+gt-react-cli@^2.2.2, gt-react-cli@^2.2.6, "gt-react-cli@file:/Users/ernestmccarter/Documents/Work/GT/dev/gt-libraries/packages/react-cli":
+  version "2.2.7"
   resolved "file:packages/react-cli"
   dependencies:
     "@babel/generator" "^7.25.7"
@@ -2009,23 +2024,7 @@ graceful-fs@^4.1.2, graceful-fs@^4.2.11, graceful-fs@^4.2.4:
     generaltranslation "^6.2.0"
     ora "^8.2.0"
 
-gt-react@^9.2.0:
-  version "9.2.1"
-  resolved "https://registry.npmjs.org/gt-react/-/gt-react-9.2.1.tgz"
-  integrity sha512-H4lNEci/p2DZfrpTa0gRO+PLZXvgoSfXWL7YyS9yViqfn886vzWRQQseUZkYdUs3rEevXn5AmtETGKRhUkdcJg==
-  dependencies:
-    "@generaltranslation/supported-locales" "^2.0.6"
-    generaltranslation "^6.2.0"
-
-gt-react@^9.2.2:
-  version "9.2.1"
-  resolved "https://registry.npmjs.org/gt-react/-/gt-react-9.2.1.tgz"
-  integrity sha512-H4lNEci/p2DZfrpTa0gRO+PLZXvgoSfXWL7YyS9yViqfn886vzWRQQseUZkYdUs3rEevXn5AmtETGKRhUkdcJg==
-  dependencies:
-    "@generaltranslation/supported-locales" "^2.0.6"
-    generaltranslation "^6.2.0"
-
-"gt-react@file:/Users/ernestmccarter/Documents/Work/GT/dev/gt-libraries/packages/react":
+gt-react@^9.1.1, gt-react@^9.2.0, gt-react@^9.2.2, "gt-react@file:/Users/ernestmccarter/Documents/Work/GT/dev/gt-libraries/packages/react":
   version "9.2.2"
   resolved "file:packages/react"
   dependencies:
@@ -2421,7 +2420,7 @@ mute-stream@^2.0.0:
   resolved "https://registry.npmjs.org/mute-stream/-/mute-stream-2.0.0.tgz"
   integrity sha512-WWdIxpyjEn+FhQJQQv9aQAYlHoNVdzIzUySNV1gHUPDSdZJ3yZn7pAAbQcV7B56Mvu881q9FZV+0Vx2xC44VWA==
 
-nanoid@^3.3.6:
+nanoid@^3.3.6, nanoid@^5.0.8:
   version "3.3.8"
   resolved "https://registry.npmjs.org/nanoid/-/nanoid-3.3.8.tgz"
   integrity sha512-WNLf5Sd8oZxOm+TzppcYk8gVOgP+l58xNy58D0nbUnOxOWRWvlcCV4kUF7ltmI6PsrLl/BgKEyS4mqsGChFN0w==
@@ -2436,7 +2435,7 @@ neo-async@^2.6.2:
   resolved "https://registry.npmjs.org/neo-async/-/neo-async-2.6.2.tgz"
   integrity sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==
 
-"next@>=13.0.0 <16.0.0":
+"next@>=13.0.0 <16.0.0", next@15.1.6, next@15.1.7:
   version "15.1.6"
   resolved "https://registry.npmjs.org/next/-/next-15.1.6.tgz"
   integrity sha512-Hch4wzbaX0vKQtalpXvUiw5sYivBy4cm5rzUKrBnUB/y436LGrvOUqYvlSeNVCWFO/770gDlltR9gqZH62ct4Q==
@@ -2890,7 +2889,7 @@ postcss-value-parser@^4.1.0, postcss-value-parser@^4.2.0:
   resolved "https://registry.npmjs.org/postcss-value-parser/-/postcss-value-parser-4.2.0.tgz"
   integrity sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==
 
-postcss@^8.0.0, postcss@^8.0.9, postcss@^8.1.0, postcss@^8.2.15, postcss@^8.2.2, postcss@>=8.0.9, postcss@8.4.31, postcss@8.x:
+postcss@^8, postcss@^8.0.0, postcss@^8.0.9, postcss@^8.1.0, postcss@^8.2.15, postcss@^8.2.2, postcss@>=8.0.9, postcss@8.4.31, postcss@8.x:
   version "8.4.31"
   resolved "https://registry.npmjs.org/postcss/-/postcss-8.4.31.tgz"
   integrity sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ==
@@ -2931,14 +2930,14 @@ randombytes@^2.1.0:
   dependencies:
     safe-buffer "^5.1.0"
 
-"react-dom@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react-dom@>=16.8.0 <20.0.0":
+"react-dom@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", react-dom@^19.0.0, "react-dom@>=16.8.0 <20.0.0", react-dom@19.0.0:
   version "19.0.0"
   resolved "https://registry.npmjs.org/react-dom/-/react-dom-19.0.0.tgz"
   integrity sha512-4GV5sHFG0e/0AD4X+ySy6UJd3jVl1iNsNHdpad0qhABJ11twS3TTBnseqsKurKcsNqCEFeGL3uLpVChpIO3QfQ==
   dependencies:
     scheduler "^0.25.0"
 
-"react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", react@^19.0.0, "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", "react@>=16.8.0 <20.0.0":
+"react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", react@^19.0.0, "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", "react@>=16.8.0 <20.0.0", react@19.0.0:
   version "19.0.0"
   resolved "https://registry.npmjs.org/react/-/react-19.0.0.tgz"
   integrity sha512-V8AVnmPIICiWpGfm6GLzCR/W5FXLchHop40W4nXBmdlEceh16rCN8O8LNWm5bh5XUX91fh7KpA+W0TgMKmgTpQ==
@@ -3416,7 +3415,7 @@ type-fest@^0.21.3:
   resolved "https://registry.npmjs.org/type-fest/-/type-fest-0.21.3.tgz"
   integrity sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==
 
-"typescript@^4.5 || ^5.0", typescript@^5.5.4, typescript@^5.6.2, typescript@^5.7.3, typescript@>=2.7, typescript@>=3.7.0:
+"typescript@^4.5 || ^5.0", typescript@^5, typescript@^5.5.4, typescript@^5.6.2, typescript@^5.6.3, typescript@^5.7.3, typescript@>=2.7, typescript@>=3.7.0, typescript@~5.7.2:
   version "5.7.3"
   resolved "https://registry.npmjs.org/typescript/-/typescript-5.7.3.tgz"
   integrity sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==
