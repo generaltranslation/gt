@@ -6,17 +6,23 @@
 
 # Overview
 
-General Translation is a one-stop solution for all your translation needs. It includes a next-generation translation platform, a set of libraries for React and Next.js, and a free AI-powered translation service.
+General Translation is a **one-stop solution** for all your translation needs. It includes:
+
+- A set of libraries for React and Next.js
+- A translation platform
+- A free AI-powered translation service
 
 With General Translation, you never need to worry about localization again. Just install the libraries in your project, wrap your content as you code, and we'll take care of the rest.
 
 With General Translation, you can internationalize your entire app in minutes.
 
-Get started with General Translation at [generaltranslation.com](https://generaltranslation.com)!
+Get started at [generaltranslation.com](https://generaltranslation.com)!
 
-Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](https://generaltranslation.com/docs).
+Full documentation, including guides, examples, and API references, can be found in the [docs](https://generaltranslation.com/docs).
 
-## Features
+Join our [Discord community](https://discord.gg/W99K6fchSu) to get help and stay updated!
+
+## Library Features
 
 ### ⚛️ Translate entire React components, not just strings
 
@@ -43,7 +49,7 @@ export default function Page() {
 }
 ```
 
-### 🔎 Includes features from existing libraries
+### 🔎 Feature parity with existing libraries
 
 - GT libraries also support the same features as existing libraries like `i18next`, `react-intl`, and `next-intl`.
 - Features such as dictionaries, plurals, currencies, and automatic routing are all supported.
@@ -58,7 +64,8 @@ export default function Page() {
 
 ### 🧠 Free AI-powered translation service
 
-- Our free AI-powered translation service allows you to create translations for your app in seconds.
+- Libraries integrate natively with our translation platform.
+- Translations are generated for your app in seconds.
 - HTML content is re-arranged and customized according to the language.
 - Translations are generated on-demand, so you can view them in real-time in development.
 
