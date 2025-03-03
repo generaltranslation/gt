@@ -2,4 +2,5 @@ node_modules
 package-lock.json
 archived
 .DS_Store
+yarn.lock
 .yarn
