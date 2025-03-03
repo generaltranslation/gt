@@ -4,15 +4,25 @@
   </a>
 </p>
 
-# General Translation Libraries
+# Overview
 
-This monorepo contains the libraries for General Translation, a next-generation translation platform for Next.js and React applications.
+General Translation is a **one-stop solution** for all your translation needs. It includes:
 
-Get started with General Translation at [generaltranslation.com](https://generaltranslation.com)!
+- A set of libraries for React and Next.js
+- A translation platform
+- A free AI-powered translation service
 
-Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](https://generaltranslation.com/docs).
+With General Translation, you never need to worry about localization again. Just install the libraries in your project, wrap your content as you code, and we'll take care of the rest.
 
-## Features
+With General Translation, you can internationalize your entire app in minutes.
+
+Get started at [generaltranslation.com](https://generaltranslation.com)!
+
+Full documentation, including guides, examples, and API references, can be found in the [docs](https://generaltranslation.com/docs).
+
+Join our [Discord community](https://discord.gg/W99K6fchSu) to get help and stay updated!
+
+## Library Features
 
 ### ⚛️ Translate entire React components, not just strings
 
@@ -39,18 +49,25 @@ export default function Page() {
 }
 ```
 
-### 🧠 AI-powered translations
+### 🔎 Feature parity with existing libraries
 
-- Translations are created in seconds.
-- UI and HTML elements are translated in context by state of the art AI models.
-- HTML content are re-arranged and customized according to the language.
+- GT libraries also support the same features as existing libraries like `i18next`, `react-intl`, and `next-intl`.
+- Features such as dictionaries, plurals, currencies, and automatic routing are all supported.
 
 ### 🔧 Developer-friendly
 
-- Setup is simple and can be done in minutes, no need for complex refactoring.
-- Never have to worry about localization while coding, ever again.
+- Setup is simple and can be done in minutes.
+- All GT libraries are open-source and work standalone.
+  - You can use your own translation provider or use our free AI-powered translation service.
 - No more wasting time managing translation keys like `t('menu.header.title')`.
   - Just write everything in-line!
+
+### 🧠 Free AI-powered translation service
+
+- Libraries integrate natively with our translation platform.
+- Translations are generated for your app in seconds.
+- HTML content is re-arranged and customized according to the language.
+- Translations are generated on-demand, so you can view them in real-time in development.
 
 ## Examples
 
