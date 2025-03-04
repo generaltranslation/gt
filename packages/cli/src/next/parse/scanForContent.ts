@@ -5,16 +5,16 @@ import {
   SupportedFrameworks,
   Updates,
   WrapOptions,
-} from 'gt-react-cli/types';
+} from '../../types';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import generate from '@babel/generator';
 import * as babel from '@babel/types';
-import { getFiles } from 'gt-react-cli/fs/findJsxFilepath';
-import { isMeaningful } from 'gt-react-cli/jsx/evaluateJsx';
-import { handleJsxElement } from 'gt-react-cli/jsx/wrapJsx';
-import { getRelativePath } from 'gt-react-cli/fs/findFilepath';
+import { getFiles } from '../../fs/findJsxFilepath';
+import { isMeaningful } from '../../react/jsx/evaluateJsx';
+import { handleJsxElement } from '../../react/jsx/wrapJsx';
+import { getRelativePath } from '../../fs/findFilepath';
 import {
   isHtmlElement,
   isBodyElement,
@@ -26,7 +26,7 @@ import {
   determineModuleType,
   generateImportMap,
   createImports,
-} from 'gt-react-cli/jsx/parse/parseAst';
+} from '../../react/jsx/utils/parseAst';
 
 const IMPORT_MAP = {
   T: { name: 'T', source: 'gt-next' },

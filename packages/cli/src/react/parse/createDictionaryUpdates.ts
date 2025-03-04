@@ -3,16 +3,12 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { build, BuildOptions } from 'esbuild';
-import { Options, Updates } from '../types';
-import {
-  addGTIdentifier,
-  getEntryAndMetadata,
-  flattenDictionary,
-  writeChildrenAsObjects,
-} from 'gt-react/internal';
+import { Options, Updates } from '../../types';
+import flattenDictionary from '../utils/flattenDictionary';
 import { splitStringToContent } from 'generaltranslation';
-import loadJSON from '../fs/loadJSON';
+import loadJSON from '../../fs/loadJSON';
 import { hashJsxChildren } from 'generaltranslation/id';
+import getEntryAndMetadata from '../utils/getEntryAndMetadata';
 
 export default async function createDictionaryUpdates(
   options: Options & { dictionary: string },

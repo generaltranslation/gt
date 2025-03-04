@@ -1,12 +1,12 @@
 import { NodePath } from '@babel/traverse';
-import { Updates } from '../../types';
+import { Updates } from '../../../types';
 import { splitStringToContent } from 'generaltranslation';
 import * as t from '@babel/types';
 import { isStaticExpression } from '../evaluateJsx';
 import {
   warnNonStaticExpression,
   warnTemplateLiteral,
-} from '../../console/warnings';
+} from '../../../console/warnings';
 import generate from '@babel/generator';
 
 export const attributes = ['id', 'context'];

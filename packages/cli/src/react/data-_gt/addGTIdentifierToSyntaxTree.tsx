@@ -1,4 +1,4 @@
-import { getVariableName } from 'gt-react/internal';
+import { getVariableName } from '../utils/getVariableName';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 
 // recreates addGTIdentifier and writeChildrenAsObjects

@@ -1,17 +1,15 @@
 import fs from 'fs';
 import path from 'path';
-import { Options, SupportedFrameworks, Updates, WrapOptions } from '../types';
+import { SupportedFrameworks, WrapOptions } from '../../types';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import generate from '@babel/generator';
-import * as babel from '@babel/types';
-import { getFiles } from '../fs/findJsxFilepath';
+import { getFiles } from '../../fs/findJsxFilepath';
 import { isMeaningful } from '../jsx/evaluateJsx';
 import { handleJsxElement } from '../jsx/wrapJsx';
-import { getRelativePath } from '../fs/findFilepath';
+import { getRelativePath } from '../../fs/findFilepath';
 import {
-  determineModuleType,
   generateImportMap,
   createImports,
   ImportItem,
