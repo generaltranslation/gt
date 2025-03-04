@@ -8,6 +8,7 @@ type InitGTProps = {
     projectId?: string;
     runtimeUrl?: string | null;
     cacheUrl?: string | null;
+    cacheExpiryTime?: number;
     locales?: string[];
     defaultLocale?: string;
     getLocale?: () => Promise<string>;

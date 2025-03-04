@@ -52,6 +52,7 @@ var defaultInitGTProps = {
     maxConcurrentRequests: 100,
     maxBatchSize: 25,
     batchInterval: 50,
+    cacheExpiryTime: 60000,
     renderSettings: internal_2.defaultRenderSettings,
     _usingPlugin: false,
 };

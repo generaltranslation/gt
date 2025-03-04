@@ -10,6 +10,8 @@ export type TranslationManagerConfig = {
     projectId?: string;
     _versionId?: string;
     translationEnabled: boolean;
+    cacheExpiryTime: number;
+    loadTranslationType?: 'remote' | 'custom' | 'disabled';
 };
 /**
  * Manages remote translations.
@@ -17,6 +19,7 @@ export type TranslationManagerConfig = {
 export declare class TranslationManager {
     private config;
     private translationsMap;
+    private translationTimestamps;
     private fetchPromises;
     private requestedTranslations;
     /**
