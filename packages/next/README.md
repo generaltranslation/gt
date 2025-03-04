@@ -16,14 +16,8 @@ Install `gt-next` via npm:
 
 ```bash
 npm install gt-next
+npm install gt-next-cli --save-dev
 ```
-
-Or with yarn:
-
-```bash
-yarn add gt-next
-```
-
 ## Getting Started
 
 ### Step 1: Configure Your Environment Variables
