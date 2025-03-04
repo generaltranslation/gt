@@ -138,6 +138,7 @@ var TranslationManager = /** @class */ (function () {
                         // Cache the retrieved translations
                         if (retrievedTranslations) {
                             this.translationsMap.set(reference, retrievedTranslations);
+                            this.translationTimestamps.set(reference, Date.now());
                         }
                         return [2 /*return*/, retrievedTranslations];
                 }

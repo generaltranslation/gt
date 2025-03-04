@@ -115,6 +115,7 @@ export class TranslationManager {
     // Cache the retrieved translations
     if (retrievedTranslations) {
       this.translationsMap.set(reference, retrievedTranslations);
+      this.translationTimestamps.set(reference, Date.now());
     }
 
     return retrievedTranslations;
