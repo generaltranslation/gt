@@ -1,0 +1,73 @@
+{
+  "name": "gtx-cli",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "bin": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "build-push-publish": "rm -rf dist; tsc; git add -A; git commit -m \"minor changes\"; npm version patch; git push; npm publish;",
+    "build:clean": "rm -rf dist; npm run build",
+    "release": "npm run build:clean && npm publish",
+    "release:alpha": "npm run build:clean && npm publish --tag alpha",
+    "release:beta": "npm run build:clean && npm publish --tag beta",
+    "release:latest": "npm run build:clean && npm publish --tag latest"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./types": "./dist/types.js",
+    "./updates/*": "./dist/updates/*.js",
+    "./jsx/*": "./dist/jsx/*.js",
+    "./fs/*": "./dist/fs/*.js",
+    "./console/*": "./dist/console/*.js",
+    "./config/*": "./dist/config/*.js",
+    "./api/*": "./dist/api/*.js",
+    "./*": "./dist/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/General-Translation/gt-libraries.git"
+  },
+  "peerDependencies": {},
+  "keywords": [
+    "i18n",
+    "l10n",
+    "translation",
+    "internationalization",
+    "localization",
+    "cli"
+  ],
+  "author": "",
+  "license": "FSL-1.1-ALv2",
+  "bugs": {
+    "url": "https://github.com/General-Translation/gt-libraries/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "description": "CLI tool for AI-powered i18n",
+  "dependencies": {
+    "@babel/generator": "^7.25.7",
+    "@babel/parser": "^7.25.7",
+    "@babel/plugin-transform-react-jsx": "^7.25.9",
+    "@babel/traverse": "^7.25.7",
+    "@inquirer/prompts": "^7.2.4",
+    "chalk": "^4.1.2",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "esbuild": "^0.23.1",
+    "generaltranslation": "^6.2.0",
+    "ora": "^8.2.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/babel__generator": "^7.6.8",
+    "@types/babel__traverse": "^7.20.6",
+    "@types/figlet": "^1.7.0",
+    "@types/mock-require": "^2.0.3",
+    "@types/node": "^22.5.1",
+    "@types/react": "^18.3.4",
+    "eslint": "^9.20.0",
+    "esm": "^3.2.25",
+    "prettier": "^3.4.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}
