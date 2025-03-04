@@ -16,7 +16,7 @@ Install `gt-react` via npm:
 
 ```bash
 npm install gt-react
-npm install gt-next-cli --save-dev
+npm install gt-react-cli --save-dev
 ```
 
 ## Getting Started
