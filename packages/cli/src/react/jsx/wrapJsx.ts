@@ -1,6 +1,6 @@
 import * as t from '@babel/types';
 import { isStaticExpression, isStaticValue } from './evaluateJsx';
-import { ImportItem } from './parse/parseAst';
+import { ImportItem } from './utils/parseAst';
 import generate from '@babel/generator';
 import { warnTernary } from '../console/warnings';
 /**

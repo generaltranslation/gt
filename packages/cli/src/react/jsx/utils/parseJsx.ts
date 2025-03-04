@@ -1,19 +1,19 @@
-import { Updates } from '../types';
+import { Updates } from '../../../types';
 
 import generate from '@babel/generator';
 import * as t from '@babel/types';
-import addGTIdentifierToSyntaxTree from '../data-_gt/addGTIdentifierToSyntaxTree';
+import addGTIdentifierToSyntaxTree from '../../data-_gt/addGTIdentifierToSyntaxTree';
 import {
   warnHasUnwrappedExpression,
   warnNoId,
   warnVariableProp,
-} from '../console/warnings';
+} from '../../../console/warnings';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import {
   handleChildrenWhitespace,
   trimJsxStringChild,
-} from './trimJsxStringChildren';
-import { isStaticExpression } from './evaluateJsx';
+} from '../trimJsxStringChildren';
+import { isStaticExpression } from '../evaluateJsx';
 
 // Valid variable components
 const VARIABLE_COMPONENTS = ['Var', 'DateTime', 'Currency', 'Num'];

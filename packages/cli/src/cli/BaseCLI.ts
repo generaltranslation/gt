@@ -17,7 +17,7 @@ import {
 import loadJSON from '../fs/loadJSON';
 import findFilepath, { findFilepaths } from '../fs/findFilepath';
 import loadConfig from '../fs/config/loadConfig';
-import createESBuildConfig from '../config/createESBuildConfig';
+import createESBuildConfig from '../react/config/createESBuildConfig';
 import { isValidLocale } from 'generaltranslation';
 import { warnApiKeyInConfig } from '../console/warnings';
 import { noTranslationsError } from '../console/errors';

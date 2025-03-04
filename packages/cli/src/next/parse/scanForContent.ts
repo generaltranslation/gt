@@ -1,29 +1,40 @@
 import fs from 'fs';
 import path from 'path';
-import { Options, SupportedFrameworks, Updates, WrapOptions } from '../types';
+import {
+  Options,
+  SupportedFrameworks,
+  Updates,
+  WrapOptions,
+} from 'gt-react-cli/types';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import generate from '@babel/generator';
 import * as babel from '@babel/types';
-import { getFiles } from '../fs/findJsxFilepath';
-import { isMeaningful } from '../jsx/evaluateJsx';
-import { handleJsxElement } from '../jsx/wrapJsx';
-import { getRelativePath } from '../fs/findFilepath';
+import { getFiles } from 'gt-react-cli/fs/findJsxFilepath';
+import { isMeaningful } from 'gt-react-cli/jsx/evaluateJsx';
+import { handleJsxElement } from 'gt-react-cli/jsx/wrapJsx';
+import { getRelativePath } from 'gt-react-cli/fs/findFilepath';
+import {
+  isHtmlElement,
+  isBodyElement,
+  hasGTProviderChild,
+  addDynamicLangAttribute,
+  makeParentFunctionAsync,
+} from '../jsx/utils';
 import {
   determineModuleType,
   generateImportMap,
   createImports,
-  ImportItem,
-} from '../jsx/parse/parseAst';
+} from 'gt-react-cli/jsx/parse/parseAst';
 
 const IMPORT_MAP = {
-  T: { name: 'T', source: 'gt-react' },
-  Var: { name: 'Var', source: 'gt-react' },
-  GTT: { name: 'T', source: 'gt-react' },
-  GTVar: { name: 'Var', source: 'gt-react' },
-  GTProvider: { name: 'GTProvider', source: 'gt-react' },
-  // getLocale: { name: 'getLocale', source: 'gt-react/server' },
+  T: { name: 'T', source: 'gt-next' },
+  Var: { name: 'Var', source: 'gt-next' },
+  GTT: { name: 'T', source: 'gt-next' },
+  GTVar: { name: 'Var', source: 'gt-next' },
+  GTProvider: { name: 'GTProvider', source: 'gt-next' },
+  getLocale: { name: 'getLocale', source: 'gt-next/server' },
 };
 
 /**
@@ -46,17 +57,6 @@ export default async function scanForContent(
   const filesUpdated = [];
 
   for (const file of files) {
-    const baseFileName = path.basename(file);
-    const configPath = path.relative(
-      path.dirname(file),
-      path.resolve(process.cwd(), options.config)
-    );
-
-    // Ensure the path starts with ./ or ../
-    const normalizedConfigPath = configPath.startsWith('.')
-      ? configPath
-      : './' + configPath;
-
     const code = fs.readFileSync(file, 'utf8');
 
     // Create relative path from src directory and remove extension
@@ -77,7 +77,7 @@ export default async function scanForContent(
     }
 
     let modified = false;
-    let usedImports: ImportItem[] = [];
+    let usedImports: string[] = [];
 
     let { importAlias, initialImports } = generateImportMap(ast, pkg);
 
@@ -90,56 +90,57 @@ export default async function scanForContent(
     traverse(ast, {
       JSXElement(path) {
         if (
-          framework === 'next-pages' &&
+          pkg === 'gt-next' &&
           options.addGTProvider &&
-          (baseFileName === '_app.tsx' || baseFileName === '_app.jsx')
+          isHtmlElement(path.node.openingElement)
         ) {
-          // Check if this is the top-level JSX element in the default export
-          let isDefaultExport = false;
-          let currentPath: NodePath = path;
+          // Find the body element in the HTML children
+          const bodyElement = path.node.children.find(
+            (child): child is t.JSXElement =>
+              t.isJSXElement(child) && isBodyElement(child.openingElement)
+          );
 
-          // Check if GTProvider already exists in the ancestors
-          let hasGTProvider = false;
-          while (currentPath.parentPath) {
-            if (
-              t.isJSXElement(currentPath.node) &&
-              t.isJSXIdentifier(currentPath.node.openingElement.name) &&
-              currentPath.node.openingElement.name.name === 'GTProvider'
-            ) {
-              hasGTProvider = true;
-              break;
-            }
-            if (t.isExportDefaultDeclaration(currentPath.parentPath.node)) {
-              isDefaultExport = true;
-            }
-            currentPath = currentPath.parentPath;
-          }
-
-          if (isDefaultExport && !hasGTProvider) {
-            // Wrap the JSX element with GTProvider
-            const gtProviderJsx = t.jsxElement(
-              t.jsxOpeningElement(
-                t.jsxIdentifier('GTProvider'),
-                [t.jsxSpreadAttribute(t.identifier('gtConfig'))],
-                false
-              ),
-              t.jsxClosingElement(t.jsxIdentifier('GTProvider')),
-              [path.node]
+          if (!bodyElement) {
+            warnings.push(
+              `File ${file} has a <html> tag without a <body> tag. Skipping GTProvider insertion.`
             );
-
-            path.replaceWith(gtProviderJsx);
-            usedImports.push('GTProvider');
-            usedImports.push({
-              local: 'gtConfig',
-              imported: 'default',
-              source: normalizedConfigPath,
-            });
-            modified = true;
-            path.skip();
             return;
           }
-        }
 
+          // Skip if body already has GTProvider
+          if (hasGTProviderChild(bodyElement)) {
+            return;
+          }
+
+          // Handle lang attribute for html tag
+          const langAttr = path.node.openingElement.attributes.find(
+            (attr) =>
+              t.isJSXAttribute(attr) &&
+              t.isJSXIdentifier(attr.name) &&
+              t.isStringLiteral(attr.value) &&
+              attr.name.name === 'lang'
+          );
+
+          if (langAttr) {
+            makeParentFunctionAsync(path);
+            addDynamicLangAttribute(path.node.openingElement);
+            usedImports.push('getLocale');
+          }
+
+          // Wrap body children with GTProvider
+          const bodyChildren = bodyElement.children;
+          const gtProviderElement = t.jsxElement(
+            t.jsxOpeningElement(t.jsxIdentifier('GTProvider'), [], false),
+            t.jsxClosingElement(t.jsxIdentifier('GTProvider')),
+            bodyChildren,
+            false
+          );
+          bodyElement.children = [gtProviderElement];
+          usedImports.push('GTProvider');
+          modified = true;
+          path.skip();
+          return;
+        }
         // Check if this JSX element has any JSX element ancestors
         let currentPath: NodePath = path;
         if (t.isJSXElement(currentPath.parentPath?.node)) {
@@ -168,10 +169,8 @@ export default async function scanForContent(
     });
     if (!modified) continue;
 
-    let needsImport = usedImports.filter((imp) =>
-      typeof imp === 'string'
-        ? !initialImports.includes(imp)
-        : !initialImports.includes(imp.local)
+    let needsImport = usedImports.filter(
+      (imp) => !initialImports.includes(imp)
     );
 
     if (needsImport.length > 0) {

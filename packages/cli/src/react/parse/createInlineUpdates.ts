@@ -1,14 +1,14 @@
 import fs from 'fs';
 import path from 'path';
-import { Options, Updates } from '../types';
+import { Options, Updates } from '../../types';
 
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
 
 import { hashJsxChildren } from 'generaltranslation/id';
-import { parseJSXElement } from '../jsx/parseJsx';
-import { parseStrings } from '../jsx/parse/parseStringFunction';
-import { extractImportName } from '../jsx/parse/parseAst';
+import { parseJSXElement } from '../jsx/utils/parseJsx';
+import { parseStrings } from '../jsx/utils/parseStringFunction';
+import { extractImportName } from '../jsx/utils/parseAst';
 
 export default async function createInlineUpdates(
   options: Options,
