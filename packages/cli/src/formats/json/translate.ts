@@ -8,7 +8,7 @@ import { defaultBaseUrl } from 'generaltranslation/internal';
 import path from 'path';
 import { fetchTranslations } from '../../api/fetchTranslations';
 import { saveTranslations } from './save';
-import { DataTypes } from '../../types/data';
+import { DataFormat, FileExtension } from '../../types/data';
 import { noTranslationsDirError } from '../../console/errors';
 
 /**
@@ -26,8 +26,8 @@ import { noTranslationsDirError } from '../../console/errors';
 export async function translateJson(
   sourceJson: any,
   settings: Settings,
-  library: SupportedLibraries,
-  fileType: DataTypes
+  dataFormat: DataFormat,
+  fileExtension: FileExtension
 ) {
   const flattened = flattenDictionary(sourceJson);
   const updates: Updates = [];
@@ -62,6 +62,7 @@ export async function translateJson(
     wait: true,
     timeout: '600',
     translationsDir: outputDir,
+    dataFormat,
   });
 
   if (updateResponse?.versionId) {
@@ -70,6 +71,6 @@ export async function translateJson(
       settings.apiKey,
       updateResponse.versionId
     );
-    saveTranslations(translations, outputDir, fileType, 'json');
+    saveTranslations(translations, outputDir, dataFormat, fileExtension);
   }
 }

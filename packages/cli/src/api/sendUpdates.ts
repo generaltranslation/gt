@@ -3,11 +3,13 @@ import { displayLoadingAnimation } from '../console/console';
 import { Settings, Updates } from '../types';
 import updateConfig from '../fs/config/updateConfig';
 import { waitForUpdates } from './waitForUpdates';
+import { DataFormat } from '../types/data';
 
 type ApiOptions = Settings & {
   publish: boolean;
   wait: boolean;
   timeout: string;
+  dataFormat: DataFormat;
 };
 
 /**
@@ -17,10 +19,12 @@ type ApiOptions = Settings & {
  * @returns The versionId of the updated project
  */
 export async function sendUpdates(updates: Updates, options: ApiOptions) {
-  const { apiKey, projectId, defaultLocale } = options;
+  const { apiKey, projectId, defaultLocale, dataFormat } = options;
+
   const globalMetadata = {
     ...(projectId && { projectId }),
     ...(defaultLocale && { sourceLocale: defaultLocale }),
+    ...(dataFormat && { dataFormat }),
   };
 
   // If additionalLocales is provided, additionalLocales + project.current_locales will be translated
@@ -75,7 +79,6 @@ export async function sendUpdates(updates: Updates, options: ApiOptions) {
 
     // Wait for translations if wait is true
     if (options.wait && locales) {
-      console.log();
       // timeout was validated earlier
       const timeout = parseInt(options.timeout) * 1000;
       const result = await waitForUpdates(

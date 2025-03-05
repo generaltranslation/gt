@@ -64,7 +64,13 @@ export type SupportedFrameworks =
   | 'react'
   | 'gatsby';
 
-export type SupportedLibraries = 'gt-next' | 'gt-react' | 'next-intl' | 'base';
+export type SupportedLibraries =
+  | 'gt-next'
+  | 'gt-react'
+  | 'next-intl'
+  | 'react-i18next'
+  | 'next-i18next'
+  | 'base';
 
 export interface ContentScanner {
   scanForContent(

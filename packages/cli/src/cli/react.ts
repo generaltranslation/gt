@@ -601,6 +601,7 @@ export class ReactCLI extends BaseCLI {
         publish: initOptions.publish,
         wait: initOptions.wait,
         timeout: initOptions.timeout,
+        dataFormat: 'gt',
       });
       const versionId = updateResponse?.versionId;
 
@@ -612,12 +613,7 @@ export class ReactCLI extends BaseCLI {
           settings.apiKey,
           versionId
         );
-        saveTranslations(
-          translations,
-          settings.translationsDir,
-          'gt-json',
-          'json'
-        );
+        saveTranslations(translations, settings.translationsDir, 'gt', 'json');
       }
     } else {
       throw new Error(noTranslationsError);

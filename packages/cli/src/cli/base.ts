@@ -21,7 +21,7 @@ import yaml from 'yaml';
 import { translateJson } from '../formats/json/translate';
 import { SupportedLibraries } from '../types';
 import { resolveProjectId } from '../fs/utils';
-import { DataTypes } from '../types/data';
+import { FileExtension } from '../types/data';
 import { generateSettings } from '../config/generateSettings';
 type InitOptions = {
   defaultLocale?: string;
@@ -123,7 +123,19 @@ export class BaseCLI {
           process.exit(1);
         }
         // Get the data format from the ending of the translationsDir
-        const dataFormat = settings.translationsDir.split('.').pop();
+        const fileExtension = settings.translationsDir
+          .split('.')
+          .pop() as FileExtension;
+
+        const dataFormat =
+          this.library === 'next-intl'
+            ? 'next-intl'
+            : this.library === 'react-i18next'
+              ? 'react-i18next'
+              : this.library === 'next-i18next'
+                ? 'next-i18next'
+                : 'gt';
+
         if (!dataFormat) {
           console.error(noDataFormatError);
           process.exit(1);
@@ -132,13 +144,15 @@ export class BaseCLI {
           process.exit(1);
         }
         const source =
-          dataFormat === 'json' ? JSON.parse(rawSource) : yaml.parse(rawSource);
+          fileExtension === 'json'
+            ? JSON.parse(rawSource)
+            : yaml.parse(rawSource);
 
         const result = await translateJson(
           source,
           settings,
-          this.library,
-          dataFormat as DataTypes
+          dataFormat,
+          fileExtension
         );
       });
   }

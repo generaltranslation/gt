@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'yaml';
 import { RetrievedTranslations } from '../../types/api';
-import { DataTypes } from '../../types/data';
+import { DataFormat } from '../../types/data';
 /**
  * Saves translations to a local directory
  * @param translations - The translations to save
@@ -12,7 +12,7 @@ import { DataTypes } from '../../types/data';
 export function saveTranslations(
   translations: RetrievedTranslations,
   translationsDir: string,
-  dataType: 'gt-json',
+  dataFormat: DataFormat,
   fileExtension: string
 ) {
   for (const translation of translations) {
@@ -23,7 +23,7 @@ export function saveTranslations(
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
 
     // Handle different file types
-    if (dataType === 'gt-json') {
+    if (dataFormat === 'gt') {
       fs.writeFileSync(filepath, JSON.stringify(translationData, null, 2));
     }
   }

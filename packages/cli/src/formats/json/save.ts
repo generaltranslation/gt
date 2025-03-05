@@ -3,8 +3,9 @@ import path from 'path';
 import yaml from 'yaml';
 import { RetrievedTranslations } from '../../types/api';
 import {
-  DataTypes,
+  DataFormat,
   Dictionary,
+  FileExtension,
   Translations,
   TranslationsMetadata,
 } from '../../types/data';
@@ -17,20 +18,25 @@ import {
 export function saveTranslations(
   translations: RetrievedTranslations,
   translationsDir: string,
-  dataType: DataTypes,
-  fileExtension: string
+  dataFormat: DataFormat,
+  fileExtension: FileExtension
 ) {
   for (const translation of translations) {
     const locale = translation.locale;
     const translationData: Translations = translation.translation;
     const translationMetadata: TranslationsMetadata = translation.metadata;
     const filepath = path.join(translationsDir, `${locale}.${fileExtension}`);
+
     // Ensure directory exists
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
 
     // Handle different file types
     let writeData: string | undefined;
-    if (dataType === 'json') {
+    if (
+      dataFormat === 'next-intl' ||
+      dataFormat === 'react-i18next' ||
+      dataFormat === 'next-i18next'
+    ) {
       // JSONs need to be mapped back to the original format
       const revertedJson: Dictionary = {};
       for (const hash in translationData) {
@@ -57,9 +63,10 @@ export function saveTranslations(
         }
       }
       writeData = JSON.stringify(revertedJson, null, 2);
-    } else if (dataType === 'yaml' || dataType === 'yml') {
-      writeData = yaml.stringify(translationData);
     }
+    // else if (dataFormat === 'yaml') {
+    //   writeData = yaml.stringify(translationData);
+    // }
 
     if (writeData) {
       fs.writeFileSync(filepath, writeData);
