@@ -1,6 +1,5 @@
 import * as t from '@babel/types';
-import { parse } from '@babel/parser';
-import traverse, { NodePath } from '@babel/traverse';
+import { NodePath } from '@babel/traverse';
 
 // Helper function to check if is the <html> fragment
 export function isHtmlElement(element: t.JSXOpeningElement): boolean {

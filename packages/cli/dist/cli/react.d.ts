@@ -1,0 +1,29 @@
+import { Options, SetupOptions, SupportedFrameworks, Updates, WrapOptions, GenerateSourceOptions } from '../types';
+import { BaseCLI } from './base';
+export declare class ReactCLI extends BaseCLI {
+    constructor();
+    protected scanForContent(options: WrapOptions, framework: SupportedFrameworks): Promise<{
+        errors: string[];
+        filesUpdated: string[];
+        warnings: string[];
+    }>;
+    protected createDictionaryUpdates(options: Options & {
+        dictionary: string;
+    }, esbuildConfig: any): Promise<Updates>;
+    protected createInlineUpdates(options: Options): Promise<{
+        updates: Updates;
+        errors: string[];
+    }>;
+    protected setupTranslateCommand(): void;
+    protected setupGenerateSourceCommand(): void;
+    protected setupSetupCommand(): void;
+    protected setupScanCommand(): void;
+    protected handleGenerateSourceCommand(options: GenerateSourceOptions): Promise<void>;
+    protected handleScanCommand(options: WrapOptions): Promise<void>;
+    protected handleSetupCommand(options: SetupOptions): Promise<void>;
+    protected handleTranslateCommand(initOptions: Options): Promise<void>;
+    protected createUpdates(options: Options | GenerateSourceOptions): Promise<{
+        updates: Updates;
+        errors: string[];
+    }>;
+}

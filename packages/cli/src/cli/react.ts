@@ -30,9 +30,10 @@ import createConfig from '../fs/config/setupConfig';
 import { detectFormatter, formatFiles } from '../hooks/postProcess';
 import saveTranslations, { saveSourceFile } from '../fs/saveTranslations';
 import path from 'path';
-import scanForContent from '../updates/scanForContent';
-import createDictionaryUpdates from '../updates/createDictionaryUpdates';
-import createInlineUpdates from '../updates/createInlineUpdates';
+import { BaseCLI } from './base';
+import scanForContent from '../react/parse/scanForContent';
+import createDictionaryUpdates from '../react/parse/createDictionaryUpdates';
+import createInlineUpdates from '../react/parse/createInlineUpdates';
 
 function resolveProjectId(): string | undefined {
   const CANDIDATES = [
@@ -50,18 +51,16 @@ function resolveProjectId(): string | undefined {
   ];
   return CANDIDATES.find((projectId) => projectId !== undefined);
 }
+
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
-
-export class BaseCLI {
-  public constructor() {}
-
-  public initialize(): void {
+export class ReactCLI extends BaseCLI {
+  constructor() {
+    super();
     this.setupTranslateCommand();
     this.setupSetupCommand();
     this.setupScanCommand();
     this.setupGenerateSourceCommand();
-    program.parse();
   }
   protected scanForContent(
     options: WrapOptions,
@@ -82,7 +81,8 @@ export class BaseCLI {
   ): Promise<{ updates: Updates; errors: string[] }> {
     return createInlineUpdates(options, pkg);
   }
-  private setupTranslateCommand(): void {
+
+  protected setupTranslateCommand(): void {
     program
       .command('translate')
       .description(
@@ -170,7 +170,7 @@ export class BaseCLI {
       .action((options: Options) => this.handleTranslateCommand(options));
   }
 
-  private setupGenerateSourceCommand(): void {
+  protected setupGenerateSourceCommand(): void {
     program
       .command('generate')
       .description(
@@ -222,7 +222,7 @@ export class BaseCLI {
       );
   }
 
-  private setupSetupCommand(): void {
+  protected setupSetupCommand(): void {
     program
       .command('setup')
       .description(
@@ -241,7 +241,7 @@ export class BaseCLI {
       .action((options: SetupOptions) => this.handleSetupCommand(options));
   }
 
-  private setupScanCommand(): void {
+  protected setupScanCommand(): void {
     program
       .command('scan')
       .description(

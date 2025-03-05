@@ -1,16 +1,9 @@
 import fs from 'fs';
-import path from 'path';
-import {
-  Options,
-  SupportedFrameworks,
-  Updates,
-  WrapOptions,
-} from '../../types';
+import { SupportedFrameworks, WrapOptions } from '../../types';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import generate from '@babel/generator';
-import * as babel from '@babel/types';
 import { getFiles } from '../../fs/findJsxFilepath';
 import { isMeaningful } from '../../react/jsx/evaluateJsx';
 import { handleJsxElement } from '../../react/jsx/wrapJsx';
@@ -23,7 +16,6 @@ import {
   makeParentFunctionAsync,
 } from '../jsx/utils';
 import {
-  determineModuleType,
   generateImportMap,
   createImports,
 } from '../../react/jsx/utils/parseAst';
