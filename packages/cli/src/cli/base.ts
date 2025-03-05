@@ -21,7 +21,7 @@ import yaml from 'yaml';
 import { translateJson } from '../formats/json/translate';
 import { SupportedLibraries } from '../types';
 import { resolveProjectId } from '../fs/utils';
-
+import { DataTypes } from '../types/data';
 type InitOptions = {
   defaultLocale?: string;
   locales?: string[];
@@ -37,7 +37,7 @@ type TranslateOptions = {
   projectId?: string;
 };
 
-const SUPPORTED_DATA_FORMATS = ['json', 'yaml'];
+const SUPPORTED_DATA_FORMATS = ['json', 'yaml', 'yml'];
 
 export class BaseCLI {
   private library: SupportedLibraries;
@@ -140,7 +140,6 @@ export class BaseCLI {
         }
         const source =
           dataFormat === 'json' ? JSON.parse(rawSource) : yaml.parse(rawSource);
-        console.log(source);
 
         const result = await translateJson(
           source,
@@ -150,7 +149,8 @@ export class BaseCLI {
           mergedOptions.apiKey,
           mergedOptions.projectId,
           mergedOptions.config,
-          translationsDir
+          translationsDir,
+          dataFormat as DataTypes
         );
       });
   }

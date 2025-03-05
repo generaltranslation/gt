@@ -72,7 +72,7 @@ const chalk_1 = __importDefault(require("chalk"));
 const prompts_1 = require("@inquirer/prompts");
 const setupConfig_1 = __importDefault(require("../fs/config/setupConfig"));
 const postProcess_1 = require("../hooks/postProcess");
-const saveTranslations_1 = require("../fs/saveTranslations");
+const fetchTranslations_1 = require("../api/fetchTranslations");
 const path_1 = __importDefault(require("path"));
 const base_1 = require("./base");
 const scanForContent_1 = __importDefault(require("../react/parse/scanForContent"));
@@ -80,6 +80,7 @@ const createDictionaryUpdates_1 = __importDefault(require("../react/parse/create
 const createInlineUpdates_1 = __importDefault(require("../react/parse/createInlineUpdates"));
 const utils_1 = require("../fs/utils");
 const sendUpdates_1 = require("../api/sendUpdates");
+const save_1 = require("../formats/gt/save");
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 class ReactCLI extends base_1.BaseCLI {
@@ -194,7 +195,7 @@ class ReactCLI extends base_1.BaseCLI {
             // Save source file if translationsDir exists
             if (options.translationsDir) {
                 console.log();
-                (0, saveTranslations_1.saveSourceFile)(path_1.default.join(options.translationsDir, `${options.defaultLocale || 'en'}.json`), updates);
+                (0, fetchTranslations_1.saveSourceFile)(path_1.default.join(options.translationsDir, `${options.defaultLocale || 'en'}.json`), updates);
             }
         });
     }
@@ -443,7 +444,7 @@ class ReactCLI extends base_1.BaseCLI {
                 // Error if no projectId at this point
                 if (!options.projectId)
                     throw new Error('No General Translation Project ID found. Use the --project-id flag to provide one.');
-                yield (0, sendUpdates_1.sendUpdates)(updates, {
+                const updateResponse = yield (0, sendUpdates_1.sendUpdates)(updates, {
                     apiKey: options.apiKey,
                     projectId: options.projectId,
                     defaultLocale: (_b = options.defaultLocale) !== null && _b !== void 0 ? _b : 'en',
@@ -456,6 +457,13 @@ class ReactCLI extends base_1.BaseCLI {
                     wait: options.wait,
                     timeout: options.timeout,
                 });
+                const versionId = updateResponse === null || updateResponse === void 0 ? void 0 : updateResponse.versionId;
+                // Save translations to local directory if translationsDir is provided
+                if (versionId && options.translationsDir) {
+                    console.log();
+                    const translations = yield (0, fetchTranslations_1.fetchTranslations)(options.baseUrl, options.apiKey, versionId);
+                    (0, save_1.saveTranslations)(translations, options.translationsDir, 'gt-json', 'json');
+                }
             }
             else {
                 throw new Error(errors_1.noTranslationsError);

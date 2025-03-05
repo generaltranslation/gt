@@ -28,7 +28,7 @@ import { waitForUpdates } from '../api/waitForUpdates';
 import updateConfig from '../fs/config/updateConfig';
 import createConfig from '../fs/config/setupConfig';
 import { detectFormatter, formatFiles } from '../hooks/postProcess';
-import saveTranslations, { saveSourceFile } from '../fs/saveTranslations';
+import { saveSourceFile, fetchTranslations } from '../api/fetchTranslations';
 import path from 'path';
 import { BaseCLI } from './base';
 import scanForContent from '../react/parse/scanForContent';
@@ -36,6 +36,7 @@ import createDictionaryUpdates from '../react/parse/createDictionaryUpdates';
 import createInlineUpdates from '../react/parse/createInlineUpdates';
 import { resolveProjectId } from '../fs/utils';
 import { sendUpdates } from '../api/sendUpdates';
+import { saveTranslations } from '../formats/gt/save';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
@@ -660,7 +661,7 @@ export class ReactCLI extends BaseCLI {
           'No General Translation Project ID found. Use the --project-id flag to provide one.'
         );
 
-      await sendUpdates(updates, {
+      const updateResponse = await sendUpdates(updates, {
         apiKey: options.apiKey,
         projectId: options.projectId,
         defaultLocale: options.defaultLocale ?? 'en',
@@ -673,6 +674,23 @@ export class ReactCLI extends BaseCLI {
         wait: options.wait,
         timeout: options.timeout,
       });
+      const versionId = updateResponse?.versionId;
+
+      // Save translations to local directory if translationsDir is provided
+      if (versionId && options.translationsDir) {
+        console.log();
+        const translations = await fetchTranslations(
+          options.baseUrl,
+          options.apiKey,
+          versionId
+        );
+        saveTranslations(
+          translations,
+          options.translationsDir,
+          'gt-json',
+          'json'
+        );
+      }
     } else {
       throw new Error(noTranslationsError);
     }

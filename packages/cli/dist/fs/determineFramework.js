@@ -27,6 +27,9 @@ function determineLibrary() {
         else if (dependencies['gt-react']) {
             return 'gt-react';
         }
+        else if (dependencies['next-intl']) {
+            return 'next-intl';
+        }
         // Fallback to base if neither is found
         return 'base';
     }

@@ -59,7 +59,7 @@ const path_1 = __importDefault(require("path"));
 const yaml_1 = __importDefault(require("yaml"));
 const translate_1 = require("../formats/json/translate");
 const utils_1 = require("../fs/utils");
-const SUPPORTED_DATA_FORMATS = ['json', 'yaml'];
+const SUPPORTED_DATA_FORMATS = ['json', 'yaml', 'yml'];
 class BaseCLI {
     // Constructor is shared amongst all CLI class types
     constructor(library) {
@@ -136,8 +136,7 @@ class BaseCLI {
                 process.exit(1);
             }
             const source = dataFormat === 'json' ? JSON.parse(rawSource) : yaml_1.default.parse(rawSource);
-            console.log(source);
-            const result = yield (0, translate_1.translateJson)(source, defaultLocale, locales, this.library, mergedOptions.apiKey, mergedOptions.projectId, mergedOptions.config, translationsDir);
+            const result = yield (0, translate_1.translateJson)(source, defaultLocale, locales, this.library, mergedOptions.apiKey, mergedOptions.projectId, mergedOptions.config, translationsDir, dataFormat);
         }));
     }
     setupInitCommand() {

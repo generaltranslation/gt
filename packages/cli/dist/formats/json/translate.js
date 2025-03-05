@@ -18,7 +18,21 @@ const id_1 = require("generaltranslation/id");
 const sendUpdates_1 = require("../../api/sendUpdates");
 const internal_1 = require("generaltranslation/internal");
 const path_1 = __importDefault(require("path"));
-function translateJson(sourceJson, defaultLocale, locales, library, apiKey, projectId, config, translationsDir) {
+const fetchTranslations_1 = require("../../api/fetchTranslations");
+const save_1 = require("./save");
+/**
+ * Translates a JSON object and saves the translations to a local directory
+ * @param sourceJson - The source JSON object
+ * @param defaultLocale - The default locale
+ * @param locales - The locales to translate to
+ * @param library - The library to use
+ * @param apiKey - The API key for the General Translation API
+ * @param projectId - The project ID
+ * @param config - The config file path
+ * @param translationsDir - The directory to save the translations to
+ * @param fileType - The file type to save the translations as (file extension)
+ */
+function translateJson(sourceJson, defaultLocale, locales, library, apiKey, projectId, config, translationsDir, fileType) {
     return __awaiter(this, void 0, void 0, function* () {
         const flattened = (0, flattenDictionary_1.default)(sourceJson);
         const updates = [];
@@ -38,7 +52,7 @@ function translateJson(sourceJson, defaultLocale, locales, library, apiKey, proj
         }
         const outputDir = path_1.default.dirname(translationsDir);
         // Actually do the translation
-        yield (0, sendUpdates_1.sendUpdates)(updates, {
+        const updateResponse = yield (0, sendUpdates_1.sendUpdates)(updates, {
             apiKey,
             projectId,
             defaultLocale,
@@ -50,5 +64,9 @@ function translateJson(sourceJson, defaultLocale, locales, library, apiKey, proj
             timeout: '600',
             translationsDir: outputDir,
         });
+        if (updateResponse === null || updateResponse === void 0 ? void 0 : updateResponse.versionId) {
+            const translations = yield (0, fetchTranslations_1.fetchTranslations)(internal_1.defaultBaseUrl, apiKey, updateResponse.versionId);
+            (0, save_1.saveTranslations)(translations, outputDir, fileType, 'json');
+        }
     });
 }

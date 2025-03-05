@@ -3,7 +3,7 @@ import { displayLoadingAnimation } from '../console/console';
 import { Updates } from '../types';
 import updateConfig from '../fs/config/updateConfig';
 import { waitForUpdates } from './waitForUpdates';
-import saveTranslations from '../fs/saveTranslations';
+
 type ApiOptions = {
   baseUrl: string;
   config: string;
@@ -19,6 +19,12 @@ type ApiOptions = {
   translationsDir?: string;
 };
 
+/**
+ * Sends updates to the API
+ * @param updates - The updates to send
+ * @param options - The options for the API call
+ * @returns The versionId of the updated project
+ */
 export async function sendUpdates(updates: Updates, options: ApiOptions) {
   const { apiKey, projectId, defaultLocale } = options;
   const globalMetadata = {
@@ -94,17 +100,7 @@ export async function sendUpdates(updates: Updates, options: ApiOptions) {
         timeout
       );
     }
-
-    // Save translations to local directory if translationsDir is provided
-    if (options.translationsDir) {
-      console.log();
-      await saveTranslations(
-        options.baseUrl,
-        apiKey,
-        versionId,
-        options.translationsDir
-      );
-    }
+    return { versionId };
   } catch (error) {
     spinner.fail(chalk.red('Failed to send updates'));
     throw error;

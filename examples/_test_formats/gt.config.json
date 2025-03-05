@@ -1,10 +1,10 @@
 {
   "defaultLocale": "en",
-  "translationsDir": "locales/*.json",
+  "translationsDir": "locales/*.yaml",
   "locales": [
     "zh",
     "es",
     "fr"
   ],
-  "_versionId": "8d1a37c4d0618195026437db230e653b2ed226305ac48a3115e7f4c02943c391"
+  "_versionId": "82c60d6c3e2f3dc1a92cfe25987251b047045a30386a651fffff608b5627e4ec"
 }

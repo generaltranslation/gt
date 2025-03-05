@@ -17,7 +17,12 @@ const chalk_1 = __importDefault(require("chalk"));
 const console_1 = require("../console/console");
 const updateConfig_1 = __importDefault(require("../fs/config/updateConfig"));
 const waitForUpdates_1 = require("./waitForUpdates");
-const saveTranslations_1 = __importDefault(require("../fs/saveTranslations"));
+/**
+ * Sends updates to the API
+ * @param updates - The updates to send
+ * @param options - The options for the API call
+ * @returns The versionId of the updated project
+ */
 function sendUpdates(updates, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const { apiKey, projectId, defaultLocale } = options;
@@ -56,11 +61,7 @@ function sendUpdates(updates, options) {
                 const timeout = parseInt(options.timeout) * 1000;
                 const result = yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, locales, startTime, timeout);
             }
-            // Save translations to local directory if translationsDir is provided
-            if (options.translationsDir) {
-                console.log();
-                yield (0, saveTranslations_1.default)(options.baseUrl, apiKey, versionId, options.translationsDir);
-            }
+            return { versionId };
         }
         catch (error) {
             spinner.fail(chalk_1.default.red('Failed to send updates'));
