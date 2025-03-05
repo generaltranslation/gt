@@ -30,9 +30,7 @@ function sendUpdates(updates, options) {
         // If additionalLocales is provided, additionalLocales + project.current_locales will be translated
         // If not, then options.locales will be translated
         // If neither, then project.current_locales will be translated
-        const body = Object.assign(Object.assign(Object.assign(Object.assign({ updates }, (options.locales && { locales: options.locales })), (options.additionalLocales && {
-            additionalLocales: options.additionalLocales,
-        })), { metadata: globalMetadata, publish: options.publish }), (options.versionId && { versionId: options.versionId }));
+        const body = Object.assign(Object.assign(Object.assign({ updates }, (options.locales && { locales: options.locales })), { metadata: globalMetadata, publish: options.publish }), (options.versionId && { versionId: options.versionId }));
         const spinner = yield (0, console_1.displayLoadingAnimation)('Sending updates to General Translation API...');
         try {
             const startTime = Date.now();
@@ -53,7 +51,11 @@ function sendUpdates(updates, options) {
             const { versionId, message, locales } = yield response.json();
             spinner.succeed(chalk_1.default.green(message));
             if (options.config)
-                (0, updateConfig_1.default)(Object.assign({ configFilepath: options.config, _versionId: versionId }, (options.locales && { locales: options.locales })));
+                (0, updateConfig_1.default)({
+                    configFilepath: options.config,
+                    _versionId: versionId,
+                    locales,
+                });
             // Wait for translations if wait is true
             if (options.wait && locales) {
                 console.log();

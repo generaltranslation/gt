@@ -1,17 +1,8 @@
-import { Updates } from '../types';
-type ApiOptions = {
-    baseUrl: string;
-    config: string;
-    apiKey: string;
-    projectId: string;
-    defaultLocale: string;
-    locales: string[];
-    additionalLocales?: string[] | undefined;
+import { Settings, Updates } from '../types';
+type ApiOptions = Settings & {
     publish: boolean;
-    versionId?: string;
     wait: boolean;
     timeout: string;
-    translationsDir?: string;
 };
 /**
  * Sends updates to the API

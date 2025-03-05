@@ -22,6 +22,7 @@ import { translateJson } from '../formats/json/translate';
 import { SupportedLibraries } from '../types';
 import { resolveProjectId } from '../fs/utils';
 import { DataTypes } from '../types/data';
+import { generateSettings } from '../config/generateSettings';
 type InitOptions = {
   defaultLocale?: string;
   locales?: string[];
@@ -88,49 +89,41 @@ export class BaseCLI {
         displayAsciiTitle();
         displayInitializingText();
 
-        // Load config file
-        const gtConfig: Record<string, any> = options.config
-          ? loadConfig(options.config)
-          : {};
+        const settings = generateSettings(options);
 
-        // merge options
-        const mergedOptions = { ...gtConfig, ...options };
-        mergedOptions.apiKey = mergedOptions.apiKey || process.env.GT_API_KEY;
-        if (!mergedOptions.config) mergedOptions.config = 'gt.config.json';
-
-        const locales = mergedOptions.locales;
-        const defaultLocale = mergedOptions.defaultLocale;
-        const translationsDir = mergedOptions.translationsDir;
-
-        if (!locales) {
+        if (!settings.locales) {
           console.error(noLocalesError);
           process.exit(1);
         }
-        if (!defaultLocale) {
+        if (!settings.defaultLocale) {
           console.error(noDefaultLocaleError);
           process.exit(1);
         }
-        if (!translationsDir) {
+        if (!settings.translationsDir) {
           console.error(noTranslationsDirError);
           process.exit(1);
         }
-        if (!mergedOptions.apiKey) {
+        if (!settings.apiKey) {
           console.error(noApiKeyError);
           process.exit(1);
         }
-        if (!mergedOptions.projectId) {
+        if (!settings.projectId) {
           console.error(noProjectIdError);
           process.exit(1);
         }
+
         // ---- CREATING UPDATES ---- //
         // Find the source file in the translationsDir
-        const rawSource = findFile(translationsDir, defaultLocale);
+        const rawSource = findFile(
+          settings.translationsDir,
+          settings.defaultLocale
+        );
         if (!rawSource) {
           console.error(noSourceFileError);
           process.exit(1);
         }
         // Get the data format from the ending of the translationsDir
-        const dataFormat = translationsDir.split('.').pop();
+        const dataFormat = settings.translationsDir.split('.').pop();
         if (!dataFormat) {
           console.error(noDataFormatError);
           process.exit(1);
@@ -143,13 +136,8 @@ export class BaseCLI {
 
         const result = await translateJson(
           source,
-          defaultLocale,
-          locales,
+          settings,
           this.library,
-          mergedOptions.apiKey,
-          mergedOptions.projectId,
-          mergedOptions.config,
-          translationsDir,
           dataFormat as DataTypes
         );
       });

@@ -19,6 +19,7 @@ import createDictionaryUpdates from 'gt-react-cli/updates/createDictionaryUpdate
 import createInlineUpdates from 'gt-react-cli/updates/createInlineUpdates';
 import handleInitGT from '../next/parse/handleInitGT';
 import { ReactCLI } from './react';
+import { generateSettings } from '../config/generateSettings';
 
 const pkg = 'gt-next';
 
@@ -131,8 +132,7 @@ export class NextCLI extends ReactCLI {
     });
 
     // ----- Create a starter gt.config.json file -----
-    if (!options.config)
-      createConfig('gt.config.json', process.env.GT_PROJECT_ID, '');
+    generateSettings(options);
 
     // ----- //
 

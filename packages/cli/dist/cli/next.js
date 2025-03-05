@@ -16,7 +16,6 @@ exports.NextCLI = void 0;
 const console_1 = require("gt-react-cli/console/console");
 const chalk_1 = __importDefault(require("chalk"));
 const prompts_1 = require("@inquirer/prompts");
-const setupConfig_1 = __importDefault(require("gt-react-cli/fs/config/setupConfig"));
 const postProcess_1 = require("gt-react-cli/hooks/postProcess");
 const findFilepath_1 = __importDefault(require("gt-react-cli/fs/findFilepath"));
 const scanForContent_1 = __importDefault(require("../next/parse/scanForContent"));
@@ -24,6 +23,7 @@ const createDictionaryUpdates_1 = __importDefault(require("gt-react-cli/updates/
 const createInlineUpdates_1 = __importDefault(require("gt-react-cli/updates/createInlineUpdates"));
 const handleInitGT_1 = __importDefault(require("../next/parse/handleInitGT"));
 const react_1 = require("./react");
+const generateSettings_1 = require("../config/generateSettings");
 const pkg = 'gt-next';
 class NextCLI extends react_1.ReactCLI {
     constructor() {
@@ -114,8 +114,7 @@ class NextCLI extends react_1.ReactCLI {
                 default: true,
             });
             // ----- Create a starter gt.config.json file -----
-            if (!options.config)
-                (0, setupConfig_1.default)('gt.config.json', process.env.GT_PROJECT_ID, '');
+            (0, generateSettings_1.generateSettings)(options);
             // ----- //
             const mergeOptions = Object.assign(Object.assign({}, options), { disableIds: !includeTId, disableFormatting: true, addGTProvider });
             // Wrap all JSX elements in the src directory with a <T> tag, with unique ids

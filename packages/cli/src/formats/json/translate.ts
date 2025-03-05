@@ -2,13 +2,14 @@ import { splitStringToContent } from 'generaltranslation';
 import flattenDictionary from '../../react/utils/flattenDictionary';
 import getEntryAndMetadata from '../../react/utils/getEntryAndMetadata';
 import { hashJsxChildren } from 'generaltranslation/id';
-import { SupportedLibraries, Updates } from '../../types';
+import { Settings, SupportedLibraries, Updates } from '../../types';
 import { sendUpdates } from '../../api/sendUpdates';
 import { defaultBaseUrl } from 'generaltranslation/internal';
 import path from 'path';
 import { fetchTranslations } from '../../api/fetchTranslations';
 import { saveTranslations } from './save';
 import { DataTypes } from '../../types/data';
+import { noTranslationsDirError } from '../../console/errors';
 
 /**
  * Translates a JSON object and saves the translations to a local directory
@@ -24,13 +25,8 @@ import { DataTypes } from '../../types/data';
  */
 export async function translateJson(
   sourceJson: any,
-  defaultLocale: string,
-  locales: string[],
+  settings: Settings,
   library: SupportedLibraries,
-  apiKey: string,
-  projectId: string,
-  config: string,
-  translationsDir: string,
   fileType: DataTypes
 ) {
   const flattened = flattenDictionary(sourceJson);
@@ -52,16 +48,16 @@ export async function translateJson(
       metadata,
     });
   }
+  if (!settings.translationsDir) {
+    console.error(noTranslationsDirError);
+    process.exit(1);
+  }
 
-  const outputDir = path.dirname(translationsDir);
+  const outputDir = path.dirname(settings.translationsDir);
+
   // Actually do the translation
   const updateResponse = await sendUpdates(updates, {
-    apiKey,
-    projectId,
-    defaultLocale,
-    locales,
-    baseUrl: defaultBaseUrl,
-    config,
+    ...settings,
     publish: false,
     wait: true,
     timeout: '600',
@@ -70,8 +66,8 @@ export async function translateJson(
 
   if (updateResponse?.versionId) {
     const translations = await fetchTranslations(
-      defaultBaseUrl,
-      apiKey,
+      settings.baseUrl,
+      settings.apiKey,
       updateResponse.versionId
     );
     saveTranslations(translations, outputDir, fileType, 'json');

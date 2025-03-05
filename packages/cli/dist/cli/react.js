@@ -41,17 +41,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -62,15 +51,10 @@ const commander_1 = require("commander");
 const console_1 = require("../console/console");
 const loadJSON_1 = __importDefault(require("../fs/loadJSON"));
 const findFilepath_1 = __importStar(require("../fs/findFilepath"));
-const loadConfig_1 = __importDefault(require("../fs/config/loadConfig"));
 const createESBuildConfig_1 = __importDefault(require("../react/config/createESBuildConfig"));
-const generaltranslation_1 = require("generaltranslation");
-const warnings_1 = require("../console/warnings");
 const errors_1 = require("../console/errors");
-const internal_1 = require("generaltranslation/internal");
 const chalk_1 = __importDefault(require("chalk"));
 const prompts_1 = require("@inquirer/prompts");
-const setupConfig_1 = __importDefault(require("../fs/config/setupConfig"));
 const postProcess_1 = require("../hooks/postProcess");
 const fetchTranslations_1 = require("../api/fetchTranslations");
 const path_1 = __importDefault(require("path"));
@@ -81,6 +65,7 @@ const createInlineUpdates_1 = __importDefault(require("../react/parse/createInli
 const utils_1 = require("../fs/utils");
 const sendUpdates_1 = require("../api/sendUpdates");
 const save_1 = require("../formats/gt/save");
+const generateSettings_1 = require("../config/generateSettings");
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 class ReactCLI extends base_1.BaseCLI {
@@ -179,6 +164,7 @@ class ReactCLI extends base_1.BaseCLI {
             (0, console_1.displayAsciiTitle)();
             (0, console_1.displayInitializingText)();
             const { updates, errors } = yield this.createUpdates(options);
+            const settings = (0, generateSettings_1.generateSettings)(options);
             if (errors.length > 0) {
                 if (options.ignoreErrors) {
                     console.log(chalk_1.default.red(`CLI tool encountered errors while scanning for ${chalk_1.default.green('<T>')} tags.\n`));
@@ -193,9 +179,9 @@ class ReactCLI extends base_1.BaseCLI {
                 }
             }
             // Save source file if translationsDir exists
-            if (options.translationsDir) {
+            if (settings.translationsDir) {
                 console.log();
-                (0, fetchTranslations_1.saveSourceFile)(path_1.default.join(options.translationsDir, `${options.defaultLocale || 'en'}.json`), updates);
+                (0, fetchTranslations_1.saveSourceFile)(path_1.default.join(settings.translationsDir, `${settings.defaultLocale}.json`), updates);
             }
         });
     }
@@ -217,11 +203,7 @@ class ReactCLI extends base_1.BaseCLI {
                 process.exit(0);
             }
             // ----- Create a starter gt.config.json file -----
-            if (!options.config)
-                (0, setupConfig_1.default)('gt.config.json', {
-                    projectId: process.env.GT_PROJECT_ID,
-                    defaultLocale: 'en',
-                });
+            (0, generateSettings_1.generateSettings)(options);
             // ----- //
             // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
             const { errors, filesUpdated, warnings } = yield this.scanForContent(options, 'react');
@@ -313,10 +295,7 @@ class ReactCLI extends base_1.BaseCLI {
                 default: true,
             });
             // ----- Create a starter gt.config.json file -----
-            if (!options.config)
-                options.config = (0, setupConfig_1.default)('gt.config.json', {
-                    projectId: process.env.GT_PROJECT_ID,
-                });
+            (0, generateSettings_1.generateSettings)(options);
             // ----- //
             const mergeOptions = Object.assign(Object.assign({}, options), { disableIds: !includeTId, disableFormatting: true, addGTProvider });
             // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
@@ -359,65 +338,16 @@ class ReactCLI extends base_1.BaseCLI {
     }
     handleTranslateCommand(initOptions) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b, _c;
             (0, console_1.displayAsciiTitle)();
             (0, console_1.displayInitializingText)();
-            // Load config file
-            const gtConfig = initOptions.config
-                ? (0, loadConfig_1.default)(initOptions.config)
-                : {};
-            // merge options
-            const options = Object.assign(Object.assign({}, gtConfig), initOptions);
-            options.apiKey = options.apiKey || process.env.GT_API_KEY;
-            if (!options.baseUrl)
-                options.baseUrl = internal_1.defaultBaseUrl;
-            // Distinguish between new locales and existing locales
-            let additionalLocales = undefined;
-            if (!gtConfig.locales) {
-                additionalLocales = initOptions.locales;
-                options.locales = undefined;
-            }
-            else {
-                options.locales = Array.from(new Set([...gtConfig.locales, ...(initOptions.locales || [])]));
-            }
-            // Warn if apiKey is present in gt.config.json
-            if (gtConfig.apiKey) {
-                (0, warnings_1.warnApiKeyInConfig)(options.config);
-                process.exit(1);
-            }
-            if (options.projectId)
-                (0, console_1.displayProjectId)(options.projectId);
-            // Check locales
-            if (options.defaultLocale && !(0, generaltranslation_1.isValidLocale)(options.defaultLocale))
-                throw new Error(`defaultLocale: ${options.defaultLocale} is not a valid locale!`);
-            if (options.locales) {
-                for (const locale of options.locales) {
-                    if (!(0, generaltranslation_1.isValidLocale)(locale)) {
-                        throw new Error(`locales: "${(_a = options === null || options === void 0 ? void 0 : options.locales) === null || _a === void 0 ? void 0 : _a.join()}", ${locale} is not a valid locale!`);
-                    }
-                }
-            }
-            if (additionalLocales) {
-                for (const locale of additionalLocales) {
-                    if (!(0, generaltranslation_1.isValidLocale)(locale)) {
-                        throw new Error(`locales: "${additionalLocales === null || additionalLocales === void 0 ? void 0 : additionalLocales.join()}", ${locale} is not a valid locale!`);
-                    }
-                }
-            }
+            const settings = (0, generateSettings_1.generateSettings)(initOptions);
+            const options = Object.assign(Object.assign({}, initOptions), settings);
             // validate timeout
             const timeout = parseInt(options.timeout);
             if (isNaN(timeout) || timeout < 0) {
                 throw new Error(`Invalid timeout: ${options.timeout}. Must be a positive integer.`);
             }
             options.timeout = timeout.toString();
-            // if there's no existing config file, creates one
-            // does not include the API key to avoid exposing it
-            const { projectId, defaultLocale } = options, rest = __rest(options, ["projectId", "defaultLocale"]);
-            if (!options.config)
-                (0, setupConfig_1.default)('gt.config.json', {
-                    projectId,
-                    defaultLocale,
-                });
             // ---- CREATING UPDATES ---- //
             const { updates, errors } = yield this.createUpdates(options);
             if (errors.length > 0) {
@@ -439,30 +369,18 @@ class ReactCLI extends base_1.BaseCLI {
             // Send updates to General Translation API
             if (updates.length) {
                 // Error if no API key at this point
-                if (!options.apiKey)
+                if (!settings.apiKey)
                     throw new Error('No General Translation API key found. Use the --api-key flag to provide one.');
                 // Error if no projectId at this point
-                if (!options.projectId)
+                if (!settings.projectId)
                     throw new Error('No General Translation Project ID found. Use the --project-id flag to provide one.');
-                const updateResponse = yield (0, sendUpdates_1.sendUpdates)(updates, {
-                    apiKey: options.apiKey,
-                    projectId: options.projectId,
-                    defaultLocale: (_b = options.defaultLocale) !== null && _b !== void 0 ? _b : 'en',
-                    locales: (_c = options.locales) !== null && _c !== void 0 ? _c : [],
-                    additionalLocales,
-                    baseUrl: options.baseUrl,
-                    config: options.config,
-                    publish: options.publish,
-                    translationsDir: options.translationsDir,
-                    wait: options.wait,
-                    timeout: options.timeout,
-                });
+                const updateResponse = yield (0, sendUpdates_1.sendUpdates)(updates, Object.assign(Object.assign({}, settings), { publish: initOptions.publish, wait: initOptions.wait, timeout: initOptions.timeout }));
                 const versionId = updateResponse === null || updateResponse === void 0 ? void 0 : updateResponse.versionId;
                 // Save translations to local directory if translationsDir is provided
-                if (versionId && options.translationsDir) {
+                if (versionId && settings.translationsDir) {
                     console.log();
-                    const translations = yield (0, fetchTranslations_1.fetchTranslations)(options.baseUrl, options.apiKey, versionId);
-                    (0, save_1.saveTranslations)(translations, options.translationsDir, 'gt-json', 'json');
+                    const translations = yield (0, fetchTranslations_1.fetchTranslations)(settings.baseUrl, settings.apiKey, versionId);
+                    (0, save_1.saveTranslations)(translations, settings.translationsDir, 'gt-json', 'json');
                 }
             }
             else {

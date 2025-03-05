@@ -37,6 +37,7 @@ import createInlineUpdates from '../react/parse/createInlineUpdates';
 import { resolveProjectId } from '../fs/utils';
 import { sendUpdates } from '../api/sendUpdates';
 import { saveTranslations } from '../formats/gt/save';
+import { generateSettings } from '../config/generateSettings';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
@@ -265,6 +266,8 @@ export class ReactCLI extends BaseCLI {
     displayInitializingText();
     const { updates, errors } = await this.createUpdates(options);
 
+    const settings = generateSettings(options);
+
     if (errors.length > 0) {
       if (options.ignoreErrors) {
         console.log(
@@ -298,13 +301,10 @@ export class ReactCLI extends BaseCLI {
       }
     }
     // Save source file if translationsDir exists
-    if (options.translationsDir) {
+    if (settings.translationsDir) {
       console.log();
       saveSourceFile(
-        path.join(
-          options.translationsDir,
-          `${options.defaultLocale || 'en'}.json`
-        ),
+        path.join(settings.translationsDir, `${settings.defaultLocale}.json`),
         updates
       );
     }
@@ -332,11 +332,7 @@ export class ReactCLI extends BaseCLI {
     }
 
     // ----- Create a starter gt.config.json file -----
-    if (!options.config)
-      createConfig('gt.config.json', {
-        projectId: process.env.GT_PROJECT_ID,
-        defaultLocale: 'en',
-      });
+    generateSettings(options);
 
     // ----- //
 
@@ -461,10 +457,7 @@ export class ReactCLI extends BaseCLI {
     });
 
     // ----- Create a starter gt.config.json file -----
-    if (!options.config)
-      options.config = createConfig('gt.config.json', {
-        projectId: process.env.GT_PROJECT_ID,
-      });
+    generateSettings(options);
 
     // ----- //
 
@@ -537,58 +530,9 @@ export class ReactCLI extends BaseCLI {
     displayAsciiTitle();
     displayInitializingText();
 
-    // Load config file
-    const gtConfig: Record<string, any> = initOptions.config
-      ? loadConfig(initOptions.config)
-      : {};
+    const settings = generateSettings(initOptions);
 
-    // merge options
-    const options = { ...gtConfig, ...initOptions };
-    options.apiKey = options.apiKey || process.env.GT_API_KEY;
-    if (!options.baseUrl) options.baseUrl = defaultBaseUrl;
-
-    // Distinguish between new locales and existing locales
-    let additionalLocales: string[] | undefined = undefined;
-    if (!gtConfig.locales) {
-      additionalLocales = initOptions.locales;
-      options.locales = undefined;
-    } else {
-      options.locales = Array.from(
-        new Set([...gtConfig.locales, ...(initOptions.locales || [])])
-      );
-    }
-
-    // Warn if apiKey is present in gt.config.json
-    if (gtConfig.apiKey) {
-      warnApiKeyInConfig(options.config);
-      process.exit(1);
-    }
-
-    if (options.projectId) displayProjectId(options.projectId);
-
-    // Check locales
-    if (options.defaultLocale && !isValidLocale(options.defaultLocale))
-      throw new Error(
-        `defaultLocale: ${options.defaultLocale} is not a valid locale!`
-      );
-    if (options.locales) {
-      for (const locale of options.locales) {
-        if (!isValidLocale(locale)) {
-          throw new Error(
-            `locales: "${options?.locales?.join()}", ${locale} is not a valid locale!`
-          );
-        }
-      }
-    }
-    if (additionalLocales) {
-      for (const locale of additionalLocales) {
-        if (!isValidLocale(locale)) {
-          throw new Error(
-            `locales: "${additionalLocales?.join()}", ${locale} is not a valid locale!`
-          );
-        }
-      }
-    }
+    const options = { ...initOptions, ...settings };
 
     // validate timeout
     const timeout = parseInt(options.timeout);
@@ -598,15 +542,6 @@ export class ReactCLI extends BaseCLI {
       );
     }
     options.timeout = timeout.toString();
-
-    // if there's no existing config file, creates one
-    // does not include the API key to avoid exposing it
-    const { projectId, defaultLocale, ...rest } = options;
-    if (!options.config)
-      createConfig('gt.config.json', {
-        projectId,
-        defaultLocale,
-      });
 
     // ---- CREATING UPDATES ---- //
     const { updates, errors } = await this.createUpdates(options);
@@ -651,42 +586,35 @@ export class ReactCLI extends BaseCLI {
     // Send updates to General Translation API
     if (updates.length) {
       // Error if no API key at this point
-      if (!options.apiKey)
+      if (!settings.apiKey)
         throw new Error(
           'No General Translation API key found. Use the --api-key flag to provide one.'
         );
       // Error if no projectId at this point
-      if (!options.projectId)
+      if (!settings.projectId)
         throw new Error(
           'No General Translation Project ID found. Use the --project-id flag to provide one.'
         );
 
       const updateResponse = await sendUpdates(updates, {
-        apiKey: options.apiKey,
-        projectId: options.projectId,
-        defaultLocale: options.defaultLocale ?? 'en',
-        locales: options.locales ?? [],
-        additionalLocales,
-        baseUrl: options.baseUrl,
-        config: options.config,
-        publish: options.publish,
-        translationsDir: options.translationsDir,
-        wait: options.wait,
-        timeout: options.timeout,
+        ...settings,
+        publish: initOptions.publish,
+        wait: initOptions.wait,
+        timeout: initOptions.timeout,
       });
       const versionId = updateResponse?.versionId;
 
       // Save translations to local directory if translationsDir is provided
-      if (versionId && options.translationsDir) {
+      if (versionId && settings.translationsDir) {
         console.log();
         const translations = await fetchTranslations(
-          options.baseUrl,
-          options.apiKey,
+          settings.baseUrl,
+          settings.apiKey,
           versionId
         );
         saveTranslations(
           translations,
-          options.translationsDir,
+          settings.translationsDir,
           'gt-json',
           'json'
         );

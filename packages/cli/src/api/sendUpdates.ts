@@ -1,22 +1,13 @@
 import chalk from 'chalk';
 import { displayLoadingAnimation } from '../console/console';
-import { Updates } from '../types';
+import { Settings, Updates } from '../types';
 import updateConfig from '../fs/config/updateConfig';
 import { waitForUpdates } from './waitForUpdates';
 
-type ApiOptions = {
-  baseUrl: string;
-  config: string;
-  apiKey: string;
-  projectId: string;
-  defaultLocale: string;
-  locales: string[];
-  additionalLocales?: string[] | undefined;
+type ApiOptions = Settings & {
   publish: boolean;
-  versionId?: string;
   wait: boolean;
   timeout: string;
-  translationsDir?: string;
 };
 
 /**
@@ -38,9 +29,6 @@ export async function sendUpdates(updates: Updates, options: ApiOptions) {
   const body = {
     updates,
     ...(options.locales && { locales: options.locales }),
-    ...(options.additionalLocales && {
-      additionalLocales: options.additionalLocales,
-    }),
     metadata: globalMetadata,
     publish: options.publish,
     ...(options.versionId && { versionId: options.versionId }),
@@ -82,8 +70,7 @@ export async function sendUpdates(updates: Updates, options: ApiOptions) {
       updateConfig({
         configFilepath: options.config,
         _versionId: versionId,
-        ...(options.locales && { locales: options.locales }),
-        // only save if locales was previously in options
+        locales,
       });
 
     // Wait for translations if wait is true

@@ -15,6 +15,7 @@ const yaml_1 = __importDefault(require("yaml"));
  */
 function saveTranslations(translations, translationsDir, dataType, fileExtension) {
     for (const translation of translations) {
+        console.log(translation);
         const locale = translation.locale;
         const translationData = translation.translation;
         const translationMetadata = translation.metadata;

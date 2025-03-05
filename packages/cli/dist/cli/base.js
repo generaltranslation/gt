@@ -53,12 +53,12 @@ const setupConfig_1 = __importDefault(require("../fs/config/setupConfig"));
 const prompts_1 = require("@inquirer/prompts");
 const generaltranslation_1 = require("generaltranslation");
 const findFilepath_1 = __importStar(require("../fs/findFilepath"));
-const loadConfig_1 = __importDefault(require("../fs/config/loadConfig"));
 const errors_1 = require("../console/errors");
 const path_1 = __importDefault(require("path"));
 const yaml_1 = __importDefault(require("yaml"));
 const translate_1 = require("../formats/json/translate");
 const utils_1 = require("../fs/utils");
+const generateSettings_1 = require("../config/generateSettings");
 const SUPPORTED_DATA_FORMATS = ['json', 'yaml', 'yml'];
 class BaseCLI {
     // Constructor is shared amongst all CLI class types
@@ -86,47 +86,36 @@ class BaseCLI {
             .action((options) => __awaiter(this, void 0, void 0, function* () {
             (0, console_1.displayAsciiTitle)();
             (0, console_2.displayInitializingText)();
-            // Load config file
-            const gtConfig = options.config
-                ? (0, loadConfig_1.default)(options.config)
-                : {};
-            // merge options
-            const mergedOptions = Object.assign(Object.assign({}, gtConfig), options);
-            mergedOptions.apiKey = mergedOptions.apiKey || process.env.GT_API_KEY;
-            if (!mergedOptions.config)
-                mergedOptions.config = 'gt.config.json';
-            const locales = mergedOptions.locales;
-            const defaultLocale = mergedOptions.defaultLocale;
-            const translationsDir = mergedOptions.translationsDir;
-            if (!locales) {
+            const settings = (0, generateSettings_1.generateSettings)(options);
+            if (!settings.locales) {
                 console.error(errors_1.noLocalesError);
                 process.exit(1);
             }
-            if (!defaultLocale) {
+            if (!settings.defaultLocale) {
                 console.error(errors_1.noDefaultLocaleError);
                 process.exit(1);
             }
-            if (!translationsDir) {
+            if (!settings.translationsDir) {
                 console.error(errors_1.noTranslationsDirError);
                 process.exit(1);
             }
-            if (!mergedOptions.apiKey) {
+            if (!settings.apiKey) {
                 console.error(errors_1.noApiKeyError);
                 process.exit(1);
             }
-            if (!mergedOptions.projectId) {
+            if (!settings.projectId) {
                 console.error(errors_1.noProjectIdError);
                 process.exit(1);
             }
             // ---- CREATING UPDATES ---- //
             // Find the source file in the translationsDir
-            const rawSource = (0, findFilepath_1.findFile)(translationsDir, defaultLocale);
+            const rawSource = (0, findFilepath_1.findFile)(settings.translationsDir, settings.defaultLocale);
             if (!rawSource) {
                 console.error(errors_1.noSourceFileError);
                 process.exit(1);
             }
             // Get the data format from the ending of the translationsDir
-            const dataFormat = translationsDir.split('.').pop();
+            const dataFormat = settings.translationsDir.split('.').pop();
             if (!dataFormat) {
                 console.error(errors_1.noDataFormatError);
                 process.exit(1);
@@ -136,7 +125,7 @@ class BaseCLI {
                 process.exit(1);
             }
             const source = dataFormat === 'json' ? JSON.parse(rawSource) : yaml_1.default.parse(rawSource);
-            const result = yield (0, translate_1.translateJson)(source, defaultLocale, locales, this.library, mergedOptions.apiKey, mergedOptions.projectId, mergedOptions.config, translationsDir, dataFormat);
+            const result = yield (0, translate_1.translateJson)(source, settings, this.library, dataFormat);
         }));
     }
     setupInitCommand() {

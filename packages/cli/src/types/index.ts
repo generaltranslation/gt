@@ -76,3 +76,15 @@ export interface ContentScanner {
     warnings: string[];
   }>;
 }
+
+// Shared settings between all API-related commands
+export type Settings = {
+  config: string;
+  baseUrl: string;
+  apiKey: string;
+  projectId: string;
+  defaultLocale: string;
+  locales: string[];
+  translationsDir?: string;
+  versionId?: string;
+};

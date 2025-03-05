@@ -1,4 +1,4 @@
-import { SupportedLibraries } from '../../types';
+import { Settings, SupportedLibraries } from '../../types';
 import { DataTypes } from '../../types/data';
 /**
  * Translates a JSON object and saves the translations to a local directory
@@ -12,4 +12,4 @@ import { DataTypes } from '../../types/data';
  * @param translationsDir - The directory to save the translations to
  * @param fileType - The file type to save the translations as (file extension)
  */
-export declare function translateJson(sourceJson: any, defaultLocale: string, locales: string[], library: SupportedLibraries, apiKey: string, projectId: string, config: string, translationsDir: string, fileType: DataTypes): Promise<void>;
+export declare function translateJson(sourceJson: any, settings: Settings, library: SupportedLibraries, fileType: DataTypes): Promise<void>;
