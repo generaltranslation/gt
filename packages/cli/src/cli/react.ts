@@ -57,11 +57,18 @@ const pkg = 'gt-react';
 export class ReactCLI extends BaseCLI {
   constructor() {
     super();
+  }
+  public init() {
+    super.init();
     this.setupTranslateCommand();
     this.setupSetupCommand();
     this.setupScanCommand();
     this.setupGenerateSourceCommand();
   }
+  public execute() {
+    super.execute();
+  }
+
   protected scanForContent(
     options: WrapOptions,
     framework: SupportedFrameworks

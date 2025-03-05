@@ -81,4 +81,6 @@ function main() {
     else {
         cli = new base_1.BaseCLI();
     }
+    cli.init();
+    cli.execute();
 }

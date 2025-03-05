@@ -25,10 +25,15 @@ const pkg = 'gt-next';
 export class NextCLI extends ReactCLI {
   constructor() {
     super();
+  }
+  public init() {
     this.setupTranslateCommand();
     this.setupSetupCommand();
     this.setupScanCommand();
     this.setupGenerateSourceCommand();
+  }
+  public execute() {
+    super.execute();
   }
   protected scanForContent(
     options: WrapOptions,

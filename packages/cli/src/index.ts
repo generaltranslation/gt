@@ -48,6 +48,8 @@ export default function main() {
   } else {
     cli = new BaseCLI();
   }
+  cli.init();
+  cli.execute();
 }
 
 export { BaseCLI };

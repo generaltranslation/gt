@@ -28,10 +28,15 @@ const pkg = 'gt-next';
 class NextCLI extends react_1.ReactCLI {
     constructor() {
         super();
+    }
+    init() {
         this.setupTranslateCommand();
         this.setupSetupCommand();
         this.setupScanCommand();
         this.setupGenerateSourceCommand();
+    }
+    execute() {
+        super.execute();
     }
     scanForContent(options, framework) {
         return (0, scanForContent_1.default)(options, pkg, framework);

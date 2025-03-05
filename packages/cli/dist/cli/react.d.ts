@@ -2,6 +2,8 @@ import { Options, SetupOptions, SupportedFrameworks, Updates, WrapOptions, Gener
 import { BaseCLI } from './base';
 export declare class ReactCLI extends BaseCLI {
     constructor();
+    init(): void;
+    execute(): void;
     protected scanForContent(options: WrapOptions, framework: SupportedFrameworks): Promise<{
         errors: string[];
         filesUpdated: string[];

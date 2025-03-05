@@ -2,6 +2,8 @@ import { WrapOptions, Options, Updates, SetupOptions, SupportedFrameworks } from
 import { ReactCLI } from './react';
 export declare class NextCLI extends ReactCLI {
     constructor();
+    init(): void;
+    execute(): void;
     protected scanForContent(options: WrapOptions, framework: SupportedFrameworks): Promise<{
         errors: string[];
         filesUpdated: string[];
