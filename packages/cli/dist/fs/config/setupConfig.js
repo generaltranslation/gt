@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = createConfig;
+exports.default = createOrUpdateConfig;
 const fs_1 = __importDefault(require("fs"));
 const console_1 = require("../../console/console");
 /**
@@ -13,9 +13,11 @@ const console_1 = require("../../console/console");
  * @param {string} configFilepath - The path to the config file.
  * @param {Record<string, any>} configObject - The config object to write if the file does not exist.
  */
-function createConfig(configFilepath, projectId, defaultLocale) {
+function createOrUpdateConfig(configFilepath, options) {
     // Filter out empty string values from the config object
-    const newContent = Object.assign(Object.assign({}, (projectId && { projectId })), (defaultLocale && { defaultLocale }));
+    const newContent = Object.assign(Object.assign(Object.assign({}, (options.projectId && { projectId: options.projectId })), (options.defaultLocale && { defaultLocale: options.defaultLocale })), (options.translationsDir && {
+        translationsDir: options.translationsDir,
+    }));
     try {
         // if file exists
         let oldContent = {};
@@ -24,6 +26,12 @@ function createConfig(configFilepath, projectId, defaultLocale) {
         }
         // merge old and new content
         const mergedContent = Object.assign(Object.assign({}, oldContent), newContent);
+        // Add locales to mergedContent if they exist
+        if (options.locales) {
+            mergedContent.locales = mergedContent.locales
+                ? [...new Set([...mergedContent.locales, ...options.locales])]
+                : options.locales;
+        }
         // write to file
         const mergedJsonContent = JSON.stringify(mergedContent, null, 2);
         fs_1.default.writeFileSync(configFilepath, mergedJsonContent, 'utf-8');

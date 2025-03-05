@@ -49,6 +49,7 @@ export type GenerateSourceOptions = {
 };
 export type Framework = 'gt-next' | 'gt-react';
 export type SupportedFrameworks = 'next-app' | 'next-pages' | 'vite' | 'react' | 'gatsby';
+export type SupportedLibraries = 'gt-next' | 'gt-react' | 'next-intl' | 'base';
 export interface ContentScanner {
     scanForContent(options: WrapOptions, framework: Framework): Promise<{
         errors: string[];

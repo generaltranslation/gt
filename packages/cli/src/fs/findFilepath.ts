@@ -49,3 +49,19 @@ export function getRelativePath(file: string, srcDirectory: string): string {
     .map((segment) => segment.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()) // Convert each segment to snake case
     .join('.'); // Rejoin with dots
 }
+
+/**
+ * Find a file in a directory based on a wildcard pattern.
+ * @param {string} filePattern - The wildcard pattern to search for.
+ * @param {string} file - The file to search for.
+ * @returns {string} - The path to the file.
+ */
+export function findFile(filePattern: string, file: string): string {
+  // Handle wildcard pattern by replacing the wildcard with the file parameter
+  const resolvedPath = filePattern.replace(/\*/, file);
+
+  if (fs.existsSync(resolvedPath)) {
+    return fs.readFileSync(resolvedPath, 'utf8');
+  }
+  return '';
+}

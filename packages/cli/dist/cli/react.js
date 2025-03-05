@@ -70,40 +70,23 @@ const errors_1 = require("../console/errors");
 const internal_1 = require("generaltranslation/internal");
 const chalk_1 = __importDefault(require("chalk"));
 const prompts_1 = require("@inquirer/prompts");
-const waitForUpdates_1 = require("../api/waitForUpdates");
-const updateConfig_1 = __importDefault(require("../fs/config/updateConfig"));
 const setupConfig_1 = __importDefault(require("../fs/config/setupConfig"));
 const postProcess_1 = require("../hooks/postProcess");
-const saveTranslations_1 = __importStar(require("../fs/saveTranslations"));
+const saveTranslations_1 = require("../fs/saveTranslations");
 const path_1 = __importDefault(require("path"));
 const base_1 = require("./base");
 const scanForContent_1 = __importDefault(require("../react/parse/scanForContent"));
 const createDictionaryUpdates_1 = __importDefault(require("../react/parse/createDictionaryUpdates"));
 const createInlineUpdates_1 = __importDefault(require("../react/parse/createInlineUpdates"));
-function resolveProjectId() {
-    const CANDIDATES = [
-        process.env.GT_PROJECT_ID, // any server side, Remix
-        process.env.NEXT_PUBLIC_GT_PROJECT_ID, // Next.js
-        process.env.VITE_GT_PROJECT_ID, // Vite
-        process.env.REACT_APP_GT_PROJECT_ID, // Create React App
-        process.env.REDWOOD_ENV_GT_PROJECT_ID, // RedwoodJS
-        process.env.GATSBY_GT_PROJECT_ID, // Gatsby
-        process.env.EXPO_PUBLIC_GT_PROJECT_ID, // Expo (React Native)
-        process.env.RAZZLE_GT_PROJECT_ID, // Razzle
-        process.env.UMI_GT_PROJECT_ID, // UmiJS
-        process.env.BLITZ_PUBLIC_GT_PROJECT_ID, // Blitz.js
-        process.env.PUBLIC_GT_PROJECT_ID, // WMR, Qwik (general "public" convention)
-    ];
-    return CANDIDATES.find((projectId) => projectId !== undefined);
-}
+const utils_1 = require("../fs/utils");
+const sendUpdates_1 = require("../api/sendUpdates");
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 class ReactCLI extends base_1.BaseCLI {
     constructor() {
-        super();
+        super('gt-react');
     }
     init() {
-        super.init();
         this.setupTranslateCommand();
         this.setupSetupCommand();
         this.setupScanCommand();
@@ -127,7 +110,7 @@ class ReactCLI extends base_1.BaseCLI {
             .description('Scans the project for a dictionary and/or <T> tags, and updates the General Translation remote dictionary with the latest content.')
             .option('--config <path>', 'Filepath to config file, by default gt.config.json', (0, findFilepath_1.default)(['gt.config.json']))
             .option('--api-key <key>', 'API key for General Translation cloud service')
-            .option('--project-id <id>', 'Project ID for the translation service', resolveProjectId())
+            .option('--project-id <id>', 'Project ID for the translation service', (0, utils_1.resolveProjectId)())
             .option('--version-id <id>', 'Version ID for the translation service')
             .option('--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file', (0, findFilepath_1.default)(['./tsconfig.json', './jsconfig.json']))
             .option('--dictionary <path>', 'Path to dictionary file', (0, findFilepath_1.default)([
@@ -234,7 +217,10 @@ class ReactCLI extends base_1.BaseCLI {
             }
             // ----- Create a starter gt.config.json file -----
             if (!options.config)
-                (0, setupConfig_1.default)('gt.config.json', process.env.GT_PROJECT_ID, '');
+                (0, setupConfig_1.default)('gt.config.json', {
+                    projectId: process.env.GT_PROJECT_ID,
+                    defaultLocale: 'en',
+                });
             // ----- //
             // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
             const { errors, filesUpdated, warnings } = yield this.scanForContent(options, 'react');
@@ -327,7 +313,9 @@ class ReactCLI extends base_1.BaseCLI {
             });
             // ----- Create a starter gt.config.json file -----
             if (!options.config)
-                options.config = (0, setupConfig_1.default)('gt.config.json', process.env.GT_PROJECT_ID, '');
+                options.config = (0, setupConfig_1.default)('gt.config.json', {
+                    projectId: process.env.GT_PROJECT_ID,
+                });
             // ----- //
             const mergeOptions = Object.assign(Object.assign({}, options), { disableIds: !includeTId, disableFormatting: true, addGTProvider });
             // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
@@ -370,7 +358,7 @@ class ReactCLI extends base_1.BaseCLI {
     }
     handleTranslateCommand(initOptions) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
+            var _a, _b, _c;
             (0, console_1.displayAsciiTitle)();
             (0, console_1.displayInitializingText)();
             // Load config file
@@ -425,7 +413,10 @@ class ReactCLI extends base_1.BaseCLI {
             // does not include the API key to avoid exposing it
             const { projectId, defaultLocale } = options, rest = __rest(options, ["projectId", "defaultLocale"]);
             if (!options.config)
-                (0, setupConfig_1.default)('gt.config.json', projectId, defaultLocale);
+                (0, setupConfig_1.default)('gt.config.json', {
+                    projectId,
+                    defaultLocale,
+                });
             // ---- CREATING UPDATES ---- //
             const { updates, errors } = yield this.createUpdates(options);
             if (errors.length > 0) {
@@ -452,50 +443,19 @@ class ReactCLI extends base_1.BaseCLI {
                 // Error if no projectId at this point
                 if (!options.projectId)
                     throw new Error('No General Translation Project ID found. Use the --project-id flag to provide one.');
-                const { apiKey, projectId, defaultLocale } = options;
-                const globalMetadata = Object.assign(Object.assign({}, (projectId && { projectId })), (defaultLocale && { sourceLocale: defaultLocale }));
-                // If additionalLocales is provided, additionalLocales + project.current_locales will be translated
-                // If not, then options.locales will be translated
-                // If neither, then project.current_locales will be translated
-                const body = Object.assign(Object.assign(Object.assign(Object.assign({ updates }, (options.locales && { locales: options.locales })), (additionalLocales && { additionalLocales })), { metadata: globalMetadata, publish: options.publish }), (options.versionId && { versionId: options.versionId }));
-                const spinner = yield (0, console_1.displayLoadingAnimation)('Sending updates to General Translation API...');
-                try {
-                    const startTime = Date.now();
-                    const response = yield fetch(`${options.baseUrl}/v1/project/translations/update`, {
-                        method: 'POST',
-                        headers: Object.assign({ 'Content-Type': 'application/json' }, (apiKey && { 'x-gt-api-key': apiKey })),
-                        body: JSON.stringify(body),
-                    });
-                    process.stdout.write('\n\n');
-                    if (!response.ok) {
-                        spinner.fail(yield response.text());
-                        process.exit(1);
-                    }
-                    if (response.status === 204) {
-                        spinner.succeed(yield response.text());
-                        return;
-                    }
-                    const { versionId, message, locales } = yield response.json();
-                    spinner.succeed(chalk_1.default.green(message));
-                    if (options.config)
-                        (0, updateConfig_1.default)(Object.assign({ configFilepath: options.config, _versionId: versionId }, (options.locales && { locales: options.locales })));
-                    // Wait for translations if wait is true
-                    if (options.wait && locales) {
-                        console.log();
-                        // timeout was validated earlier
-                        const timeout = parseInt(options.timeout) * 1000;
-                        const result = yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, locales, startTime, timeout);
-                    }
-                    // Save translations to local directory if translationsDir is provided
-                    if (options.translationsDir) {
-                        console.log();
-                        yield (0, saveTranslations_1.default)(options.baseUrl, apiKey, versionId, options.translationsDir);
-                    }
-                }
-                catch (error) {
-                    spinner.fail(chalk_1.default.red('Failed to send updates'));
-                    throw error;
-                }
+                yield (0, sendUpdates_1.sendUpdates)(updates, {
+                    apiKey: options.apiKey,
+                    projectId: options.projectId,
+                    defaultLocale: (_b = options.defaultLocale) !== null && _b !== void 0 ? _b : 'en',
+                    locales: (_c = options.locales) !== null && _c !== void 0 ? _c : [],
+                    additionalLocales,
+                    baseUrl: options.baseUrl,
+                    config: options.config,
+                    publish: options.publish,
+                    translationsDir: options.translationsDir,
+                    wait: options.wait,
+                    timeout: options.timeout,
+                });
             }
             else {
                 throw new Error(errors_1.noTranslationsError);

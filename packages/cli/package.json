@@ -27,7 +27,6 @@
     "type": "git",
     "url": "git+https://github.com/General-Translation/gt-libraries.git"
   },
-  "peerDependencies": {},
   "keywords": [
     "i18n",
     "l10n",
@@ -54,6 +53,7 @@
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
     "generaltranslation": "^6.2.0",
+    "js-yaml": "^4.1.0",
     "ora": "^8.2.0"
   },
   "devDependencies": {

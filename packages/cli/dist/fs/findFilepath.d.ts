@@ -13,3 +13,10 @@ export default function findFilepath(paths: string[], errorMessage?: string): st
  */
 export declare function findFilepaths(paths: string[], errorMessage?: string): string[];
 export declare function getRelativePath(file: string, srcDirectory: string): string;
+/**
+ * Find a file in a directory based on a wildcard pattern.
+ * @param {string} filePattern - The wildcard pattern to search for.
+ * @param {string} file - The file to search for.
+ * @returns {string} - The path to the file.
+ */
+export declare function findFile(filePattern: string, file: string): string;

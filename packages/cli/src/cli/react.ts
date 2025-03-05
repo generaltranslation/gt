@@ -34,32 +34,16 @@ import { BaseCLI } from './base';
 import scanForContent from '../react/parse/scanForContent';
 import createDictionaryUpdates from '../react/parse/createDictionaryUpdates';
 import createInlineUpdates from '../react/parse/createInlineUpdates';
-
-function resolveProjectId(): string | undefined {
-  const CANDIDATES = [
-    process.env.GT_PROJECT_ID, // any server side, Remix
-    process.env.NEXT_PUBLIC_GT_PROJECT_ID, // Next.js
-    process.env.VITE_GT_PROJECT_ID, // Vite
-    process.env.REACT_APP_GT_PROJECT_ID, // Create React App
-    process.env.REDWOOD_ENV_GT_PROJECT_ID, // RedwoodJS
-    process.env.GATSBY_GT_PROJECT_ID, // Gatsby
-    process.env.EXPO_PUBLIC_GT_PROJECT_ID, // Expo (React Native)
-    process.env.RAZZLE_GT_PROJECT_ID, // Razzle
-    process.env.UMI_GT_PROJECT_ID, // UmiJS
-    process.env.BLITZ_PUBLIC_GT_PROJECT_ID, // Blitz.js
-    process.env.PUBLIC_GT_PROJECT_ID, // WMR, Qwik (general "public" convention)
-  ];
-  return CANDIDATES.find((projectId) => projectId !== undefined);
-}
+import { resolveProjectId } from '../fs/utils';
+import { sendUpdates } from '../api/sendUpdates';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 export class ReactCLI extends BaseCLI {
   constructor() {
-    super();
+    super('gt-react');
   }
   public init() {
-    super.init();
     this.setupTranslateCommand();
     this.setupSetupCommand();
     this.setupScanCommand();
@@ -348,7 +332,10 @@ export class ReactCLI extends BaseCLI {
 
     // ----- Create a starter gt.config.json file -----
     if (!options.config)
-      createConfig('gt.config.json', process.env.GT_PROJECT_ID, '');
+      createConfig('gt.config.json', {
+        projectId: process.env.GT_PROJECT_ID,
+        defaultLocale: 'en',
+      });
 
     // ----- //
 
@@ -474,11 +461,9 @@ export class ReactCLI extends BaseCLI {
 
     // ----- Create a starter gt.config.json file -----
     if (!options.config)
-      options.config = createConfig(
-        'gt.config.json',
-        process.env.GT_PROJECT_ID,
-        ''
-      );
+      options.config = createConfig('gt.config.json', {
+        projectId: process.env.GT_PROJECT_ID,
+      });
 
     // ----- //
 
@@ -617,7 +602,10 @@ export class ReactCLI extends BaseCLI {
     // does not include the API key to avoid exposing it
     const { projectId, defaultLocale, ...rest } = options;
     if (!options.config)
-      createConfig('gt.config.json', projectId, defaultLocale);
+      createConfig('gt.config.json', {
+        projectId,
+        defaultLocale,
+      });
 
     // ---- CREATING UPDATES ---- //
     const { updates, errors } = await this.createUpdates(options);
@@ -672,93 +660,19 @@ export class ReactCLI extends BaseCLI {
           'No General Translation Project ID found. Use the --project-id flag to provide one.'
         );
 
-      const { apiKey, projectId, defaultLocale } = options;
-      const globalMetadata = {
-        ...(projectId && { projectId }),
-        ...(defaultLocale && { sourceLocale: defaultLocale }),
-      };
-
-      // If additionalLocales is provided, additionalLocales + project.current_locales will be translated
-      // If not, then options.locales will be translated
-      // If neither, then project.current_locales will be translated
-      const body = {
-        updates,
-        ...(options.locales && { locales: options.locales }),
-        ...(additionalLocales && { additionalLocales }),
-        metadata: globalMetadata,
+      await sendUpdates(updates, {
+        apiKey: options.apiKey,
+        projectId: options.projectId,
+        defaultLocale: options.defaultLocale ?? 'en',
+        locales: options.locales ?? [],
+        additionalLocales,
+        baseUrl: options.baseUrl,
+        config: options.config,
         publish: options.publish,
-        ...(options.versionId && { versionId: options.versionId }),
-      };
-
-      const spinner = await displayLoadingAnimation(
-        'Sending updates to General Translation API...'
-      );
-
-      try {
-        const startTime = Date.now();
-        const response = await fetch(
-          `${options.baseUrl}/v1/project/translations/update`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(apiKey && { 'x-gt-api-key': apiKey }),
-            },
-            body: JSON.stringify(body),
-          }
-        );
-
-        process.stdout.write('\n\n');
-
-        if (!response.ok) {
-          spinner.fail(await response.text());
-          process.exit(1);
-        }
-
-        if (response.status === 204) {
-          spinner.succeed(await response.text());
-          return;
-        }
-
-        const { versionId, message, locales } = await response.json();
-        spinner.succeed(chalk.green(message));
-        if (options.config)
-          updateConfig({
-            configFilepath: options.config,
-            _versionId: versionId,
-            ...(options.locales && { locales: options.locales }),
-            // only save if locales was previously in options
-          });
-
-        // Wait for translations if wait is true
-        if (options.wait && locales) {
-          console.log();
-          // timeout was validated earlier
-          const timeout = parseInt(options.timeout) * 1000;
-          const result = await waitForUpdates(
-            apiKey,
-            options.baseUrl,
-            versionId,
-            locales,
-            startTime,
-            timeout
-          );
-        }
-
-        // Save translations to local directory if translationsDir is provided
-        if (options.translationsDir) {
-          console.log();
-          await saveTranslations(
-            options.baseUrl,
-            apiKey,
-            versionId,
-            options.translationsDir
-          );
-        }
-      } catch (error) {
-        spinner.fail(chalk.red('Failed to send updates'));
-        throw error;
-      }
+        translationsDir: options.translationsDir,
+        wait: options.wait,
+        timeout: options.timeout,
+      });
     } else {
       throw new Error(noTranslationsError);
     }

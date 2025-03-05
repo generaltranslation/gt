@@ -12,15 +12,22 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * @param {string} configFilepath - The path to the config file.
  * @param {Record<string, any>} configObject - The config object to write if the file does not exist.
  */
-export default function createConfig(
+export default function createOrUpdateConfig(
   configFilepath: string,
-  projectId?: string,
-  defaultLocale?: string
+  options: {
+    projectId?: string;
+    defaultLocale?: string;
+    locales?: string[];
+    translationsDir?: string;
+  }
 ): string {
   // Filter out empty string values from the config object
   const newContent = {
-    ...(projectId && { projectId }),
-    ...(defaultLocale && { defaultLocale }),
+    ...(options.projectId && { projectId: options.projectId }),
+    ...(options.defaultLocale && { defaultLocale: options.defaultLocale }),
+    ...(options.translationsDir && {
+      translationsDir: options.translationsDir,
+    }),
   };
   try {
     // if file exists
@@ -34,6 +41,13 @@ export default function createConfig(
       ...oldContent,
       ...newContent,
     };
+
+    // Add locales to mergedContent if they exist
+    if (options.locales) {
+      mergedContent.locales = mergedContent.locales
+        ? [...new Set([...mergedContent.locales, ...options.locales])]
+        : options.locales;
+    }
 
     // write to file
     const mergedJsonContent = JSON.stringify(mergedContent, null, 2);

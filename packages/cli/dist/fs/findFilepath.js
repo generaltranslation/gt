@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = findFilepath;
 exports.findFilepaths = findFilepaths;
 exports.getRelativePath = getRelativePath;
+exports.findFile = findFile;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 /**
@@ -46,4 +47,18 @@ function getRelativePath(file, srcDirectory) {
         .filter(Boolean) // Remove empty segments that might cause extra dots
         .map((segment) => segment.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()) // Convert each segment to snake case
         .join('.'); // Rejoin with dots
+}
+/**
+ * Find a file in a directory based on a wildcard pattern.
+ * @param {string} filePattern - The wildcard pattern to search for.
+ * @param {string} file - The file to search for.
+ * @returns {string} - The path to the file.
+ */
+function findFile(filePattern, file) {
+    // Handle wildcard pattern by replacing the wildcard with the file parameter
+    const resolvedPath = filePattern.replace(/\*/, file);
+    if (fs_1.default.existsSync(resolvedPath)) {
+        return fs_1.default.readFileSync(resolvedPath, 'utf8');
+    }
+    return '';
 }
