@@ -21,7 +21,6 @@ export function saveTranslations(
   fileExtension: string
 ) {
   for (const translation of translations) {
-    console.log(translation);
     const locale = translation.locale;
     const translationData: Translations = translation.translation;
     const translationMetadata: TranslationsMetadata = translation.metadata;
