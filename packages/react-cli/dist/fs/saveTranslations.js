@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = saveTranslations;
+exports.saveSourceFile = saveSourceFile;
 const chalk_1 = __importDefault(require("chalk"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
@@ -40,4 +41,17 @@ function saveTranslations(baseUrl, apiKey, versionId, translationsDir) {
             console.error(chalk_1.default.red('Failed to fetch translations'));
         }
     });
+}
+function saveSourceFile(filepath, data) {
+    // Ensure directory exists
+    fs_1.default.mkdirSync(path_1.default.dirname(filepath), { recursive: true });
+    // Convert updates to the proper data format
+    const obj = {};
+    for (const update of data) {
+        const { source, metadata } = update;
+        const { hash } = metadata;
+        obj[hash] = source;
+    }
+    fs_1.default.writeFileSync(filepath, JSON.stringify(obj, null, 2));
+    console.log(chalk_1.default.green('Source file saved successfully!'));
 }

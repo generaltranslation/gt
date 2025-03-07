@@ -16,14 +16,8 @@ Install `gt-next` via npm:
 
 ```bash
 npm install gt-next
+npm install gt-next-cli --save-dev
 ```
-
-Or with yarn:
-
-```bash
-yarn add gt-next
-```
-
 ## Getting Started
 
 ### Step 1: Configure Your Environment Variables
@@ -37,50 +31,67 @@ GT_PROJECT_ID="your-project-id"
 
 - Get your `API Key` and `Project ID` from the [General Translation Dashboard](https://generaltranslation.com).
 
-### Step 2: Add the `<GTProvider>`
+### 2. Add the `withGTConfig()` plugin
 
-Add the `<GTProvider>` component below your root `layout.tsx` `<html>` tag to add translations for client-side
-content, and set the <html> `lang` attribute using `getLocale()`.
+Add `withGTConfig()` to your `next.config.js` file.
+You can specify the languages you want to support by passing an array of [locale codes](https://generaltranslation.com/docs/reference/supported-locales).
 
-```jsx
-import { GTProvider } from 'gt-next';
-import { getLocale } from 'gt-next/server';
+```js
+import { withGTConfig } from 'gt-next/config';
 
-export default async function RootLayout({ children }) {
-  const lang = await getLocale();
+const nextConfig = {};
 
-  return (
-    <html lang={lang}>
-      <body>
-        <GTProvider>{children}</GTProvider>
-      </body>
-    </html>
-  );
-}
+export default withGTConfig(nextConfig, {
+  locales: ['pt', 'es'], // Support for Portuguese and Spanish
+});
 ```
 
-### Step 3: Translate Content with `<T>`
+### 3. Add the `<T>` component
 
-The `<T>` component is the simplest way to translate inline JSX content.
+Wrap any nested JSX content in the `<T>` component to make it translatable.
+For more information, check out this [guide on using `<T>` components](https://generaltranslation.com/docs/next/reference/t-reference).
 
 ```jsx
-import { T } from 'gt-next';
+import { T } from "gt-next";
 
-export default function HomePage() {
+export default function Example() {
   return (
-    <T id='greeting'>
-      <p>Hello, world!</p>
+    <T>
+      <p>
+        This gets translated.
+      </p>
     </T>
   );
 }
 ```
 
-If you have an existing project you would like to internationalize, you can use the `gt-react-cli` tool for initial setup.
+Use the `<Var>` component to designate JSX content that should not be translated.
+
+```jsx
+import { T, Var } from "gt-next";
+
+export default function Example() {
+  return (
+    <T>
+      <p>
+        This gets translated. <Var>This does not.</Var>
+      </p>
+    </T>
+  );
+}
+```
+
+**Tip:**
+To save time, run the setup command.
+It will scan your codebase for translatable JSX and insert the `<T>` tags for you.
 
 ```bash
-npm install gt-react-cli
-npx gt-react-cli scan
+npx gt-next-cli setup
 ```
+
+**Strings:**
+For strings, you can use `useGT()` or `getGT()` for translation.
+For more information, check out [this guide](https://generaltranslation.com/docs/next/tutorials/translating-strings).
 
 ## Documentation
 

@@ -4,6 +4,7 @@ import {
   libraryDefaultLocale,
   localeCookieName,
 } from 'generaltranslation/internal';
+import { createUnsupportedLocaleWarning } from '../../messages/createMessages';
 
 /**
  *
@@ -32,11 +33,15 @@ export default function useDetermineLocale({
   // update locale and store it in cookie
   const setLocale = (newLocale: string): void => {
     // validate locale
-    newLocale = determineLocale(newLocale, locales) || locale || defaultLocale;
+    const validatedLocale =
+      determineLocale(newLocale, locales) || locale || defaultLocale;
+    if (validatedLocale !== newLocale) {
+      console.warn(createUnsupportedLocaleWarning(validatedLocale, newLocale));
+    }
 
     // persist locale
-    _setLocale(newLocale);
-    document.cookie = `${cookieName}=${newLocale};path=/`;
+    _setLocale(validatedLocale);
+    document.cookie = `${cookieName}=${validatedLocale};path=/`;
   };
 
   // check brower for locales

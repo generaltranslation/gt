@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-
+import generate from '@babel/generator';
 const MEANINGFUL_REGEX = /[\p{L}\p{N}]/u;
 
 /**

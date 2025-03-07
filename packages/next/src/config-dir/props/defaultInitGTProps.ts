@@ -17,6 +17,7 @@ const defaultInitGTProps = {
   maxConcurrentRequests: 100,
   maxBatchSize: 25,
   batchInterval: 50,
+  cacheExpiryTime: 60000,
   renderSettings: defaultRenderSettings,
   _usingPlugin: false,
 } as const;

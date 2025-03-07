@@ -1,38 +1,69 @@
-# gt-next Starter Project
+# gt-next + Create Next.js App Example
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app) 
+This is an example project showcasing a multilingual Next.js App using `gt-next`.
 
-## Getting Started
+[See it live here](https://gt-next-starter.vercel.app/).
 
-Install `gt-next`:
+Change your browser language to see the translations in action.
+
+- [Chrome](https://support.google.com/chrome/answer/95647)
+- [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
+- [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
+- [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
+
+## Deploy to Vercel
+
+One-click deploy to Vercel:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/General-Translation/gt-libraries/tree/main/examples/next-gt-starter)
+
+Everything works out of the box!
+
+## Docs
+
+See the [docs](https://generaltranslation.com/docs/next/tutorials/quickstart) for more information on how to use `gt-next` with Next.js.
+
+## Cloning
+
+To clone this example and see it in action yourself, follow the following steps:
+
+1. Run
 
 ```bash
-npm i gt-next gt-next-cli
+git clone https://github.com/General-Translation/gt-libraries.git
+cd gt-libraries/examples/next-gt-starter
+npm install
 ```
 
-Add environment variables in `.env.local`. 
-You can get API keys from [generaltranslation.com/dashboard](https://generaltranslation.com).
+2. (Optional) Create a `.local.env` file and populate it with `GT_PROJECT_ID` and `GT_API_KEY`, obtainable via the GT Dashboard [here](https://generaltranslation.com/dashboard)
 
-```bash
-GT_API_KEY=""
-GT_PROJECT_ID=""
+   - This example comes with translations for French, Spanish, and Chinese out of the box, but if you want to experiment with other locales or modify some content, you'll need to add your own API keys.
+
+3. Run `npm run dev`
+
+## Step by Step Setup
+
+Here is a list of steps done to reach this repo state:
+
+1. `npx create-next-app@latest`
+2. `npm install gt-next gt-next-cli`
+3. `npx gt-next-cli setup`
+4. Add locales to the `next.config.ts` file:
+
+```ts
+export default withGTConfig(nextConfig, {
+  defaultLocale: 'en-US',
+  locales: ['en-US', 'fr', 'es', 'zh'],
+});
 ```
 
-Install `gt-next`:
+6. (optional) Create a `.local.env` file and populate it with `GT_PROJECT_ID` and `GT_API_KEY`
+   - These environment variables are needed for local translations during development. The `GT_API_KEY` should be a **development** API key. A separate **production API Key** is needed for subsequent steps when deploying to production.
+7. `npm run dev`
 
-```bash
-npm i gt-next gt-next-cli
-```
+To deploy this app to production:
 
-Finally, run the development server:
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-If you are using a [development API key](https://generaltranslation.com/docs/usage/apikeys#development-api-key), 
-you will be able to see a on-demand temporary preview translation of the page. 
+1. Add `GT_PROJECT_ID` and `GT_API_KEY` to your `.env.local` file
+   - The `GT_API_KEY` should be a **production** API key.
+2. `npx gt-next-cli translate --locales es fr zh`
+3. Deploy to Vercel / Render / etc..

@@ -36,9 +36,9 @@ export const VersionFooter = ({
   if (!documents) return;
 
   return (
-    <T id='components.version_footer.0'>
+    <T id="components.version_footer.0">
       <motion.div
-        className='absolute flex flex-col gap-4 lg:flex-row bottom-0 bg-background p-4 w-full border-t z-50 justify-between'
+        className="absolute flex flex-col gap-4 lg:flex-row bottom-0 bg-background p-4 w-full border-t z-50 justify-between"
         initial={{ y: isMobile ? 200 : 77 }}
         animate={{ y: 0 }}
         exit={{ y: isMobile ? 200 : 77 }}
@@ -46,12 +46,12 @@ export const VersionFooter = ({
       >
         <div>
           <div>You are viewing a previous version</div>
-          <div className='text-muted-foreground text-sm'>
+          <div className="text-muted-foreground text-sm">
             Restore this version to make edits
           </div>
         </div>
 
-        <div className='flex flex-row gap-4'>
+        <div className="flex flex-row gap-4">
           <Button
             disabled={isMutating}
             onClick={async () => {
@@ -64,7 +64,7 @@ export const VersionFooter = ({
                   body: JSON.stringify({
                     timestamp: getDocumentTimestampByIndex(
                       documents,
-                      currentVersionIndex
+                      currentVersionIndex,
                     ),
                   }),
                 }),
@@ -77,28 +77,28 @@ export const VersionFooter = ({
                             new Date(
                               getDocumentTimestampByIndex(
                                 documents,
-                                currentVersionIndex
-                              )
-                            )
-                          )
+                                currentVersionIndex,
+                              ),
+                            ),
+                          ),
                         ),
                       ]
                     : [],
-                }
+                },
               );
             }}
           >
             <div>Restore this version</div>
             <Var>
               {isMutating && (
-                <div className='animate-spin'>
+                <div className="animate-spin">
                   <LoaderIcon />
                 </div>
               )}
             </Var>
           </Button>
           <Button
-            variant='outline'
+            variant="outline"
             onClick={() => {
               handleVersionChange('latest');
             }}

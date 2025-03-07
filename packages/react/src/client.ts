@@ -15,6 +15,9 @@ import Num from './variables/Num';
 import Var from './variables/Var';
 import LocaleSelector from './ui/LocaleSelector';
 import GTProvider from './provider/GTProvider';
+import useSetLocale from './hooks/useSetLocale';
+import useLocales from './hooks/useLocales';
+import useLocaleSelector from './hooks/useLocaleSelector';
 export {
   GTContext,
   GTProvider,
@@ -25,6 +28,9 @@ export {
   useDict,
   useDefaultLocale,
   useLocale,
+  useLocales,
+  useSetLocale,
+  useLocaleSelector,
   T,
   Var,
   Num,

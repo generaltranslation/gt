@@ -1,19 +1,11 @@
-import {
-  flattenDictionary,
-  getEntryAndMetadata,
-  DictionaryEntry,
-  Entry,
-  TranslatedChildren,
-} from 'gt-react/internal';
+import { DictionaryEntry } from 'gt-react/internal';
 import { isValidElement, ReactNode } from 'react';
 import getI18NConfig from '../config-dir/getI18NConfig';
 import getLocale from '../request/getLocale';
-import { isSameLanguage, splitStringToContent } from 'generaltranslation';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
 import { Dictionary, TranslationsObject } from 'gt-react/internal';
 import { createDictionarySubsetError } from '../errors/createErrors';
 import ClientProvider from './ClientProviderWrapper';
-import { hashJsxChildren } from 'generaltranslation/id';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -62,6 +54,14 @@ export default async function GTProvider({
     throw new Error(
       createDictionarySubsetError(prefixId ?? '', '<GTProvider>')
     );
+  }
+
+  // Insert prefix into dictionary
+  if (prefixId) {
+    const prefixPath = prefixId.split('.').reverse();
+    dictionary = prefixPath.reduce<Dictionary>((acc, prefix) => {
+      return { [prefix]: acc };
+    }, dictionary as Dictionary);
   }
 
   // Block until cache check resolves

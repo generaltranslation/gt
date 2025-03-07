@@ -10,10 +10,7 @@ import { T } from 'gt-next';
 export function SubmitButton({
   children,
   isSuccessful,
-}: {
-  children: React.ReactNode;
-  isSuccessful: boolean;
-}) {
+}: { children: React.ReactNode; isSuccessful: boolean }) {
   const { pending } = useFormStatus();
 
   return (
@@ -21,21 +18,21 @@ export function SubmitButton({
       type={pending ? 'button' : 'submit'}
       aria-disabled={pending || isSuccessful}
       disabled={pending || isSuccessful}
-      className='relative'
+      className="relative"
     >
       {children}
 
       {(pending || isSuccessful) && (
-        <span className='animate-spin absolute right-4'>
+        <span className="animate-spin absolute right-4">
           <LoaderIcon />
         </span>
       )}
 
-      <output aria-live='polite' className='sr-only'>
+      <output aria-live="polite" className="sr-only">
         {pending || isSuccessful ? (
-          <T id='components.submit_button.0'>{'Loading'}</T>
+          <T id="components.submit_button.0">{'Loading'}</T>
         ) : (
-          <T id='components.submit_button.1'>{'Submit form'}</T>
+          <T id="components.submit_button.1">{'Submit form'}</T>
         )}
       </output>
     </Button>

@@ -1,4 +1,4 @@
-import baseConfig from './rollup.base.config.js';
+import baseConfig from './rollup.base.config.mjs';
 import terser from '@rollup/plugin-terser';
 import { dts } from 'rollup-plugin-dts';
 

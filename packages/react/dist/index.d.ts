@@ -13,5 +13,6 @@ import Branch from './branches/Branch';
 import useLocales from './hooks/useLocales';
 import useSetLocale from './hooks/useSetLocale';
 import LocaleSelector from './ui/LocaleSelector';
-export { Var, Num, Currency, DateTime, T, GTProvider, Plural, Branch, useGT, useDict, useDefaultLocale, useLocale, useSetLocale, useLocales, LocaleSelector, };
+import useLocaleSelector from './hooks/useLocaleSelector';
+export { Var, Num, Currency, DateTime, T, GTProvider, Plural, Branch, useGT, useDict, useDefaultLocale, useLocale, useLocales, useSetLocale, useLocaleSelector, LocaleSelector, };
 //# sourceMappingURL=index.d.ts.map

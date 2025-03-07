@@ -52,6 +52,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TranslationManager = void 0;
 var generaltranslation_1 = require("generaltranslation");
+var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
 var internal_1 = require("generaltranslation/internal");
 var loadTranslation_1 = __importDefault(require("./loadTranslation"));
 /**
@@ -68,8 +69,10 @@ var TranslationManager = /** @class */ (function () {
             projectId: '',
             _versionId: undefined,
             translationEnabled: true,
+            cacheExpiryTime: defaultInitGTProps_1.default.cacheExpiryTime,
         };
         this.translationsMap = new Map();
+        this.translationTimestamps = new Map();
         this.fetchPromises = new Map();
         this.requestedTranslations = new Map();
     }
@@ -108,28 +111,34 @@ var TranslationManager = /** @class */ (function () {
      */
     TranslationManager.prototype.getCachedTranslations = function (locale) {
         return __awaiter(this, void 0, void 0, function () {
-            var reference, fetchPromise, retrievedTranslations;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var reference, hasExpired, fetchPromise, retrievedTranslations;
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         reference = (0, generaltranslation_1.standardizeLocale)(locale);
-                        // Return cached translations if available (no expiry check)
-                        if (this.translationsMap.has(reference)) {
+                        hasExpired = this.config.loadTranslationType === 'remote' &&
+                            this.translationsMap.has(reference) &&
+                            Date.now() - ((_a = this.translationTimestamps.get(reference)) !== null && _a !== void 0 ? _a : 0) >
+                                this.config.cacheExpiryTime;
+                        // Return cached translations if available
+                        if (this.translationsMap.has(reference) && !hasExpired) {
                             return [2 /*return*/, this.translationsMap.get(reference)];
                         }
                         if (!this.fetchPromises.has(reference)) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.fetchPromises.get(reference)];
-                    case 1: return [2 /*return*/, _a.sent()];
+                    case 1: return [2 /*return*/, _b.sent()];
                     case 2:
                         fetchPromise = this._fetchTranslations(reference);
                         this.fetchPromises.set(reference, fetchPromise);
                         return [4 /*yield*/, fetchPromise];
                     case 3:
-                        retrievedTranslations = _a.sent();
+                        retrievedTranslations = _b.sent();
                         this.fetchPromises.delete(reference);
                         // Cache the retrieved translations
                         if (retrievedTranslations) {
                             this.translationsMap.set(reference, retrievedTranslations);
+                            this.translationTimestamps.set(reference, Date.now());
                         }
                         return [2 /*return*/, retrievedTranslations];
                 }

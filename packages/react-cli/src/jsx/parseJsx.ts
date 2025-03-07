@@ -36,6 +36,11 @@ export function buildJSXTree(
   file: string
 ): any {
   if (t.isJSXExpressionContainer(node)) {
+    // Skip JSX comments
+    if (t.isJSXEmptyExpression(node.expression)) {
+      return null;
+    }
+
     const expr = node.expression;
     const staticAnalysis = isStaticExpression(expr);
     if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
@@ -119,16 +124,19 @@ export function buildJSXTree(
       };
     }
 
-    const children = element.children.map((child) =>
-      buildJSXTree(
-        importAliases,
-        child,
-        unwrappedExpressions,
-        updates,
-        errors,
-        file
+    const children = element.children
+      .map((child) =>
+        buildJSXTree(
+          importAliases,
+          child,
+          unwrappedExpressions,
+          updates,
+          errors,
+          file
+        )
       )
-    );
+      .filter((child) => child !== null && child !== '');
+
     if (children.length === 1) {
       props.children = children[0];
     } else if (children.length > 1) {

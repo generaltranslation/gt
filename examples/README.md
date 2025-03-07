@@ -5,6 +5,9 @@ This directory contains example apps that use gt-next and gt-react. All of these
 ## Next.js
 
 - [next-create-app](./next-create-app)
+- [next-chatbot](./next-chatbot)
+- [next-pages-router](./next-pages-router)
+- [next-gt-starter](./next-gt-starter)
 
 ## Vite
 

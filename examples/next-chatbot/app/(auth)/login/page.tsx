@@ -10,10 +10,10 @@ import { SubmitButton } from '@/components/submit-button';
 
 import { login, type LoginActionState } from '../actions';
 import { T } from 'gt-next';
-
+import { useGT } from 'gt-next/client';
 export default function Page() {
   const router = useRouter();
-
+  const t = useGT();
   const [email, setEmail] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
 
@@ -26,14 +26,14 @@ export default function Page() {
 
   useEffect(() => {
     if (state.status === 'failed') {
-      toast.error('Invalid credentials!');
+      toast.error(t('Invalid credentials!'));
     } else if (state.status === 'invalid_data') {
-      toast.error('Failed validating your submission!');
+      toast.error(t('Failed validating your submission!'));
     } else if (state.status === 'success') {
       setIsSuccessful(true);
       router.refresh();
     }
-  }, [state.status, router]);
+  }, [state.status, router, t]);
 
   const handleSubmit = (formData: FormData) => {
     setEmail(formData.get('email') as string);

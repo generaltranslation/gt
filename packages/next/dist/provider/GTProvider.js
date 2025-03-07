@@ -101,7 +101,7 @@ var ClientProviderWrapper_1 = __importDefault(require("./ClientProviderWrapper")
  */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, _c, translationRequired, dialectTranslationRequired, cachedTranslationsPromise, dictionary, translations;
+        var I18NConfig, locale, defaultLocale, _c, translationRequired, dialectTranslationRequired, cachedTranslationsPromise, dictionary, prefixPath, translations;
         var children = _b.children, prefixId = _b.id;
         return __generator(this, function (_d) {
             switch (_d.label) {
@@ -122,6 +122,14 @@ function GTProvider(_a) {
                         typeof dictionary !== 'object') {
                         // cannot be a DictionaryEntry, must be a Dictionary
                         throw new Error((0, createErrors_1.createDictionarySubsetError)(prefixId !== null && prefixId !== void 0 ? prefixId : '', '<GTProvider>'));
+                    }
+                    // Insert prefix into dictionary
+                    if (prefixId) {
+                        prefixPath = prefixId.split('.').reverse();
+                        dictionary = prefixPath.reduce(function (acc, prefix) {
+                            var _a;
+                            return _a = {}, _a[prefix] = acc, _a;
+                        }, dictionary);
                     }
                     return [4 /*yield*/, cachedTranslationsPromise];
                 case 2:

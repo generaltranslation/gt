@@ -17,7 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { Var, T } from 'gt-next';
+import { Var, T, Branch } from 'gt-next';
 
 export function SidebarUserNav({ user }: { user: User }) {
   const { setTheme, theme } = useTheme();
@@ -51,7 +51,10 @@ export function SidebarUserNav({ user }: { user: User }) {
                 className='cursor-pointer'
                 onSelect={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               >
-                <Var>{`Toggle ${theme === 'light' ? 'dark' : 'light'} mode`}</Var>
+                {/* <Var>{`Toggle ${theme === 'light' ? 'dark' : 'light'} mode`}</Var> */}
+                <Branch branch={theme} light={'Toggle dark mode'}>
+                  Toggle dark mode
+                </Branch>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>

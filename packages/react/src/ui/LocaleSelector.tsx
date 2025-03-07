@@ -1,8 +1,6 @@
 import React from 'react';
-import useLocale from '../hooks/useLocale';
-import useLocales from '../hooks/useLocales';
 import { getLocaleProperties } from 'generaltranslation';
-import useSetLocale from '../hooks/useSetLocale';
+import useLocaleSelector from '../hooks/useLocaleSelector';
 
 /**
  * Capitalizes the first letter of a language name if applicable.
@@ -20,18 +18,27 @@ function capitalizeLanguageName(language: string): string {
 
 /**
  * A dropdown component that allows users to select a locale.
- * @param {string[]} locales - The list of supported locales. By default this is the user's list of supported locales from the `<GTProvider>` context.
+ * @param {string[]} locales - An optional list of locales to use for the dropdown. If not provided, the list of locales from the `<GTProvider>` context is used.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
 export default function LocaleSelector({
-  locales = useLocales().sort(),
+  locales: _locales,
   ...props
 }: {
   locales?: string[];
-}): React.ReactElement | null {
-  // Retrieve the locale, locales, and setLocale function
-  const locale = useLocale();
-  const setLocale = useSetLocale();
+  [key: string]: any;
+}): React.JSX.Element | null {
+  // Get locale selector properties
+  const { locale, locales, setLocale } = useLocaleSelector(
+    _locales ? _locales : undefined
+  );
+
+  // Get display name
+  const getDisplayName = (locale: string) => {
+    return capitalizeLanguageName(
+      getLocaleProperties(locale).nativeNameWithRegionCode
+    );
+  };
 
   // If no locales are returned, just render nothing or handle gracefully
   if (!locales || locales.length === 0 || !setLocale) {
@@ -50,9 +57,7 @@ export default function LocaleSelector({
 
       {locales.map((locale) => (
         <option key={locale} value={locale} suppressHydrationWarning>
-          {capitalizeLanguageName(
-            getLocaleProperties(locale).nativeNameWithRegionCode
-          )}
+          {getDisplayName(locale)}
         </option>
       ))}
     </select>

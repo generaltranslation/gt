@@ -253,7 +253,7 @@ declare function useDefaultLocale(): string;
  * const d = useDict();
  * console.log(d('hello')); // Translates item 'hello'
  */
-declare function useDict(id?: string): (id: string, options?: DictionaryTranslationOptions) => React__default.ReactNode;
+declare function useDict(id?: string): (id: string, options?: DictionaryTranslationOptions) => string;
 
 /**
  * Retrieves the user's locale from the `<GTProvider>` context.
@@ -455,12 +455,13 @@ declare namespace Var {
 
 /**
  * A dropdown component that allows users to select a locale.
- * @param {string[]} locales - The list of supported locales. By default this is the user's list of supported locales from the `<GTProvider>` context.
+ * @param {string[]} locales - An optional list of locales to use for the dropdown. If not provided, the list of locales from the `<GTProvider>` context is used.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
-declare function LocaleSelector({ locales, ...props }: {
+declare function LocaleSelector({ locales: _locales, ...props }: {
     locales?: string[];
-}): React__default.ReactElement | null;
+    [key: string]: any;
+}): React__default.JSX.Element | null;
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -499,4 +500,38 @@ declare function GTProvider({ children, projectId: _projectId, devApiKey: _devAp
     [key: string]: any;
 }): React__default.JSX.Element;
 
-export { Branch, ClientProvider, Currency, DateTime, GTContext, GTProvider, LocaleSelector, Num, Plural, T, Var, renderVariable, useDefaultLocale, useDict, useGT, useLocale, useRuntimeTranslation };
+/**
+ * Sets the user's locale in the `<GTProvider>` context.
+ * If the locale passed is not supported, will fallback on current locale and then defaultLocale if necessary.
+ * @note Unless a locale has explicitly been passed to the `<GTProvider>`, this will override the user's browser preferences. The locale passed to `<GTProvider>` will always take priority.
+ *
+ * @returns {(locale: string) => void} A function that sets the user's locale.
+ *
+ * @example
+ * setLocale('en-US');
+ */
+declare function useSetLocale(): (locale: string) => void;
+
+/**
+ * Retrieves the user's list of supported locales from the `<GTProvider>` context.
+ *
+ * @returns {string[]} The user's locales, e.g., ['en-US', 'fr', 'jp'].
+ *
+ * @example
+ * const locales = useLocales();
+ * console.log(locale); // ['en-US', 'fr', 'jp]
+ */
+declare function useLocales(): string[];
+
+/**
+ * Gets the list of properties for using a locale selector.
+ * @param locales an optional list of locales to use for the drop down. These locales must be a subset of the locales provided by the `<GTProvider>` context. When not provided, the list of locales from the `<GTProvider>` context is used.
+ * @returns {object} The locale, locales, and setLocale function.
+ */
+declare function useLocaleSelector(locales?: string[]): {
+    locale: string;
+    locales: string[];
+    setLocale: (locale: string) => void;
+};
+
+export { Branch, ClientProvider, Currency, DateTime, GTContext, GTProvider, LocaleSelector, Num, Plural, T, Var, renderVariable, useDefaultLocale, useDict, useGT, useLocale, useLocaleSelector, useLocales, useRuntimeTranslation, useSetLocale };

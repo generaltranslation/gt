@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { isSameLanguage, requiresTranslation } from 'generaltranslation';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GTContext } from './GTContext';
 import { RenderMethod, TranslationsObject } from '../types/types';
 import {
-  Content,
   defaultCacheUrl,
   defaultRuntimeApiUrl,
   libraryDefaultLocale,
@@ -24,6 +23,7 @@ import { readAuthFromEnv } from '../utils/utils';
 import fetchTranslations from '../utils/fetchTranslations';
 import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
 import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
+import { hashJsxChildren } from 'generaltranslation/id';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.

@@ -1,1 +1,1 @@
-{"version":3,"file":"defaultInitGTProps.d.ts","sourceRoot":"","sources":["../../../src/config-dir/props/defaultInitGTProps.ts"],"names":[],"mappings":"AAOA,QAAA,MAAM,kBAAkB;;;;;;;;sBAQP,MAAM,EAAE;;;;;;;;;CAMf,CAAC;AAEX,eAAe,kBAAkB,CAAC"}
+{"version":3,"file":"defaultInitGTProps.d.ts","sourceRoot":"","sources":["../../../src/config-dir/props/defaultInitGTProps.ts"],"names":[],"mappings":"AAOA,QAAA,MAAM,kBAAkB;;;;;;;;sBAQP,MAAM,EAAE;;;;;;;;;;CAOf,CAAC;AAEX,eAAe,kBAAkB,CAAC"}

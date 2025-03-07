@@ -10,10 +10,10 @@ import { SubmitButton } from '@/components/submit-button';
 
 import { register, type RegisterActionState } from '../actions';
 import { T } from 'gt-next';
-
+import { useGT } from 'gt-next/client';
 export default function Page() {
   const router = useRouter();
-
+  const t = useGT();
   const [email, setEmail] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
 
@@ -26,17 +26,17 @@ export default function Page() {
 
   useEffect(() => {
     if (state.status === 'user_exists') {
-      toast.error('Account already exists');
+      toast.error(t('Account already exists'));
     } else if (state.status === 'failed') {
-      toast.error('Failed to create account');
+      toast.error(t('Failed to create account'));
     } else if (state.status === 'invalid_data') {
-      toast.error('Failed validating your submission!');
+      toast.error(t('Failed validating your submission!'));
     } else if (state.status === 'success') {
-      toast.success('Account created successfully');
+      toast.success(t('Account created successfully'));
       setIsSuccessful(true);
       router.refresh();
     }
-  }, [state, router]);
+  }, [state, router, t]);
 
   const handleSubmit = (formData: FormData) => {
     setEmail(formData.get('email') as string);

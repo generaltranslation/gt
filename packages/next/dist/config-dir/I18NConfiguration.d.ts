@@ -7,6 +7,7 @@ type I18NConfigurationParams = {
     projectId?: string;
     runtimeUrl: string | undefined;
     cacheUrl: string | null;
+    cacheExpiryTime: number;
     loadTranslationType: 'remote' | 'custom' | 'disabled';
     defaultLocale: string;
     locales: string[];
@@ -30,6 +31,7 @@ export default class I18NConfiguration {
     devApiKey?: string;
     runtimeUrl: string | undefined;
     cacheUrl: string | null;
+    cacheExpiryTime: number;
     _versionId?: string;
     defaultLocale: string;
     locales: string[];
@@ -45,7 +47,7 @@ export default class I18NConfiguration {
     private _queue;
     private _activeRequests;
     private _translationCache;
-    constructor({ apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, loadTranslationType, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, _usingPlugin, ...metadata }: I18NConfigurationParams);
+    constructor({ apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, loadTranslationType, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, _usingPlugin, ...metadata }: I18NConfigurationParams);
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.

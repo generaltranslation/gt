@@ -20,6 +20,8 @@ export type TranslationManagerConfig = {
   projectId?: string;
   _versionId?: string;
   translationEnabled: boolean;
+  cacheExpiryTime: number;
+  loadTranslationType?: 'remote' | 'custom' | 'disabled';
 };
 
 /**
@@ -28,6 +30,7 @@ export type TranslationManagerConfig = {
 export class TranslationManager {
   private config: TranslationManagerConfig;
   private translationsMap: Map<string, TranslationsObject>;
+  private translationTimestamps: Map<string, number>;
   private fetchPromises: Map<string, Promise<TranslationsObject | undefined>>;
   private requestedTranslations: Map<string, boolean>;
 
@@ -41,8 +44,10 @@ export class TranslationManager {
       projectId: '',
       _versionId: undefined,
       translationEnabled: true,
+      cacheExpiryTime: defaultInitGTProps.cacheExpiryTime,
     };
     this.translationsMap = new Map();
+    this.translationTimestamps = new Map();
     this.fetchPromises = new Map();
     this.requestedTranslations = new Map();
   }
@@ -83,8 +88,16 @@ export class TranslationManager {
   ): Promise<TranslationsObject | undefined> {
     const reference = standardizeLocale(locale);
 
-    // Return cached translations if available (no expiry check)
-    if (this.translationsMap.has(reference)) {
+    // Check if translations have expired
+    // Translations can only expire if they are loaded remotely
+    const hasExpired =
+      this.config.loadTranslationType === 'remote' &&
+      this.translationsMap.has(reference) &&
+      Date.now() - (this.translationTimestamps.get(reference) ?? 0) >
+        this.config.cacheExpiryTime;
+
+    // Return cached translations if available
+    if (this.translationsMap.has(reference) && !hasExpired) {
       return this.translationsMap.get(reference);
     }
 
@@ -102,6 +115,7 @@ export class TranslationManager {
     // Cache the retrieved translations
     if (retrievedTranslations) {
       this.translationsMap.set(reference, retrievedTranslations);
+      this.translationTimestamps.set(reference, Date.now());
     }
 
     return retrievedTranslations;

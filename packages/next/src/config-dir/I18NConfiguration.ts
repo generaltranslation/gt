@@ -20,6 +20,7 @@ type I18NConfigurationParams = {
   projectId?: string;
   runtimeUrl: string | undefined;
   cacheUrl: string | null;
+  cacheExpiryTime: number;
   loadTranslationType: 'remote' | 'custom' | 'disabled';
   defaultLocale: string;
   locales: string[];
@@ -68,6 +69,7 @@ export default class I18NConfiguration {
   devApiKey?: string;
   runtimeUrl: string | undefined;
   cacheUrl: string | null;
+  cacheExpiryTime: number;
   _versionId?: string;
   // Locale info
   defaultLocale: string;
@@ -98,6 +100,7 @@ export default class I18NConfiguration {
     _versionId,
     runtimeUrl,
     cacheUrl,
+    cacheExpiryTime,
     loadTranslationType,
     // Locale info
     defaultLocale,
@@ -122,6 +125,7 @@ export default class I18NConfiguration {
     this.projectId = projectId;
     this.runtimeUrl = runtimeUrl;
     this.cacheUrl = cacheUrl;
+    this.cacheExpiryTime = cacheExpiryTime;
     this._versionId = _versionId; // version id for the dictionary
 
     // IS BUILDTIME TRANSLATION ENABLED
@@ -181,6 +185,8 @@ export default class I18NConfiguration {
       projectId,
       translationEnabled: this.translationEnabled,
       _versionId,
+      cacheExpiryTime: this.cacheExpiryTime,
+      loadTranslationType,
     });
     // Batching
     this.maxConcurrentRequests = maxConcurrentRequests;

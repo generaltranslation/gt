@@ -4,10 +4,10 @@ import type { ArtifactKind } from './artifact';
 import { FileIcon, LoaderIcon, MessageIcon, PencilEditIcon } from './icons';
 import { toast } from 'sonner';
 import { useArtifact } from '@/hooks/use-artifact';
-
+import { useGT } from 'gt-next/client';
 const getActionText = (
   type: 'create' | 'update' | 'request-suggestions',
-  tense: 'present' | 'past',
+  tense: 'present' | 'past'
 ) => {
   switch (type) {
     case 'create':
@@ -35,15 +35,15 @@ function PureDocumentToolResult({
   isReadonly,
 }: DocumentToolResultProps) {
   const { setArtifact } = useArtifact();
-
+  const t = useGT();
   return (
     <button
-      type="button"
-      className="bg-background cursor-pointer border py-2 px-3 rounded-xl w-fit flex flex-row gap-3 items-start"
+      type='button'
+      className='bg-background cursor-pointer border py-2 px-3 rounded-xl w-fit flex flex-row gap-3 items-start'
       onClick={(event) => {
         if (isReadonly) {
           toast.error(
-            'Viewing files in shared chats is currently not supported.',
+            t('Viewing files in shared chats is currently not supported.')
           );
           return;
         }
@@ -68,7 +68,7 @@ function PureDocumentToolResult({
         });
       }}
     >
-      <div className="text-muted-foreground mt-1">
+      <div className='text-muted-foreground mt-1'>
         {type === 'create' ? (
           <FileIcon />
         ) : type === 'update' ? (
@@ -77,7 +77,7 @@ function PureDocumentToolResult({
           <MessageIcon />
         ) : null}
       </div>
-      <div className="text-left">
+      <div className='text-left'>
         {`${getActionText(type, 'past')} "${result.title}"`}
       </div>
     </button>
@@ -98,15 +98,15 @@ function PureDocumentToolCall({
   isReadonly,
 }: DocumentToolCallProps) {
   const { setArtifact } = useArtifact();
-
+  const t = useGT();
   return (
     <button
-      type="button"
-      className="cursor pointer w-fit border py-2 px-3 rounded-xl flex flex-row items-start justify-between gap-3"
+      type='button'
+      className='cursor pointer w-fit border py-2 px-3 rounded-xl flex flex-row items-start justify-between gap-3'
       onClick={(event) => {
         if (isReadonly) {
           toast.error(
-            'Viewing files in shared chats is currently not supported.',
+            t('Viewing files in shared chats is currently not supported.')
           );
           return;
         }
@@ -127,8 +127,8 @@ function PureDocumentToolCall({
         }));
       }}
     >
-      <div className="flex flex-row gap-3 items-start">
-        <div className="text-zinc-500 mt-1">
+      <div className='flex flex-row gap-3 items-start'>
+        <div className='text-zinc-500 mt-1'>
           {type === 'create' ? (
             <FileIcon />
           ) : type === 'update' ? (
@@ -138,12 +138,12 @@ function PureDocumentToolCall({
           ) : null}
         </div>
 
-        <div className="text-left">
+        <div className='text-left'>
           {`${getActionText(type, 'present')} ${args.title ? `"${args.title}"` : ''}`}
         </div>
       </div>
 
-      <div className="animate-spin mt-1">{<LoaderIcon />}</div>
+      <div className='animate-spin mt-1'>{<LoaderIcon />}</div>
     </button>
   );
 }

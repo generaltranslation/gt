@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import fs from 'fs';
 import path from 'path';
+import { Updates } from '../types';
 
 export default async function saveTranslations(
   baseUrl: string,
@@ -35,4 +36,20 @@ export default async function saveTranslations(
   } else {
     console.error(chalk.red('Failed to fetch translations'));
   }
+}
+
+export function saveSourceFile(filepath: string, data: Updates) {
+  // Ensure directory exists
+  fs.mkdirSync(path.dirname(filepath), { recursive: true });
+
+  // Convert updates to the proper data format
+  const obj: Record<string, any> = {};
+  for (const update of data) {
+    const { source, metadata } = update;
+    const { hash } = metadata;
+    obj[hash] = source;
+  }
+
+  fs.writeFileSync(filepath, JSON.stringify(obj, null, 2));
+  console.log(chalk.green('Source file saved successfully!'));
 }

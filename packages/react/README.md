@@ -16,12 +16,7 @@ Install `gt-react` via npm:
 
 ```bash
 npm install gt-react
-```
-
-Or with yarn:
-
-```bash
-yarn add gt-react
+npm install gt-react-cli --save-dev
 ```
 
 ## Getting Started
@@ -37,48 +32,86 @@ GT_PROJECT_ID="your-project-id"
 
 - Get your `API Key` and `Project ID` from the [General Translation Dashboard](https://generaltranslation.com).
 
-### Step 2: Add the `<GTProvider>`
+### 2. Select languages
 
-Add the `<GTProvider>` component at the root of your application.
+`<GTProvider>` is used to configure the behavior of `gt-react`. 
+It should be placed as high up in your app as possible, ideally at the root.
+
+Just pass a list of [locale codes](https://generaltranslation.com/docs/reference/supported-locales) to add them to your app.
 
 ```jsx
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <GTProvider
-      projectId={GT_PROJECT_ID}
-      devApiKey={GT_API_KEY}
-    >
-      <App />
+import { GTProvider } from "gt-react";
+import MyApp from "./MyApp";
+
+export default function App() {
+  return (
+    <GTProvider locales={['fr', 'zh']}> // French and Chinese support
+      <MyApp />
     </GTProvider>
-  </StrictMode>
-);
+  );
+}
 ```
 
-### Step 3: Translate Content with `<T>`
 
-The `<T>` component is the simplest way to translate inline JSX content.
+### 3. Add the `<T>` component
+
+Wrap any nested JSX content in the `<T>` component to make it translatable.
+For more information, check out the [guide on using `<T>` components](https://generaltranslation.com/docs/react/reference/t-reference).
 
 ```jsx
-import { T } from 'gt-react';
+import { T } from "gt-react";
 
-export default function HomePage() {
+export default function Example() {
   return (
-    <T id='greeting'>
-      <p>Hello, world!</p>
+    <T>
+      <p>
+        This gets translated.
+      </p>
     </T>
   );
 }
 ```
 
-If you have an existing project you would like to internationalize, you can use the `gt-react-cli` tool for initial setup.
+Use the `<Var>` component to designate JSX content that should not be translated.
 
-```bash
-npm install gt-react-cli
-npx gt-react-cli scan
+```jsx
+import { T, Var } from "gt-react";
+
+export default function Example() {
+  return (
+    <T>
+      <p>
+        This gets translated. <Var>This does not.</Var>
+      </p>
+    </T>
+  );
+}
 ```
 
-This will scan your project for all the text content that needs to be translated, and automatically wrap them in `<T>` and `<Var>` components.
+**Tip:**
+To save time, run the setup command.
+It will scan your codebase for translatable JSX and insert the `<T>` tags for you.
 
+```bash title="shell" copy
+npx gt-react-cli setup
+```
+
+**Strings:**
+For strings, you can use `useGT()` for translation.
+For more information, check out [this guide](/docs/react/tutorials/translating-strings).
+
+```jsx
+import { useGT } from "gt-react";
+
+export default function Example() {
+  const t = useGT();
+  return (
+    <p>
+      {t("This gets translated.")}
+    </p>
+  );
+}
+```
 ## Documentation
 
 Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](generaltranslation.com/docs).
