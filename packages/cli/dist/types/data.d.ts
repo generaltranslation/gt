@@ -11,7 +11,14 @@ export type Dictionary = {
 export type FlattenedDictionary = {
     [key: string]: DictionaryEntry;
 };
-export type DataTypes = 'gt-json' | 'json' | 'yaml' | 'yml';
+export type JSONDictionary = {
+    [key: string]: string | JSONDictionary;
+};
+export type FlattenedJSONDictionary = {
+    [key: string]: string;
+};
+export type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
+export type FileExtension = 'json' | 'yaml' | 'yml';
 export type JsxChildren = string | string[] | any;
 export type Translations = {
     [key: string]: JsxChildren;

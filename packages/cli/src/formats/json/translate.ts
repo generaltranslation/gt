@@ -1,5 +1,7 @@
 import { splitStringToContent } from 'generaltranslation';
-import flattenDictionary from '../../react/utils/flattenDictionary';
+import flattenDictionary, {
+  flattenJsonDictionary,
+} from '../../react/utils/flattenDictionary';
 import getEntryAndMetadata from '../../react/utils/getEntryAndMetadata';
 import { hashJsxChildren } from 'generaltranslation/id';
 import { Settings, SupportedLibraries, Updates } from '../../types';
@@ -29,21 +31,15 @@ export async function translateJson(
   dataFormat: DataFormat,
   fileExtension: FileExtension
 ) {
-  const flattened = flattenDictionary(sourceJson);
+  const flattened = flattenJsonDictionary(sourceJson);
   const updates: Updates = [];
   for (const id of Object.keys(flattened)) {
     const source = flattened[id];
-    const content = Array.isArray(source) ? source[0] : source;
     const metadata: Record<string, any> = {
       id,
-      // This hash isn't actually used by the GT API, just for consistency sake
-      hash: hashJsxChildren({
-        source: content,
-        ...(id && { id }),
-      }),
     };
     updates.push({
-      type: 'jsx',
+      type: dataFormat,
       source,
       metadata,
     });

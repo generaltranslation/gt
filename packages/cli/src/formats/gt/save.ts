@@ -23,7 +23,7 @@ export function saveTranslations(
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
 
     // Handle different file types
-    if (dataFormat === 'gt') {
+    if (dataFormat === 'JSX') {
       fs.writeFileSync(filepath, JSON.stringify(translationData, null, 2));
     }
   }

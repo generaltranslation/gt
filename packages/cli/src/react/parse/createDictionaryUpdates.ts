@@ -82,7 +82,7 @@ export default async function createDictionaryUpdates(
       }),
     };
     updates.push({
-      type: 'content',
+      type: 'JSX',
       source,
       metadata,
     });

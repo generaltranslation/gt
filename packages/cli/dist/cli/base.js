@@ -59,7 +59,7 @@ const yaml_1 = __importDefault(require("yaml"));
 const translate_1 = require("../formats/json/translate");
 const utils_1 = require("../fs/utils");
 const generateSettings_1 = require("../config/generateSettings");
-const SUPPORTED_DATA_FORMATS = ['json', 'yaml', 'yml'];
+const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 class BaseCLI {
     // Constructor is shared amongst all CLI class types
     constructor(library) {
@@ -115,7 +115,16 @@ class BaseCLI {
                 process.exit(1);
             }
             // Get the data format from the ending of the translationsDir
-            const dataFormat = settings.translationsDir.split('.').pop();
+            const fileExtension = settings.translationsDir
+                .split('.')
+                .pop();
+            const dataFormat = this.library === 'next-intl'
+                ? 'ICU'
+                : this.library === 'react-i18next'
+                    ? 'I18NEXT'
+                    : this.library === 'next-i18next'
+                        ? 'I18NEXT'
+                        : 'JSX';
             if (!dataFormat) {
                 console.error(errors_1.noDataFormatError);
                 process.exit(1);
@@ -124,8 +133,10 @@ class BaseCLI {
                 console.error(errors_1.noSupportedDataFormatError);
                 process.exit(1);
             }
-            const source = dataFormat === 'json' ? JSON.parse(rawSource) : yaml_1.default.parse(rawSource);
-            const result = yield (0, translate_1.translateJson)(source, settings, this.library, dataFormat);
+            const source = fileExtension === 'json'
+                ? JSON.parse(rawSource)
+                : yaml_1.default.parse(rawSource);
+            const result = yield (0, translate_1.translateJson)(source, settings, dataFormat, fileExtension);
         }));
     }
     setupInitCommand() {

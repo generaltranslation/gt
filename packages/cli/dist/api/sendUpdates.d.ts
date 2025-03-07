@@ -1,8 +1,10 @@
 import { Settings, Updates } from '../types';
+import { DataFormat } from '../types/data';
 type ApiOptions = Settings & {
     publish: boolean;
     wait: boolean;
     timeout: string;
+    dataFormat: DataFormat;
 };
 /**
  * Sends updates to the API

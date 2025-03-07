@@ -24,7 +24,6 @@ export async function sendUpdates(updates: Updates, options: ApiOptions) {
   const globalMetadata = {
     ...(projectId && { projectId }),
     ...(defaultLocale && { sourceLocale: defaultLocale }),
-    ...(dataFormat && { dataFormat }),
   };
 
   // If additionalLocales is provided, additionalLocales + project.current_locales will be translated
@@ -35,6 +34,7 @@ export async function sendUpdates(updates: Updates, options: ApiOptions) {
     ...(options.locales && { locales: options.locales }),
     metadata: globalMetadata,
     publish: options.publish,
+    ...(dataFormat && { dataFormat }),
     ...(options.versionId && { versionId: options.versionId }),
   };
 

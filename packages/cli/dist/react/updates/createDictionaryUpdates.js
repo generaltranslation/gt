@@ -66,7 +66,7 @@ function createDictionaryUpdates(options, esbuildConfig) {
                 // This hash isn't actually used by the GT API, just for consistency sake
                 hash: (0, id_1.hashJsxChildren)(Object.assign(Object.assign({ source }, (context && { context })), (id && { id }))) });
             updates.push({
-                type: 'content',
+                type: 'JSX',
                 source,
                 metadata,
             });

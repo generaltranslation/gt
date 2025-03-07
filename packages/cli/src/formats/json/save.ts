@@ -33,9 +33,9 @@ export function saveTranslations(
     // Handle different file types
     let writeData: string | undefined;
     if (
-      dataFormat === 'next-intl' ||
-      dataFormat === 'react-i18next' ||
-      dataFormat === 'next-i18next'
+      dataFormat === 'ICU' ||
+      dataFormat === 'I18NEXT' ||
+      dataFormat === 'JSX'
     ) {
       // JSONs need to be mapped back to the original format
       const revertedJson: Dictionary = {};
@@ -67,7 +67,6 @@ export function saveTranslations(
     // else if (dataFormat === 'yaml') {
     //   writeData = yaml.stringify(translationData);
     // }
-
     if (writeData) {
       fs.writeFileSync(filepath, writeData);
     }

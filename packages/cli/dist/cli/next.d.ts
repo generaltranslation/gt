@@ -1,4 +1,4 @@
-import { WrapOptions, Options, Updates, SetupOptions, SupportedFrameworks } from 'gt-react-cli/types';
+import { WrapOptions, Options, Updates, SetupOptions, SupportedFrameworks } from '../types';
 import { ReactCLI } from './react';
 export declare class NextCLI extends ReactCLI {
     constructor();

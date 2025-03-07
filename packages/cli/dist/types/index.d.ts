@@ -1,12 +1,16 @@
+import { JsxChildren } from 'generaltranslation/internal';
 export type Updates = ({
-    type: 'jsx';
-    source: any;
     metadata: Record<string, any>;
+} & ({
+    type: 'JSX';
+    source: JsxChildren;
 } | {
-    type: 'content';
-    source: any;
-    metadata: Record<string, any>;
-})[];
+    type: 'ICU';
+    source: string;
+} | {
+    type: 'I18NEXT';
+    source: string;
+}))[];
 export type Options = {
     config: string;
     apiKey?: string;
@@ -49,7 +53,7 @@ export type GenerateSourceOptions = {
 };
 export type Framework = 'gt-next' | 'gt-react';
 export type SupportedFrameworks = 'next-app' | 'next-pages' | 'vite' | 'react' | 'gatsby';
-export type SupportedLibraries = 'gt-next' | 'gt-react' | 'next-intl' | 'base';
+export type SupportedLibraries = 'gt-next' | 'gt-react' | 'next-intl' | 'react-i18next' | 'next-i18next' | 'base';
 export interface ContentScanner {
     scanForContent(options: WrapOptions, framework: Framework): Promise<{
         errors: string[];

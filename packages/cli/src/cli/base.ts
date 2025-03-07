@@ -5,7 +5,6 @@ import createOrUpdateConfig from '../fs/config/setupConfig';
 import { input, select } from '@inquirer/prompts';
 import { isValidLocale } from 'generaltranslation';
 import findFilepath, { findFile } from '../fs/findFilepath';
-import loadConfig from '../fs/config/loadConfig';
 import {
   noDefaultLocaleError,
   noLocalesError,
@@ -38,7 +37,7 @@ type TranslateOptions = {
   projectId?: string;
 };
 
-const SUPPORTED_DATA_FORMATS = ['json', 'yaml', 'yml'];
+const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 export class BaseCLI {
   private library: SupportedLibraries;
@@ -129,12 +128,12 @@ export class BaseCLI {
 
         const dataFormat =
           this.library === 'next-intl'
-            ? 'next-intl'
+            ? 'ICU'
             : this.library === 'react-i18next'
-              ? 'react-i18next'
+              ? 'I18NEXT'
               : this.library === 'next-i18next'
-                ? 'next-i18next'
-                : 'gt';
+                ? 'I18NEXT'
+                : 'JSX';
 
         if (!dataFormat) {
           console.error(noDataFormatError);

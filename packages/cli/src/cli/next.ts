@@ -4,19 +4,15 @@ import {
   Updates,
   SetupOptions,
   SupportedFrameworks,
-} from 'gt-react-cli/types';
-import {
-  displayAsciiTitle,
-  displayInitializingText,
-} from 'gt-react-cli/console/console';
+} from '../types';
+import { displayAsciiTitle, displayInitializingText } from '../console/console';
 import chalk from 'chalk';
 import { select } from '@inquirer/prompts';
-import createConfig from 'gt-react-cli/fs/config/setupConfig';
-import { detectFormatter, formatFiles } from 'gt-react-cli/hooks/postProcess';
-import findFilepath from 'gt-react-cli/fs/findFilepath';
+import { detectFormatter, formatFiles } from '../hooks/postProcess';
+import findFilepath from '../fs/findFilepath';
 import scanForContent from '../next/parse/scanForContent';
-import createDictionaryUpdates from 'gt-react-cli/updates/createDictionaryUpdates';
-import createInlineUpdates from 'gt-react-cli/updates/createInlineUpdates';
+import createDictionaryUpdates from '../react/updates/createDictionaryUpdates';
+import createInlineUpdates from '../react/updates/createInlineUpdates';
 import handleInitGT from '../next/parse/handleInitGT';
 import { ReactCLI } from './react';
 import { generateSettings } from '../config/generateSettings';

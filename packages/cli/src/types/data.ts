@@ -12,7 +12,15 @@ export type FlattenedDictionary = {
   [key: string]: DictionaryEntry;
 };
 
-export type DataFormat = 'gt' | 'next-intl' | 'react-i18next' | 'next-i18next';
+export type JSONDictionary = {
+  [key: string]: string | JSONDictionary;
+};
+
+export type FlattenedJSONDictionary = {
+  [key: string]: string;
+};
+
+export type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
 
 export type FileExtension = 'json' | 'yaml' | 'yml';
 

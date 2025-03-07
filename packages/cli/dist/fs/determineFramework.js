@@ -30,6 +30,12 @@ function determineLibrary() {
         else if (dependencies['next-intl']) {
             return 'next-intl';
         }
+        else if (dependencies['react-i18next']) {
+            return 'react-i18next';
+        }
+        else if (dependencies['next-i18next']) {
+            return 'next-i18next';
+        }
         // Fallback to base if neither is found
         return 'base';
     }

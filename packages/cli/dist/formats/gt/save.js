@@ -12,7 +12,7 @@ const path_1 = __importDefault(require("path"));
  * @param translationsDir - The directory to save the translations to
  * @param fileType - The file type to save the translations as (file extension)
  */
-function saveTranslations(translations, translationsDir, dataType, fileExtension) {
+function saveTranslations(translations, translationsDir, dataFormat, fileExtension) {
     for (const translation of translations) {
         const locale = translation.locale;
         const translationData = translation.translation;
@@ -20,7 +20,7 @@ function saveTranslations(translations, translationsDir, dataType, fileExtension
         // Ensure directory exists
         fs_1.default.mkdirSync(path_1.default.dirname(filepath), { recursive: true });
         // Handle different file types
-        if (dataType === 'gt-json') {
+        if (dataFormat === 'JSX') {
             fs_1.default.writeFileSync(filepath, JSON.stringify(translationData, null, 2));
         }
     }

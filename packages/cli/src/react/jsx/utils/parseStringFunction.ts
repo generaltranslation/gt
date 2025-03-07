@@ -96,7 +96,7 @@ export function parseStrings(
               }
 
               updates.push({
-                type: 'content',
+                type: 'JSX',
                 source: content,
                 metadata,
               });

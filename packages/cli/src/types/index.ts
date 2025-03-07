@@ -1,15 +1,19 @@
-export type Updates = (
+import { JsxChildren } from 'generaltranslation/internal';
+
+export type Updates = ({ metadata: Record<string, any> } & (
   | {
-      type: 'jsx';
-      source: any;
-      metadata: Record<string, any>;
+      type: 'JSX';
+      source: JsxChildren;
     }
   | {
-      type: 'content';
-      source: any;
-      metadata: Record<string, any>;
+      type: 'ICU';
+      source: string;
     }
-)[];
+  | {
+      type: 'I18NEXT';
+      source: string;
+    }
+))[];
 
 export type Options = {
   config: string;
