@@ -5,9 +5,6 @@ import defaultInitGTProps from './config-dir/props/defaultInitGTProps';
 import InitGTProps from './config-dir/props/InitGTProps';
 import {
   APIKeyMissingWarn,
-  conflictingDictionaryMessagesDefaultLocaleWarn,
-  createMissingCustomMessageLoadedError,
-  createMissingCustomTranslationLoadedError,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
   projectIdMissingWarn,
@@ -115,6 +112,14 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
       ? mergedConfig.dictionary
       : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']);
 
+  // Get the type of dictionary file
+  const resolvedDictionaryFilePathType = resolvedDictionaryFilePath
+    ? path.extname(resolvedDictionaryFilePath)
+    : undefined;
+  if (resolvedDictionaryFilePathType) {
+    mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
+  }
+
   // Resolve custom translation loader path
   const customLoadTranslationPath =
     typeof mergedConfig.loadTranslationPath === 'string'
@@ -126,14 +131,6 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
     typeof mergedConfig.loadMessagePath === 'string'
       ? mergedConfig.loadMessagePath
       : resolveConfigFilepath('loadMessages');
-
-  // Get the type of dictionary file
-  const resolvedDictionaryFilePathType = resolvedDictionaryFilePath
-    ? path.extname(resolvedDictionaryFilePath)
-    : undefined;
-  if (resolvedDictionaryFilePathType) {
-    mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
-  }
 
   // ----- CUSTOM CONTENT LOADER FLAGS ----- //
 
@@ -209,7 +206,7 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
       }),
       _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (!!customLoadTranslationPath).toString(),
       _GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED: (!!customLoadMessagePath).toString(),
-      _GENERALTRANSLATION_DEFAULT_LOCALE: mergedConfig.defaultLocale,
+      _GENERALTRANSLATION_DEFAULT_LOCALE: (mergedConfig.defaultLocale || defaultInitGTProps.defaultLocale).toString(),
     },
     experimental: {
       ...nextConfig.experimental,

@@ -115,6 +115,13 @@ function withGTConfig(nextConfig, props) {
     var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
         ? mergedConfig.dictionary
         : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']);
+    // Get the type of dictionary file
+    var resolvedDictionaryFilePathType = resolvedDictionaryFilePath
+        ? path_1.default.extname(resolvedDictionaryFilePath)
+        : undefined;
+    if (resolvedDictionaryFilePathType) {
+        mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
+    }
     // Resolve custom translation loader path
     var customLoadTranslationPath = typeof mergedConfig.loadTranslationPath === 'string'
         ? mergedConfig.loadTranslationPath
@@ -123,13 +130,6 @@ function withGTConfig(nextConfig, props) {
     var customLoadMessagePath = typeof mergedConfig.loadMessagePath === 'string'
         ? mergedConfig.loadMessagePath
         : resolveConfigFilepath('loadMessages');
-    // Get the type of dictionary file
-    var resolvedDictionaryFilePathType = resolvedDictionaryFilePath
-        ? path_1.default.extname(resolvedDictionaryFilePath)
-        : undefined;
-    if (resolvedDictionaryFilePathType) {
-        mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
-    }
     // ----- CUSTOM CONTENT LOADER FLAGS ----- //
     // Local messages flag
     if (customLoadMessagePath &&
@@ -174,7 +174,7 @@ function withGTConfig(nextConfig, props) {
     var I18NConfigParams = JSON.stringify(mergedConfig);
     return __assign(__assign({}, nextConfig), { env: __assign(__assign(__assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), (resolvedDictionaryFilePathType && {
             _GENERALTRANSLATION_DICTIONARY_FILE_TYPE: resolvedDictionaryFilePathType,
-        })), { _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (!!customLoadTranslationPath).toString(), _GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED: (!!customLoadMessagePath).toString(), _GENERALTRANSLATION_DEFAULT_LOCALE: mergedConfig.defaultLocale }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_b = nextConfig.experimental) === null || _b === void 0 ? void 0 : _b.turbo)
+        })), { _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (!!customLoadTranslationPath).toString(), _GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED: (!!customLoadMessagePath).toString(), _GENERALTRANSLATION_DEFAULT_LOCALE: (mergedConfig.defaultLocale || defaultInitGTProps_1.default.defaultLocale).toString() }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_b = nextConfig.experimental) === null || _b === void 0 ? void 0 : _b.turbo)
             ? {
                 turbo: __assign(__assign({}, (((_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_e = (_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) === null || _e === void 0 ? void 0 : _e.resolveAlias) || {})), { 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translation': customLoadTranslationPath || '', 'gt-next/_load-messages': customLoadMessagePath || '' }) }),
             }
