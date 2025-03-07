@@ -1,8 +1,18 @@
 import { useMemo } from 'react';
-import { isSameLanguage, requiresTranslation } from 'generaltranslation';
+import {
+  getLocaleProperties,
+  isSameLanguage,
+  requiresTranslation,
+} from 'generaltranslation';
 import { useEffect, useState } from 'react';
 import { GTContext } from './GTContext';
-import { CustomLoader, MessagesObject, RenderMethod, TranslationsObject } from '../types/types';
+import {
+  CustomLoader,
+  Dictionary,
+  MessagesObject,
+  RenderMethod,
+  TranslationsObject,
+} from '../types/types';
 import {
   defaultCacheUrl,
   defaultRuntimeApiUrl,
@@ -11,9 +21,12 @@ import {
 import {
   APIKeyMissingWarn,
   createUnsupportedLocalesWarning,
+  customLoadMessagesError,
+  customLoadTranslationError,
   devApiKeyProductionError,
+  dictionaryMissingWarning,
   projectIdMissingWarning,
-} from '../messages/createMessages';
+} from '../errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
@@ -47,7 +60,7 @@ export default function GTProvider({
   children,
   projectId: _projectId = '',
   devApiKey: _devApiKey,
-  dictionary = {},
+  dictionary: _dictionary,
   locales = [],
   defaultLocale = libraryDefaultLocale,
   locale: _locale,
@@ -96,17 +109,65 @@ export default function GTProvider({
   });
 
   // Translation at runtime during development is enabled
-  const runtimeTranslationEnabled = useMemo(() => !!(
-    projectId &&
-    runtimeUrl &&
-    devApiKey &&
-    process.env.NODE_ENV === 'development'
-  ), [projectId, runtimeUrl, devApiKey]);
+  const runtimeTranslationEnabled = useMemo(
+    () =>
+      !!(
+        projectId &&
+        runtimeUrl &&
+        devApiKey &&
+        process.env.NODE_ENV === 'development'
+      ),
+    [projectId, runtimeUrl, devApiKey]
+  );
 
-  // loaders
-  const loadTranslationType = useMemo(() => (
-    (loadTranslation && 'custom') || (cacheUrl && 'default') || 'disabled'
-  ), [loadTranslation]);
+  // Loaders
+  const loadTranslationType = useMemo(
+    () =>
+      (loadTranslation && 'custom') || (cacheUrl && 'default') || 'disabled',
+    [loadTranslation]
+  );
+
+  // ---------- SET UP DICTIONARY ---------- //
+
+  const [dictionary, setDictionary] = useState<Dictionary | undefined>(
+    _dictionary
+  );
+
+  // Resolve dictionary when not provided, but using custom message loader
+  useEffect(() => {
+    // Early return if dictionary is provided or not loading messages
+    if (dictionary || !loadMessages) return;
+
+    let storeResults = true;
+
+    (async () => {
+      let result;
+      // Check for [defaultLocale.json] file
+      try {
+        result = await loadMessages(defaultLocale);
+      } catch {}
+
+      // Check the simplified locale name ('en' instead of 'en-US')
+      const languageCode = getLocaleProperties(defaultLocale)?.languageCode;
+      if (!dictionary && languageCode && languageCode !== defaultLocale) {
+        try {
+          result = await loadMessages(languageCode);
+        } catch (error) {
+          console.warn(dictionaryMissingWarning, error);
+        }
+      }
+
+      // Update dictionary
+      if (storeResults) {
+        setDictionary(result || {});
+      }
+    })();
+
+    // cancel load if a dep changes
+    return () => {
+      storeResults = false;
+    };
+  }, [dictionary, loadMessages]);
 
   // ---------- MEMOIZED CHECKS ---------- //
 
@@ -177,7 +238,6 @@ export default function GTProvider({
     return [translationRequired, dialectTranslationRequired];
   }, [defaultLocale, locale, locales]);
 
-
   // ---------- MESSAGES STATE ---------- //
 
   // Null -> not loaded, {} -> Loaded (or not required/load failed)
@@ -233,25 +293,22 @@ export default function GTProvider({
 
   useEffect(() => {
     // Early return if no need to load messages
-    if (messages || !translationRequired) return;
+    if (messages || !translationRequired || !loadMessages) return;
 
     // Load messages
     let storeResults = true;
     (async () => {
       let result = {};
       try {
-        if (!!loadMessages){
-          result = await loadMessages(locale);
-        }
+        result = await loadMessages(locale);
       } catch (error) {
-        console.error(error);
+        console.error(customLoadMessagesError(locale), error);
       }
 
       if (storeResults) {
-        setMessages({});
+        setMessages(result);
       }
-    }
-    )();
+    })();
 
     // cancel load if a dep changes
     return () => {
@@ -268,26 +325,40 @@ export default function GTProvider({
     // Fetch translations
     let storeResults = true;
     (async () => {
-      try {
-        let result;
-        switch (loadTranslationType) {
-          case 'custom':
-            // check is redundant, but makes ts happy
-            if (loadTranslation) result = await loadTranslation(locale);
-            break;
-          case 'default':
+      let result;
+      switch (loadTranslationType) {
+        case 'custom':
+          // check is redundant, but makes ts happy
+          if (loadTranslation) {
+            try {
+              result = await loadTranslation(locale);
+            } catch (error) {
+              console.error(customLoadTranslationError(locale), error);
+            }
+          }
+          break;
+        case 'default':
+          try {
             result = await fetchTranslations({
               cacheUrl,
               projectId,
               locale,
               versionId: _versionId,
             });
-            break;
-          default:
-            result = {};
-        }
+          } catch (error) {
+            console.error(error);
+          }
+          break;
+      }
 
-        const parsedResult = Object.entries(result).reduce(
+      // fallback to empty object if failed or disabled
+      if (!result) {
+        result = {};
+      }
+
+      // Parse
+      try {
+        result = Object.entries(result).reduce(
           (
             translationsAcc: Record<string, any>,
             [hash, target]: [string, any]
@@ -297,14 +368,13 @@ export default function GTProvider({
           },
           {}
         );
-        if (storeResults) {
-          setTranslations(parsedResult); // store results
-        }
       } catch (error) {
         console.error(error);
-        if (storeResults) {
-          setTranslations({}); // not classified as a translation error, because we can still fetch from API
-        }
+      }
+
+      // Record results
+      if (storeResults) {
+        setTranslations(result); // not classified as a translation error, because we can still fetch from API
       }
     })();
 

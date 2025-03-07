@@ -5,11 +5,11 @@ import { getLocaleProperties } from 'generaltranslation';
 export const remoteTranslationsError =
   'gt-next Error: fetching remote translation.';
 
-export const customLoadTranslationError =
-  'gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.';
+export const customLoadTranslationError = (locale: string = '') =>
+  `gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(${locale}), make sure it is correctly implemented.`;
 
-export const customLoadMessagesError =
-  'gt-next Error: fetching locally stored messages. If you are using a custom loadMessage(), make sure it is correctly implemented.';
+export const customLoadMessagesError = (locale: string = '') =>
+  `gt-next Error: fetching locally stored messages. If you are using a custom loadMessage(${locale}), make sure it is correctly implemented.`;
 
 export const createStringTranslationError = (
   string: string,

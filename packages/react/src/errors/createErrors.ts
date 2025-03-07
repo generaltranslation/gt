@@ -42,13 +42,13 @@ export const createGenericRuntimeTranslationError = (
   }
 };
 
-export const dictionaryDisabledError =
-  `gt-react Error: ` +
-  `You are trying to use a dictionary, but dictionary has been disabled. ` +
-  `This is likely because the server cannot access the dictionary upstream. ` +
-  `For example, if you are using gt-next, make sure that you have added the withGTConfig() plugin to your app and that the dictionary exists.`;
-
 export const runtimeTranslationError = `gt-react Error: Runtime translation failed: `;
+
+export const customLoadTranslationError = (locale: string = '') =>
+  `gt-react Error: fetching locally stored translations. If you are using a custom loadTranslation(${locale}), make sure it is correctly implemented.`;
+
+export const customLoadMessagesError = (locale: string = '') =>
+  `gt-react Error: fetching locally stored messages. If you are using a custom loadMessage(${locale}), make sure it is correctly implemented.`;
 
 // ---- WARNINGS ---- //
 
@@ -97,3 +97,9 @@ export const createUnsupportedLocaleWarning = (
     `Falling back to "${validatedLocale}".`
   );
 };
+
+export const dictionaryMissingWarning =
+  `gt-react Error: ` +
+  `No dictionary was found. ` +
+  `Ensure you are either passing your dictionary to the <GTProvider>, or if you are using user defined messages, ` +
+  `that you have defined a [defaultLocale].json file in your messages directory and that your loadMessages() function is properly defined.`;

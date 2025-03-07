@@ -63,7 +63,7 @@ export default async function loadTranslation(
         const result = await customLoadTranslation(props.targetLocale);
         return parseResult(result); 
       } catch (error) {
-        console.error(customLoadTranslationError, error);
+        console.error(customLoadTranslationError(), error);
         return undefined;
       }
     };

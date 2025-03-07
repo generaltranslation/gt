@@ -14,14 +14,17 @@ import getEntryAndMetadata from '../../provider/helpers/getEntryAndMetadata';
 import {
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
-} from '../../messages/createMessages';
-import { renderContentToString, splitStringToContent } from 'generaltranslation';
+} from '../../errors/createErrors';
+import {
+  renderContentToString,
+  splitStringToContent,
+} from 'generaltranslation';
 import { hashJsxChildren } from 'generaltranslation/id';
 import { Content } from 'generaltranslation/internal';
 import { TranslateContentCallback } from '../../types/runtime';
 
 export default function useCreateInternalUseDictFunction(
-  dictionary: Dictionary,
+  dictionary: Dictionary | undefined,
   translations: TranslationsObject | null,
   messages: MessagesObject | null,
   locale: string,
@@ -34,6 +37,11 @@ export default function useCreateInternalUseDictFunction(
 ) {
   return useCallback(
     (id: string, options: DictionaryTranslationOptions = {}): string => {
+      // Check: dictionary exists
+      if (!dictionary) {
+        return '';
+      }
+
       // Get entry
       const value = getDictionaryEntry(dictionary, id);
 

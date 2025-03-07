@@ -3,7 +3,7 @@ import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import {
   createNestedDataGTError,
   createNestedTError,
-} from '../messages/createMessages';
+} from '../errors/createErrors';
 import {
   Child,
   Children,
