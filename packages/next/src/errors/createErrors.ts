@@ -95,8 +95,7 @@ export const translationLoadingWarning =
 
 export const runtimeTranslationTimeoutWarning = `gt-next: Runtime translation timed out.`;
 
-export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the withGTConfig() plugin.`;
-
+export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added a dictionary to your project (either dictionary.js or /messages/[defaultLocale].json), and you have added the withGTConfig() plugin.`;
 
 export const conflictingDictionaryMessagesDefaultLocaleWarn = (dictionaryPath: string, defaultLocalMessagePath: string, defaultLocale: string) => `gt-next: ` +
   `You currently have ${defaultLocale} set as your default locale. ` +

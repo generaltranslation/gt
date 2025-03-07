@@ -14,7 +14,7 @@ export type TranslationManagerConfig = {
     loadTranslationType?: 'remote' | 'custom' | 'disabled';
 };
 /**
- * Manages remote translations.
+ * Manages translations
  */
 export declare class TranslationManager {
     private config;

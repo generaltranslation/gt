@@ -32,7 +32,11 @@ import {
   GTTranslationError,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
-  RuntimeTranslationOptions
+  RuntimeTranslationOptions,
+  LocalesMessages,
+  MessagesContent,
+  MessagesObject,
+  CustomLoader,
 } from './types/types';
 
 import { GTContextType, ClientProviderProps } from './types/providers';
@@ -73,5 +77,9 @@ export {
   ClientProviderProps,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
-  RuntimeTranslationOptions
+  RuntimeTranslationOptions,
+  MessagesContent,
+  MessagesObject,
+  LocalesMessages,
+  CustomLoader,
 };

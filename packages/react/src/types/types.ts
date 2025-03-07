@@ -40,6 +40,9 @@ export type Variable = {
   variable?: 'variable' | 'number' | 'datetime' | 'currency';
 };
 
+
+// ----- TRANSLATION ----- //
+
 export type TranslatedElement = {
   type: string;
   props: {
@@ -69,13 +72,31 @@ export type TranslationLoading = {
 };
 
 export type TranslationsObject = {
-  [key: string]: TranslationSuccess | TranslationLoading | TranslationError;
+  [hash: string]: TranslationSuccess | TranslationLoading | TranslationError;
 };
-
 // maps locales to translation objects
 export type LocalesTranslations = {
   [locale: string]: TranslationsObject | null;
 };
+
+// ----- MESSAGES ----- //
+
+// a user defined message (e.g. a user provided translation)
+export type MessagesContent = string;
+
+// maps message ids to messages content
+export type MessagesObject = {
+  [id: string]: MessagesContent;
+}
+
+// maps locales to messages objects
+export type LocalesMessages = {
+  [locale: string]: MessagesObject;
+}
+
+
+export type CustomLoader = (locale: string) => Promise<any>;
+
 
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 

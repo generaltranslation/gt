@@ -35,35 +35,19 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = loadTranslation;
 var createErrors_1 = require("../errors/createErrors");
+var resolveTranslationLoader_1 = __importDefault(require("../loaders/resolveTranslationLoader"));
 var loadTranslationFunction;
-// flatten object helper function
-function flattenObject(obj, parentKey, result) {
-    if (parentKey === void 0) { parentKey = ''; }
-    if (result === void 0) { result = {}; }
-    for (var key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            var newKey = parentKey ? "".concat(parentKey, ".").concat(key) : key;
-            var value = obj[key];
-            if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-                flattenObject(value, newKey, result);
-            }
-            else {
-                result[newKey] = value;
-            }
-        }
-    }
-    return result;
-}
 // parse translation result (local or remote)
 function parseResult(result) {
     if (result && Object.keys(result).length) {
-        // Flatten the object
-        var flattenedResult = flattenObject(result);
         // Mark success
-        var parsedResult = Object.entries(flattenedResult).reduce(function (translationsAcc, _a) {
+        var parsedResult = Object.entries(result).reduce(function (translationsAcc, _a) {
             var hash = _a[0], target = _a[1];
             translationsAcc[hash] = { state: 'success', target: target };
             return translationsAcc;
@@ -71,56 +55,6 @@ function parseResult(result) {
         return parsedResult;
     }
     return undefined;
-}
-function getCustomLoaders() {
-    return __awaiter(this, void 0, void 0, function () {
-        var customLoadMessages, customLoadTranslation, customLoadMessagesConfig, customLoadTranslationConfig;
-        return __generator(this, function (_a) {
-            // message loader
-            if (process.env._GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED === 'true') {
-                customLoadMessagesConfig = void 0;
-                try {
-                    customLoadMessagesConfig = require('gt-next/_load-messages');
-                }
-                catch (_b) { }
-                // Get custom loader
-                customLoadMessages =
-                    (customLoadMessagesConfig === null || customLoadMessagesConfig === void 0 ? void 0 : customLoadMessagesConfig.default) ||
-                        (customLoadMessagesConfig === null || customLoadMessagesConfig === void 0 ? void 0 : customLoadMessagesConfig.getLocalMessages);
-                // Check: custom loader is exported
-                if (!customLoadMessages) {
-                    // Custom loader file was defined but not exported
-                    if (process.env.NODE_ENV === 'production') {
-                        console.error(createErrors_1.unresolvedCustomLoadMessagesError);
-                        return [2 /*return*/, { customLoadMessages: undefined, customLoadTranslation: undefined }];
-                    }
-                    throw new Error(createErrors_1.unresolvedCustomLoadMessagesError);
-                }
-            }
-            // translation loader
-            if (process.env._GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED === 'true') {
-                customLoadTranslationConfig = void 0;
-                try {
-                    customLoadTranslationConfig = require('gt-next/_load-translation');
-                }
-                catch (_c) { }
-                // Get custom loader
-                customLoadTranslation =
-                    (customLoadTranslationConfig === null || customLoadTranslationConfig === void 0 ? void 0 : customLoadTranslationConfig.default) ||
-                        (customLoadTranslationConfig === null || customLoadTranslationConfig === void 0 ? void 0 : customLoadTranslationConfig.getLocalTranslation);
-                // Check: custom loader is exported
-                if (!customLoadTranslation) {
-                    // Custom loader file was defined but not exported
-                    if (process.env.NODE_ENV === 'production') {
-                        console.error(createErrors_1.unresolvedCustomLoadTranslationError);
-                        return [2 /*return*/, { customLoadMessages: undefined, customLoadTranslation: undefined }];
-                    }
-                    throw new Error(createErrors_1.unresolvedCustomLoadTranslationError);
-                }
-            }
-            return [2 /*return*/, { customLoadMessages: customLoadMessages, customLoadTranslation: customLoadTranslation }];
-        });
-    });
 }
 /**
  * Loads the translations for the user's current locale.
@@ -131,80 +65,34 @@ function getCustomLoaders() {
  */
 function loadTranslation(props) {
     return __awaiter(this, void 0, void 0, function () {
-        var _a, customLoadMessages, customLoadTranslation, loadCustomContent;
+        var customLoadTranslation;
         var _this = this;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0:
                     if (!loadTranslationFunction) return [3 /*break*/, 2];
                     return [4 /*yield*/, loadTranslationFunction(props)];
-                case 1: return [2 /*return*/, _b.sent()];
-                case 2: return [4 /*yield*/, getCustomLoaders()];
-                case 3:
-                    _a = _b.sent(), customLoadMessages = _a.customLoadMessages, customLoadTranslation = _a.customLoadTranslation;
-                    loadCustomContent = function (loader, errorMsg) { return __awaiter(_this, void 0, void 0, function () {
-                        var result, error_1;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    _a.trys.push([0, 2, , 3]);
-                                    return [4 /*yield*/, loader(props.targetLocale)];
-                                case 1:
-                                    result = _a.sent();
-                                    return [2 /*return*/, parseResult(result)];
-                                case 2:
-                                    error_1 = _a.sent();
-                                    console.error(errorMsg, error_1);
-                                    return [3 /*break*/, 3];
-                                case 3: return [2 /*return*/];
-                            }
-                        });
-                    }); };
-                    // Assign a loader to singleton
-                    if (customLoadMessages && customLoadTranslation) {
-                        // ----- USING CUSTOM LOADER WITH FALLBACK ----- //
-                        // Set custom translation loader (with fallback)
-                        loadTranslationFunction = function (props) { return __awaiter(_this, void 0, void 0, function () {
-                            var result;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0: return [4 /*yield*/, loadCustomContent(customLoadMessages, createErrors_1.customLoadMessagesError)];
-                                    case 1:
-                                        result = _a.sent();
-                                        if (result)
-                                            return [2 /*return*/, result];
-                                        return [4 /*yield*/, loadCustomContent(customLoadTranslation, createErrors_1.customLoadTranslationError)];
-                                    case 2: 
-                                    // Load translation
-                                    return [2 /*return*/, _a.sent()];
-                                }
-                            });
-                        }); };
-                    }
-                    else if (customLoadMessages) {
-                        // ----- USING CUSTOM MESSAGE LOADER ----- //
-                        // Set custom message loader
-                        loadTranslationFunction = function (props) { return __awaiter(_this, void 0, void 0, function () {
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0: return [4 /*yield*/, loadCustomContent(customLoadMessages, createErrors_1.customLoadMessagesError)];
-                                    case 1: 
-                                    // Load messages
-                                    return [2 /*return*/, _a.sent()];
-                                }
-                            });
-                        }); };
-                    }
-                    else if (customLoadTranslation) {
+                case 1: return [2 /*return*/, _a.sent()];
+                case 2:
+                    customLoadTranslation = (0, resolveTranslationLoader_1.default)();
+                    if (customLoadTranslation) {
                         // ----- USING CUSTOM TRANSLATION LOADER ----- //
                         // Set custom translation loader
-                        loadTranslationFunction = function (props) { return __awaiter(_this, void 0, void 0, function () {
+                        loadTranslationFunction = function (_) { return __awaiter(_this, void 0, void 0, function () {
+                            var result, error_1;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0: return [4 /*yield*/, loadCustomContent(customLoadTranslation, createErrors_1.customLoadTranslationError)];
-                                    case 1: 
-                                    // Load translation
-                                    return [2 /*return*/, _a.sent()];
+                                    case 0:
+                                        _a.trys.push([0, 2, , 3]);
+                                        return [4 /*yield*/, customLoadTranslation(props.targetLocale)];
+                                    case 1:
+                                        result = _a.sent();
+                                        return [2 /*return*/, parseResult(result)];
+                                    case 2:
+                                        error_1 = _a.sent();
+                                        console.error(createErrors_1.customLoadTranslationError, error_1);
+                                        return [2 /*return*/, undefined];
+                                    case 3: return [2 /*return*/];
                                 }
                             });
                         }); };
@@ -235,9 +123,9 @@ function loadTranslation(props) {
                         }); };
                     }
                     return [4 /*yield*/, loadTranslationFunction(props)];
-                case 4: 
+                case 3: 
                 // Invoke the function
-                return [2 /*return*/, _b.sent()];
+                return [2 /*return*/, _a.sent()];
             }
         });
     });

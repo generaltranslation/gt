@@ -21,6 +21,6 @@ export declare const noInitGTWarn: string;
 export declare const APIKeyMissingWarn: string;
 export declare const translationLoadingWarning: string;
 export declare const runtimeTranslationTimeoutWarning = "gt-next: Runtime translation timed out.";
-export declare const dictionaryNotFoundWarning = "gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the withGTConfig() plugin.";
+export declare const dictionaryNotFoundWarning = "gt-next: Dictionary not found. Make sure you have added a dictionary to your project (either dictionary.js or /messages/[defaultLocale].json), and you have added the withGTConfig() plugin.";
 export declare const conflictingDictionaryMessagesDefaultLocaleWarn: (dictionaryPath: string, defaultLocalMessagePath: string, defaultLocale: string) => string;
 //# sourceMappingURL=createErrors.d.ts.map

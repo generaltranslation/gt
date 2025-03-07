@@ -5,7 +5,6 @@ import {
   isValidDictionaryEntry,
 } from 'gt-react/internal';
 
-import getGT from './getGT';
 import getDictionary from '../../dictionary/getDictionary';
 import {
   createInvalidDictionaryEntryWarning,
@@ -40,13 +39,14 @@ export default async function getDict(
     return id ? `${id}.${suffix}` : suffix;
   };
 
-  const dictionary = getDictionary() || {};
+  const dictionary = await getDictionary() || {};
 
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
+  const messages = translationRequired ? await I18NConfig.getMessages(locale) : undefined;
   const translations = translationRequired
     ? await I18NConfig.getCachedTranslations(locale)
     : undefined;
@@ -98,7 +98,6 @@ export default async function getDict(
     // Get entry and metadata
     const { entry, metadata } = getEntryAndMetadata(value);
 
-  
     // Validate entry
     if (!entry || typeof entry !== 'string') return '';
 
@@ -118,26 +117,29 @@ export default async function getDict(
     // Check: translation required
     if (!translationRequired) return renderContent(source, [defaultLocale]);
 
-    // ----- GET TRANSLATION ----- //
-    // Calc hash helper
-    let hash: string;
-    const calculateHash = () => {
-      if (hash) return hash;
-      hash = hashJsxChildren({
-        source,
-        ...(metadata?.context && { context: metadata?.context }),
-        id,
-      });
-      return hash;
-    };
+    // ---------- MESSAGES ---------- //
 
-    // Check id first
-    let translationEntry = translations?.[id];
+    // Get message
+    const message = messages?.[id];
 
-    // Check hash
-    if (!translationEntry) {
-      translationEntry = translations?.[calculateHash()];
+    // Render message
+    if (message) {
+      return renderContentToString(
+        splitStringToContent(message),
+        [locale, defaultLocale],
+        options.variables,
+        options.variablesOptions
+      );
     }
+
+    // ---------- TRANSLATION ---------- //
+
+    const hash = hashJsxChildren({
+      source,
+      ...(metadata?.context && { context: metadata?.context }),
+      id,
+    });
+    const translationEntry = translations?.[hash];
 
     // ----- RENDER TRANSLATION ----- //
 
@@ -164,7 +166,7 @@ export default async function getDict(
       options: {
         ...(metadata?.context && { context: metadata?.context }),
         id,
-        hash: calculateHash(),
+        hash,
       },
     }).catch(() => {}); // Error logged in I18NConfig
 

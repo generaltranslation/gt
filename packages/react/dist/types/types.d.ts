@@ -63,11 +63,19 @@ export type TranslationLoading = {
     state: 'loading';
 };
 export type TranslationsObject = {
-    [key: string]: TranslationSuccess | TranslationLoading | TranslationError;
+    [hash: string]: TranslationSuccess | TranslationLoading | TranslationError;
 };
 export type LocalesTranslations = {
     [locale: string]: TranslationsObject | null;
 };
+export type MessagesContent = string;
+export type MessagesObject = {
+    [id: string]: MessagesContent;
+};
+export type LocalesMessages = {
+    [locale: string]: MessagesObject;
+};
+export type CustomLoader = (locale: string) => Promise<any>;
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 export type DictionaryTranslationOptions = {
     variables?: Record<string, any>;

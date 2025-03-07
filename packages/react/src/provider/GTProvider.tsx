@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { isSameLanguage, requiresTranslation } from 'generaltranslation';
 import { useEffect, useState } from 'react';
 import { GTContext } from './GTContext';
-import { RenderMethod, TranslationsObject } from '../types/types';
+import { CustomLoader, MessagesObject, RenderMethod, TranslationsObject } from '../types/types';
 import {
   defaultCacheUrl,
   defaultRuntimeApiUrl,
@@ -54,6 +54,7 @@ export default function GTProvider({
   cacheUrl = defaultCacheUrl,
   runtimeUrl = defaultRuntimeApiUrl,
   renderSettings = defaultRenderSettings,
+  loadMessages,
   loadTranslation,
   _versionId,
   ...metadata
@@ -71,7 +72,8 @@ export default function GTProvider({
     method: RenderMethod;
     timeout?: number;
   };
-  loadTranslation?: (locale: string) => Promise<any>;
+  loadMessages?: CustomLoader;
+  loadTranslation?: CustomLoader;
   _versionId?: string;
   [key: string]: any;
 }): React.JSX.Element {
@@ -94,16 +96,17 @@ export default function GTProvider({
   });
 
   // Translation at runtime during development is enabled
-  const runtimeTranslationEnabled = !!(
+  const runtimeTranslationEnabled = useMemo(() => !!(
     projectId &&
     runtimeUrl &&
     devApiKey &&
     process.env.NODE_ENV === 'development'
-  );
+  ), [projectId, runtimeUrl, devApiKey]);
 
-  // LoadTranslation type, only custom and default for now
-  const loadTranslationType: 'default' | 'custom' | 'disabled' =
-    (loadTranslation && 'custom') || (cacheUrl && 'default') || 'disabled';
+  // loaders
+  const loadTranslationType = useMemo(() => (
+    (loadTranslation && 'custom') || (cacheUrl && 'default') || 'disabled'
+  ), [loadTranslation]);
 
   // ---------- MEMOIZED CHECKS ---------- //
 
@@ -174,6 +177,17 @@ export default function GTProvider({
     return [translationRequired, dialectTranslationRequired];
   }, [defaultLocale, locale, locales]);
 
+
+  // ---------- MESSAGES STATE ---------- //
+
+  // Null -> not loaded, {} -> Loaded (or not required/load failed)
+  const [messages, setMessages] = useState<MessagesObject | null>(
+    translationRequired ? null : {}
+  );
+
+  // Reset messages if locale changes (null to trigger a new load)
+  useEffect(() => setMessages(translationRequired ? null : {}), [locale]);
+
   // ---------- TRANSLATION STATE ---------- //
 
   /** Key for translation tracking:
@@ -214,6 +228,36 @@ export default function GTProvider({
       setTranslations,
       ...metadata,
     });
+
+  // ---------- ATTEMPT TO LOAD MESSAGES ---------- //
+
+  useEffect(() => {
+    // Early return if no need to load messages
+    if (messages || !translationRequired) return;
+
+    // Load messages
+    let storeResults = true;
+    (async () => {
+      let result = {};
+      try {
+        if (!!loadMessages){
+          result = await loadMessages(locale);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+
+      if (storeResults) {
+        setMessages({});
+      }
+    }
+    )();
+
+    // cancel load if a dep changes
+    return () => {
+      storeResults = false;
+    };
+  }, [locale, loadMessages, translationRequired, messages]);
 
   // ---------- ATTEMPT TO LOAD TRANSLATIONS ---------- //
 
@@ -264,8 +308,8 @@ export default function GTProvider({
       }
     })();
 
+    // Cancel fetch if a dep changes
     return () => {
-      // cancel fetch if a dep changes
       storeResults = false;
     };
   }, [
@@ -296,6 +340,7 @@ export default function GTProvider({
   const _internalUseDictFunction = useCreateInternalUseDictFunction(
     dictionary,
     translations,
+    messages,
     locale,
     defaultLocale,
     translationRequired,
@@ -323,6 +368,7 @@ export default function GTProvider({
         setLocale,
         defaultLocale,
         translations,
+        messages,
         translationRequired,
         dialectTranslationRequired,
         projectId,

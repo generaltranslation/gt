@@ -73,7 +73,7 @@ exports.APIKeyMissingWarn = "gt-next: A Development API key is required for runt
 exports.translationLoadingWarning = "gt-next: [DEV ONLY] Translations have changed since the last update. " +
     "Translations in production will be preloaded, and page will not need to be refreshed.";
 exports.runtimeTranslationTimeoutWarning = "gt-next: Runtime translation timed out.";
-exports.dictionaryNotFoundWarning = "gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the withGTConfig() plugin.";
+exports.dictionaryNotFoundWarning = "gt-next: Dictionary not found. Make sure you have added a dictionary to your project (either dictionary.js or /messages/[defaultLocale].json), and you have added the withGTConfig() plugin.";
 var conflictingDictionaryMessagesDefaultLocaleWarn = function (dictionaryPath, defaultLocalMessagePath, defaultLocale) { return "gt-next: " +
     "You currently have ".concat(defaultLocale, " set as your default locale. ") +
     "Because you have a dictionary at ".concat(dictionaryPath, " and your default locale is ").concat(defaultLocale, ", ") +

@@ -3,6 +3,7 @@ import {
   Dictionary,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
+  MessagesObject,
   RenderMethod,
   TranslationsObject,
 } from '../../types/types';
@@ -22,6 +23,7 @@ import { TranslateContentCallback } from '../../types/runtime';
 export default function useCreateInternalUseDictFunction(
   dictionary: Dictionary,
   translations: TranslationsObject | null,
+  messages: MessagesObject | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
@@ -71,27 +73,32 @@ export default function useCreateInternalUseDictFunction(
       // Check: translation not required
       if (!translationRequired) return renderContent(source, [defaultLocale]);
 
+      // ----- CHECK MESSAGES ----- //
+
+      // Get message
+      const message = messages?.[id];
+
+      // Render message
+      if (message) {
+        return renderContentToString(
+          splitStringToContent(message),
+          [locale, defaultLocale],
+          options.variables,
+          options.variablesOptions
+        );
+      }
+
       // ----- CHECK TRANSLATIONS ----- //
 
       // Get hash
-      let hash: string;
-      const calculateHash = () => {
-        if (hash) return hash;
-        hash = hashJsxChildren({
-          source,
-          ...(metadata?.context && { context: metadata.context }),
-          id,
-        })
-        return hash;
-      };
+      let hash = hashJsxChildren({
+        source,
+        ...(metadata?.context && { context: metadata.context }),
+        id,
+      });
 
       // Check id first
-      let translationEntry = translations?.[id];
-
-      // Check hash
-      if (!translationEntry) {
-        translationEntry = translations?.[calculateHash()];
-      }
+      let translationEntry = translations?.[hash];
 
       // Check translation successful
       if (translationEntry?.state === 'success') {
@@ -120,7 +127,7 @@ export default function useCreateInternalUseDictFunction(
         metadata: {
           ...(metadata?.context && { context: metadata.context }),
           id,
-          hash: calculateHash(),
+          hash,
         },
       });
 

@@ -112,7 +112,6 @@ function withGTConfig(nextConfig, props) {
     mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
     // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
     // Resolve dictionary filepath
-    // TODO: add check for `${defaultLocale}.json/.ts/.js`
     var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
         ? mergedConfig.dictionary
         : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']);
@@ -124,72 +123,25 @@ function withGTConfig(nextConfig, props) {
     var customLoadMessagePath = typeof mergedConfig.loadMessagePath === 'string'
         ? mergedConfig.loadMessagePath
         : resolveConfigFilepath('loadMessages');
-    // Resolve local translations directory
-    var resolvedLocalTranslationDir = typeof mergedConfig.localTranslationsDir === 'string'
-        ? mergedConfig.localTranslationsDir
-        : './public/_gt';
-    // Resolve local messages directory
-    var resolvedLocalMessageDir = typeof mergedConfig.localMessagesDir === 'string'
-        ? mergedConfig.localMessagesDir
-        : './public/messages'; // TODO: should be in public??
-    // ----- GET DICTIONAR FILE TYPE ----- //
+    // Get the type of dictionary file
     var resolvedDictionaryFilePathType = resolvedDictionaryFilePath
         ? path_1.default.extname(resolvedDictionaryFilePath)
         : undefined;
     if (resolvedDictionaryFilePathType) {
         mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
     }
-    // ----- RESOLVE LOCAL TRANSLATIONS ----- //
-    // Check for local translations and get the list of locales
-    var localTranslationLocales = [];
-    if (fs_1.default.existsSync(resolvedLocalTranslationDir) &&
-        fs_1.default.statSync(resolvedLocalTranslationDir).isDirectory()) {
-        localTranslationLocales = fs_1.default
-            .readdirSync(resolvedLocalTranslationDir)
-            .filter(function (file) { return file.endsWith('.json'); })
-            .map(function (file) { return file.replace('.json', ''); });
-    }
-    // When there are local translations, force custom translation loader
-    // for now, we can just check if that file exists, and then assume the existance of the loaders
-    if (customLoadTranslationPath &&
-        fs_1.default.existsSync(path_1.default.resolve(customLoadTranslationPath))) {
-        mergedConfig.loadTranslationType = 'custom';
-    }
-    // ----- RESOLVE LOCAL MESSAGES ----- //
-    // Check for local messages and get the list of locales
-    var localMessageLocales = [];
-    if (fs_1.default.existsSync(resolvedLocalMessageDir) &&
-        fs_1.default.statSync(resolvedLocalMessageDir).isDirectory()) {
-        localMessageLocales = fs_1.default
-            .readdirSync(resolvedLocalMessageDir)
-            .filter(function (file) { return file.endsWith('.json'); })
-            .map(function (file) { return file.replace('.json', ''); });
-    }
-    console.log(localMessageLocales);
-    // When there are local messages, force custom message loader
-    // for now, we can just check if that file exists, and then assume the existance of the loaders
+    // ----- CUSTOM CONTENT LOADER FLAGS ----- //
+    // Local messages flag
     if (customLoadMessagePath &&
         fs_1.default.existsSync(path_1.default.resolve(customLoadMessagePath))) {
         mergedConfig.localMessagesEnabled = true;
     }
+    // Local translations flag
+    if (customLoadTranslationPath &&
+        fs_1.default.existsSync(path_1.default.resolve(customLoadTranslationPath))) {
+        mergedConfig.loadTranslationType = 'custom';
+    }
     // ---------- ERROR CHECKS ---------- //
-    // Check: local translations are enabled, but no custom translation loader is found
-    if (localTranslationLocales.length && mergedConfig.loadTranslationType !== 'custom') {
-        throw new Error((0, createErrors_1.createMissingCustomTranslationLoadedError)(customLoadTranslationPath));
-    }
-    // Check: local messages exist, but no custom message loader is found
-    if (localMessageLocales.length && mergedConfig.localMessagesEnabled && !customLoadMessagePath) {
-        throw new Error((0, createErrors_1.createMissingCustomMessageLoadedError)(customLoadMessagePath));
-    }
-    // If dictionary exists and messages for default locale also exist
-    // warn that dictionary will override (show in dev only)
-    if (mergedConfig.localMessagesEnabled &&
-        customLoadMessagePath &&
-        resolvedDictionaryFilePath &&
-        mergedConfig.defaultLocale &&
-        localMessageLocales.includes(mergedConfig.defaultLocale)) {
-        (0, createErrors_1.conflictingDictionaryMessagesDefaultLocaleWarn)(resolvedDictionaryFilePath, customLoadMessagePath, mergedConfig.defaultLocale);
-    }
     // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
     if ((mergedConfig.cacheUrl || mergedConfig.runtimeUrl) &&
         !mergedConfig.projectId &&
@@ -222,8 +174,7 @@ function withGTConfig(nextConfig, props) {
     var I18NConfigParams = JSON.stringify(mergedConfig);
     return __assign(__assign({}, nextConfig), { env: __assign(__assign(__assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), (resolvedDictionaryFilePathType && {
             _GENERALTRANSLATION_DICTIONARY_FILE_TYPE: resolvedDictionaryFilePathType,
-        })), { _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (!!localTranslationLocales
-                .length).toString(), _GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED: (!!localMessageLocales.length).toString() }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_b = nextConfig.experimental) === null || _b === void 0 ? void 0 : _b.turbo)
+        })), { _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (!!customLoadTranslationPath).toString(), _GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED: (!!customLoadMessagePath).toString(), _GENERALTRANSLATION_DEFAULT_LOCALE: mergedConfig.defaultLocale }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_b = nextConfig.experimental) === null || _b === void 0 ? void 0 : _b.turbo)
             ? {
                 turbo: __assign(__assign({}, (((_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_e = (_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) === null || _e === void 0 ? void 0 : _e.resolveAlias) || {})), { 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translation': customLoadTranslationPath || '', 'gt-next/_load-messages': customLoadMessagePath || '' }) }),
             }
