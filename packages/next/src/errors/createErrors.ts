@@ -8,6 +8,9 @@ export const remoteTranslationsError =
 export const customLoadTranslationError =
   'gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.';
 
+export const customLoadMessagesError =
+  'gt-next Error: fetching locally stored messages. If you are using a custom loadMessage(), make sure it is correctly implemented.';
+
 export const createStringTranslationError = (
   string: string,
   id?: string,
@@ -35,9 +38,18 @@ export const createMissingCustomTranslationLoadedError = (
     ? `Local translations exist, but no translation loader is found. Please create a translation loader at ${customLoadTranslationPath}`
     : 'Local translations exist, but no translation loader is found. See generaltranslation.com/docs for more information on how to create a translation loader.';
 
+export const createMissingCustomMessageLoadedError = (
+  customLoadMessagePath: string | undefined
+) =>
+  'gt-next Error: ' + customLoadMessagePath
+    ? `Local messages (user defined translations) exist, but no message loader is found. Please create a message loader at ${customLoadMessagePath}`
+    : 'Local messages (user defined translations) exist, but no message loader is found. See generaltranslation.com/docs for more information on how to create a message loader.';
+
 export const dictionaryDisabledError = `gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs`;
 
 export const unresolvedCustomLoadTranslationError = `gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.`;
+
+export const unresolvedCustomLoadMessagesError = `gt-next Error: Custom message loader could not be resolved. This usually means that the file was found, but the message loader function itself was not exported.`;
 
 // ---- WARNINGS ---- //
 
@@ -84,3 +96,9 @@ export const translationLoadingWarning =
 export const runtimeTranslationTimeoutWarning = `gt-next: Runtime translation timed out.`;
 
 export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the withGTConfig() plugin.`;
+
+
+export const conflictingDictionaryMessagesDefaultLocaleWarn = (dictionaryPath: string, defaultLocalMessagePath: string, defaultLocale: string) => `gt-next: ` +
+  `You currently have ${defaultLocale} set as your default locale. ` +
+  `Because you have a dictionary at ${dictionaryPath} and your default locale is ${defaultLocale}, ` +
+  `${defaultLocalMessagePath}/${defaultLocale}.json will be ignored in favor of the dictionary.`

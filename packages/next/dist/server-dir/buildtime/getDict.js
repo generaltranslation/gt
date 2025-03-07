@@ -52,9 +52,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getDict;
 var internal_1 = require("gt-react/internal");
-var getGT_1 = __importDefault(require("./getGT"));
 var getDictionary_1 = __importDefault(require("../../dictionary/getDictionary"));
 var createErrors_1 = require("../../errors/createErrors");
+var getI18NConfig_1 = __importDefault(require("../../config-dir/getI18NConfig"));
+var getLocale_1 = __importDefault(require("../../request/getLocale"));
+var generaltranslation_1 = require("generaltranslation");
+var id_1 = require("generaltranslation/id");
 /**
  * Returns the dictionary access function `d()`, which is used to translate an item from the dictionary.
  *
@@ -70,17 +73,31 @@ var createErrors_1 = require("../../errors/createErrors");
  */
 function getDict(id) {
     return __awaiter(this, void 0, void 0, function () {
-        var getId, dictionary, t, d;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var getId, dictionary, I18NConfig, locale, defaultLocale, translationRequired, translations, _a, renderSettings, d;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     getId = function (suffix) {
                         return id ? "".concat(id, ".").concat(suffix) : suffix;
                     };
                     dictionary = (0, getDictionary_1.default)() || {};
-                    return [4 /*yield*/, (0, getGT_1.default)()];
+                    I18NConfig = (0, getI18NConfig_1.default)();
+                    return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    t = _a.sent();
+                    locale = _b.sent();
+                    defaultLocale = I18NConfig.getDefaultLocale();
+                    translationRequired = I18NConfig.requiresTranslation(locale)[0];
+                    if (!translationRequired) return [3 /*break*/, 3];
+                    return [4 /*yield*/, I18NConfig.getCachedTranslations(locale)];
+                case 2:
+                    _a = _b.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    _a = undefined;
+                    _b.label = 4;
+                case 4:
+                    translations = _a;
+                    renderSettings = I18NConfig.getRenderSettings();
                     d = function (id, options) {
                         if (options === void 0) { options = {}; }
                         // Get entry
@@ -98,8 +115,63 @@ function getDict(id) {
                         }
                         // Get entry and metadata
                         var _a = (0, internal_1.getEntryAndMetadata)(value), entry = _a.entry, metadata = _a.metadata;
-                        // Translate
-                        return t(entry, __assign(__assign(__assign({}, metadata), options), { id: id }));
+                        // Validate entry
+                        if (!entry || typeof entry !== 'string')
+                            return '';
+                        // Parse content
+                        var source = (0, generaltranslation_1.splitStringToContent)(entry);
+                        // Render Method
+                        var renderContent = function (content, locales) {
+                            return (0, generaltranslation_1.renderContentToString)(content, locales, options.variables, options.variablesOptions);
+                        };
+                        // Check: translation required
+                        if (!translationRequired)
+                            return renderContent(source, [defaultLocale]);
+                        // ----- GET TRANSLATION ----- //
+                        // Calc hash helper
+                        var hash;
+                        var calculateHash = function () {
+                            if (hash)
+                                return hash;
+                            hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: id }));
+                            return hash;
+                        };
+                        // Check id first
+                        var translationEntry = translations === null || translations === void 0 ? void 0 : translations[id];
+                        // Check hash
+                        if (!translationEntry) {
+                            translationEntry = translations === null || translations === void 0 ? void 0 : translations[calculateHash()];
+                        }
+                        // ----- RENDER TRANSLATION ----- //
+                        // If a translation already exists
+                        if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success')
+                            return renderContent(translationEntry.target, [locale, defaultLocale]);
+                        // If a translation errored
+                        if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'error')
+                            return renderContent(source, [defaultLocale]);
+                        // ----- CREATE TRANSLATION ----- //
+                        // Since this is buildtime string translation, it's dev only
+                        if (!I18NConfig.isDevelopmentApiEnabled()) {
+                            console.warn((0, createErrors_1.createStringTranslationError)(entry, id, 'd'));
+                            return renderContent(source, [defaultLocale]);
+                        }
+                        // Translate on demand
+                        I18NConfig.translateContent({
+                            source: source,
+                            targetLocale: locale,
+                            options: __assign(__assign({}, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: id, hash: calculateHash() }),
+                        }).catch(function () { }); // Error logged in I18NConfig
+                        // Loading translation warning
+                        console.warn(createErrors_1.translationLoadingWarning);
+                        // Loading behavior
+                        if (renderSettings.method === 'replace') {
+                            return renderContent(source, [defaultLocale]);
+                        }
+                        else if (renderSettings.method === 'skeleton') {
+                            return '';
+                        }
+                        // Default is returning source, rather than returning a loading state
+                        return renderContent(source, [defaultLocale]);
                     };
                     return [2 /*return*/, d];
             }

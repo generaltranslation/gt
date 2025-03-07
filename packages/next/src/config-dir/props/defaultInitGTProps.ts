@@ -9,6 +9,7 @@ const defaultInitGTProps = {
   config: './gt.config.json',
   runtimeTranslation: true,
   loadTranslationType: 'remote',
+  localMessagesEnabled: false,
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
   defaultLocale: libraryDefaultLocale,

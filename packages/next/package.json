@@ -71,6 +71,9 @@
     },
     "./_load-translation": {
       "default": "./dist/_load-translation.js"
+    },
+    "./_load-messages": {
+      "default": "./dist/_load-messages.js"
     }
   },
   "typesVersions": {
@@ -95,6 +98,9 @@
       ],
       "_load-translation": [
         "./dist/_load-translation.d.ts"
+      ],
+      "_load-messages": [
+        "./dist/_load-messages.d.ts"
       ]
     }
   },
@@ -121,6 +127,9 @@
       ],
       "gt-next/_load-translation": [
         "/dist/_load-translation"
+      ],
+      "gt-next/_load-messages": [
+        "/dist/_load-messages"
       ]
     }
   },

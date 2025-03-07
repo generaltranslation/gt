@@ -5,6 +5,8 @@ import defaultInitGTProps from './config-dir/props/defaultInitGTProps';
 import InitGTProps from './config-dir/props/InitGTProps';
 import {
   APIKeyMissingWarn,
+  conflictingDictionaryMessagesDefaultLocaleWarn,
+  createMissingCustomMessageLoadedError,
   createMissingCustomTranslationLoadedError,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
@@ -108,6 +110,7 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
   // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
 
   // Resolve dictionary filepath
+  // TODO: add check for `${defaultLocale}.json/.ts/.js`
   const resolvedDictionaryFilePath =
     typeof mergedConfig.dictionary === 'string'
       ? mergedConfig.dictionary
@@ -119,11 +122,23 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
       ? mergedConfig.loadTranslationPath
       : resolveConfigFilepath('loadTranslation');
 
+  // Resolve custom message loader path
+  const customLoadMessagePath =
+    typeof mergedConfig.loadMessagePath === 'string'
+      ? mergedConfig.loadMessagePath
+      : resolveConfigFilepath('loadMessages');
+
   // Resolve local translations directory
   const resolvedLocalTranslationDir =
     typeof mergedConfig.localTranslationsDir === 'string'
       ? mergedConfig.localTranslationsDir
       : './public/_gt';
+
+  // Resolve local messages directory
+  const resolvedLocalMessageDir =
+    typeof mergedConfig.localMessagesDir === 'string'
+      ? mergedConfig.localMessagesDir
+      : './public/messages'; // TODO: should be in public??
 
   // ----- GET DICTIONAR FILE TYPE ----- //
   const resolvedDictionaryFilePathType = resolvedDictionaryFilePath
@@ -134,21 +149,19 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
     mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
   }
 
-  // ----- RESOLVE CONFIG LOCALES ----- //
+  // ----- RESOLVE LOCAL TRANSLATIONS ----- //
 
   // Check for local translations and get the list of locales
-  let localLocales: string[] = [];
+  let localTranslationLocales: string[] = [];
   if (
     fs.existsSync(resolvedLocalTranslationDir) &&
     fs.statSync(resolvedLocalTranslationDir).isDirectory()
   ) {
-    localLocales = fs
+    localTranslationLocales = fs
       .readdirSync(resolvedLocalTranslationDir)
       .filter((file) => file.endsWith('.json'))
       .map((file) => file.replace('.json', ''));
   }
-
-  // ----- RESOLVE LOCAL TRANSLATIONS ----- //
 
   // When there are local translations, force custom translation loader
   // for now, we can just check if that file exists, and then assume the existance of the loaders
@@ -159,13 +172,61 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
     mergedConfig.loadTranslationType = 'custom';
   }
 
+  // ----- RESOLVE LOCAL MESSAGES ----- //
+
+  // Check for local messages and get the list of locales
+  let localMessageLocales: string[] = [];
+  if (
+    fs.existsSync(resolvedLocalMessageDir) &&
+    fs.statSync(resolvedLocalMessageDir).isDirectory()
+  ) {
+    localMessageLocales = fs
+      .readdirSync(resolvedLocalMessageDir)
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => file.replace('.json', ''));
+  }
+
+  console.log(localMessageLocales)
+
+  // When there are local messages, force custom message loader
+  // for now, we can just check if that file exists, and then assume the existance of the loaders
+  if (
+    customLoadMessagePath &&
+    fs.existsSync(path.resolve(customLoadMessagePath))
+  ) {
+    mergedConfig.localMessagesEnabled = true;
+  }
+
   // ---------- ERROR CHECKS ---------- //
 
   // Check: local translations are enabled, but no custom translation loader is found
-  if (localLocales.length && mergedConfig.loadTranslationType !== 'custom') {
+  if (localTranslationLocales.length && mergedConfig.loadTranslationType !== 'custom') {
     throw new Error(
       createMissingCustomTranslationLoadedError(customLoadTranslationPath)
     );
+  }
+
+  // Check: local messages exist, but no custom message loader is found
+  if (localMessageLocales.length && mergedConfig.localMessagesEnabled && !customLoadMessagePath) {
+    throw new Error(
+      createMissingCustomMessageLoadedError(customLoadMessagePath)
+    );
+  }
+
+  // If dictionary exists and messages for default locale also exist
+  // warn that dictionary will override (show in dev only)
+  if (
+    mergedConfig.localMessagesEnabled &&
+    customLoadMessagePath &&
+    resolvedDictionaryFilePath &&
+    mergedConfig.defaultLocale &&
+    localMessageLocales.includes(mergedConfig.defaultLocale)
+  ) {
+    conflictingDictionaryMessagesDefaultLocaleWarn(
+      resolvedDictionaryFilePath,
+      customLoadMessagePath,
+      mergedConfig.defaultLocale
+    )
   }
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
@@ -220,6 +281,9 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
         _GENERALTRANSLATION_DICTIONARY_FILE_TYPE:
           resolvedDictionaryFilePathType,
       }),
+      _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (!!localTranslationLocales
+        .length).toString(),
+      _GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED: (!!localMessageLocales.length).toString(),
     },
     experimental: {
       ...nextConfig.experimental,
@@ -232,6 +296,7 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
                 ...(nextConfig.experimental?.turbo?.resolveAlias || {}),
                 'gt-next/_dictionary': resolvedDictionaryFilePath || '',
                 'gt-next/_load-translation': customLoadTranslationPath || '',
+                'gt-next/_load-messages': customLoadMessagePath || '',
               },
             },
           }
@@ -256,6 +321,10 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
         if (customLoadTranslationPath) {
           webpackConfig.resolve.alias[`gt-next/_load-translation`] =
             path.resolve(webpackConfig.context, customLoadTranslationPath);
+        }
+        if (customLoadMessagePath) {
+          webpackConfig.resolve.alias[`gt-next/_load-messages`] =
+            path.resolve(webpackConfig.context, customLoadMessagePath);
         }
       }
       if (typeof nextConfig?.webpack === 'function') {

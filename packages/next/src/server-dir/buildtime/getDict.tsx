@@ -10,7 +10,13 @@ import getDictionary from '../../dictionary/getDictionary';
 import {
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
+  createStringTranslationError,
+  translationLoadingWarning,
 } from '../../errors/createErrors';
+import getI18NConfig from '../../config-dir/getI18NConfig';
+import getLocale from '../../request/getLocale';
+import { renderContentToString, splitStringToContent } from 'generaltranslation';
+import { hashJsxChildren } from 'generaltranslation/id';
 
 /**
  * Returns the dictionary access function `d()`, which is used to translate an item from the dictionary.
@@ -28,13 +34,24 @@ import {
 export default async function getDict(
   id?: string
 ): Promise<(id: string, options?: DictionaryTranslationOptions) => string> {
+  // ---------- SET UP ---------- //
+
   const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
   };
 
   const dictionary = getDictionary() || {};
 
-  const t = await getGT();
+  const I18NConfig = getI18NConfig();
+  const locale = await getLocale();
+  const defaultLocale = I18NConfig.getDefaultLocale();
+  const [translationRequired] = I18NConfig.requiresTranslation(locale);
+
+  const translations = translationRequired
+    ? await I18NConfig.getCachedTranslations(locale)
+    : undefined;
+
+  const renderSettings = I18NConfig.getRenderSettings();
 
   // ---------- THE d() METHOD ---------- //
 
@@ -81,12 +98,88 @@ export default async function getDict(
     // Get entry and metadata
     const { entry, metadata } = getEntryAndMetadata(value);
 
-    // Translate
-    return t(entry, {
-      ...metadata,
-      ...options,
-      id,
-    });
+  
+    // Validate entry
+    if (!entry || typeof entry !== 'string') return '';
+
+    // Parse content
+    const source = splitStringToContent(entry);
+
+    // Render Method
+    const renderContent = (content: any, locales: string[]) => {
+      return renderContentToString(
+        content,
+        locales,
+        options.variables,
+        options.variablesOptions
+      );
+    };
+
+    // Check: translation required
+    if (!translationRequired) return renderContent(source, [defaultLocale]);
+
+    // ----- GET TRANSLATION ----- //
+    // Calc hash helper
+    let hash: string;
+    const calculateHash = () => {
+      if (hash) return hash;
+      hash = hashJsxChildren({
+        source,
+        ...(metadata?.context && { context: metadata?.context }),
+        id,
+      });
+      return hash;
+    };
+
+    // Check id first
+    let translationEntry = translations?.[id];
+
+    // Check hash
+    if (!translationEntry) {
+      translationEntry = translations?.[calculateHash()];
+    }
+
+    // ----- RENDER TRANSLATION ----- //
+
+    // If a translation already exists
+    if (translationEntry?.state === 'success')
+      return renderContent(translationEntry.target, [locale, defaultLocale]);
+
+    // If a translation errored
+    if (translationEntry?.state === 'error')
+      return renderContent(source, [defaultLocale]);
+
+    // ----- CREATE TRANSLATION ----- //
+    // Since this is buildtime string translation, it's dev only
+
+    if (!I18NConfig.isDevelopmentApiEnabled()) {
+      console.warn(createStringTranslationError(entry, id, 'd'));
+      return renderContent(source, [defaultLocale]);
+    }
+
+    // Translate on demand
+    I18NConfig.translateContent({
+      source,
+      targetLocale: locale,
+      options: {
+        ...(metadata?.context && { context: metadata?.context }),
+        id,
+        hash: calculateHash(),
+      },
+    }).catch(() => {}); // Error logged in I18NConfig
+
+    // Loading translation warning
+    console.warn(translationLoadingWarning);
+
+    // Loading behavior
+    if (renderSettings.method === 'replace') {
+      return renderContent(source, [defaultLocale]);
+    } else if (renderSettings.method === 'skeleton') {
+      return '';
+    }
+
+    // Default is returning source, rather than returning a loading state
+    return renderContent(source, [defaultLocale]);
   };
 
   return d;

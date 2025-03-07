@@ -1,13 +1,16 @@
 export declare const remoteTranslationsError = "gt-next Error: fetching remote translation.";
 export declare const customLoadTranslationError = "gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.";
+export declare const customLoadMessagesError = "gt-next Error: fetching locally stored messages. If you are using a custom loadMessage(), make sure it is correctly implemented.";
 export declare const createStringTranslationError: (string: string, id?: string, functionName?: string) => string;
 export declare const createDictionaryStringTranslationError: (id: string) => string;
 export declare const createRequiredPrefixError: (id: string, requiredPrefix: string) => string;
 export declare const devApiKeyIncludedInProductionError = "gt-next Error: You are attempting a production using a development API key. Replace this API key with a production API key when you build your app for production.";
 export declare const createDictionarySubsetError: (id: string, functionName: string) => string;
 export declare const createMissingCustomTranslationLoadedError: (customLoadTranslationPath: string | undefined) => string;
+export declare const createMissingCustomMessageLoadedError: (customLoadMessagePath: string | undefined) => string;
 export declare const dictionaryDisabledError = "gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs";
 export declare const unresolvedCustomLoadTranslationError = "gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.";
+export declare const unresolvedCustomLoadMessagesError = "gt-next Error: Custom message loader could not be resolved. This usually means that the file was found, but the message loader function itself was not exported.";
 export declare const usingDefaultsWarning = "gt-next: Unable to access gt-next configuration. Using defaults.";
 export declare const createNoEntryFoundWarning: (id: string) => string;
 export declare const createInvalidDictionaryEntryWarning: (id: string) => string;
@@ -19,4 +22,5 @@ export declare const APIKeyMissingWarn: string;
 export declare const translationLoadingWarning: string;
 export declare const runtimeTranslationTimeoutWarning = "gt-next: Runtime translation timed out.";
 export declare const dictionaryNotFoundWarning = "gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the withGTConfig() plugin.";
+export declare const conflictingDictionaryMessagesDefaultLocaleWarn: (dictionaryPath: string, defaultLocalMessagePath: string, defaultLocale: string) => string;
 //# sourceMappingURL=createErrors.d.ts.map
