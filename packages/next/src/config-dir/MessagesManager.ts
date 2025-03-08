@@ -1,15 +1,13 @@
-import { standardizeLocale } from "generaltranslation";
-import { MessagesContent, MessagesObject } from "gt-react/internal";
-import resolveMessageLoader from "../loaders/resolveMessagesLoader";
-import { customLoadMessagesError } from "../errors/createErrors";
+import { standardizeLocale } from 'generaltranslation';
+import { MessagesContent, MessagesObject } from 'gt-react/internal';
+import resolveMessageLoader from '../loaders/resolveMessagesLoader';
+import { customLoadMessagesWarning } from '../errors/createErrors';
 
 /**
  * Manages messages
  */
 export class MessagesManager {
-
   private messagesMap: Map<string, MessagesObject>;
-
 
   /**
    * Creates an instance of TranslationManager.
@@ -18,7 +16,6 @@ export class MessagesManager {
   constructor() {
     this.messagesMap = new Map();
   }
-
 
   // flatten object helper function
   _flattenObject(
@@ -30,7 +27,11 @@ export class MessagesManager {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         const newKey = parentKey ? `${parentKey}.${key}` : key;
         const value = obj[key];
-        if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        if (
+          value !== null &&
+          typeof value === 'object' &&
+          !Array.isArray(value)
+        ) {
           this._flattenObject(value, newKey, result);
         } else {
           result[newKey] = value;
@@ -59,7 +60,9 @@ export class MessagesManager {
         result = this._flattenObject(await customLoadMessages(reference));
         this.messagesMap.set(reference, result);
       } catch (error) {
-        console.error(customLoadMessagesError, error);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(customLoadMessagesWarning(reference), error);
+        }
         return undefined;
       }
     }
@@ -67,7 +70,6 @@ export class MessagesManager {
     return result;
   }
 }
-
 
 const messagesManager = new MessagesManager();
 export default messagesManager;

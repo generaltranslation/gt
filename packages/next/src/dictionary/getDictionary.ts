@@ -4,7 +4,7 @@ import {
   getDictionaryEntry as getEntry,
 } from 'gt-react/internal';
 import {
-  customLoadMessagesError,
+  customLoadMessagesWarning,
   dictionaryNotFoundWarning,
 } from '../errors/createErrors';
 import resolveMessageLoader from '../loaders/resolveMessagesLoader';
@@ -49,7 +49,9 @@ export default async function getDictionary(): Promise<Dictionary | undefined> {
       try {
         dictionary = await customLoadMessages(languageCode);
       } catch (error) {
-        console.error(customLoadMessagesError(), error);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(customLoadMessagesWarning(languageCode), error);
+        }
       }
     }
   }

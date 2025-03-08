@@ -1,4 +1,4 @@
-import { MessagesObject } from "gt-react/internal";
+import { MessagesObject } from 'gt-react/internal';
 /**
  * Manages messages
  */

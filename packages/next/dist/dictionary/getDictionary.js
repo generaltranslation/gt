@@ -96,7 +96,9 @@ function getDictionary() {
                     return [3 /*break*/, 8];
                 case 7:
                     error_1 = _c.sent();
-                    console.error((0, createErrors_1.customLoadMessagesError)(), error_1);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.warn((0, createErrors_1.customLoadMessagesWarning)(languageCode), error_1);
+                    }
                     return [3 /*break*/, 8];
                 case 8:
                     if (!dictionary) {

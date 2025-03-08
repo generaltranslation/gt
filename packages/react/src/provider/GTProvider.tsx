@@ -21,7 +21,7 @@ import {
 import {
   APIKeyMissingWarn,
   createUnsupportedLocalesWarning,
-  customLoadMessagesError,
+  customLoadMessagesWarning,
   customLoadTranslationError,
   devApiKeyProductionError,
   dictionaryMissingWarning,
@@ -301,7 +301,9 @@ export default function GTProvider({
       try {
         result = await loadMessages(locale);
       } catch (error) {
-        console.error(customLoadMessagesError(locale), error);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(customLoadMessagesWarning(locale), error);
+        }
       }
 
       if (storeResults) {

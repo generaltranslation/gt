@@ -1,6 +1,5 @@
 import { TranslationsObject } from 'gt-react/internal';
 import {
-  customLoadMessagesError,
   customLoadTranslationError,
   remoteTranslationsError,
 } from '../errors/createErrors';

@@ -62,7 +62,9 @@ var MessagesManager = /** @class */ (function () {
             if (Object.prototype.hasOwnProperty.call(obj, key)) {
                 var newKey = parentKey ? "".concat(parentKey, ".").concat(key) : key;
                 var value = obj[key];
-                if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+                if (value !== null &&
+                    typeof value === 'object' &&
+                    !Array.isArray(value)) {
                     this._flattenObject(value, newKey, result);
                 }
                 else {
@@ -100,7 +102,9 @@ var MessagesManager = /** @class */ (function () {
                         return [3 /*break*/, 4];
                     case 3:
                         error_1 = _b.sent();
-                        console.error(createErrors_1.customLoadMessagesError, error_1);
+                        if (process.env.NODE_ENV === 'development') {
+                            console.warn((0, createErrors_1.customLoadMessagesWarning)(reference), error_1);
+                        }
                         return [2 /*return*/, undefined];
                     case 4: return [2 /*return*/, result];
                 }

@@ -23,7 +23,6 @@ export default async function GTProvider({
   id?: string;
 }) {
   // ---------- SETUP ---------- //
-
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
@@ -31,7 +30,7 @@ export default async function GTProvider({
     I18NConfig.requiresTranslation(locale);
 
   // load messages
-  const messages = await I18NConfig.getMessages(locale) || {};
+  const messages = (await I18NConfig.getMessages(locale)) || {};
 
   // ----- FETCH TRANSLATIONS FROM CACHE ----- //
 
