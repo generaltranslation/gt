@@ -53,8 +53,8 @@
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
     "generaltranslation": "^6.2.1-alpha.2",
-    "js-yaml": "^4.1.0",
-    "ora": "^8.2.0"
+    "ora": "^8.2.0",
+    "yaml": "^2.7.0"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
