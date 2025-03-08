@@ -54,10 +54,8 @@ export default async function getDictionary(): Promise<Dictionary | undefined> {
     }
   }
 
-  // Warn if no dictionary was found
   if (!dictionary) {
     dictionary = {};
-    console.warn(dictionaryNotFoundWarning);
   }
 
   return dictionary;

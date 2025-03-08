@@ -99,10 +99,8 @@ function getDictionary() {
                     console.error((0, createErrors_1.customLoadMessagesError)(), error_1);
                     return [3 /*break*/, 8];
                 case 8:
-                    // Warn if no dictionary was found
                     if (!dictionary) {
                         dictionary = {};
-                        console.warn(createErrors_1.dictionaryNotFoundWarning);
                     }
                     return [2 /*return*/, dictionary];
             }
