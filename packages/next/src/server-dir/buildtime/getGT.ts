@@ -1,5 +1,4 @@
 import {
-  isSameLanguage,
   renderContentToString,
   splitStringToContent,
 } from 'generaltranslation';

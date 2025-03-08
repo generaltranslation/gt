@@ -3,6 +3,9 @@ import {
   Dictionary,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
+  MessagesObject,
+  RenderMethod,
+  TranslationsObject,
 } from '../../types/types';
 import getDictionaryEntry, {
   isValidDictionaryEntry,
@@ -11,20 +14,34 @@ import getEntryAndMetadata from '../../provider/helpers/getEntryAndMetadata';
 import {
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
-} from '../../messages/createMessages';
+} from '../../errors/createErrors';
+import {
+  renderContentToString,
+  splitStringToContent,
+} from 'generaltranslation';
+import { hashJsxChildren } from 'generaltranslation/id';
+import { Content } from 'generaltranslation/internal';
+import { TranslateContentCallback } from '../../types/runtime';
 
-export default function useCreateInternalUseDictFunction({
-  dictionary,
-  _internalUseGTFunction,
-}: {
-  dictionary: Dictionary;
-  _internalUseGTFunction: (
-    string: string,
-    options?: InlineTranslationOptions
-  ) => string;
-}) {
+export default function useCreateInternalUseDictFunction(
+  dictionary: Dictionary | undefined,
+  translations: TranslationsObject | null,
+  messages: MessagesObject | null,
+  locale: string,
+  defaultLocale: string,
+  translationRequired: boolean,
+  dialectTranslationRequired: boolean,
+  runtimeTranslationEnabled: boolean,
+  registerContentForTranslation: TranslateContentCallback,
+  renderSettings: { method: RenderMethod }
+) {
   return useCallback(
     (id: string, options: DictionaryTranslationOptions = {}): string => {
+      // Check: dictionary exists
+      if (!dictionary) {
+        return '';
+      }
+
       // Get entry
       const value = getDictionaryEntry(dictionary, id);
 
@@ -43,13 +60,104 @@ export default function useCreateInternalUseDictFunction({
       // Get entry and metadata
       const { entry, metadata } = getEntryAndMetadata(value);
 
-      // Return translation
-      return _internalUseGTFunction(entry, {
-        ...metadata,
-        ...options,
+      // ----- SET UP ----- //
+
+      // Check: reject invalid content
+      if (!entry || typeof entry !== 'string') return '';
+
+      // Parse content
+      const source = splitStringToContent(entry);
+
+      // Render method
+      const renderContent = (content: Content, locales: string[]) => {
+        return renderContentToString(
+          content,
+          locales,
+          options.variables,
+          options.variablesOptions
+        );
+      };
+
+      // Check: translation not required
+      if (!translationRequired) return renderContent(source, [defaultLocale]);
+
+      // ----- CHECK MESSAGES ----- //
+
+      // Get message
+      const message = messages?.[id];
+
+      // Render message
+      if (message) {
+        return renderContentToString(
+          splitStringToContent(message),
+          [locale, defaultLocale],
+          options.variables,
+          options.variablesOptions
+        );
+      }
+
+      // ----- CHECK TRANSLATIONS ----- //
+
+      // Get hash
+      let hash = hashJsxChildren({
+        source,
+        ...(metadata?.context && { context: metadata.context }),
         id,
       });
+
+      // Check id first
+      let translationEntry = translations?.[hash];
+
+      // Check translation successful
+      if (translationEntry?.state === 'success') {
+        return renderContent(translationEntry.target as Content, [
+          locale,
+          defaultLocale,
+        ]);
+      }
+
+      if (translationEntry?.state === 'error') {
+        return renderContent(source, [defaultLocale]);
+      }
+
+      // ----- TRANSLATE ON DEMAND ----- //
+      // develoment only
+
+      // Check if runtime translation is enabled
+      if (!runtimeTranslationEnabled) {
+        return renderContent(source, [defaultLocale]);
+      }
+
+      // Translate Content
+      registerContentForTranslation({
+        source,
+        targetLocale: locale,
+        metadata: {
+          ...(metadata?.context && { context: metadata.context }),
+          id,
+          hash,
+        },
+      });
+
+      // Loading behavior
+      if (renderSettings.method === 'replace') {
+        return renderContent(source, [defaultLocale]);
+      } else if (renderSettings.method === 'skeleton') {
+        return '';
+      }
+      return dialectTranslationRequired // default behavior
+        ? renderContent(source, [defaultLocale])
+        : '';
     },
-    [dictionary, _internalUseGTFunction]
+    [
+      dictionary,
+      translations,
+      locale,
+      defaultLocale,
+      translationRequired,
+      runtimeTranslationEnabled,
+      registerContentForTranslation,
+      dialectTranslationRequired,
+    ]
   );
 }

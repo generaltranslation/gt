@@ -35,13 +35,18 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = loadTranslation;
 var createErrors_1 = require("../errors/createErrors");
+var resolveTranslationLoader_1 = __importDefault(require("../loaders/resolveTranslationLoader"));
 var loadTranslationFunction;
+// parse translation result (local or remote)
 function parseResult(result) {
     if (result && Object.keys(result).length) {
-        // Parse response
+        // Mark success
         var parsedResult = Object.entries(result).reduce(function (translationsAcc, _a) {
             var hash = _a[0], target = _a[1];
             translationsAcc[hash] = { state: 'success', target: target };
@@ -60,7 +65,7 @@ function parseResult(result) {
  */
 function loadTranslation(props) {
     return __awaiter(this, void 0, void 0, function () {
-        var usingCustomLoader, customLoadTranslationConfig, customLoadTranslation_1;
+        var customLoadTranslation;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -69,37 +74,17 @@ function loadTranslation(props) {
                     return [4 /*yield*/, loadTranslationFunction(props)];
                 case 1: return [2 /*return*/, _a.sent()];
                 case 2:
-                    usingCustomLoader = true;
-                    try {
-                        customLoadTranslationConfig = require('gt-next/_load-translation');
-                    }
-                    catch (_b) {
-                        usingCustomLoader = false;
-                    }
-                    // Assign a loader to singleton
-                    if (usingCustomLoader) {
-                        customLoadTranslation_1 = (customLoadTranslationConfig === null || customLoadTranslationConfig === void 0 ? void 0 : customLoadTranslationConfig.default) ||
-                            (customLoadTranslationConfig === null || customLoadTranslationConfig === void 0 ? void 0 : customLoadTranslationConfig.getLocalTranslation);
-                        // Check: custom loader is exported
-                        if (!customLoadTranslation_1) {
-                            // Custom loader file was defined but not exported
-                            if (process.env.NODE_ENV === 'production') {
-                                console.error(createErrors_1.unresolvedCustomLoadTranslationError);
-                                loadTranslationFunction = function (_) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-                                    return [2 /*return*/, undefined];
-                                }); }); };
-                                return [2 /*return*/, undefined];
-                            }
-                            throw new Error(createErrors_1.unresolvedCustomLoadTranslationError);
-                        }
+                    customLoadTranslation = (0, resolveTranslationLoader_1.default)();
+                    if (customLoadTranslation) {
+                        // ----- USING CUSTOM TRANSLATION LOADER ----- //
                         // Set custom translation loader
-                        loadTranslationFunction = function (props) { return __awaiter(_this, void 0, void 0, function () {
+                        loadTranslationFunction = function (_) { return __awaiter(_this, void 0, void 0, function () {
                             var result, error_1;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
                                         _a.trys.push([0, 2, , 3]);
-                                        return [4 /*yield*/, customLoadTranslation_1(props.targetLocale)];
+                                        return [4 /*yield*/, customLoadTranslation(props.targetLocale)];
                                     case 1:
                                         result = _a.sent();
                                         return [2 /*return*/, parseResult(result)];

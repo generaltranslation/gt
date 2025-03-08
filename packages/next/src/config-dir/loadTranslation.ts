@@ -1,9 +1,11 @@
 import { TranslationsObject } from 'gt-react/internal';
 import {
+  customLoadMessagesError,
   customLoadTranslationError,
   remoteTranslationsError,
-  unresolvedCustomLoadTranslationError,
 } from '../errors/createErrors';
+import resolveMessageLoader from '../loaders/resolveMessagesLoader';
+import resolveTranslationLoader from '../loaders/resolveTranslationLoader';
 
 type RemoteLoadTranslationInput = {
   targetLocale: string;
@@ -16,9 +18,10 @@ let loadTranslationFunction: (
   props: RemoteLoadTranslationInput
 ) => Promise<any>;
 
+// parse translation result (local or remote)
 function parseResult(result: any): TranslationsObject | undefined {
   if (result && Object.keys(result).length) {
-    // Parse response
+    // Mark success
     const parsedResult: TranslationsObject = Object.entries(result).reduce(
       (translationsAcc: TranslationsObject, [hash, target]: [string, any]) => {
         translationsAcc[hash] = { state: 'success', target };
@@ -45,47 +48,26 @@ export default async function loadTranslation(
   if (loadTranslationFunction) return await loadTranslationFunction(props);
 
   // ----- CHECK FOR CUSTOM LOADER ----- //
-  let usingCustomLoader = true;
-  let customLoadTranslationConfig;
-  try {
-    customLoadTranslationConfig = require('gt-next/_load-translation');
-  } catch {
-    usingCustomLoader = false;
-  }
 
-  // Assign a loader to singleton
-  if (usingCustomLoader) {
-    // ----- USING CUSTOM LOADER ----- //
+  // get content loader
+  const customLoadTranslation = resolveTranslationLoader();
 
-    // Get custom loader
-    const customLoadTranslation:
-      | ((locale: string) => Promise<any>)
-      | undefined =
-      customLoadTranslationConfig?.default ||
-      customLoadTranslationConfig?.getLocalTranslation;
 
-    // Check: custom loader is exported
-    if (!customLoadTranslation) {
-      // Custom loader file was defined but not exported
-      if (process.env.NODE_ENV === 'production') {
-        console.error(unresolvedCustomLoadTranslationError);
-        loadTranslationFunction = async (_: RemoteLoadTranslationInput) =>
-          undefined;
-        return undefined;
-      }
-      throw new Error(unresolvedCustomLoadTranslationError);
-    }
+  if (customLoadTranslation) {
+    // ----- USING CUSTOM TRANSLATION LOADER ----- //
 
     // Set custom translation loader
-    loadTranslationFunction = async (props: RemoteLoadTranslationInput) => {
+    loadTranslationFunction = async (_: RemoteLoadTranslationInput) => {
+      // Load translation
       try {
         const result = await customLoadTranslation(props.targetLocale);
-        return parseResult(result);
+        return parseResult(result); 
       } catch (error) {
-        console.error(customLoadTranslationError, error);
+        console.error(customLoadTranslationError(), error);
         return undefined;
       }
     };
+
   } else {
     // ----- USING REMOTE CACHE LOADER ----- //
 

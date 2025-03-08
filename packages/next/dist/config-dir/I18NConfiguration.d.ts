@@ -1,4 +1,4 @@
-import { RenderMethod, TranslatedChildren, TranslatedContent } from 'gt-react/internal';
+import { RenderMethod, TranslatedChildren, TranslatedContent, MessagesObject } from 'gt-react/internal';
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TranslationsObject } from 'gt-react/internal';
 type I18NConfigurationParams = {
@@ -9,6 +9,7 @@ type I18NConfigurationParams = {
     cacheUrl: string | null;
     cacheExpiryTime: number;
     loadTranslationType: 'remote' | 'custom' | 'disabled';
+    loadMessagesEnabled: boolean;
     defaultLocale: string;
     locales: string[];
     renderSettings: {
@@ -40,6 +41,7 @@ export default class I18NConfiguration {
         timeout?: number;
     };
     private _translationManager;
+    private _messagesManager;
     metadata: Record<string, any>;
     maxConcurrentRequests: number;
     maxBatchSize: number;
@@ -47,7 +49,7 @@ export default class I18NConfiguration {
     private _queue;
     private _activeRequests;
     private _translationCache;
-    constructor({ apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, loadTranslationType, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, _usingPlugin, ...metadata }: I18NConfigurationParams);
+    constructor({ apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, loadTranslationType, loadMessagesEnabled, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, _usingPlugin, ...metadata }: I18NConfigurationParams);
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.
@@ -105,6 +107,12 @@ export default class I18NConfiguration {
      * @returns True if translation is required, otherwise false
      */
     requiresTranslation(locale: string): [boolean, boolean];
+    /**
+     * Load the user's translations for a given locale
+     * @param locale - The locale set by the user
+     * @returns A promise that resolves to the translations.
+     */
+    getMessages(locale: string): Promise<MessagesObject | undefined>;
     /**
      * Get the translation dictionaries for this user's locale, if they exist
      * Globally shared cache or saved locally

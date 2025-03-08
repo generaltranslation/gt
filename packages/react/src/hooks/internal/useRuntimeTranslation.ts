@@ -3,7 +3,7 @@ import {
   dynamicTranslationError,
   createGenericRuntimeTranslationError,
   runtimeTranslationTimeoutWarning,
-} from '../../messages/createMessages';
+} from '../../errors/createErrors';
 import {
   RenderMethod,
   TranslationError,

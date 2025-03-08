@@ -43,8 +43,13 @@ type TranslationLoading = {
     state: 'loading';
 };
 type TranslationsObject = {
-    [key: string]: TranslationSuccess | TranslationLoading | TranslationError;
+    [hash: string]: TranslationSuccess | TranslationLoading | TranslationError;
 };
+type MessagesContent = string;
+type MessagesObject = {
+    [id: string]: MessagesContent;
+};
+type CustomLoader = (locale: string) => Promise<any>;
 type RenderMethod = 'skeleton' | 'replace' | 'default';
 type DictionaryTranslationOptions = {
     variables?: Record<string, any>;
@@ -83,6 +88,7 @@ type GTContextType = {
     setLocale: (locale: string) => void;
     defaultLocale: string;
     translations: TranslationsObject | null;
+    messages: MessagesObject | null;
     translationRequired: boolean;
     dialectTranslationRequired: boolean;
     renderSettings: {
@@ -95,6 +101,7 @@ type ClientProviderProps = {
     children: any;
     dictionary: Dictionary;
     initialTranslations: TranslationsObject;
+    messages: MessagesObject;
     locale: string;
     locales: string[];
     _versionId?: string;
@@ -143,7 +150,7 @@ declare function renderVariable({ variableType, variableName, variableValue, var
     locales: string[];
 }): React.JSX.Element;
 
-declare function ClientProvider({ children, dictionary, initialTranslations, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
+declare function ClientProvider({ children, dictionary, initialTranslations, messages, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -481,7 +488,7 @@ declare function LocaleSelector({ locales: _locales, ...props }: {
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-declare function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadTranslation, _versionId, ...metadata }: {
+declare function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadMessages, loadTranslation, _versionId, ...metadata }: {
     children?: React__default.ReactNode;
     projectId?: string;
     devApiKey?: string;
@@ -495,7 +502,8 @@ declare function GTProvider({ children, projectId: _projectId, devApiKey: _devAp
         method: RenderMethod;
         timeout?: number;
     };
-    loadTranslation?: (locale: string) => Promise<any>;
+    loadMessages?: CustomLoader;
+    loadTranslation?: CustomLoader;
     _versionId?: string;
     [key: string]: any;
 }): React__default.JSX.Element;

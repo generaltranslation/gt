@@ -25,7 +25,7 @@ export type TranslationManagerConfig = {
 };
 
 /**
- * Manages remote translations.
+ * Manages translations
  */
 export class TranslationManager {
   private config: TranslationManagerConfig;

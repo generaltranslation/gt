@@ -29,7 +29,7 @@ Join our [Discord community](https://discord.gg/W99K6fchSu) to get help and stay
 - Just wrap your content in a `<T>` component!
 - No need for complex refactoring or messy function calls.
 
-```js
+```tsx
 export default function Page() {
   return (
     <T>

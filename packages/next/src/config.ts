@@ -5,7 +5,6 @@ import defaultInitGTProps from './config-dir/props/defaultInitGTProps';
 import InitGTProps from './config-dir/props/InitGTProps';
 import {
   APIKeyMissingWarn,
-  createMissingCustomTranslationLoadedError,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
   projectIdMissingWarn,
@@ -113,45 +112,37 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
       ? mergedConfig.dictionary
       : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']);
 
+  // Get the type of dictionary file
+  const resolvedDictionaryFilePathType = resolvedDictionaryFilePath
+    ? path.extname(resolvedDictionaryFilePath)
+    : undefined;
+  if (resolvedDictionaryFilePathType) {
+    mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
+  }
+
   // Resolve custom translation loader path
   const customLoadTranslationPath =
     typeof mergedConfig.loadTranslationPath === 'string'
       ? mergedConfig.loadTranslationPath
       : resolveConfigFilepath('loadTranslation');
 
-  // Resolve local translations directory
-  const resolvedLocalTranslationDir =
-    typeof mergedConfig.localTranslationsDir === 'string'
-      ? mergedConfig.localTranslationsDir
-      : './public/_gt';
+  // Resolve custom message loader path
+  const customLoadMessagePath =
+    typeof mergedConfig.loadMessagePath === 'string'
+      ? mergedConfig.loadMessagePath
+      : resolveConfigFilepath('loadMessages');
 
-  // ----- GET DICTIONAR FILE TYPE ----- //
-  const resolvedDictionaryFilePathType = resolvedDictionaryFilePath
-    ? path.extname(resolvedDictionaryFilePath)
-    : undefined;
+  // ----- CUSTOM CONTENT LOADER FLAGS ----- //
 
-  if (resolvedDictionaryFilePathType) {
-    mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
-  }
-
-  // ----- RESOLVE CONFIG LOCALES ----- //
-
-  // Check for local translations and get the list of locales
-  let localLocales: string[] = [];
+  // Local messages flag
   if (
-    fs.existsSync(resolvedLocalTranslationDir) &&
-    fs.statSync(resolvedLocalTranslationDir).isDirectory()
+    customLoadMessagePath &&
+    fs.existsSync(path.resolve(customLoadMessagePath))
   ) {
-    localLocales = fs
-      .readdirSync(resolvedLocalTranslationDir)
-      .filter((file) => file.endsWith('.json'))
-      .map((file) => file.replace('.json', ''));
+    mergedConfig.localMessagesEnabled = true;
   }
 
-  // ----- RESOLVE LOCAL TRANSLATIONS ----- //
-
-  // When there are local translations, force custom translation loader
-  // for now, we can just check if that file exists, and then assume the existance of the loaders
+  // Local translations flag
   if (
     customLoadTranslationPath &&
     fs.existsSync(path.resolve(customLoadTranslationPath))
@@ -160,13 +151,6 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
   }
 
   // ---------- ERROR CHECKS ---------- //
-
-  // Check: local translations are enabled, but no custom translation loader is found
-  if (localLocales.length && mergedConfig.loadTranslationType !== 'custom') {
-    throw new Error(
-      createMissingCustomTranslationLoadedError(customLoadTranslationPath)
-    );
-  }
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
   if (
@@ -220,6 +204,9 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
         _GENERALTRANSLATION_DICTIONARY_FILE_TYPE:
           resolvedDictionaryFilePathType,
       }),
+      _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (!!customLoadTranslationPath).toString(),
+      _GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED: (!!customLoadMessagePath).toString(),
+      _GENERALTRANSLATION_DEFAULT_LOCALE: (mergedConfig.defaultLocale || defaultInitGTProps.defaultLocale).toString(),
     },
     experimental: {
       ...nextConfig.experimental,
@@ -232,6 +219,7 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
                 ...(nextConfig.experimental?.turbo?.resolveAlias || {}),
                 'gt-next/_dictionary': resolvedDictionaryFilePath || '',
                 'gt-next/_load-translation': customLoadTranslationPath || '',
+                'gt-next/_load-messages': customLoadMessagePath || '',
               },
             },
           }
@@ -256,6 +244,10 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
         if (customLoadTranslationPath) {
           webpackConfig.resolve.alias[`gt-next/_load-translation`] =
             path.resolve(webpackConfig.context, customLoadTranslationPath);
+        }
+        if (customLoadMessagePath) {
+          webpackConfig.resolve.alias[`gt-next/_load-messages`] =
+            path.resolve(webpackConfig.context, customLoadMessagePath);
         }
       }
       if (typeof nextConfig?.webpack === 'function') {

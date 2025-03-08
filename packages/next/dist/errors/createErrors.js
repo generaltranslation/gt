@@ -1,10 +1,11 @@
 "use strict";
 // ---- ERRORS ---- //
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dictionaryNotFoundWarning = exports.runtimeTranslationTimeoutWarning = exports.translationLoadingWarning = exports.APIKeyMissingWarn = exports.noInitGTWarn = exports.projectIdMissingWarn = exports.createMismatchingHashWarning = exports.createUnsupportedLocalesWarning = exports.createInvalidDictionaryEntryWarning = exports.createNoEntryFoundWarning = exports.usingDefaultsWarning = exports.unresolvedCustomLoadTranslationError = exports.dictionaryDisabledError = exports.createMissingCustomTranslationLoadedError = exports.createDictionarySubsetError = exports.devApiKeyIncludedInProductionError = exports.createRequiredPrefixError = exports.createDictionaryStringTranslationError = exports.createStringTranslationError = exports.customLoadTranslationError = exports.remoteTranslationsError = void 0;
+exports.dictionaryNotFoundWarning = exports.runtimeTranslationTimeoutWarning = exports.translationLoadingWarning = exports.APIKeyMissingWarn = exports.noInitGTWarn = exports.projectIdMissingWarn = exports.createMismatchingHashWarning = exports.createUnsupportedLocalesWarning = exports.createInvalidDictionaryEntryWarning = exports.createNoEntryFoundWarning = exports.usingDefaultsWarning = exports.unresolvedCustomLoadMessagesError = exports.unresolvedCustomLoadTranslationError = exports.dictionaryDisabledError = exports.createDictionarySubsetError = exports.devApiKeyIncludedInProductionError = exports.createRequiredPrefixError = exports.createDictionaryStringTranslationError = exports.createStringTranslationError = exports.customLoadMessagesError = exports.customLoadTranslationError = exports.remoteTranslationsError = void 0;
 var generaltranslation_1 = require("generaltranslation");
 exports.remoteTranslationsError = 'gt-next Error: fetching remote translation.';
 exports.customLoadTranslationError = 'gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.';
+exports.customLoadMessagesError = 'gt-next Error: fetching locally stored messages. If you are using a custom loadMessage(), make sure it is correctly implemented.';
 var createStringTranslationError = function (string, id, functionName) {
     if (functionName === void 0) { functionName = 'tx'; }
     return "gt-next string translation error. ".concat(functionName, "(\"").concat(string, "\")").concat(id ? " with id \"".concat(id, "\"") : '', " could not locate translation.");
@@ -23,14 +24,9 @@ var createDictionarySubsetError = function (id, functionName) {
     return "gt-next Error: ".concat(functionName, " with id: \"").concat(id, "\". Invalid dictionary entry detected. Make sure you are navigating to the correct subroute of the dictionary with the ID you provide.");
 };
 exports.createDictionarySubsetError = createDictionarySubsetError;
-var createMissingCustomTranslationLoadedError = function (customLoadTranslationPath) {
-    return 'gt-next Error: ' + customLoadTranslationPath
-        ? "Local translations exist, but no translation loader is found. Please create a translation loader at ".concat(customLoadTranslationPath)
-        : 'Local translations exist, but no translation loader is found. See generaltranslation.com/docs for more information on how to create a translation loader.';
-};
-exports.createMissingCustomTranslationLoadedError = createMissingCustomTranslationLoadedError;
 exports.dictionaryDisabledError = "gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs";
 exports.unresolvedCustomLoadTranslationError = "gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.";
+exports.unresolvedCustomLoadMessagesError = "gt-next Error: Custom message loader could not be resolved. This usually means that the file was found, but the message loader function itself was not exported.";
 // ---- WARNINGS ---- //
 exports.usingDefaultsWarning = 'gt-next: Unable to access gt-next configuration. Using defaults.';
 var createNoEntryFoundWarning = function (id) {
@@ -65,5 +61,5 @@ exports.APIKeyMissingWarn = "gt-next: A Development API key is required for runt
 exports.translationLoadingWarning = "gt-next: [DEV ONLY] Translations have changed since the last update. " +
     "Translations in production will be preloaded, and page will not need to be refreshed.";
 exports.runtimeTranslationTimeoutWarning = "gt-next: Runtime translation timed out.";
-exports.dictionaryNotFoundWarning = "gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the withGTConfig() plugin.";
+exports.dictionaryNotFoundWarning = "gt-next: Dictionary not found. Make sure you have added a dictionary to your project (either dictionary.js or /messages/[defaultLocale].json), and you have added the withGTConfig() plugin.";
 //# sourceMappingURL=createErrors.js.map
