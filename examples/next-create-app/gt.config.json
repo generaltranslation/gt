@@ -4,8 +4,5 @@
     "fr",
     "es",
     "zh"
-  ],
-  "baseUrl": "https://api.gtx.wtf",
-  "runtimeUrl": "https://runtime.gtx.wtf",
-  "cacheUrl": "http://gt-edge-staging.generaltranslation.workers.dev"
+  ]
 }
