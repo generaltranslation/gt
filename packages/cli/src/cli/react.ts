@@ -690,14 +690,16 @@ export class ReactCLI extends BaseCLI {
         options.translationsDir,
         `${options.defaultLocale}.json`
       );
-      options.dictionary = sourceFile;
-      updates = [
-        ...updates,
-        ...(await this.createDictionaryUpdates(
-          options as any,
-          createESBuildConfig({})
-        )),
-      ];
+      if (sourceFile) {
+        options.dictionary = sourceFile;
+        updates = [
+          ...updates,
+          ...(await this.createDictionaryUpdates(
+            options as any,
+            createESBuildConfig({})
+          )),
+        ];
+      }
     }
     // Scan through project for <T> tags
     if (options.inline) {

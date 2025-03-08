@@ -93,10 +93,10 @@ var I18NConfiguration = /** @class */ (function () {
         this.cacheExpiryTime = cacheExpiryTime;
         this._versionId = _versionId; // version id for the dictionary
         // IS BUILDTIME TRANSLATION ENABLED
-        this.translationEnabled = !!((loadTranslationType === 'custom' || // load local translation
+        this.translationEnabled = !!(loadTranslationType === 'custom' || // load local translation
             (loadTranslationType === 'remote' &&
                 this.projectId && // projectId required because it's part of the GET request
-                this.cacheUrl)) ||
+                this.cacheUrl) ||
             loadMessagesEnabled // load local messages
         );
         // IS RUNTIME TRANSLATION ENABLED

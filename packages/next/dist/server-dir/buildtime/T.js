@@ -99,17 +99,16 @@ function Resolver(_a) {
  */
 function T(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, _c, translationRequired, dialectTranslationRequired, taggedChildren, renderDefault, translationsPromise, childrenAsObjects, hash, translationEntry, renderTranslation, renderSettings, translationPromise, loadingFallback;
+        var I18NConfig, locale, defaultLocale, _c, translationRequired, dialectTranslationRequired, taggedChildren, renderDefault, translationsPromise, childrenAsObjects, hash, translations, translationEntry, renderTranslation, renderSettings, translationPromise, loadingFallback;
         var _this = this;
-        var _d;
         var children = _b.children, id = _b.id, context = _b.context;
-        return __generator(this, function (_e) {
-            switch (_e.label) {
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0:
                     I18NConfig = (0, getI18NConfig_1.default)();
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    locale = _e.sent();
+                    locale = _d.sent();
                     defaultLocale = I18NConfig.getDefaultLocale();
                     _c = I18NConfig.requiresTranslation(locale), translationRequired = _c[0], dialectTranslationRequired = _c[1];
                     taggedChildren = (0, internal_1.addGTIdentifier)(children);
@@ -132,7 +131,8 @@ function T(_a) {
                     hash = (0, id_1.hashJsxChildren)(__assign(__assign(__assign({ source: childrenAsObjects }, (context && { context: context })), (id && { id: id })), { dataFormat: 'JSX' }));
                     return [4 /*yield*/, translationsPromise];
                 case 2:
-                    translationEntry = (_d = (_e.sent())) === null || _d === void 0 ? void 0 : _d[hash];
+                    translations = _d.sent();
+                    translationEntry = translations === null || translations === void 0 ? void 0 : translations[hash];
                     renderTranslation = function (target) {
                         return (0, internal_1.renderTranslatedChildren)({
                             source: taggedChildren,

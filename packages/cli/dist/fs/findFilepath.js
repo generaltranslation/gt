@@ -71,8 +71,13 @@ function findFile(filePattern, file) {
  */
 function findFileInDir(dir, file) {
     const resolvedPath = path_1.default.join(dir, file);
-    if (fs_1.default.existsSync(resolvedPath)) {
-        return fs_1.default.readFileSync(resolvedPath, 'utf8');
+    try {
+        if (fs_1.default.existsSync(resolvedPath)) {
+            return fs_1.default.readFileSync(resolvedPath, 'utf8');
+        }
+    }
+    catch (error) {
+        console.error(error);
     }
     return '';
 }

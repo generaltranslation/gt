@@ -103,7 +103,8 @@ async function T({
   });
 
   // Get the translation entry object
-  const translationEntry = (await translationsPromise)?.[hash];
+  const translations = await translationsPromise;
+  const translationEntry = translations?.[hash];
 
   // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
 

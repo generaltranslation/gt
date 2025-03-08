@@ -52,33 +52,31 @@ export default async function loadTranslation(
   // get content loader
   const customLoadTranslation = resolveTranslationLoader();
 
-
   if (customLoadTranslation) {
     // ----- USING CUSTOM TRANSLATION LOADER ----- //
 
     // Set custom translation loader
-    loadTranslationFunction = async (_: RemoteLoadTranslationInput) => {
+    loadTranslationFunction = async (_props: RemoteLoadTranslationInput) => {
       // Load translation
       try {
-        const result = await customLoadTranslation(props.targetLocale);
-        return parseResult(result); 
+        const result = await customLoadTranslation(_props.targetLocale);
+        return parseResult(result);
       } catch (error) {
         console.error(customLoadTranslationError(), error);
         return undefined;
       }
     };
-
   } else {
     // ----- USING REMOTE CACHE LOADER ----- //
 
     // Default translation loader: remote cache
     loadTranslationFunction = async (
-      props: RemoteLoadTranslationInput
+      _props: RemoteLoadTranslationInput
     ): Promise<any> => {
       try {
         const response = await fetch(
-          `${props.cacheUrl}/${props.projectId}/${props.targetLocale}${
-            props._versionId ? `/${props._versionId}` : ''
+          `${_props.cacheUrl}/${_props.projectId}/${_props.targetLocale}${
+            _props._versionId ? `/${_props._versionId}` : ''
           }`
         );
         const result = await response.json();

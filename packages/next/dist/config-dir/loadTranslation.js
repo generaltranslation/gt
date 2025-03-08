@@ -78,13 +78,13 @@ function loadTranslation(props) {
                     if (customLoadTranslation) {
                         // ----- USING CUSTOM TRANSLATION LOADER ----- //
                         // Set custom translation loader
-                        loadTranslationFunction = function (_) { return __awaiter(_this, void 0, void 0, function () {
+                        loadTranslationFunction = function (_props) { return __awaiter(_this, void 0, void 0, function () {
                             var result, error_1;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
                                         _a.trys.push([0, 2, , 3]);
-                                        return [4 /*yield*/, customLoadTranslation(props.targetLocale)];
+                                        return [4 /*yield*/, customLoadTranslation(_props.targetLocale)];
                                     case 1:
                                         result = _a.sent();
                                         return [2 /*return*/, parseResult(result)];
@@ -100,13 +100,13 @@ function loadTranslation(props) {
                     else {
                         // ----- USING REMOTE CACHE LOADER ----- //
                         // Default translation loader: remote cache
-                        loadTranslationFunction = function (props) { return __awaiter(_this, void 0, void 0, function () {
+                        loadTranslationFunction = function (_props) { return __awaiter(_this, void 0, void 0, function () {
                             var response, result, error_2;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
                                         _a.trys.push([0, 3, , 4]);
-                                        return [4 /*yield*/, fetch("".concat(props.cacheUrl, "/").concat(props.projectId, "/").concat(props.targetLocale).concat(props._versionId ? "/".concat(props._versionId) : ''))];
+                                        return [4 /*yield*/, fetch("".concat(_props.cacheUrl, "/").concat(_props.projectId, "/").concat(_props.targetLocale).concat(_props._versionId ? "/".concat(_props._versionId) : ''))];
                                     case 1:
                                         response = _a.sent();
                                         return [4 /*yield*/, response.json()];

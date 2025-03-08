@@ -442,11 +442,13 @@ class ReactCLI extends base_1.BaseCLI {
                 // {defaultLocale}.json file exists in the translationsDir, and use that as a source
                 // instead
                 const sourceFile = (0, findFilepath_1.findFileInDir)(options.translationsDir, `${options.defaultLocale}.json`);
-                options.dictionary = sourceFile;
-                updates = [
-                    ...updates,
-                    ...(yield this.createDictionaryUpdates(options, (0, createESBuildConfig_1.default)({}))),
-                ];
+                if (sourceFile) {
+                    options.dictionary = sourceFile;
+                    updates = [
+                        ...updates,
+                        ...(yield this.createDictionaryUpdates(options, (0, createESBuildConfig_1.default)({}))),
+                    ];
+                }
             }
             // Scan through project for <T> tags
             if (options.inline) {

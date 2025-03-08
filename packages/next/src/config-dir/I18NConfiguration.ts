@@ -136,10 +136,10 @@ export default class I18NConfiguration {
     // IS BUILDTIME TRANSLATION ENABLED
 
     this.translationEnabled = !!(
-      (loadTranslationType === 'custom' || // load local translation
+      loadTranslationType === 'custom' || // load local translation
       (loadTranslationType === 'remote' &&
         this.projectId && // projectId required because it's part of the GET request
-        this.cacheUrl)) ||
+        this.cacheUrl) ||
       loadMessagesEnabled // load local messages
     );
 

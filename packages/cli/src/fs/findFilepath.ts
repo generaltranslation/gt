@@ -74,9 +74,12 @@ export function findFile(filePattern: string, file: string): string {
  */
 export function findFileInDir(dir: string, file: string): string {
   const resolvedPath = path.join(dir, file);
-
-  if (fs.existsSync(resolvedPath)) {
-    return fs.readFileSync(resolvedPath, 'utf8');
+  try {
+    if (fs.existsSync(resolvedPath)) {
+      return fs.readFileSync(resolvedPath, 'utf8');
+    }
+  } catch (error) {
+    console.error(error);
   }
   return '';
 }
