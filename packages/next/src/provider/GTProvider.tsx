@@ -23,12 +23,14 @@ export default async function GTProvider({
   id?: string;
 }) {
   // ---------- SETUP ---------- //
-
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired, dialectTranslationRequired] =
     I18NConfig.requiresTranslation(locale);
+
+  // load messages
+  const messages = (await I18NConfig.getMessages(locale)) || {};
 
   // ----- FETCH TRANSLATIONS FROM CACHE ----- //
 
@@ -42,7 +44,7 @@ export default async function GTProvider({
 
   // Get dictionary subset
   let dictionary: Dictionary | DictionaryEntry =
-    (prefixId ? getDictionaryEntry(prefixId) : getDictionary()) || {};
+    (prefixId ? getDictionaryEntry(prefixId) : await getDictionary()) || {};
 
   // Check provisional dictionary
   if (
@@ -71,6 +73,7 @@ export default async function GTProvider({
     <ClientProvider
       dictionary={dictionary}
       initialTranslations={translations}
+      messages={messages}
       locale={locale}
       locales={I18NConfig.getLocales()}
       defaultLocale={defaultLocale}

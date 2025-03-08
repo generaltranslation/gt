@@ -27,7 +27,8 @@
     "translation",
     "internationalization",
     "localization",
-    "i18n"
+    "i18n",
+    "l10n"
   ],
   "devDependencies": {
     "prettier": "^3.4.2",

@@ -1,4 +1,4 @@
-import { Content, JsxChildren, JsxTranslationResult, ContentTranslationResult, TranslationError } from './types';
+import { Content, JsxChildren, JsxTranslationResult, ContentTranslationResult, TranslationError, IcuTranslationResult } from './types';
 /**
  * Type representing the constructor parameters for the GT class.
  */
@@ -65,6 +65,25 @@ declare class GT {
         sourceLocale?: string;
         [key: string]: any;
     }): Promise<JsxTranslationResult | TranslationError>;
+    /**
+     * Translates an ICU message into a given locale.
+     * If `metadata.save` is provided, the translation is cached for use in a public project.
+     *
+     * @param {string} source - The ICU message to be translated.
+     * @param {string} locale - The target locale code (e.g., 'en-US', 'fr') for the translation.
+     * @param {{ context?: string, [key: string]: any }} [metadata] - Additional metadata for the translation request.
+     * @param {string} [metadata.context] - Contextual information to assist with the translation.
+     *
+     * @returns {Promise<ContentTranslationResult | TranslationError>} A promise that resolves to the translated content, or an error if the translation fails.
+     */
+    translateIcu(source: string, locale: string, metadata?: {
+        context?: string;
+        id?: string;
+        publish?: boolean;
+        fast?: boolean;
+        sourceLocale?: string;
+        [key: string]: any;
+    }): Promise<IcuTranslationResult | TranslationError>;
 }
 /**
  * Get the text direction for a given locale code using the Intl.Locale API.

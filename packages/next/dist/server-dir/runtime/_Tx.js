@@ -134,7 +134,7 @@ function Tx(_a) {
                         return [2 /*return*/, renderDefault()];
                     }
                     childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedChildren);
-                    hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: childrenAsObjects }, (context && { context: context })), (id && { id: id })));
+                    hash = (0, id_1.hashJsxChildren)(__assign(__assign(__assign({ source: childrenAsObjects }, (context && { context: context })), (id && { id: id })), { dataFormat: 'JSX' }));
                     translationEntry = (_e = I18NConfig.getRecentTranslations(locale)) === null || _e === void 0 ? void 0 : _e[hash];
                     renderTranslation = function (target) {
                         return (0, internal_1.renderTranslatedChildren)({

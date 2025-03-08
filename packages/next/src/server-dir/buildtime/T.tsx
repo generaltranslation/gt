@@ -41,7 +41,7 @@ async function Resolver({ children }: { children: React.ReactNode }) {
  * @param {React.ReactNode} children - The content to be translated or displayed.
  * @param {string} [id] - Optional identifier for the translation string. If not provided, a hash will be generated from the content.
  * @param {any} [context] - Additional context for translation key generation.
- * 
+ *
  * @returns {JSX.Element} The rendered translation or fallback content based on the provided configuration.
  *
  * @throws {Error} If a plural translation is requested but the `n` option is not provided.
@@ -55,15 +55,13 @@ async function T({
   id?: string;
   context?: string;
 }): Promise<any> {
-
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
-  const [
-    translationRequired, dialectTranslationRequired
-  ] = I18NConfig.requiresTranslation(locale);
+  const [translationRequired, dialectTranslationRequired] =
+    I18NConfig.requiresTranslation(locale);
 
   // ----- TAG CHILDREN ----- //
 
@@ -101,28 +99,30 @@ async function T({
     source: childrenAsObjects,
     ...(context && { context }),
     ...(id && { id }),
+    dataFormat: 'JSX',
   });
 
   // Get the translation entry object
-  const translationEntry = (await translationsPromise)?.[hash];
+  const translations = await translationsPromise;
+  const translationEntry = translations?.[hash];
 
   // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
 
   const renderTranslation = (target: TranslatedChildren) => {
     return renderTranslatedChildren({
       source: taggedChildren,
-      target, 
+      target,
       locales: [locale, defaultLocale],
-      renderVariable
+      renderVariable,
     });
-  }
+  };
 
   // ----- RENDER CACHED TRANSLATIONS ----- //
 
   // if we have a cached translation, render it
   if (translationEntry?.state === 'success') {
     return renderTranslation(translationEntry.target);
-  } 
+  }
 
   if (translationEntry?.state === 'error') {
     return renderDefault();
@@ -156,16 +156,18 @@ async function T({
       return renderDefault();
     }
   })();
-  
+
   // ----- DEFINE LOADING BEHAVIOR ----- //
 
-  let loadingFallback; 
+  let loadingFallback;
   if (renderSettings.method === 'replace') {
     loadingFallback = renderDefault();
   } else if (renderSettings.method === 'skeleton') {
     loadingFallback = renderSkeleton();
   } else {
-    loadingFallback = dialectTranslationRequired ? renderDefault() : renderSkeleton();
+    loadingFallback = dialectTranslationRequired
+      ? renderDefault()
+      : renderSkeleton();
   }
 
   return (

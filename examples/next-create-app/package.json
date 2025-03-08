@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "gt-next": "^5.2.5",
-    "gt-next-cli": "^2.1.2",
+    "gt-next": "^5.2.6-alpha.6",
+    "gtx-cli": "^1.0.0-alpha.3",
     "next": "15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

@@ -73,6 +73,7 @@ function T({
         source: childrenAsObjects,
         ...(context && { context }),
         ...(id && { id }),
+        dataFormat: 'JSX',
       });
       return [childrenAsObjects, hash];
     } else {

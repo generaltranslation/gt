@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.noProjectIdError = exports.noApiKeyError = exports.noSupportedDataFormatError = exports.noDataFormatError = exports.noSourceFileError = exports.noTranslationsDirError = exports.noDefaultLocaleError = exports.noLocalesError = exports.noTranslationsError = void 0;
+exports.noTranslationsError = `No updates found! Are you sure you're running this command in the right directory?`;
+exports.noLocalesError = `No locales found! Please provide a list of locales to translate to, or specify them in your gt.config.json file.`;
+exports.noDefaultLocaleError = `No default locale found! Please provide a default locale, or specify it in your gt.config.json file.`;
+exports.noTranslationsDirError = `No translations directory found! Please provide a path to the directory where translations will be saved, or specify it in your gt.config.json file.`;
+exports.noSourceFileError = `No source file found! Please double check your translations directory and default locale.`;
+exports.noDataFormatError = `No data format found! Please make sure your translationsDir parameter ends with a supported file extension.`;
+exports.noSupportedDataFormatError = `Unsupported data format! Please make sure your translationsDir parameter ends with a supported file extension.`;
+exports.noApiKeyError = `No API key found! Please provide an API key using the --api-key flag.`;
+exports.noProjectIdError = `No project ID found! Please provide a project ID using the --project-id flag or specify it in your gt.config.json file.`;

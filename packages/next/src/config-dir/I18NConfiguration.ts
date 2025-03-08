@@ -6,6 +6,7 @@ import {
   TranslatedContent,
   defaultRenderSettings,
   GTTranslationError,
+  MessagesObject,
 } from 'gt-react/internal';
 import {
   createMismatchingHashWarning,
@@ -14,6 +15,7 @@ import {
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TranslationsObject } from 'gt-react/internal';
 import defaultInitGTProps from './props/defaultInitGTProps';
+import messagesManager, { MessagesManager } from './MessagesManager';
 type I18NConfigurationParams = {
   apiKey?: string;
   devApiKey?: string;
@@ -22,6 +24,7 @@ type I18NConfigurationParams = {
   cacheUrl: string | null;
   cacheExpiryTime: number;
   loadTranslationType: 'remote' | 'custom' | 'disabled';
+  loadMessagesEnabled: boolean;
   defaultLocale: string;
   locales: string[];
   renderSettings: {
@@ -81,6 +84,7 @@ export default class I18NConfiguration {
   };
   // Dictionaries
   private _translationManager: TranslationManager | undefined;
+  private _messagesManager: MessagesManager | undefined;
   // Other metadata
   metadata: Record<string, any>;
   // Batching config
@@ -102,6 +106,7 @@ export default class I18NConfiguration {
     cacheUrl,
     cacheExpiryTime,
     loadTranslationType,
+    loadMessagesEnabled,
     // Locale info
     defaultLocale,
     locales,
@@ -131,10 +136,11 @@ export default class I18NConfiguration {
     // IS BUILDTIME TRANSLATION ENABLED
 
     this.translationEnabled = !!(
-      loadTranslationType === 'custom' ||
+      loadTranslationType === 'custom' || // load local translation
       (loadTranslationType === 'remote' &&
         this.projectId && // projectId required because it's part of the GET request
-        this.cacheUrl)
+        this.cacheUrl) ||
+      loadMessagesEnabled // load local messages
     );
 
     // IS RUNTIME TRANSLATION ENABLED
@@ -180,6 +186,7 @@ export default class I18NConfiguration {
     };
     // Dictionary managers
     this._translationManager = translationManager;
+    this._messagesManager = messagesManager;
     this._translationManager.setConfig({
       cacheUrl,
       projectId,
@@ -302,6 +309,18 @@ export default class I18NConfiguration {
     const dialectTranslationRequired =
       translationRequired && isSameLanguage(locale, this.defaultLocale);
     return [translationRequired, dialectTranslationRequired];
+  }
+
+  // ----- MESSAGES ----- //
+  // User defined translations are called messages
+
+  /**
+   * Load the user's translations for a given locale
+   * @param locale - The locale set by the user
+   * @returns A promise that resolves to the translations.
+   */
+  async getMessages(locale: string): Promise<MessagesObject | undefined> {
+    return await this._messagesManager?.getMessages(locale);
   }
 
   // ----- CACHED TRANSLATIONS ----- //

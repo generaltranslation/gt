@@ -25,7 +25,7 @@ export type TranslationManagerConfig = {
 };
 
 /**
- * Manages remote translations.
+ * Manages translations
  */
 export class TranslationManager {
   private config: TranslationManagerConfig;
@@ -95,17 +95,14 @@ export class TranslationManager {
       this.translationsMap.has(reference) &&
       Date.now() - (this.translationTimestamps.get(reference) ?? 0) >
         this.config.cacheExpiryTime;
-
     // Return cached translations if available
     if (this.translationsMap.has(reference) && !hasExpired) {
       return this.translationsMap.get(reference);
     }
-
     // Await any in-progress fetch
     if (this.fetchPromises.has(reference)) {
       return await this.fetchPromises.get(reference);
     }
-
     // Fetch translations remotely
     const fetchPromise = this._fetchTranslations(reference);
     this.fetchPromises.set(reference, fetchPromise);
@@ -117,7 +114,6 @@ export class TranslationManager {
       this.translationsMap.set(reference, retrievedTranslations);
       this.translationTimestamps.set(reference, Date.now());
     }
-
     return retrievedTranslations;
   }
 

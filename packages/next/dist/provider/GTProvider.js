@@ -101,21 +101,32 @@ var ClientProviderWrapper_1 = __importDefault(require("./ClientProviderWrapper")
  */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, _c, translationRequired, dialectTranslationRequired, cachedTranslationsPromise, dictionary, prefixPath, translations;
+        var I18NConfig, locale, defaultLocale, _c, translationRequired, dialectTranslationRequired, messages, cachedTranslationsPromise, dictionary, _d, prefixPath, translations;
         var children = _b.children, prefixId = _b.id;
-        return __generator(this, function (_d) {
-            switch (_d.label) {
+        return __generator(this, function (_e) {
+            switch (_e.label) {
                 case 0:
                     I18NConfig = (0, getI18NConfig_1.default)();
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    locale = _d.sent();
+                    locale = _e.sent();
                     defaultLocale = I18NConfig.getDefaultLocale();
                     _c = I18NConfig.requiresTranslation(locale), translationRequired = _c[0], dialectTranslationRequired = _c[1];
+                    return [4 /*yield*/, I18NConfig.getMessages(locale)];
+                case 2:
+                    messages = (_e.sent()) || {};
                     cachedTranslationsPromise = translationRequired
                         ? I18NConfig.getCachedTranslations(locale)
                         : {};
-                    dictionary = (prefixId ? (0, getDictionary_1.getDictionaryEntry)(prefixId) : (0, getDictionary_1.default)()) || {};
+                    if (!prefixId) return [3 /*break*/, 3];
+                    _d = (0, getDictionary_1.getDictionaryEntry)(prefixId);
+                    return [3 /*break*/, 5];
+                case 3: return [4 /*yield*/, (0, getDictionary_1.default)()];
+                case 4:
+                    _d = _e.sent();
+                    _e.label = 5;
+                case 5:
+                    dictionary = (_d) || {};
                     // Check provisional dictionary
                     if ((0, react_1.isValidElement)(dictionary) ||
                         Array.isArray(dictionary) ||
@@ -132,9 +143,9 @@ function GTProvider(_a) {
                         }, dictionary);
                     }
                     return [4 /*yield*/, cachedTranslationsPromise];
-                case 2:
-                    translations = _d.sent();
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired }, I18NConfig.getClientSideConfig(), { children: children })))];
+                case 6:
+                    translations = _e.sent();
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, messages: messages, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });
     });

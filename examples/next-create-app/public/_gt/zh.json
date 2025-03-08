@@ -1,5 +1,5 @@
 {
-  "7e5762e044bf0f92013ec26b83362b992c1bb5e22eebb566c66bcae011e750b4": {
+  "5b2070dd9b135a1858e6536195ec44e1b468d81a6502958ad4f4a3be9984a3ab": {
     "type": "div",
     "props": {
       "children": [
@@ -23,7 +23,7 @@
                       "type": "li",
                       "props": {
                         "children": [
-                          "从编辑 ",
+                          "通过编辑 ",
                           {
                             "type": "code",
                             "props": {
@@ -43,7 +43,7 @@
                     {
                       "type": "li",
                       "props": {
-                        "children": "保存后立即查看更改。",
+                        "children": "保存并立即查看您的更改。",
                         "data-_gt": {
                           "id": 7
                         }
@@ -81,7 +81,7 @@
                     {
                       "type": "a",
                       "props": {
-                        "children": "阅读文档",
+                        "children": "阅读我们的文档",
                         "data-_gt": {
                           "id": 11
                         }
@@ -153,7 +153,7 @@
                         }
                       }
                     },
-                    "访问 nextjs.org →"
+                    "前往 nextjs.org →"
                   ],
                   "data-_gt": {
                     "id": 17

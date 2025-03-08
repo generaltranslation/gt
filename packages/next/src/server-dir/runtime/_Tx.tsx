@@ -99,6 +99,7 @@ async function Tx({
     source: childrenAsObjects,
     ...(context && { context }),
     ...(id && { id }),
+    dataFormat: 'JSX',
   });
 
   // Get the translation entry object
