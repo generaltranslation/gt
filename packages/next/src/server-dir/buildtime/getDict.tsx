@@ -14,7 +14,10 @@ import {
 } from '../../errors/createErrors';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import getLocale from '../../request/getLocale';
-import { renderContentToString, splitStringToContent } from 'generaltranslation';
+import {
+  renderContentToString,
+  splitStringToContent,
+} from 'generaltranslation';
 import { hashJsxChildren } from 'generaltranslation/id';
 
 /**
@@ -39,14 +42,16 @@ export default async function getDict(
     return id ? `${id}.${suffix}` : suffix;
   };
 
-  const dictionary = await getDictionary() || {};
+  const dictionary = (await getDictionary()) || {};
 
   const I18NConfig = getI18NConfig();
   const locale = await getLocale();
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
-  const messages = translationRequired ? await I18NConfig.getMessages(locale) : undefined;
+  const messages = translationRequired
+    ? await I18NConfig.getMessages(locale)
+    : undefined;
   const translations = translationRequired
     ? await I18NConfig.getCachedTranslations(locale)
     : undefined;
@@ -138,6 +143,7 @@ export default async function getDict(
       source,
       ...(metadata?.context && { context: metadata?.context }),
       id,
+      dataFormat: 'JSX',
     });
     const translationEntry = translations?.[hash];
 

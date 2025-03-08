@@ -75,6 +75,7 @@ export default async function tx(
     source,
     ...(options?.context && { context: options.context }),
     ...(options?.id && { id: options.id }),
+    dataFormat: 'JSX',
   });
 
   // ----- CHECK LOCAL CACHE ----- //

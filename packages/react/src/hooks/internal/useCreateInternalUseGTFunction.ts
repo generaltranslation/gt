@@ -64,6 +64,7 @@ export default function useCreateInternalUseGTFunction(
         source,
         ...(options?.context && { context: options.context }),
         ...(options?.id && { id: options.id }),
+        dataFormat: 'JSX',
       });
 
       // Check translation successful

@@ -147,7 +147,7 @@ function getDict(id) {
                             return (0, generaltranslation_1.renderContentToString)((0, generaltranslation_1.splitStringToContent)(message), [locale, defaultLocale], options.variables, options.variablesOptions);
                         }
                         // ---------- TRANSLATION ---------- //
-                        var hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: id }));
+                        var hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: id, dataFormat: 'JSX' }));
                         var translationEntry = translations === null || translations === void 0 ? void 0 : translations[hash];
                         // ----- RENDER TRANSLATION ----- //
                         // If a translation already exists

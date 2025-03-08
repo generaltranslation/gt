@@ -129,7 +129,7 @@ function T(_a) {
                     }
                     translationsPromise = I18NConfig.getCachedTranslations(locale);
                     childrenAsObjects = (0, internal_1.writeChildrenAsObjects)(taggedChildren);
-                    hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: childrenAsObjects }, (context && { context: context })), (id && { id: id })));
+                    hash = (0, id_1.hashJsxChildren)(__assign(__assign(__assign({ source: childrenAsObjects }, (context && { context: context })), (id && { id: id })), { dataFormat: 'JSX' }));
                     return [4 /*yield*/, translationsPromise];
                 case 2:
                     translationEntry = (_d = (_e.sent())) === null || _d === void 0 ? void 0 : _d[hash];
@@ -138,7 +138,7 @@ function T(_a) {
                             source: taggedChildren,
                             target: target,
                             locales: [locale, defaultLocale],
-                            renderVariable: renderVariable_1.default
+                            renderVariable: renderVariable_1.default,
                         });
                     };
                     // ----- RENDER CACHED TRANSLATIONS ----- //
@@ -183,7 +183,9 @@ function T(_a) {
                         loadingFallback = (0, internal_1.renderSkeleton)();
                     }
                     else {
-                        loadingFallback = dialectTranslationRequired ? renderDefault() : (0, internal_1.renderSkeleton)();
+                        loadingFallback = dialectTranslationRequired
+                            ? renderDefault()
+                            : (0, internal_1.renderSkeleton)();
                     }
                     return [2 /*return*/, ((0, jsx_runtime_1.jsx)(react_1.Suspense, { fallback: loadingFallback, children: (0, jsx_runtime_1.jsx)(Resolver, { children: translationPromise }) }, locale))];
             }

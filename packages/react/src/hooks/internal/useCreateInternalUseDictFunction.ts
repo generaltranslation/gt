@@ -103,6 +103,7 @@ export default function useCreateInternalUseDictFunction(
         source,
         ...(metadata?.context && { context: metadata.context }),
         id,
+        dataFormat: 'JSX',
       });
 
       // Check id first

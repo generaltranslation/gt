@@ -19,5 +19,5 @@ export declare function hashJsxChildren({ source, context, id, dataFormat, }: {
     source: JsxChildren;
     context?: string;
     id?: string;
-    dataFormat?: string;
+    dataFormat: string;
 }, hashFunction?: (string: string) => string): string;

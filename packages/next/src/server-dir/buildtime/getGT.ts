@@ -77,6 +77,7 @@ export default async function getGT(): Promise<
       source,
       ...(options?.context && { context: options?.context }),
       ...(options?.id && { id: options?.id }),
+      dataFormat: 'JSX',
     });
     const translationEntry = translations?.[hash];
 

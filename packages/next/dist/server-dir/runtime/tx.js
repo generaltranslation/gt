@@ -116,7 +116,7 @@ function tx(string_1) {
                     // ----- CHECK IF TRANSLATION REQUIRED ----- //
                     if (!translationRequired)
                         return [2 /*return*/, renderContent(source, [defaultLocale])];
-                    hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options.id })));
+                    hash = (0, id_1.hashJsxChildren)(__assign(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options.id })), { dataFormat: 'JSX' }));
                     recentTranslations = I18NConfig.getRecentTranslations(locale);
                     if (((_b = recentTranslations === null || recentTranslations === void 0 ? void 0 : recentTranslations[hash]) === null || _b === void 0 ? void 0 : _b.state) === 'success') {
                         return [2 /*return*/, renderContent(recentTranslations[hash].target, [

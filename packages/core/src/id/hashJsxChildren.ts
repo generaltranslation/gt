@@ -34,7 +34,7 @@ export function hashJsxChildren(
     source: JsxChildren;
     context?: string;
     id?: string;
-    dataFormat?: string;
+    dataFormat: string;
   },
   hashFunction: (string: string) => string = hashString
 ): string {

@@ -104,7 +104,7 @@ function getGT() {
                         if (!translationRequired)
                             return renderContent(source, [defaultLocale]);
                         // ----- GET TRANSLATION ----- //
-                        var hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })));
+                        var hash = (0, id_1.hashJsxChildren)(__assign(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })), { dataFormat: 'JSX' }));
                         var translationEntry = translations === null || translations === void 0 ? void 0 : translations[hash];
                         // ----- RENDER TRANSLATION ----- //
                         // If a translation already exists
