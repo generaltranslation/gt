@@ -45,10 +45,11 @@ export class BaseCLI {
   public constructor(library: SupportedLibraries) {
     this.library = library;
     this.setupInitCommand();
-    this.setupGTCommand();
   }
   // Init is never called in a child class
-  public init() {}
+  public init() {
+    this.setupGTCommand();
+  }
   // Execute is called by the main program
   public execute() {
     program.parse();

@@ -39,19 +39,3 @@ export async function fetchTranslations(
   }
   return [];
 }
-
-export function saveSourceFile(filepath: string, data: Updates) {
-  // Ensure directory exists
-  fs.mkdirSync(path.dirname(filepath), { recursive: true });
-
-  // Convert updates to the proper data format
-  const obj: Record<string, any> = {};
-  for (const update of data) {
-    const { source, metadata } = update;
-    const { hash } = metadata;
-    obj[hash] = source;
-  }
-
-  fs.writeFileSync(filepath, JSON.stringify(obj, null, 2));
-  console.log(chalk.green('Source file saved successfully!'));
-}

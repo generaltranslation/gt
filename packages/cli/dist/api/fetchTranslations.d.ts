@@ -1,4 +1,3 @@
-import { Updates } from '../types';
 import { RetrievedTranslations } from '../types/api';
 /**
  * Fetches translations from the API and saves them to a local directory
@@ -9,4 +8,3 @@ import { RetrievedTranslations } from '../types/api';
  * @param fileType - The file type to save the translations as (file extension)
  */
 export declare function fetchTranslations(baseUrl: string, apiKey: string, versionId: string): Promise<RetrievedTranslations>;
-export declare function saveSourceFile(filepath: string, data: Updates): void;

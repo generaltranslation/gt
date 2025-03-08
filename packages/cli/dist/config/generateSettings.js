@@ -21,7 +21,7 @@ function generateSettings(options) {
     // Load config file
     const gtConfig = options.config
         ? (0, loadConfig_1.default)(options.config)
-        : {};
+        : (0, loadConfig_1.default)('gt.config.json');
     // Warn if apiKey is present in gt.config.json
     if (gtConfig.apiKey) {
         (0, warnings_1.warnApiKeyInConfig)(options.config);
@@ -30,7 +30,7 @@ function generateSettings(options) {
     // merge options
     const mergedOptions = Object.assign(Object.assign({}, gtConfig), options);
     // merge locales
-    mergedOptions.locales = Array.from(new Set([...gtConfig.locales, ...(options.locales || [])]));
+    mergedOptions.locales = Array.from(new Set([...(gtConfig.locales || []), ...(options.locales || [])]));
     // Add apiKey if not provided
     mergedOptions.apiKey = mergedOptions.apiKey || process.env.GT_API_KEY;
     // Add projectId if not provided

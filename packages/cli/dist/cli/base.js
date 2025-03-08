@@ -65,10 +65,11 @@ class BaseCLI {
     constructor(library) {
         this.library = library;
         this.setupInitCommand();
-        this.setupGTCommand();
     }
     // Init is never called in a child class
-    init() { }
+    init() {
+        this.setupGTCommand();
+    }
     // Execute is called by the main program
     execute() {
         commander_1.program.parse();

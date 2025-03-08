@@ -65,3 +65,18 @@ export function findFile(filePattern: string, file: string): string {
   }
   return '';
 }
+
+/**
+ * Find a file in a directory.
+ * @param {string} dir - The directory to search in.
+ * @param {string} file - The file to search for.
+ * @returns {string} - The path to the file.
+ */
+export function findFileInDir(dir: string, file: string): string {
+  const resolvedPath = path.join(dir, file);
+
+  if (fs.existsSync(resolvedPath)) {
+    return fs.readFileSync(resolvedPath, 'utf8');
+  }
+  return '';
+}

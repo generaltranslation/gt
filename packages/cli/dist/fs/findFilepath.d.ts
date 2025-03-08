@@ -20,3 +20,10 @@ export declare function getRelativePath(file: string, srcDirectory: string): str
  * @returns {string} - The path to the file.
  */
 export declare function findFile(filePattern: string, file: string): string;
+/**
+ * Find a file in a directory.
+ * @param {string} dir - The directory to search in.
+ * @param {string} file - The file to search for.
+ * @returns {string} - The path to the file.
+ */
+export declare function findFileInDir(dir: string, file: string): string;

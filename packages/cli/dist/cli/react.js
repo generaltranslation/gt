@@ -66,6 +66,7 @@ const utils_1 = require("../fs/utils");
 const sendUpdates_1 = require("../api/sendUpdates");
 const save_1 = require("../formats/gt/save");
 const generateSettings_1 = require("../config/generateSettings");
+const saveJSON_1 = require("../fs/saveJSON");
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 class ReactCLI extends base_1.BaseCLI {
@@ -99,14 +100,7 @@ class ReactCLI extends base_1.BaseCLI {
             .option('--project-id <id>', 'Project ID for the translation service', (0, utils_1.resolveProjectId)())
             .option('--version-id <id>', 'Version ID for the translation service')
             .option('--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file', (0, findFilepath_1.default)(['./tsconfig.json', './jsconfig.json']))
-            .option('--dictionary <path>', 'Path to dictionary file', (0, findFilepath_1.default)([
-            './dictionary.js',
-            './src/dictionary.js',
-            './dictionary.json',
-            './src/dictionary.json',
-            './dictionary.ts',
-            './src/dictionary.ts',
-        ]))
+            .option('--dictionary <path>', 'Path to dictionary file')
             .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
             .option('--default-language, --default-locale <locale>', 'Default locale (e.g., en)')
             .option('--new, --locales <locales...>', 'Space-separated list of locales (e.g., en fr es)')
@@ -178,10 +172,27 @@ class ReactCLI extends base_1.BaseCLI {
                     process.exit(1);
                 }
             }
+            // Convert updates to the proper data format
+            const newData = {};
+            for (const update of updates) {
+                const { source, metadata } = update;
+                const { hash } = metadata;
+                newData[hash] = source;
+            }
             // Save source file if translationsDir exists
             if (settings.translationsDir) {
                 console.log();
-                (0, fetchTranslations_1.saveSourceFile)(path_1.default.join(settings.translationsDir, `${settings.defaultLocale}.json`), updates);
+                (0, saveJSON_1.saveJSON)(path_1.default.join(settings.translationsDir, `${settings.defaultLocale}.json`), newData);
+                console.log(chalk_1.default.green('Source file saved successfully!\n'));
+                // Also save translations (after merging with existing translations)
+                for (const locale of settings.locales) {
+                    const existingTranslations = (0, loadJSON_1.default)(path_1.default.join(settings.translationsDir, `${locale}.json`));
+                    const mergedTranslations = Object.assign(Object.assign({}, newData), existingTranslations);
+                    // Filter out only keys that exist in newData
+                    const filteredTranslations = Object.fromEntries(Object.entries(mergedTranslations).filter(([key]) => newData[key]));
+                    (0, saveJSON_1.saveJSON)(path_1.default.join(settings.translationsDir, `${locale}.json`), filteredTranslations);
+                }
+                console.log(chalk_1.default.green('Merged translations successfully!\n'));
             }
         });
     }
@@ -342,6 +353,18 @@ class ReactCLI extends base_1.BaseCLI {
             (0, console_1.displayInitializingText)();
             const settings = (0, generateSettings_1.generateSettings)(initOptions);
             const options = Object.assign(Object.assign({}, initOptions), settings);
+            if (!options.dictionary) {
+                options.dictionary = (0, findFilepath_1.default)([
+                    './dictionary.js',
+                    './src/dictionary.js',
+                    './dictionary.json',
+                    './src/dictionary.json',
+                    './dictionary.ts',
+                    './src/dictionary.ts',
+                ]);
+            }
+            // Separate defaultLocale from locales
+            options.locales = options.locales.filter((locale) => locale !== options.defaultLocale);
             // validate timeout
             const timeout = parseInt(options.timeout);
             if (isNaN(timeout) || timeout < 0) {
@@ -407,6 +430,17 @@ class ReactCLI extends base_1.BaseCLI {
                 updates = [
                     ...updates,
                     ...(yield this.createDictionaryUpdates(options, esbuildConfig)),
+                ];
+            }
+            else if (options.defaultLocale) {
+                // If options.dictionary is not provided, additionally check if the
+                // {defaultLocale}.json file exists in the translationsDir, and use that as a source
+                // instead
+                const sourceFile = (0, findFilepath_1.findFileInDir)(options.translationsDir, `${options.defaultLocale}.json`);
+                options.dictionary = sourceFile;
+                updates = [
+                    ...updates,
+                    ...(yield this.createDictionaryUpdates(options, (0, createESBuildConfig_1.default)({}))),
                 ];
             }
             // Scan through project for <T> tags

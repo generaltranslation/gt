@@ -16,7 +16,7 @@ export function generateSettings(options: any): Settings {
   // Load config file
   const gtConfig: Record<string, any> = options.config
     ? loadConfig(options.config)
-    : {};
+    : loadConfig('gt.config.json');
 
   // Warn if apiKey is present in gt.config.json
   if (gtConfig.apiKey) {
@@ -29,7 +29,7 @@ export function generateSettings(options: any): Settings {
 
   // merge locales
   mergedOptions.locales = Array.from(
-    new Set([...gtConfig.locales, ...(options.locales || [])])
+    new Set([...(gtConfig.locales || []), ...(options.locales || [])])
   );
 
   // Add apiKey if not provided
