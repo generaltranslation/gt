@@ -65,9 +65,9 @@ function createDictionaryUpdates(options, esbuildConfig) {
             const context = props === null || props === void 0 ? void 0 : props.context;
             const metadata = Object.assign(Object.assign({ id }, (context && { context })), { 
                 // This hash isn't actually used by the GT API, just for consistency sake
-                hash: (0, id_1.hashJsxChildren)(Object.assign(Object.assign({ source }, (context && { context })), (id && { id }))) });
+                hash: (0, id_1.hashJsxChildren)(Object.assign(Object.assign(Object.assign({ source }, (context && { context })), (id && { id })), { dataFormat: 'JSX' })) });
             updates.push({
-                type: 'JSX',
+                dataFormat: 'JSX',
                 source,
                 metadata,
             });

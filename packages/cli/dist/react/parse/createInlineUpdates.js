@@ -133,7 +133,7 @@ function createInlineUpdates(options, pkg) {
         // Post-process to add a hash to each update
         yield Promise.all(updates.map((update) => __awaiter(this, void 0, void 0, function* () {
             const context = update.metadata.context;
-            const hash = (0, id_1.hashJsxChildren)(Object.assign(Object.assign({ source: update.source }, (context && { context })), (update.metadata.id && { id: update.metadata.id })));
+            const hash = (0, id_1.hashJsxChildren)(Object.assign(Object.assign(Object.assign({ source: update.source }, (context && { context })), (update.metadata.id && { id: update.metadata.id })), { dataFormat: 'JSX' }));
             update.metadata.hash = hash;
         })));
         return { updates, errors };

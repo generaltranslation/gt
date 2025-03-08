@@ -228,7 +228,7 @@ function parseJSXElement(importAliases, node, updates, errors, file) {
         // <T> is valid here
         // displayFoundTMessage(file, id);
         updates.push({
-            type: 'JSX',
+            dataFormat: 'JSX',
             source: componentObj.tree,
             metadata: componentObj.props,
         });

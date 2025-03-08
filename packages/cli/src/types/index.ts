@@ -2,15 +2,15 @@ import { JsxChildren } from 'generaltranslation/internal';
 
 export type Updates = ({ metadata: Record<string, any> } & (
   | {
-      type: 'JSX';
+      dataFormat: 'JSX';
       source: JsxChildren;
     }
   | {
-      type: 'ICU';
+      dataFormat: 'ICU';
       source: string;
     }
   | {
-      type: 'I18NEXT';
+      dataFormat: 'I18NEXT';
       source: string;
     }
 ))[];

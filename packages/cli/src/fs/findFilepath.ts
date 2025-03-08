@@ -60,7 +60,7 @@ export function findFile(filePattern: string, file: string): string {
   // Handle wildcard pattern by replacing the wildcard with the file parameter
   const resolvedPath = filePattern.replace(/\*/, file);
 
-  if (fs.existsSync(resolvedPath)) {
+  if (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isFile()) {
     return fs.readFileSync(resolvedPath, 'utf8');
   }
   return '';

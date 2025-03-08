@@ -58,7 +58,7 @@ function getRelativePath(file, srcDirectory) {
 function findFile(filePattern, file) {
     // Handle wildcard pattern by replacing the wildcard with the file parameter
     const resolvedPath = filePattern.replace(/\*/, file);
-    if (fs_1.default.existsSync(resolvedPath)) {
+    if (fs_1.default.existsSync(resolvedPath) && fs_1.default.statSync(resolvedPath).isFile()) {
         return fs_1.default.readFileSync(resolvedPath, 'utf8');
     }
     return '';

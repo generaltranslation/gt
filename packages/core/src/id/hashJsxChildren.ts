@@ -29,12 +29,12 @@ export function hashJsxChildren(
     source,
     context,
     id,
-    type,
+    dataFormat,
   }: {
     source: JsxChildren;
     context?: string;
     id?: string;
-    type?: string;
+    dataFormat?: string;
   },
   hashFunction: (string: string) => string = hashString
 ): string {
@@ -42,7 +42,7 @@ export function hashJsxChildren(
     source: sanitizeJsxChildren(source),
     ...(id && { id }),
     ...(context && { context }),
-    ...(type && { type }),
+    ...(dataFormat && { dataFormat }),
   });
   return hashFunction(unhashedKey);
 }

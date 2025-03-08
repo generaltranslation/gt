@@ -103,7 +103,7 @@ function parseStrings(importName, path, updates, errors, file) {
                                 });
                             }
                             updates.push({
-                                type: 'JSX',
+                                dataFormat: 'JSX',
                                 source: content,
                                 metadata,
                             });

@@ -79,10 +79,11 @@ export default async function createDictionaryUpdates(
         source,
         ...(context && { context }),
         ...(id && { id }),
+        dataFormat: 'JSX',
       }),
     };
     updates.push({
-      type: 'JSX',
+      dataFormat: 'JSX',
       source,
       metadata,
     });

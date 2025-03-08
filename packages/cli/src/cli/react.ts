@@ -172,18 +172,7 @@ export class ReactCLI extends BaseCLI {
         'Path to jsconfig or tsconfig file',
         findFilepath(['./tsconfig.json', './jsconfig.json'])
       )
-      .option(
-        '--dictionary <path>',
-        'Path to dictionary file',
-        findFilepath([
-          './dictionary.js',
-          './src/dictionary.js',
-          './dictionary.json',
-          './src/dictionary.json',
-          './dictionary.ts',
-          './src/dictionary.ts',
-        ])
-      )
+      .option('--dictionary <path>', 'Path to dictionary file')
       .option(
         '--default-language, --default-locale <locale>',
         'Source locale (e.g., en)',
@@ -257,9 +246,23 @@ export class ReactCLI extends BaseCLI {
   ): Promise<void> {
     displayAsciiTitle();
     displayInitializingText();
-    const { updates, errors } = await this.createUpdates(options);
 
     const settings = generateSettings(options);
+
+    options = { ...options, ...settings };
+
+    if (!options.dictionary) {
+      options.dictionary = findFilepath([
+        './dictionary.js',
+        './src/dictionary.js',
+        './dictionary.json',
+        './src/dictionary.json',
+        './dictionary.ts',
+        './src/dictionary.ts',
+      ]);
+    }
+
+    const { updates, errors } = await this.createUpdates(options);
 
     if (errors.length > 0) {
       if (options.ignoreErrors) {
@@ -679,7 +682,7 @@ export class ReactCLI extends BaseCLI {
         ...updates,
         ...(await this.createDictionaryUpdates(options as any, esbuildConfig)),
       ];
-    } else if (options.defaultLocale) {
+    } else if (options.defaultLocale && options.translationsDir) {
       // If options.dictionary is not provided, additionally check if the
       // {defaultLocale}.json file exists in the translationsDir, and use that as a source
       // instead

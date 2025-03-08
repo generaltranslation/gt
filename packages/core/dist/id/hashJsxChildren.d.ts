@@ -15,9 +15,9 @@ export declare function hashString(string: string): string;
  * @param {function} hashFunction custom hash function
  * @returns {string} - The unique has of the children.
  */
-export declare function hashJsxChildren({ source, context, id, type, }: {
+export declare function hashJsxChildren({ source, context, id, dataFormat, }: {
     source: JsxChildren;
     context?: string;
     id?: string;
-    type?: string;
+    dataFormat?: string;
 }, hashFunction?: (string: string) => string): string;

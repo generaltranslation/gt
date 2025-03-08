@@ -121,14 +121,7 @@ class ReactCLI extends base_1.BaseCLI {
             .description('Generate a translation file for the source locale. The -t flag must be provided. This command should be used if you are handling your own translations.')
             .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
             .option('--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file', (0, findFilepath_1.default)(['./tsconfig.json', './jsconfig.json']))
-            .option('--dictionary <path>', 'Path to dictionary file', (0, findFilepath_1.default)([
-            './dictionary.js',
-            './src/dictionary.js',
-            './dictionary.json',
-            './src/dictionary.json',
-            './dictionary.ts',
-            './src/dictionary.ts',
-        ]))
+            .option('--dictionary <path>', 'Path to dictionary file')
             .option('--default-language, --default-locale <locale>', 'Source locale (e.g., en)', 'en')
             .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
             .option('--ignore-errors', 'Ignore errors encountered while scanning for <T> tags', false)
@@ -157,8 +150,19 @@ class ReactCLI extends base_1.BaseCLI {
         return __awaiter(this, void 0, void 0, function* () {
             (0, console_1.displayAsciiTitle)();
             (0, console_1.displayInitializingText)();
-            const { updates, errors } = yield this.createUpdates(options);
             const settings = (0, generateSettings_1.generateSettings)(options);
+            options = Object.assign(Object.assign({}, options), settings);
+            if (!options.dictionary) {
+                options.dictionary = (0, findFilepath_1.default)([
+                    './dictionary.js',
+                    './src/dictionary.js',
+                    './dictionary.json',
+                    './src/dictionary.json',
+                    './dictionary.ts',
+                    './src/dictionary.ts',
+                ]);
+            }
+            const { updates, errors } = yield this.createUpdates(options);
             if (errors.length > 0) {
                 if (options.ignoreErrors) {
                     console.log(chalk_1.default.red(`CLI tool encountered errors while scanning for ${chalk_1.default.green('<T>')} tags.\n`));
@@ -433,7 +437,7 @@ class ReactCLI extends base_1.BaseCLI {
                     ...(yield this.createDictionaryUpdates(options, esbuildConfig)),
                 ];
             }
-            else if (options.defaultLocale) {
+            else if (options.defaultLocale && options.translationsDir) {
                 // If options.dictionary is not provided, additionally check if the
                 // {defaultLocale}.json file exists in the translationsDir, and use that as a source
                 // instead

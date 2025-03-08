@@ -135,7 +135,6 @@ export class BaseCLI {
               : this.library === 'next-i18next'
                 ? 'I18NEXT'
                 : 'JSX';
-
         if (!dataFormat) {
           console.error(noDataFormatError);
           process.exit(1);

@@ -41,7 +41,7 @@ function translateJson(sourceJson, settings, dataFormat, fileExtension) {
                 id,
             };
             updates.push({
-                type: dataFormat,
+                dataFormat,
                 source,
                 metadata,
             });

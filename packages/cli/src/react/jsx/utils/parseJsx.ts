@@ -265,7 +265,7 @@ export function parseJSXElement(
     // <T> is valid here
     // displayFoundTMessage(file, id);
     updates.push({
-      type: 'JSX',
+      dataFormat: 'JSX',
       source: componentObj.tree,
       metadata: componentObj.props,
     });

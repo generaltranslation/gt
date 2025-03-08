@@ -1,12 +1,6 @@
-import { splitStringToContent } from 'generaltranslation';
-import flattenDictionary, {
-  flattenJsonDictionary,
-} from '../../react/utils/flattenDictionary';
-import getEntryAndMetadata from '../../react/utils/getEntryAndMetadata';
-import { hashJsxChildren } from 'generaltranslation/id';
-import { Settings, SupportedLibraries, Updates } from '../../types';
+import { flattenJsonDictionary } from '../../react/utils/flattenDictionary';
+import { Settings, Updates } from '../../types';
 import { sendUpdates } from '../../api/sendUpdates';
-import { defaultBaseUrl } from 'generaltranslation/internal';
 import path from 'path';
 import { fetchTranslations } from '../../api/fetchTranslations';
 import { saveTranslations } from './save';
@@ -39,7 +33,7 @@ export async function translateJson(
       id,
     };
     updates.push({
-      type: dataFormat,
+      dataFormat,
       source,
       metadata,
     });
@@ -48,7 +42,6 @@ export async function translateJson(
     console.error(noTranslationsDirError);
     process.exit(1);
   }
-
   const outputDir = path.dirname(settings.translationsDir);
 
   // Actually do the translation
