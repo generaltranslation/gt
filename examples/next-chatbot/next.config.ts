@@ -15,4 +15,6 @@ const nextConfig: NextConfig = {
 export default withGTConfig(nextConfig, {
   locales: ['en', 'fr', 'es', 'zh'],
   defaultLocale: 'en',
+  runtimeUrl: 'https://runtime.gtx.wtf',
+  cacheUrl: 'http://gt-edge-staging.generaltranslation.workers.dev/',
 });
