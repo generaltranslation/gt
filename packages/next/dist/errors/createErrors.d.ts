@@ -1,6 +1,6 @@
 export declare const remoteTranslationsError = "gt-next Error: fetching remote translation.";
-export declare const customLoadTranslationError = "gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.";
-export declare const customLoadMessagesError = "gt-next Error: fetching locally stored messages. If you are using a custom loadMessage(), make sure it is correctly implemented.";
+export declare const customLoadTranslationError: (locale?: string) => string;
+export declare const customLoadMessagesError: (locale?: string) => string;
 export declare const createStringTranslationError: (string: string, id?: string, functionName?: string) => string;
 export declare const createDictionaryStringTranslationError: (id: string) => string;
 export declare const createRequiredPrefixError: (id: string, requiredPrefix: string) => string;

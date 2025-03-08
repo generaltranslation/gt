@@ -4,8 +4,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.dictionaryNotFoundWarning = exports.runtimeTranslationTimeoutWarning = exports.translationLoadingWarning = exports.APIKeyMissingWarn = exports.noInitGTWarn = exports.projectIdMissingWarn = exports.createMismatchingHashWarning = exports.createUnsupportedLocalesWarning = exports.createInvalidDictionaryEntryWarning = exports.createNoEntryFoundWarning = exports.usingDefaultsWarning = exports.unresolvedCustomLoadMessagesError = exports.unresolvedCustomLoadTranslationError = exports.dictionaryDisabledError = exports.createDictionarySubsetError = exports.devApiKeyIncludedInProductionError = exports.createRequiredPrefixError = exports.createDictionaryStringTranslationError = exports.createStringTranslationError = exports.customLoadMessagesError = exports.customLoadTranslationError = exports.remoteTranslationsError = void 0;
 var generaltranslation_1 = require("generaltranslation");
 exports.remoteTranslationsError = 'gt-next Error: fetching remote translation.';
-exports.customLoadTranslationError = 'gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.';
-exports.customLoadMessagesError = 'gt-next Error: fetching locally stored messages. If you are using a custom loadMessage(), make sure it is correctly implemented.';
+var customLoadTranslationError = function (locale) {
+    if (locale === void 0) { locale = ''; }
+    return "gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(".concat(locale, "), make sure it is correctly implemented.");
+};
+exports.customLoadTranslationError = customLoadTranslationError;
+var customLoadMessagesError = function (locale) {
+    if (locale === void 0) { locale = ''; }
+    return "gt-next Error: fetching locally stored messages. If you are using a custom loadMessage(".concat(locale, "), make sure it is correctly implemented.");
+};
+exports.customLoadMessagesError = customLoadMessagesError;
 var createStringTranslationError = function (string, id, functionName) {
     if (functionName === void 0) { functionName = 'tx'; }
     return "gt-next string translation error. ".concat(functionName, "(\"").concat(string, "\")").concat(id ? " with id \"".concat(id, "\"") : '', " could not locate translation.");

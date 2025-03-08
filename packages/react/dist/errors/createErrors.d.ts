@@ -9,7 +9,6 @@ export declare const createNestedTError: (child: any) => string;
 export declare const renderingError = "General Translation: Rendering error.";
 export declare const dynamicTranslationError = "Error fetching batched translations:";
 export declare const createGenericRuntimeTranslationError: (id: string | undefined, hash: string) => string;
-export declare const dictionaryDisabledError: string;
 export declare const runtimeTranslationError = "gt-react Error: Runtime translation failed: ";
 export declare const customLoadTranslationError: (locale?: string) => string;
 export declare const customLoadMessagesError: (locale?: string) => string;
@@ -22,4 +21,5 @@ export declare const APIKeyMissingWarn: string;
 export declare const createUnsupportedLocalesWarning: (locales: string[]) => string;
 export declare const runtimeTranslationTimeoutWarning = "gt-react: Runtime translation timed out.";
 export declare const createUnsupportedLocaleWarning: (validatedLocale: string, newLocale: string) => string;
+export declare const dictionaryMissingWarning: string;
 //# sourceMappingURL=createErrors.d.ts.map

@@ -352,6 +352,7 @@ class ReactCLI extends base_1.BaseCLI {
             (0, console_1.displayAsciiTitle)();
             (0, console_1.displayInitializingText)();
             const settings = (0, generateSettings_1.generateSettings)(initOptions);
+            // only for typing purposes
             const options = Object.assign(Object.assign({}, initOptions), settings);
             if (!options.dictionary) {
                 options.dictionary = (0, findFilepath_1.default)([

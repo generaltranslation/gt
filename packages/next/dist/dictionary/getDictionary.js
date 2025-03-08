@@ -49,10 +49,10 @@ var generaltranslation_1 = require("generaltranslation");
 var dictionary = undefined;
 function getDictionary() {
     return __awaiter(this, void 0, void 0, function () {
-        var dictionaryFileType, customLoadMessages, defaultLocale, _a, languageCode, _b;
-        var _c;
-        return __generator(this, function (_d) {
-            switch (_d.label) {
+        var dictionaryFileType, customLoadMessages, defaultLocale, _a, languageCode, error_1;
+        var _b;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     // Singleton pattern
                     if (dictionary !== undefined)
@@ -67,34 +67,36 @@ function getDictionary() {
                             dictionary = require('gt-next/_dictionary').default;
                         }
                     }
-                    catch (_e) { }
+                    catch (_d) { }
                     if (dictionary)
                         return [2 /*return*/, dictionary];
                     customLoadMessages = (0, resolveMessagesLoader_1.default)();
                     if (!customLoadMessages) return [3 /*break*/, 8];
-                    defaultLocale = process.env._GENERALTRANSLATION_DEFAULT_LOCALE || defaultInitGTProps_1.default.defaultLocale;
-                    _d.label = 1;
+                    defaultLocale = process.env._GENERALTRANSLATION_DEFAULT_LOCALE ||
+                        defaultInitGTProps_1.default.defaultLocale;
+                    _c.label = 1;
                 case 1:
-                    _d.trys.push([1, 3, , 4]);
+                    _c.trys.push([1, 3, , 4]);
                     return [4 /*yield*/, customLoadMessages(defaultLocale)];
                 case 2:
-                    dictionary = _d.sent();
+                    dictionary = _c.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    _a = _d.sent();
+                    _a = _c.sent();
                     return [3 /*break*/, 4];
                 case 4:
-                    languageCode = (_c = (0, generaltranslation_1.getLocaleProperties)(defaultLocale)) === null || _c === void 0 ? void 0 : _c.languageCode;
+                    languageCode = (_b = (0, generaltranslation_1.getLocaleProperties)(defaultLocale)) === null || _b === void 0 ? void 0 : _b.languageCode;
                     if (!(!dictionary && languageCode && languageCode !== defaultLocale)) return [3 /*break*/, 8];
-                    _d.label = 5;
+                    _c.label = 5;
                 case 5:
-                    _d.trys.push([5, 7, , 8]);
+                    _c.trys.push([5, 7, , 8]);
                     return [4 /*yield*/, customLoadMessages(languageCode)];
                 case 6:
-                    dictionary = _d.sent();
+                    dictionary = _c.sent();
                     return [3 /*break*/, 8];
                 case 7:
-                    _b = _d.sent();
+                    error_1 = _c.sent();
+                    console.error((0, createErrors_1.customLoadMessagesError)(), error_1);
                     return [3 /*break*/, 8];
                 case 8:
                     // Warn if no dictionary was found
