@@ -5,3 +5,5 @@ archived
 yarn.lock
 .yarn
 _test_formats
+.env
+.env.local
