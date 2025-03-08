@@ -134,7 +134,7 @@ function withGTConfig(nextConfig, props) {
     // Local messages flag
     if (customLoadMessagePath &&
         fs_1.default.existsSync(path_1.default.resolve(customLoadMessagePath))) {
-        mergedConfig.localMessagesEnabled = true;
+        mergedConfig.loadMessagesEnabled = true;
     }
     // Local translations flag
     if (customLoadTranslationPath &&
@@ -187,6 +187,10 @@ function withGTConfig(nextConfig, props) {
             // Only apply webpack aliases if we're using webpack (not Turbopack)
             var isTurbopack = (options === null || options === void 0 ? void 0 : options.turbo) || process.env.TURBOPACK === '1';
             if (!isTurbopack) {
+                // Disable cache in dev bc people might move around loadTranslation() and loadMessages() files
+                if (process.env.NODE_ENV === 'development') {
+                    webpackConfig.cache = false;
+                }
                 if (resolvedDictionaryFilePath) {
                     webpackConfig.resolve.alias['gt-next/_dictionary'] = path_1.default.resolve(webpackConfig.context, resolvedDictionaryFilePath);
                 }
@@ -195,8 +199,7 @@ function withGTConfig(nextConfig, props) {
                         path_1.default.resolve(webpackConfig.context, customLoadTranslationPath);
                 }
                 if (customLoadMessagePath) {
-                    webpackConfig.resolve.alias["gt-next/_load-messages"] =
-                        path_1.default.resolve(webpackConfig.context, customLoadMessagePath);
+                    webpackConfig.resolve.alias["gt-next/_load-messages"] = path_1.default.resolve(webpackConfig.context, customLoadMessagePath);
                 }
             }
             if (typeof (nextConfig === null || nextConfig === void 0 ? void 0 : nextConfig.webpack) === 'function') {

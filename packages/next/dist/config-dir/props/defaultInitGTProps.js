@@ -42,7 +42,7 @@ var defaultInitGTProps = {
     config: './gt.config.json',
     runtimeTranslation: true,
     loadTranslationType: 'remote',
-    localMessagesEnabled: false,
+    loadMessagesEnabled: false,
     runtimeUrl: internal_1.defaultRuntimeApiUrl,
     cacheUrl: internal_1.defaultCacheUrl,
     defaultLocale: internal_1.libraryDefaultLocale,

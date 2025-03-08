@@ -1,5 +1,5 @@
-import { CustomLoader } from "gt-react/internal";
-import { unresolvedCustomLoadMessagesError } from "../errors/createErrors";
+import { CustomLoader } from 'gt-react/internal';
+import { unresolvedCustomLoadMessagesError } from '../errors/createErrors';
 
 let customLoadMessages: CustomLoader | undefined = undefined;
 
@@ -14,7 +14,7 @@ export default function resolveMessageLoader(): CustomLoader | undefined {
   let customLoadMessagesConfig;
   try {
     customLoadMessagesConfig = require('gt-next/_load-messages');
-  } catch { }
+  } catch {}
 
   // Get custom loader
   customLoadMessages =

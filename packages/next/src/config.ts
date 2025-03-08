@@ -139,7 +139,7 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
     customLoadMessagePath &&
     fs.existsSync(path.resolve(customLoadMessagePath))
   ) {
-    mergedConfig.localMessagesEnabled = true;
+    mergedConfig.loadMessagesEnabled = true;
   }
 
   // Local translations flag
@@ -204,9 +204,13 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
         _GENERALTRANSLATION_DICTIONARY_FILE_TYPE:
           resolvedDictionaryFilePathType,
       }),
-      _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (!!customLoadTranslationPath).toString(),
-      _GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED: (!!customLoadMessagePath).toString(),
-      _GENERALTRANSLATION_DEFAULT_LOCALE: (mergedConfig.defaultLocale || defaultInitGTProps.defaultLocale).toString(),
+      _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED:
+        (!!customLoadTranslationPath).toString(),
+      _GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED:
+        (!!customLoadMessagePath).toString(),
+      _GENERALTRANSLATION_DEFAULT_LOCALE: (
+        mergedConfig.defaultLocale || defaultInitGTProps.defaultLocale
+      ).toString(),
     },
     experimental: {
       ...nextConfig.experimental,
@@ -235,6 +239,10 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
         (options as any)?.turbo || process.env.TURBOPACK === '1';
 
       if (!isTurbopack) {
+        // Disable cache in dev bc people might move around loadTranslation() and loadMessages() files
+        if (process.env.NODE_ENV === 'development') {
+          webpackConfig.cache = false;
+        }
         if (resolvedDictionaryFilePath) {
           webpackConfig.resolve.alias['gt-next/_dictionary'] = path.resolve(
             webpackConfig.context,
@@ -246,8 +254,10 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
             path.resolve(webpackConfig.context, customLoadTranslationPath);
         }
         if (customLoadMessagePath) {
-          webpackConfig.resolve.alias[`gt-next/_load-messages`] =
-            path.resolve(webpackConfig.context, customLoadMessagePath);
+          webpackConfig.resolve.alias[`gt-next/_load-messages`] = path.resolve(
+            webpackConfig.context,
+            customLoadMessagePath
+          );
         }
       }
       if (typeof nextConfig?.webpack === 'function') {

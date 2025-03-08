@@ -3,7 +3,7 @@ import { RenderMethod } from 'gt-react/internal';
 type InitGTProps = {
   // Feature flags
   loadTranslationType?: 'remote' | 'custom' | 'disabled'; // remote: CDN, custom: uknown, disabled: no fetch
-  localMessagesEnabled?: boolean; // "messages" = user defined translations, "translations" = GT translations
+  loadMessagesEnabled?: boolean; // "messages" = user defined translations, "translations" = GT translations
   // Request scoped filepath
   dictionary?: string;
   config?: string;
