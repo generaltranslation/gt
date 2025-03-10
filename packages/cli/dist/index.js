@@ -11,10 +11,10 @@ function main() {
     const library = (0, determineFramework_1.determineLibrary)();
     let cli;
     if (library === 'gt-next') {
-        cli = new next_1.NextCLI();
+        cli = new next_1.NextCLI('gt-next');
     }
     else if (library === 'gt-react') {
-        cli = new react_1.ReactCLI();
+        cli = new react_1.ReactCLI('gt-react');
     }
     else {
         cli = new base_1.BaseCLI(library);
