@@ -21,8 +21,11 @@ import { generateSettings } from '../config/generateSettings';
 const pkg = 'gt-next';
 
 export class NextCLI extends ReactCLI {
-  constructor(library: SupportedLibraries) {
-    super(library);
+  constructor(
+    library: SupportedLibraries,
+    additionalModules?: SupportedLibraries[]
+  ) {
+    super(library, additionalModules);
   }
   public init() {
     this.setupTranslateCommand();

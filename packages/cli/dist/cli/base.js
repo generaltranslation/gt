@@ -63,8 +63,9 @@ const chalk_1 = __importDefault(require("chalk"));
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 class BaseCLI {
     // Constructor is shared amongst all CLI class types
-    constructor(library) {
+    constructor(library, additionalModules) {
         this.library = library;
+        this.additionalModules = additionalModules || [];
         this.setupInitCommand();
     }
     // Init is never called in a child class
@@ -120,13 +121,21 @@ class BaseCLI {
             const fileExtension = settings.translationsDir
                 .split('.')
                 .pop();
-            const dataFormat = this.library === 'next-intl'
-                ? 'ICU'
-                : this.library === 'react-i18next'
-                    ? 'I18NEXT'
-                    : this.library === 'next-i18next'
-                        ? 'I18NEXT'
-                        : 'JSX';
+            let dataFormat;
+            if (this.library === 'next-intl') {
+                dataFormat = 'ICU';
+            }
+            else if (this.library === 'i18next') {
+                if (this.additionalModules.includes('i18next-icu')) {
+                    dataFormat = 'ICU';
+                }
+                else {
+                    dataFormat = 'I18NEXT';
+                }
+            }
+            else {
+                dataFormat = 'JSX';
+            }
             if (!dataFormat) {
                 console.error(errors_1.noDataFormatError);
                 process.exit(1);

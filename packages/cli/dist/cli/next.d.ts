@@ -1,7 +1,7 @@
 import { WrapOptions, Options, Updates, SetupOptions, SupportedFrameworks, SupportedLibraries } from '../types';
 import { ReactCLI } from './react';
 export declare class NextCLI extends ReactCLI {
-    constructor(library: SupportedLibraries);
+    constructor(library: SupportedLibraries, additionalModules?: SupportedLibraries[]);
     init(): void;
     execute(): void;
     protected scanForContent(options: WrapOptions, framework: SupportedFrameworks): Promise<{

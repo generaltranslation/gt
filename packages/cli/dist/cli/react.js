@@ -70,8 +70,8 @@ const saveJSON_1 = require("../fs/saveJSON");
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 class ReactCLI extends base_1.BaseCLI {
-    constructor(library) {
-        super(library);
+    constructor(library, additionalModules) {
+        super(library, additionalModules);
     }
     init() {
         this.setupTranslateCommand();

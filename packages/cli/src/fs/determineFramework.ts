@@ -3,7 +3,12 @@ import path from 'path';
 import fs from 'fs';
 import { SupportedLibraries } from '../types';
 
-export function determineLibrary(): SupportedLibraries {
+export function determineLibrary(): {
+  library: SupportedLibraries;
+  additionalModules: SupportedLibraries[];
+} {
+  let library: SupportedLibraries = 'base';
+  let additionalModules: SupportedLibraries[] = [];
   try {
     // Get the current working directory (where the CLI is being run)
     const cwd = process.cwd();
@@ -16,7 +21,7 @@ export function determineLibrary(): SupportedLibraries {
           'No package.json found in the current directory. Please run this command from the root of your project.'
         )
       );
-      return 'base';
+      return { library: 'base', additionalModules: [] };
     }
 
     // Read and parse package.json
@@ -28,21 +33,23 @@ export function determineLibrary(): SupportedLibraries {
 
     // Check for gt-next or gt-react in dependencies
     if (dependencies['gt-next']) {
-      return 'gt-next';
+      library = 'gt-next';
     } else if (dependencies['gt-react']) {
-      return 'gt-react';
+      library = 'gt-react';
     } else if (dependencies['next-intl']) {
-      return 'next-intl';
-    } else if (dependencies['react-i18next']) {
-      return 'react-i18next';
-    } else if (dependencies['next-i18next']) {
-      return 'next-i18next';
+      library = 'next-intl';
+    } else if (dependencies['i18next']) {
+      library = 'i18next';
+    }
+
+    if (dependencies['i18next-icu']) {
+      additionalModules.push('i18next-icu');
     }
 
     // Fallback to base if neither is found
-    return 'base';
+    return { library, additionalModules };
   } catch (error) {
     console.error('Error determining framework:', error);
-    return 'base';
+    return { library: 'base', additionalModules: [] };
   }
 }

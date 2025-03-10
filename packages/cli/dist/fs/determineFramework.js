@@ -8,6 +8,8 @@ const chalk_1 = __importDefault(require("chalk"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 function determineLibrary() {
+    let library = 'base';
+    let additionalModules = [];
     try {
         // Get the current working directory (where the CLI is being run)
         const cwd = process.cwd();
@@ -15,32 +17,32 @@ function determineLibrary() {
         // Check if package.json exists
         if (!fs_1.default.existsSync(packageJsonPath)) {
             console.log(chalk_1.default.red('No package.json found in the current directory. Please run this command from the root of your project.'));
-            return 'base';
+            return { library: 'base', additionalModules: [] };
         }
         // Read and parse package.json
         const packageJson = JSON.parse(fs_1.default.readFileSync(packageJsonPath, 'utf8'));
         const dependencies = Object.assign(Object.assign({}, packageJson.dependencies), packageJson.devDependencies);
         // Check for gt-next or gt-react in dependencies
         if (dependencies['gt-next']) {
-            return 'gt-next';
+            library = 'gt-next';
         }
         else if (dependencies['gt-react']) {
-            return 'gt-react';
+            library = 'gt-react';
         }
         else if (dependencies['next-intl']) {
-            return 'next-intl';
+            library = 'next-intl';
         }
-        else if (dependencies['react-i18next']) {
-            return 'react-i18next';
+        else if (dependencies['i18next']) {
+            library = 'i18next';
         }
-        else if (dependencies['next-i18next']) {
-            return 'next-i18next';
+        if (dependencies['i18next-icu']) {
+            additionalModules.push('i18next-icu');
         }
         // Fallback to base if neither is found
-        return 'base';
+        return { library, additionalModules };
     }
     catch (error) {
         console.error('Error determining framework:', error);
-        return 'base';
+        return { library: 'base', additionalModules: [] };
     }
 }
