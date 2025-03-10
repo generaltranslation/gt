@@ -5,7 +5,7 @@ type withGTConfigProps = {
   dictionary?: string;
   config?: string;
   loadTranslationsPath?: string;
-  loadMessagesPath?: string;
+  loadDictionaryPath?: string;
   // Cloud integration
   apiKey?: string;
   projectId?: string;

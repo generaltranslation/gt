@@ -3,7 +3,7 @@ type withGTConfigProps = {
     dictionary?: string;
     config?: string;
     loadTranslationsPath?: string;
-    loadMessagesPath?: string;
+    loadDictionaryPath?: string;
     apiKey?: string;
     projectId?: string;
     runtimeUrl?: string | null;

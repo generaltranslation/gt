@@ -68,12 +68,12 @@ export type TranslationsObject = {
 export type LocalesTranslations = {
     [locale: string]: TranslationsObject | null;
 };
-export type MessagesContent = string;
-export type MessagesObject = {
-    [id: string]: MessagesContent;
+export type DictionaryContent = string;
+export type DictionaryObject = {
+    [id: string]: DictionaryContent;
 };
-export type LocalesMessages = {
-    [locale: string]: MessagesObject;
+export type LocalesDictionary = {
+    [locale: string]: DictionaryObject;
 };
 export type CustomLoader = (locale: string) => Promise<any>;
 export type RenderMethod = 'skeleton' | 'replace' | 'default';

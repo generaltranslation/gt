@@ -101,7 +101,7 @@ var ClientProviderWrapper_1 = __importDefault(require("./ClientProviderWrapper")
  */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, _c, translationRequired, dialectTranslationRequired, messages, cachedTranslationsPromise, dictionary, _d, prefixPath, translations;
+        var I18NConfig, locale, defaultLocale, _c, translationRequired, dialectTranslationRequired, dictionaryTranslations, cachedTranslationsPromise, dictionary, _d, prefixPath, translations;
         var children = _b.children, prefixId = _b.id;
         return __generator(this, function (_e) {
             switch (_e.label) {
@@ -112,9 +112,9 @@ function GTProvider(_a) {
                     locale = _e.sent();
                     defaultLocale = I18NConfig.getDefaultLocale();
                     _c = I18NConfig.requiresTranslation(locale), translationRequired = _c[0], dialectTranslationRequired = _c[1];
-                    return [4 /*yield*/, I18NConfig.getMessages(locale)];
+                    return [4 /*yield*/, I18NConfig.getDictionaryTranslations(locale)];
                 case 2:
-                    messages = (_e.sent()) || {};
+                    dictionaryTranslations = (_e.sent()) || {};
                     cachedTranslationsPromise = translationRequired
                         ? I18NConfig.getCachedTranslations(locale)
                         : {};
@@ -145,7 +145,7 @@ function GTProvider(_a) {
                     return [4 /*yield*/, cachedTranslationsPromise];
                 case 6:
                     translations = _e.sent();
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, messages: messages, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired }, I18NConfig.getClientSideConfig(), { children: children })))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, dictionaryTranslations: dictionaryTranslations, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });
     });

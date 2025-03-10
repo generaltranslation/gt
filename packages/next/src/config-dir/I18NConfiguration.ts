@@ -6,7 +6,7 @@ import {
   TranslatedContent,
   defaultRenderSettings,
   GTTranslationError,
-  MessagesObject,
+  DictionaryObject,
 } from 'gt-react/internal';
 import {
   createMismatchingHashWarning,
@@ -15,7 +15,7 @@ import {
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TranslationsObject } from 'gt-react/internal';
 import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
-import messagesManager, { MessagesManager } from './MessagesManager';
+import dictionaryManager, { DictionaryManager } from './DictionaryManager';
 type I18NConfigurationParams = {
   apiKey?: string;
   devApiKey?: string;
@@ -24,7 +24,7 @@ type I18NConfigurationParams = {
   cacheUrl: string | null;
   cacheExpiryTime: number;
   loadTranslationsType: 'remote' | 'custom' | 'disabled';
-  loadMessagesEnabled: boolean;
+  loadDictionaryEnabled: boolean;
   defaultLocale: string;
   locales: string[];
   renderSettings: {
@@ -84,7 +84,7 @@ export default class I18NConfiguration {
   };
   // Dictionaries
   private _translationManager: TranslationManager | undefined;
-  private _messagesManager: MessagesManager | undefined;
+  private _dictionaryManager: DictionaryManager | undefined;
   // Other metadata
   metadata: Record<string, any>;
   // Batching config
@@ -106,7 +106,7 @@ export default class I18NConfiguration {
     cacheUrl,
     cacheExpiryTime,
     loadTranslationsType,
-    loadMessagesEnabled,
+    loadDictionaryEnabled,
     // Locale info
     defaultLocale,
     locales,
@@ -139,7 +139,7 @@ export default class I18NConfiguration {
       (loadTranslationsType === 'remote' &&
         this.projectId && // projectId required because it's part of the GET request
         this.cacheUrl) ||
-      loadMessagesEnabled // load local messages
+      loadDictionaryEnabled // load local dictionary
     );
 
     // runtime translation enabled
@@ -183,7 +183,7 @@ export default class I18NConfiguration {
     };
     // Dictionary managers
     this._translationManager = translationManager;
-    this._messagesManager = messagesManager;
+    this._dictionaryManager = dictionaryManager;
     this._translationManager.setConfig({
       cacheUrl,
       projectId,
@@ -308,16 +308,18 @@ export default class I18NConfiguration {
     return [translationRequired, dialectTranslationRequired];
   }
 
-  // ----- MESSAGES ----- //
-  // User defined translations are called messages
+  // ----- DICTIONARY ----- //
+  // User defined translations are called dictionary
 
   /**
    * Load the user's translations for a given locale
    * @param locale - The locale set by the user
    * @returns A promise that resolves to the translations.
    */
-  async getMessages(locale: string): Promise<MessagesObject | undefined> {
-    return await this._messagesManager?.getMessages(locale);
+  async getDictionaryTranslations(
+    locale: string
+  ): Promise<DictionaryObject | undefined> {
+    return await this._dictionaryManager?.getDictionary(locale);
   }
 
   // ----- CACHED TRANSLATIONS ----- //

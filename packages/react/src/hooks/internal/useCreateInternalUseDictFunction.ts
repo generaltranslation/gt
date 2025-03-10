@@ -3,7 +3,7 @@ import {
   Dictionary,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
-  MessagesObject,
+  DictionaryObject,
   RenderMethod,
   TranslationsObject,
 } from '../../types/types';
@@ -26,7 +26,7 @@ import { TranslateContentCallback } from '../../types/runtime';
 export default function useCreateInternalUseDictFunction(
   dictionary: Dictionary | undefined,
   translations: TranslationsObject | null,
-  messages: MessagesObject | null,
+  dictionaryTranslations: DictionaryObject | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
@@ -81,15 +81,15 @@ export default function useCreateInternalUseDictFunction(
       // Check: translation not required
       if (!translationRequired) return renderContent(source, [defaultLocale]);
 
-      // ----- CHECK MESSAGES ----- //
+      // ----- CHECK DICTIONARY TRANSLATIONS ----- //
 
-      // Get message
-      const message = messages?.[id];
+      // Get dictionary translation
+      const dictionaryTranslation = dictionaryTranslations?.[id];
 
-      // Render message
-      if (message) {
+      // Render translation
+      if (dictionaryTranslation) {
         return renderContentToString(
-          splitStringToContent(message),
+          splitStringToContent(dictionaryTranslation),
           [locale, defaultLocale],
           options.variables,
           options.variablesOptions

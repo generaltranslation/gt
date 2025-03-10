@@ -47,8 +47,8 @@ export const runtimeTranslationError = `gt-react Error: Runtime translation fail
 export const customLoadTranslationsError = (locale: string = '') =>
   `gt-react Error: fetching locally stored translations. If you are using a custom loadTranslations(${locale}), make sure it is correctly implemented.`;
 
-export const customLoadMessagesWarning = (locale: string = '') =>
-  `gt-react Warning: fetching locally stored messages. If you are using a custom loadMessage(${locale}), make sure it is correctly implemented.`;
+export const customLoadDictionaryWarning = (locale: string = '') =>
+  `gt-react Error: fetching locally stored dictionary. If you are using a custom loadDictionary(${locale}), make sure it is correctly implemented.`;
 
 // ---- WARNINGS ---- //
 
@@ -98,8 +98,4 @@ export const createUnsupportedLocaleWarning = (
   );
 };
 
-export const dictionaryMissingWarning =
-  `gt-react Error: ` +
-  `No dictionary was found. ` +
-  `Ensure you are either passing your dictionary to the <GTProvider>, or if you are using user defined messages, ` +
-  `that you have defined a [defaultLocale].json file in your messages directory and that your loadMessages() function is properly defined.`;
+export const dictionaryMissingWarning = `gt-react Warning: No dictionary was found. Ensure you are either passing your dictionary to the <GTProvider>.`;
