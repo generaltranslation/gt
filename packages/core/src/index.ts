@@ -7,6 +7,7 @@ import _translateBatch from './api/batch/translateBatch';
 import _requiresTranslation from './locales/requiresTranslation';
 import _translate from './api/translate/translate';
 import _translateJsx from './api/jsx/translateJsx';
+import { _translateIcu } from './api/icu/translate';
 import _updateProjectTranslations from './projects/updateProjectTranslations';
 import _getProjectLocales from './projects/getProjectLocales';
 import _determineLocale from './locales/determineLocale';
@@ -27,6 +28,7 @@ import {
   JsxTranslationResult,
   ContentTranslationResult,
   TranslationError,
+  IcuTranslationResult,
 } from './types';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties from './locales/getLocaleProperties';
@@ -144,6 +146,35 @@ class GT {
     }
   ): Promise<JsxTranslationResult | TranslationError> {
     return await _translateJsx(this, source, locale, {
+      sourceLocale: this.sourceLocale,
+      ...metadata,
+    });
+  }
+
+  /**
+   * Translates an ICU message into a given locale.
+   * If `metadata.save` is provided, the translation is cached for use in a public project.
+   *
+   * @param {string} source - The ICU message to be translated.
+   * @param {string} locale - The target locale code (e.g., 'en-US', 'fr') for the translation.
+   * @param {{ context?: string, [key: string]: any }} [metadata] - Additional metadata for the translation request.
+   * @param {string} [metadata.context] - Contextual information to assist with the translation.
+   *
+   * @returns {Promise<ContentTranslationResult | TranslationError>} A promise that resolves to the translated content, or an error if the translation fails.
+   */
+  async translateIcu(
+    source: string,
+    locale: string,
+    metadata?: {
+      context?: string;
+      id?: string;
+      publish?: boolean;
+      fast?: boolean;
+      sourceLocale?: string;
+      [key: string]: any;
+    }
+  ): Promise<IcuTranslationResult | TranslationError> {
+    return await _translateIcu(this, source, locale, {
       sourceLocale: this.sourceLocale,
       ...metadata,
     });

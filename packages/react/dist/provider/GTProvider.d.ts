@@ -1,4 +1,4 @@
-import { RenderMethod } from '../types/types';
+import { CustomLoader, RenderMethod } from '../types/types';
 import React from 'react';
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -18,7 +18,7 @@ import React from 'react';
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadTranslation, _versionId, ...metadata }: {
+export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadMessages, loadTranslation, _versionId, ...metadata }: {
     children?: React.ReactNode;
     projectId?: string;
     devApiKey?: string;
@@ -32,7 +32,8 @@ export default function GTProvider({ children, projectId: _projectId, devApiKey:
         method: RenderMethod;
         timeout?: number;
     };
-    loadTranslation?: (locale: string) => Promise<any>;
+    loadMessages?: CustomLoader;
+    loadTranslation?: CustomLoader;
     _versionId?: string;
     [key: string]: any;
 }): React.JSX.Element;

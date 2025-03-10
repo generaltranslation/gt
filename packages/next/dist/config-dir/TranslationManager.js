@@ -56,7 +56,7 @@ var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps")
 var internal_1 = require("generaltranslation/internal");
 var loadTranslation_1 = __importDefault(require("./loadTranslation"));
 /**
- * Manages remote translations.
+ * Manages translations
  */
 var TranslationManager = /** @class */ (function () {
     /**

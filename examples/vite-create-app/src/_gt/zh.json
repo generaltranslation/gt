@@ -1,14 +1,5 @@
 {
-  "268bf547b71518c7879b49f2dff0966525d9a3f3c694ce3fe4bbf7d9384bb2e1": {
-    "type": "h1",
-    "props": {
-      "children": "Vite + React",
-      "data-_gt": {
-        "id": 1
-      }
-    }
-  },
-  "2a75381e312ae0421d5363983d23b6a166fa7323a6888d481abac47065a781ea": {
+  "1622d9dcb13a5e2bc7656875d81f1aa29dca453662794fb478ff57300210785f": {
     "type": "div",
     "props": {
       "children": [
@@ -42,7 +33,7 @@
                   }
                 }
               },
-              " 并保存以测试 HMR"
+              " 并保存以测试热模块替换（HMR）"
             ],
             "data-_gt": {
               "id": 4
@@ -55,7 +46,16 @@
       }
     }
   },
-  "d6ce46b788849d0c6354a30c3ef1c23b61df9155434bc8ed808ff126ac3083ca": {
+  "17d3b00e650565e271551bd16d9fe6504ca149aabba540034e6edf2d5a3eea85": {
+    "type": "h1",
+    "props": {
+      "children": "Vite + React",
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  },
+  "aa73a1ebc6b6f3f67ac8d8eabf33053b3f167ce274d9843ba0548d25063381ce": {
     "type": "p",
     "props": {
       "children": "点击 Vite 和 React 的标志以了解更多",

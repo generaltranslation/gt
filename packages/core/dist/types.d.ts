@@ -56,6 +56,14 @@ export type ContentTranslationResult = {
         key: string;
     };
 };
+export type IcuTranslationResult = {
+    translation: string;
+    locale: string;
+    reference?: {
+        id: string;
+        key: string;
+    };
+};
 export type JsxTranslationResult = {
     translation: JsxChildren;
     locale: string;

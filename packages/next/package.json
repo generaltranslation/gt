@@ -1,17 +1,17 @@
 {
   "name": "gt-next",
-  "version": "5.2.5",
+  "version": "5.2.6",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
-    "next": ">=13.0.0 <16.0.0",
+    "next": ">=13.0.0 <=15.1.7",
     "react": ">=16.8.0 <20.0.0",
     "react-dom": ">=16.8.0 <20.0.0"
   },
   "dependencies": {
     "@generaltranslation/supported-locales": "^2.0.6",
-    "generaltranslation": "^6.2.0",
-    "gt-react": "^9.2.3"
+    "generaltranslation": "^6.2.1",
+    "gt-react": "^9.2.4"
   },
   "scripts": {
     "patch": "npm version patch",
@@ -71,6 +71,9 @@
     },
     "./_load-translation": {
       "default": "./dist/_load-translation.js"
+    },
+    "./_load-messages": {
+      "default": "./dist/_load-messages.js"
     }
   },
   "typesVersions": {
@@ -95,6 +98,9 @@
       ],
       "_load-translation": [
         "./dist/_load-translation.d.ts"
+      ],
+      "_load-messages": [
+        "./dist/_load-messages.d.ts"
       ]
     }
   },
@@ -121,6 +127,9 @@
       ],
       "gt-next/_load-translation": [
         "/dist/_load-translation"
+      ],
+      "gt-next/_load-messages": [
+        "/dist/_load-messages"
       ]
     }
   },
@@ -129,6 +138,7 @@
     "translation",
     "internationalization",
     "localization",
-    "i18n"
+    "i18n",
+    "l10n"
   ]
 }

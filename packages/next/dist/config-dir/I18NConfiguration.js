@@ -66,12 +66,13 @@ var TranslationManager_1 = __importDefault(require("./TranslationManager"));
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
 var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
+var MessagesManager_1 = __importDefault(require("./MessagesManager"));
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         // ----- CLOUD INTEGRATION ----- //
         var 
         // Cloud integration
-        apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, loadTranslationType = _a.loadTranslationType, 
+        apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, loadTranslationType = _a.loadTranslationType, loadMessagesEnabled = _a.loadMessagesEnabled, 
         // Locale info
         defaultLocale = _a.defaultLocale, locales = _a.locales, 
         // Render method
@@ -83,7 +84,7 @@ var I18NConfiguration = /** @class */ (function () {
         // Internal
         _usingPlugin = _a._usingPlugin, 
         // Other metadata
-        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "loadTranslationType", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "_usingPlugin"]);
+        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "loadTranslationType", "loadMessagesEnabled", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "_usingPlugin"]);
         this.apiKey = apiKey;
         this.devApiKey = devApiKey;
         this.projectId = projectId;
@@ -92,10 +93,12 @@ var I18NConfiguration = /** @class */ (function () {
         this.cacheExpiryTime = cacheExpiryTime;
         this._versionId = _versionId; // version id for the dictionary
         // IS BUILDTIME TRANSLATION ENABLED
-        this.translationEnabled = !!(loadTranslationType === 'custom' ||
+        this.translationEnabled = !!(loadTranslationType === 'custom' || // load local translation
             (loadTranslationType === 'remote' &&
                 this.projectId && // projectId required because it's part of the GET request
-                this.cacheUrl));
+                this.cacheUrl) ||
+            loadMessagesEnabled // load local messages
+        );
         // IS RUNTIME TRANSLATION ENABLED
         var runtimeApiEnabled = !!(this.runtimeUrl ===
             defaultInitGTProps_1.default.runtimeUrl
@@ -122,6 +125,7 @@ var I18NConfiguration = /** @class */ (function () {
         })), { projectId: this.projectId, publish: true, fast: true }), metadata);
         // Dictionary managers
         this._translationManager = TranslationManager_1.default;
+        this._messagesManager = MessagesManager_1.default;
         this._translationManager.setConfig({
             cacheUrl: cacheUrl,
             projectId: projectId,
@@ -216,6 +220,24 @@ var I18NConfiguration = /** @class */ (function () {
         var translationRequired = (0, generaltranslation_1.requiresTranslation)(this.defaultLocale, locale, this.locales);
         var dialectTranslationRequired = translationRequired && (0, generaltranslation_1.isSameLanguage)(locale, this.defaultLocale);
         return [translationRequired, dialectTranslationRequired];
+    };
+    // ----- MESSAGES ----- //
+    // User defined translations are called messages
+    /**
+     * Load the user's translations for a given locale
+     * @param locale - The locale set by the user
+     * @returns A promise that resolves to the translations.
+     */
+    I18NConfiguration.prototype.getMessages = function (locale) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, ((_a = this._messagesManager) === null || _a === void 0 ? void 0 : _a.getMessages(locale))];
+                    case 1: return [2 /*return*/, _b.sent()];
+                }
+            });
+        });
     };
     // ----- CACHED TRANSLATIONS ----- //
     /**

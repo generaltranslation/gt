@@ -1,8 +1,18 @@
 import { useMemo } from 'react';
-import { isSameLanguage, requiresTranslation } from 'generaltranslation';
+import {
+  getLocaleProperties,
+  isSameLanguage,
+  requiresTranslation,
+} from 'generaltranslation';
 import { useEffect, useState } from 'react';
 import { GTContext } from './GTContext';
-import { RenderMethod, TranslationsObject } from '../types/types';
+import {
+  CustomLoader,
+  Dictionary,
+  MessagesObject,
+  RenderMethod,
+  TranslationsObject,
+} from '../types/types';
 import {
   defaultCacheUrl,
   defaultRuntimeApiUrl,
@@ -11,9 +21,12 @@ import {
 import {
   APIKeyMissingWarn,
   createUnsupportedLocalesWarning,
+  customLoadMessagesWarning,
+  customLoadTranslationError,
   devApiKeyProductionError,
+  dictionaryMissingWarning,
   projectIdMissingWarning,
-} from '../messages/createMessages';
+} from '../errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
@@ -23,7 +36,6 @@ import { readAuthFromEnv } from '../utils/utils';
 import fetchTranslations from '../utils/fetchTranslations';
 import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
 import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
-import { hashJsxChildren } from 'generaltranslation/id';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -47,13 +59,14 @@ export default function GTProvider({
   children,
   projectId: _projectId = '',
   devApiKey: _devApiKey,
-  dictionary = {},
+  dictionary: _dictionary,
   locales = [],
   defaultLocale = libraryDefaultLocale,
   locale: _locale,
   cacheUrl = defaultCacheUrl,
   runtimeUrl = defaultRuntimeApiUrl,
   renderSettings = defaultRenderSettings,
+  loadMessages,
   loadTranslation,
   _versionId,
   ...metadata
@@ -71,7 +84,8 @@ export default function GTProvider({
     method: RenderMethod;
     timeout?: number;
   };
-  loadTranslation?: (locale: string) => Promise<any>;
+  loadMessages?: CustomLoader;
+  loadTranslation?: CustomLoader;
   _versionId?: string;
   [key: string]: any;
 }): React.JSX.Element {
@@ -94,16 +108,65 @@ export default function GTProvider({
   });
 
   // Translation at runtime during development is enabled
-  const runtimeTranslationEnabled = !!(
-    projectId &&
-    runtimeUrl &&
-    devApiKey &&
-    process.env.NODE_ENV === 'development'
+  const runtimeTranslationEnabled = useMemo(
+    () =>
+      !!(
+        projectId &&
+        runtimeUrl &&
+        devApiKey &&
+        process.env.NODE_ENV === 'development'
+      ),
+    [projectId, runtimeUrl, devApiKey]
   );
 
-  // LoadTranslation type, only custom and default for now
-  const loadTranslationType: 'default' | 'custom' | 'disabled' =
-    (loadTranslation && 'custom') || (cacheUrl && 'default') || 'disabled';
+  // Loaders
+  const loadTranslationType = useMemo(
+    () =>
+      (loadTranslation && 'custom') || (cacheUrl && 'default') || 'disabled',
+    [loadTranslation]
+  );
+
+  // ---------- SET UP DICTIONARY ---------- //
+
+  const [dictionary, setDictionary] = useState<Dictionary | undefined>(
+    _dictionary
+  );
+
+  // Resolve dictionary when not provided, but using custom message loader
+  useEffect(() => {
+    // Early return if dictionary is provided or not loading messages
+    if (dictionary || !loadMessages) return;
+
+    let storeResults = true;
+
+    (async () => {
+      let result;
+      // Check for [defaultLocale.json] file
+      try {
+        result = await loadMessages(defaultLocale);
+      } catch {}
+
+      // Check the simplified locale name ('en' instead of 'en-US')
+      const languageCode = getLocaleProperties(defaultLocale)?.languageCode;
+      if (!dictionary && languageCode && languageCode !== defaultLocale) {
+        try {
+          result = await loadMessages(languageCode);
+        } catch (error) {
+          console.warn(dictionaryMissingWarning, error);
+        }
+      }
+
+      // Update dictionary
+      if (storeResults) {
+        setDictionary(result || {});
+      }
+    })();
+
+    // cancel load if a dep changes
+    return () => {
+      storeResults = false;
+    };
+  }, [dictionary, loadMessages]);
 
   // ---------- MEMOIZED CHECKS ---------- //
 
@@ -174,6 +237,16 @@ export default function GTProvider({
     return [translationRequired, dialectTranslationRequired];
   }, [defaultLocale, locale, locales]);
 
+  // ---------- MESSAGES STATE ---------- //
+
+  // Null -> not loaded, {} -> Loaded (or not required/load failed)
+  const [messages, setMessages] = useState<MessagesObject | null>(
+    translationRequired ? null : {}
+  );
+
+  // Reset messages if locale changes (null to trigger a new load)
+  useEffect(() => setMessages(translationRequired ? null : {}), [locale]);
+
   // ---------- TRANSLATION STATE ---------- //
 
   /** Key for translation tracking:
@@ -215,6 +288,35 @@ export default function GTProvider({
       ...metadata,
     });
 
+  // ---------- ATTEMPT TO LOAD MESSAGES ---------- //
+
+  useEffect(() => {
+    // Early return if no need to load messages
+    if (messages || !translationRequired || !loadMessages) return;
+
+    // Load messages
+    let storeResults = true;
+    (async () => {
+      let result = {};
+      try {
+        result = await loadMessages(locale);
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(customLoadMessagesWarning(locale), error);
+        }
+      }
+
+      if (storeResults) {
+        setMessages(result);
+      }
+    })();
+
+    // cancel load if a dep changes
+    return () => {
+      storeResults = false;
+    };
+  }, [locale, loadMessages, translationRequired, messages]);
+
   // ---------- ATTEMPT TO LOAD TRANSLATIONS ---------- //
 
   useEffect(() => {
@@ -224,26 +326,40 @@ export default function GTProvider({
     // Fetch translations
     let storeResults = true;
     (async () => {
-      try {
-        let result;
-        switch (loadTranslationType) {
-          case 'custom':
-            // check is redundant, but makes ts happy
-            if (loadTranslation) result = await loadTranslation(locale);
-            break;
-          case 'default':
+      let result;
+      switch (loadTranslationType) {
+        case 'custom':
+          // check is redundant, but makes ts happy
+          if (loadTranslation) {
+            try {
+              result = await loadTranslation(locale);
+            } catch (error) {
+              console.error(customLoadTranslationError(locale), error);
+            }
+          }
+          break;
+        case 'default':
+          try {
             result = await fetchTranslations({
               cacheUrl,
               projectId,
               locale,
               versionId: _versionId,
             });
-            break;
-          default:
-            result = {};
-        }
+          } catch (error) {
+            console.error(error);
+          }
+          break;
+      }
 
-        const parsedResult = Object.entries(result).reduce(
+      // fallback to empty object if failed or disabled
+      if (!result) {
+        result = {};
+      }
+
+      // Parse
+      try {
+        result = Object.entries(result).reduce(
           (
             translationsAcc: Record<string, any>,
             [hash, target]: [string, any]
@@ -253,19 +369,18 @@ export default function GTProvider({
           },
           {}
         );
-        if (storeResults) {
-          setTranslations(parsedResult); // store results
-        }
       } catch (error) {
         console.error(error);
-        if (storeResults) {
-          setTranslations({}); // not classified as a translation error, because we can still fetch from API
-        }
+      }
+
+      // Record results
+      if (storeResults) {
+        setTranslations(result); // not classified as a translation error, because we can still fetch from API
       }
     })();
 
+    // Cancel fetch if a dep changes
     return () => {
-      // cancel fetch if a dep changes
       storeResults = false;
     };
   }, [
@@ -293,10 +408,18 @@ export default function GTProvider({
 
   // ---------- USE DICT ---------- //
 
-  const _internalUseDictFunction = useCreateInternalUseDictFunction({
+  const _internalUseDictFunction = useCreateInternalUseDictFunction(
     dictionary,
-    _internalUseGTFunction,
-  });
+    translations,
+    messages,
+    locale,
+    defaultLocale,
+    translationRequired,
+    dialectTranslationRequired,
+    runtimeTranslationEnabled,
+    registerContentForTranslation,
+    renderSettings
+  );
 
   // ----- RETURN ----- //
 
@@ -316,6 +439,7 @@ export default function GTProvider({
         setLocale,
         defaultLocale,
         translations,
+        messages,
         translationRequired,
         dialectTranslationRequired,
         projectId,

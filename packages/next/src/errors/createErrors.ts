@@ -5,8 +5,11 @@ import { getLocaleProperties } from 'generaltranslation';
 export const remoteTranslationsError =
   'gt-next Error: fetching remote translation.';
 
-export const customLoadTranslationError =
-  'gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(), make sure it is correctly implemented.';
+export const customLoadTranslationError = (locale: string = '') =>
+  `gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(${locale}), make sure it is correctly implemented.`;
+
+export const customLoadMessagesWarning = (locale: string = '') =>
+  `gt-next Warning: fetching locally stored messages. If you are using a custom loadMessage(${locale}), make sure it is correctly implemented.`;
 
 export const createStringTranslationError = (
   string: string,
@@ -28,16 +31,11 @@ export const devApiKeyIncludedInProductionError = `gt-next Error: You are attemp
 export const createDictionarySubsetError = (id: string, functionName: string) =>
   `gt-next Error: ${functionName} with id: "${id}". Invalid dictionary entry detected. Make sure you are navigating to the correct subroute of the dictionary with the ID you provide.`;
 
-export const createMissingCustomTranslationLoadedError = (
-  customLoadTranslationPath: string | undefined
-) =>
-  'gt-next Error: ' + customLoadTranslationPath
-    ? `Local translations exist, but no translation loader is found. Please create a translation loader at ${customLoadTranslationPath}`
-    : 'Local translations exist, but no translation loader is found. See generaltranslation.com/docs for more information on how to create a translation loader.';
-
 export const dictionaryDisabledError = `gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs`;
 
 export const unresolvedCustomLoadTranslationError = `gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.`;
+
+export const unresolvedCustomLoadMessagesError = `gt-next Error: Custom message loader could not be resolved. This usually means that the file was found, but the message loader function itself was not exported.`;
 
 // ---- WARNINGS ---- //
 
@@ -83,4 +81,4 @@ export const translationLoadingWarning =
 
 export const runtimeTranslationTimeoutWarning = `gt-next: Runtime translation timed out.`;
 
-export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added the dictionary to your project, and you are using the withGTConfig() plugin.`;
+export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added a dictionary to your project (either dictionary.js or /messages/[defaultLocale].json), and you have added the withGTConfig() plugin.`;

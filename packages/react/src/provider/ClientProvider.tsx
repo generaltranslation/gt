@@ -14,6 +14,7 @@ export default function ClientProvider({
   children,
   dictionary,
   initialTranslations,
+  messages,
   locale: _locale,
   _versionId,
   defaultLocale,
@@ -109,10 +110,18 @@ export default function ClientProvider({
 
   // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
 
-  const _internalUseDictFunction = useCreateInternalUseDictFunction({
+  const _internalUseDictFunction = useCreateInternalUseDictFunction(
     dictionary,
-    _internalUseGTFunction,
-  });
+    translations,
+    messages,
+    locale,
+    defaultLocale,
+    translationRequired,
+    dialectTranslationRequired,
+    runtimeTranslationEnabled,
+    registerContentForTranslation,
+    renderSettings
+  );
 
   // ---------- RENDER LOGIC ---------- //
 
@@ -131,6 +140,7 @@ export default function ClientProvider({
         locales,
         defaultLocale,
         translations,
+        messages,
         translationRequired,
         dialectTranslationRequired,
         renderSettings,

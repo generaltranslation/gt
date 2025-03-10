@@ -4,7 +4,7 @@ import {
   libraryDefaultLocale,
   localeCookieName,
 } from 'generaltranslation/internal';
-import { createUnsupportedLocaleWarning } from '../../messages/createMessages';
+import { createUnsupportedLocaleWarning } from '../../errors/createErrors';
 
 /**
  *
