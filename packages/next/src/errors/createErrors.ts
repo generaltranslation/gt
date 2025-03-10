@@ -6,10 +6,10 @@ export const remoteTranslationsError =
   'gt-next Error: fetching remote translation.';
 
 export const customLoadTranslationsError = (locale: string = '') =>
-  `gt-next Error: fetching locally stored translations. If you are using a custom loadTranslations(${locale}), make sure it is correctly implemented.`;
+  `gt-next Error: fetching locally stored translations. If you are using a custom loadTranslations("${locale}"), make sure it is correctly implemented.`;
 
 export const customLoadMessagesWarning = (locale: string = '') =>
-  `gt-next Warning: fetching locally stored messages. If you are using a custom loadMessages(${locale}), make sure it is correctly implemented.`;
+  `gt-next Warning: fetching locally stored messages. If you are using a custom loadMessages("${locale}"), make sure it is correctly implemented.`;
 
 export const createStringTranslationError = (
   string: string,
