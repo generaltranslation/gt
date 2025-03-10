@@ -7,9 +7,9 @@ import {
 
 import getDictionary from '../../dictionary/getDictionary';
 import {
+  createDictionaryTranslationError,
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
-  createStringTranslationError,
   translationLoadingWarning,
 } from '../../errors/createErrors';
 import getI18NConfig from '../../config-dir/getI18NConfig';
@@ -161,7 +161,7 @@ export default async function getDict(
     // Since this is buildtime string translation, it's dev only
 
     if (!I18NConfig.isDevelopmentApiEnabled()) {
-      console.warn(createStringTranslationError(entry, id, 'd'));
+      console.warn(createDictionaryTranslationError(id));
       return renderContent(source, [defaultLocale]);
     }
 

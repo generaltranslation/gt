@@ -52,7 +52,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TranslationManager = void 0;
 var generaltranslation_1 = require("generaltranslation");
-var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
+var defaultWithGTConfigProps_1 = __importDefault(require("./props/defaultWithGTConfigProps"));
 var internal_1 = require("generaltranslation/internal");
 var loadTranslation_1 = __importDefault(require("./loadTranslation"));
 /**
@@ -69,7 +69,7 @@ var TranslationManager = /** @class */ (function () {
             projectId: '',
             _versionId: undefined,
             translationEnabled: true,
-            cacheExpiryTime: defaultInitGTProps_1.default.cacheExpiryTime,
+            cacheExpiryTime: defaultWithGTConfigProps_1.default.cacheExpiryTime,
         };
         this.translationsMap = new Map();
         this.translationTimestamps = new Map();
@@ -117,7 +117,7 @@ var TranslationManager = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         reference = (0, generaltranslation_1.standardizeLocale)(locale);
-                        hasExpired = this.config.loadTranslationType === 'remote' &&
+                        hasExpired = this.config.loadTranslationsType === 'remote' &&
                             this.translationsMap.has(reference) &&
                             Date.now() - ((_a = this.translationTimestamps.get(reference)) !== null && _a !== void 0 ? _a : 0) >
                                 this.config.cacheExpiryTime;

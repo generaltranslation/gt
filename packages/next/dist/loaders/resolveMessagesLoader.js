@@ -45,7 +45,7 @@ function resolveMessageLoader() {
     if (customLoadMessages !== undefined)
         return customLoadMessages;
     // Check: local message loader is enabled
-    if (process.env._GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED !== 'true')
+    if (process.env._GENERALTRANSLATION_LOCAL_MESSAGES_ENABLED !== 'true')
         return;
     // get load messages file
     var customLoadMessagesConfig;

@@ -1,5 +1,5 @@
 import { standardizeLocale } from 'generaltranslation';
-import defaultInitGTProps from './props/defaultInitGTProps';
+import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import {
   TranslationsObject,
@@ -7,7 +7,7 @@ import {
   TranslationError,
   TranslationSuccess,
 } from 'gt-react/internal';
-import loadTranslation from './loadTranslation';
+import loadTranslations from './loadTranslation';
 
 /**
  * Configuration type for TranslationManager.
@@ -21,7 +21,7 @@ export type TranslationManagerConfig = {
   _versionId?: string;
   translationEnabled: boolean;
   cacheExpiryTime: number;
-  loadTranslationType?: 'remote' | 'custom' | 'disabled';
+  loadTranslationsType?: 'remote' | 'custom' | 'disabled';
 };
 
 /**
@@ -44,7 +44,7 @@ export class TranslationManager {
       projectId: '',
       _versionId: undefined,
       translationEnabled: true,
-      cacheExpiryTime: defaultInitGTProps.cacheExpiryTime,
+      cacheExpiryTime: defaultWithGTConfigProps.cacheExpiryTime,
     };
     this.translationsMap = new Map();
     this.translationTimestamps = new Map();
@@ -69,7 +69,7 @@ export class TranslationManager {
     reference: string
   ): Promise<TranslationsObject | undefined> {
     if (!this.config.translationEnabled) return undefined;
-    const result = await loadTranslation({
+    const result = await loadTranslations({
       targetLocale: reference,
       ...(this.config._versionId && { _versionId: this.config._versionId }),
       ...(this.config.cacheUrl && { cacheUrl: this.config.cacheUrl }),
@@ -91,7 +91,7 @@ export class TranslationManager {
     // Check if translations have expired
     // Translations can only expire if they are loaded remotely
     const hasExpired =
-      this.config.loadTranslationType === 'remote' &&
+      this.config.loadTranslationsType === 'remote' &&
       this.translationsMap.has(reference) &&
       Date.now() - (this.translationTimestamps.get(reference) ?? 0) >
         this.config.cacheExpiryTime;

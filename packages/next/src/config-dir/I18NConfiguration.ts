@@ -14,7 +14,7 @@ import {
 } from '../errors/createErrors';
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TranslationsObject } from 'gt-react/internal';
-import defaultInitGTProps from './props/defaultInitGTProps';
+import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import messagesManager, { MessagesManager } from './MessagesManager';
 type I18NConfigurationParams = {
   apiKey?: string;
@@ -23,7 +23,7 @@ type I18NConfigurationParams = {
   runtimeUrl: string | undefined;
   cacheUrl: string | null;
   cacheExpiryTime: number;
-  loadTranslationType: 'remote' | 'custom' | 'disabled';
+  loadTranslationsType: 'remote' | 'custom' | 'disabled';
   loadMessagesEnabled: boolean;
   defaultLocale: string;
   locales: string[];
@@ -105,7 +105,7 @@ export default class I18NConfiguration {
     runtimeUrl,
     cacheUrl,
     cacheExpiryTime,
-    loadTranslationType,
+    loadTranslationsType,
     loadMessagesEnabled,
     // Locale info
     defaultLocale,
@@ -133,20 +133,18 @@ export default class I18NConfiguration {
     this.cacheExpiryTime = cacheExpiryTime;
     this._versionId = _versionId; // version id for the dictionary
 
-    // IS BUILDTIME TRANSLATION ENABLED
-
+    // buildtime translation enabled
     this.translationEnabled = !!(
-      loadTranslationType === 'custom' || // load local translation
-      (loadTranslationType === 'remote' &&
+      loadTranslationsType === 'custom' || // load local translation
+      (loadTranslationsType === 'remote' &&
         this.projectId && // projectId required because it's part of the GET request
         this.cacheUrl) ||
       loadMessagesEnabled // load local messages
     );
 
-    // IS RUNTIME TRANSLATION ENABLED
-
+    // runtime translation enabled
     const runtimeApiEnabled = !!(this.runtimeUrl ===
-    defaultInitGTProps.runtimeUrl
+    defaultWithGTConfigProps.runtimeUrl
       ? this.projectId
       : this.runtimeUrl);
     this.developmentApiEnabled = !!(
@@ -156,8 +154,7 @@ export default class I18NConfiguration {
     );
     this.productionApiEnabled = !!(runtimeApiEnabled && this.apiKey);
 
-    // DICTIONARY ENABLED
-
+    // dictionary enabled
     this.dictionaryEnabled = _usingPlugin;
 
     // ----- SETUP ----- //
@@ -193,7 +190,7 @@ export default class I18NConfiguration {
       translationEnabled: this.translationEnabled,
       _versionId,
       cacheExpiryTime: this.cacheExpiryTime,
-      loadTranslationType,
+      loadTranslationsType: loadTranslationsType,
     });
     // Batching
     this.maxConcurrentRequests = maxConcurrentRequests;

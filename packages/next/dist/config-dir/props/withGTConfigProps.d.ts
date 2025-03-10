@@ -1,10 +1,9 @@
 import { RenderMethod } from 'gt-react/internal';
-type InitGTProps = {
-    loadTranslationType?: 'remote' | 'custom' | 'disabled';
-    loadMessagesEnabled?: boolean;
+type withGTConfigProps = {
     dictionary?: string;
     config?: string;
-    loadTranslationPath?: string;
+    loadTranslationsPath?: string;
+    loadMessagesPath?: string;
     apiKey?: string;
     projectId?: string;
     runtimeUrl?: string | null;
@@ -24,5 +23,5 @@ type InitGTProps = {
     _usingPlugin?: boolean;
     [key: string]: any;
 };
-export default InitGTProps;
-//# sourceMappingURL=InitGTProps.d.ts.map
+export default withGTConfigProps;
+//# sourceMappingURL=withGTConfigProps.d.ts.map

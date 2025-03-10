@@ -1,8 +1,5 @@
-declare const defaultInitGTProps: {
+declare const defaultWithGTConfigProps: {
     readonly config: "./gt.config.json";
-    readonly runtimeTranslation: true;
-    readonly loadTranslationType: "remote";
-    readonly loadMessagesEnabled: false;
     readonly runtimeUrl: "https://runtime.gtx.dev";
     readonly cacheUrl: "https://cdn.gtx.dev";
     readonly defaultLocale: "en-US";
@@ -18,5 +15,5 @@ declare const defaultInitGTProps: {
     };
     readonly _usingPlugin: false;
 };
-export default defaultInitGTProps;
-//# sourceMappingURL=defaultInitGTProps.d.ts.map
+export default defaultWithGTConfigProps;
+//# sourceMappingURL=defaultWithGTConfigProps.d.ts.map

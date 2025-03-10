@@ -44,8 +44,8 @@ export const createGenericRuntimeTranslationError = (
 
 export const runtimeTranslationError = `gt-react Error: Runtime translation failed: `;
 
-export const customLoadTranslationError = (locale: string = '') =>
-  `gt-react Error: fetching locally stored translations. If you are using a custom loadTranslation(${locale}), make sure it is correctly implemented.`;
+export const customLoadTranslationsError = (locale: string = '') =>
+  `gt-react Error: fetching locally stored translations. If you are using a custom loadTranslations(${locale}), make sure it is correctly implemented.`;
 
 export const customLoadMessagesWarning = (locale: string = '') =>
   `gt-react Warning: fetching locally stored messages. If you are using a custom loadMessage(${locale}), make sure it is correctly implemented.`;

@@ -38,11 +38,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var internal_1 = require("generaltranslation/internal");
 var internal_2 = require("gt-react/internal");
-var defaultInitGTProps = {
+var defaultWithGTConfigProps = {
     config: './gt.config.json',
-    runtimeTranslation: true,
-    loadTranslationType: 'remote',
-    loadMessagesEnabled: false,
     runtimeUrl: internal_1.defaultRuntimeApiUrl,
     cacheUrl: internal_1.defaultCacheUrl,
     defaultLocale: internal_1.libraryDefaultLocale,
@@ -57,5 +54,5 @@ var defaultInitGTProps = {
     renderSettings: internal_2.defaultRenderSettings,
     _usingPlugin: false,
 };
-exports.default = defaultInitGTProps;
-//# sourceMappingURL=defaultInitGTProps.js.map
+exports.default = defaultWithGTConfigProps;
+//# sourceMappingURL=defaultWithGTConfigProps.js.map

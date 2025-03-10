@@ -65,14 +65,14 @@ var generaltranslation_1 = require("generaltranslation");
 var TranslationManager_1 = __importDefault(require("./TranslationManager"));
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
-var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
+var defaultWithGTConfigProps_1 = __importDefault(require("./props/defaultWithGTConfigProps"));
 var MessagesManager_1 = __importDefault(require("./MessagesManager"));
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         // ----- CLOUD INTEGRATION ----- //
         var 
         // Cloud integration
-        apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, loadTranslationType = _a.loadTranslationType, loadMessagesEnabled = _a.loadMessagesEnabled, 
+        apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, loadTranslationsType = _a.loadTranslationsType, loadMessagesEnabled = _a.loadMessagesEnabled, 
         // Locale info
         defaultLocale = _a.defaultLocale, locales = _a.locales, 
         // Render method
@@ -84,7 +84,7 @@ var I18NConfiguration = /** @class */ (function () {
         // Internal
         _usingPlugin = _a._usingPlugin, 
         // Other metadata
-        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "loadTranslationType", "loadMessagesEnabled", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "_usingPlugin"]);
+        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "loadTranslationsType", "loadMessagesEnabled", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "_usingPlugin"]);
         this.apiKey = apiKey;
         this.devApiKey = devApiKey;
         this.projectId = projectId;
@@ -92,23 +92,23 @@ var I18NConfiguration = /** @class */ (function () {
         this.cacheUrl = cacheUrl;
         this.cacheExpiryTime = cacheExpiryTime;
         this._versionId = _versionId; // version id for the dictionary
-        // IS BUILDTIME TRANSLATION ENABLED
-        this.translationEnabled = !!(loadTranslationType === 'custom' || // load local translation
-            (loadTranslationType === 'remote' &&
+        // buildtime translation enabled
+        this.translationEnabled = !!(loadTranslationsType === 'custom' || // load local translation
+            (loadTranslationsType === 'remote' &&
                 this.projectId && // projectId required because it's part of the GET request
                 this.cacheUrl) ||
             loadMessagesEnabled // load local messages
         );
-        // IS RUNTIME TRANSLATION ENABLED
+        // runtime translation enabled
         var runtimeApiEnabled = !!(this.runtimeUrl ===
-            defaultInitGTProps_1.default.runtimeUrl
+            defaultWithGTConfigProps_1.default.runtimeUrl
             ? this.projectId
             : this.runtimeUrl);
         this.developmentApiEnabled = !!(runtimeApiEnabled &&
             this.devApiKey &&
             process.env.NODE_ENV === 'development');
         this.productionApiEnabled = !!(runtimeApiEnabled && this.apiKey);
-        // DICTIONARY ENABLED
+        // dictionary enabled
         this.dictionaryEnabled = _usingPlugin;
         // ----- SETUP ----- //
         // Locales
@@ -132,7 +132,7 @@ var I18NConfiguration = /** @class */ (function () {
             translationEnabled: this.translationEnabled,
             _versionId: _versionId,
             cacheExpiryTime: this.cacheExpiryTime,
-            loadTranslationType: loadTranslationType,
+            loadTranslationsType: loadTranslationsType,
         });
         // Batching
         this.maxConcurrentRequests = maxConcurrentRequests;
