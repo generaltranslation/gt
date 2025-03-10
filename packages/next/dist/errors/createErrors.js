@@ -6,12 +6,12 @@ var generaltranslation_1 = require("generaltranslation");
 exports.remoteTranslationsError = 'gt-next Error: fetching remote translation.';
 var customLoadTranslationsError = function (locale) {
     if (locale === void 0) { locale = ''; }
-    return "gt-next Error: fetching locally stored translations. If you are using a custom loadTranslations(".concat(locale, "), make sure it is correctly implemented.");
+    return "gt-next Error: fetching locally stored translations. If you are using a custom loadTranslations(\"".concat(locale, "\"), make sure it is correctly implemented.");
 };
 exports.customLoadTranslationsError = customLoadTranslationsError;
 var customLoadMessagesWarning = function (locale) {
     if (locale === void 0) { locale = ''; }
-    return "gt-next Warning: fetching locally stored messages. If you are using a custom loadMessages(".concat(locale, "), make sure it is correctly implemented.");
+    return "gt-next Warning: fetching locally stored messages. If you are using a custom loadMessages(\"".concat(locale, "\"), make sure it is correctly implemented.");
 };
 exports.customLoadMessagesWarning = customLoadMessagesWarning;
 var createStringTranslationError = function (string, id, functionName) {

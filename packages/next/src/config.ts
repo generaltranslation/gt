@@ -112,19 +112,40 @@ export function withGTConfig(
   // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
 
   // Resolve dictionary filepath
-  // const defaultLanguage = getLocaleProperties(mergedConfig.defaultLocale);
-  const resolvedDictionaryFilePath =
+  let resolvedDictionaryFilePath =
     typeof mergedConfig.dictionary === 'string'
       ? mergedConfig.dictionary
       : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']); // fallback to dictionary
-  // : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']);
+
+  // Check [defaultLocale].json file
+  if (!resolvedDictionaryFilePath && mergedConfig.defaultLocale) {
+    resolvedDictionaryFilePath = resolveConfigFilepath(
+      mergedConfig.defaultLocale,
+      ['.ts', '.js', '.json']
+    );
+
+    // Check [defaultLanguageCode].json file
+    if (!resolvedDictionaryFilePath) {
+      const defaultLanguage = getLocaleProperties(
+        mergedConfig.defaultLocale
+      )?.languageCode;
+
+      if (defaultLanguage && defaultLanguage !== mergedConfig.defaultLocale) {
+        resolvedDictionaryFilePath = resolveConfigFilepath(defaultLanguage, [
+          '.ts',
+          '.js',
+          '.json',
+        ]);
+      }
+    }
+  }
 
   // Get the type of dictionary file
   const resolvedDictionaryFilePathType = resolvedDictionaryFilePath
     ? path.extname(resolvedDictionaryFilePath)
     : undefined;
   if (resolvedDictionaryFilePathType) {
-    mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
+    mergedConfig._dictionaryFileType = resolvedDictionaryFilePathType;
   }
 
   // Resolve custom message loader path
@@ -173,7 +194,7 @@ export function withGTConfig(
     !mergedConfig.projectId &&
     process.env.NODE_ENV === 'development' &&
     mergedConfig.loadTranslationsType === 'remote' &&
-    !mergedConfig.loadMessageEnabled // skip warn if using local messages
+    !mergedConfig.loadMessagesEnabled // skip warn if using local messages
   ) {
     console.warn(projectIdMissingWarn);
   }

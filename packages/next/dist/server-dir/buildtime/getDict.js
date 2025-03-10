@@ -159,7 +159,7 @@ function getDict(id) {
                         // ----- CREATE TRANSLATION ----- //
                         // Since this is buildtime string translation, it's dev only
                         if (!I18NConfig.isDevelopmentApiEnabled()) {
-                            console.warn((0, createErrors_1.createDictionaryTranslationError)('id'));
+                            console.warn((0, createErrors_1.createDictionaryTranslationError)(id));
                             return renderContent(source, [defaultLocale]);
                         }
                         // Translate on demand
