@@ -3,7 +3,7 @@ import {
   customLoadTranslationsError,
   remoteTranslationsError,
 } from '../errors/createErrors';
-import resolveMessageLoader from '../loaders/resolveMessagesLoader';
+import resolveDictionaryLoader from '../loaders/resolveDictionaryDictionary';
 import resolveTranslationLoader from '../loaders/resolveTranslationLoader';
 
 type RemoteLoadTranslationsInput = {

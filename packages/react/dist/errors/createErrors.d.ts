@@ -11,7 +11,7 @@ export declare const dynamicTranslationError = "Error fetching batched translati
 export declare const createGenericRuntimeTranslationError: (id: string | undefined, hash: string) => string;
 export declare const runtimeTranslationError = "gt-react Error: Runtime translation failed: ";
 export declare const customLoadTranslationsError: (locale?: string) => string;
-export declare const customLoadMessagesWarning: (locale?: string) => string;
+export declare const customLoadDictionaryWarning: (locale?: string) => string;
 export declare const projectIdMissingWarning = "gt-react: Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.";
 export declare const createNoEntryFoundWarning: (id: string) => string;
 export declare const createInvalidDictionaryEntryWarning: (id: string) => string;
@@ -21,5 +21,5 @@ export declare const APIKeyMissingWarn: string;
 export declare const createUnsupportedLocalesWarning: (locales: string[]) => string;
 export declare const runtimeTranslationTimeoutWarning = "gt-react: Runtime translation timed out.";
 export declare const createUnsupportedLocaleWarning: (validatedLocale: string, newLocale: string) => string;
-export declare const dictionaryMissingWarning: string;
+export declare const dictionaryMissingWarning = "gt-react Warning: No dictionary was found. Ensure you are either passing your dictionary to the <GTProvider>.";
 //# sourceMappingURL=createErrors.d.ts.map

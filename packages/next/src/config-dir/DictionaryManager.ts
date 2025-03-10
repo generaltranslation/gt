@@ -1,20 +1,20 @@
 import { standardizeLocale } from 'generaltranslation';
-import { MessagesContent, MessagesObject } from 'gt-react/internal';
-import resolveMessageLoader from '../loaders/resolveMessagesLoader';
-import { customLoadMessagesWarning } from '../errors/createErrors';
+import { DictionaryObject } from 'gt-react/internal';
+import resolveDictionaryLoader from '../loaders/resolveDictionaryDictionary';
+import { customLoadDictionaryWarning } from '../errors/createErrors';
 
 /**
- * Manages messages
+ * Manages Dictionary
  */
-export class MessagesManager {
-  private messagesMap: Map<string, MessagesObject>;
+export class DictionaryManager {
+  private dictionaryMap: Map<string, DictionaryObject>;
 
   /**
    * Creates an instance of TranslationManager.
    * @constructor
    */
   constructor() {
-    this.messagesMap = new Map();
+    this.dictionaryMap = new Map();
   }
 
   // flatten object helper function
@@ -42,26 +42,26 @@ export class MessagesManager {
   }
 
   /**
-   * Retrieves messages for a given locale from bundle.
+   * Retrieves dictionary for a given locale from bundle.
    * @param {string} locale - The locale code.
-   * @returns {Promise<MessagesObject | undefined>} The messages data or undefined if not found.
+   * @returns {Promise<DictionaryObject | undefined>} The dictionary data or undefined if not found.
    */
-  async getMessages(locale: string): Promise<MessagesObject | undefined> {
+  async getDictionary(locale: string): Promise<DictionaryObject | undefined> {
     const reference = standardizeLocale(locale);
 
     // Check internal cache
-    let result = this.messagesMap.get(reference);
+    let result = this.dictionaryMap.get(reference);
     if (result) return result;
 
-    // Load messages
-    const customLoadMessages = resolveMessageLoader();
-    if (customLoadMessages) {
+    // Load dictionary
+    const customLoadDictionary = resolveDictionaryLoader();
+    if (customLoadDictionary) {
       try {
-        result = this._flattenObject(await customLoadMessages(reference));
-        this.messagesMap.set(reference, result);
+        result = this._flattenObject(await customLoadDictionary(reference));
+        this.dictionaryMap.set(reference, result);
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {
-          console.warn(customLoadMessagesWarning(reference), error);
+          console.warn(customLoadDictionaryWarning(reference), error);
         }
         return undefined;
       }
@@ -71,5 +71,5 @@ export class MessagesManager {
   }
 }
 
-const messagesManager = new MessagesManager();
-export default messagesManager;
+const dictionaryManager = new DictionaryManager();
+export default dictionaryManager;

@@ -4,10 +4,10 @@ import {
   getDictionaryEntry as getEntry,
 } from 'gt-react/internal';
 import {
-  customLoadMessagesWarning,
+  customLoadDictionaryWarning,
   dictionaryNotFoundWarning,
 } from '../errors/createErrors';
-import resolveMessageLoader from '../loaders/resolveMessagesLoader';
+import resolveDictionaryLoader from '../loaders/resolveDictionaryDictionary';
 import defaultWithGTConfigProps from '../config-dir/props/defaultWithGTConfigProps';
 import { getLocaleProperties } from 'generaltranslation';
 
@@ -31,26 +31,26 @@ export default async function getDictionary(): Promise<Dictionary | undefined> {
   } catch {}
   if (dictionary) return dictionary;
 
-  // Second, check for custom message loader
-  const customLoadMessages = resolveMessageLoader(); // must be user defined bc compiler reasons
-  if (customLoadMessages) {
+  // Second, check for custom dictionary loader
+  const customLoadDictionary = resolveDictionaryLoader(); // must be user defined bc compiler reasons
+  if (customLoadDictionary) {
     const defaultLocale =
       process.env._GENERALTRANSLATION_DEFAULT_LOCALE ||
       defaultWithGTConfigProps.defaultLocale;
 
     // Check for [defaultLocale.json] file
     try {
-      dictionary = await customLoadMessages(defaultLocale);
+      dictionary = await customLoadDictionary(defaultLocale);
     } catch {}
 
     // Check the simplified locale name ('en' instead of 'en-US')
     const languageCode = getLocaleProperties(defaultLocale)?.languageCode;
     if (!dictionary && languageCode && languageCode !== defaultLocale) {
       try {
-        dictionary = await customLoadMessages(languageCode);
+        dictionary = await customLoadDictionary(languageCode);
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {
-          console.warn(customLoadMessagesWarning(languageCode), error);
+          console.warn(customLoadDictionaryWarning(languageCode), error);
         }
       }
     }

@@ -49,8 +49,8 @@ export default async function getDict(
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
-  const messages = translationRequired
-    ? await I18NConfig.getMessages(locale)
+  const dictionaryTranslations = translationRequired
+    ? await I18NConfig.getDictionaryTranslations(locale)
     : undefined;
   const translations = translationRequired
     ? await I18NConfig.getCachedTranslations(locale)
@@ -122,15 +122,15 @@ export default async function getDict(
     // Check: translation required
     if (!translationRequired) return renderContent(source, [defaultLocale]);
 
-    // ---------- MESSAGES ---------- //
+    // ---------- DICTIONARY TRANSLATIONS ---------- //
 
-    // Get message
-    const message = messages?.[id];
+    // Get dictionaryTranslation
+    const dictionaryTranslation = dictionaryTranslations?.[id];
 
-    // Render message
-    if (message) {
+    // Render dictionaryTranslation
+    if (dictionaryTranslation) {
       return renderContentToString(
-        splitStringToContent(message),
+        splitStringToContent(dictionaryTranslation),
         [locale, defaultLocale],
         options.variables,
         options.variablesOptions

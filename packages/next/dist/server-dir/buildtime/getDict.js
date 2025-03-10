@@ -73,7 +73,7 @@ var id_1 = require("generaltranslation/id");
  */
 function getDict(id) {
     return __awaiter(this, void 0, void 0, function () {
-        var getId, dictionary, I18NConfig, locale, defaultLocale, translationRequired, messages, _a, translations, _b, renderSettings, d;
+        var getId, dictionary, I18NConfig, locale, defaultLocale, translationRequired, dictionaryTranslations, _a, translations, _b, renderSettings, d;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
@@ -90,7 +90,7 @@ function getDict(id) {
                     defaultLocale = I18NConfig.getDefaultLocale();
                     translationRequired = I18NConfig.requiresTranslation(locale)[0];
                     if (!translationRequired) return [3 /*break*/, 4];
-                    return [4 /*yield*/, I18NConfig.getMessages(locale)];
+                    return [4 /*yield*/, I18NConfig.getDictionaryTranslations(locale)];
                 case 3:
                     _a = _c.sent();
                     return [3 /*break*/, 5];
@@ -98,7 +98,7 @@ function getDict(id) {
                     _a = undefined;
                     _c.label = 5;
                 case 5:
-                    messages = _a;
+                    dictionaryTranslations = _a;
                     if (!translationRequired) return [3 /*break*/, 7];
                     return [4 /*yield*/, I18NConfig.getCachedTranslations(locale)];
                 case 6:
@@ -139,12 +139,12 @@ function getDict(id) {
                         // Check: translation required
                         if (!translationRequired)
                             return renderContent(source, [defaultLocale]);
-                        // ---------- MESSAGES ---------- //
-                        // Get message
-                        var message = messages === null || messages === void 0 ? void 0 : messages[id];
-                        // Render message
-                        if (message) {
-                            return (0, generaltranslation_1.renderContentToString)((0, generaltranslation_1.splitStringToContent)(message), [locale, defaultLocale], options.variables, options.variablesOptions);
+                        // ---------- DICTIONARY TRANSLATIONS ---------- //
+                        // Get dictionaryTranslation
+                        var dictionaryTranslation = dictionaryTranslations === null || dictionaryTranslations === void 0 ? void 0 : dictionaryTranslations[id];
+                        // Render dictionaryTranslation
+                        if (dictionaryTranslation) {
+                            return (0, generaltranslation_1.renderContentToString)((0, generaltranslation_1.splitStringToContent)(dictionaryTranslation), [locale, defaultLocale], options.variables, options.variablesOptions);
                         }
                         // ---------- TRANSLATION ---------- //
                         var hash = (0, id_1.hashJsxChildren)(__assign(__assign({ source: source }, ((metadata === null || metadata === void 0 ? void 0 : metadata.context) && { context: metadata === null || metadata === void 0 ? void 0 : metadata.context })), { id: id, dataFormat: 'JSX' }));

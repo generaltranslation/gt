@@ -117,14 +117,12 @@ function withGTConfig(nextConfig, props) {
         : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']); // fallback to dictionary
     // Check [defaultLocale].json file
     if (!resolvedDictionaryFilePath && mergedConfig.defaultLocale) {
-        resolvedDictionaryFilePath = resolveConfigFilepath(mergedConfig.defaultLocale, ['.ts', '.js', '.json']);
+        resolvedDictionaryFilePath = resolveConfigFilepath(mergedConfig.defaultLocale, ['.json']);
         // Check [defaultLanguageCode].json file
         if (!resolvedDictionaryFilePath) {
             var defaultLanguage = (_b = (0, generaltranslation_1.getLocaleProperties)(mergedConfig.defaultLocale)) === null || _b === void 0 ? void 0 : _b.languageCode;
             if (defaultLanguage && defaultLanguage !== mergedConfig.defaultLocale) {
                 resolvedDictionaryFilePath = resolveConfigFilepath(defaultLanguage, [
-                    '.ts',
-                    '.js',
                     '.json',
                 ]);
             }
@@ -137,27 +135,27 @@ function withGTConfig(nextConfig, props) {
     if (resolvedDictionaryFilePathType) {
         mergedConfig._dictionaryFileType = resolvedDictionaryFilePathType;
     }
-    // Resolve custom message loader path
-    var customLoadMessagesPath = typeof mergedConfig.loadMessagesPath === 'string'
-        ? mergedConfig.loadMessagesPath
-        : resolveConfigFilepath('loadMessages');
+    // Resolve custom dictionary loader path
+    var customLoadDictionaryPath = typeof mergedConfig.loadDictionaryPath === 'string'
+        ? mergedConfig.loadDictionaryPath
+        : resolveConfigFilepath('loadDictionary');
     // Resolve custom translation loader path
     var customLoadTranslationsPath = typeof mergedConfig.loadTranslationsPath === 'string'
         ? mergedConfig.loadTranslationsPath
         : resolveConfigFilepath('loadTranslations');
     // ---------- ERROR CHECKS ---------- //
-    // Local messages flag
-    if (customLoadMessagesPath) {
+    // Local dictionary flag
+    if (customLoadDictionaryPath) {
         // Check: file exists if provided
-        if (!fs_1.default.existsSync(path_1.default.resolve(customLoadMessagesPath))) {
-            throw new Error((0, createErrors_1.unresolvedLoadMessagesBuildError)(customLoadMessagesPath));
+        if (!fs_1.default.existsSync(path_1.default.resolve(customLoadDictionaryPath))) {
+            throw new Error((0, createErrors_1.unresolvedLoadDictionaryBuildError)(customLoadDictionaryPath));
         }
         else {
-            mergedConfig.loadMessagesEnabled = true;
+            mergedConfig.loadDictionaryEnabled = true;
         }
     }
     else {
-        mergedConfig.loadMessagesEnabled = false;
+        mergedConfig.loadDictionaryEnabled = false;
     }
     // Local translations flag
     if (customLoadTranslationsPath) {
@@ -177,7 +175,7 @@ function withGTConfig(nextConfig, props) {
         !mergedConfig.projectId &&
         process.env.NODE_ENV === 'development' &&
         mergedConfig.loadTranslationsType === 'remote' &&
-        !mergedConfig.loadMessagesEnabled // skip warn if using local messages
+        !mergedConfig.loadDictionaryEnabled // skip warn if using local dictionary
     ) {
         console.warn(createErrors_1.projectIdMissingWarn);
     }
@@ -209,9 +207,9 @@ function withGTConfig(nextConfig, props) {
     var I18NConfigParams = JSON.stringify(mergedConfig);
     return __assign(__assign({}, nextConfig), { env: __assign(__assign(__assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), (resolvedDictionaryFilePathType && {
             _GENERALTRANSLATION_DICTIONARY_FILE_TYPE: resolvedDictionaryFilePathType,
-        })), { _GENERALTRANSLATION_LOCAL_MESSAGES_ENABLED: mergedConfig.loadMessagesEnabled.toString(), _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (mergedConfig.loadTranslationsType === 'custom').toString(), _GENERALTRANSLATION_DEFAULT_LOCALE: (mergedConfig.defaultLocale || defaultWithGTConfigProps_1.default.defaultLocale).toString() }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo)
+        })), { _GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED: mergedConfig.loadDictionaryEnabled.toString(), _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (mergedConfig.loadTranslationsType === 'custom').toString(), _GENERALTRANSLATION_DEFAULT_LOCALE: (mergedConfig.defaultLocale || defaultWithGTConfigProps_1.default.defaultLocale).toString() }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo)
             ? {
-                turbo: __assign(__assign({}, (((_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_f = (_e = nextConfig.experimental) === null || _e === void 0 ? void 0 : _e.turbo) === null || _f === void 0 ? void 0 : _f.resolveAlias) || {})), { 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translations': customLoadTranslationsPath || '', 'gt-next/_load-messages': customLoadMessagesPath || '' }) }),
+                turbo: __assign(__assign({}, (((_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_f = (_e = nextConfig.experimental) === null || _e === void 0 ? void 0 : _e.turbo) === null || _f === void 0 ? void 0 : _f.resolveAlias) || {})), { 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translations': customLoadTranslationsPath || '', 'gt-next/_load-dictionary': customLoadDictionaryPath || '' }) }),
             }
             : {})), webpack: function webpack() {
             var _a = [];
@@ -222,7 +220,7 @@ function withGTConfig(nextConfig, props) {
             // Only apply webpack aliases if we're using webpack (not Turbopack)
             var isTurbopack = (options === null || options === void 0 ? void 0 : options.turbo) || process.env.TURBOPACK === '1';
             if (!isTurbopack) {
-                // Disable cache in dev bc people might move around loadTranslations() and loadMessages() files
+                // Disable cache in dev bc people might move around loadTranslations() and loadDictionary() files
                 if (process.env.NODE_ENV === 'development') {
                     webpackConfig.cache = false;
                 }
@@ -233,8 +231,9 @@ function withGTConfig(nextConfig, props) {
                     webpackConfig.resolve.alias["gt-next/_load-translations"] =
                         path_1.default.resolve(webpackConfig.context, customLoadTranslationsPath);
                 }
-                if (customLoadMessagesPath) {
-                    webpackConfig.resolve.alias["gt-next/_load-messages"] = path_1.default.resolve(webpackConfig.context, customLoadMessagesPath);
+                if (customLoadDictionaryPath) {
+                    webpackConfig.resolve.alias["gt-next/_load-dictionary"] =
+                        path_1.default.resolve(webpackConfig.context, customLoadDictionaryPath);
                 }
             }
             if (typeof (nextConfig === null || nextConfig === void 0 ? void 0 : nextConfig.webpack) === 'function') {
