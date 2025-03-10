@@ -65,7 +65,7 @@ var generaltranslation_1 = require("generaltranslation");
 var TranslationManager_1 = __importDefault(require("./TranslationManager"));
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
-var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
+var defaultWithGTConfigProps_1 = __importDefault(require("./props/defaultWithGTConfigProps"));
 var MessagesManager_1 = __importDefault(require("./MessagesManager"));
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
@@ -92,23 +92,23 @@ var I18NConfiguration = /** @class */ (function () {
         this.cacheUrl = cacheUrl;
         this.cacheExpiryTime = cacheExpiryTime;
         this._versionId = _versionId; // version id for the dictionary
-        // IS BUILDTIME TRANSLATION ENABLED
+        // buildtime translation enabled
         this.translationEnabled = !!(loadTranslationType === 'custom' || // load local translation
             (loadTranslationType === 'remote' &&
                 this.projectId && // projectId required because it's part of the GET request
                 this.cacheUrl) ||
             loadMessagesEnabled // load local messages
         );
-        // IS RUNTIME TRANSLATION ENABLED
+        // runtime translation enabled
         var runtimeApiEnabled = !!(this.runtimeUrl ===
-            defaultInitGTProps_1.default.runtimeUrl
+            defaultWithGTConfigProps_1.default.runtimeUrl
             ? this.projectId
             : this.runtimeUrl);
         this.developmentApiEnabled = !!(runtimeApiEnabled &&
             this.devApiKey &&
             process.env.NODE_ENV === 'development');
         this.productionApiEnabled = !!(runtimeApiEnabled && this.apiKey);
-        // DICTIONARY ENABLED
+        // dictionary enabled
         this.dictionaryEnabled = _usingPlugin;
         // ----- SETUP ----- //
         // Locales

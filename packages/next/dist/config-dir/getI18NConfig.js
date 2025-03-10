@@ -16,7 +16,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getI18NConfig;
 var I18NConfiguration_1 = __importDefault(require("./I18NConfiguration"));
-var defaultInitGTProps_1 = __importDefault(require("./props/defaultInitGTProps"));
+var defaultWithGTConfigProps_1 = __importDefault(require("./props/defaultWithGTConfigProps"));
 var createErrors_1 = require("../errors/createErrors");
 var internal_1 = require("gt-react/internal");
 function getI18NConfig() {
@@ -29,7 +29,7 @@ function getI18NConfig() {
     // initGT: Get config from environment
     var I18NConfigParams = process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
     if (I18NConfigParams) {
-        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), JSON.parse(I18NConfigParams)));
+        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultWithGTConfigProps_1.default), JSON.parse(I18NConfigParams)));
     }
     else {
         console.warn(createErrors_1.usingDefaultsWarning);
@@ -50,7 +50,7 @@ function getI18NConfig() {
         }
         // Parse: defaultLocale
         // Currently, you have to specify the default locale in the config
-        var defaultLocale = defaultInitGTProps_1.default.defaultLocale;
+        var defaultLocale = defaultWithGTConfigProps_1.default.defaultLocale;
         // Check: in dev, tell them to use initGT to activate translation
         if (process.env.NODE_ENV === 'development') {
             console.warn(createErrors_1.noInitGTWarn);
@@ -60,7 +60,7 @@ function getI18NConfig() {
             throw new Error(createErrors_1.devApiKeyIncludedInProductionError);
         }
         // disable all translation
-        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultInitGTProps_1.default), { locales: [defaultLocale], renderSettings: internal_1.defaultRenderSettings, apiKey: apiKey, projectId: projectId, devApiKey: devApiKey, runtimeUrl: undefined, cacheUrl: null, loadTranslationType: 'disabled', loadMessagesEnabled: false }));
+        globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration_1.default(__assign(__assign({}, defaultWithGTConfigProps_1.default), { locales: [defaultLocale], renderSettings: internal_1.defaultRenderSettings, apiKey: apiKey, projectId: projectId, devApiKey: devApiKey, runtimeUrl: undefined, cacheUrl: null, loadTranslationType: 'disabled', loadMessagesEnabled: false }));
     }
     return globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE;
 }

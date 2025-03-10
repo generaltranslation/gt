@@ -8,7 +8,7 @@ import {
   dictionaryNotFoundWarning,
 } from '../errors/createErrors';
 import resolveMessageLoader from '../loaders/resolveMessagesLoader';
-import defaultInitGTProps from '../config-dir/props/defaultInitGTProps';
+import defaultWithGTConfigProps from '../config-dir/props/defaultWithGTConfigProps';
 import { getLocaleProperties } from 'generaltranslation';
 
 let dictionary: Dictionary | undefined = undefined;
@@ -36,7 +36,7 @@ export default async function getDictionary(): Promise<Dictionary | undefined> {
   if (customLoadMessages) {
     const defaultLocale =
       process.env._GENERALTRANSLATION_DEFAULT_LOCALE ||
-      defaultInitGTProps.defaultLocale;
+      defaultWithGTConfigProps.defaultLocale;
 
     // Check for [defaultLocale.json] file
     try {

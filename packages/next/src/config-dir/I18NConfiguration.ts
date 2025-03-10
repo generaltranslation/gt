@@ -14,7 +14,7 @@ import {
 } from '../errors/createErrors';
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TranslationsObject } from 'gt-react/internal';
-import defaultInitGTProps from './props/defaultInitGTProps';
+import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import messagesManager, { MessagesManager } from './MessagesManager';
 type I18NConfigurationParams = {
   apiKey?: string;
@@ -133,8 +133,7 @@ export default class I18NConfiguration {
     this.cacheExpiryTime = cacheExpiryTime;
     this._versionId = _versionId; // version id for the dictionary
 
-    // IS BUILDTIME TRANSLATION ENABLED
-
+    // buildtime translation enabled
     this.translationEnabled = !!(
       loadTranslationType === 'custom' || // load local translation
       (loadTranslationType === 'remote' &&
@@ -143,10 +142,9 @@ export default class I18NConfiguration {
       loadMessagesEnabled // load local messages
     );
 
-    // IS RUNTIME TRANSLATION ENABLED
-
+    // runtime translation enabled
     const runtimeApiEnabled = !!(this.runtimeUrl ===
-    defaultInitGTProps.runtimeUrl
+    defaultWithGTConfigProps.runtimeUrl
       ? this.projectId
       : this.runtimeUrl);
     this.developmentApiEnabled = !!(
@@ -156,8 +154,7 @@ export default class I18NConfiguration {
     );
     this.productionApiEnabled = !!(runtimeApiEnabled && this.apiKey);
 
-    // DICTIONARY ENABLED
-
+    // dictionary enabled
     this.dictionaryEnabled = _usingPlugin;
 
     // ----- SETUP ----- //

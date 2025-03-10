@@ -20,8 +20,8 @@ export const createStringTranslationError = (
     id ? ` with id "${id}"` : ''
   } could not locate translation.`;
 
-export const createDictionaryStringTranslationError = (id: string) =>
-  `gt-next Error: string translation error. Translation from dictionary with id: ${id} failed.`;
+export const createDictionaryTranslationError = (id: string) =>
+  `gt-next Error: Dictionary translation entry with id: ${id} could not be found.`;
 
 export const createRequiredPrefixError = (id: string, requiredPrefix: string) =>
   `gt-next Error: You are using <GTProvider> with a provided prefix id: "${requiredPrefix}", but one of the children of <GTProvider> has the id "${id}". Change the <GTProvider> id prop or your dictionary structure to proceed.`;
@@ -33,9 +33,15 @@ export const createDictionarySubsetError = (id: string, functionName: string) =>
 
 export const dictionaryDisabledError = `gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs`;
 
+export const unresolvedCustomLoadMessagesError = `gt-next Error: Custom message loader could not be resolved. This usually means that the file was found, but the message loader function itself was not exported.`;
+
 export const unresolvedCustomLoadTranslationError = `gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.`;
 
-export const unresolvedCustomLoadMessagesError = `gt-next Error: Custom message loader could not be resolved. This usually means that the file was found, but the message loader function itself was not exported.`;
+export const unresolvedLoadMessagesBuildError = (path: string) =>
+  `gt-next Error: Custom messages loader file could not be resolved at ${path}`;
+
+export const unresolvedLoadTranslationBuildError = (path: string) =>
+  `gt-next Error: Custom translation loader file could not be resolved at ${path}`;
 
 // ---- WARNINGS ---- //
 

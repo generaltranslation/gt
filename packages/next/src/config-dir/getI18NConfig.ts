@@ -1,5 +1,5 @@
 import I18NConfiguration from './I18NConfiguration';
-import defaultInitGTProps from './props/defaultInitGTProps';
+import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import {
   devApiKeyIncludedInProductionError,
   noInitGTWarn,
@@ -18,7 +18,7 @@ export default function getI18NConfig(): I18NConfiguration {
   const I18NConfigParams = process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
   if (I18NConfigParams) {
     globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration({
-      ...defaultInitGTProps,
+      ...defaultWithGTConfigProps,
       ...JSON.parse(I18NConfigParams),
     });
   } else {
@@ -42,7 +42,7 @@ export default function getI18NConfig(): I18NConfiguration {
 
     // Parse: defaultLocale
     // Currently, you have to specify the default locale in the config
-    const defaultLocale = defaultInitGTProps.defaultLocale;
+    const defaultLocale = defaultWithGTConfigProps.defaultLocale;
 
     // Check: in dev, tell them to use initGT to activate translation
     if (process.env.NODE_ENV === 'development') {
@@ -56,7 +56,7 @@ export default function getI18NConfig(): I18NConfiguration {
 
     // disable all translation
     globalObj._GENERALTRANSLATION_I18N_CONFIG_INSTANCE = new I18NConfiguration({
-      ...defaultInitGTProps,
+      ...defaultWithGTConfigProps,
       locales: [defaultLocale],
       renderSettings: defaultRenderSettings,
       apiKey,

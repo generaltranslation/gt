@@ -1,13 +1,15 @@
 import path from 'path';
 import fs from 'fs';
 import { NextConfig } from 'next';
-import defaultInitGTProps from './config-dir/props/defaultInitGTProps';
-import InitGTProps from './config-dir/props/InitGTProps';
+import defaultWithGTConfigProps from './config-dir/props/defaultWithGTConfigProps';
+import withGTConfigProps from './config-dir/props/withGTConfigProps';
 import {
   APIKeyMissingWarn,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
   projectIdMissingWarn,
+  unresolvedLoadMessagesBuildError,
+  unresolvedLoadTranslationBuildError,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 
@@ -33,7 +35,6 @@ import { getSupportedLocale } from '@generaltranslation/supported-locales';
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
  * @param {string|null} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations. Set to null to disable.
  * @param {string|null} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations. Set to null to disable.
- * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
  * @param {string[]|undefined} - Whether to use local translations.
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
@@ -45,15 +46,18 @@ import { getSupportedLocale } from '@generaltranslation/supported-locales';
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {NextConfig} nextConfig - The Next.js configuration object to extend
- * @param {InitGTProps} props - General Translation configuration properties
+ * @param {withGTConfigProps} props - General Translation configuration properties
  * @returns {NextConfig} - An updated Next.js config with GT settings applied
  *
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  */
-export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
+export function withGTConfig(
+  nextConfig: any = {},
+  props: withGTConfigProps = {}
+) {
   // ---------- LOAD GT CONFIG FILE ---------- //
-  let loadedConfig: Partial<InitGTProps> = {};
-  const configPath = props.config || defaultInitGTProps.config;
+  let loadedConfig: Partial<withGTConfigProps> = {};
+  const configPath = props.config || defaultWithGTConfigProps.config;
   try {
     if (typeof configPath === 'string' && fs.existsSync(configPath)) {
       const fileContent = fs.readFileSync(configPath, 'utf-8');
@@ -81,7 +85,7 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
   }
 
   // conditionally add environment variables to config
-  const envConfig: Partial<InitGTProps> = {
+  const envConfig: Partial<withGTConfigProps> = {
     ...(projectId ? { projectId } : {}),
     ...(apiKey ? { apiKey } : {}),
     ...(devApiKey ? { devApiKey } : {}),
@@ -90,8 +94,8 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
   // ---------- MERGE CONFIGS ---------- //
 
   // precedence: input > env > config file > defaults
-  const mergedConfig: InitGTProps = {
-    ...defaultInitGTProps,
+  const mergedConfig: withGTConfigProps = {
+    ...defaultWithGTConfigProps,
     ...loadedConfig,
     ...envConfig,
     ...props,
@@ -127,37 +131,46 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
       : resolveConfigFilepath('loadTranslation');
 
   // Resolve custom message loader path
-  const customLoadMessagePath =
-    typeof mergedConfig.loadMessagePath === 'string'
-      ? mergedConfig.loadMessagePath
+  const customLoadMessagesPath =
+    typeof mergedConfig.loadMessagesPath === 'string'
+      ? mergedConfig.loadMessagesPath
       : resolveConfigFilepath('loadMessages');
 
-  // ----- CUSTOM CONTENT LOADER FLAGS ----- //
+  // ---------- ERROR CHECKS ---------- //
 
   // Local messages flag
-  if (
-    customLoadMessagePath &&
-    fs.existsSync(path.resolve(customLoadMessagePath))
-  ) {
-    mergedConfig.loadMessagesEnabled = true;
+  if (customLoadMessagesPath) {
+    // Check: file exists if provided
+    if (!fs.existsSync(path.resolve(customLoadMessagesPath))) {
+      throw new Error(unresolvedLoadMessagesBuildError(customLoadMessagesPath));
+    } else {
+      mergedConfig.loadMessagesEnabled = true;
+    }
+  } else {
+    mergedConfig.loadMessagesEnabled = false;
   }
 
   // Local translations flag
-  if (
-    customLoadTranslationPath &&
-    fs.existsSync(path.resolve(customLoadTranslationPath))
-  ) {
-    mergedConfig.loadTranslationType = 'custom';
+  if (customLoadTranslationPath) {
+    // Check: file exists if provided
+    if (!fs.existsSync(path.resolve(customLoadTranslationPath))) {
+      throw new Error(
+        unresolvedLoadTranslationBuildError(customLoadTranslationPath)
+      );
+    } else {
+      mergedConfig.loadTranslationType = 'custom';
+    }
+  } else {
+    mergedConfig.loadTranslationType = 'remote';
   }
-
-  // ---------- ERROR CHECKS ---------- //
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
   if (
     (mergedConfig.cacheUrl || mergedConfig.runtimeUrl) &&
     !mergedConfig.projectId &&
     process.env.NODE_ENV === 'development' &&
-    mergedConfig.loadTranslationType !== 'custom'
+    mergedConfig.loadTranslationType === 'remote' &&
+    !mergedConfig.loadMessageEnabled // skip warn if using local messages
   ) {
     console.warn(projectIdMissingWarn);
   }
@@ -171,7 +184,6 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
   if (
     mergedConfig.projectId && // must have projectId for this check to matter anyways
     mergedConfig.runtimeUrl &&
-    mergedConfig.loadTranslationType !== 'custom' && // this usually conincides with not using runtime tx
     !(mergedConfig.apiKey || mergedConfig.devApiKey) &&
     process.env.NODE_ENV === 'development'
   ) {
@@ -179,13 +191,19 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
   }
 
   // Check: if using GT infrastructure, warn about unsupported locales
+  const gtRuntimeTranslationEnabled =
+    mergedConfig.runtimeUrl === defaultWithGTConfigProps.runtimeUrl &&
+    ((process.env.NODE_ENV === 'production' && mergedConfig.apiKey) ||
+      (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey));
+  const gtRemoteCacheEnabled =
+    mergedConfig.cacheUrl === defaultWithGTConfigProps.cacheUrl &&
+    mergedConfig.loadTranslationType === 'remote';
   if (
-    mergedConfig.runtimeUrl === defaultInitGTProps.runtimeUrl ||
-    (mergedConfig.cacheUrl === defaultInitGTProps.cacheUrl &&
-      mergedConfig.loadTranslationType === 'remote')
+    (gtRuntimeTranslationEnabled || gtRemoteCacheEnabled) &&
+    mergedConfig.projectId
   ) {
     const warningLocales = (
-      mergedConfig.locales || defaultInitGTProps.locales
+      mergedConfig.locales || defaultWithGTConfigProps.locales
     ).filter((locale) => !getSupportedLocale(locale));
     if (warningLocales.length) {
       console.warn(createUnsupportedLocalesWarning(warningLocales));
@@ -204,12 +222,13 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
         _GENERALTRANSLATION_DICTIONARY_FILE_TYPE:
           resolvedDictionaryFilePathType,
       }),
-      _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED:
-        (!!customLoadTranslationPath).toString(),
-      _GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED:
-        (!!customLoadMessagePath).toString(),
+      _GENERALTRANSLATION_LOCAL_MESSAGES_ENABLED:
+        mergedConfig.loadMessagesEnabled.toString(),
+      _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (
+        mergedConfig.loadTranslationType === 'custom'
+      ).toString(),
       _GENERALTRANSLATION_DEFAULT_LOCALE: (
-        mergedConfig.defaultLocale || defaultInitGTProps.defaultLocale
+        mergedConfig.defaultLocale || defaultWithGTConfigProps.defaultLocale
       ).toString(),
     },
     experimental: {
@@ -223,7 +242,7 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
                 ...(nextConfig.experimental?.turbo?.resolveAlias || {}),
                 'gt-next/_dictionary': resolvedDictionaryFilePath || '',
                 'gt-next/_load-translation': customLoadTranslationPath || '',
-                'gt-next/_load-messages': customLoadMessagePath || '',
+                'gt-next/_load-messages': customLoadMessagesPath || '',
               },
             },
           }
@@ -253,10 +272,10 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
           webpackConfig.resolve.alias[`gt-next/_load-translation`] =
             path.resolve(webpackConfig.context, customLoadTranslationPath);
         }
-        if (customLoadMessagePath) {
+        if (customLoadMessagesPath) {
           webpackConfig.resolve.alias[`gt-next/_load-messages`] = path.resolve(
             webpackConfig.context,
-            customLoadMessagePath
+            customLoadMessagesPath
           );
         }
       }
@@ -269,7 +288,7 @@ export function withGTConfig(nextConfig: any = {}, props: InitGTProps = {}) {
 }
 
 // Keep initGT for backward compatibility
-export const initGT = (props: InitGTProps) => (nextConfig: any) =>
+export const initGT = (props: withGTConfigProps) => (nextConfig: any) =>
   withGTConfig(nextConfig, props);
 
 /**

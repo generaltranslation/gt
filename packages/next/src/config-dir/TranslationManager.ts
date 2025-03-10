@@ -1,5 +1,5 @@
 import { standardizeLocale } from 'generaltranslation';
-import defaultInitGTProps from './props/defaultInitGTProps';
+import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import {
   TranslationsObject,
@@ -44,7 +44,7 @@ export class TranslationManager {
       projectId: '',
       _versionId: undefined,
       translationEnabled: true,
-      cacheExpiryTime: defaultInitGTProps.cacheExpiryTime,
+      cacheExpiryTime: defaultWithGTConfigProps.cacheExpiryTime,
     };
     this.translationsMap = new Map();
     this.translationTimestamps = new Map();

@@ -1,4 +1,4 @@
-import InitGTProps from './config-dir/props/InitGTProps';
+import withGTConfigProps from './config-dir/props/withGTConfigProps';
 /**
  * Initializes General Translation settings for a Next.js application.
  *
@@ -21,7 +21,6 @@ import InitGTProps from './config-dir/props/InitGTProps';
  * @param {string} [projectId=defaultInitGTProps.projectId] - Project ID for the GeneralTranslation service. Required for most functionality.
  * @param {string|null} [runtimeUrl=defaultInitGTProps.runtimeUrl] - The base URL for the GT API. Set to an empty string to disable automatic translations. Set to null to disable.
  * @param {string|null} [cacheUrl=defaultInitGTProps.cacheUrl] - The URL for cached translations. Set to null to disable.
- * @param {boolean} [runtimeTranslation=defaultInitGTProps.runtimeTranslation] - Whether to enable runtime translation.
  * @param {string[]|undefined} - Whether to use local translations.
  * @param {string[]} [locales=defaultInitGTProps.locales] - List of supported locales for the application.
  * @param {string} [defaultLocale=defaultInitGTProps.defaultLocale] - The default locale to use if none is specified.
@@ -33,11 +32,11 @@ import InitGTProps from './config-dir/props/InitGTProps';
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {NextConfig} nextConfig - The Next.js configuration object to extend
- * @param {InitGTProps} props - General Translation configuration properties
+ * @param {withGTConfigProps} props - General Translation configuration properties
  * @returns {NextConfig} - An updated Next.js config with GT settings applied
  *
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  */
-export declare function withGTConfig(nextConfig?: any, props?: InitGTProps): any;
-export declare const initGT: (props: InitGTProps) => (nextConfig: any) => any;
+export declare function withGTConfig(nextConfig?: any, props?: withGTConfigProps): any;
+export declare const initGT: (props: withGTConfigProps) => (nextConfig: any) => any;
 //# sourceMappingURL=config.d.ts.map

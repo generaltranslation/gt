@@ -5,11 +5,8 @@ import {
 } from 'generaltranslation/internal';
 import { defaultRenderSettings } from 'gt-react/internal';
 
-const defaultInitGTProps = {
+const defaultWithGTConfigProps = {
   config: './gt.config.json',
-  runtimeTranslation: true,
-  loadTranslationType: 'remote',
-  loadMessagesEnabled: false,
   runtimeUrl: defaultRuntimeApiUrl,
   cacheUrl: defaultCacheUrl,
   defaultLocale: libraryDefaultLocale,
@@ -23,4 +20,4 @@ const defaultInitGTProps = {
   _usingPlugin: false,
 } as const;
 
-export default defaultInitGTProps;
+export default defaultWithGTConfigProps;

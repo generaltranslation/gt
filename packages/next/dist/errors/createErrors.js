@@ -1,7 +1,7 @@
 "use strict";
 // ---- ERRORS ---- //
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dictionaryNotFoundWarning = exports.runtimeTranslationTimeoutWarning = exports.translationLoadingWarning = exports.APIKeyMissingWarn = exports.noInitGTWarn = exports.projectIdMissingWarn = exports.createMismatchingHashWarning = exports.createUnsupportedLocalesWarning = exports.createInvalidDictionaryEntryWarning = exports.createNoEntryFoundWarning = exports.usingDefaultsWarning = exports.unresolvedCustomLoadMessagesError = exports.unresolvedCustomLoadTranslationError = exports.dictionaryDisabledError = exports.createDictionarySubsetError = exports.devApiKeyIncludedInProductionError = exports.createRequiredPrefixError = exports.createDictionaryStringTranslationError = exports.createStringTranslationError = exports.customLoadMessagesWarning = exports.customLoadTranslationError = exports.remoteTranslationsError = void 0;
+exports.dictionaryNotFoundWarning = exports.runtimeTranslationTimeoutWarning = exports.translationLoadingWarning = exports.APIKeyMissingWarn = exports.noInitGTWarn = exports.projectIdMissingWarn = exports.createMismatchingHashWarning = exports.createUnsupportedLocalesWarning = exports.createInvalidDictionaryEntryWarning = exports.createNoEntryFoundWarning = exports.usingDefaultsWarning = exports.unresolvedLoadTranslationBuildError = exports.unresolvedLoadMessagesBuildError = exports.unresolvedCustomLoadTranslationError = exports.unresolvedCustomLoadMessagesError = exports.dictionaryDisabledError = exports.createDictionarySubsetError = exports.devApiKeyIncludedInProductionError = exports.createRequiredPrefixError = exports.createDictionaryStringTranslationError = exports.createStringTranslationError = exports.customLoadMessagesWarning = exports.customLoadTranslationError = exports.remoteTranslationsError = void 0;
 var generaltranslation_1 = require("generaltranslation");
 exports.remoteTranslationsError = 'gt-next Error: fetching remote translation.';
 var customLoadTranslationError = function (locale) {
@@ -33,8 +33,16 @@ var createDictionarySubsetError = function (id, functionName) {
 };
 exports.createDictionarySubsetError = createDictionarySubsetError;
 exports.dictionaryDisabledError = "gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs";
-exports.unresolvedCustomLoadTranslationError = "gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.";
 exports.unresolvedCustomLoadMessagesError = "gt-next Error: Custom message loader could not be resolved. This usually means that the file was found, but the message loader function itself was not exported.";
+exports.unresolvedCustomLoadTranslationError = "gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.";
+var unresolvedLoadMessagesBuildError = function (path) {
+    return "gt-next Error: Custom messages loader file could not be resolved at ".concat(path);
+};
+exports.unresolvedLoadMessagesBuildError = unresolvedLoadMessagesBuildError;
+var unresolvedLoadTranslationBuildError = function (path) {
+    return "gt-next Error: Custom translation loader file could not be resolved at ".concat(path);
+};
+exports.unresolvedLoadTranslationBuildError = unresolvedLoadTranslationBuildError;
 // ---- WARNINGS ---- //
 exports.usingDefaultsWarning = 'gt-next: Unable to access gt-next configuration. Using defaults.';
 var createNoEntryFoundWarning = function (id) {

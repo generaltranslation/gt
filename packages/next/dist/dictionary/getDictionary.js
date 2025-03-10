@@ -44,7 +44,7 @@ exports.getDictionaryEntry = getDictionaryEntry;
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
 var resolveMessagesLoader_1 = __importDefault(require("../loaders/resolveMessagesLoader"));
-var defaultInitGTProps_1 = __importDefault(require("../config-dir/props/defaultInitGTProps"));
+var defaultWithGTConfigProps_1 = __importDefault(require("../config-dir/props/defaultWithGTConfigProps"));
 var generaltranslation_1 = require("generaltranslation");
 var dictionary = undefined;
 function getDictionary() {
@@ -73,7 +73,7 @@ function getDictionary() {
                     customLoadMessages = (0, resolveMessagesLoader_1.default)();
                     if (!customLoadMessages) return [3 /*break*/, 8];
                     defaultLocale = process.env._GENERALTRANSLATION_DEFAULT_LOCALE ||
-                        defaultInitGTProps_1.default.defaultLocale;
+                        defaultWithGTConfigProps_1.default.defaultLocale;
                     _c.label = 1;
                 case 1:
                     _c.trys.push([1, 3, , 4]);
