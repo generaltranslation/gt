@@ -65,7 +65,7 @@ function resolveTranslationLoader() {
         }); }); };
         // Throw error in dev
         if (process.env.NODE_ENV !== 'production') {
-            // TODO: throw new Error(unresolvedCustomLoadTranslationError);
+            throw new Error(createErrors_1.unresolvedCustomLoadTranslationsError);
         }
         // Custom loader file was defined but not exported
         console.error(createErrors_1.unresolvedCustomLoadTranslationsError);

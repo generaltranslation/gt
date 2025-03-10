@@ -29,7 +29,7 @@ export default function resolveTranslationLoader(): CustomLoader | undefined {
 
     // Throw error in dev
     if (process.env.NODE_ENV !== 'production') {
-      // TODO: throw new Error(unresolvedCustomLoadTranslationError);
+      throw new Error(unresolvedCustomLoadTranslationsError);
     }
 
     // Custom loader file was defined but not exported

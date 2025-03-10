@@ -124,17 +124,17 @@ export function withGTConfig(
     mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
   }
 
-  // Resolve custom translation loader path
-  const customLoadTranslationsPath =
-    typeof mergedConfig.loadTranslationsPath === 'string'
-      ? mergedConfig.loadTranslationsPath
-      : resolveConfigFilepath('loadTranslations');
-
   // Resolve custom message loader path
   const customLoadMessagesPath =
     typeof mergedConfig.loadMessagesPath === 'string'
       ? mergedConfig.loadMessagesPath
       : resolveConfigFilepath('loadMessages');
+
+  // Resolve custom translation loader path
+  const customLoadTranslationsPath =
+    typeof mergedConfig.loadTranslationsPath === 'string'
+      ? mergedConfig.loadTranslationsPath
+      : resolveConfigFilepath('loadTranslations');
 
   // ---------- ERROR CHECKS ---------- //
 

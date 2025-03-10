@@ -121,14 +121,14 @@ function withGTConfig(nextConfig, props) {
     if (resolvedDictionaryFilePathType) {
         mergedConfig['_dictionaryFileType'] = resolvedDictionaryFilePathType;
     }
-    // Resolve custom translation loader path
-    var customLoadTranslationsPath = typeof mergedConfig.loadTranslationsPath === 'string'
-        ? mergedConfig.loadTranslationsPath
-        : resolveConfigFilepath('loadTranslations');
     // Resolve custom message loader path
     var customLoadMessagesPath = typeof mergedConfig.loadMessagesPath === 'string'
         ? mergedConfig.loadMessagesPath
         : resolveConfigFilepath('loadMessages');
+    // Resolve custom translation loader path
+    var customLoadTranslationsPath = typeof mergedConfig.loadTranslationsPath === 'string'
+        ? mergedConfig.loadTranslationsPath
+        : resolveConfigFilepath('loadTranslations');
     // ---------- ERROR CHECKS ---------- //
     // Local messages flag
     if (customLoadMessagesPath) {
