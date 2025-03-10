@@ -7,6 +7,7 @@ import {
   Updates,
   WrapOptions,
   GenerateSourceOptions,
+  SupportedLibraries,
 } from '../types';
 import {
   displayAsciiTitle,
@@ -46,8 +47,8 @@ import { saveJSON } from '../fs/saveJSON';
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 export class ReactCLI extends BaseCLI {
-  constructor() {
-    super('gt-react');
+  constructor(library: SupportedLibraries) {
+    super(library);
   }
   public init() {
     this.setupTranslateCommand();
@@ -251,6 +252,10 @@ export class ReactCLI extends BaseCLI {
 
     options = { ...options, ...settings };
 
+    if (!settings.translationsDir) {
+      console.log(chalk.red('Error: the translationsDir path is required'));
+      process.exit(1);
+    }
     if (!options.dictionary) {
       options.dictionary = findFilepath([
         './dictionary.js',
@@ -321,7 +326,7 @@ export class ReactCLI extends BaseCLI {
           ...newData,
           ...existingTranslations,
         };
-        // Filter out only keys that exist in newData
+        // Filter out keys that don't exist in newData
         const filteredTranslations = Object.fromEntries(
           Object.entries(mergedTranslations).filter(([key]) => newData[key])
         );

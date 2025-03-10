@@ -7,9 +7,9 @@ export default function main() {
   const library = determineLibrary();
   let cli: BaseCLI;
   if (library === 'gt-next') {
-    cli = new NextCLI();
+    cli = new NextCLI('gt-next');
   } else if (library === 'gt-react') {
-    cli = new ReactCLI();
+    cli = new ReactCLI('gt-react');
   } else {
     cli = new BaseCLI(library);
   }

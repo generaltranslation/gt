@@ -4,6 +4,7 @@ import {
   Updates,
   SetupOptions,
   SupportedFrameworks,
+  SupportedLibraries,
 } from '../types';
 import { displayAsciiTitle, displayInitializingText } from '../console/console';
 import chalk from 'chalk';
@@ -20,8 +21,8 @@ import { generateSettings } from '../config/generateSettings';
 const pkg = 'gt-next';
 
 export class NextCLI extends ReactCLI {
-  constructor() {
-    super();
+  constructor(library: SupportedLibraries) {
+    super(library);
   }
   public init() {
     this.setupTranslateCommand();

@@ -22,6 +22,7 @@ import { SupportedLibraries } from '../types';
 import { resolveProjectId } from '../fs/utils';
 import { FileExtension } from '../types/data';
 import { generateSettings } from '../config/generateSettings';
+import chalk from 'chalk';
 type InitOptions = {
   defaultLocale?: string;
   locales?: string[];
@@ -164,20 +165,17 @@ export class BaseCLI {
         displayAsciiTitle();
         displayInitializingText();
 
-        // Ask where the translations are stored
-        const translationsDir = await input({
-          message: 'Where is the directory containing your language files?',
-        });
-
         // Ask for the default locale
         const defaultLocale = await input({
           message: 'What is the default locale for your project?',
+          default: 'en',
         });
 
         // Ask for the locales
         const locales = await input({
-          message:
-            'What locales would you like to translate using General Translation? (space-separated list)',
+          message: `What locales would you like to translate using General Translation? ${chalk.gray(
+            '(space-separated list)'
+          )}`,
           validate: (input) => {
             const locales = input.split(' ');
             if (locales.length === 0) {
@@ -192,25 +190,74 @@ export class BaseCLI {
           },
         });
 
-        const dataFormat: string = await select({
-          message: 'What is the format of your language files?',
-          choices: ['.json', '.yaml'],
-          default: '.json',
+        // Ask where the translations are stored
+        const location = await select({
+          message: 'Where are your language files stored? (CDN or local)',
+          choices: [
+            { value: 'cdn', name: 'CDN' },
+            { value: 'local', name: 'Local' },
+          ],
+          default: 'cdn',
         });
 
-        // combine translationsDir and dataFormat into something like
-        // translationsDir/*[.json|.yaml]
-        const translationsDirWithFormat = path.join(
-          translationsDir,
-          `*${dataFormat}`
-        );
+        if (location === 'cdn') {
+          // Create gt.config.json
+          createOrUpdateConfig('gt.config.json', {
+            defaultLocale,
+            locales: locales.split(' '),
+          });
+          return;
+        }
 
-        // Create gt.config.json
-        createOrUpdateConfig('gt.config.json', {
-          defaultLocale,
-          locales: locales.split(' '),
-          translationsDir: translationsDirWithFormat,
+        // Ask where the translations are stored
+        const translationsDir = await input({
+          message:
+            'What is the path to the directory containing your language files?',
         });
+
+        const thirdPartyLibrary =
+          this.library !== 'gt-next' && this.library !== 'gt-react';
+
+        // Ask if using another i18n library
+        const i18nLibrary = thirdPartyLibrary
+          ? await select({
+              message: `Are you using a third-party i18n library? (${chalk.gray(
+                `Auto-detected: ${this.library}`
+              )})`,
+              choices: [
+                { value: true, name: 'Yes' },
+                { value: false, name: 'No' },
+              ],
+              default: true,
+            })
+          : false;
+
+        if (i18nLibrary) {
+          const dataFormat: string = await select({
+            message: 'What is the format of your language files?',
+            choices: ['.json', '.yaml'],
+            default: '.json',
+          });
+          // combine translationsDir and dataFormat into something like
+          // translationsDir/*[.json|.yaml]
+          const translationsDirWithFormat = path.join(
+            translationsDir,
+            `*${dataFormat}`
+          );
+          // Create gt.config.json
+          createOrUpdateConfig('gt.config.json', {
+            defaultLocale,
+            locales: locales.split(' '),
+            translationsDir: translationsDirWithFormat,
+          });
+        } else {
+          // Create gt.config.json
+          createOrUpdateConfig('gt.config.json', {
+            defaultLocale,
+            locales: locales.split(' '),
+            translationsDir: translationsDir,
+          });
+        }
       });
   }
 }
