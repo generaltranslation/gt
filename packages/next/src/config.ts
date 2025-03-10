@@ -12,6 +12,7 @@ import {
   unresolvedLoadTranslationsBuildError,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
+import { getLocaleProperties } from 'generaltranslation';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -111,9 +112,11 @@ export function withGTConfig(
   // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
 
   // Resolve dictionary filepath
+  // const defaultLanguage = getLocaleProperties(mergedConfig.defaultLocale);
   const resolvedDictionaryFilePath =
     typeof mergedConfig.dictionary === 'string'
       ? mergedConfig.dictionary
+      : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']) // fallback to dictionary
       : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']);
 
   // Get the type of dictionary file
