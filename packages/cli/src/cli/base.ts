@@ -20,7 +20,7 @@ import yaml from 'yaml';
 import { translateJson } from '../formats/json/translate';
 import { SupportedLibraries } from '../types';
 import { resolveProjectId } from '../fs/utils';
-import { FileExtension } from '../types/data';
+import { DataFormat, FileExtension } from '../types/data';
 import { generateSettings } from '../config/generateSettings';
 import chalk from 'chalk';
 type InitOptions = {
@@ -42,9 +42,14 @@ const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 export class BaseCLI {
   private library: SupportedLibraries;
+  private additionalModules: SupportedLibraries[];
   // Constructor is shared amongst all CLI class types
-  public constructor(library: SupportedLibraries) {
+  public constructor(
+    library: SupportedLibraries,
+    additionalModules?: SupportedLibraries[]
+  ) {
     this.library = library;
+    this.additionalModules = additionalModules || [];
     this.setupInitCommand();
   }
   // Init is never called in a child class
@@ -128,14 +133,19 @@ export class BaseCLI {
           .split('.')
           .pop() as FileExtension;
 
-        const dataFormat =
-          this.library === 'next-intl'
-            ? 'ICU'
-            : this.library === 'react-i18next'
-              ? 'I18NEXT'
-              : this.library === 'next-i18next'
-                ? 'I18NEXT'
-                : 'JSX';
+        let dataFormat: DataFormat;
+        if (this.library === 'next-intl') {
+          dataFormat = 'ICU';
+        } else if (this.library === 'i18next') {
+          if (this.additionalModules.includes('i18next-icu')) {
+            dataFormat = 'ICU';
+          } else {
+            dataFormat = 'I18NEXT';
+          }
+        } else {
+          dataFormat = 'JSX';
+        }
+
         if (!dataFormat) {
           console.error(noDataFormatError);
           process.exit(1);

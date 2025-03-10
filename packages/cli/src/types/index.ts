@@ -74,6 +74,8 @@ export type SupportedLibraries =
   | 'next-intl'
   | 'react-i18next'
   | 'next-i18next'
+  | 'i18next'
+  | 'i18next-icu'
   | 'base';
 
 export interface ContentScanner {

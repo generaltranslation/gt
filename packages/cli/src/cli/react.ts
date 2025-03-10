@@ -47,8 +47,11 @@ import { saveJSON } from '../fs/saveJSON';
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 export class ReactCLI extends BaseCLI {
-  constructor(library: SupportedLibraries) {
-    super(library);
+  constructor(
+    library: SupportedLibraries,
+    additionalModules?: SupportedLibraries[]
+  ) {
+    super(library, additionalModules);
   }
   public init() {
     this.setupTranslateCommand();

@@ -1,7 +1,7 @@
 import { Options, SetupOptions, SupportedFrameworks, Updates, WrapOptions, GenerateSourceOptions, SupportedLibraries } from '../types';
 import { BaseCLI } from './base';
 export declare class ReactCLI extends BaseCLI {
-    constructor(library: SupportedLibraries);
+    constructor(library: SupportedLibraries, additionalModules?: SupportedLibraries[]);
     init(): void;
     execute(): void;
     protected scanForContent(options: WrapOptions, framework: SupportedFrameworks): Promise<{
