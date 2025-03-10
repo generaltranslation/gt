@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "5.2.6",
+  "version": "5.2.8",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -11,7 +11,7 @@
   "dependencies": {
     "@generaltranslation/supported-locales": "^2.0.6",
     "generaltranslation": "^6.2.1",
-    "gt-react": "^9.2.4"
+    "gt-react": "^9.2.6"
   },
   "scripts": {
     "patch": "npm version patch",
@@ -69,11 +69,11 @@
     "./_dictionary": {
       "default": "./dist/_dictionary.js"
     },
-    "./_load-translation": {
-      "default": "./dist/_load-translation.js"
+    "./_load-translations": {
+      "default": "./dist/_load-translations.js"
     },
-    "./_load-messages": {
-      "default": "./dist/_load-messages.js"
+    "./_load-dictionary": {
+      "default": "./dist/_load-dictionary.js"
     }
   },
   "typesVersions": {
@@ -96,11 +96,11 @@
       "_dictionary": [
         "./dist/_dictionary.d.ts"
       ],
-      "_load-translation": [
-        "./dist/_load-translation.d.ts"
+      "_load-translations": [
+        "./dist/_load-translations.d.ts"
       ],
-      "_load-messages": [
-        "./dist/_load-messages.d.ts"
+      "_load-dictionary": [
+        "./dist/_load-dictionary.d.ts"
       ]
     }
   },
@@ -125,11 +125,11 @@
       "gt-next/_dictionary": [
         "/dist/_dictionary"
       ],
-      "gt-next/_load-translation": [
-        "/dist/_load-translation"
+      "gt-next/_load-translations": [
+        "/dist/_load-translations"
       ],
-      "gt-next/_load-messages": [
-        "/dist/_load-messages"
+      "gt-next/_load-dictionary": [
+        "/dist/_load-dictionary"
       ]
     }
   },

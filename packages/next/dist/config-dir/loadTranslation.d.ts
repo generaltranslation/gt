@@ -1,5 +1,5 @@
 import { TranslationsObject } from 'gt-react/internal';
-type RemoteLoadTranslationInput = {
+type RemoteLoadTranslationsInput = {
     targetLocale: string;
     projectId?: string;
     cacheUrl?: string | null;
@@ -12,6 +12,6 @@ type RemoteLoadTranslationInput = {
  * @returns {Promise<TranslationsObject | undefined>} The translation object or undefined if not found or errored
  *
  */
-export default function loadTranslation(props: RemoteLoadTranslationInput): Promise<TranslationsObject | undefined>;
+export default function loadTranslations(props: RemoteLoadTranslationsInput): Promise<TranslationsObject | undefined>;
 export {};
 //# sourceMappingURL=loadTranslation.d.ts.map

@@ -26,8 +26,8 @@ const react_1 = require("./react");
 const generateSettings_1 = require("../config/generateSettings");
 const pkg = 'gt-next';
 class NextCLI extends react_1.ReactCLI {
-    constructor() {
-        super();
+    constructor(library, additionalModules) {
+        super(library, additionalModules);
     }
     init() {
         this.setupTranslateCommand();

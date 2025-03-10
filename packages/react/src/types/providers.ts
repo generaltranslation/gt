@@ -1,11 +1,10 @@
 import {
   TranslationsObject,
   RenderMethod,
-  TranslatedChildren,
   InlineTranslationOptions,
   DictionaryTranslationOptions,
   Dictionary,
-  MessagesObject,
+  DictionaryObject,
 } from './types';
 
 import { TranslateContentCallback, TranslateChildrenCallback } from './runtime';
@@ -27,7 +26,7 @@ export type GTContextType = {
   setLocale: (locale: string) => void;
   defaultLocale: string;
   translations: TranslationsObject | null;
-  messages: MessagesObject | null;
+  dictionaryTranslations: DictionaryObject | null;
   translationRequired: boolean;
   dialectTranslationRequired: boolean;
   renderSettings: { method: RenderMethod; timeout?: number };
@@ -38,7 +37,7 @@ export type ClientProviderProps = {
   children: any;
   dictionary: Dictionary;
   initialTranslations: TranslationsObject;
-  messages: MessagesObject;
+  dictionaryTranslations: DictionaryObject;
   locale: string;
   locales: string[];
   _versionId?: string;

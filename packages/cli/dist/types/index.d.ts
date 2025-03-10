@@ -53,7 +53,7 @@ export type GenerateSourceOptions = {
 };
 export type Framework = 'gt-next' | 'gt-react';
 export type SupportedFrameworks = 'next-app' | 'next-pages' | 'vite' | 'react' | 'gatsby';
-export type SupportedLibraries = 'gt-next' | 'gt-react' | 'next-intl' | 'react-i18next' | 'next-i18next' | 'base';
+export type SupportedLibraries = 'gt-next' | 'gt-react' | 'next-intl' | 'react-i18next' | 'next-i18next' | 'i18next' | 'i18next-icu' | 'base';
 export interface ContentScanner {
     scanForContent(options: WrapOptions, framework: Framework): Promise<{
         errors: string[];

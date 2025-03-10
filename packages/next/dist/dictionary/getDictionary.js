@@ -43,13 +43,13 @@ exports.default = getDictionary;
 exports.getDictionaryEntry = getDictionaryEntry;
 var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
-var resolveMessagesLoader_1 = __importDefault(require("../loaders/resolveMessagesLoader"));
-var defaultInitGTProps_1 = __importDefault(require("../config-dir/props/defaultInitGTProps"));
+var resolveDictionaryDictionary_1 = __importDefault(require("../loaders/resolveDictionaryDictionary"));
+var defaultWithGTConfigProps_1 = __importDefault(require("../config-dir/props/defaultWithGTConfigProps"));
 var generaltranslation_1 = require("generaltranslation");
 var dictionary = undefined;
 function getDictionary() {
     return __awaiter(this, void 0, void 0, function () {
-        var dictionaryFileType, customLoadMessages, defaultLocale, _a, languageCode, error_1;
+        var dictionaryFileType, customLoadDictionary, defaultLocale, _a, languageCode, error_1;
         var _b;
         return __generator(this, function (_c) {
             switch (_c.label) {
@@ -70,14 +70,14 @@ function getDictionary() {
                     catch (_d) { }
                     if (dictionary)
                         return [2 /*return*/, dictionary];
-                    customLoadMessages = (0, resolveMessagesLoader_1.default)();
-                    if (!customLoadMessages) return [3 /*break*/, 8];
+                    customLoadDictionary = (0, resolveDictionaryDictionary_1.default)();
+                    if (!customLoadDictionary) return [3 /*break*/, 8];
                     defaultLocale = process.env._GENERALTRANSLATION_DEFAULT_LOCALE ||
-                        defaultInitGTProps_1.default.defaultLocale;
+                        defaultWithGTConfigProps_1.default.defaultLocale;
                     _c.label = 1;
                 case 1:
                     _c.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, customLoadMessages(defaultLocale)];
+                    return [4 /*yield*/, customLoadDictionary(defaultLocale)];
                 case 2:
                     dictionary = _c.sent();
                     return [3 /*break*/, 4];
@@ -90,14 +90,14 @@ function getDictionary() {
                     _c.label = 5;
                 case 5:
                     _c.trys.push([5, 7, , 8]);
-                    return [4 /*yield*/, customLoadMessages(languageCode)];
+                    return [4 /*yield*/, customLoadDictionary(languageCode)];
                 case 6:
                     dictionary = _c.sent();
                     return [3 /*break*/, 8];
                 case 7:
                     error_1 = _c.sent();
                     if (process.env.NODE_ENV === 'development') {
-                        console.warn((0, createErrors_1.customLoadMessagesWarning)(languageCode), error_1);
+                        console.warn((0, createErrors_1.customLoadDictionaryWarning)(languageCode), error_1);
                     }
                     return [3 /*break*/, 8];
                 case 8:

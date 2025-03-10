@@ -36,40 +36,23 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = resolveMessageLoader;
-var createErrors_1 = require("../errors/createErrors");
-var customLoadMessages = undefined;
-function resolveMessageLoader() {
-    var _this = this;
-    // Singleton pattern
-    if (customLoadMessages !== undefined)
-        return customLoadMessages;
-    // Check: local message loader is enabled
-    if (process.env._GENERALTRANSLATION_LOCAL_MESSAGE_ENABLED !== 'true')
-        return;
-    // get load messages file
-    var customLoadMessagesConfig;
-    try {
-        customLoadMessagesConfig = require('gt-next/_load-messages');
-    }
-    catch (_a) { }
-    // Get custom loader
-    customLoadMessages =
-        (customLoadMessagesConfig === null || customLoadMessagesConfig === void 0 ? void 0 : customLoadMessagesConfig.default) ||
-            (customLoadMessagesConfig === null || customLoadMessagesConfig === void 0 ? void 0 : customLoadMessagesConfig.getLocalMessages);
-    // Check: custom loader is exported
-    if (!customLoadMessages) {
-        // So the custom loader doesnt eval to falsey
-        customLoadMessages = function (_) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-            return [2 /*return*/, undefined];
-        }); }); };
-        // Throw error in dev
-        if (process.env.NODE_ENV !== 'production') {
-            throw new Error(createErrors_1.unresolvedCustomLoadMessagesError);
-        }
-        // Custom loader file was defined but not exported
-        console.error(createErrors_1.unresolvedCustomLoadMessagesError);
-    }
-    return customLoadMessages;
-}
-//# sourceMappingURL=resolveMessagesLoader.js.map
+var internal_1 = require("generaltranslation/internal");
+var internal_2 = require("gt-react/internal");
+var defaultWithGTConfigProps = {
+    config: './gt.config.json',
+    runtimeUrl: internal_1.defaultRuntimeApiUrl,
+    cacheUrl: internal_1.defaultCacheUrl,
+    defaultLocale: internal_1.libraryDefaultLocale,
+    getLocale: function () { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
+        return [2 /*return*/, internal_1.libraryDefaultLocale];
+    }); }); },
+    locales: [],
+    maxConcurrentRequests: 100,
+    maxBatchSize: 25,
+    batchInterval: 50,
+    cacheExpiryTime: 60000,
+    renderSettings: internal_2.defaultRenderSettings,
+    _usingPlugin: false,
+};
+exports.default = defaultWithGTConfigProps;
+//# sourceMappingURL=defaultWithGTConfigProps.js.map

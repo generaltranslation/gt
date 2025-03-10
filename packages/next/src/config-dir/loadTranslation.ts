@@ -1,20 +1,20 @@
 import { TranslationsObject } from 'gt-react/internal';
 import {
-  customLoadTranslationError,
+  customLoadTranslationsError,
   remoteTranslationsError,
 } from '../errors/createErrors';
-import resolveMessageLoader from '../loaders/resolveMessagesLoader';
+import resolveDictionaryLoader from '../loaders/resolveDictionaryDictionary';
 import resolveTranslationLoader from '../loaders/resolveTranslationLoader';
 
-type RemoteLoadTranslationInput = {
+type RemoteLoadTranslationsInput = {
   targetLocale: string;
   projectId?: string;
   cacheUrl?: string | null;
   _versionId?: string;
 };
 
-let loadTranslationFunction: (
-  props: RemoteLoadTranslationInput
+let loadTranslationsFunction: (
+  props: RemoteLoadTranslationsInput
 ) => Promise<any>;
 
 // parse translation result (local or remote)
@@ -40,28 +40,28 @@ function parseResult(result: any): TranslationsObject | undefined {
  * @returns {Promise<TranslationsObject | undefined>} The translation object or undefined if not found or errored
  *
  */
-export default async function loadTranslation(
-  props: RemoteLoadTranslationInput
+export default async function loadTranslations(
+  props: RemoteLoadTranslationsInput
 ): Promise<TranslationsObject | undefined> {
   // Singleton pattern
-  if (loadTranslationFunction) return await loadTranslationFunction(props);
+  if (loadTranslationsFunction) return await loadTranslationsFunction(props);
 
   // ----- CHECK FOR CUSTOM LOADER ----- //
 
   // get content loader
-  const customLoadTranslation = resolveTranslationLoader();
+  const customLoadTranslations = resolveTranslationLoader();
 
-  if (customLoadTranslation) {
+  if (customLoadTranslations) {
     // ----- USING CUSTOM TRANSLATION LOADER ----- //
 
     // Set custom translation loader
-    loadTranslationFunction = async (_props: RemoteLoadTranslationInput) => {
+    loadTranslationsFunction = async (_props: RemoteLoadTranslationsInput) => {
       // Load translation
       try {
-        const result = await customLoadTranslation(_props.targetLocale);
+        const result = await customLoadTranslations(_props.targetLocale);
         return parseResult(result);
       } catch (error) {
-        console.error(customLoadTranslationError(), error);
+        console.error(customLoadTranslationsError(), error);
         return undefined;
       }
     };
@@ -69,8 +69,8 @@ export default async function loadTranslation(
     // ----- USING REMOTE CACHE LOADER ----- //
 
     // Default translation loader: remote cache
-    loadTranslationFunction = async (
-      _props: RemoteLoadTranslationInput
+    loadTranslationsFunction = async (
+      _props: RemoteLoadTranslationsInput
     ): Promise<any> => {
       try {
         const response = await fetch(
@@ -88,5 +88,5 @@ export default async function loadTranslation(
   }
 
   // Invoke the function
-  return await loadTranslationFunction(props);
+  return await loadTranslationsFunction(props);
 }

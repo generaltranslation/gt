@@ -29,8 +29,9 @@ export default async function GTProvider({
   const [translationRequired, dialectTranslationRequired] =
     I18NConfig.requiresTranslation(locale);
 
-  // load messages
-  const messages = (await I18NConfig.getMessages(locale)) || {};
+  // load dictionary
+  const dictionaryTranslations =
+    (await I18NConfig.getDictionaryTranslations(locale)) || {};
 
   // ----- FETCH TRANSLATIONS FROM CACHE ----- //
 
@@ -73,7 +74,7 @@ export default async function GTProvider({
     <ClientProvider
       dictionary={dictionary}
       initialTranslations={translations}
-      messages={messages}
+      dictionaryTranslations={dictionaryTranslations}
       locale={locale}
       locales={I18NConfig.getLocales()}
       defaultLocale={defaultLocale}

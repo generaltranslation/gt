@@ -11,7 +11,7 @@ export type TranslationManagerConfig = {
     _versionId?: string;
     translationEnabled: boolean;
     cacheExpiryTime: number;
-    loadTranslationType?: 'remote' | 'custom' | 'disabled';
+    loadTranslationsType?: 'remote' | 'custom' | 'disabled';
 };
 /**
  * Manages translations

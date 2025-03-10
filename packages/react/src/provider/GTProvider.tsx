@@ -9,7 +9,7 @@ import { GTContext } from './GTContext';
 import {
   CustomLoader,
   Dictionary,
-  MessagesObject,
+  DictionaryObject,
   RenderMethod,
   TranslationsObject,
 } from '../types/types';
@@ -21,8 +21,8 @@ import {
 import {
   APIKeyMissingWarn,
   createUnsupportedLocalesWarning,
-  customLoadMessagesWarning,
-  customLoadTranslationError,
+  customLoadDictionaryWarning,
+  customLoadTranslationsError,
   devApiKeyProductionError,
   dictionaryMissingWarning,
   projectIdMissingWarning,
@@ -66,8 +66,8 @@ export default function GTProvider({
   cacheUrl = defaultCacheUrl,
   runtimeUrl = defaultRuntimeApiUrl,
   renderSettings = defaultRenderSettings,
-  loadMessages,
-  loadTranslation,
+  loadDictionary,
+  loadTranslations,
   _versionId,
   ...metadata
 }: {
@@ -84,8 +84,8 @@ export default function GTProvider({
     method: RenderMethod;
     timeout?: number;
   };
-  loadMessages?: CustomLoader;
-  loadTranslation?: CustomLoader;
+  loadDictionary?: CustomLoader;
+  loadTranslations?: CustomLoader;
   _versionId?: string;
   [key: string]: any;
 }): React.JSX.Element {
@@ -120,10 +120,10 @@ export default function GTProvider({
   );
 
   // Loaders
-  const loadTranslationType = useMemo(
+  const loadTranslationsType = useMemo(
     () =>
-      (loadTranslation && 'custom') || (cacheUrl && 'default') || 'disabled',
-    [loadTranslation]
+      (loadTranslations && 'custom') || (cacheUrl && 'default') || 'disabled',
+    [loadTranslations]
   );
 
   // ---------- SET UP DICTIONARY ---------- //
@@ -132,10 +132,10 @@ export default function GTProvider({
     _dictionary
   );
 
-  // Resolve dictionary when not provided, but using custom message loader
+  // Resolve dictionary when not provided, but using custom dictionary loader
   useEffect(() => {
-    // Early return if dictionary is provided or not loading messages
-    if (dictionary || !loadMessages) return;
+    // Early return if dictionary is provided or not loading translation dictionary
+    if (dictionary || !loadDictionary) return;
 
     let storeResults = true;
 
@@ -143,14 +143,14 @@ export default function GTProvider({
       let result;
       // Check for [defaultLocale.json] file
       try {
-        result = await loadMessages(defaultLocale);
+        result = await loadDictionary(defaultLocale);
       } catch {}
 
       // Check the simplified locale name ('en' instead of 'en-US')
       const languageCode = getLocaleProperties(defaultLocale)?.languageCode;
       if (!dictionary && languageCode && languageCode !== defaultLocale) {
         try {
-          result = await loadMessages(languageCode);
+          result = await loadDictionary(languageCode);
         } catch (error) {
           console.warn(dictionaryMissingWarning, error);
         }
@@ -166,7 +166,7 @@ export default function GTProvider({
     return () => {
       storeResults = false;
     };
-  }, [dictionary, loadMessages]);
+  }, [dictionary, loadDictionary]);
 
   // ---------- MEMOIZED CHECKS ---------- //
 
@@ -179,7 +179,7 @@ export default function GTProvider({
 
     // Check: projectId missing while using cache/runtime in dev
     if (
-      loadTranslationType !== 'custom' &&
+      loadTranslationsType !== 'custom' &&
       (cacheUrl || runtimeUrl) &&
       !projectId &&
       process.env.NODE_ENV === 'development'
@@ -191,7 +191,7 @@ export default function GTProvider({
     if (
       projectId && // must have projectId for this check to matter anyways
       runtimeUrl &&
-      loadTranslationType !== 'custom' && // this usually conincides with not using runtime tx
+      loadTranslationsType !== 'custom' && // this usually conincides with not using runtime tx
       !devApiKey &&
       process.env.NODE_ENV === 'development'
     ) {
@@ -201,7 +201,7 @@ export default function GTProvider({
     // Check: if using GT infrastructure, warn about unsupported locales
     if (
       runtimeUrl === defaultRuntimeApiUrl ||
-      (cacheUrl === defaultCacheUrl && loadTranslationType === 'default')
+      (cacheUrl === defaultCacheUrl && loadTranslationsType === 'default')
     ) {
       const warningLocales = (locales || locales).filter(
         (locale) => !getSupportedLocale(locale)
@@ -213,7 +213,7 @@ export default function GTProvider({
   }, [
     process.env.NODE_ENV,
     devApiKey,
-    loadTranslationType,
+    loadTranslationsType,
     cacheUrl,
     runtimeUrl,
     projectId,
@@ -237,15 +237,17 @@ export default function GTProvider({
     return [translationRequired, dialectTranslationRequired];
   }, [defaultLocale, locale, locales]);
 
-  // ---------- MESSAGES STATE ---------- //
+  // ---------- TRANSLATION DICTIONARY STATE ---------- //
 
   // Null -> not loaded, {} -> Loaded (or not required/load failed)
-  const [messages, setMessages] = useState<MessagesObject | null>(
-    translationRequired ? null : {}
-  );
+  const [dictionaryTranslations, setDictionaryTranslations] =
+    useState<DictionaryObject | null>(translationRequired ? null : {});
 
-  // Reset messages if locale changes (null to trigger a new load)
-  useEffect(() => setMessages(translationRequired ? null : {}), [locale]);
+  // Reset dictionaryTranslations if locale changes (null to trigger a new load)
+  useEffect(
+    () => setDictionaryTranslations(translationRequired ? null : {}),
+    [locale]
+  );
 
   // ---------- TRANSLATION STATE ---------- //
 
@@ -288,26 +290,27 @@ export default function GTProvider({
       ...metadata,
     });
 
-  // ---------- ATTEMPT TO LOAD MESSAGES ---------- //
+  // ---------- ATTEMPT TO LOAD DICTIONARY TRANSLATOINS ---------- //
 
   useEffect(() => {
-    // Early return if no need to load messages
-    if (messages || !translationRequired || !loadMessages) return;
+    // Early return if no need to load dictionaryTranslations
+    if (dictionaryTranslations || !translationRequired || !loadDictionary)
+      return;
 
-    // Load messages
+    // Load dictionaryTranslations
     let storeResults = true;
     (async () => {
       let result = {};
       try {
-        result = await loadMessages(locale);
+        result = await loadDictionary(locale);
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {
-          console.warn(customLoadMessagesWarning(locale), error);
+          console.warn(customLoadDictionaryWarning(locale), error);
         }
       }
 
       if (storeResults) {
-        setMessages(result);
+        setDictionaryTranslations(result);
       }
     })();
 
@@ -315,7 +318,7 @@ export default function GTProvider({
     return () => {
       storeResults = false;
     };
-  }, [locale, loadMessages, translationRequired, messages]);
+  }, [locale, loadDictionary, translationRequired, dictionaryTranslations]);
 
   // ---------- ATTEMPT TO LOAD TRANSLATIONS ---------- //
 
@@ -327,14 +330,14 @@ export default function GTProvider({
     let storeResults = true;
     (async () => {
       let result;
-      switch (loadTranslationType) {
+      switch (loadTranslationsType) {
         case 'custom':
           // check is redundant, but makes ts happy
-          if (loadTranslation) {
+          if (loadTranslations) {
             try {
-              result = await loadTranslation(locale);
+              result = await loadTranslations(locale);
             } catch (error) {
-              console.error(customLoadTranslationError(locale), error);
+              console.error(customLoadTranslationsError(locale), error);
             }
           }
           break;
@@ -386,7 +389,7 @@ export default function GTProvider({
   }, [
     translations,
     translationRequired,
-    loadTranslationType,
+    loadTranslationsType,
     cacheUrl,
     projectId,
     locale,
@@ -411,7 +414,7 @@ export default function GTProvider({
   const _internalUseDictFunction = useCreateInternalUseDictFunction(
     dictionary,
     translations,
-    messages,
+    dictionaryTranslations,
     locale,
     defaultLocale,
     translationRequired,
@@ -439,7 +442,7 @@ export default function GTProvider({
         setLocale,
         defaultLocale,
         translations,
-        messages,
+        dictionaryTranslations: dictionaryTranslations,
         translationRequired,
         dialectTranslationRequired,
         projectId,

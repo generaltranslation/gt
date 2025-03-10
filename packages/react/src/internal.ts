@@ -2,7 +2,9 @@ import flattenDictionary from './internal/flattenDictionary';
 import addGTIdentifier from './internal/addGTIdentifier';
 import writeChildrenAsObjects from './internal/writeChildrenAsObjects';
 import getPluralBranch from './branches/plurals/getPluralBranch';
-import getDictionaryEntry, { isValidDictionaryEntry } from './provider/helpers/getDictionaryEntry';
+import getDictionaryEntry, {
+  isValidDictionaryEntry,
+} from './provider/helpers/getDictionaryEntry';
 import getEntryAndMetadata from './provider/helpers/getEntryAndMetadata';
 import getVariableProps from './variables/_getVariableProps';
 import isVariableObject from './provider/helpers/isVariableObject';
@@ -33,9 +35,9 @@ import {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-  LocalesMessages,
-  MessagesContent,
-  MessagesObject,
+  LocalesDictionary,
+  DictionaryContent,
+  DictionaryObject,
   CustomLoader,
 } from './types/types';
 
@@ -78,8 +80,8 @@ export {
   DictionaryTranslationOptions,
   InlineTranslationOptions,
   RuntimeTranslationOptions,
-  MessagesContent,
-  MessagesObject,
-  LocalesMessages,
+  DictionaryContent,
+  DictionaryObject,
+  LocalesDictionary,
   CustomLoader,
 };

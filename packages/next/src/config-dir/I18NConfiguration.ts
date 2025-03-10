@@ -6,7 +6,7 @@ import {
   TranslatedContent,
   defaultRenderSettings,
   GTTranslationError,
-  MessagesObject,
+  DictionaryObject,
 } from 'gt-react/internal';
 import {
   createMismatchingHashWarning,
@@ -14,8 +14,8 @@ import {
 } from '../errors/createErrors';
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TranslationsObject } from 'gt-react/internal';
-import defaultInitGTProps from './props/defaultInitGTProps';
-import messagesManager, { MessagesManager } from './MessagesManager';
+import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
+import dictionaryManager, { DictionaryManager } from './DictionaryManager';
 type I18NConfigurationParams = {
   apiKey?: string;
   devApiKey?: string;
@@ -23,8 +23,8 @@ type I18NConfigurationParams = {
   runtimeUrl: string | undefined;
   cacheUrl: string | null;
   cacheExpiryTime: number;
-  loadTranslationType: 'remote' | 'custom' | 'disabled';
-  loadMessagesEnabled: boolean;
+  loadTranslationsType: 'remote' | 'custom' | 'disabled';
+  loadDictionaryEnabled: boolean;
   defaultLocale: string;
   locales: string[];
   renderSettings: {
@@ -84,7 +84,7 @@ export default class I18NConfiguration {
   };
   // Dictionaries
   private _translationManager: TranslationManager | undefined;
-  private _messagesManager: MessagesManager | undefined;
+  private _dictionaryManager: DictionaryManager | undefined;
   // Other metadata
   metadata: Record<string, any>;
   // Batching config
@@ -105,8 +105,8 @@ export default class I18NConfiguration {
     runtimeUrl,
     cacheUrl,
     cacheExpiryTime,
-    loadTranslationType,
-    loadMessagesEnabled,
+    loadTranslationsType,
+    loadDictionaryEnabled,
     // Locale info
     defaultLocale,
     locales,
@@ -133,20 +133,18 @@ export default class I18NConfiguration {
     this.cacheExpiryTime = cacheExpiryTime;
     this._versionId = _versionId; // version id for the dictionary
 
-    // IS BUILDTIME TRANSLATION ENABLED
-
+    // buildtime translation enabled
     this.translationEnabled = !!(
-      loadTranslationType === 'custom' || // load local translation
-      (loadTranslationType === 'remote' &&
+      loadTranslationsType === 'custom' || // load local translation
+      (loadTranslationsType === 'remote' &&
         this.projectId && // projectId required because it's part of the GET request
         this.cacheUrl) ||
-      loadMessagesEnabled // load local messages
+      loadDictionaryEnabled // load local dictionary
     );
 
-    // IS RUNTIME TRANSLATION ENABLED
-
+    // runtime translation enabled
     const runtimeApiEnabled = !!(this.runtimeUrl ===
-    defaultInitGTProps.runtimeUrl
+    defaultWithGTConfigProps.runtimeUrl
       ? this.projectId
       : this.runtimeUrl);
     this.developmentApiEnabled = !!(
@@ -156,8 +154,7 @@ export default class I18NConfiguration {
     );
     this.productionApiEnabled = !!(runtimeApiEnabled && this.apiKey);
 
-    // DICTIONARY ENABLED
-
+    // dictionary enabled
     this.dictionaryEnabled = _usingPlugin;
 
     // ----- SETUP ----- //
@@ -186,14 +183,14 @@ export default class I18NConfiguration {
     };
     // Dictionary managers
     this._translationManager = translationManager;
-    this._messagesManager = messagesManager;
+    this._dictionaryManager = dictionaryManager;
     this._translationManager.setConfig({
       cacheUrl,
       projectId,
       translationEnabled: this.translationEnabled,
       _versionId,
       cacheExpiryTime: this.cacheExpiryTime,
-      loadTranslationType,
+      loadTranslationsType: loadTranslationsType,
     });
     // Batching
     this.maxConcurrentRequests = maxConcurrentRequests;
@@ -311,16 +308,18 @@ export default class I18NConfiguration {
     return [translationRequired, dialectTranslationRequired];
   }
 
-  // ----- MESSAGES ----- //
-  // User defined translations are called messages
+  // ----- DICTIONARY ----- //
+  // User defined translations are called dictionary
 
   /**
    * Load the user's translations for a given locale
    * @param locale - The locale set by the user
    * @returns A promise that resolves to the translations.
    */
-  async getMessages(locale: string): Promise<MessagesObject | undefined> {
-    return await this._messagesManager?.getMessages(locale);
+  async getDictionaryTranslations(
+    locale: string
+  ): Promise<DictionaryObject | undefined> {
+    return await this._dictionaryManager?.getDictionary(locale);
   }
 
   // ----- CACHED TRANSLATIONS ----- //

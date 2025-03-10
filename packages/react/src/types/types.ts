@@ -26,7 +26,7 @@ export type Metadata = {
   variablesOptions?: Record<string, any>;
   [key: string]: any;
 };
-export type DictionaryEntry = Entry | [ Entry ] | [Entry, Metadata];
+export type DictionaryEntry = Entry | [Entry] | [Entry, Metadata];
 export type Dictionary = {
   [key: string]: Dictionary | DictionaryEntry;
 };
@@ -39,7 +39,6 @@ export type Variable = {
   id?: number;
   variable?: 'variable' | 'number' | 'datetime' | 'currency';
 };
-
 
 // ----- TRANSLATION ----- //
 
@@ -79,24 +78,22 @@ export type LocalesTranslations = {
   [locale: string]: TranslationsObject | null;
 };
 
-// ----- MESSAGES ----- //
+// ----- DICTIONARY ----- //
 
-// a user defined message (e.g. a user provided translation)
-export type MessagesContent = string;
+// a user defined dict (e.g. a user provided translation)
+export type DictionaryContent = string;
 
-// maps message ids to messages content
-export type MessagesObject = {
-  [id: string]: MessagesContent;
-}
+// maps dict ids to dict content
+export type DictionaryObject = {
+  [id: string]: DictionaryContent;
+};
 
-// maps locales to messages objects
-export type LocalesMessages = {
-  [locale: string]: MessagesObject;
-}
-
+// maps locales to dict objects
+export type LocalesDictionary = {
+  [locale: string]: DictionaryObject;
+};
 
 export type CustomLoader = (locale: string) => Promise<any>;
-
 
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 

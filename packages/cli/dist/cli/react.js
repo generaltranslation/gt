@@ -70,8 +70,8 @@ const saveJSON_1 = require("../fs/saveJSON");
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 class ReactCLI extends base_1.BaseCLI {
-    constructor() {
-        super('gt-react');
+    constructor(library, additionalModules) {
+        super(library, additionalModules);
     }
     init() {
         this.setupTranslateCommand();
@@ -152,6 +152,10 @@ class ReactCLI extends base_1.BaseCLI {
             (0, console_1.displayInitializingText)();
             const settings = (0, generateSettings_1.generateSettings)(options);
             options = Object.assign(Object.assign({}, options), settings);
+            if (!settings.translationsDir) {
+                console.log(chalk_1.default.red('Error: the translationsDir path is required'));
+                process.exit(1);
+            }
             if (!options.dictionary) {
                 options.dictionary = (0, findFilepath_1.default)([
                     './dictionary.js',
@@ -192,7 +196,7 @@ class ReactCLI extends base_1.BaseCLI {
                 for (const locale of settings.locales) {
                     const existingTranslations = (0, loadJSON_1.default)(path_1.default.join(settings.translationsDir, `${locale}.json`));
                     const mergedTranslations = Object.assign(Object.assign({}, newData), existingTranslations);
-                    // Filter out only keys that exist in newData
+                    // Filter out keys that don't exist in newData
                     const filteredTranslations = Object.fromEntries(Object.entries(mergedTranslations).filter(([key]) => newData[key]));
                     (0, saveJSON_1.saveJSON)(path_1.default.join(settings.translationsDir, `${locale}.json`), filteredTranslations);
                 }

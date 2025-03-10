@@ -5,11 +5,11 @@ import { getLocaleProperties } from 'generaltranslation';
 export const remoteTranslationsError =
   'gt-next Error: fetching remote translation.';
 
-export const customLoadTranslationError = (locale: string = '') =>
-  `gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(${locale}), make sure it is correctly implemented.`;
+export const customLoadTranslationsError = (locale: string = '') =>
+  `gt-next Error: fetching locally stored translations. If you are using a custom loadTranslations("${locale}"), make sure it is correctly implemented.`;
 
-export const customLoadMessagesWarning = (locale: string = '') =>
-  `gt-next Warning: fetching locally stored messages. If you are using a custom loadMessage(${locale}), make sure it is correctly implemented.`;
+export const customLoadDictionaryWarning = (locale: string = '') =>
+  `gt-next Warning: fetching locally stored translation dictionary. If you are using a custom loadDictionary("${locale}"), make sure it is correctly implemented.`;
 
 export const createStringTranslationError = (
   string: string,
@@ -20,8 +20,8 @@ export const createStringTranslationError = (
     id ? ` with id "${id}"` : ''
   } could not locate translation.`;
 
-export const createDictionaryStringTranslationError = (id: string) =>
-  `gt-next Error: string translation error. Translation from dictionary with id: ${id} failed.`;
+export const createDictionaryTranslationError = (id: string) =>
+  `gt-next Error: Dictionary translation entry with id: ${id} could not be found.`;
 
 export const createRequiredPrefixError = (id: string, requiredPrefix: string) =>
   `gt-next Error: You are using <GTProvider> with a provided prefix id: "${requiredPrefix}", but one of the children of <GTProvider> has the id "${id}". Change the <GTProvider> id prop or your dictionary structure to proceed.`;
@@ -33,9 +33,15 @@ export const createDictionarySubsetError = (id: string, functionName: string) =>
 
 export const dictionaryDisabledError = `gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs`;
 
-export const unresolvedCustomLoadTranslationError = `gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.`;
+export const unresolvedCustomLoadDictionaryError = `gt-next Error: loadDictionary() could not be resolved. This usually means that the file was found, but the loadDictionary() function itself was not exported.`;
 
-export const unresolvedCustomLoadMessagesError = `gt-next Error: Custom message loader could not be resolved. This usually means that the file was found, but the message loader function itself was not exported.`;
+export const unresolvedCustomLoadTranslationsError = `gt-next Error: loadTranslations() could not be resolved. This usually means that the file was found, but the loadTranslations() function itself was not exported.`;
+
+export const unresolvedLoadDictionaryBuildError = (path: string) =>
+  `gt-next Error: File defining loadDictionary() could not be resolved at ${path}`;
+
+export const unresolvedLoadTranslationsBuildError = (path: string) =>
+  `gt-next Error: File defining loadTranslations() function could not be resolved at ${path}`;
 
 // ---- WARNINGS ---- //
 
@@ -81,4 +87,4 @@ export const translationLoadingWarning =
 
 export const runtimeTranslationTimeoutWarning = `gt-next: Runtime translation timed out.`;
 
-export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added a dictionary to your project (either dictionary.js or /messages/[defaultLocale].json), and you have added the withGTConfig() plugin.`;
+export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added a dictionary to your project (either dictionary.js or [defaultLocale].json), and you have added the withGTConfig() plugin.`;

@@ -1,13 +1,11 @@
 import { RenderMethod } from 'gt-react/internal';
 
-type InitGTProps = {
-  // Feature flags
-  loadTranslationType?: 'remote' | 'custom' | 'disabled'; // remote: CDN, custom: uknown, disabled: no fetch
-  loadMessagesEnabled?: boolean; // "messages" = user defined translations, "translations" = GT translations
+type withGTConfigProps = {
   // Request scoped filepath
   dictionary?: string;
   config?: string;
-  loadTranslationPath?: string;
+  loadTranslationsPath?: string;
+  loadDictionaryPath?: string;
   // Cloud integration
   apiKey?: string;
   projectId?: string;
@@ -34,4 +32,4 @@ type InitGTProps = {
   [key: string]: any;
 };
 
-export default InitGTProps;
+export default withGTConfigProps;

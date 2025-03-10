@@ -39,23 +39,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MessagesManager = void 0;
+exports.DictionaryManager = void 0;
 var generaltranslation_1 = require("generaltranslation");
-var resolveMessagesLoader_1 = __importDefault(require("../loaders/resolveMessagesLoader"));
+var resolveDictionaryDictionary_1 = __importDefault(require("../loaders/resolveDictionaryDictionary"));
 var createErrors_1 = require("../errors/createErrors");
 /**
- * Manages messages
+ * Manages Dictionary
  */
-var MessagesManager = /** @class */ (function () {
+var DictionaryManager = /** @class */ (function () {
     /**
      * Creates an instance of TranslationManager.
      * @constructor
      */
-    function MessagesManager() {
-        this.messagesMap = new Map();
+    function DictionaryManager() {
+        this.dictionaryMap = new Map();
     }
     // flatten object helper function
-    MessagesManager.prototype._flattenObject = function (obj, parentKey, result) {
+    DictionaryManager.prototype._flattenObject = function (obj, parentKey, result) {
         if (parentKey === void 0) { parentKey = ''; }
         if (result === void 0) { result = {}; }
         for (var key in obj) {
@@ -75,35 +75,35 @@ var MessagesManager = /** @class */ (function () {
         return result;
     };
     /**
-     * Retrieves messages for a given locale from bundle.
+     * Retrieves dictionary for a given locale from bundle.
      * @param {string} locale - The locale code.
-     * @returns {Promise<MessagesObject | undefined>} The messages data or undefined if not found.
+     * @returns {Promise<DictionaryObject | undefined>} The dictionary data or undefined if not found.
      */
-    MessagesManager.prototype.getMessages = function (locale) {
+    DictionaryManager.prototype.getDictionary = function (locale) {
         return __awaiter(this, void 0, void 0, function () {
-            var reference, result, customLoadMessages, _a, error_1;
+            var reference, result, customLoadDictionary, _a, error_1;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         reference = (0, generaltranslation_1.standardizeLocale)(locale);
-                        result = this.messagesMap.get(reference);
+                        result = this.dictionaryMap.get(reference);
                         if (result)
                             return [2 /*return*/, result];
-                        customLoadMessages = (0, resolveMessagesLoader_1.default)();
-                        if (!customLoadMessages) return [3 /*break*/, 4];
+                        customLoadDictionary = (0, resolveDictionaryDictionary_1.default)();
+                        if (!customLoadDictionary) return [3 /*break*/, 4];
                         _b.label = 1;
                     case 1:
                         _b.trys.push([1, 3, , 4]);
                         _a = this._flattenObject;
-                        return [4 /*yield*/, customLoadMessages(reference)];
+                        return [4 /*yield*/, customLoadDictionary(reference)];
                     case 2:
                         result = _a.apply(this, [_b.sent()]);
-                        this.messagesMap.set(reference, result);
+                        this.dictionaryMap.set(reference, result);
                         return [3 /*break*/, 4];
                     case 3:
                         error_1 = _b.sent();
                         if (process.env.NODE_ENV === 'development') {
-                            console.warn((0, createErrors_1.customLoadMessagesWarning)(reference), error_1);
+                            console.warn((0, createErrors_1.customLoadDictionaryWarning)(reference), error_1);
                         }
                         return [2 /*return*/, undefined];
                     case 4: return [2 /*return*/, result];
@@ -111,9 +111,9 @@ var MessagesManager = /** @class */ (function () {
             });
         });
     };
-    return MessagesManager;
+    return DictionaryManager;
 }());
-exports.MessagesManager = MessagesManager;
-var messagesManager = new MessagesManager();
-exports.default = messagesManager;
-//# sourceMappingURL=MessagesManager.js.map
+exports.DictionaryManager = DictionaryManager;
+var dictionaryManager = new DictionaryManager();
+exports.default = dictionaryManager;
+//# sourceMappingURL=DictionaryManager.js.map
