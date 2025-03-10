@@ -116,8 +116,8 @@ export function withGTConfig(
   const resolvedDictionaryFilePath =
     typeof mergedConfig.dictionary === 'string'
       ? mergedConfig.dictionary
-      : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']) // fallback to dictionary
-      : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']);
+      : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']); // fallback to dictionary
+  // : resolveConfigFilepath('dictionary', ['.ts', '.js', '.json']);
 
   // Get the type of dictionary file
   const resolvedDictionaryFilePathType = resolvedDictionaryFilePath
