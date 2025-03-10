@@ -23,7 +23,7 @@ type I18NConfigurationParams = {
   runtimeUrl: string | undefined;
   cacheUrl: string | null;
   cacheExpiryTime: number;
-  loadTranslationType: 'remote' | 'custom' | 'disabled';
+  loadTranslationsType: 'remote' | 'custom' | 'disabled';
   loadMessagesEnabled: boolean;
   defaultLocale: string;
   locales: string[];
@@ -105,7 +105,7 @@ export default class I18NConfiguration {
     runtimeUrl,
     cacheUrl,
     cacheExpiryTime,
-    loadTranslationType,
+    loadTranslationsType,
     loadMessagesEnabled,
     // Locale info
     defaultLocale,
@@ -135,8 +135,8 @@ export default class I18NConfiguration {
 
     // buildtime translation enabled
     this.translationEnabled = !!(
-      loadTranslationType === 'custom' || // load local translation
-      (loadTranslationType === 'remote' &&
+      loadTranslationsType === 'custom' || // load local translation
+      (loadTranslationsType === 'remote' &&
         this.projectId && // projectId required because it's part of the GET request
         this.cacheUrl) ||
       loadMessagesEnabled // load local messages
@@ -190,7 +190,7 @@ export default class I18NConfiguration {
       translationEnabled: this.translationEnabled,
       _versionId,
       cacheExpiryTime: this.cacheExpiryTime,
-      loadTranslationType,
+      loadTranslationsType: loadTranslationsType,
     });
     // Batching
     this.maxConcurrentRequests = maxConcurrentRequests;

@@ -4,7 +4,7 @@ type withGTConfigProps = {
   // Request scoped filepath
   dictionary?: string;
   config?: string;
-  loadTranslationPath?: string;
+  loadTranslationsPath?: string;
   loadMessagesPath?: string;
   // Cloud integration
   apiKey?: string;

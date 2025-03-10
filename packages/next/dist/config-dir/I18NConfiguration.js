@@ -72,7 +72,7 @@ var I18NConfiguration = /** @class */ (function () {
         // ----- CLOUD INTEGRATION ----- //
         var 
         // Cloud integration
-        apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, loadTranslationType = _a.loadTranslationType, loadMessagesEnabled = _a.loadMessagesEnabled, 
+        apiKey = _a.apiKey, devApiKey = _a.devApiKey, projectId = _a.projectId, _versionId = _a._versionId, runtimeUrl = _a.runtimeUrl, cacheUrl = _a.cacheUrl, cacheExpiryTime = _a.cacheExpiryTime, loadTranslationsType = _a.loadTranslationsType, loadMessagesEnabled = _a.loadMessagesEnabled, 
         // Locale info
         defaultLocale = _a.defaultLocale, locales = _a.locales, 
         // Render method
@@ -84,7 +84,7 @@ var I18NConfiguration = /** @class */ (function () {
         // Internal
         _usingPlugin = _a._usingPlugin, 
         // Other metadata
-        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "loadTranslationType", "loadMessagesEnabled", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "_usingPlugin"]);
+        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "loadTranslationsType", "loadMessagesEnabled", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "_usingPlugin"]);
         this.apiKey = apiKey;
         this.devApiKey = devApiKey;
         this.projectId = projectId;
@@ -93,8 +93,8 @@ var I18NConfiguration = /** @class */ (function () {
         this.cacheExpiryTime = cacheExpiryTime;
         this._versionId = _versionId; // version id for the dictionary
         // buildtime translation enabled
-        this.translationEnabled = !!(loadTranslationType === 'custom' || // load local translation
-            (loadTranslationType === 'remote' &&
+        this.translationEnabled = !!(loadTranslationsType === 'custom' || // load local translation
+            (loadTranslationsType === 'remote' &&
                 this.projectId && // projectId required because it's part of the GET request
                 this.cacheUrl) ||
             loadMessagesEnabled // load local messages
@@ -132,7 +132,7 @@ var I18NConfiguration = /** @class */ (function () {
             translationEnabled: this.translationEnabled,
             _versionId: _versionId,
             cacheExpiryTime: this.cacheExpiryTime,
-            loadTranslationType: loadTranslationType,
+            loadTranslationsType: loadTranslationsType,
         });
         // Batching
         this.maxConcurrentRequests = maxConcurrentRequests;

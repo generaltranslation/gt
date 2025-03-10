@@ -38,38 +38,38 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = resolveTranslationLoader;
 var createErrors_1 = require("../errors/createErrors");
-var customLoadTranslation = undefined;
+var customLoadTranslations = undefined;
 function resolveTranslationLoader() {
     var _this = this;
     // Singleton pattern
-    if (customLoadTranslation !== undefined)
-        return customLoadTranslation;
+    if (customLoadTranslations !== undefined)
+        return customLoadTranslations;
     // Check: local translation loader is enabled
     if (process.env._GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED !== 'true')
         return undefined;
     // get load translation file
-    var customLoadTranslationConfig;
+    var customLoadTranslationsConfig;
     try {
-        customLoadTranslationConfig = require('gt-next/_load-translation');
+        customLoadTranslationsConfig = require('gt-next/_load-translations');
     }
     catch (_a) { }
     // Get custom loader
-    customLoadTranslation =
-        (customLoadTranslationConfig === null || customLoadTranslationConfig === void 0 ? void 0 : customLoadTranslationConfig.default) ||
-            (customLoadTranslationConfig === null || customLoadTranslationConfig === void 0 ? void 0 : customLoadTranslationConfig.getLocalTranslation);
+    customLoadTranslations =
+        (customLoadTranslationsConfig === null || customLoadTranslationsConfig === void 0 ? void 0 : customLoadTranslationsConfig.default) ||
+            (customLoadTranslationsConfig === null || customLoadTranslationsConfig === void 0 ? void 0 : customLoadTranslationsConfig.getLocalTranslation);
     // Check: custom loader is exported
-    if (!customLoadTranslation) {
+    if (!customLoadTranslations) {
         // So the custom loader doesnt eval to falsey
-        customLoadTranslation = function (_) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+        customLoadTranslations = function (_) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
             return [2 /*return*/, undefined];
         }); }); };
         // Throw error in dev
         if (process.env.NODE_ENV !== 'production') {
-            // throw new Error(unresolvedCustomLoadTranslationError);
+            // TODO: throw new Error(unresolvedCustomLoadTranslationError);
         }
         // Custom loader file was defined but not exported
-        console.error(createErrors_1.unresolvedCustomLoadTranslationError);
+        console.error(createErrors_1.unresolvedCustomLoadTranslationsError);
     }
-    return customLoadTranslation;
+    return customLoadTranslations;
 }
 //# sourceMappingURL=resolveTranslationLoader.js.map

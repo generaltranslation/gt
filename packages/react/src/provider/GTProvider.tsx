@@ -22,7 +22,7 @@ import {
   APIKeyMissingWarn,
   createUnsupportedLocalesWarning,
   customLoadMessagesWarning,
-  customLoadTranslationError,
+  customLoadTranslationsError,
   devApiKeyProductionError,
   dictionaryMissingWarning,
   projectIdMissingWarning,
@@ -67,7 +67,7 @@ export default function GTProvider({
   runtimeUrl = defaultRuntimeApiUrl,
   renderSettings = defaultRenderSettings,
   loadMessages,
-  loadTranslation,
+  loadTranslations,
   _versionId,
   ...metadata
 }: {
@@ -85,7 +85,7 @@ export default function GTProvider({
     timeout?: number;
   };
   loadMessages?: CustomLoader;
-  loadTranslation?: CustomLoader;
+  loadTranslations?: CustomLoader;
   _versionId?: string;
   [key: string]: any;
 }): React.JSX.Element {
@@ -120,10 +120,10 @@ export default function GTProvider({
   );
 
   // Loaders
-  const loadTranslationType = useMemo(
+  const loadTranslationsType = useMemo(
     () =>
-      (loadTranslation && 'custom') || (cacheUrl && 'default') || 'disabled',
-    [loadTranslation]
+      (loadTranslations && 'custom') || (cacheUrl && 'default') || 'disabled',
+    [loadTranslations]
   );
 
   // ---------- SET UP DICTIONARY ---------- //
@@ -179,7 +179,7 @@ export default function GTProvider({
 
     // Check: projectId missing while using cache/runtime in dev
     if (
-      loadTranslationType !== 'custom' &&
+      loadTranslationsType !== 'custom' &&
       (cacheUrl || runtimeUrl) &&
       !projectId &&
       process.env.NODE_ENV === 'development'
@@ -191,7 +191,7 @@ export default function GTProvider({
     if (
       projectId && // must have projectId for this check to matter anyways
       runtimeUrl &&
-      loadTranslationType !== 'custom' && // this usually conincides with not using runtime tx
+      loadTranslationsType !== 'custom' && // this usually conincides with not using runtime tx
       !devApiKey &&
       process.env.NODE_ENV === 'development'
     ) {
@@ -201,7 +201,7 @@ export default function GTProvider({
     // Check: if using GT infrastructure, warn about unsupported locales
     if (
       runtimeUrl === defaultRuntimeApiUrl ||
-      (cacheUrl === defaultCacheUrl && loadTranslationType === 'default')
+      (cacheUrl === defaultCacheUrl && loadTranslationsType === 'default')
     ) {
       const warningLocales = (locales || locales).filter(
         (locale) => !getSupportedLocale(locale)
@@ -213,7 +213,7 @@ export default function GTProvider({
   }, [
     process.env.NODE_ENV,
     devApiKey,
-    loadTranslationType,
+    loadTranslationsType,
     cacheUrl,
     runtimeUrl,
     projectId,
@@ -327,14 +327,14 @@ export default function GTProvider({
     let storeResults = true;
     (async () => {
       let result;
-      switch (loadTranslationType) {
+      switch (loadTranslationsType) {
         case 'custom':
           // check is redundant, but makes ts happy
-          if (loadTranslation) {
+          if (loadTranslations) {
             try {
-              result = await loadTranslation(locale);
+              result = await loadTranslations(locale);
             } catch (error) {
-              console.error(customLoadTranslationError(locale), error);
+              console.error(customLoadTranslationsError(locale), error);
             }
           }
           break;
@@ -386,7 +386,7 @@ export default function GTProvider({
   }, [
     translations,
     translationRequired,
-    loadTranslationType,
+    loadTranslationsType,
     cacheUrl,
     projectId,
     locale,

@@ -9,7 +9,7 @@ import {
   devApiKeyIncludedInProductionError,
   projectIdMissingWarn,
   unresolvedLoadMessagesBuildError,
-  unresolvedLoadTranslationBuildError,
+  unresolvedLoadTranslationsBuildError,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 
@@ -125,10 +125,10 @@ export function withGTConfig(
   }
 
   // Resolve custom translation loader path
-  const customLoadTranslationPath =
-    typeof mergedConfig.loadTranslationPath === 'string'
-      ? mergedConfig.loadTranslationPath
-      : resolveConfigFilepath('loadTranslation');
+  const customLoadTranslationsPath =
+    typeof mergedConfig.loadTranslationsPath === 'string'
+      ? mergedConfig.loadTranslationsPath
+      : resolveConfigFilepath('loadTranslations');
 
   // Resolve custom message loader path
   const customLoadMessagesPath =
@@ -151,17 +151,17 @@ export function withGTConfig(
   }
 
   // Local translations flag
-  if (customLoadTranslationPath) {
+  if (customLoadTranslationsPath) {
     // Check: file exists if provided
-    if (!fs.existsSync(path.resolve(customLoadTranslationPath))) {
+    if (!fs.existsSync(path.resolve(customLoadTranslationsPath))) {
       throw new Error(
-        unresolvedLoadTranslationBuildError(customLoadTranslationPath)
+        unresolvedLoadTranslationsBuildError(customLoadTranslationsPath)
       );
     } else {
-      mergedConfig.loadTranslationType = 'custom';
+      mergedConfig.loadTranslationsType = 'custom';
     }
   } else {
-    mergedConfig.loadTranslationType = 'remote';
+    mergedConfig.loadTranslationsType = 'remote';
   }
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
@@ -169,7 +169,7 @@ export function withGTConfig(
     (mergedConfig.cacheUrl || mergedConfig.runtimeUrl) &&
     !mergedConfig.projectId &&
     process.env.NODE_ENV === 'development' &&
-    mergedConfig.loadTranslationType === 'remote' &&
+    mergedConfig.loadTranslationsType === 'remote' &&
     !mergedConfig.loadMessageEnabled // skip warn if using local messages
   ) {
     console.warn(projectIdMissingWarn);
@@ -197,7 +197,7 @@ export function withGTConfig(
       (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey));
   const gtRemoteCacheEnabled =
     mergedConfig.cacheUrl === defaultWithGTConfigProps.cacheUrl &&
-    mergedConfig.loadTranslationType === 'remote';
+    mergedConfig.loadTranslationsType === 'remote';
   if (
     (gtRuntimeTranslationEnabled || gtRemoteCacheEnabled) &&
     mergedConfig.projectId
@@ -225,7 +225,7 @@ export function withGTConfig(
       _GENERALTRANSLATION_LOCAL_MESSAGES_ENABLED:
         mergedConfig.loadMessagesEnabled.toString(),
       _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (
-        mergedConfig.loadTranslationType === 'custom'
+        mergedConfig.loadTranslationsType === 'custom'
       ).toString(),
       _GENERALTRANSLATION_DEFAULT_LOCALE: (
         mergedConfig.defaultLocale || defaultWithGTConfigProps.defaultLocale
@@ -241,7 +241,7 @@ export function withGTConfig(
               resolveAlias: {
                 ...(nextConfig.experimental?.turbo?.resolveAlias || {}),
                 'gt-next/_dictionary': resolvedDictionaryFilePath || '',
-                'gt-next/_load-translation': customLoadTranslationPath || '',
+                'gt-next/_load-translations': customLoadTranslationsPath || '',
                 'gt-next/_load-messages': customLoadMessagesPath || '',
               },
             },
@@ -258,7 +258,7 @@ export function withGTConfig(
         (options as any)?.turbo || process.env.TURBOPACK === '1';
 
       if (!isTurbopack) {
-        // Disable cache in dev bc people might move around loadTranslation() and loadMessages() files
+        // Disable cache in dev bc people might move around loadTranslations() and loadMessages() files
         if (process.env.NODE_ENV === 'development') {
           webpackConfig.cache = false;
         }
@@ -268,9 +268,9 @@ export function withGTConfig(
             resolvedDictionaryFilePath
           );
         }
-        if (customLoadTranslationPath) {
-          webpackConfig.resolve.alias[`gt-next/_load-translation`] =
-            path.resolve(webpackConfig.context, customLoadTranslationPath);
+        if (customLoadTranslationsPath) {
+          webpackConfig.resolve.alias[`gt-next/_load-translations`] =
+            path.resolve(webpackConfig.context, customLoadTranslationsPath);
         }
         if (customLoadMessagesPath) {
           webpackConfig.resolve.alias[`gt-next/_load-messages`] = path.resolve(

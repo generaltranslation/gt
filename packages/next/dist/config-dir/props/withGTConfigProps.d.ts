@@ -2,7 +2,7 @@ import { RenderMethod } from 'gt-react/internal';
 type withGTConfigProps = {
     dictionary?: string;
     config?: string;
-    loadTranslationPath?: string;
+    loadTranslationsPath?: string;
     loadMessagesPath?: string;
     apiKey?: string;
     projectId?: string;

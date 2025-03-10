@@ -39,10 +39,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = loadTranslation;
+exports.default = loadTranslations;
 var createErrors_1 = require("../errors/createErrors");
 var resolveTranslationLoader_1 = __importDefault(require("../loaders/resolveTranslationLoader"));
-var loadTranslationFunction;
+var loadTranslationsFunction;
 // parse translation result (local or remote)
 function parseResult(result) {
     if (result && Object.keys(result).length) {
@@ -63,34 +63,34 @@ function parseResult(result) {
  * @returns {Promise<TranslationsObject | undefined>} The translation object or undefined if not found or errored
  *
  */
-function loadTranslation(props) {
+function loadTranslations(props) {
     return __awaiter(this, void 0, void 0, function () {
-        var customLoadTranslation;
+        var customLoadTranslations;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!loadTranslationFunction) return [3 /*break*/, 2];
-                    return [4 /*yield*/, loadTranslationFunction(props)];
+                    if (!loadTranslationsFunction) return [3 /*break*/, 2];
+                    return [4 /*yield*/, loadTranslationsFunction(props)];
                 case 1: return [2 /*return*/, _a.sent()];
                 case 2:
-                    customLoadTranslation = (0, resolveTranslationLoader_1.default)();
-                    if (customLoadTranslation) {
+                    customLoadTranslations = (0, resolveTranslationLoader_1.default)();
+                    if (customLoadTranslations) {
                         // ----- USING CUSTOM TRANSLATION LOADER ----- //
                         // Set custom translation loader
-                        loadTranslationFunction = function (_props) { return __awaiter(_this, void 0, void 0, function () {
+                        loadTranslationsFunction = function (_props) { return __awaiter(_this, void 0, void 0, function () {
                             var result, error_1;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
                                         _a.trys.push([0, 2, , 3]);
-                                        return [4 /*yield*/, customLoadTranslation(_props.targetLocale)];
+                                        return [4 /*yield*/, customLoadTranslations(_props.targetLocale)];
                                     case 1:
                                         result = _a.sent();
                                         return [2 /*return*/, parseResult(result)];
                                     case 2:
                                         error_1 = _a.sent();
-                                        console.error((0, createErrors_1.customLoadTranslationError)(), error_1);
+                                        console.error((0, createErrors_1.customLoadTranslationsError)(), error_1);
                                         return [2 /*return*/, undefined];
                                     case 3: return [2 /*return*/];
                                 }
@@ -100,7 +100,7 @@ function loadTranslation(props) {
                     else {
                         // ----- USING REMOTE CACHE LOADER ----- //
                         // Default translation loader: remote cache
-                        loadTranslationFunction = function (_props) { return __awaiter(_this, void 0, void 0, function () {
+                        loadTranslationsFunction = function (_props) { return __awaiter(_this, void 0, void 0, function () {
                             var response, result, error_2;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
@@ -122,7 +122,7 @@ function loadTranslation(props) {
                             });
                         }); };
                     }
-                    return [4 /*yield*/, loadTranslationFunction(props)];
+                    return [4 /*yield*/, loadTranslationsFunction(props)];
                 case 3: 
                 // Invoke the function
                 return [2 /*return*/, _a.sent()];

@@ -18,7 +18,7 @@ import React from 'react';
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadMessages, loadTranslation, _versionId, ...metadata }: {
+export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadMessages, loadTranslations, _versionId, ...metadata }: {
     children?: React.ReactNode;
     projectId?: string;
     devApiKey?: string;
@@ -33,7 +33,7 @@ export default function GTProvider({ children, projectId: _projectId, devApiKey:
         timeout?: number;
     };
     loadMessages?: CustomLoader;
-    loadTranslation?: CustomLoader;
+    loadTranslations?: CustomLoader;
     _versionId?: string;
     [key: string]: any;
 }): React.JSX.Element;

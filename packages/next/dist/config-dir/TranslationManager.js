@@ -117,7 +117,7 @@ var TranslationManager = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         reference = (0, generaltranslation_1.standardizeLocale)(locale);
-                        hasExpired = this.config.loadTranslationType === 'remote' &&
+                        hasExpired = this.config.loadTranslationsType === 'remote' &&
                             this.translationsMap.has(reference) &&
                             Date.now() - ((_a = this.translationTimestamps.get(reference)) !== null && _a !== void 0 ? _a : 0) >
                                 this.config.cacheExpiryTime;

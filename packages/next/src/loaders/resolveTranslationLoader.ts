@@ -1,40 +1,40 @@
 import { CustomLoader } from 'gt-react/internal';
-import { unresolvedCustomLoadTranslationError } from '../errors/createErrors';
+import { unresolvedCustomLoadTranslationsError } from '../errors/createErrors';
 
-let customLoadTranslation: CustomLoader | undefined = undefined;
+let customLoadTranslations: CustomLoader | undefined = undefined;
 
 export default function resolveTranslationLoader(): CustomLoader | undefined {
   // Singleton pattern
-  if (customLoadTranslation !== undefined) return customLoadTranslation;
+  if (customLoadTranslations !== undefined) return customLoadTranslations;
 
   // Check: local translation loader is enabled
   if (process.env._GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED !== 'true')
     return undefined;
 
   // get load translation file
-  let customLoadTranslationConfig;
+  let customLoadTranslationsConfig;
   try {
-    customLoadTranslationConfig = require('gt-next/_load-translation');
+    customLoadTranslationsConfig = require('gt-next/_load-translations');
   } catch {}
 
   // Get custom loader
-  customLoadTranslation =
-    customLoadTranslationConfig?.default ||
-    customLoadTranslationConfig?.getLocalTranslation;
+  customLoadTranslations =
+    customLoadTranslationsConfig?.default ||
+    customLoadTranslationsConfig?.getLocalTranslation;
 
   // Check: custom loader is exported
-  if (!customLoadTranslation) {
+  if (!customLoadTranslations) {
     // So the custom loader doesnt eval to falsey
-    customLoadTranslation = async (_: string) => undefined;
+    customLoadTranslations = async (_: string) => undefined;
 
     // Throw error in dev
     if (process.env.NODE_ENV !== 'production') {
-      // throw new Error(unresolvedCustomLoadTranslationError);
+      // TODO: throw new Error(unresolvedCustomLoadTranslationError);
     }
 
     // Custom loader file was defined but not exported
-    console.error(unresolvedCustomLoadTranslationError);
+    console.error(unresolvedCustomLoadTranslationsError);
   }
 
-  return customLoadTranslation;
+  return customLoadTranslations;
 }

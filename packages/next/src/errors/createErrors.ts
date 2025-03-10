@@ -5,11 +5,11 @@ import { getLocaleProperties } from 'generaltranslation';
 export const remoteTranslationsError =
   'gt-next Error: fetching remote translation.';
 
-export const customLoadTranslationError = (locale: string = '') =>
-  `gt-next Error: fetching locally stored translations. If you are using a custom loadTranslation(${locale}), make sure it is correctly implemented.`;
+export const customLoadTranslationsError = (locale: string = '') =>
+  `gt-next Error: fetching locally stored translations. If you are using a custom loadTranslations(${locale}), make sure it is correctly implemented.`;
 
 export const customLoadMessagesWarning = (locale: string = '') =>
-  `gt-next Warning: fetching locally stored messages. If you are using a custom loadMessage(${locale}), make sure it is correctly implemented.`;
+  `gt-next Warning: fetching locally stored messages. If you are using a custom loadMessages(${locale}), make sure it is correctly implemented.`;
 
 export const createStringTranslationError = (
   string: string,
@@ -33,15 +33,15 @@ export const createDictionarySubsetError = (id: string, functionName: string) =>
 
 export const dictionaryDisabledError = `gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs`;
 
-export const unresolvedCustomLoadMessagesError = `gt-next Error: Custom message loader could not be resolved. This usually means that the file was found, but the message loader function itself was not exported.`;
+export const unresolvedCustomLoadMessagesError = `gt-next Error: loadMessages() could not be resolved. This usually means that the file was found, but the loadMessages() function itself was not exported.`;
 
-export const unresolvedCustomLoadTranslationError = `gt-next Error: Custom translation loader could not be resolved. This usually means that the file was found, but the translation loader function itself was not exported.`;
+export const unresolvedCustomLoadTranslationsError = `gt-next Error: loadTranslations() could not be resolved. This usually means that the file was found, but the loadTranslations() function itself was not exported.`;
 
 export const unresolvedLoadMessagesBuildError = (path: string) =>
-  `gt-next Error: Custom messages loader file could not be resolved at ${path}`;
+  `gt-next Error: File defining loadMessages() could not be resolved at ${path}`;
 
-export const unresolvedLoadTranslationBuildError = (path: string) =>
-  `gt-next Error: Custom translation loader file could not be resolved at ${path}`;
+export const unresolvedLoadTranslationsBuildError = (path: string) =>
+  `gt-next Error: File defining loadTranslations() function could not be resolved at ${path}`;
 
 // ---- WARNINGS ---- //
 
