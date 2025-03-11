@@ -23,6 +23,7 @@ import { resolveProjectId } from '../fs/utils';
 import { DataFormat, FileExtension } from '../types/data';
 import { generateSettings } from '../config/generateSettings';
 import chalk from 'chalk';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 type InitOptions = {
   defaultLocale?: string;
   locales?: string[];
@@ -178,7 +179,7 @@ export class BaseCLI {
         // Ask for the default locale
         const defaultLocale = await input({
           message: 'What is the default locale for your project?',
-          default: 'en',
+          default: libraryDefaultLocale,
         });
 
         // Ask for the locales

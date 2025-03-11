@@ -3,7 +3,7 @@ import { displayProjectId } from '../console/console';
 import { warnApiKeyInConfig } from '../console/warnings';
 import loadConfig from '../fs/config/loadConfig';
 import { Settings } from '../types';
-import { defaultBaseUrl } from 'generaltranslation/internal';
+import { defaultBaseUrl, libraryDefaultLocale } from 'generaltranslation/internal';
 import fs from 'fs';
 import createOrUpdateConfig from '../fs/config/setupConfig';
 
@@ -43,7 +43,7 @@ export function generateSettings(options: any): Settings {
   mergedOptions.baseUrl = mergedOptions.baseUrl || defaultBaseUrl;
 
   // Add defaultLocale if not provided
-  mergedOptions.defaultLocale = mergedOptions.defaultLocale || 'en';
+  mergedOptions.defaultLocale = mergedOptions.defaultLocale || libraryDefaultLocale;
 
   // Add locales if not provided
   mergedOptions.locales = mergedOptions.locales || [];

@@ -11,7 +11,6 @@ import {
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import {
   handleChildrenWhitespace,
-  trimJsxStringChild,
 } from '../trimJsxStringChildren';
 import { isStaticExpression } from '../evaluateJsx';
 

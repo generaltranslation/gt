@@ -65,9 +65,12 @@ function T({
 
   // ----- FETCH TRANSLATION ----- //
 
+  // set boolean up here to make memoization more efficient
+  let translationEntryIsIdIndexed = (id && translations?.[id]) ? true : false;
+
   // Calculate necessary info for fetching translation / generating translation
   const [childrenAsObjects, hash] = useMemo(() => {
-    if (translationRequired) {
+    if (translationRequired && !translationEntryIsIdIndexed) {
       const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
       const hash: string = hashJsxChildren({
         source: childrenAsObjects,
@@ -79,10 +82,17 @@ function T({
     } else {
       return [undefined, ''];
     }
-  }, [context, taggedChildren, translationRequired, children]);
+  }, [
+    taggedChildren, context, id,
+    translationRequired,
+    translationEntryIsIdIndexed
+  ]);
 
-  // get translation entry
-  const translationEntry = translations?.[hash];
+  // get translation entry on hash
+  const translationEntry = translationEntryIsIdIndexed ? 
+    translations?.[id as string] : 
+    translations?.[hash]
+  ;
 
   // Do dev translation if required
   useEffect(() => {

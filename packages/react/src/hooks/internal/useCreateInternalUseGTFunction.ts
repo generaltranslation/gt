@@ -59,16 +59,21 @@ export default function useCreateInternalUseGTFunction(
 
       // ----- CHECK TRANSLATIONS ----- //
 
-      // Get hash
-      const hash = hashJsxChildren({
-        source,
-        ...(options?.context && { context: options.context }),
-        ...(options?.id && { id: options.id }),
-        dataFormat: 'JSX',
-      });
+      let translationEntry = 
+        options?.id ? 
+        translations?.[options.id] : // index translations by provided id
+        undefined;
 
-      // Check translation successful
-      const translationEntry = translations?.[hash];
+      let hash;
+      if (!translationEntry) {
+        hash = hashJsxChildren({
+          source,
+          ...(options?.context && { context: options.context }),
+          ...(options?.id && { id: options.id }), // index translations by hash of content
+          dataFormat: 'JSX',
+        });
+        translationEntry = translations?.[hash];
+      }
 
       if (translationEntry?.state === 'success') {
         return renderContent(translationEntry.target as Content, [
@@ -96,7 +101,7 @@ export default function useCreateInternalUseGTFunction(
         metadata: {
           ...(options?.context && { context: options.context }),
           id: options?.id,
-          hash: hash,
+          hash: hash || ''
         },
       });
 

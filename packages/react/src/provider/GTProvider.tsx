@@ -31,7 +31,7 @@ import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
 import React from 'react';
-import useDetermineLocale from '../hooks/internal/useDetermineLocale';
+import { useDetermineLocale } from '../hooks/internal/useDetermineLocale';
 import { readAuthFromEnv } from '../utils/utils';
 import fetchTranslations from '../utils/fetchTranslations';
 import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
@@ -68,6 +68,7 @@ export default function GTProvider({
   renderSettings = defaultRenderSettings,
   loadDictionary,
   loadTranslations,
+  fallback=undefined,
   _versionId,
   ...metadata
 }: {
@@ -89,6 +90,7 @@ export default function GTProvider({
   _versionId?: string;
   [key: string]: any;
 }): React.JSX.Element {
+
   // ---------- SANITIZATION ---------- //
 
   // Read env
@@ -105,6 +107,7 @@ export default function GTProvider({
     defaultLocale,
     locales,
     locale: _locale,
+    ssr: false
   });
 
   // Translation at runtime during development is enabled
@@ -428,6 +431,12 @@ export default function GTProvider({
 
   const display = !!((!translationRequired || translations) && locale);
 
+  console.log({
+    translationRequired,
+    translations,
+    locale
+  })
+
   // hang until cache response, then render translations or loading state (when waiting on API response)
   return (
     <GTContext.Provider
@@ -449,7 +458,7 @@ export default function GTProvider({
         renderSettings,
       }}
     >
-      {display && children}
+      {display ? children : fallback}
     </GTContext.Provider>
   );
 }

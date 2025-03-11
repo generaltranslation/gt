@@ -39,7 +39,7 @@ function generateSettings(options) {
     // Add baseUrl if not provided
     mergedOptions.baseUrl = mergedOptions.baseUrl || internal_1.defaultBaseUrl;
     // Add defaultLocale if not provided
-    mergedOptions.defaultLocale = mergedOptions.defaultLocale || 'en';
+    mergedOptions.defaultLocale = mergedOptions.defaultLocale || internal_1.libraryDefaultLocale;
     // Add locales if not provided
     mergedOptions.locales = mergedOptions.locales || [];
     // Add default config file name if not provided

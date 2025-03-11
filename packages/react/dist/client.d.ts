@@ -488,7 +488,7 @@ declare function LocaleSelector({ locales: _locales, ...props }: {
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-declare function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadDictionary, loadTranslations, _versionId, ...metadata }: {
+declare function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadDictionary, loadTranslations, fallback, _versionId, ...metadata }: {
     children?: React__default.ReactNode;
     projectId?: string;
     devApiKey?: string;
