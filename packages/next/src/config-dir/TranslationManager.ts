@@ -95,6 +95,7 @@ export class TranslationManager {
       this.translationsMap.has(reference) &&
       Date.now() - (this.translationTimestamps.get(reference) ?? 0) >
         this.config.cacheExpiryTime;
+
     // Return cached translations if available
     if (this.translationsMap.has(reference) && !hasExpired) {
       return this.translationsMap.get(reference);

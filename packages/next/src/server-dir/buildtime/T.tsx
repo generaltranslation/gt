@@ -104,7 +104,9 @@ async function T({
 
   // Get the translation entry object
   const translations = await translationsPromise;
-  const translationEntry = translations?.[hash];
+  const translationEntry = id
+    ? translations?.[id] || translations?.[hash]
+    : translations?.[hash];
 
   // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
 

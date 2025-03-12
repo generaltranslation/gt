@@ -132,7 +132,9 @@ function T(_a) {
                     return [4 /*yield*/, translationsPromise];
                 case 2:
                     translations = _d.sent();
-                    translationEntry = translations === null || translations === void 0 ? void 0 : translations[hash];
+                    translationEntry = id
+                        ? (translations === null || translations === void 0 ? void 0 : translations[id]) || (translations === null || translations === void 0 ? void 0 : translations[hash])
+                        : translations === null || translations === void 0 ? void 0 : translations[hash];
                     renderTranslation = function (target) {
                         return (0, internal_1.renderTranslatedChildren)({
                             source: taggedChildren,

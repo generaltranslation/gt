@@ -65,34 +65,41 @@ function T({
 
   // ----- FETCH TRANSLATION ----- //
 
-  // set boolean up here to make memoization more efficient
-  let translationEntryIsIdIndexed = (id && translations?.[id]) ? true : false;
+  // Dependency flag to avoid recalculating hash whenever translation object changes
+  const translationWithIdExists = id && translations?.[id as string];
 
   // Calculate necessary info for fetching translation / generating translation
   const [childrenAsObjects, hash] = useMemo(() => {
-    if (translationRequired && !translationEntryIsIdIndexed) {
-      const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-      const hash: string = hashJsxChildren({
-        source: childrenAsObjects,
-        ...(context && { context }),
-        ...(id && { id }),
-        dataFormat: 'JSX',
-      });
-      return [childrenAsObjects, hash];
-    } else {
+    // skip hashing:
+    if (
+      !translationRequired || // Translation not required
+      translationWithIdExists // Translation already exists under the id
+    ) {
       return [undefined, ''];
     }
+
+    // calculate hash
+    const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+    const hash: string = hashJsxChildren({
+      source: childrenAsObjects,
+      ...(context && { context }),
+      ...(id && { id }),
+      dataFormat: 'JSX',
+    });
+
+    return [childrenAsObjects, hash];
   }, [
-    taggedChildren, context, id,
+    taggedChildren,
+    context,
+    id,
     translationRequired,
-    translationEntryIsIdIndexed
+    translationWithIdExists,
   ]);
 
   // get translation entry on hash
-  const translationEntry = translationEntryIsIdIndexed ? 
-    translations?.[id as string] : 
-    translations?.[hash]
-  ;
+  const translationEntry = translationWithIdExists
+    ? translations?.[id as string]
+    : translations?.[hash];
 
   // Do dev translation if required
   useEffect(() => {

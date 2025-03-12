@@ -68,7 +68,7 @@ export default function GTProvider({
   renderSettings = defaultRenderSettings,
   loadDictionary,
   loadTranslations,
-  fallback=undefined,
+  fallback = undefined,
   _versionId,
   ...metadata
 }: {
@@ -90,7 +90,6 @@ export default function GTProvider({
   _versionId?: string;
   [key: string]: any;
 }): React.JSX.Element {
-
   // ---------- SANITIZATION ---------- //
 
   // Read env
@@ -107,7 +106,7 @@ export default function GTProvider({
     defaultLocale,
     locales,
     locale: _locale,
-    ssr: false
+    ssr: false,
   });
 
   // Translation at runtime during development is enabled
@@ -430,12 +429,6 @@ export default function GTProvider({
   // ----- RETURN ----- //
 
   const display = !!((!translationRequired || translations) && locale);
-
-  console.log({
-    translationRequired,
-    translations,
-    locale
-  })
 
   // hang until cache response, then render translations or loading state (when waiting on API response)
   return (
