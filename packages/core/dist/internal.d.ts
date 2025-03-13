@@ -2,7 +2,7 @@ declare const defaultCacheUrl: "https://cdn.gtx.dev";
 declare const defaultBaseUrl: "https://api.gtx.dev";
 declare const defaultRuntimeApiUrl: "https://runtime.gtx.dev";
 
-declare const libraryDefaultLocale: "en-US";
+declare const libraryDefaultLocale: "en";
 declare const localeCookieName: "generaltranslation.locale";
 declare const localeHeaderName = "x-generaltranslation-locale";
 

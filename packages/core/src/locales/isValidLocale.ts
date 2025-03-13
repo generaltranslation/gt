@@ -1,3 +1,4 @@
+import { intlCache } from 'src/cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
 
 const scriptExceptions = ['Cham', 'Jamo', 'Kawi', 'Lisu', 'Toto', 'Thai'];
@@ -10,7 +11,7 @@ const scriptExceptions = ['Cham', 'Jamo', 'Kawi', 'Lisu', 'Toto', 'Thai'];
  */
 export const _isValidLocale = (locale: string): boolean => {
   try {
-    const { language, region, script } = new Intl.Locale(locale);
+    const { language, region, script } = intlCache.get('Locale', locale);
     if (
       locale.split('-').length !==
       (() => {
@@ -21,20 +22,32 @@ export const _isValidLocale = (locale: string): boolean => {
       })()
     )
       return false;
-    const displayLanguageNames = new Intl.DisplayNames([libraryDefaultLocale], {
-      type: 'language',
-    });
+    const displayLanguageNames = intlCache.get(
+      'DisplayNames',
+      [libraryDefaultLocale], 
+      {
+        type: 'language',
+      }
+    );
     if (displayLanguageNames.of(language) === language) return false;
     if (region) {
-      const displayRegionNames = new Intl.DisplayNames([libraryDefaultLocale], {
-        type: 'region',
-      });
+      const displayRegionNames = intlCache.get(
+        'DisplayNames',
+        [libraryDefaultLocale], 
+        {
+          type: 'region',
+        }
+      );
       if (displayRegionNames.of(region) === region) return false;
     }
     if (script) {
-      const displayScriptNames = new Intl.DisplayNames([libraryDefaultLocale], {
-        type: 'script',
-      });
+      const displayScriptNames = intlCache.get(
+        'DisplayNames',
+        [libraryDefaultLocale], 
+        {
+          type: 'script',
+        }
+      );
       if (
         displayScriptNames.of(script) === script &&
         !scriptExceptions.includes(script)

@@ -1,3 +1,4 @@
+import { intlCache } from 'src/cache/IntlCache';
 import { _standardizeLocale } from './isValidLocale';
 
 function checkTwoLocalesAreSameDialect(codeA: string, codeB: string) {
@@ -5,12 +6,12 @@ function checkTwoLocalesAreSameDialect(codeA: string, codeB: string) {
     language: languageA,
     region: regionA,
     script: scriptA,
-  } = new Intl.Locale(codeA);
+  } = intlCache.get('Locale', codeA);
   const {
     language: languageB,
     region: regionB,
     script: scriptB,
-  } = new Intl.Locale(codeB);
+  } = intlCache.get('Locale', codeB);
   if (languageA !== languageB) return false;
   if (regionA && regionB && regionA !== regionB) return false;
   if (scriptA && scriptB && scriptA !== scriptB) return false;

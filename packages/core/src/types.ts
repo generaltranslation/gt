@@ -21,7 +21,11 @@ export type JsxElement = {
 export type JsxChild = string | JsxElement | Variable;
 export type JsxChildren = JsxChild | JsxChild[];
 
-type Metadata = {
+export type Metadata = {
+  context?: string;
+  id?: string;
+  sourceLocale?: string;
+  actionType?: 'standard' | 'fast' | string;
   [key: string]: any;
 };
 

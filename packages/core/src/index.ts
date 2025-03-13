@@ -29,6 +29,7 @@ import {
   ContentTranslationResult,
   TranslationError,
   IcuTranslationResult,
+  Metadata,
 } from './types';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties from './locales/getLocaleProperties';
@@ -76,7 +77,7 @@ class GT {
    *
    * @param {GTConstructorParams} [params] - The parameters for initializing the GT instance.
    * @param {string} [params.apiKey=''] - The API key for accessing the translation service.
-   * @param {string} [params.sourceLocale='en-US'] - The default locale for translations.
+   * @param {string} [params.sourceLocale=''] - The default locale for translations.
    * @param {string} [params.projectId=''] - The project ID for the translation service.
    * @param {string} [params.baseUrl='https://api.gtx.dev'] - The base URL for the translation service.
    */
@@ -96,26 +97,17 @@ class GT {
 
   /**
    * Translates a string or an array of strings/variables into a target locale.
-   * If `metadata.save` is provided, the translation is cached for use in a public project.
    *
    * @param {Content} source - The string or array of strings/variables to be translated.
    * @param {string} locale - The target locale code (e.g., 'en-US', 'fr') for the translation.
    * @param {{ context?: string, [key: string]: any }} [metadata] - Additional metadata for the translation request.
-   * @param {string} [metadata.context] - Contextual information to assist with the translation.
    *
    * @returns {Promise<ContentTranslationResult | TranslationError>} A promise that resolves to the translated content, or an error if the translation fails.
    */
   async translate(
     source: Content,
     locale: string,
-    metadata?: {
-      context?: string;
-      id?: string;
-      publish?: boolean;
-      fast?: boolean;
-      sourceLocale?: string;
-      [key: string]: any;
-    }
+    metadata?: Metadata
   ): Promise<ContentTranslationResult | TranslationError> {
     return await _translate(this, source, locale, {
       sourceLocale: this.sourceLocale,
@@ -136,14 +128,7 @@ class GT {
   async translateJsx(
     source: JsxChildren,
     locale: string,
-    metadata?: {
-      context?: string;
-      id?: string;
-      publish?: boolean;
-      fast?: boolean;
-      sourceLocale?: string;
-      [key: string]: any;
-    }
+    metadata?: Metadata
   ): Promise<JsxTranslationResult | TranslationError> {
     return await _translateJsx(this, source, locale, {
       sourceLocale: this.sourceLocale,
@@ -153,7 +138,6 @@ class GT {
 
   /**
    * Translates an ICU message into a given locale.
-   * If `metadata.save` is provided, the translation is cached for use in a public project.
    *
    * @param {string} source - The ICU message to be translated.
    * @param {string} locale - The target locale code (e.g., 'en-US', 'fr') for the translation.
@@ -165,14 +149,7 @@ class GT {
   async translateIcu(
     source: string,
     locale: string,
-    metadata?: {
-      context?: string;
-      id?: string;
-      publish?: boolean;
-      fast?: boolean;
-      sourceLocale?: string;
-      [key: string]: any;
-    }
+    metadata?: Metadata
   ): Promise<IcuTranslationResult | TranslationError> {
     return await _translateIcu(this, source, locale, {
       sourceLocale: this.sourceLocale,
@@ -197,7 +174,7 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
  * Retrieves the display name of locale code using Intl.DisplayNames.
  *
  * @param {string} locale - A BCP-47 locale code.
- * @param {string} [defaultLocale = 'en-US'] - The locale for display names.
+ * @param {string} [defaultLocale = 'en'] - The locale for display names.
  * @returns {string} The display name corresponding to the code.
  */
 export function getLocaleName(
@@ -343,32 +320,42 @@ export function isSameLanguage(...locales: (string | string[])[]): boolean {
  * Formats a number according to the specified locales and options.
  * @param {Object} params - The parameters for the number formatting.
  * @param {number} params.value - The number to format.
- * @param {string | string[]} [params.locales=['en-US']] - The locales to use for formatting.
+ * @param {string | string[]} [params.locales=['en']] - The locales to use for formatting.
  * @param {Intl.NumberFormatOptions} [params.options={}] - Additional options for number formatting.
  * @returns {string} The formatted number.
  */
-export function formatNum(params: {
-  value: number;
-  locales?: string | string[];
-  options?: Intl.NumberFormatOptions;
-}): string {
-  return _formatNum(params);
+export function formatNum(
+  number: number,
+  options?: {
+    locales?: string | string[];
+  } & Intl.NumberFormatOptions
+): string {
+  return _formatNum({ 
+    value: number, 
+    locales: options?.locales, 
+    options
+  });
 }
 
 /**
  * Formats a date according to the specified languages and options.
  * @param {Object} params - The parameters for the date formatting.
  * @param {Date} params.value - The date to format.
- * @param {string | string[]} [params.locales=['en-US']] - The languages to use for formatting.
+ * @param {string | string[]} [params.locales=['en']] - The languages to use for formatting.
  * @param {Intl.DateTimeFormatOptions} [params.options={}] - Additional options for date formatting.
  * @returns {string} The formatted date.
  */
-export function formatDateTime(params: {
-  value: Date;
-  locales?: string | string[];
-  options?: Intl.DateTimeFormatOptions;
-}): string {
-  return _formatDateTime(params);
+export function formatDateTime(
+  date: Date,
+  options?: {
+    locales?: string | string[];
+  } & Intl.DateTimeFormatOptions
+): string {
+  return _formatDateTime({
+    value: date, 
+    locales: options?.locales, 
+    options
+  });
 }
 
 /**
@@ -376,33 +363,44 @@ export function formatDateTime(params: {
  * @param {Object} params - The parameters for the currency formatting.
  * @param {number} params.value - The currency value to format.
  * @param {string} params.currency - The currency code (e.g., 'USD').
- * @param {string | string[]} [params.locales=['en-US']] - The locale codes to use for formatting.
+ * @param {string | string[]} [params.locales=['en']] - The locale codes to use for formatting.
  * @param {Intl.NumberFormatOptions} [params.options={}] - Additional options for currency formatting.
  * @returns {string} The formatted currency value.
  */
-export function formatCurrency(params: {
-  value: number;
-  currency: string;
-  locales?: string | string[];
-  options?: Intl.NumberFormatOptions;
-}): string {
-  return _formatCurrency(params);
+export function formatCurrency(
+  value: number,
+  currency: string,
+  options?: {
+    locales?: string | string[];
+  } & Intl.NumberFormatOptions
+): string {
+  return _formatCurrency({
+    value, 
+    currency,
+    locales: options?.locales, 
+    options
+  });
 }
 
 /**
  * Formats a list of items according to the specified locales and options.
  * @param {Object} params - The parameters for the list formatting.
  * @param {Array<string | number>} params.value - The list of items to format.
- * @param {string | string[]} [params.locales=['en-US']] - The locales to use for formatting.
+ * @param {string | string[]} [params.locales=['en']] - The locales to use for formatting.
  * @param {Intl.ListFormatOptions} [params.options={}] - Additional options for list formatting.
  * @returns {string} The formatted list.
  */
-export function formatList(params: {
-  value: Array<string | number>;
-  locales?: string | string[];
-  options?: Intl.ListFormatOptions;
-}) {
-  return _formatList(params);
+export function formatList(
+  array: Array<string | number>,
+  options: {
+    locales?: string | string[];
+  } & Intl.ListFormatOptions
+) {
+  return _formatList({
+    value: array,
+    locales: options?.locales,
+    options: options
+  });
 }
 
 /**
@@ -410,17 +408,20 @@ export function formatList(params: {
  * @param {Object} params - The parameters for the relative time formatting.
  * @param {number} params.value - The relative time value to format.
  * @param {Intl.RelativeTimeFormatUnit} params.unit - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'week', 'month', 'year').
- * @param {string | string[]} [params.locales=['en-US']] - The locales to use for formatting.
+ * @param {string | string[]} [params.locales=['en']] - The locales to use for formatting.
  * @param {Intl.RelativeTimeFormatOptions} [params.options={}] - Additional options for relative time formatting.
  * @returns {string} The formatted relative time string.
  */
-export function formatRelativeTime(params: {
-  value: number;
-  unit: Intl.RelativeTimeFormatUnit;
-  locales?: string | string[];
-  options?: Intl.RelativeTimeFormatOptions;
-}): string {
-  return _formatRelativeTime(params);
+export function formatRelativeTime(
+  value: number,
+  unit: Intl.RelativeTimeFormatUnit,
+  options: {
+    locales?: string | string[];
+  } & Intl.RelativeTimeFormatOptions
+): string {
+  return _formatRelativeTime({
+    value, unit, locales: options?.locales, options
+  });
 }
 
 /**
@@ -435,7 +436,7 @@ export function splitStringToContent(string: string): Content {
 /**
  * Renders content to a string by replacing variables with their formatted values.
  * @param {Content} content - The content to render.
- * @param {string | string[]} [locales='en-US'] - The locale(s) to use for formatting.
+ * @param {string | string[]} [locales='en'] - The locale(s) to use for formatting.
  * @param {Record<string, any>} [variables={}] - An object containing variable values.
  * @param {Record<string, any>} [variableOptions={}] - An object containing options for formatting variables.
  * @returns {string} - The rendered string with variables replaced by their formatted values.
