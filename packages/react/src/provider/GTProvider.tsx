@@ -52,6 +52,7 @@ import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInterna
  * @param {string} [_versionId] - The version ID for fetching translations.
  * @param {string} [devApiKey] - The API key for development environments.
  * @param {object} [metadata] - Additional metadata to pass to the context.
+ * @param {React.ReactNode} [fallback = undefined] - Custom fallback to display while loading
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */

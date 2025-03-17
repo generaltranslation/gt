@@ -23,7 +23,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.initGT = void 0;
+exports.initGT = exports.GTRouter = void 0;
 exports.withGTConfig = withGTConfig;
 var path_1 = __importDefault(require("path"));
 var fs_1 = __importDefault(require("fs"));
@@ -31,6 +31,8 @@ var defaultWithGTConfigProps_1 = __importDefault(require("./config-dir/props/def
 var createErrors_1 = require("./errors/createErrors");
 var supported_locales_1 = require("@generaltranslation/supported-locales");
 var generaltranslation_1 = require("generaltranslation");
+var gt_router_1 = __importDefault(require("./config-dir/gt-router"));
+exports.GTRouter = gt_router_1.default;
 /**
  * Initializes General Translation settings for a Next.js application.
  *
@@ -143,6 +145,10 @@ function withGTConfig(nextConfig, props) {
     var customLoadTranslationsPath = typeof mergedConfig.loadTranslationsPath === 'string'
         ? mergedConfig.loadTranslationsPath
         : resolveConfigFilepath('loadTranslations');
+    // Resolve router
+    var customRouterPath = typeof mergedConfig.routerPath === 'string'
+        ? mergedConfig.routerPath
+        : resolveConfigFilepath('routing', ['.ts', '.js']);
     // ---------- ERROR CHECKS ---------- //
     // Local dictionary flag
     if (customLoadDictionaryPath) {
@@ -209,7 +215,7 @@ function withGTConfig(nextConfig, props) {
             _GENERALTRANSLATION_DICTIONARY_FILE_TYPE: resolvedDictionaryFilePathType,
         })), { _GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED: mergedConfig.loadDictionaryEnabled.toString(), _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (mergedConfig.loadTranslationsType === 'custom').toString(), _GENERALTRANSLATION_DEFAULT_LOCALE: (mergedConfig.defaultLocale || defaultWithGTConfigProps_1.default.defaultLocale).toString() }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo)
             ? {
-                turbo: __assign(__assign({}, (((_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_f = (_e = nextConfig.experimental) === null || _e === void 0 ? void 0 : _e.turbo) === null || _f === void 0 ? void 0 : _f.resolveAlias) || {})), { 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translations': customLoadTranslationsPath || '', 'gt-next/_load-dictionary': customLoadDictionaryPath || '' }) }),
+                turbo: __assign(__assign({}, (((_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_f = (_e = nextConfig.experimental) === null || _e === void 0 ? void 0 : _e.turbo) === null || _f === void 0 ? void 0 : _f.resolveAlias) || {})), { 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translations': customLoadTranslationsPath || '', 'gt-next/_load-dictionary': customLoadDictionaryPath || '', 'gt-next/_routing': customRouterPath || '' }) }),
             }
             : {})), webpack: function webpack() {
             var _a = [];
@@ -234,6 +240,9 @@ function withGTConfig(nextConfig, props) {
                 if (customLoadDictionaryPath) {
                     webpackConfig.resolve.alias["gt-next/_load-dictionary"] =
                         path_1.default.resolve(webpackConfig.context, customLoadDictionaryPath);
+                }
+                if (customLoadDictionaryPath) {
+                    webpackConfig.resolve.alias["gt-next/_routing"] = path_1.default.resolve(webpackConfig.context, customLoadDictionaryPath);
                 }
             }
             if (typeof (nextConfig === null || nextConfig === void 0 ? void 0 : nextConfig.webpack) === 'function') {

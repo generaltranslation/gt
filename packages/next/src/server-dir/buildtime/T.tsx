@@ -131,6 +131,7 @@ async function T({
   }
 
   // ----- TRANSLATE ON DEMAND ----- //
+  // dev only
 
   // Since this is the buildtime translation component <T>, this is dev-only
   if (!I18NConfig.isDevelopmentApiEnabled()) return renderDefault();

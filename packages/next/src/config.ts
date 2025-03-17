@@ -14,6 +14,10 @@ import {
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import { getLocaleProperties } from 'generaltranslation';
 
+import GTRouter from './config-dir/gt-router';
+
+export { GTRouter };
+
 /**
  * Initializes General Translation settings for a Next.js application.
  *
@@ -158,6 +162,12 @@ export function withGTConfig(
       ? mergedConfig.loadTranslationsPath
       : resolveConfigFilepath('loadTranslations');
 
+  // Resolve router
+  const customRouterPath =
+    typeof mergedConfig.routerPath === 'string'
+      ? mergedConfig.routerPath
+      : resolveConfigFilepath('routing', ['.ts', '.js']);
+
   // ---------- ERROR CHECKS ---------- //
 
   // Local dictionary flag
@@ -267,6 +277,7 @@ export function withGTConfig(
                 'gt-next/_dictionary': resolvedDictionaryFilePath || '',
                 'gt-next/_load-translations': customLoadTranslationsPath || '',
                 'gt-next/_load-dictionary': customLoadDictionaryPath || '',
+                'gt-next/_routing': customRouterPath || '',
               },
             },
           }
@@ -299,6 +310,12 @@ export function withGTConfig(
         if (customLoadDictionaryPath) {
           webpackConfig.resolve.alias[`gt-next/_load-dictionary`] =
             path.resolve(webpackConfig.context, customLoadDictionaryPath);
+        }
+        if (customLoadDictionaryPath) {
+          webpackConfig.resolve.alias[`gt-next/_routing`] = path.resolve(
+            webpackConfig.context,
+            customLoadDictionaryPath
+          );
         }
       }
       if (typeof nextConfig?.webpack === 'function') {
