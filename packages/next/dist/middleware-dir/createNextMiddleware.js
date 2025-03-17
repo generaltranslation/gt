@@ -203,7 +203,7 @@ function createNextMiddleware(_a) {
                 rewriteUrl.search = originalUrl.search;
                 res.headers.set(internal_1.localeRewriteFlagName, 'true');
                 console.log('REWRITE (localized path, same locale):', userLocale, pathnameLocale, '\n' + pathname_1, '->', rewritePath);
-                var response = server_1.NextResponse.rewrite(rewriteUrl);
+                var response = server_1.NextResponse.rewrite(rewriteUrl, req.url);
                 if (userLocale) {
                     response.cookies.set('generaltranslation.middleware.locale', userLocale);
                 }

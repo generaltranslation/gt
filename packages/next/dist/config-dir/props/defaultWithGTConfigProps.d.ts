@@ -2,8 +2,8 @@ declare const defaultWithGTConfigProps: {
     readonly config: "./gt.config.json";
     readonly runtimeUrl: "https://runtime.gtx.dev";
     readonly cacheUrl: "https://cdn.gtx.dev";
-    readonly defaultLocale: "en-US";
-    readonly getLocale: () => Promise<"en-US">;
+    readonly defaultLocale: "en";
+    readonly getLocale: () => Promise<"en">;
     readonly locales: string[];
     readonly maxConcurrentRequests: 100;
     readonly maxBatchSize: 25;

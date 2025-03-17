@@ -268,7 +268,7 @@ export default function createNextMiddleware(
           '->',
           rewritePath
         );
-        const response = NextResponse.rewrite(rewriteUrl);
+        const response = NextResponse.rewrite(rewriteUrl, req.url);
         if (userLocale) {
           response.cookies.set(
             'generaltranslation.middleware.locale',
