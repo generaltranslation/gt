@@ -157,9 +157,11 @@ export function getLocaleFromRequest(
   userLocale: string;
   pathnameLocale: string | undefined;
   unstandardizedPathnameLocale: string | null | undefined;
+  clearResetCookie: boolean;
 } {
   const headerList = new Headers(req.headers);
   const candidates: string[] = [];
+  let clearResetCookie = false;
 
   // Check pathname locales
   let pathnameLocale, unstandardizedPathnameLocale;
@@ -182,6 +184,7 @@ export function getLocaleFromRequest(
     const resetCookie = req.cookies.get(resetCookieName);
     if (resetCookie?.value) {
       candidates.unshift(cookieLocale.value);
+      clearResetCookie = true;
     } else {
       candidates.push(cookieLocale.value);
     }
@@ -229,5 +232,6 @@ export function getLocaleFromRequest(
     userLocale,
     pathnameLocale,
     unstandardizedPathnameLocale,
+    clearResetCookie,
   };
 }

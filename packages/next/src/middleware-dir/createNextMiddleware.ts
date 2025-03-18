@@ -9,7 +9,10 @@ import {
 } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
-import { middlewareLocaleName } from '../utils/constants';
+import {
+  middlewareLocaleName,
+  middlewareLocaleResetFlagName,
+} from '../utils/constants';
 import {
   PathConfig,
   getSharedPath,
@@ -120,19 +123,25 @@ export default function createNextMiddleware({
 
     // ---------- LOCALE DETECTION ---------- //
 
-    const { userLocale, pathnameLocale, unstandardizedPathnameLocale } =
-      getLocaleFromRequest(
-        req,
-        defaultLocale,
-        approvedLocales,
-        localeRouting,
-        gtServicesEnabled
-      );
+    const {
+      userLocale,
+      pathnameLocale,
+      unstandardizedPathnameLocale,
+      clearResetCookie,
+    } = getLocaleFromRequest(
+      req,
+      defaultLocale,
+      approvedLocales,
+      localeRouting,
+      gtServicesEnabled
+    );
 
     res.headers.set(localeHeaderName, userLocale);
 
-    if (userLocale) {
-      res.cookies.set(middlewareLocaleName, userLocale);
+    res.cookies.set(middlewareLocaleName, userLocale);
+
+    if (clearResetCookie) {
+      res.cookies.delete(middlewareLocaleResetFlagName);
     }
 
     if (localeRouting) {
@@ -207,8 +216,9 @@ export default function createNextMiddleware({
           headers: headerList,
         });
         response.headers.set(localeHeaderName, userLocale);
-        if (userLocale) {
-          response.cookies.set(middlewareLocaleName, userLocale);
+        response.cookies.set(middlewareLocaleName, userLocale);
+        if (clearResetCookie) {
+          response.cookies.delete(middlewareLocaleResetFlagName);
         }
         return response;
       }
@@ -226,6 +236,10 @@ export default function createNextMiddleware({
           headers: headerList,
         });
         response.headers.set(localeHeaderName, userLocale);
+        response.cookies.set(middlewareLocaleName, userLocale);
+        if (clearResetCookie) {
+          response.cookies.delete(middlewareLocaleResetFlagName);
+        }
         return response;
       }
 
@@ -246,8 +260,9 @@ export default function createNextMiddleware({
         const redirectUrl = new URL(redirectPath, originalUrl);
         redirectUrl.search = originalUrl.search;
         const response = NextResponse.redirect(redirectUrl);
-        if (userLocale) {
-          response.cookies.set(middlewareLocaleName, userLocale);
+        response.cookies.set(middlewareLocaleName, userLocale);
+        if (clearResetCookie) {
+          response.cookies.delete(middlewareLocaleResetFlagName);
         }
         return response;
       }
@@ -257,8 +272,9 @@ export default function createNextMiddleware({
         const redirectUrl = new URL(localizedPathWithParameters, originalUrl);
         redirectUrl.search = originalUrl.search;
         const response = NextResponse.redirect(redirectUrl);
-        if (userLocale) {
-          response.cookies.set(middlewareLocaleName, userLocale);
+        response.cookies.set(middlewareLocaleName, userLocale);
+        if (clearResetCookie) {
+          response.cookies.delete(middlewareLocaleResetFlagName);
         }
         return response;
       }

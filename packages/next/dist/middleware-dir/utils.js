@@ -115,6 +115,7 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
     var _a, _b, _c;
     var headerList = new Headers(req.headers);
     var candidates = [];
+    var clearResetCookie = false;
     // Check pathname locales
     var pathnameLocale, unstandardizedPathnameLocale;
     var pathname = req.nextUrl.pathname;
@@ -135,6 +136,7 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
         var resetCookie = req.cookies.get(resetCookieName);
         if (resetCookie === null || resetCookie === void 0 ? void 0 : resetCookie.value) {
             candidates.unshift(cookieLocale.value);
+            clearResetCookie = true;
         }
         else {
             candidates.push(cookieLocale.value);
@@ -172,6 +174,7 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
         userLocale: userLocale,
         pathnameLocale: pathnameLocale,
         unstandardizedPathnameLocale: unstandardizedPathnameLocale,
+        clearResetCookie: clearResetCookie,
     };
 }
 //# sourceMappingURL=utils.js.map

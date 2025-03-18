@@ -39,5 +39,6 @@ export declare function getLocaleFromRequest(req: NextRequest, defaultLocale: st
     userLocale: string;
     pathnameLocale: string | undefined;
     unstandardizedPathnameLocale: string | null | undefined;
+    clearResetCookie: boolean;
 };
 //# sourceMappingURL=utils.d.ts.map

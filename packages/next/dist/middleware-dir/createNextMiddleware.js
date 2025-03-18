@@ -83,10 +83,11 @@ function createNextMiddleware(_a) {
             },
         });
         // ---------- LOCALE DETECTION ---------- //
-        var _a = (0, utils_1.getLocaleFromRequest)(req, defaultLocale, approvedLocales, localeRouting, gtServicesEnabled), userLocale = _a.userLocale, pathnameLocale = _a.pathnameLocale, unstandardizedPathnameLocale = _a.unstandardizedPathnameLocale;
+        var _a = (0, utils_1.getLocaleFromRequest)(req, defaultLocale, approvedLocales, localeRouting, gtServicesEnabled), userLocale = _a.userLocale, pathnameLocale = _a.pathnameLocale, unstandardizedPathnameLocale = _a.unstandardizedPathnameLocale, clearResetCookie = _a.clearResetCookie;
         res.headers.set(internal_1.localeHeaderName, userLocale);
-        if (userLocale) {
-            res.cookies.set(constants_1.middlewareLocaleName, userLocale);
+        res.cookies.set(constants_1.middlewareLocaleName, userLocale);
+        if (clearResetCookie) {
+            res.cookies.delete(constants_1.middlewareLocaleResetFlagName);
         }
         if (localeRouting) {
             // ---------- GET PATHS ---------- //
@@ -133,8 +134,9 @@ function createNextMiddleware(_a) {
                     headers: headerList,
                 });
                 response.headers.set(internal_1.localeHeaderName, userLocale);
-                if (userLocale) {
-                    response.cookies.set(constants_1.middlewareLocaleName, userLocale);
+                response.cookies.set(constants_1.middlewareLocaleName, userLocale);
+                if (clearResetCookie) {
+                    response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
                 }
                 return response;
             }
@@ -149,6 +151,10 @@ function createNextMiddleware(_a) {
                     headers: headerList,
                 });
                 response.headers.set(internal_1.localeHeaderName, userLocale);
+                response.cookies.set(constants_1.middlewareLocaleName, userLocale);
+                if (clearResetCookie) {
+                    response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
+                }
                 return response;
             }
             // REDIRECT CASE: non-i18n path
@@ -164,8 +170,9 @@ function createNextMiddleware(_a) {
                 var redirectUrl = new URL(redirectPath, originalUrl);
                 redirectUrl.search = originalUrl.search;
                 var response = server_1.NextResponse.redirect(redirectUrl);
-                if (userLocale) {
-                    response.cookies.set(constants_1.middlewareLocaleName, userLocale);
+                response.cookies.set(constants_1.middlewareLocaleName, userLocale);
+                if (clearResetCookie) {
+                    response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
                 }
                 return response;
             }
@@ -174,8 +181,9 @@ function createNextMiddleware(_a) {
                 var redirectUrl = new URL(localizedPathWithParameters, originalUrl);
                 redirectUrl.search = originalUrl.search;
                 var response = server_1.NextResponse.redirect(redirectUrl);
-                if (userLocale) {
-                    response.cookies.set(constants_1.middlewareLocaleName, userLocale);
+                response.cookies.set(constants_1.middlewareLocaleName, userLocale);
+                if (clearResetCookie) {
+                    response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
                 }
                 return response;
             }
