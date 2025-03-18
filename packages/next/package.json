@@ -66,9 +66,6 @@
     "./_request": {
       "default": "./dist/_request.js"
     },
-    "./routing": {
-      "default": "./dist/_routing.js"
-    },
     "./_dictionary": {
       "default": "./dist/_dictionary.js"
     },
@@ -95,9 +92,6 @@
       ],
       "_request": [
         "./dist/_request.d.ts"
-      ],
-      "_routing": [
-        "./dist/_routing.d.ts"
       ],
       "_dictionary": [
         "./dist/_dictionary.d.ts"
@@ -127,9 +121,6 @@
       ],
       "gt-next/_request": [
         "/dist/_request"
-      ],
-      "gt-next/_routing": [
-        "./dist/_routing.d.ts"
       ],
       "gt-next/_dictionary": [
         "/dist/_dictionary"

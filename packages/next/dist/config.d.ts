@@ -1,6 +1,4 @@
 import withGTConfigProps from './config-dir/props/withGTConfigProps';
-import GTRouter from './config-dir/gt-router';
-export { GTRouter };
 /**
  * Initializes General Translation settings for a Next.js application.
  *

@@ -82,14 +82,6 @@ function createNextMiddleware(_a) {
                 headers: headerList,
             },
         });
-        // routing
-        var routingConfig;
-        try {
-            routingConfig = require('gt-next/_routing');
-        }
-        catch (e) {
-            console.error(e);
-        }
         // ---------- LOCALE DETECTION ---------- //
         var _a = (0, utils_1.getLocaleFromRequest)(req, defaultLocale, approvedLocales, localeRouting, gtServicesEnabled), userLocale = _a.userLocale, pathnameLocale = _a.pathnameLocale, unstandardizedPathnameLocale = _a.unstandardizedPathnameLocale;
         res.headers.set(internal_1.localeHeaderName, userLocale);

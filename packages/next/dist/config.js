@@ -23,7 +23,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.initGT = exports.GTRouter = void 0;
+exports.initGT = void 0;
 exports.withGTConfig = withGTConfig;
 var path_1 = __importDefault(require("path"));
 var fs_1 = __importDefault(require("fs"));
@@ -31,8 +31,6 @@ var defaultWithGTConfigProps_1 = __importDefault(require("./config-dir/props/def
 var createErrors_1 = require("./errors/createErrors");
 var supported_locales_1 = require("@generaltranslation/supported-locales");
 var generaltranslation_1 = require("generaltranslation");
-var gt_router_1 = __importDefault(require("./config-dir/gt-router"));
-exports.GTRouter = gt_router_1.default;
 /**
  * Initializes General Translation settings for a Next.js application.
  *

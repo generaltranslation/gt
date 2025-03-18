@@ -5,7 +5,6 @@ import {
 } from 'generaltranslation';
 import {
   libraryDefaultLocale,
-  localeCookieName,
   localeHeaderName,
 } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
@@ -119,14 +118,6 @@ export default function createNextMiddleware({
         headers: headerList,
       },
     });
-
-    // routing
-    let routingConfig;
-    try {
-      routingConfig = require('gt-next/_routing');
-    } catch (e) {
-      console.error(e);
-    }
 
     // ---------- LOCALE DETECTION ---------- //
 
