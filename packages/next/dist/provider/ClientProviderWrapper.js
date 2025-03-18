@@ -34,6 +34,9 @@ function ClientProvider(props) {
             .split('; ')
             .find(function (row) { return row.startsWith("".concat(constants_1.middlewareLocaleName, "=")); })) === null || _a === void 0 ? void 0 : _a.split('=')[1];
         if (newLocale && newLocale !== props.locale) {
+            console.log('newLocale', newLocale);
+            console.log('props.locale', props.locale);
+            console.log('--------------------------------');
             var rewriteFlag = ((_b = document
                 .querySelector("meta[name=\"".concat(constants_1.middlewareLocaleRewriteFlagName, "\"]"))) === null || _b === void 0 ? void 0 : _b.getAttribute('content')) === 'true';
             if (!rewriteFlag) {

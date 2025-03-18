@@ -28,6 +28,9 @@ export default function ClientProvider(
       .find((row) => row.startsWith(`${middlewareLocaleName}=`))
       ?.split('=')[1];
     if (newLocale && newLocale !== props.locale) {
+      console.log('newLocale', newLocale);
+      console.log('props.locale', props.locale);
+      console.log('--------------------------------');
       const rewriteFlag =
         document
           .querySelector(`meta[name="${middlewareLocaleRewriteFlagName}"]`)

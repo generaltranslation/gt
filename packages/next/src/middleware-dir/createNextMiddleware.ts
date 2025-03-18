@@ -117,7 +117,7 @@ export default function createNextMiddleware({
    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
    */
   function nextMiddleware(req: NextRequest) {
-    // console.log('--------------------------------');
+    console.log('--------------------------------');
     const headerList = new Headers(req.headers);
 
     const res = NextResponse.next({
@@ -186,12 +186,13 @@ export default function createNextMiddleware({
           localizedPath
         );
 
-      // console.log('pathname', pathname);
-      // console.log('unprefixedPathname', unprefixedPathname);
-      // console.log('standardizedPathname', standardizedPathname);
-      // console.log('sharedPath', sharedPath);
-      // console.log('localizedPath', localizedPath);
-      // console.log('localizedPathWithParameters', localizedPathWithParameters);
+      console.log('userLocale', userLocale);
+      console.log('pathname', pathname);
+      console.log('unprefixedPathname', unprefixedPathname);
+      console.log('standardizedPathname', standardizedPathname);
+      console.log('sharedPath', sharedPath);
+      console.log('localizedPath', localizedPath);
+      console.log('localizedPathWithParameters', localizedPathWithParameters);
 
       // ---------- ROUTING LOGIC ---------- //
 
@@ -201,9 +202,9 @@ export default function createNextMiddleware({
         standardizedPathname === localizedPathWithParameters &&
         userLocale === defaultLocale
       ) {
-        // console.log(
-        //   `[Middleware] Default locale path match: ${pathname} -> ${localizedPathWithParameters}`
-        // );
+        console.log(
+          `[Middleware] Default locale path match: ${pathname} -> ${localizedPathWithParameters}`
+        );
         return res;
       }
 
@@ -212,17 +213,17 @@ export default function createNextMiddleware({
         pathname === localizedPathWithParameters &&
         `/${userLocale}${sharedPath}` === localizedPathWithParameters
       ) {
-        // console.log(
-        //   `[Middleware] Localized path match: ${pathname} -> ${localizedPathWithParameters}`
-        // );
+        console.log(
+          `[Middleware] Localized path match: ${pathname} -> ${localizedPathWithParameters}`
+        );
         return res;
       }
 
       // If we've already rewritten this path, don't process it again
       if (rewriteFlag) {
-        // console.log(
-        //   `[Middleware] Already rewritten path: ${pathname} (skipping)`
-        // );
+        console.log(
+          `[Middleware] Already rewritten path: ${pathname} (skipping)`
+        );
         return res;
       }
 
@@ -243,12 +244,13 @@ export default function createNextMiddleware({
           headers: headerList,
         });
         response.headers.set(middlewareLocaleRewriteFlagName, 'true');
+        response.headers.set(localeHeaderName, userLocale);
         if (userLocale) {
           response.cookies.set(middlewareLocaleName, userLocale);
         }
-        // console.log(
-        //   `[Middleware] Rewrite localized path: ${pathname} -> ${rewritePath}`
-        // );
+        console.log(
+          `[Middleware] Rewrite localized path: ${pathname} -> ${rewritePath}`
+        );
         return response;
       }
 
@@ -265,9 +267,10 @@ export default function createNextMiddleware({
           headers: headerList,
         });
         response.headers.set(middlewareLocaleRewriteFlagName, 'true');
-        // console.log(
-        //   `[Middleware] Rewrite no locale prefix: ${pathname} -> ${rewritePath}`
-        // );
+        response.headers.set(localeHeaderName, userLocale);
+        console.log(
+          `[Middleware] Rewrite no locale prefix: ${pathname} -> ${rewritePath}`
+        );
         return response;
       }
 
@@ -291,9 +294,9 @@ export default function createNextMiddleware({
         if (userLocale) {
           response.cookies.set(middlewareLocaleName, userLocale);
         }
-        // console.log(
-        //   `[Middleware] Redirect non-i18n path: ${pathname} -> ${redirectPath}`
-        // );
+        console.log(
+          `[Middleware] Redirect non-i18n path: ${pathname} -> ${redirectPath}`
+        );
         return response;
       }
 
@@ -305,18 +308,18 @@ export default function createNextMiddleware({
         if (userLocale) {
           response.cookies.set(middlewareLocaleName, userLocale);
         }
-        // console.log(
-        //   `[Middleware] Redirect mismatched path: ${pathname} -> ${localizedPathWithParameters}`
-        // );
+        console.log(
+          `[Middleware] Redirect mismatched path: ${pathname} -> ${localizedPathWithParameters}`
+        );
         return response;
       }
 
       // BASE CASE
-      // console.log(`[Middleware] No transformation needed: ${pathname}`);
+      console.log(`[Middleware] No transformation needed: ${pathname}`);
       return res;
     }
 
-    // console.log(`[Middleware] No locale routing: ${req.nextUrl.pathname}`);
+    console.log(`[Middleware] No locale routing: ${req.nextUrl.pathname}`);
     return res;
   }
 

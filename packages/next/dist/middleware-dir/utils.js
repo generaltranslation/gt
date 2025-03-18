@@ -112,7 +112,7 @@ function createPathToSharedPathMap(pathConfig) {
  * Gets the locale from the request using various sources
  */
 function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting) {
-    var _a, _b;
+    var _a, _b, _c;
     var headerList = new Headers(req.headers);
     var candidates = [];
     // Check pathname locales
@@ -121,6 +121,9 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
     if (localeRouting) {
         unstandardizedPathnameLocale = extractLocale(pathname);
         var extractedLocale = (0, generaltranslation_1.standardizeLocale)(unstandardizedPathnameLocale || '');
+        unstandardizedPathnameLocale = (0, generaltranslation_1.isValidLocale)(unstandardizedPathnameLocale || '')
+            ? unstandardizedPathnameLocale
+            : undefined;
         if ((0, generaltranslation_1.isValidLocale)(extractedLocale)) {
             pathnameLocale = extractedLocale;
             candidates.push(pathnameLocale);
@@ -148,15 +151,26 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
                 candidates.push(refererLocale || '');
         }
     }
+    // Check middleware cookie locale
+    var middlewareCookieLocale = (_b = req.cookies.get(constants_1.middlewareLocaleName)) === null || _b === void 0 ? void 0 : _b.value;
+    if (middlewareCookieLocale && (0, generaltranslation_1.isValidLocale)(middlewareCookieLocale)) {
+        candidates.push(middlewareCookieLocale);
+    }
     // Get locales from accept-language header
-    var acceptedLocales = ((_b = headerList
-        .get('accept-language')) === null || _b === void 0 ? void 0 : _b.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); })) || [];
+    var acceptedLocales = ((_c = headerList
+        .get('accept-language')) === null || _c === void 0 ? void 0 : _c.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); })) || [];
     candidates.push.apply(candidates, acceptedLocales);
     // Get default locale
     candidates.push(defaultLocale);
     // determine userLocale
     var userLocale = (0, generaltranslation_1.standardizeLocale)((0, generaltranslation_1.determineLocale)(candidates.filter(generaltranslation_1.isValidLocale), approvedLocales) ||
         defaultLocale);
+    console.log('userLocale', userLocale);
+    console.log('pathnameLocale', pathnameLocale);
+    console.log('unstandardizedPathnameLocale', unstandardizedPathnameLocale);
+    console.log('refererLocale', refererLocale);
+    console.log('cookieLocale', cookieLocale);
+    console.log('middlewareCookieLocale', middlewareCookieLocale);
     return {
         userLocale: userLocale,
         pathnameLocale: pathnameLocale,

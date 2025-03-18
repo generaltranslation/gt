@@ -170,6 +170,11 @@ export function getLocaleFromRequest(
     const extractedLocale = standardizeLocale(
       unstandardizedPathnameLocale || ''
     );
+    unstandardizedPathnameLocale = isValidLocale(
+      unstandardizedPathnameLocale || ''
+    )
+      ? unstandardizedPathnameLocale
+      : undefined;
     if (isValidLocale(extractedLocale)) {
       pathnameLocale = extractedLocale;
       candidates.push(pathnameLocale);
@@ -199,6 +204,12 @@ export function getLocaleFromRequest(
     }
   }
 
+  // Check middleware cookie locale
+  const middlewareCookieLocale = req.cookies.get(middlewareLocaleName)?.value;
+  if (middlewareCookieLocale && isValidLocale(middlewareCookieLocale)) {
+    candidates.push(middlewareCookieLocale);
+  }
+
   // Get locales from accept-language header
   const acceptedLocales =
     headerList
@@ -216,6 +227,12 @@ export function getLocaleFromRequest(
       defaultLocale
   );
 
+  console.log('userLocale', userLocale);
+  console.log('pathnameLocale', pathnameLocale);
+  console.log('unstandardizedPathnameLocale', unstandardizedPathnameLocale);
+  console.log('refererLocale', refererLocale);
+  console.log('cookieLocale', cookieLocale);
+  console.log('middlewareCookieLocale', middlewareCookieLocale);
   return {
     userLocale,
     pathnameLocale,
