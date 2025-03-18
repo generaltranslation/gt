@@ -8,11 +8,12 @@ import {
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
   projectIdMissingWarn,
+  standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import { getLocaleProperties } from 'generaltranslation';
+import { getLocaleProperties, standardizeLocale } from 'generaltranslation';
 
 import GTRouter from './config-dir/gt-router';
 
@@ -107,12 +108,6 @@ export function withGTConfig(
     _usingPlugin: true, // flag to indicate plugin usage
   };
 
-  // ----------- LOCALE STANDARDIZATION ----------- //
-  if (mergedConfig.locales && mergedConfig.defaultLocale) {
-    mergedConfig.locales.unshift(mergedConfig.defaultLocale);
-  }
-  mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
-
   // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
 
   // Resolve dictionary filepath
@@ -167,6 +162,37 @@ export function withGTConfig(
     typeof mergedConfig.routerPath === 'string'
       ? mergedConfig.routerPath
       : resolveConfigFilepath('routing', ['.ts', '.js']);
+
+  // ----------- LOCALE STANDARDIZATION ----------- //
+
+  // Check if using Services
+  const gtRuntimeTranslationEnabled =
+    mergedConfig.runtimeUrl === defaultWithGTConfigProps.runtimeUrl &&
+    ((process.env.NODE_ENV === 'production' && mergedConfig.apiKey) ||
+      (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey));
+  const gtRemoteCacheEnabled =
+    mergedConfig.cacheUrl === defaultWithGTConfigProps.cacheUrl &&
+    mergedConfig.loadTranslationsType === 'remote';
+  mergedConfig.gtServicesEnabled =
+    (gtRuntimeTranslationEnabled || gtRemoteCacheEnabled) &&
+    mergedConfig.projectId;
+
+  // Standardize locales
+  if (mergedConfig.locales && mergedConfig.defaultLocale) {
+    mergedConfig.locales.unshift(mergedConfig.defaultLocale);
+  }
+  const updatedLocales: string[] = [];
+  mergedConfig.locales = Array.from(new Set(mergedConfig.locales)).map(
+    (locale) => {
+      const updatedLocale = mergedConfig.gtServicesEnabled
+        ? standardizeLocale(locale)
+        : locale;
+      if (updatedLocale !== locale) {
+        updatedLocales.push(`${locale} -> ${updatedLocale}`);
+      }
+      return updatedLocale;
+    }
+  );
 
   // ---------- ERROR CHECKS ---------- //
 
@@ -225,17 +251,13 @@ export function withGTConfig(
   }
 
   // Check: if using GT infrastructure, warn about unsupported locales
-  const gtRuntimeTranslationEnabled =
-    mergedConfig.runtimeUrl === defaultWithGTConfigProps.runtimeUrl &&
-    ((process.env.NODE_ENV === 'production' && mergedConfig.apiKey) ||
-      (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey));
-  const gtRemoteCacheEnabled =
-    mergedConfig.cacheUrl === defaultWithGTConfigProps.cacheUrl &&
-    mergedConfig.loadTranslationsType === 'remote';
-  if (
-    (gtRuntimeTranslationEnabled || gtRemoteCacheEnabled) &&
-    mergedConfig.projectId
-  ) {
+  if (mergedConfig.gtServicesEnabled) {
+    // Warn about standardized locales
+    if (updatedLocales.length) {
+      console.warn(standardizedLocalesWarning(updatedLocales));
+    }
+
+    // Warn about unsupported locales
     const warningLocales = (
       mergedConfig.locales || defaultWithGTConfigProps.locales
     ).filter((locale) => !getSupportedLocale(locale));

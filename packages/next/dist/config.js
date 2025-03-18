@@ -107,11 +107,6 @@ function withGTConfig(nextConfig, props) {
     // ---------- MERGE CONFIGS ---------- //
     // precedence: input > env > config file > defaults
     var mergedConfig = __assign(__assign(__assign(__assign(__assign({}, defaultWithGTConfigProps_1.default), loadedConfig), envConfig), props), { _usingPlugin: true });
-    // ----------- LOCALE STANDARDIZATION ----------- //
-    if (mergedConfig.locales && mergedConfig.defaultLocale) {
-        mergedConfig.locales.unshift(mergedConfig.defaultLocale);
-    }
-    mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
     // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
     // Resolve dictionary filepath
     var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'
@@ -149,6 +144,30 @@ function withGTConfig(nextConfig, props) {
     var customRouterPath = typeof mergedConfig.routerPath === 'string'
         ? mergedConfig.routerPath
         : resolveConfigFilepath('routing', ['.ts', '.js']);
+    // ----------- LOCALE STANDARDIZATION ----------- //
+    // Check if using Services
+    var gtRuntimeTranslationEnabled = mergedConfig.runtimeUrl === defaultWithGTConfigProps_1.default.runtimeUrl &&
+        ((process.env.NODE_ENV === 'production' && mergedConfig.apiKey) ||
+            (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey));
+    var gtRemoteCacheEnabled = mergedConfig.cacheUrl === defaultWithGTConfigProps_1.default.cacheUrl &&
+        mergedConfig.loadTranslationsType === 'remote';
+    mergedConfig.gtServicesEnabled =
+        (gtRuntimeTranslationEnabled || gtRemoteCacheEnabled) &&
+            mergedConfig.projectId;
+    // Standardize locales
+    if (mergedConfig.locales && mergedConfig.defaultLocale) {
+        mergedConfig.locales.unshift(mergedConfig.defaultLocale);
+    }
+    var updatedLocales = [];
+    mergedConfig.locales = Array.from(new Set(mergedConfig.locales)).map(function (locale) {
+        var updatedLocale = mergedConfig.gtServicesEnabled
+            ? (0, generaltranslation_1.standardizeLocale)(locale)
+            : locale;
+        if (updatedLocale !== locale) {
+            updatedLocales.push("".concat(locale, " -> ").concat(updatedLocale));
+        }
+        return updatedLocale;
+    });
     // ---------- ERROR CHECKS ---------- //
     // Local dictionary flag
     if (customLoadDictionaryPath) {
@@ -197,13 +216,12 @@ function withGTConfig(nextConfig, props) {
         console.warn(createErrors_1.APIKeyMissingWarn);
     }
     // Check: if using GT infrastructure, warn about unsupported locales
-    var gtRuntimeTranslationEnabled = mergedConfig.runtimeUrl === defaultWithGTConfigProps_1.default.runtimeUrl &&
-        ((process.env.NODE_ENV === 'production' && mergedConfig.apiKey) ||
-            (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey));
-    var gtRemoteCacheEnabled = mergedConfig.cacheUrl === defaultWithGTConfigProps_1.default.cacheUrl &&
-        mergedConfig.loadTranslationsType === 'remote';
-    if ((gtRuntimeTranslationEnabled || gtRemoteCacheEnabled) &&
-        mergedConfig.projectId) {
+    if (mergedConfig.gtServicesEnabled) {
+        // Warn about standardized locales
+        if (updatedLocales.length) {
+            console.warn((0, createErrors_1.standardizedLocalesWarning)(updatedLocales));
+        }
+        // Warn about unsupported locales
         var warningLocales = (mergedConfig.locales || defaultWithGTConfigProps_1.default.locales).filter(function (locale) { return !(0, supported_locales_1.getSupportedLocale)(locale); });
         if (warningLocales.length) {
             console.warn((0, createErrors_1.createUnsupportedLocalesWarning)(warningLocales));
