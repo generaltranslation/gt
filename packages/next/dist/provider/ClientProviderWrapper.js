@@ -30,7 +30,6 @@ function ClientProvider(props) {
     var pathname = (0, navigation_1.usePathname)();
     (0, react_1.useEffect)(function () {
         var _a, _b;
-        console.log("".concat(pathname, " re-rendered"));
         var newLocale = (_a = document.cookie
             .split('; ')
             .find(function (row) { return row.startsWith("".concat(constants_1.middlewareLocaleName, "=")); })) === null || _a === void 0 ? void 0 : _a.split('=')[1];
@@ -38,14 +37,10 @@ function ClientProvider(props) {
             var rewriteFlag = ((_b = document
                 .querySelector("meta[name=\"".concat(constants_1.middlewareLocaleRewriteFlagName, "\"]"))) === null || _b === void 0 ? void 0 : _b.getAttribute('content')) === 'true';
             if (!rewriteFlag) {
-                console.log('New cookie locale', newLocale, pathname);
                 // reload server
                 router.refresh();
                 // reload client
                 window.location.reload();
-            }
-            else {
-                console.log('DO NOTHING: Rewrite flag is true', pathname);
             }
         }
     }, [pathname]); // Re-run when pathname changes

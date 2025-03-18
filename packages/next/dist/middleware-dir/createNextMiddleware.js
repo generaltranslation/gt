@@ -6,16 +6,7 @@ var internal_1 = require("generaltranslation/internal");
 var createErrors_1 = require("../errors/createErrors");
 var server_1 = require("next/server");
 var constants_1 = require("../utils/constants");
-/**
- * Extracts the locale from the given pathname.
- *
- * @param {string} pathname - The pathname to extract from.
- * @returns {string} The extracted locale.
- */
-function extractLocale(pathname) {
-    var matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
-    return matches ? matches[1] : null;
-}
+var utils_1 = require("./utils");
 /**
  * Middleware factory to create a Next.js middleware for i18n routing and locale detection.
  *
@@ -68,157 +59,9 @@ function createNextMiddleware(_a) {
         }
         return acc;
     }, {});
-    var pathToSharedPath = Object.entries(pathConfig).reduce(function (acc, _a) {
-        var sharedPath = _a[0], localizedPath = _a[1];
-        // Add the shared path itself, converting to regex pattern if it has dynamic segments
-        if (sharedPath.includes('[')) {
-            var pattern = sharedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
-            acc[pattern] = sharedPath;
-        }
-        else {
-            acc[sharedPath] = sharedPath;
-        }
-        // Add localized paths, converting to regex pattern if they have dynamic segments
-        if (typeof localizedPath === 'object') {
-            Object.values(localizedPath).forEach(function (localizedPath) {
-                // Convert the localized path to a regex pattern
-                // Replace [param] with [^/]+ to match any non-slash characters
-                var pattern = localizedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
-                acc[pattern] = sharedPath;
-            });
-        }
-        return acc;
-    }, {});
+    // Create the path mapping
+    var pathToSharedPath = (0, utils_1.createPathToSharedPathMap)(pathConfig);
     console.log(pathToSharedPath);
-    /**
-     * Gets the shared path from a given pathname, handling both static and dynamic paths
-     * @param pathname The pathname to extract the shared path from
-     * @returns The shared path or undefined if no match is found
-     *
-     * Example:
-     * pathname: /fr/dashboard/1/le-custom
-     * Returns: /dashboard/[id]/custom
-     *
-     * pathname: /fr/le-about
-     * Returns: /about
-     *
-     * pathname: /fr/blog
-     * Returns: /blog
-     */
-    var getSharedPath = function (pathname) {
-        // Try exact match first
-        if (pathToSharedPath[pathname]) {
-            return pathToSharedPath[pathname];
-        }
-        // Try regex pattern match
-        for (var _i = 0, _a = Object.entries(pathToSharedPath); _i < _a.length; _i++) {
-            var _b = _a[_i], pattern = _b[0], sharedPath = _b[1];
-            if (pattern.includes('[^/]+')) {
-                // Convert the pattern to a strict regex that matches the exact path structure
-                var regex = new RegExp("^".concat(pattern.replace(/\//g, '\\/'), "$"));
-                if (regex.test(pathname)) {
-                    return sharedPath;
-                }
-            }
-        }
-        return undefined;
-    };
-    /**
-     * Extracts dynamic parameters from a path based on a shared path pattern
-     * @param path The actual pathname containing values (includes locale prefix)
-     * @param templatePath The shared path containing dynamic segments (does not include locale)
-     * @returns Array of parameter values in order of appearance
-     *
-     * Example:
-     * templatePath: /fr/dashboard/[id]/custom
-     * path: /fr/dashboard/1/le-custom
-     * Returns: ['1']
-     *
-     * Example with multiple params:
-     * templatePath: /fr/dashboard/[id]/[type]/custom
-     * path: /fr/dashboard/1/2/le-custom
-     * Returns: ['1', '2']
-     */
-    var extractDynamicParams = function (templatePath, path) {
-        if (!templatePath.includes('['))
-            return [];
-        var params = [];
-        var pathSegments = path.split('/');
-        var sharedSegments = templatePath.split('/');
-        sharedSegments.forEach(function (segment, index) {
-            if (segment.startsWith('[') && segment.endsWith(']')) {
-                params.push(pathSegments[index]);
-            }
-        });
-        return params;
-    };
-    /**
-     * Replaces dynamic segments in a path with their actual values
-     * @param path The original pathname containing actual values
-     * @param templatePath The shared path containing dynamic segments
-     * @returns The path with dynamic segments replaced with actual values
-     *
-     * Example:
-     * path: /fr/dashboard/1/custom
-     * templatePath: /fr/dashboard/[id]/le-custom
-     * Returns: /fr/dashboard/1/le-custom
-     *
-     * Example:
-     * path: /about
-     * templatePath: /fr/le-about
-     * Returns: /fr/le-about
-     *
-     * Note: This function only replaces dynamic segments (e.g. [id]) with their actual values.
-     * It does not handle localized path parts (e.g. /custom vs /le-custom).
-     */
-    var replaceDynamicSegments = function (path, templatePath) {
-        if (!templatePath.includes('['))
-            return templatePath;
-        var params = extractDynamicParams(templatePath, path);
-        var paramIndex = 0;
-        return templatePath.replace(/\[([^\]]+)\]/g, function (match) {
-            return params[paramIndex++] || match;
-        });
-    };
-    /**
-     * Gets the full localized path given a shared path and locale
-     * @param sharedPath The shared path to localize
-     * @param locale The locale to use
-     * @param originalUrl Optional URL to preserve query parameters from
-     * @returns localized path or undefined if no localized path is found
-     *
-     * const pathConfig = {
-     *   '/blog': '/blog',
-     *   '/about': {
-     *     fr: '/le-about',
-     *   },
-     * }
-     *
-     * // exact matches returns full localized path
-     * getLocalizedPath('/about', 'en-US') -> '/en-US/about'
-     * getLocalizedPath('/about', 'fr') -> '/fr/le-about'
-     * getLocalizedPath('/about', 'es') -> '/es/about
-     * getLocalizedPath('/blog', 'en-US') -> '/en-US/blog'
-     *
-     * // with query parameters
-     * getLocalizedPath('/about', 'fr', new URL('/about?foo=bar')) -> '/fr/le-about?foo=bar'
-     *
-     * // non-shared paths return undefined
-     * getLocalizedPath('/foo', 'en-US') -> undefined
-     */
-    var getLocalizedPath = function (sharedPath, locale) {
-        var localizedPath = pathConfig[sharedPath];
-        var path;
-        if (typeof localizedPath === 'string') {
-            path = "/".concat(locale).concat(localizedPath);
-        }
-        else if (typeof localizedPath === 'object') {
-            path = localizedPath[locale]
-                ? "/".concat(locale).concat(localizedPath[locale])
-                : "/".concat(locale).concat(sharedPath);
-        }
-        return path;
-    };
     /**
      * Processes the incoming request to determine the user's locale and sets a locale cookie.
      * Optionally redirects the user based on the locale if locale-based routing is enabled.
@@ -233,7 +76,6 @@ function createNextMiddleware(_a) {
      * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
      */
     function nextMiddleware(req) {
-        var _a, _b, _c;
         console.log('--------------------------------');
         var headerList = new Headers(req.headers);
         var res = server_1.NextResponse.next({
@@ -242,7 +84,6 @@ function createNextMiddleware(_a) {
                 headers: headerList,
             },
         });
-        var candidates = [];
         // routing
         var routingConfig;
         try {
@@ -254,119 +95,62 @@ function createNextMiddleware(_a) {
         // Check for rewrite flag in cookies
         var rewriteFlag = req.headers.get(constants_1.middlewareLocaleRewriteFlagName) === 'true';
         // ---------- LOCALE DETECTION ---------- //
-        // Check pathname locales
-        var pathnameLocale, unstandardizedPathnameLocale;
-        var pathname = req.nextUrl.pathname;
-        if (localeRouting) {
-            // Check if there is any supported locale in the pathname
-            unstandardizedPathnameLocale = extractLocale(pathname);
-            var extractedLocale = gtServicesEnabled
-                ? (0, generaltranslation_1.standardizeLocale)(unstandardizedPathnameLocale || '')
-                : unstandardizedPathnameLocale;
-            if (extractedLocale && (0, generaltranslation_1.isValidLocale)(extractedLocale)) {
-                pathnameLocale = extractedLocale;
-                candidates.push(pathnameLocale);
-            }
-        }
-        // Check cookie locale
-        var cookieLocale = req.cookies.get(internal_1.localeCookieName);
-        if ((cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value) && (0, generaltranslation_1.isValidLocale)(cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value)) {
-            var resetCookieName = constants_1.middlewareLocaleResetFlagName;
-            var resetCookie = req.cookies.get(resetCookieName);
-            if (resetCookie === null || resetCookie === void 0 ? void 0 : resetCookie.value) {
-                res.cookies.delete(resetCookieName);
-                candidates.unshift(cookieLocale.value);
-            }
-            else {
-                candidates.push(cookieLocale.value);
-            }
-        }
-        var refererLocale;
-        if (localeRouting) {
-            // If there's no locale, try to get one from the referer
-            var referer = headerList.get('referer');
-            if (referer && typeof referer === 'string') {
-                refererLocale = extractLocale((_a = new URL(referer)) === null || _a === void 0 ? void 0 : _a.pathname);
-                if ((0, generaltranslation_1.isValidLocale)(refererLocale || ''))
-                    candidates.push(refererLocale || '');
-            }
-        }
-        // middleware locale
-        var middlewareLocale = (_b = req.cookies.get(constants_1.middlewareLocaleName)) === null || _b === void 0 ? void 0 : _b.value;
-        if (middlewareLocale && (0, generaltranslation_1.isValidLocale)(middlewareLocale)) {
-            middlewareLocale = gtServicesEnabled
-                ? (0, generaltranslation_1.standardizeLocale)(middlewareLocale)
-                : middlewareLocale;
-            candidates.push(middlewareLocale);
-        }
-        // Get locales from accept-language header
-        var acceptedLocales = ((_c = headerList
-            .get('accept-language')) === null || _c === void 0 ? void 0 : _c.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); })) || [];
-        candidates.push.apply(candidates, acceptedLocales);
-        // Get default locale
-        candidates.push(defaultLocale);
-        // determine userLocale
-        var unstandardizedUserLocale = (0, generaltranslation_1.determineLocale)(candidates.filter(generaltranslation_1.isValidLocale), approvedLocales) ||
-            defaultLocale;
-        var userLocale = gtServicesEnabled
-            ? (0, generaltranslation_1.standardizeLocale)(unstandardizedUserLocale || '')
-            : unstandardizedUserLocale;
+        var _a = (0, utils_1.getLocaleFromRequest)(req, defaultLocale, approvedLocales, localeRouting), userLocale = _a.userLocale, pathnameLocale = _a.pathnameLocale, unstandardizedPathnameLocale = _a.unstandardizedPathnameLocale;
         res.headers.set(internal_1.localeHeaderName, userLocale);
         if (userLocale) {
-            // TODO: make sure this is compatable with user changing browser langugage
             res.cookies.set(constants_1.middlewareLocaleName, userLocale);
         }
-        // ---------- ROUTING ---------- //
         if (localeRouting) {
-            var pathname_1 = req.nextUrl.pathname;
+            // ---------- GET PATHS ---------- //
+            var pathname = req.nextUrl.pathname;
             // Only strip off the locale if it's a valid locale (/fr/le-about -> /about), (/blog -> /blog)
             var unprefixedPathname = pathnameLocale
-                ? pathname_1.replace(new RegExp("^/".concat(unstandardizedPathnameLocale)), '')
-                : pathname_1;
+                ? pathname.replace(new RegExp("^/".concat(unstandardizedPathnameLocale)), '')
+                : pathname;
             var originalUrl = req.nextUrl;
             // standardize pathname (ie, /tg/welcome -> /fil/welcome), (/blog -> /blog)
             var standardizedPathname = pathnameLocale && pathnameLocale !== unstandardizedPathnameLocale
-                ? pathname_1.replace(new RegExp("^/".concat(unstandardizedPathnameLocale)), "/".concat(userLocale))
-                : pathname_1;
+                ? pathname.replace(new RegExp("^/".concat(unstandardizedPathnameLocale)), "/".concat(userLocale))
+                : pathname;
             // Get the shared path for the unprefixed pathname
-            var sharedPath = getSharedPath(unprefixedPathname);
+            var sharedPath = (0, utils_1.getSharedPath)(unprefixedPathname, pathToSharedPath);
             // Localized path (/en-US/blog, /fr/le-about, /fr/dashboard/[id]/custom)
-            var localizedPath = sharedPath && getLocalizedPath(sharedPath, userLocale);
+            var localizedPath = sharedPath && (0, utils_1.getLocalizedPath)(sharedPath, userLocale, pathConfig);
             // Combine localized path with dynamic parameters (/en-US/blog, /fr/le-about, /fr/dashboard/1/le-custom)
             var localizedPathWithParameters = localizedPath &&
-                replaceDynamicSegments(standardizedPathname, localizedPath);
-            console.log('userLocale', userLocale);
-            console.log('pathnameLocale', pathnameLocale);
-            console.log('unstandardizedPathnameLocale', unstandardizedPathnameLocale);
-            console.log('pathname', pathname_1);
+                (0, utils_1.replaceDynamicSegments)(pathnameLocale
+                    ? standardizedPathname
+                    : "/".concat(userLocale).concat(standardizedPathname), localizedPath);
+            console.log('pathname', pathname);
             console.log('unprefixedPathname', unprefixedPathname);
             console.log('standardizedPathname', standardizedPathname);
             console.log('sharedPath', sharedPath);
             console.log('localizedPath', localizedPath);
             console.log('localizedPathWithParameters', localizedPathWithParameters);
+            // ---------- ROUTING LOGIC ---------- //
             // BASE CASE: default locale, same path (/en-US/blog -> /en-US/blog), (/en-US/dashboard/1/custom -> /en-US/dashboard/1/custom)
             if (localizedPathWithParameters &&
                 standardizedPathname === localizedPathWithParameters &&
                 userLocale === defaultLocale) {
-                console.log('BASE CASE', standardizedPathname);
+                console.log("[Middleware] Default locale path match: ".concat(pathname, " -> ").concat(localizedPathWithParameters));
                 return res;
             }
             // BASE CASE: at localized path, which is the same as the shared path (/fil/blog -> /fil/blog)
-            if (pathname_1 === localizedPathWithParameters &&
+            if (pathname === localizedPathWithParameters &&
                 "/".concat(userLocale).concat(sharedPath) === localizedPathWithParameters) {
-                console.log('BASE CASE', pathname_1, '->', localizedPathWithParameters);
+                console.log("[Middleware] Localized path match: ".concat(pathname, " -> ").concat(localizedPathWithParameters));
                 return res;
             }
             // If we've already rewritten this path, don't process it again
             if (rewriteFlag) {
-                console.log('BASE CASE', standardizedPathname);
+                console.log("[Middleware] Already rewritten path: ".concat(pathname, " (skipping)"));
                 return res;
             }
             // REWRITE CASE: proxies a localized path, same locale (/fr/le-about => /fr/about) (/fr/dashboard/1/le-custom => /fr/dashboard/1/custom)
             if (localizedPathWithParameters &&
                 standardizedPathname === localizedPathWithParameters) {
                 // convert to shared path with dynamic parameters
-                var rewritePath = replaceDynamicSegments(localizedPathWithParameters, "/".concat(userLocale).concat(sharedPath));
+                var rewritePath = (0, utils_1.replaceDynamicSegments)(localizedPathWithParameters, "/".concat(userLocale).concat(sharedPath));
                 var rewriteUrl = new URL(rewritePath, originalUrl);
                 rewriteUrl.search = originalUrl.search;
                 headerList.set(internal_1.localeHeaderName, userLocale);
@@ -377,21 +161,21 @@ function createNextMiddleware(_a) {
                 if (userLocale) {
                     response.cookies.set(constants_1.middlewareLocaleName, userLocale);
                 }
-                console.log('REWRITE CASE', pathname_1, '->', rewritePath);
+                console.log("[Middleware] Rewrite localized path: ".concat(pathname, " -> ").concat(rewritePath));
                 return response;
             }
             // REWRITE CASE: no locale prefix
             if (!pathnameLocale &&
                 !prefixDefaultLocale &&
                 (0, generaltranslation_1.isSameDialect)(userLocale, defaultLocale)) {
-                var rewritePath = "/".concat(userLocale).concat(pathname_1);
+                var rewritePath = "/".concat(userLocale).concat(pathname);
                 var rewriteUrl = new URL(rewritePath, originalUrl);
                 rewriteUrl.search = originalUrl.search;
                 var response = server_1.NextResponse.rewrite(rewriteUrl, {
                     headers: headerList,
                 });
                 response.headers.set(constants_1.middlewareLocaleRewriteFlagName, 'true');
-                console.log('REWRITE CASE', pathname_1, '->', rewritePath);
+                console.log("[Middleware] Rewrite no locale prefix: ".concat(pathname, " -> ").concat(rewritePath));
                 return response;
             }
             // REDIRECT CASE: non-i18n path
@@ -402,15 +186,15 @@ function createNextMiddleware(_a) {
                 // determine redirect path
                 var redirectPath = localizedPathWithParameters ||
                     (pathnameLocale
-                        ? pathname_1.replace(new RegExp("^/".concat(unstandardizedPathnameLocale)), "/".concat(userLocale))
-                        : "/".concat(userLocale).concat(pathname_1));
+                        ? pathname.replace(new RegExp("^/".concat(unstandardizedPathnameLocale)), "/".concat(userLocale))
+                        : "/".concat(userLocale).concat(pathname));
                 var redirectUrl = new URL(redirectPath, originalUrl);
                 redirectUrl.search = originalUrl.search;
                 var response = server_1.NextResponse.redirect(redirectUrl);
                 if (userLocale) {
                     response.cookies.set(constants_1.middlewareLocaleName, userLocale);
                 }
-                console.log('REDIRECT CASE', pathname_1, '->', redirectPath);
+                console.log("[Middleware] Redirect non-i18n path: ".concat(pathname, " -> ").concat(redirectPath));
                 return response;
             }
             // REDIRECT CASE: mismatched localized path (/fr/about -> /fr/le-about), mismatched dynamic path (/fr/dashboard/1/custom -> /fr/dashboard/1/le-custom)
@@ -421,13 +205,14 @@ function createNextMiddleware(_a) {
                 if (userLocale) {
                     response.cookies.set(constants_1.middlewareLocaleName, userLocale);
                 }
-                console.log('REDIRECT CASE', pathname_1, '->', localizedPathWithParameters);
+                console.log("[Middleware] Redirect mismatched path: ".concat(pathname, " -> ").concat(localizedPathWithParameters));
                 return response;
             }
             // BASE CASE
-            console.log('BASE CASE', pathname_1);
+            console.log("[Middleware] No transformation needed: ".concat(pathname));
             return res;
         }
+        console.log("[Middleware] No locale routing: ".concat(req.nextUrl.pathname));
         return res;
     }
     return nextMiddleware;

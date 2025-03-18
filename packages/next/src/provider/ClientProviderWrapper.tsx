@@ -23,7 +23,6 @@ export default function ClientProvider(
   // When nav to same route but in diff locale, client components were cached and not re-rendered
   const pathname = usePathname();
   useEffect(() => {
-    console.log(`${pathname} re-rendered`);
     const newLocale = document.cookie
       .split('; ')
       .find((row) => row.startsWith(`${middlewareLocaleName}=`))
@@ -35,14 +34,11 @@ export default function ClientProvider(
           ?.getAttribute('content') === 'true';
 
       if (!rewriteFlag) {
-        console.log('New cookie locale', newLocale, pathname);
         // reload server
         router.refresh();
 
         // reload client
         window.location.reload();
-      } else {
-        console.log('DO NOTHING: Rewrite flag is true', pathname);
       }
     }
   }, [pathname]); // Re-run when pathname changes
