@@ -10,7 +10,6 @@ import {
   localeHeaderName,
   localeRewriteFlagName,
 } from 'generaltranslation/internal';
-import { listSupportedLocales } from '@generaltranslation/supported-locales';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -504,11 +503,29 @@ export default function createNextMiddleware(
         return response;
       }
 
-      // // REWRITE CASE: no locale prefix
-      // if (!pathnameLocale && !prefixDefaultLocale) {
-      //   console.log('REWRITE: no locale prefix');
-      //   return res;
-      // }
+      // REWRITE CASE: no locale prefix
+      if (
+        !pathnameLocale &&
+        !prefixDefaultLocale &&
+        isSameDialect(userLocale, defaultLocale)
+      ) {
+        const rewritePath = `/${userLocale}${pathname}`;
+        const rewriteUrl = new URL(rewritePath, originalUrl);
+        rewriteUrl.search = originalUrl.search;
+        console.log(
+          'REWRITE: no locale prefix',
+          userLocale,
+          pathname,
+          '\n' + pathname,
+          '->',
+          rewritePath
+        );
+        const response = NextResponse.rewrite(rewriteUrl, {
+          headers: headerList,
+        });
+        response.headers.set(localeRewriteFlagName, 'true');
+        return response;
+      }
 
       // REDIRECT CASE: non-i18n path
       // 1. use customized path if it exists                      (/en-US/about -> /fr/le-about), (/about -> /fr/le-about)
@@ -518,7 +535,7 @@ export default function createNextMiddleware(
         // determine redirect path
         // TODO: check out standardizeLocale(extractLocale(pathname) || ''); TL which gets standardized to FIL causing an infinite loop, instead standardize later
         const redirectPath =
-          localizedPath ||
+          localizedPathWithParameters ||
           (pathnameLocale
             ? pathname.replace(
                 new RegExp(`^/${pathnameLocale}`),

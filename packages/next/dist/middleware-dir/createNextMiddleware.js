@@ -148,9 +148,9 @@ function createNextMiddleware(_a) {
         var paths = pathname.replace(/^\//, '').split('/');
         var result = pathToSharedPath[paths[0]];
         for (var _i = 0, _c = paths.slice(1); _i < _c.length; _i++) {
-            var path = _c[_i];
+            var path_1 = _c[_i];
             // if we have a children object, then we continue traversing
-            var next = (_a = result === null || result === void 0 ? void 0 : result.children) === null || _a === void 0 ? void 0 : _a[path]; // check for dynamic pattern
+            var next = (_a = result === null || result === void 0 ? void 0 : result.children) === null || _a === void 0 ? void 0 : _a[path_1]; // check for dynamic pattern
             if (!(next === null || next === void 0 ? void 0 : next.value) && Object.keys((result === null || result === void 0 ? void 0 : result.children) || {}).includes('[*]')) {
                 next = (_b = result === null || result === void 0 ? void 0 : result.children) === null || _b === void 0 ? void 0 : _b['[*]'];
             }
@@ -390,6 +390,20 @@ function createNextMiddleware(_a) {
                 }
                 return response;
             }
+            // REWRITE CASE: no locale prefix
+            if (!pathnameLocale &&
+                !prefixDefaultLocale &&
+                (0, generaltranslation_1.isSameDialect)(userLocale, defaultLocale)) {
+                var rewritePath = "/".concat(userLocale).concat(pathname_1);
+                var rewriteUrl = new URL(rewritePath, originalUrl);
+                rewriteUrl.search = originalUrl.search;
+                console.log('REWRITE: no locale prefix', userLocale, pathname_1, '\n' + pathname_1, '->', rewritePath);
+                var response = server_1.NextResponse.rewrite(rewriteUrl, {
+                    headers: headerList,
+                });
+                response.headers.set(internal_1.localeRewriteFlagName, 'true');
+                return response;
+            }
             // REDIRECT CASE: non-i18n path
             // 1. use customized path if it exists                      (/en-US/about -> /fr/le-about), (/about -> /fr/le-about)
             // 2. otherwise, if pathname has locale prefix, replace it  (/en-US/welcome -> /fr/welcome)
@@ -397,7 +411,7 @@ function createNextMiddleware(_a) {
             if (pathnameLocale !== userLocale) {
                 // determine redirect path
                 // TODO: check out standardizeLocale(extractLocale(pathname) || ''); TL which gets standardized to FIL causing an infinite loop, instead standardize later
-                var redirectPath = localizedPath ||
+                var redirectPath = localizedPathWithParameters ||
                     (pathnameLocale
                         ? pathname_1.replace(new RegExp("^/".concat(pathnameLocale)), "/".concat(userLocale))
                         : "/".concat(userLocale).concat(pathname_1));
