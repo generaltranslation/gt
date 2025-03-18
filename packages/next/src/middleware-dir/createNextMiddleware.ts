@@ -24,6 +24,10 @@ function extractLocale(pathname: string): string | null {
   return matches ? matches[1] : null;
 }
 
+type PathConfig = {
+  [key: string]: string | { [key: string]: string };
+};
+
 /**
  * Middleware factory to create a Next.js middleware for i18n routing and locale detection.
  *
@@ -36,18 +40,15 @@ function extractLocale(pathname: string): string | null {
  * @param {boolean} [config.prefixDefaultLocale=false] - Flag to enable or disable prefixing the default locale to the pathname, i.e., /en/about -> /about
  * @returns {function} - A middleware function that processes the request and response.
  */
-export default function createNextMiddleware(
-  {
-    localeRouting = true,
-    prefixDefaultLocale = false,
-  }: {
-    localeRouting?: boolean;
-    prefixDefaultLocale?: boolean;
-  } = {
-    localeRouting: true,
-    prefixDefaultLocale: false,
-  }
-) {
+export default function createNextMiddleware({
+  localeRouting = true,
+  prefixDefaultLocale = false,
+  pathConfig = {},
+}: {
+  localeRouting?: boolean;
+  prefixDefaultLocale?: boolean;
+  pathConfig?: PathConfig;
+}) {
   // i18n config
   let envParams;
   if (process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS) {
@@ -76,22 +77,6 @@ export default function createNextMiddleware(
   const approvedLocales = locales;
 
   // ---------- PRE-PROCESSING PATHS ---------- //
-
-  type PathConfig = {
-    [key: string]: string | { [key: string]: string };
-  };
-  const pathConfig: PathConfig = {
-    '/blog': '/blog',
-    '/about': {
-      fr: '/le-about',
-    },
-    '/dashboard/[id]/custom': {
-      fr: '/le-dashboard/[id]/le-custom',
-    },
-    '/dashboard/[id]/custom/[type]': {
-      fr: '/le-dashboard/[id]/le-custom/[type]',
-    },
-  };
 
   // recursively build a tree for the shared path lookup
   const buildTree = (
@@ -175,7 +160,6 @@ export default function createNextMiddleware(
       }
       return acc;
     }, {});
-  console.log('pathToSharedPath', pathToSharedPath);
 
   /**
    * Gets the shared path from a given pathname, handling both static and dynamic paths
@@ -209,7 +193,6 @@ export default function createNextMiddleware(
         next = result?.children?.['[*]' as string];
       }
       result = next;
-      if (paths[0] === 'le-dashboard') console.log(result);
     }
     return result?.value;
   };
@@ -339,7 +322,6 @@ export default function createNextMiddleware(
    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
    */
   function nextMiddleware(req: NextRequest) {
-    console.log('--------------------------------');
     const headerList = new Headers(req.headers);
 
     const res = NextResponse.next({
@@ -419,7 +401,6 @@ export default function createNextMiddleware(
       determineLocale(candidates.filter(isValidLocale), approvedLocales) ||
         defaultLocale
     );
-    console.log('userLocale', userLocale);
     res.headers.set(localeHeaderName, userLocale);
 
     if (userLocale) {
@@ -448,25 +429,17 @@ export default function createNextMiddleware(
       const localizedPathWithParameters =
         localizedPath && replaceDynamicSegments(pathname, localizedPath);
 
-      console.log('pathname', pathname);
-      console.log('unprefixedPathname', unprefixedPathname);
-      console.log('sharedPath', sharedPath);
-      console.log('localizedPath', localizedPath);
-      console.log('localizedPathWithParameters', localizedPathWithParameters);
-
       // BASE CASE: same locale, same path (/en-US/blog -> /en-US/blog), (/en-US/dashboard/1/custom -> /en-US/dashboard/1/custom)
       if (
         localizedPathWithParameters &&
         pathname === localizedPathWithParameters &&
         userLocale === defaultLocale
       ) {
-        console.log('DO NOTHING: ', userLocale, pathname);
         return res;
       }
 
       // If we've already rewritten this path, don't process it again
       if (rewriteFlag) {
-        console.log('DO NOTHING: Rewrite flag is true', pathname);
         return res;
       }
 
@@ -481,14 +454,6 @@ export default function createNextMiddleware(
         );
         const rewriteUrl = new URL(rewritePath, originalUrl);
         rewriteUrl.search = originalUrl.search;
-        console.log(
-          'REWRITE (localized path, same locale):',
-          userLocale,
-          pathnameLocale,
-          '\n' + pathname,
-          '->',
-          rewritePath
-        );
         headerList.set(localeHeaderName, userLocale);
         const response = NextResponse.rewrite(rewriteUrl, {
           headers: headerList,
@@ -512,14 +477,6 @@ export default function createNextMiddleware(
         const rewritePath = `/${userLocale}${pathname}`;
         const rewriteUrl = new URL(rewritePath, originalUrl);
         rewriteUrl.search = originalUrl.search;
-        console.log(
-          'REWRITE: no locale prefix',
-          userLocale,
-          pathname,
-          '\n' + pathname,
-          '->',
-          rewritePath
-        );
         const response = NextResponse.rewrite(rewriteUrl, {
           headers: headerList,
         });
@@ -544,14 +501,6 @@ export default function createNextMiddleware(
             : `/${userLocale}${pathname}`);
         const redirectUrl = new URL(redirectPath, originalUrl);
         redirectUrl.search = originalUrl.search;
-        console.log(
-          'REDIRECT (unknown path):',
-          userLocale,
-          pathnameLocale,
-          '\n' + pathname,
-          '->',
-          redirectPath
-        );
         const response = NextResponse.redirect(redirectUrl);
         if (userLocale) {
           response.cookies.set(
@@ -566,14 +515,6 @@ export default function createNextMiddleware(
       if (localizedPathWithParameters) {
         const redirectUrl = new URL(localizedPathWithParameters, originalUrl);
         redirectUrl.search = originalUrl.search;
-        console.log(
-          'REDIRECT (mismatched localized path):',
-          userLocale,
-          pathnameLocale,
-          '\n' + pathname,
-          '->',
-          localizedPathWithParameters
-        );
         const response = NextResponse.redirect(redirectUrl);
         if (userLocale) {
           response.cookies.set(
@@ -585,7 +526,6 @@ export default function createNextMiddleware(
       }
 
       // BASE CASE
-      console.log('DO NOTHING:', userLocale, pathname);
       return res;
     }
 
