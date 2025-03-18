@@ -14,15 +14,15 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = ClientProvider;
 var jsx_runtime_1 = require("react/jsx-runtime");
-var internal_1 = require("generaltranslation/internal");
 var client_1 = require("gt-react/client");
 var navigation_1 = require("next/navigation");
 var react_1 = require("react");
+var constants_1 = require("../utils/constants");
 function ClientProvider(props) {
     // locale change on client, trigger page reload
     var router = (0, navigation_1.useRouter)();
     var onLocaleChange = function () {
-        document.cookie = "generaltranslation.locale.reset=true;path=/";
+        document.cookie = "".concat(constants_1.middlewareLocaleResetFlagName, "=true;path=/");
         router.refresh();
     };
     // Trigger page reload when locale changes
@@ -33,10 +33,10 @@ function ClientProvider(props) {
         console.log("".concat(pathname, " re-rendered"));
         var newLocale = (_a = document.cookie
             .split('; ')
-            .find(function (row) { return row.startsWith("generaltranslation.middleware.locale="); })) === null || _a === void 0 ? void 0 : _a.split('=')[1];
+            .find(function (row) { return row.startsWith("".concat(constants_1.middlewareLocaleName, "=")); })) === null || _a === void 0 ? void 0 : _a.split('=')[1];
         if (newLocale && newLocale !== props.locale) {
             var rewriteFlag = ((_b = document
-                .querySelector("meta[name=\"".concat(internal_1.localeRewriteFlagName, "\"]"))) === null || _b === void 0 ? void 0 : _b.getAttribute('content')) === 'true';
+                .querySelector("meta[name=\"".concat(constants_1.middlewareLocaleRewriteFlagName, "\"]"))) === null || _b === void 0 ? void 0 : _b.getAttribute('content')) === 'true';
             if (!rewriteFlag) {
                 console.log('New cookie locale', newLocale, pathname);
                 // reload server

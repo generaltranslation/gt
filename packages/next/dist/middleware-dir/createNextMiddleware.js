@@ -5,6 +5,7 @@ var generaltranslation_1 = require("generaltranslation");
 var internal_1 = require("generaltranslation/internal");
 var createErrors_1 = require("../errors/createErrors");
 var server_1 = require("next/server");
+var constants_1 = require("../utils/constants");
 /**
  * Extracts the locale from the given pathname.
  *
@@ -270,10 +271,8 @@ function createNextMiddleware(_a) {
         catch (e) {
             console.error(e);
         }
-        // Clear any existing rewrite flag cookie
-        res.cookies.delete(internal_1.localeRewriteFlagName);
         // Check for rewrite flag in cookies
-        var rewriteFlag = req.headers.get(internal_1.localeRewriteFlagName) === 'true';
+        var rewriteFlag = req.headers.get(constants_1.middlewareLocaleRewriteFlagName) === 'true';
         // ---------- LOCALE DETECTION ---------- //
         // Check pathname locales
         var pathnameLocale;
@@ -289,7 +288,7 @@ function createNextMiddleware(_a) {
         // Check cookie locale
         var cookieLocale = req.cookies.get(internal_1.localeCookieName);
         if ((cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value) && (0, generaltranslation_1.isValidLocale)(cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value)) {
-            var resetCookieName = 'generaltranslation.locale.reset';
+            var resetCookieName = constants_1.middlewareLocaleResetFlagName;
             var resetCookie = req.cookies.get(resetCookieName);
             if (resetCookie === null || resetCookie === void 0 ? void 0 : resetCookie.value) {
                 res.cookies.delete(resetCookieName);
@@ -321,7 +320,7 @@ function createNextMiddleware(_a) {
         res.headers.set(internal_1.localeHeaderName, userLocale);
         if (userLocale) {
             // TODO: make sure this is compatable with user changing browser langugage
-            res.cookies.set('generaltranslation.middleware.locale', userLocale);
+            res.cookies.set(constants_1.middlewareLocaleName, userLocale);
         }
         // ---------- ROUTING ---------- //
         if (localeRouting) {
@@ -357,9 +356,9 @@ function createNextMiddleware(_a) {
                 var response = server_1.NextResponse.rewrite(rewriteUrl, {
                     headers: headerList,
                 });
-                response.headers.set(internal_1.localeRewriteFlagName, 'true');
+                response.headers.set(constants_1.middlewareLocaleRewriteFlagName, 'true');
                 if (userLocale) {
-                    response.cookies.set('generaltranslation.middleware.locale', userLocale);
+                    response.cookies.set(constants_1.middlewareLocaleName, userLocale);
                 }
                 return response;
             }
@@ -373,7 +372,7 @@ function createNextMiddleware(_a) {
                 var response = server_1.NextResponse.rewrite(rewriteUrl, {
                     headers: headerList,
                 });
-                response.headers.set(internal_1.localeRewriteFlagName, 'true');
+                response.headers.set(constants_1.middlewareLocaleRewriteFlagName, 'true');
                 return response;
             }
             // REDIRECT CASE: non-i18n path
@@ -391,7 +390,7 @@ function createNextMiddleware(_a) {
                 redirectUrl.search = originalUrl.search;
                 var response = server_1.NextResponse.redirect(redirectUrl);
                 if (userLocale) {
-                    response.cookies.set('generaltranslation.middleware.locale', userLocale);
+                    response.cookies.set(constants_1.middlewareLocaleName, userLocale);
                 }
                 return response;
             }
@@ -401,7 +400,7 @@ function createNextMiddleware(_a) {
                 redirectUrl.search = originalUrl.search;
                 var response = server_1.NextResponse.redirect(redirectUrl);
                 if (userLocale) {
-                    response.cookies.set('generaltranslation.middleware.locale', userLocale);
+                    response.cookies.set(constants_1.middlewareLocaleName, userLocale);
                 }
                 return response;
             }

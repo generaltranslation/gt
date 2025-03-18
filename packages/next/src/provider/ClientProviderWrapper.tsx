@@ -1,9 +1,13 @@
 'use client';
-import { localeRewriteFlagName } from 'generaltranslation/internal';
 import { ClientProvider as _ClientProvider } from 'gt-react/client';
 import { ClientProviderProps } from 'gt-react/internal';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import {
+  middlewareLocaleName,
+  middlewareLocaleResetFlagName,
+  middlewareLocaleRewriteFlagName,
+} from '../utils/constants';
 
 export default function ClientProvider(
   props: Omit<ClientProviderProps, 'onLocaleChange'>
@@ -11,7 +15,7 @@ export default function ClientProvider(
   // locale change on client, trigger page reload
   const router = useRouter();
   const onLocaleChange = () => {
-    document.cookie = `generaltranslation.locale.reset=true;path=/`;
+    document.cookie = `${middlewareLocaleResetFlagName}=true;path=/`;
     router.refresh();
   };
 
@@ -22,12 +26,12 @@ export default function ClientProvider(
     console.log(`${pathname} re-rendered`);
     const newLocale = document.cookie
       .split('; ')
-      .find((row) => row.startsWith(`generaltranslation.middleware.locale=`))
+      .find((row) => row.startsWith(`${middlewareLocaleName}=`))
       ?.split('=')[1];
     if (newLocale && newLocale !== props.locale) {
       const rewriteFlag =
         document
-          .querySelector(`meta[name="${localeRewriteFlagName}"]`)
+          .querySelector(`meta[name="${middlewareLocaleRewriteFlagName}"]`)
           ?.getAttribute('content') === 'true';
 
       if (!rewriteFlag) {

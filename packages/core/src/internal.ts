@@ -7,7 +7,6 @@ export {
   libraryDefaultLocale,
   localeCookieName,
   localeHeaderName,
-  localeRewriteFlagName,
 } from './settings/settings';
 export { pluralForms, isAcceptedPluralForm } from './settings/plurals';
 import _getPluralForm from './locales/getPluralForm';

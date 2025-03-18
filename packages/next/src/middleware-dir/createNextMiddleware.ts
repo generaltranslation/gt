@@ -8,10 +8,14 @@ import {
   libraryDefaultLocale,
   localeCookieName,
   localeHeaderName,
-  localeRewriteFlagName,
 } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  middlewareLocaleName,
+  middlewareLocaleResetFlagName,
+  middlewareLocaleRewriteFlagName,
+} from '../utils/constants';
 
 /**
  * Extracts the locale from the given pathname.
@@ -341,11 +345,9 @@ export default function createNextMiddleware({
       console.error(e);
     }
 
-    // Clear any existing rewrite flag cookie
-    res.cookies.delete(localeRewriteFlagName);
-
     // Check for rewrite flag in cookies
-    const rewriteFlag = req.headers.get(localeRewriteFlagName) === 'true';
+    const rewriteFlag =
+      req.headers.get(middlewareLocaleRewriteFlagName) === 'true';
 
     // ---------- LOCALE DETECTION ---------- //
 
@@ -364,7 +366,7 @@ export default function createNextMiddleware({
     // Check cookie locale
     const cookieLocale = req.cookies.get(localeCookieName);
     if (cookieLocale?.value && isValidLocale(cookieLocale?.value)) {
-      const resetCookieName = 'generaltranslation.locale.reset';
+      const resetCookieName = middlewareLocaleResetFlagName;
       const resetCookie = req.cookies.get(resetCookieName);
       if (resetCookie?.value) {
         res.cookies.delete(resetCookieName);
@@ -405,7 +407,7 @@ export default function createNextMiddleware({
 
     if (userLocale) {
       // TODO: make sure this is compatable with user changing browser langugage
-      res.cookies.set('generaltranslation.middleware.locale', userLocale);
+      res.cookies.set(middlewareLocaleName, userLocale);
     }
 
     // ---------- ROUTING ---------- //
@@ -458,12 +460,9 @@ export default function createNextMiddleware({
         const response = NextResponse.rewrite(rewriteUrl, {
           headers: headerList,
         });
-        response.headers.set(localeRewriteFlagName, 'true');
+        response.headers.set(middlewareLocaleRewriteFlagName, 'true');
         if (userLocale) {
-          response.cookies.set(
-            'generaltranslation.middleware.locale',
-            userLocale
-          );
+          response.cookies.set(middlewareLocaleName, userLocale);
         }
         return response;
       }
@@ -480,7 +479,7 @@ export default function createNextMiddleware({
         const response = NextResponse.rewrite(rewriteUrl, {
           headers: headerList,
         });
-        response.headers.set(localeRewriteFlagName, 'true');
+        response.headers.set(middlewareLocaleRewriteFlagName, 'true');
         return response;
       }
 
@@ -503,10 +502,7 @@ export default function createNextMiddleware({
         redirectUrl.search = originalUrl.search;
         const response = NextResponse.redirect(redirectUrl);
         if (userLocale) {
-          response.cookies.set(
-            'generaltranslation.middleware.locale',
-            userLocale
-          );
+          response.cookies.set(middlewareLocaleName, userLocale);
         }
         return response;
       }
@@ -517,10 +513,7 @@ export default function createNextMiddleware({
         redirectUrl.search = originalUrl.search;
         const response = NextResponse.redirect(redirectUrl);
         if (userLocale) {
-          response.cookies.set(
-            'generaltranslation.middleware.locale',
-            userLocale
-          );
+          response.cookies.set(middlewareLocaleName, userLocale);
         }
         return response;
       }
