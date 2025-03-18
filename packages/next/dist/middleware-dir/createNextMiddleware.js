@@ -55,23 +55,173 @@ function createNextMiddleware(_a) {
         '/about': {
             fr: '/le-about',
         },
+        '/dashboard/[id]/custom': {
+            fr: '/le-dashboard/[id]/le-custom',
+        },
+        '/dashboard/[id]/custom/[type]': {
+            fr: '/le-dashboard/[id]/le-custom/[type]',
+        },
     };
-    // maps localized paths to shared paths
-    var pathToSharedPath = Object.entries(pathConfig).reduce(function (acc, _a) {
+    // recursively build a tree for the shared path lookup
+    var buildTree = function (chunks, sharedPath, node) {
+        // base case - if no more chunks, set the value and return
+        if (chunks.length === 0) {
+            node.value = sharedPath;
+            return node;
+        }
+        // get the next chunk
+        var chunk = chunks.shift();
+        if (!chunk)
+            return node;
+        // Initialize children if undefined
+        if (!node.children) {
+            node.children = {};
+        }
+        // Handle dynamic segments by converting them to [*]
+        var normalizedChunk = chunk.startsWith('[') ? '[*]' : chunk;
+        // Create or get the child node
+        var childNode = node.children[normalizedChunk] || {
+            value: undefined,
+            children: {},
+        };
+        // Recursively build the rest of the tree
+        node.children[normalizedChunk] = buildTree(chunks, sharedPath, childNode);
+        return node;
+    };
+    var pathToSharedPath = Object.entries(pathConfig)
+        // create a flat map of shared paths and their patterns
+        .reduce(function (acc, _a) {
         var sharedPath = _a[0], localizedPath = _a[1];
-        acc[sharedPath] = sharedPath;
+        // Add the shared path itself
+        acc.push([sharedPath, sharedPath]);
         if (typeof localizedPath === 'object') {
             Object.values(localizedPath).forEach(function (localizedPath) {
-                acc[localizedPath] = sharedPath;
+                // Convert dynamic path pattern to regex
+                var pattern = localizedPath.replace(/\[([^\]]+)\]/g, '[*]');
+                // Only add each pattern once
+                acc.push([pattern, sharedPath]);
             });
+        }
+        return acc;
+    }, [])
+        // convert the flat map to a nested object for dynamic path matching
+        .reduce(function (acc, _a) {
+        var localizedPath = _a[0], sharedPath = _a[1];
+        // Nested pattern for dynamic params (the tree)
+        if (localizedPath.includes('[')) {
+            var chunks = localizedPath.replace(/^\//, '').split('/');
+            if (chunks.length > 1) {
+                acc[chunks[0]] = buildTree(chunks.slice(1), sharedPath, acc[chunks[0]] || {});
+            }
+            else {
+                acc[localizedPath] = sharedPath;
+            }
+        }
+        else {
+            acc[localizedPath] = sharedPath;
         }
         return acc;
     }, {});
     console.log('pathToSharedPath', pathToSharedPath);
     /**
+     * Gets the shared path from a given pathname, handling both static and dynamic paths
+     * @param pathname The pathname to extract the shared path from
+     * @returns The shared path or undefined if no match is found
+     *
+     * Example:
+     * pathname: /fr/dashboard/1/le-custom
+     * Returns: /dashboard/[id]/custom
+     *
+     * pathname: /fr/le-about
+     * Returns: /about
+     *
+     * pathname: /fr/blog
+     * Returns: /blog
+     */
+    var getSharedPath = function (pathname) {
+        var _a, _b;
+        // Try exact match first
+        var sharedPath = pathToSharedPath[pathname];
+        if (typeof sharedPath === 'string')
+            return sharedPath;
+        // Try dynamic pattern match
+        var paths = pathname.replace(/^\//, '').split('/');
+        var result = pathToSharedPath[paths[0]];
+        for (var _i = 0, _c = paths.slice(1); _i < _c.length; _i++) {
+            var path = _c[_i];
+            // if we have a children object, then we continue traversing
+            var next = (_a = result === null || result === void 0 ? void 0 : result.children) === null || _a === void 0 ? void 0 : _a[path]; // check for dynamic pattern
+            if (!(next === null || next === void 0 ? void 0 : next.value) && Object.keys((result === null || result === void 0 ? void 0 : result.children) || {}).includes('[*]')) {
+                next = (_b = result === null || result === void 0 ? void 0 : result.children) === null || _b === void 0 ? void 0 : _b['[*]'];
+            }
+            result = next;
+            if (paths[0] === 'le-dashboard')
+                console.log(result);
+        }
+        return result === null || result === void 0 ? void 0 : result.value;
+    };
+    /**
+     * Extracts dynamic parameters from a path based on a shared path pattern
+     * @param path The actual pathname containing values (includes locale prefix)
+     * @param templatePath The shared path containing dynamic segments (does not include locale)
+     * @returns Array of parameter values in order of appearance
+     *
+     * Example:
+     * templatePath: /fr/dashboard/[id]/custom
+     * path: /fr/dashboard/1/le-custom
+     * Returns: ['1']
+     *
+     * Example with multiple params:
+     * templatePath: /fr/dashboard/[id]/[type]/custom
+     * path: /fr/dashboard/1/2/le-custom
+     * Returns: ['1', '2']
+     */
+    var extractDynamicParams = function (templatePath, path) {
+        if (!templatePath.includes('['))
+            return [];
+        var params = [];
+        var pathSegments = path.split('/');
+        var sharedSegments = templatePath.split('/');
+        sharedSegments.forEach(function (segment, index) {
+            if (segment.startsWith('[') && segment.endsWith(']')) {
+                params.push(pathSegments[index]);
+            }
+        });
+        return params;
+    };
+    /**
+     * Replaces dynamic segments in a path with their actual values
+     * @param path The original pathname containing actual values
+     * @param templatePath The shared path containing dynamic segments
+     * @returns The path with dynamic segments replaced with actual values
+     *
+     * Example:
+     * path: /fr/dashboard/1/custom
+     * templatePath: /fr/dashboard/[id]/le-custom
+     * Returns: /fr/dashboard/1/le-custom
+     *
+     * Example:
+     * path: /about
+     * templatePath: /fr/le-about
+     * Returns: /fr/le-about
+     *
+     * Note: This function only replaces dynamic segments (e.g. [id]) with their actual values.
+     * It does not handle localized path parts (e.g. /custom vs /le-custom).
+     */
+    var replaceDynamicSegments = function (path, templatePath) {
+        if (!templatePath.includes('['))
+            return templatePath;
+        var params = extractDynamicParams(templatePath, path);
+        var paramIndex = 0;
+        return templatePath.replace(/\[([^\]]+)\]/g, function (match) {
+            return params[paramIndex++] || match;
+        });
+    };
+    /**
      * Gets the full localized path given a shared path and locale
-     * @param sharedPath
-     * @param locale
+     * @param sharedPath The shared path to localize
+     * @param locale The locale to use
+     * @param originalUrl Optional URL to preserve query parameters from
      * @returns localized path or undefined if no localized path is found
      *
      * const pathConfig = {
@@ -87,18 +237,24 @@ function createNextMiddleware(_a) {
      * getLocalizedPath('/about', 'es') -> '/es/about
      * getLocalizedPath('/blog', 'en-US') -> '/en-US/blog'
      *
+     * // with query parameters
+     * getLocalizedPath('/about', 'fr', new URL('/about?foo=bar')) -> '/fr/le-about?foo=bar'
+     *
      * // non-shared paths return undefined
      * getLocalizedPath('/foo', 'en-US') -> undefined
      */
     var getLocalizedPath = function (sharedPath, locale) {
         var localizedPath = pathConfig[sharedPath];
-        if (typeof localizedPath === 'string')
-            return "/".concat(locale).concat(localizedPath);
-        else if (typeof localizedPath === 'object')
-            return localizedPath[locale]
+        var path;
+        if (typeof localizedPath === 'string') {
+            path = "/".concat(locale).concat(localizedPath);
+        }
+        else if (typeof localizedPath === 'object') {
+            path = localizedPath[locale]
                 ? "/".concat(locale).concat(localizedPath[locale])
                 : "/".concat(locale).concat(sharedPath);
-        return undefined;
+        }
+        return path;
     };
     /**
      * Processes the incoming request to determine the user's locale and sets a locale cookie.
@@ -110,14 +266,19 @@ function createNextMiddleware(_a) {
      * - Sets a cookie with the detected or default locale.
      * - Redirects to the correct locale route if locale routing is enabled.
      *
-     * @param {any} req - The incoming request object, containing URL and headers.
+     * @param {NextRequest} req - The incoming request object, containing URL and headers.
      * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
      */
     function nextMiddleware(req) {
         var _a, _b;
         console.log('--------------------------------');
         var headerList = new Headers(req.headers);
-        var res = server_1.NextResponse.next();
+        var res = server_1.NextResponse.next({
+            request: {
+                // New request headers
+                headers: headerList,
+            },
+        });
         var candidates = [];
         // routing
         var routingConfig;
@@ -127,6 +288,9 @@ function createNextMiddleware(_a) {
         catch (e) {
             console.error(e);
         }
+        // Clear any existing rewrite flag cookie
+        res.cookies.delete(internal_1.localeRewriteFlagName);
+        // Check for rewrite flag in cookies
         var rewriteFlag = req.headers.get(internal_1.localeRewriteFlagName) === 'true';
         // ---------- LOCALE DETECTION ---------- //
         // Check pathname locales
@@ -142,7 +306,7 @@ function createNextMiddleware(_a) {
         }
         // Check cookie locale
         var cookieLocale = req.cookies.get(internal_1.localeCookieName);
-        if ((0, generaltranslation_1.isValidLocale)(cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value)) {
+        if ((cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value) && (0, generaltranslation_1.isValidLocale)(cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value)) {
             var resetCookieName = 'generaltranslation.locale.reset';
             var resetCookie = req.cookies.get(resetCookieName);
             if (resetCookie === null || resetCookie === void 0 ? void 0 : resetCookie.value) {
@@ -175,6 +339,7 @@ function createNextMiddleware(_a) {
         console.log('userLocale', userLocale);
         res.headers.set(internal_1.localeHeaderName, userLocale);
         if (userLocale) {
+            // TODO: make sure this is compatable with user changing browser langugage
             res.cookies.set('generaltranslation.middleware.locale', userLocale);
         }
         // ---------- ROUTING ---------- //
@@ -185,25 +350,41 @@ function createNextMiddleware(_a) {
                 ? pathname_1.replace(new RegExp("^/".concat(pathnameLocale)), '')
                 : pathname_1;
             var originalUrl = req.nextUrl;
-            var sharedPath = pathToSharedPath[unprefixedPathname];
+            // Get the shared path for the unprefixed pathname
+            var sharedPath = getSharedPath(unprefixedPathname);
+            // Localized path (/en-US/blog, /fr/le-about, /fr/dashboard/[id]/custom)
             var localizedPath = sharedPath && getLocalizedPath(sharedPath, userLocale);
+            // Combine localized path with dynamic parameters (/en-US/blog, /fr/le-about, /fr/dashboard/1/le-custom)
+            var localizedPathWithParameters = localizedPath && replaceDynamicSegments(pathname_1, localizedPath);
             console.log('pathname', pathname_1);
+            console.log('unprefixedPathname', unprefixedPathname);
             console.log('sharedPath', sharedPath);
             console.log('localizedPath', localizedPath);
-            // BASE CASE: same locale, same path (/en-US/blog -> /en-US/blog)
-            if (pathname_1 === localizedPath &&
-                localizedPath === "/".concat(userLocale).concat(sharedPath)) {
+            console.log('localizedPathWithParameters', localizedPathWithParameters);
+            // BASE CASE: same locale, same path (/en-US/blog -> /en-US/blog), (/en-US/dashboard/1/custom -> /en-US/dashboard/1/custom)
+            if (localizedPathWithParameters &&
+                pathname_1 === localizedPathWithParameters &&
+                userLocale === defaultLocale) {
                 console.log('DO NOTHING: ', userLocale, pathname_1);
                 return res;
             }
+            // If we've already rewritten this path, don't process it again
+            if (rewriteFlag) {
+                console.log('DO NOTHING: Rewrite flag is true', pathname_1);
+                return res;
+            }
             // REWRITE CASE: proxies a localized path, same locale (/fr/le-about => /fr/about)
-            if (pathname_1 === localizedPath) {
-                var rewritePath = "/".concat(userLocale).concat(sharedPath);
+            if (localizedPathWithParameters &&
+                pathname_1 === localizedPathWithParameters) {
+                var rewritePath = replaceDynamicSegments(localizedPathWithParameters, "/".concat(userLocale).concat(sharedPath));
                 var rewriteUrl = new URL(rewritePath, originalUrl);
                 rewriteUrl.search = originalUrl.search;
-                res.headers.set(internal_1.localeRewriteFlagName, 'true');
                 console.log('REWRITE (localized path, same locale):', userLocale, pathnameLocale, '\n' + pathname_1, '->', rewritePath);
-                var response = server_1.NextResponse.rewrite(rewriteUrl, req.url);
+                headerList.set(internal_1.localeHeaderName, userLocale);
+                var response = server_1.NextResponse.rewrite(rewriteUrl, {
+                    headers: headerList,
+                });
+                response.headers.set(internal_1.localeRewriteFlagName, 'true');
                 if (userLocale) {
                     response.cookies.set('generaltranslation.middleware.locale', userLocale);
                 }
@@ -215,6 +396,7 @@ function createNextMiddleware(_a) {
             // 3. otherwise, prefix with locale                         (/welcome -> /fr/welcome)
             if (pathnameLocale !== userLocale) {
                 // determine redirect path
+                // TODO: check out standardizeLocale(extractLocale(pathname) || ''); TL which gets standardized to FIL causing an infinite loop, instead standardize later
                 var redirectPath = localizedPath ||
                     (pathnameLocale
                         ? pathname_1.replace(new RegExp("^/".concat(pathnameLocale)), "/".concat(userLocale))
@@ -228,11 +410,11 @@ function createNextMiddleware(_a) {
                 }
                 return response;
             }
-            // REDIRECT CASE: mismatched localized path (i.e. /fr/about -> /fr/le-about)
-            if (localizedPath && !rewriteFlag) {
-                var redirectUrl = new URL(localizedPath, originalUrl);
+            // REDIRECT CASE: mismatched localized path (/fr/about -> /fr/le-about), mismatched dynamic path (/fr/dashboard/1/custom -> /fr/dashboard/1/le-custom)
+            if (localizedPathWithParameters) {
+                var redirectUrl = new URL(localizedPathWithParameters, originalUrl);
                 redirectUrl.search = originalUrl.search;
-                console.log('REDIRECT (mismatched localized path):', userLocale, pathnameLocale, '\n' + pathname_1, '->', localizedPath);
+                console.log('REDIRECT (mismatched localized path):', userLocale, pathnameLocale, '\n' + pathname_1, '->', localizedPathWithParameters);
                 var response = server_1.NextResponse.redirect(redirectUrl);
                 if (userLocale) {
                     response.cookies.set('generaltranslation.middleware.locale', userLocale);

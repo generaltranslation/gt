@@ -1,4 +1,5 @@
 'use client';
+import { localeRewriteFlagName } from 'generaltranslation/internal';
 import { ClientProvider as _ClientProvider } from 'gt-react/client';
 import { ClientProviderProps } from 'gt-react/internal';
 import { usePathname, useRouter } from 'next/navigation';
@@ -24,13 +25,21 @@ export default function ClientProvider(
       .find((row) => row.startsWith(`generaltranslation.middleware.locale=`))
       ?.split('=')[1];
     if (newLocale && newLocale !== props.locale) {
-      console.log('New cookie locale', newLocale);
+      const rewriteFlag =
+        document
+          .querySelector(`meta[name="${localeRewriteFlagName}"]`)
+          ?.getAttribute('content') === 'true';
 
-      // reload server
-      router.refresh();
+      if (!rewriteFlag) {
+        console.log('New cookie locale', newLocale, pathname);
+        // reload server
+        router.refresh();
 
-      // reload client
-      window.location.reload();
+        // reload client
+        window.location.reload();
+      } else {
+        console.log('DO NOTHING: Rewrite flag is true', pathname);
+      }
     }
   }, [pathname]); // Re-run when pathname changes
 
