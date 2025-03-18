@@ -162,16 +162,19 @@ export function withGTConfig(
   // ----------- LOCALE STANDARDIZATION ----------- //
 
   // Check if using Services
-  const gtRuntimeTranslationEnabled =
+  const gtRuntimeTranslationEnabled = !!(
     mergedConfig.runtimeUrl === defaultWithGTConfigProps.runtimeUrl &&
     ((process.env.NODE_ENV === 'production' && mergedConfig.apiKey) ||
-      (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey));
-  const gtRemoteCacheEnabled =
+      (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey))
+  );
+  const gtRemoteCacheEnabled = !!(
     mergedConfig.cacheUrl === defaultWithGTConfigProps.cacheUrl &&
-    mergedConfig.loadTranslationsType === 'remote';
-  const gtServicesEnabled =
+    mergedConfig.loadTranslationsType === 'remote'
+  );
+  const gtServicesEnabled = !!(
     (gtRuntimeTranslationEnabled || gtRemoteCacheEnabled) &&
-    mergedConfig.projectId;
+    mergedConfig.projectId
+  );
 
   // Standardize locales
   if (mergedConfig.locales && mergedConfig.defaultLocale) {

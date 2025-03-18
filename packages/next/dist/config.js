@@ -144,13 +144,13 @@ function withGTConfig(nextConfig, props) {
         : resolveConfigFilepath('routing', ['.ts', '.js']);
     // ----------- LOCALE STANDARDIZATION ----------- //
     // Check if using Services
-    var gtRuntimeTranslationEnabled = mergedConfig.runtimeUrl === defaultWithGTConfigProps_1.default.runtimeUrl &&
+    var gtRuntimeTranslationEnabled = !!(mergedConfig.runtimeUrl === defaultWithGTConfigProps_1.default.runtimeUrl &&
         ((process.env.NODE_ENV === 'production' && mergedConfig.apiKey) ||
-            (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey));
-    var gtRemoteCacheEnabled = mergedConfig.cacheUrl === defaultWithGTConfigProps_1.default.cacheUrl &&
-        mergedConfig.loadTranslationsType === 'remote';
-    var gtServicesEnabled = (gtRuntimeTranslationEnabled || gtRemoteCacheEnabled) &&
-        mergedConfig.projectId;
+            (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey)));
+    var gtRemoteCacheEnabled = !!(mergedConfig.cacheUrl === defaultWithGTConfigProps_1.default.cacheUrl &&
+        mergedConfig.loadTranslationsType === 'remote');
+    var gtServicesEnabled = !!((gtRuntimeTranslationEnabled || gtRemoteCacheEnabled) &&
+        mergedConfig.projectId);
     // Standardize locales
     if (mergedConfig.locales && mergedConfig.defaultLocale) {
         mergedConfig.locales.unshift(mergedConfig.defaultLocale);

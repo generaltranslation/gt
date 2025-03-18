@@ -95,7 +95,6 @@ export default function createNextMiddleware({
 
   // Create the path mapping
   const pathToSharedPath = createPathToSharedPathMap(pathConfig);
-
   /**
    * Processes the incoming request to determine the user's locale and sets a locale cookie.
    * Optionally redirects the user based on the locale if locale-based routing is enabled.
