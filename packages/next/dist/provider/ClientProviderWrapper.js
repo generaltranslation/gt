@@ -29,22 +29,15 @@ function ClientProvider(props) {
     // When nav to same route but in diff locale, client components were cached and not re-rendered
     var pathname = (0, navigation_1.usePathname)();
     (0, react_1.useEffect)(function () {
-        var _a, _b;
+        var _a;
         var newLocale = (_a = document.cookie
             .split('; ')
             .find(function (row) { return row.startsWith("".concat(constants_1.middlewareLocaleName, "=")); })) === null || _a === void 0 ? void 0 : _a.split('=')[1];
         if (newLocale && newLocale !== props.locale) {
-            console.log('newLocale', newLocale);
-            console.log('props.locale', props.locale);
-            console.log('--------------------------------');
-            var rewriteFlag = ((_b = document
-                .querySelector("meta[name=\"".concat(constants_1.middlewareLocaleRewriteFlagName, "\"]"))) === null || _b === void 0 ? void 0 : _b.getAttribute('content')) === 'true';
-            if (!rewriteFlag) {
-                // reload server
-                router.refresh();
-                // reload client
-                window.location.reload();
-            }
+            // reload server
+            router.refresh();
+            // reload client
+            window.location.reload();
         }
     }, [pathname]); // Re-run when pathname changes
     return (0, jsx_runtime_1.jsx)(client_1.ClientProvider, __assign({ onLocaleChange: onLocaleChange }, props));

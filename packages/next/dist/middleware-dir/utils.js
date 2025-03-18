@@ -111,7 +111,7 @@ function createPathToSharedPathMap(pathConfig) {
 /**
  * Gets the locale from the request using various sources
  */
-function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting) {
+function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting, gtServicesEnabled) {
     var _a, _b, _c;
     var headerList = new Headers(req.headers);
     var candidates = [];
@@ -120,11 +120,10 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
     var pathname = req.nextUrl.pathname;
     if (localeRouting) {
         unstandardizedPathnameLocale = extractLocale(pathname);
-        var extractedLocale = (0, generaltranslation_1.standardizeLocale)(unstandardizedPathnameLocale || '');
-        unstandardizedPathnameLocale = (0, generaltranslation_1.isValidLocale)(unstandardizedPathnameLocale || '')
-            ? unstandardizedPathnameLocale
-            : undefined;
-        if ((0, generaltranslation_1.isValidLocale)(extractedLocale)) {
+        var extractedLocale = gtServicesEnabled
+            ? (0, generaltranslation_1.standardizeLocale)(unstandardizedPathnameLocale || '')
+            : unstandardizedPathnameLocale;
+        if (extractedLocale && (0, generaltranslation_1.isValidLocale)(extractedLocale)) {
             pathnameLocale = extractedLocale;
             candidates.push(pathnameLocale);
         }
@@ -152,7 +151,8 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
         }
     }
     // Check middleware cookie locale
-    var middlewareCookieLocale = (_b = req.cookies.get(constants_1.middlewareLocaleName)) === null || _b === void 0 ? void 0 : _b.value;
+    var middlewareCookieLocale = !unstandardizedPathnameLocale &&
+        ((_b = req.cookies.get(constants_1.middlewareLocaleName)) === null || _b === void 0 ? void 0 : _b.value);
     if (middlewareCookieLocale && (0, generaltranslation_1.isValidLocale)(middlewareCookieLocale)) {
         candidates.push(middlewareCookieLocale);
     }
@@ -163,14 +163,11 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
     // Get default locale
     candidates.push(defaultLocale);
     // determine userLocale
-    var userLocale = (0, generaltranslation_1.standardizeLocale)((0, generaltranslation_1.determineLocale)(candidates.filter(generaltranslation_1.isValidLocale), approvedLocales) ||
-        defaultLocale);
-    console.log('userLocale', userLocale);
-    console.log('pathnameLocale', pathnameLocale);
-    console.log('unstandardizedPathnameLocale', unstandardizedPathnameLocale);
-    console.log('refererLocale', refererLocale);
-    console.log('cookieLocale', cookieLocale);
-    console.log('middlewareCookieLocale', middlewareCookieLocale);
+    var unstandardizedUserLocale = (0, generaltranslation_1.determineLocale)(candidates.filter(generaltranslation_1.isValidLocale), approvedLocales) ||
+        defaultLocale;
+    var userLocale = gtServicesEnabled
+        ? (0, generaltranslation_1.standardizeLocale)(unstandardizedUserLocale)
+        : unstandardizedUserLocale;
     return {
         userLocale: userLocale,
         pathnameLocale: pathnameLocale,

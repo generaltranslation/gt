@@ -35,7 +35,7 @@ export declare function createPathToSharedPathMap(pathConfig: PathConfig): {
 /**
  * Gets the locale from the request using various sources
  */
-export declare function getLocaleFromRequest(req: NextRequest, defaultLocale: string, approvedLocales: string[], localeRouting: boolean): {
+export declare function getLocaleFromRequest(req: NextRequest, defaultLocale: string, approvedLocales: string[], localeRouting: boolean, gtServicesEnabled: boolean): {
     userLocale: string;
     pathnameLocale: string | undefined;
     unstandardizedPathnameLocale: string | null | undefined;

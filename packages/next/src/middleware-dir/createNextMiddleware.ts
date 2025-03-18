@@ -10,14 +10,9 @@ import {
 } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  middlewareLocaleName,
-  middlewareLocaleResetFlagName,
-  middlewareLocaleRewriteFlagName,
-} from '../utils/constants';
+import { middlewareLocaleName } from '../utils/constants';
 import {
   PathConfig,
-  extractLocale,
   getSharedPath,
   replaceDynamicSegments,
   getLocalizedPath,
@@ -59,7 +54,8 @@ export default function createNextMiddleware({
   }
 
   // using gt services
-  const gtServicesEnabled = envParams?.gtServicesEnabled;
+  const gtServicesEnabled =
+    process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true';
 
   // i18n config
   const defaultLocale: string =
@@ -101,8 +97,6 @@ export default function createNextMiddleware({
   // Create the path mapping
   const pathToSharedPath = createPathToSharedPathMap(pathConfig);
 
-  // console.log(pathToSharedPath);
-
   /**
    * Processes the incoming request to determine the user's locale and sets a locale cookie.
    * Optionally redirects the user based on the locale if locale-based routing is enabled.
@@ -117,7 +111,6 @@ export default function createNextMiddleware({
    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
    */
   function nextMiddleware(req: NextRequest) {
-    console.log('--------------------------------');
     const headerList = new Headers(req.headers);
 
     const res = NextResponse.next({
@@ -135,14 +128,16 @@ export default function createNextMiddleware({
       console.error(e);
     }
 
-    // Check for rewrite flag in cookies
-    const rewriteFlag =
-      req.headers.get(middlewareLocaleRewriteFlagName) === 'true';
-
     // ---------- LOCALE DETECTION ---------- //
 
     const { userLocale, pathnameLocale, unstandardizedPathnameLocale } =
-      getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting);
+      getLocaleFromRequest(
+        req,
+        defaultLocale,
+        approvedLocales,
+        localeRouting,
+        gtServicesEnabled
+      );
 
     res.headers.set(localeHeaderName, userLocale);
 
@@ -154,7 +149,7 @@ export default function createNextMiddleware({
       // ---------- GET PATHS ---------- //
 
       const { pathname } = req.nextUrl;
-      // Only strip off the locale if it's a valid locale (/fr/le-about -> /about), (/blog -> /blog)
+      // Only strip off the locale if it's a valid locale (/fr/fr-about -> /about), (/blog -> /blog)
       const unprefixedPathname = pathnameLocale
         ? pathname.replace(new RegExp(`^/${unstandardizedPathnameLocale}`), '')
         : pathname;
@@ -172,11 +167,11 @@ export default function createNextMiddleware({
       // Get the shared path for the unprefixed pathname
       const sharedPath = getSharedPath(unprefixedPathname, pathToSharedPath);
 
-      // Localized path (/en-US/blog, /fr/le-about, /fr/dashboard/[id]/custom)
+      // Localized path (/en-US/blog, /fr/fr-about, /fr/dashboard/[id]/custom)
       const localizedPath =
         sharedPath && getLocalizedPath(sharedPath, userLocale, pathConfig);
 
-      // Combine localized path with dynamic parameters (/en-US/blog, /fr/le-about, /fr/dashboard/1/le-custom)
+      // Combine localized path with dynamic parameters (/en-US/blog, /fr/fr-about, /fr/dashboard/1/fr-custom)
       const localizedPathWithParameters =
         localizedPath &&
         replaceDynamicSegments(
@@ -186,14 +181,6 @@ export default function createNextMiddleware({
           localizedPath
         );
 
-      console.log('userLocale', userLocale);
-      console.log('pathname', pathname);
-      console.log('unprefixedPathname', unprefixedPathname);
-      console.log('standardizedPathname', standardizedPathname);
-      console.log('sharedPath', sharedPath);
-      console.log('localizedPath', localizedPath);
-      console.log('localizedPathWithParameters', localizedPathWithParameters);
-
       // ---------- ROUTING LOGIC ---------- //
 
       // BASE CASE: default locale, same path (/en-US/blog -> /en-US/blog), (/en-US/dashboard/1/custom -> /en-US/dashboard/1/custom)
@@ -202,9 +189,6 @@ export default function createNextMiddleware({
         standardizedPathname === localizedPathWithParameters &&
         userLocale === defaultLocale
       ) {
-        console.log(
-          `[Middleware] Default locale path match: ${pathname} -> ${localizedPathWithParameters}`
-        );
         return res;
       }
 
@@ -213,21 +197,10 @@ export default function createNextMiddleware({
         pathname === localizedPathWithParameters &&
         `/${userLocale}${sharedPath}` === localizedPathWithParameters
       ) {
-        console.log(
-          `[Middleware] Localized path match: ${pathname} -> ${localizedPathWithParameters}`
-        );
         return res;
       }
 
-      // If we've already rewritten this path, don't process it again
-      if (rewriteFlag) {
-        console.log(
-          `[Middleware] Already rewritten path: ${pathname} (skipping)`
-        );
-        return res;
-      }
-
-      // REWRITE CASE: proxies a localized path, same locale (/fr/le-about => /fr/about) (/fr/dashboard/1/le-custom => /fr/dashboard/1/custom)
+      // REWRITE CASE: proxies a localized path, same locale (/fr/fr-about => /fr/about) (/fr/dashboard/1/fr-custom => /fr/dashboard/1/custom)
       if (
         localizedPathWithParameters &&
         standardizedPathname === localizedPathWithParameters
@@ -243,14 +216,10 @@ export default function createNextMiddleware({
         const response = NextResponse.rewrite(rewriteUrl, {
           headers: headerList,
         });
-        response.headers.set(middlewareLocaleRewriteFlagName, 'true');
         response.headers.set(localeHeaderName, userLocale);
         if (userLocale) {
           response.cookies.set(middlewareLocaleName, userLocale);
         }
-        console.log(
-          `[Middleware] Rewrite localized path: ${pathname} -> ${rewritePath}`
-        );
         return response;
       }
 
@@ -266,16 +235,12 @@ export default function createNextMiddleware({
         const response = NextResponse.rewrite(rewriteUrl, {
           headers: headerList,
         });
-        response.headers.set(middlewareLocaleRewriteFlagName, 'true');
         response.headers.set(localeHeaderName, userLocale);
-        console.log(
-          `[Middleware] Rewrite no locale prefix: ${pathname} -> ${rewritePath}`
-        );
         return response;
       }
 
       // REDIRECT CASE: non-i18n path
-      // 1. use customized path if it exists                      (/en-US/about -> /fr/le-about), (/about -> /fr/le-about)
+      // 1. use customized path if it exists                      (/en-US/about -> /fr/fr-about), (/about -> /fr/fr-about)
       // 2. otherwise, if pathname has locale prefix, replace it  (/en-US/welcome -> /fr/welcome)
       // 3. otherwise, prefix with locale                         (/welcome -> /fr/welcome)
       if (unstandardizedPathnameLocale !== userLocale) {
@@ -294,13 +259,10 @@ export default function createNextMiddleware({
         if (userLocale) {
           response.cookies.set(middlewareLocaleName, userLocale);
         }
-        console.log(
-          `[Middleware] Redirect non-i18n path: ${pathname} -> ${redirectPath}`
-        );
         return response;
       }
 
-      // REDIRECT CASE: mismatched localized path (/fr/about -> /fr/le-about), mismatched dynamic path (/fr/dashboard/1/custom -> /fr/dashboard/1/le-custom)
+      // REDIRECT CASE: mismatched localized path (/fr/about -> /fr/fr-about), mismatched dynamic path (/fr/dashboard/1/custom -> /fr/dashboard/1/fr-custom)
       if (localizedPathWithParameters) {
         const redirectUrl = new URL(localizedPathWithParameters, originalUrl);
         redirectUrl.search = originalUrl.search;
@@ -308,18 +270,13 @@ export default function createNextMiddleware({
         if (userLocale) {
           response.cookies.set(middlewareLocaleName, userLocale);
         }
-        console.log(
-          `[Middleware] Redirect mismatched path: ${pathname} -> ${localizedPathWithParameters}`
-        );
         return response;
       }
 
       // BASE CASE
-      console.log(`[Middleware] No transformation needed: ${pathname}`);
       return res;
     }
 
-    console.log(`[Middleware] No locale routing: ${req.nextUrl.pathname}`);
     return res;
   }
 

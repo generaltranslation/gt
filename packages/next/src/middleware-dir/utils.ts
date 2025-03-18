@@ -10,11 +10,9 @@ import {
   localeCookieName,
   localeHeaderName,
 } from 'generaltranslation/internal';
-import { createUnsupportedLocalesWarning } from '../errors/createErrors';
 import {
   middlewareLocaleName,
   middlewareLocaleResetFlagName,
-  middlewareLocaleRewriteFlagName,
 } from '../utils/constants';
 
 export type PathConfig = {
@@ -153,7 +151,8 @@ export function getLocaleFromRequest(
   req: NextRequest,
   defaultLocale: string,
   approvedLocales: string[],
-  localeRouting: boolean
+  localeRouting: boolean,
+  gtServicesEnabled: boolean
 ): {
   userLocale: string;
   pathnameLocale: string | undefined;
@@ -167,15 +166,10 @@ export function getLocaleFromRequest(
   const { pathname } = req.nextUrl;
   if (localeRouting) {
     unstandardizedPathnameLocale = extractLocale(pathname);
-    const extractedLocale = standardizeLocale(
-      unstandardizedPathnameLocale || ''
-    );
-    unstandardizedPathnameLocale = isValidLocale(
-      unstandardizedPathnameLocale || ''
-    )
-      ? unstandardizedPathnameLocale
-      : undefined;
-    if (isValidLocale(extractedLocale)) {
+    const extractedLocale = gtServicesEnabled
+      ? standardizeLocale(unstandardizedPathnameLocale || '')
+      : unstandardizedPathnameLocale;
+    if (extractedLocale && isValidLocale(extractedLocale)) {
       pathnameLocale = extractedLocale;
       candidates.push(pathnameLocale);
     }
@@ -205,7 +199,9 @@ export function getLocaleFromRequest(
   }
 
   // Check middleware cookie locale
-  const middlewareCookieLocale = req.cookies.get(middlewareLocaleName)?.value;
+  let middlewareCookieLocale =
+    !unstandardizedPathnameLocale &&
+    req.cookies.get(middlewareLocaleName)?.value;
   if (middlewareCookieLocale && isValidLocale(middlewareCookieLocale)) {
     candidates.push(middlewareCookieLocale);
   }
@@ -222,17 +218,13 @@ export function getLocaleFromRequest(
   candidates.push(defaultLocale);
 
   // determine userLocale
-  const userLocale = standardizeLocale(
+  const unstandardizedUserLocale =
     determineLocale(candidates.filter(isValidLocale), approvedLocales) ||
-      defaultLocale
-  );
+    defaultLocale;
+  const userLocale = gtServicesEnabled
+    ? standardizeLocale(unstandardizedUserLocale)
+    : unstandardizedUserLocale;
 
-  console.log('userLocale', userLocale);
-  console.log('pathnameLocale', pathnameLocale);
-  console.log('unstandardizedPathnameLocale', unstandardizedPathnameLocale);
-  console.log('refererLocale', refererLocale);
-  console.log('cookieLocale', cookieLocale);
-  console.log('middlewareCookieLocale', middlewareCookieLocale);
   return {
     userLocale,
     pathnameLocale,

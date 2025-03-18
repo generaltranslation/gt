@@ -6,7 +6,6 @@ import { useEffect } from 'react';
 import {
   middlewareLocaleName,
   middlewareLocaleResetFlagName,
-  middlewareLocaleRewriteFlagName,
 } from '../utils/constants';
 
 export default function ClientProvider(
@@ -28,21 +27,11 @@ export default function ClientProvider(
       .find((row) => row.startsWith(`${middlewareLocaleName}=`))
       ?.split('=')[1];
     if (newLocale && newLocale !== props.locale) {
-      console.log('newLocale', newLocale);
-      console.log('props.locale', props.locale);
-      console.log('--------------------------------');
-      const rewriteFlag =
-        document
-          .querySelector(`meta[name="${middlewareLocaleRewriteFlagName}"]`)
-          ?.getAttribute('content') === 'true';
+      // reload server
+      router.refresh();
 
-      if (!rewriteFlag) {
-        // reload server
-        router.refresh();
-
-        // reload client
-        window.location.reload();
-      }
+      // reload client
+      window.location.reload();
     }
   }, [pathname]); // Re-run when pathname changes
 
