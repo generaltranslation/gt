@@ -11,6 +11,7 @@ const loadConfig_1 = __importDefault(require("../fs/config/loadConfig"));
 const internal_1 = require("generaltranslation/internal");
 const fs_1 = __importDefault(require("fs"));
 const setupConfig_1 = __importDefault(require("../fs/config/setupConfig"));
+const parseFilesConfig_1 = require("../fs/config/parseFilesConfig");
 /**
  * Generates settings from any
  * @param options - The options to generate settings from
@@ -59,6 +60,8 @@ function generateSettings(options) {
             process.exit(1);
         }
     }
+    // Resolve all glob patterns in the files object
+    mergedOptions.files = (0, parseFilesConfig_1.resolveGlobFiles)(mergedOptions.files || {});
     // if there's no existing config file, creates one
     // does not include the API key to avoid exposing it
     if (!fs_1.default.existsSync(mergedOptions.config)) {
@@ -66,7 +69,6 @@ function generateSettings(options) {
             projectId: mergedOptions.projectId,
             defaultLocale: mergedOptions.defaultLocale,
             locales: ((_b = mergedOptions.locales) === null || _b === void 0 ? void 0 : _b.length) > 0 ? mergedOptions.locales : undefined,
-            translationsDir: mergedOptions.translationsDir,
         });
     }
     return mergedOptions;

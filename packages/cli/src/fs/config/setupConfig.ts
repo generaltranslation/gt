@@ -4,6 +4,7 @@ import {
   displayUpdatedConfigFile,
 } from '../../console/console';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { FilesOptions } from '../../types';
 
 /**
  * Checks if the config file exists.
@@ -18,16 +19,14 @@ export default function createOrUpdateConfig(
     projectId?: string;
     defaultLocale?: string;
     locales?: string[];
-    translationsDir?: string;
+    files?: FilesOptions;
   }
 ): string {
   // Filter out empty string values from the config object
   const newContent = {
     ...(options.projectId && { projectId: options.projectId }),
     ...(options.defaultLocale && { defaultLocale: options.defaultLocale }),
-    ...(options.translationsDir && {
-      translationsDir: options.translationsDir,
-    }),
+    ...(options.files && { files: options.files }),
   };
   try {
     // if file exists

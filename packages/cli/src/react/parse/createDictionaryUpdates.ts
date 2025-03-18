@@ -11,22 +11,22 @@ import { hashJsxChildren } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata';
 
 export default async function createDictionaryUpdates(
-  options: Options & { dictionary: string },
-  esbuildConfig: BuildOptions
+  options: Options,
+  dictionaryPath: string,
+  esbuildConfig?: BuildOptions
 ): Promise<Updates> {
   let dictionary;
-
   // ---- HANDLE JSON STRING DICTIONARY ----- //
 
-  if (options.dictionary.endsWith('.json')) {
-    dictionary = flattenDictionary(loadJSON(options.dictionary) || {});
+  if (dictionaryPath.endsWith('.json')) {
+    dictionary = flattenDictionary(loadJSON(dictionaryPath) || {});
   }
 
   // ----- HANDLE REACT DICTIONARY ---- //
   else {
     const result = await build({
       ...esbuildConfig,
-      entryPoints: [options.dictionary],
+      entryPoints: [dictionaryPath],
       write: false,
     });
 

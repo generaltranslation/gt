@@ -1,9 +1,10 @@
 import { RetrievedTranslations } from '../../types/api';
-import { DataFormat, FileExtension } from '../../types/data';
+import { DataFormat } from '../../types/data';
+import { ResolvedFiles } from '../../types';
 /**
- * Saves translations to a local directory
+ * Saves translations to a file
  * @param translations - The translations to save
- * @param translationsDir - The directory to save the translations to
- * @param fileType - The file type to save the translations as (file extension)
+ * @param filePath - The file path to save the translations to
+ * @param dataFormat - The data format to save the translations as
  */
-export declare function saveTranslations(translations: RetrievedTranslations, translationsDir: string, dataFormat: DataFormat, fileExtension: FileExtension): void;
+export declare function saveTranslations(translations: RetrievedTranslations, filepaths: ResolvedFiles, dataFormat: DataFormat): void;

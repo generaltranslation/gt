@@ -21,6 +21,12 @@ export declare function getRelativePath(file: string, srcDirectory: string): str
  */
 export declare function findFile(filePattern: string, file: string): string;
 /**
+ * Read a file and return the contents.
+ * @param {string} filePath - The path to the file to read.
+ * @returns {string} - The contents of the file.
+ */
+export declare function readFile(filePath: string): string;
+/**
  * Find a file in a directory.
  * @param {string} dir - The directory to search in.
  * @param {string} file - The file to search for.

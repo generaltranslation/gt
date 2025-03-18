@@ -1,0 +1,12 @@
+{
+  "name": "test-cli",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "next": "^15.1.7"
+  }
+}

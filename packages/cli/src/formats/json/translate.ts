@@ -5,8 +5,7 @@ import path from 'path';
 import { fetchTranslations } from '../../api/fetchTranslations';
 import { saveTranslations } from './save';
 import { DataFormat, FileExtension } from '../../types/data';
-import { noTranslationsDirError } from '../../console/errors';
-
+import { ResolvedFiles } from '../../types';
 /**
  * Translates a JSON object and saves the translations to a local directory
  * @param sourceJson - The source JSON object
@@ -23,7 +22,7 @@ export async function translateJson(
   sourceJson: any,
   settings: Settings,
   dataFormat: DataFormat,
-  fileExtension: FileExtension
+  filepaths: ResolvedFiles
 ) {
   const flattened = flattenJsonDictionary(sourceJson);
   const updates: Updates = [];
@@ -38,11 +37,6 @@ export async function translateJson(
       metadata,
     });
   }
-  if (!settings.translationsDir) {
-    console.error(noTranslationsDirError);
-    process.exit(1);
-  }
-  const outputDir = path.dirname(settings.translationsDir);
 
   // Actually do the translation
   const updateResponse = await sendUpdates(updates, {
@@ -50,7 +44,6 @@ export async function translateJson(
     publish: false,
     wait: true,
     timeout: '600',
-    translationsDir: outputDir,
     dataFormat,
   });
 
@@ -60,6 +53,6 @@ export async function translateJson(
       settings.apiKey,
       updateResponse.versionId
     );
-    saveTranslations(translations, outputDir, dataFormat, fileExtension);
+    saveTranslations(translations, filepaths, dataFormat);
   }
 }

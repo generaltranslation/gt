@@ -8,17 +8,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.translateJson = translateJson;
 const flattenDictionary_1 = require("../../react/utils/flattenDictionary");
 const sendUpdates_1 = require("../../api/sendUpdates");
-const path_1 = __importDefault(require("path"));
 const fetchTranslations_1 = require("../../api/fetchTranslations");
 const save_1 = require("./save");
-const errors_1 = require("../../console/errors");
 /**
  * Translates a JSON object and saves the translations to a local directory
  * @param sourceJson - The source JSON object
@@ -31,7 +26,7 @@ const errors_1 = require("../../console/errors");
  * @param translationsDir - The directory to save the translations to
  * @param fileType - The file type to save the translations as (file extension)
  */
-function translateJson(sourceJson, settings, dataFormat, fileExtension) {
+function translateJson(sourceJson, settings, dataFormat, filepaths) {
     return __awaiter(this, void 0, void 0, function* () {
         const flattened = (0, flattenDictionary_1.flattenJsonDictionary)(sourceJson);
         const updates = [];
@@ -46,16 +41,11 @@ function translateJson(sourceJson, settings, dataFormat, fileExtension) {
                 metadata,
             });
         }
-        if (!settings.translationsDir) {
-            console.error(errors_1.noTranslationsDirError);
-            process.exit(1);
-        }
-        const outputDir = path_1.default.dirname(settings.translationsDir);
         // Actually do the translation
-        const updateResponse = yield (0, sendUpdates_1.sendUpdates)(updates, Object.assign(Object.assign({}, settings), { publish: false, wait: true, timeout: '600', translationsDir: outputDir, dataFormat }));
+        const updateResponse = yield (0, sendUpdates_1.sendUpdates)(updates, Object.assign(Object.assign({}, settings), { publish: false, wait: true, timeout: '600', dataFormat }));
         if (updateResponse === null || updateResponse === void 0 ? void 0 : updateResponse.versionId) {
             const translations = yield (0, fetchTranslations_1.fetchTranslations)(settings.baseUrl, settings.apiKey, updateResponse.versionId);
-            (0, save_1.saveTranslations)(translations, outputDir, dataFormat, fileExtension);
+            (0, save_1.saveTranslations)(translations, filepaths, dataFormat);
         }
     });
 }

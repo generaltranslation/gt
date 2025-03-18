@@ -4,36 +4,35 @@ import { displayInitializingText } from '../console/console';
 import createOrUpdateConfig from '../fs/config/setupConfig';
 import { input, select } from '@inquirer/prompts';
 import { isValidLocale } from 'generaltranslation';
-import findFilepath, { findFile } from '../fs/findFilepath';
+import findFilepath, { findFile, readFile } from '../fs/findFilepath';
 import {
   noDefaultLocaleError,
   noLocalesError,
   noSourceFileError,
-  noTranslationsDirError,
   noDataFormatError,
   noSupportedDataFormatError,
   noApiKeyError,
   noProjectIdError,
+  noFilesError,
 } from '../console/errors';
 import path from 'path';
 import yaml from 'yaml';
 import { translateJson } from '../formats/json/translate';
-import { SupportedLibraries } from '../types';
+import { FilesOptions, Settings, SupportedLibraries } from '../types';
 import { resolveProjectId } from '../fs/utils';
 import { DataFormat, FileExtension } from '../types/data';
 import { generateSettings } from '../config/generateSettings';
 import chalk from 'chalk';
-type InitOptions = {
-  defaultLocale?: string;
-  locales?: string[];
-  translationsDir?: string | string[];
-};
+import {
+  resolveGlobFiles,
+  resolveLocaleFiles,
+} from '../fs/config/parseFilesConfig';
 
 type TranslateOptions = {
   config?: string;
   defaultLocale?: string;
   locales?: string[];
-  translationsDir?: string;
+  files?: FilesOptions;
   apiKey?: string;
   projectId?: string;
 };
@@ -87,86 +86,86 @@ export class BaseCLI {
         '--new, --locales <locales...>',
         'Space-separated list of locales (e.g., en fr es)'
       )
-      .option(
-        '-t, --translations-dir, --translation-dir <path>',
-        'Directory containing your language files. Should be in the format path/to/translations/*.json or path/to/translations/*.yaml'
-      )
       .action(async (options: TranslateOptions) => {
         displayAsciiTitle();
         displayInitializingText();
 
         const settings = generateSettings(options);
-
-        if (!settings.locales) {
-          console.error(noLocalesError);
-          process.exit(1);
-        }
-        if (!settings.defaultLocale) {
-          console.error(noDefaultLocaleError);
-          process.exit(1);
-        }
-        if (!settings.translationsDir) {
-          console.error(noTranslationsDirError);
-          process.exit(1);
-        }
-        if (!settings.apiKey) {
-          console.error(noApiKeyError);
-          process.exit(1);
-        }
-        if (!settings.projectId) {
-          console.error(noProjectIdError);
-          process.exit(1);
-        }
-
-        // ---- CREATING UPDATES ---- //
-        // Find the source file in the translationsDir
-        const rawSource = findFile(
-          settings.translationsDir,
-          settings.defaultLocale
-        );
-        if (!rawSource) {
-          console.error(noSourceFileError);
-          process.exit(1);
-        }
-        // Get the data format from the ending of the translationsDir
-        const fileExtension = settings.translationsDir
-          .split('.')
-          .pop() as FileExtension;
-
-        let dataFormat: DataFormat;
-        if (this.library === 'next-intl') {
-          dataFormat = 'ICU';
-        } else if (this.library === 'i18next') {
-          if (this.additionalModules.includes('i18next-icu')) {
-            dataFormat = 'ICU';
-          } else {
-            dataFormat = 'I18NEXT';
-          }
-        } else {
-          dataFormat = 'JSX';
-        }
-
-        if (!dataFormat) {
-          console.error(noDataFormatError);
-          process.exit(1);
-        } else if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
-          console.error(noSupportedDataFormatError);
-          process.exit(1);
-        }
-        const source =
-          fileExtension === 'json'
-            ? JSON.parse(rawSource)
-            : yaml.parse(rawSource);
-
-        const result = await translateJson(
-          source,
-          settings,
-          dataFormat,
-          fileExtension
-        );
+        await this.handleTranslate(settings);
       });
   }
 
+  protected async handleTranslate(settings: Settings): Promise<void> {
+    // Validate required settings are present
+    if (!settings.locales) {
+      console.error(noLocalesError);
+      process.exit(1);
+    }
+    if (!settings.defaultLocale) {
+      console.error(noDefaultLocaleError);
+      process.exit(1);
+    }
+    if (!settings.files) {
+      console.error(noFilesError);
+      process.exit(1);
+    }
+    if (!settings.apiKey) {
+      console.error(noApiKeyError);
+      process.exit(1);
+    }
+    if (!settings.projectId) {
+      console.error(noProjectIdError);
+      process.exit(1);
+    }
+
+    // dataFormat for JSONs
+    let dataFormat: DataFormat;
+    if (this.library === 'next-intl') {
+      dataFormat = 'ICU';
+    } else if (this.library === 'i18next') {
+      if (this.additionalModules.includes('i18next-icu')) {
+        dataFormat = 'ICU';
+      } else {
+        dataFormat = 'I18NEXT';
+      }
+    } else {
+      dataFormat = 'JSX';
+    }
+
+    const sourceFiles = resolveLocaleFiles(
+      settings.files,
+      settings.defaultLocale
+    );
+
+    // ---- CREATING UPDATES ---- //
+    if (
+      sourceFiles.json &&
+      this.library !== 'gt-react' &&
+      this.library !== 'gt-next'
+    ) {
+      const rawSource = readFile(sourceFiles.json[0]);
+      if (!rawSource) {
+        console.error(noSourceFileError);
+        process.exit(1);
+      }
+
+      if (!dataFormat) {
+        console.error(noDataFormatError);
+        process.exit(1);
+      } else if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
+        console.error(noSupportedDataFormatError);
+        process.exit(1);
+      }
+      const source = JSON.parse(rawSource);
+
+      const result = await translateJson(
+        source,
+        settings,
+        dataFormat,
+        settings.files
+      );
+    }
+  }
   protected setupInitCommand(): void {
     program
       .command('init')
@@ -202,15 +201,17 @@ export class BaseCLI {
 
         // Ask where the translations are stored
         const location = await select({
-          message: 'Where are your language files stored? (CDN or local)',
+          message: `Where are your language files stored? ${chalk.gray(
+            '(remote or local)'
+          )}`,
           choices: [
-            { value: 'cdn', name: 'CDN' },
+            { value: 'remote', name: 'Remote' },
             { value: 'local', name: 'Local' },
           ],
-          default: 'cdn',
+          default: 'remote',
         });
 
-        if (location === 'cdn') {
+        if (location === 'remote') {
           // Create gt.config.json
           createOrUpdateConfig('gt.config.json', {
             defaultLocale,
@@ -231,9 +232,9 @@ export class BaseCLI {
         // Ask if using another i18n library
         const i18nLibrary = thirdPartyLibrary
           ? await select({
-              message: `Are you using a third-party i18n library? (${chalk.gray(
-                `Auto-detected: ${this.library}`
-              )})`,
+              message: `Are you using a 3rd-party i18n library? ${chalk.gray(
+                `(Auto-detected: ${this.library === 'base' ? 'none' : this.library})`
+              )}`,
               choices: [
                 { value: true, name: 'Yes' },
                 { value: false, name: 'No' },
@@ -245,27 +246,39 @@ export class BaseCLI {
         if (i18nLibrary) {
           const dataFormat: string = await select({
             message: 'What is the format of your language files?',
-            choices: ['.json', '.yaml'],
-            default: '.json',
+            choices: ['json'],
+            default: 'json',
           });
           // combine translationsDir and dataFormat into something like
-          // translationsDir/*[.json|.yaml]
+          // translationsDir/[locale].json
           const translationsDirWithFormat = path.join(
             translationsDir,
-            `*${dataFormat}`
+            `[locale].${dataFormat}`
           );
           // Create gt.config.json
           createOrUpdateConfig('gt.config.json', {
             defaultLocale,
             locales: locales.split(' '),
-            translationsDir: translationsDirWithFormat,
+            files: {
+              json: {
+                include: [translationsDirWithFormat],
+              },
+            },
           });
         } else {
+          const translationsDirWithFormat = path.join(
+            translationsDir,
+            `[locale].json`
+          );
           // Create gt.config.json
           createOrUpdateConfig('gt.config.json', {
             defaultLocale,
             locales: locales.split(' '),
-            translationsDir: translationsDir,
+            files: {
+              json: {
+                include: [translationsDirWithFormat],
+              },
+            },
           });
         }
       });

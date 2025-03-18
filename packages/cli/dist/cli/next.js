@@ -19,7 +19,6 @@ const prompts_1 = require("@inquirer/prompts");
 const postProcess_1 = require("../hooks/postProcess");
 const findFilepath_1 = __importDefault(require("../fs/findFilepath"));
 const scanForContent_1 = __importDefault(require("../next/parse/scanForContent"));
-const createDictionaryUpdates_1 = __importDefault(require("../react/parse/createDictionaryUpdates"));
 const createInlineUpdates_1 = __importDefault(require("../react/parse/createInlineUpdates"));
 const handleInitGT_1 = __importDefault(require("../next/parse/handleInitGT"));
 const react_1 = require("./react");
@@ -40,9 +39,6 @@ class NextCLI extends react_1.ReactCLI {
     }
     scanForContent(options, framework) {
         return (0, scanForContent_1.default)(options, pkg, framework);
-    }
-    createDictionaryUpdates(options, esbuildConfig) {
-        return (0, createDictionaryUpdates_1.default)(options, esbuildConfig);
     }
     createInlineUpdates(options) {
         return (0, createInlineUpdates_1.default)(options, pkg);

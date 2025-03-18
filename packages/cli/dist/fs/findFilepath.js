@@ -7,6 +7,7 @@ exports.default = findFilepath;
 exports.findFilepaths = findFilepaths;
 exports.getRelativePath = getRelativePath;
 exports.findFile = findFile;
+exports.readFile = readFile;
 exports.findFileInDir = findFileInDir;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
@@ -60,6 +61,17 @@ function findFile(filePattern, file) {
     const resolvedPath = filePattern.replace(/\*/, file);
     if (fs_1.default.existsSync(resolvedPath) && fs_1.default.statSync(resolvedPath).isFile()) {
         return fs_1.default.readFileSync(resolvedPath, 'utf8');
+    }
+    return '';
+}
+/**
+ * Read a file and return the contents.
+ * @param {string} filePath - The path to the file to read.
+ * @returns {string} - The contents of the file.
+ */
+function readFile(filePath) {
+    if (fs_1.default.existsSync(filePath) && fs_1.default.statSync(filePath).isFile()) {
+        return fs_1.default.readFileSync(filePath, 'utf8');
     }
     return '';
 }

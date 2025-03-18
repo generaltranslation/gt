@@ -1,4 +1,4 @@
-import { SupportedLibraries } from '../types';
+import { Settings, SupportedLibraries } from '../types';
 export declare class BaseCLI {
     private library;
     private additionalModules;
@@ -6,5 +6,6 @@ export declare class BaseCLI {
     init(): void;
     execute(): void;
     protected setupGTCommand(): void;
+    protected handleTranslate(settings: Settings): Promise<void>;
     protected setupInitCommand(): void;
 }

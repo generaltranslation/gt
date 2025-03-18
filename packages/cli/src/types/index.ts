@@ -32,7 +32,6 @@ export type Options = {
   wait: boolean;
   timeout: string;
   publish: boolean;
-  translationsDir: string;
 };
 
 export type WrapOptions = {
@@ -51,7 +50,6 @@ export type SetupOptions = {
 export type GenerateSourceOptions = {
   src: string[];
   config: string;
-  translationsDir: string;
   defaultLocale: string;
   dictionary?: string;
   jsconfig?: string;
@@ -89,6 +87,28 @@ export interface ContentScanner {
   }>;
 }
 
+export type FilesOptions = {
+  json?: {
+    include: string[];
+  };
+  yaml?: {
+    include: string[];
+  };
+  md?: {
+    include: string[];
+  };
+  mdx?: {
+    include: string[];
+  };
+};
+
+export type ResolvedFiles = {
+  json?: string[];
+  // yaml?: string[];
+  md?: string[];
+  mdx?: string[];
+};
+
 // Shared settings between all API-related commands
 export type Settings = {
   config: string;
@@ -97,6 +117,6 @@ export type Settings = {
   projectId: string;
   defaultLocale: string;
   locales: string[];
-  translationsDir?: string;
+  files: ResolvedFiles;
   versionId?: string;
 };
