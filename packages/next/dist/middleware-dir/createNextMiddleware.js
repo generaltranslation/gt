@@ -61,7 +61,7 @@ function createNextMiddleware(_a) {
     }, {});
     // Create the path mapping
     var pathToSharedPath = (0, utils_1.createPathToSharedPathMap)(pathConfig);
-    console.log(pathToSharedPath);
+    // console.log(pathToSharedPath);
     /**
      * Processes the incoming request to determine the user's locale and sets a locale cookie.
      * Optionally redirects the user based on the locale if locale-based routing is enabled.
@@ -76,7 +76,7 @@ function createNextMiddleware(_a) {
      * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
      */
     function nextMiddleware(req) {
-        console.log('--------------------------------');
+        // console.log('--------------------------------');
         var headerList = new Headers(req.headers);
         var res = server_1.NextResponse.next({
             request: {
@@ -121,29 +121,35 @@ function createNextMiddleware(_a) {
                 (0, utils_1.replaceDynamicSegments)(pathnameLocale
                     ? standardizedPathname
                     : "/".concat(userLocale).concat(standardizedPathname), localizedPath);
-            console.log('pathname', pathname);
-            console.log('unprefixedPathname', unprefixedPathname);
-            console.log('standardizedPathname', standardizedPathname);
-            console.log('sharedPath', sharedPath);
-            console.log('localizedPath', localizedPath);
-            console.log('localizedPathWithParameters', localizedPathWithParameters);
+            // console.log('pathname', pathname);
+            // console.log('unprefixedPathname', unprefixedPathname);
+            // console.log('standardizedPathname', standardizedPathname);
+            // console.log('sharedPath', sharedPath);
+            // console.log('localizedPath', localizedPath);
+            // console.log('localizedPathWithParameters', localizedPathWithParameters);
             // ---------- ROUTING LOGIC ---------- //
             // BASE CASE: default locale, same path (/en-US/blog -> /en-US/blog), (/en-US/dashboard/1/custom -> /en-US/dashboard/1/custom)
             if (localizedPathWithParameters &&
                 standardizedPathname === localizedPathWithParameters &&
                 userLocale === defaultLocale) {
-                console.log("[Middleware] Default locale path match: ".concat(pathname, " -> ").concat(localizedPathWithParameters));
+                // console.log(
+                //   `[Middleware] Default locale path match: ${pathname} -> ${localizedPathWithParameters}`
+                // );
                 return res;
             }
             // BASE CASE: at localized path, which is the same as the shared path (/fil/blog -> /fil/blog)
             if (pathname === localizedPathWithParameters &&
                 "/".concat(userLocale).concat(sharedPath) === localizedPathWithParameters) {
-                console.log("[Middleware] Localized path match: ".concat(pathname, " -> ").concat(localizedPathWithParameters));
+                // console.log(
+                //   `[Middleware] Localized path match: ${pathname} -> ${localizedPathWithParameters}`
+                // );
                 return res;
             }
             // If we've already rewritten this path, don't process it again
             if (rewriteFlag) {
-                console.log("[Middleware] Already rewritten path: ".concat(pathname, " (skipping)"));
+                // console.log(
+                //   `[Middleware] Already rewritten path: ${pathname} (skipping)`
+                // );
                 return res;
             }
             // REWRITE CASE: proxies a localized path, same locale (/fr/le-about => /fr/about) (/fr/dashboard/1/le-custom => /fr/dashboard/1/custom)
@@ -161,7 +167,9 @@ function createNextMiddleware(_a) {
                 if (userLocale) {
                     response.cookies.set(constants_1.middlewareLocaleName, userLocale);
                 }
-                console.log("[Middleware] Rewrite localized path: ".concat(pathname, " -> ").concat(rewritePath));
+                // console.log(
+                //   `[Middleware] Rewrite localized path: ${pathname} -> ${rewritePath}`
+                // );
                 return response;
             }
             // REWRITE CASE: no locale prefix
@@ -175,7 +183,9 @@ function createNextMiddleware(_a) {
                     headers: headerList,
                 });
                 response.headers.set(constants_1.middlewareLocaleRewriteFlagName, 'true');
-                console.log("[Middleware] Rewrite no locale prefix: ".concat(pathname, " -> ").concat(rewritePath));
+                // console.log(
+                //   `[Middleware] Rewrite no locale prefix: ${pathname} -> ${rewritePath}`
+                // );
                 return response;
             }
             // REDIRECT CASE: non-i18n path
@@ -194,7 +204,9 @@ function createNextMiddleware(_a) {
                 if (userLocale) {
                     response.cookies.set(constants_1.middlewareLocaleName, userLocale);
                 }
-                console.log("[Middleware] Redirect non-i18n path: ".concat(pathname, " -> ").concat(redirectPath));
+                // console.log(
+                //   `[Middleware] Redirect non-i18n path: ${pathname} -> ${redirectPath}`
+                // );
                 return response;
             }
             // REDIRECT CASE: mismatched localized path (/fr/about -> /fr/le-about), mismatched dynamic path (/fr/dashboard/1/custom -> /fr/dashboard/1/le-custom)
@@ -205,14 +217,16 @@ function createNextMiddleware(_a) {
                 if (userLocale) {
                     response.cookies.set(constants_1.middlewareLocaleName, userLocale);
                 }
-                console.log("[Middleware] Redirect mismatched path: ".concat(pathname, " -> ").concat(localizedPathWithParameters));
+                // console.log(
+                //   `[Middleware] Redirect mismatched path: ${pathname} -> ${localizedPathWithParameters}`
+                // );
                 return response;
             }
             // BASE CASE
-            console.log("[Middleware] No transformation needed: ".concat(pathname));
+            // console.log(`[Middleware] No transformation needed: ${pathname}`);
             return res;
         }
-        console.log("[Middleware] No locale routing: ".concat(req.nextUrl.pathname));
+        // console.log(`[Middleware] No locale routing: ${req.nextUrl.pathname}`);
         return res;
     }
     return nextMiddleware;

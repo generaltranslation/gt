@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "1.0.3-alpha.0",
+  "version": "1.0.3-alpha.1",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "scripts": {
@@ -52,7 +52,7 @@
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
-    "generaltranslation": "^6.2.2-alpha.0",
+    "generaltranslation": "^6.2.2-alpha.1",
     "ora": "^8.2.0",
     "yaml": "^2.7.0"
   },
