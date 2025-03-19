@@ -15,10 +15,11 @@ import React from 'react';
  * @param {string} [_versionId] - The version ID for fetching translations.
  * @param {string} [devApiKey] - The API key for development environments.
  * @param {object} [metadata] - Additional metadata to pass to the context.
+ * @param {React.ReactNode} [fallback = undefined] - Custom fallback to display while loading
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadDictionary, loadTranslations, _versionId, ...metadata }: {
+export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadDictionary, loadTranslations, fallback, _versionId, ...metadata }: {
     children?: React.ReactNode;
     projectId?: string;
     devApiKey?: string;

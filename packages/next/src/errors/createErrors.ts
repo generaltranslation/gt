@@ -88,3 +88,6 @@ export const translationLoadingWarning =
 export const runtimeTranslationTimeoutWarning = `gt-next: Runtime translation timed out.`;
 
 export const dictionaryNotFoundWarning = `gt-next: Dictionary not found. Make sure you have added a dictionary to your project (either dictionary.js or [defaultLocale].json), and you have added the withGTConfig() plugin.`;
+
+export const standardizedLocalesWarning = (locales: string[]) =>
+  `gt-next: You are using The following locales were standardized: ${locales.join(', ')}.`;

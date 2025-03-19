@@ -85,7 +85,9 @@ var DictionaryManager = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        reference = (0, generaltranslation_1.standardizeLocale)(locale);
+                        reference = process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true'
+                            ? (0, generaltranslation_1.standardizeLocale)(locale)
+                            : locale;
                         result = this.dictionaryMap.get(reference);
                         if (result)
                             return [2 /*return*/, result];

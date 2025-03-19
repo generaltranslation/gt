@@ -47,7 +47,10 @@ export class DictionaryManager {
    * @returns {Promise<DictionaryObject | undefined>} The dictionary data or undefined if not found.
    */
   async getDictionary(locale: string): Promise<DictionaryObject | undefined> {
-    const reference = standardizeLocale(locale);
+    const reference =
+      process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true'
+        ? standardizeLocale(locale)
+        : locale;
 
     // Check internal cache
     let result = this.dictionaryMap.get(reference);

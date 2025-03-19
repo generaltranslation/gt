@@ -62,7 +62,7 @@ function DateTime({
     dateValue = defaultValue;
   }
   if (typeof dateValue !== 'undefined') {
-    final = formatDateTime({ value: dateValue, locales, options }).replace(
+    final = formatDateTime(dateValue, { locales, ...options }).replace(
       /[\u200F\u202B\u202E]/g,
       ''
     );

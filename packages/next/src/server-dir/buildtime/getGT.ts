@@ -73,13 +73,28 @@ export default async function getGT(): Promise<
 
     // ----- GET TRANSLATION ----- //
 
-    const hash = hashJsxChildren({
-      source,
-      ...(options?.context && { context: options?.context }),
-      ...(options?.id && { id: options?.id }),
-      dataFormat: 'JSX',
-    });
-    const translationEntry = translations?.[hash];
+    let translationEntry = undefined;
+
+    // Use id to index
+    if (options?.id) {
+      translationEntry = translations?.[options?.id];
+    }
+
+    // Calculate hash
+    let hash = '';
+    const calcHash = () =>
+      hashJsxChildren({
+        source,
+        ...(options?.context && { context: options?.context }),
+        ...(options?.id && { id: options?.id }),
+        dataFormat: 'JSX',
+      });
+
+    // Use hash to index
+    if (!translationEntry) {
+      hash = calcHash();
+      translationEntry = translations?.[hash];
+    }
 
     // ----- RENDER TRANSLATION ----- //
 
@@ -98,6 +113,9 @@ export default async function getGT(): Promise<
       console.warn(createStringTranslationError(string, options?.id, 't'));
       return renderContent(source, [defaultLocale]);
     }
+
+    // Get hash
+    if (!hash) hash = calcHash();
 
     // Translate on demand
     I18NConfig.translateContent({

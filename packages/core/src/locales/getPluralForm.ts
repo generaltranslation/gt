@@ -1,3 +1,4 @@
+import { intlCache } from 'src/cache/IntlCache';
 import { pluralForms, PluralType } from '../settings/plurals';
 import { libraryDefaultLocale } from '../settings/settings';
 
@@ -13,7 +14,7 @@ export default function _getPluralForm(
   forms: PluralType[] = pluralForms as any,
   locales: string[] = [libraryDefaultLocale]
 ): PluralType | '' {
-  const pluralRules = new Intl.PluralRules(locales);
+  const pluralRules = intlCache.get('PluralRules', locales);
   const provisionalBranchName = pluralRules.select(n);
   // aliases
   const absN = Math.abs(n);

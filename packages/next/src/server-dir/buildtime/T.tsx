@@ -104,7 +104,9 @@ async function T({
 
   // Get the translation entry object
   const translations = await translationsPromise;
-  const translationEntry = translations?.[hash];
+  const translationEntry = id
+    ? translations?.[id] || translations?.[hash]
+    : translations?.[hash];
 
   // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
 
@@ -129,6 +131,7 @@ async function T({
   }
 
   // ----- TRANSLATE ON DEMAND ----- //
+  // dev only
 
   // Since this is the buildtime translation component <T>, this is dev-only
   if (!I18NConfig.isDevelopmentApiEnabled()) return renderDefault();

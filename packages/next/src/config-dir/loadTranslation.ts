@@ -3,7 +3,6 @@ import {
   customLoadTranslationsError,
   remoteTranslationsError,
 } from '../errors/createErrors';
-import resolveDictionaryLoader from '../loaders/resolveDictionaryDictionary';
 import resolveTranslationLoader from '../loaders/resolveTranslationLoader';
 
 type RemoteLoadTranslationsInput = {
@@ -61,7 +60,7 @@ export default async function loadTranslations(
         const result = await customLoadTranslations(_props.targetLocale);
         return parseResult(result);
       } catch (error) {
-        console.error(customLoadTranslationsError(), error);
+        console.error(customLoadTranslationsError(_props.targetLocale), error);
         return undefined;
       }
     };

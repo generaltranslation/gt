@@ -2,6 +2,7 @@ import { libraryDefaultLocale } from '../internal';
 import _getLocale from './getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 import _getLocaleEmoji from './getLocaleEmoji';
+import { intlCache } from 'src/cache/IntlCache';
 
 type LocaleProperties = {
   // assume code = "de-AT", defaultLocale = "en-US"
@@ -52,25 +53,27 @@ export default function _getLocaleProperties(
   try {
     locale = _standardizeLocale(locale); // "de-AT"
 
-    const localeObject = new Intl.Locale(locale);
+    const localeObject = intlCache.get('Locale', locale);
     const languageCode = localeObject.language; // "de"
     const baseRegion = localeObject.region; // "AT"
 
-    const maximizedLocale = new Intl.Locale(locale).maximize();
+    const maximizedLocale = localeObject.maximize();
     const maximizedCode = maximizedLocale.toString(); // "de-Latn-AT"
     const regionCode = maximizedLocale.region || ''; // "AT"
     const scriptCode = maximizedLocale.script || ''; // "Latn"
 
-    const minimizedLocale = new Intl.Locale(locale).minimize();
+    const minimizedLocale = localeObject.minimize();
     const minimizedCode = minimizedLocale.toString(); // "de-AT"
 
     // Language names (default and native)
 
-    const languageNames = new Intl.DisplayNames(
+    const languageNames = intlCache.get(
+      'DisplayNames',
       [defaultLocale, locale, libraryDefaultLocale],
       { type: 'language' }
     );
-    const nativeLanguageNames = new Intl.DisplayNames(
+    const nativeLanguageNames = intlCache.get(
+      'DisplayNames',
       [locale, defaultLocale, libraryDefaultLocale],
       { type: 'language' }
     );
@@ -96,11 +99,13 @@ export default function _getLocaleProperties(
 
     // Region names (default and native)
 
-    const regionNames = new Intl.DisplayNames(
+    const regionNames = intlCache.get(
+      'DisplayNames',
       [defaultLocale, locale, libraryDefaultLocale],
       { type: 'region' }
     );
-    const nativeRegionNames = new Intl.DisplayNames(
+    const nativeRegionNames = intlCache.get(
+      'DisplayNames',
       [locale, defaultLocale, libraryDefaultLocale],
       { type: 'region' }
     );
@@ -110,11 +115,13 @@ export default function _getLocaleProperties(
 
     // Script names (default and native)
 
-    const scriptNames = new Intl.DisplayNames(
+    const scriptNames = intlCache.get(
+      'DisplayNames',
       [defaultLocale, locale, libraryDefaultLocale],
       { type: 'script' }
     );
-    const nativeScriptNames = new Intl.DisplayNames(
+    const nativeScriptNames = intlCache.get(
+      'DisplayNames',
       [locale, defaultLocale, libraryDefaultLocale],
       { type: 'script' }
     );
