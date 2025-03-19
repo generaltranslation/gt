@@ -20,9 +20,22 @@ const parseFilesConfig_1 = require("../fs/config/parseFilesConfig");
 function generateSettings(options) {
     var _a, _b;
     // Load config file
-    const gtConfig = options.config
-        ? (0, loadConfig_1.default)(options.config)
-        : (0, loadConfig_1.default)('gt.config.json');
+    let gtConfig = {};
+    if (options.config) {
+        gtConfig = (0, loadConfig_1.default)(options.config);
+    }
+    else if (fs_1.default.existsSync('gt.config.json')) {
+        options.config = 'gt.config.json';
+        gtConfig = (0, loadConfig_1.default)('gt.config.json');
+    }
+    else if (fs_1.default.existsSync('src/gt.config.json')) {
+        options.config = 'src/gt.config.json';
+        gtConfig = (0, loadConfig_1.default)('src/gt.config.json');
+    }
+    else {
+        // If neither config exists, use empty config
+        gtConfig = {};
+    }
     // Warn if apiKey is present in gt.config.json
     if (gtConfig.apiKey) {
         (0, warnings_1.warnApiKeyInConfig)(options.config);
@@ -40,7 +53,8 @@ function generateSettings(options) {
     // Add baseUrl if not provided
     mergedOptions.baseUrl = mergedOptions.baseUrl || internal_1.defaultBaseUrl;
     // Add defaultLocale if not provided
-    mergedOptions.defaultLocale = mergedOptions.defaultLocale || internal_1.libraryDefaultLocale;
+    mergedOptions.defaultLocale =
+        mergedOptions.defaultLocale || internal_1.libraryDefaultLocale;
     // Add locales if not provided
     mergedOptions.locales = mergedOptions.locales || [];
     // Add default config file name if not provided

@@ -8,3 +8,4 @@ _test_formats
 _test_cli
 .env
 .env.local
+_testing
