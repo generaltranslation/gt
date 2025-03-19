@@ -31,7 +31,6 @@ function checkFileTranslations(apiKey, baseUrl, data, locales, timeoutDuration, 
     return __awaiter(this, void 0, void 0, function* () {
         const startTime = Date.now();
         const spinner = yield (0, console_1.displayLoadingAnimation)('Waiting for translation...');
-        const availableLocales = [];
         const downloadedFiles = new Set(); // Track which file+locale combinations have been downloaded
         let fileQueryData = [];
         // Initialize the query data
@@ -70,28 +69,13 @@ function checkFileTranslations(apiKey, baseUrl, data, locales, timeoutDuration, 
                             // Download the file
                             const outputPath = resolveOutputPath(fileName, locale);
                             yield (0, downloadFile_1.downloadFile)(baseUrl, apiKey, translation.fileId, outputPath);
-                            // Update available locales for display
-                            if (!availableLocales.includes(locale) &&
-                                locales.includes(locale)) {
-                                availableLocales.push(locale);
-                            }
                         }
                     }
                     // Update the spinner text
-                    const newSuffixText = [
-                        `\n\n` +
-                            chalk_1.default.green(`${availableLocales.length}/${locales.length}`) +
-                            ` translations completed`,
-                        ...availableLocales.map((locale) => {
-                            const localeProperties = (0, generaltranslation_1.getLocaleProperties)(locale);
-                            return `Translation completed for ${chalk_1.default.green(localeProperties.name)} (${chalk_1.default.green(localeProperties.code)})`;
-                        }),
-                    ];
-                    spinner.suffixText = newSuffixText.join('\n');
-                    // Check if all locales are available
-                    if (locales.every((locale) => availableLocales.includes(locale))) {
-                        return true;
-                    }
+                    spinner.suffixText = generateStatusSuffixText(downloadedFiles, fileQueryData);
+                }
+                if (downloadedFiles.size === fileQueryData.length) {
+                    return true;
                 }
                 return false;
             }
@@ -100,6 +84,55 @@ function checkFileTranslations(apiKey, baseUrl, data, locales, timeoutDuration, 
                 return false;
             }
         });
+        /**
+         * Generates a formatted status text showing translation progress
+         * @param downloadedFiles - Set of downloaded file+locale combinations
+         * @param fileQueryData - Array of file query data objects
+         * @returns Formatted status text
+         */
+        function generateStatusSuffixText(downloadedFiles, fileQueryData) {
+            var _a;
+            const newSuffixText = [
+                `\n\n` +
+                    chalk_1.default.green(`${downloadedFiles.size}/${fileQueryData.length}`) +
+                    ` translations completed\n`,
+            ];
+            // Group by filename for better organization
+            const fileGroups = new Map();
+            // Initialize with all files and locales from fileQueryData
+            for (const item of fileQueryData) {
+                if (!fileGroups.has(item.fileName)) {
+                    fileGroups.set(item.fileName, new Set());
+                }
+                (_a = fileGroups.get(item.fileName)) === null || _a === void 0 ? void 0 : _a.add(item.locale);
+            }
+            // Mark which ones are completed
+            for (const fileLocale of downloadedFiles) {
+                const [fileName, locale] = fileLocale.split(':');
+                const completedLocales = fileGroups.get(fileName);
+                if (completedLocales) {
+                    completedLocales.delete(locale); // Remove from pending
+                }
+            }
+            // Display each file with its status
+            for (const [fileName, pendingLocales] of fileGroups.entries()) {
+                newSuffixText.push(`\n${chalk_1.default.bold(fileName)}`);
+                // Show completed locales for this file
+                for (const fileLocale of downloadedFiles) {
+                    const [currentFileName, locale] = fileLocale.split(':');
+                    if (currentFileName === fileName) {
+                        const localeProperties = (0, generaltranslation_1.getLocaleProperties)(locale);
+                        newSuffixText.push(`  ${chalk_1.default.green('✓')} ${chalk_1.default.green(localeProperties.code)}`);
+                    }
+                }
+                // Show pending locales for this file
+                for (const locale of pendingLocales) {
+                    const localeProperties = (0, generaltranslation_1.getLocaleProperties)(locale);
+                    newSuffixText.push(`  ${chalk_1.default.yellow('[==>')} ${chalk_1.default.yellow(localeProperties.code)}`);
+                }
+            }
+            return newSuffixText.join('\n');
+        }
         // Calculate time until next 5-second interval since startTime
         const msUntilNextInterval = Math.max(0, 5000 - ((Date.now() - startTime) % 5000));
         // Do first check immediately

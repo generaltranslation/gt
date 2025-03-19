@@ -27,7 +27,6 @@ export async function checkFileTranslations(
 ) {
   const startTime = Date.now();
   const spinner = await displayLoadingAnimation('Waiting for translation...');
-  const availableLocales: string[] = [];
   const downloadedFiles: Set<string> = new Set(); // Track which file+locale combinations have been downloaded
 
   let fileQueryData: {
@@ -86,35 +85,17 @@ export async function checkFileTranslations(
             const outputPath = resolveOutputPath(fileName, locale);
 
             await downloadFile(baseUrl, apiKey, translation.fileId, outputPath);
-
-            // Update available locales for display
-            if (
-              !availableLocales.includes(locale) &&
-              locales.includes(locale)
-            ) {
-              availableLocales.push(locale);
-            }
           }
         }
 
         // Update the spinner text
-        const newSuffixText = [
-          `\n\n` +
-            chalk.green(`${availableLocales.length}/${locales.length}`) +
-            ` translations completed`,
-          ...availableLocales.map((locale: string) => {
-            const localeProperties = getLocaleProperties(locale);
-            return `Translation completed for ${chalk.green(
-              localeProperties.name
-            )} (${chalk.green(localeProperties.code)})`;
-          }),
-        ];
-        spinner.suffixText = newSuffixText.join('\n');
-
-        // Check if all locales are available
-        if (locales.every((locale) => availableLocales.includes(locale))) {
-          return true;
-        }
+        spinner.suffixText = generateStatusSuffixText(
+          downloadedFiles,
+          fileQueryData
+        );
+      }
+      if (downloadedFiles.size === fileQueryData.length) {
+        return true;
       }
       return false;
     } catch (error) {
@@ -122,6 +103,69 @@ export async function checkFileTranslations(
       return false;
     }
   };
+
+  /**
+   * Generates a formatted status text showing translation progress
+   * @param downloadedFiles - Set of downloaded file+locale combinations
+   * @param fileQueryData - Array of file query data objects
+   * @returns Formatted status text
+   */
+  function generateStatusSuffixText(
+    downloadedFiles: Set<string>,
+    fileQueryData: { versionId: string; fileName: string; locale: string }[]
+  ): string {
+    const newSuffixText = [
+      `\n\n` +
+        chalk.green(`${downloadedFiles.size}/${fileQueryData.length}`) +
+        ` translations completed\n`,
+    ];
+
+    // Group by filename for better organization
+    const fileGroups = new Map<string, Set<string>>();
+
+    // Initialize with all files and locales from fileQueryData
+    for (const item of fileQueryData) {
+      if (!fileGroups.has(item.fileName)) {
+        fileGroups.set(item.fileName, new Set());
+      }
+      fileGroups.get(item.fileName)?.add(item.locale);
+    }
+
+    // Mark which ones are completed
+    for (const fileLocale of downloadedFiles) {
+      const [fileName, locale] = fileLocale.split(':');
+      const completedLocales = fileGroups.get(fileName);
+      if (completedLocales) {
+        completedLocales.delete(locale); // Remove from pending
+      }
+    }
+
+    // Display each file with its status
+    for (const [fileName, pendingLocales] of fileGroups.entries()) {
+      newSuffixText.push(`\n${chalk.bold(fileName)}`);
+
+      // Show completed locales for this file
+      for (const fileLocale of downloadedFiles) {
+        const [currentFileName, locale] = fileLocale.split(':');
+        if (currentFileName === fileName) {
+          const localeProperties = getLocaleProperties(locale);
+          newSuffixText.push(
+            `  ${chalk.green('✓')} ${chalk.green(localeProperties.code)}`
+          );
+        }
+      }
+
+      // Show pending locales for this file
+      for (const locale of pendingLocales) {
+        const localeProperties = getLocaleProperties(locale);
+        newSuffixText.push(
+          `  ${chalk.yellow('[==>')} ${chalk.yellow(localeProperties.code)}`
+        );
+      }
+    }
+
+    return newSuffixText.join('\n');
+  }
 
   // Calculate time until next 5-second interval since startTime
   const msUntilNextInterval = Math.max(
