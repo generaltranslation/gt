@@ -65,24 +65,41 @@ function T({
 
   // ----- FETCH TRANSLATION ----- //
 
+  // Dependency flag to avoid recalculating hash whenever translation object changes
+  const translationWithIdExists = id && translations?.[id as string];
+
   // Calculate necessary info for fetching translation / generating translation
   const [childrenAsObjects, hash] = useMemo(() => {
-    if (translationRequired) {
-      const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-      const hash: string = hashJsxChildren({
-        source: childrenAsObjects,
-        ...(context && { context }),
-        ...(id && { id }),
-        dataFormat: 'JSX',
-      });
-      return [childrenAsObjects, hash];
-    } else {
+    // skip hashing:
+    if (
+      !translationRequired || // Translation not required
+      translationWithIdExists // Translation already exists under the id
+    ) {
       return [undefined, ''];
     }
-  }, [context, taggedChildren, translationRequired, children]);
 
-  // get translation entry
-  const translationEntry = translations?.[hash];
+    // calculate hash
+    const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+    const hash: string = hashJsxChildren({
+      source: childrenAsObjects,
+      ...(context && { context }),
+      ...(id && { id }),
+      dataFormat: 'JSX',
+    });
+
+    return [childrenAsObjects, hash];
+  }, [
+    taggedChildren,
+    context,
+    id,
+    translationRequired,
+    translationWithIdExists,
+  ]);
+
+  // get translation entry on hash
+  const translationEntry = translationWithIdExists
+    ? translations?.[id as string]
+    : translations?.[hash];
 
   // Do dev translation if required
   useEffect(() => {

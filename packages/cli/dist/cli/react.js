@@ -53,6 +53,7 @@ const loadJSON_1 = __importDefault(require("../fs/loadJSON"));
 const findFilepath_1 = __importStar(require("../fs/findFilepath"));
 const createESBuildConfig_1 = __importDefault(require("../react/config/createESBuildConfig"));
 const errors_1 = require("../console/errors");
+const internal_1 = require("generaltranslation/internal");
 const chalk_1 = __importDefault(require("chalk"));
 const prompts_1 = require("@inquirer/prompts");
 const postProcess_1 = require("../hooks/postProcess");
@@ -124,7 +125,7 @@ class ReactCLI extends base_1.BaseCLI {
             .option('--src <paths...>', "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components", (0, findFilepath_1.findFilepaths)(['./src', './app', './pages', './components']))
             .option('--tsconfig, --jsconfig <path>', 'Path to jsconfig or tsconfig file', (0, findFilepath_1.default)(['./tsconfig.json', './jsconfig.json']))
             .option('--dictionary <path>', 'Path to dictionary file')
-            .option('--default-language, --default-locale <locale>', 'Source locale (e.g., en)', 'en')
+            .option('--default-language, --default-locale <locale>', 'Source locale (e.g., en)', internal_1.libraryDefaultLocale)
             .option('--inline', 'Include inline <T> tags in addition to dictionary file', true)
             .option('--ignore-errors', 'Ignore errors encountered while scanning for <T> tags', false)
             .option('-t, --translations-dir, --translation-dir <path>', 'Path to directory where translations will be saved. If this flag is not provided, translations will not be saved locally.')
@@ -184,8 +185,13 @@ class ReactCLI extends base_1.BaseCLI {
             const newData = {};
             for (const update of updates) {
                 const { source, metadata } = update;
-                const { hash } = metadata;
-                newData[hash] = source;
+                const { hash, id } = metadata;
+                if (id) {
+                    newData[id] = source;
+                }
+                else {
+                    newData[hash] = source;
+                }
             }
             const { resolvedPaths, placeholderPaths } = settings.files;
             // Save source file if files.json is provided

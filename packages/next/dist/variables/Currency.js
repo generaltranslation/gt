@@ -61,7 +61,7 @@ function Currency(_a) {
             : renderedValue;
     // Format the number as currency according to the locale
     var formattedValue = typeof renderedValue === 'number'
-        ? (0, generaltranslation_1.formatCurrency)({ value: renderedValue, currency: currency, locales: locales, options: options })
+        ? (0, generaltranslation_1.formatCurrency)(renderedValue, currency, __assign({ locales: locales }, options))
         : renderedValue;
     return ((0, jsx_runtime_1.jsx)("span", { "data-_gt": generaltranslation, "data-_gt-variable-name": name, "data-_gt-variable-type": 'currency', "data-_gt-variable-options": JSON.stringify(__assign({ style: 'currency', currency: currency }, options)), "data-_gt-unformatted-value": typeof renderedValue === 'number' && !isNaN(renderedValue)
             ? renderedValue

@@ -13,7 +13,8 @@ import { displayAsciiTitle, displayInitializingText } from '../console/console';
 import loadJSON from '../fs/loadJSON';
 import findFilepath, { findFilepaths } from '../fs/findFilepath';
 import createESBuildConfig from '../react/config/createESBuildConfig';
-import { noFilesError, noTranslationsError } from '../console/errors';
+import { noTranslationsError } from '../console/errors';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import chalk from 'chalk';
 import { select } from '@inquirer/prompts';
 import { detectFormatter, formatFiles } from '../hooks/postProcess';
@@ -169,7 +170,7 @@ export class ReactCLI extends BaseCLI {
       .option(
         '--default-language, --default-locale <locale>',
         'Source locale (e.g., en)',
-        'en'
+        libraryDefaultLocale
       )
       .option(
         '--inline',
@@ -298,8 +299,12 @@ export class ReactCLI extends BaseCLI {
     const newData: Record<string, any> = {};
     for (const update of updates) {
       const { source, metadata } = update;
-      const { hash } = metadata;
-      newData[hash] = source;
+      const { hash, id } = metadata;
+      if (id) {
+        newData[id] = source;
+      } else {
+        newData[hash] = source;
+      }
     }
 
     const { resolvedPaths, placeholderPaths } = settings.files;

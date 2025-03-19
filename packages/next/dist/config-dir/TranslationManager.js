@@ -75,7 +75,17 @@ var TranslationManager = /** @class */ (function () {
         this.translationTimestamps = new Map();
         this.fetchPromises = new Map();
         this.requestedTranslations = new Map();
+        this.gtServicesEnabled =
+            process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true';
     }
+    /**
+     * Standardizes a locale if GT services are enabled.
+     * @param {string} locale - The locale to standardize.
+     * @returns {string} The standardized locale.
+     */
+    TranslationManager.prototype._standardizeLocale = function (locale) {
+        return this.gtServicesEnabled ? (0, generaltranslation_1.standardizeLocale)(locale) : locale;
+    };
     /**
      * Sets the configuration for the TranslationManager.
      * @param {Partial<TranslationManagerConfig>} newConfig - The new configuration to apply.
@@ -116,7 +126,7 @@ var TranslationManager = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        reference = (0, generaltranslation_1.standardizeLocale)(locale);
+                        reference = this._standardizeLocale(locale);
                         hasExpired = this.config.loadTranslationsType === 'remote' &&
                             this.translationsMap.has(reference) &&
                             Date.now() - ((_a = this.translationTimestamps.get(reference)) !== null && _a !== void 0 ? _a : 0) >
@@ -151,7 +161,7 @@ var TranslationManager = /** @class */ (function () {
      * @returns {TranslationsObject | undefined} The translations data or undefined if not found.
      */
     TranslationManager.prototype.getRecentTranslations = function (locale) {
-        var reference = (0, generaltranslation_1.standardizeLocale)(locale);
+        var reference = this._standardizeLocale(locale);
         return this.translationsMap.get(reference);
     };
     /**
@@ -165,7 +175,7 @@ var TranslationManager = /** @class */ (function () {
         var _a;
         if (!(locale && hash && translation))
             return false;
-        var reference = (0, generaltranslation_1.standardizeLocale)(locale);
+        var reference = this._standardizeLocale(locale);
         var currentTranslations = this.translationsMap.get(reference) || {};
         this.translationsMap.set(reference, __assign(__assign({}, currentTranslations), (_a = {}, _a[hash] = translation, _a)));
         return true;
@@ -175,7 +185,7 @@ var TranslationManager = /** @class */ (function () {
      * @param {string} locale - The locale code.
      */
     TranslationManager.prototype.setTranslationRequested = function (locale) {
-        var reference = (0, generaltranslation_1.standardizeLocale)(locale);
+        var reference = this._standardizeLocale(locale);
         this.requestedTranslations.set(reference, true);
     };
     /**

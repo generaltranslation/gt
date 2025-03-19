@@ -60,11 +60,9 @@ function Currency({
       : renderedValue;
   // Format the value using Intl.NumberFormat
   if (typeof renderedValue === 'number') {
-    renderedValue = formatCurrency({
-      value: renderedValue,
+    renderedValue = formatCurrency(renderedValue, currency, {
       locales,
-      currency,
-      options,
+      ...options,
     });
   }
 

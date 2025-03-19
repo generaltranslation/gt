@@ -51,7 +51,7 @@ function Num({
   // Format the number according to the locale
   const formattedValue =
     typeof renderedValue === 'number'
-      ? formatNum({ value: renderedValue, locales, options })
+      ? formatNum(renderedValue, { locales, ...options })
       : renderedValue;
 
   return (

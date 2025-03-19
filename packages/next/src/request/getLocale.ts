@@ -24,11 +24,13 @@ export default async function getLocale(): Promise<string> {
     return locale;
   } catch {
     const I18NConfig = getI18NConfig();
-    getLocaleFunction = async () =>
-      await getNextLocale(
+    getLocaleFunction = async () => {
+      const res = await getNextLocale(
         I18NConfig.getDefaultLocale(),
         I18NConfig.getLocales()
       );
+      return res;
+    };
     return await getLocaleFunction();
   }
 }

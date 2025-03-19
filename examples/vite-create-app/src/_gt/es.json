@@ -1,67 +1,60 @@
 {
-  "1622d9dcb13a5e2bc7656875d81f1aa29dca453662794fb478ff57300210785f": {
-    "type": "div",
-    "props": {
-      "children": [
-        {
-          "type": "button",
-          "props": {
-            "children": [
-              "el contador es ",
-              {
-                "id": 3,
-                "key": "_gt_value_3",
-                "variable": "variable"
-              }
-            ],
-            "data-_gt": {
-              "id": 2
-            }
-          }
-        },
-        {
-          "type": "p",
-          "props": {
-            "children": [
-              "Edita ",
-              {
-                "type": "code",
-                "props": {
-                  "children": "src/App.tsx",
-                  "data-_gt": {
-                    "id": 5
-                  }
+  "98c1b63fd6f14077a07dbad17c82b80a85b18e287fc9fbd0cc29ba47af787725": [
+    {
+      "type": "div",
+      "props": {
+        "children": [
+          {
+            "type": "button",
+            "props": {
+              "children": [
+                "el contador es ",
+                {
+                  "id": 3,
+                  "key": "_gt_n_3",
+                  "variable": "number"
                 }
-              },
-              " y guarda para probar HMR"
-            ],
-            "data-_gt": {
-              "id": 4
+              ],
+              "data-_gt": {
+                "id": 2
+              }
+            }
+          },
+          {
+            "type": "p",
+            "props": {
+              "children": [
+                "Edita ",
+                {
+                  "type": "code",
+                  "props": {
+                    "children": "src/App.tsx",
+                    "data-_gt": {
+                      "id": 5
+                    }
+                  }
+                },
+                " y guarda para probar HMR"
+              ],
+              "data-_gt": {
+                "id": 4
+              }
             }
           }
+        ],
+        "data-_gt": {
+          "id": 1
         }
-      ],
-      "data-_gt": {
-        "id": 1
+      }
+    },
+    {
+      "type": "p",
+      "props": {
+        "children": "Haz clic en los logotipos de Vite y React para aprender más",
+        "data-_gt": {
+          "id": 6
+        }
       }
     }
-  },
-  "17d3b00e650565e271551bd16d9fe6504ca149aabba540034e6edf2d5a3eea85": {
-    "type": "h1",
-    "props": {
-      "children": "Vite + React",
-      "data-_gt": {
-        "id": 1
-      }
-    }
-  },
-  "aa73a1ebc6b6f3f67ac8d8eabf33053b3f167ce274d9843ba0548d25063381ce": {
-    "type": "p",
-    "props": {
-      "children": "Haz clic en los logotipos de Vite y React para obtener más información",
-      "data-_gt": {
-        "id": 1
-      }
-    }
-  }
+  ]
 }

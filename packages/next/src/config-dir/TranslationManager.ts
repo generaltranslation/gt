@@ -33,7 +33,7 @@ export class TranslationManager {
   private translationTimestamps: Map<string, number>;
   private fetchPromises: Map<string, Promise<TranslationsObject | undefined>>;
   private requestedTranslations: Map<string, boolean>;
-
+  private gtServicesEnabled: boolean;
   /**
    * Creates an instance of TranslationManager.
    * @constructor
@@ -50,6 +50,17 @@ export class TranslationManager {
     this.translationTimestamps = new Map();
     this.fetchPromises = new Map();
     this.requestedTranslations = new Map();
+    this.gtServicesEnabled =
+      process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true';
+  }
+
+  /**
+   * Standardizes a locale if GT services are enabled.
+   * @param {string} locale - The locale to standardize.
+   * @returns {string} The standardized locale.
+   */
+  _standardizeLocale(locale: string): string {
+    return this.gtServicesEnabled ? standardizeLocale(locale) : locale;
   }
 
   /**
@@ -86,7 +97,7 @@ export class TranslationManager {
   async getCachedTranslations(
     locale: string
   ): Promise<TranslationsObject | undefined> {
-    const reference = standardizeLocale(locale);
+    const reference = this._standardizeLocale(locale);
 
     // Check if translations have expired
     // Translations can only expire if they are loaded remotely
@@ -95,6 +106,7 @@ export class TranslationManager {
       this.translationsMap.has(reference) &&
       Date.now() - (this.translationTimestamps.get(reference) ?? 0) >
         this.config.cacheExpiryTime;
+
     // Return cached translations if available
     if (this.translationsMap.has(reference) && !hasExpired) {
       return this.translationsMap.get(reference);
@@ -123,7 +135,7 @@ export class TranslationManager {
    * @returns {TranslationsObject | undefined} The translations data or undefined if not found.
    */
   getRecentTranslations(locale: string): TranslationsObject | undefined {
-    const reference = standardizeLocale(locale);
+    const reference = this._standardizeLocale(locale);
     return this.translationsMap.get(reference);
   }
 
@@ -140,7 +152,7 @@ export class TranslationManager {
     translation: TranslationSuccess | TranslationLoading | TranslationError
   ): boolean {
     if (!(locale && hash && translation)) return false;
-    const reference = standardizeLocale(locale);
+    const reference = this._standardizeLocale(locale);
     const currentTranslations = this.translationsMap.get(reference) || {};
     this.translationsMap.set(reference, {
       ...currentTranslations,
@@ -154,7 +166,7 @@ export class TranslationManager {
    * @param {string} locale - The locale code.
    */
   setTranslationRequested(locale: string): void {
-    const reference = standardizeLocale(locale);
+    const reference = this._standardizeLocale(locale);
     this.requestedTranslations.set(reference, true);
   }
 

@@ -3,7 +3,7 @@ import {
   splitStringToContent,
 } from 'generaltranslation';
 import { hashJsxChildren } from 'generaltranslation/id';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   InlineTranslationOptions,
   TranslationsObject,
@@ -54,31 +54,55 @@ export default function useCreateInternalUseGTFunction(
         );
       };
 
-      // Check: translation not required
-      if (!translationRequired) return renderContent(source, [defaultLocale]);
-
       // ----- CHECK TRANSLATIONS ----- //
 
-      // Get hash
-      const hash = hashJsxChildren({
+      // Dependency flag to avoid recalculating hash whenever translation object changes
+      const id = options?.id;
+      const translationWithIdExists = id && translations?.[id as string];
+
+      // Calculate hash
+      const hash = useMemo(() => {
+        // Skip hashing:
+        if (
+          !translationRequired || // Translation not required
+          translationWithIdExists // Translation already exists under the id
+        ) {
+          return '';
+        }
+
+        // Calculate hash
+        return hashJsxChildren({
+          source,
+          ...(options?.context && { context: options.context }),
+          ...(id && { id }),
+          dataFormat: 'JSX',
+        });
+      }, [
+        translationRequired,
+        translationWithIdExists,
         source,
-        ...(options?.context && { context: options.context }),
-        ...(options?.id && { id: options.id }),
-        dataFormat: 'JSX',
-      });
+        options?.context,
+        id,
+      ]);
 
-      // Check translation successful
-      const translationEntry = translations?.[hash];
+      // Get translation
+      let translationEntry = translationWithIdExists
+        ? translations?.[id as string]
+        : translations?.[hash];
 
+      // ----- TRANSLATE ON DEMAND ----- //
+
+      // Render fallback when tx not required or error
+      if (!translationRequired || translationEntry?.state === 'error') {
+        return renderContent(source, [defaultLocale]);
+      }
+
+      // Render success
       if (translationEntry?.state === 'success') {
         return renderContent(translationEntry.target as Content, [
           locale,
           defaultLocale,
         ]);
-      }
-
-      if (translationEntry?.state === 'error') {
-        return renderContent(source, [defaultLocale]);
       }
 
       // ----- TRANSLATE ON DEMAND ----- //
@@ -95,8 +119,8 @@ export default function useCreateInternalUseGTFunction(
         targetLocale: locale,
         metadata: {
           ...(options?.context && { context: options.context }),
-          id: options?.id,
-          hash: hash,
+          id,
+          hash: hash || '',
         },
       });
 

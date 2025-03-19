@@ -22,11 +22,18 @@ export declare class TranslationManager {
     private translationTimestamps;
     private fetchPromises;
     private requestedTranslations;
+    private gtServicesEnabled;
     /**
      * Creates an instance of TranslationManager.
      * @constructor
      */
     constructor();
+    /**
+     * Standardizes a locale if GT services are enabled.
+     * @param {string} locale - The locale to standardize.
+     * @returns {string} The standardized locale.
+     */
+    _standardizeLocale(locale: string): string;
     /**
      * Sets the configuration for the TranslationManager.
      * @param {Partial<TranslationManagerConfig>} newConfig - The new configuration to apply.

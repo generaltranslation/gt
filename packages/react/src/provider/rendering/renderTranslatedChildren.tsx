@@ -162,7 +162,6 @@ export default function renderTranslatedChildren({
     const sourceElements: ReactElement[] = source.filter((sourceChild) => {
       if (React.isValidElement(sourceChild)) {
         const generaltranslation = getGTProp(sourceChild);
-        getVariableProps(sourceChild.props as any);
         if (generaltranslation?.transformation === 'variable') {
           let { variableName, variableValue, variableOptions, variableType } =
             getVariableProps(sourceChild.props as any);
@@ -193,7 +192,7 @@ export default function renderTranslatedChildren({
           return sourceId === targetId;
         }
         return false;
-      });
+      }) || sourceElements.shift(); // assumes fixed order, not recommended
     };
 
     return target.map((targetChild, index) => {

@@ -57,7 +57,7 @@ function Num({
   let formattedValue = renderedValue;
   if (typeof renderedValue === 'number') {
     // Using Intl.NumberFormat for consistent number formatting
-    formattedValue = formatNum({ value: renderedValue, locales, options });
+    formattedValue = formatNum(renderedValue, { locales, ...options });
   }
 
   return (

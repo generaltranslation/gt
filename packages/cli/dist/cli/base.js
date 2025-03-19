@@ -60,6 +60,7 @@ const utils_1 = require("../fs/utils");
 const generateSettings_1 = require("../config/generateSettings");
 const chalk_1 = __importDefault(require("chalk"));
 const translate_2 = require("../formats/files/translate");
+const internal_1 = require("generaltranslation/internal");
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 class BaseCLI {
     // Constructor is shared amongst all CLI class types
@@ -174,7 +175,7 @@ class BaseCLI {
             // Ask for the default locale
             const defaultLocale = yield (0, prompts_1.input)({
                 message: 'What is the default locale for your project?',
-                default: 'en',
+                default: internal_1.libraryDefaultLocale,
             });
             // Ask for the locales
             const locales = yield (0, prompts_1.input)({
