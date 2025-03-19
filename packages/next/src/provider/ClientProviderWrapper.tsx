@@ -40,6 +40,8 @@ export default function ClientProvider(
         props.locales.includes(pathLocale) &&
         pathLocale !== props.locale
       ) {
+        // clear cookie (avoids infinite loop when there is no middleware)
+        document.cookie = `${middlewareLocaleRoutingFlagName}=;path=/`;
         // reload server
         router.refresh();
         // reload client
