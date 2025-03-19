@@ -24,6 +24,9 @@ const console_1 = require("../console/console");
 function sendFiles(files, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const { apiKey } = options;
+        console.log(chalk_1.default.cyan('\nFiles to translate:'));
+        console.log(files.map((file) => `  - ${chalk_1.default.bold(file.fileName)}`).join('\n'));
+        console.log();
         const spinner = yield (0, console_1.displayLoadingAnimation)(`Sending ${files.length} file${files.length > 1 ? 's' : ''} to Translation API...`);
         try {
             // Create form data

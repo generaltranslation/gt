@@ -24,6 +24,12 @@ type ApiOptions = Settings & {
 export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
   const { apiKey } = options;
 
+  console.log(chalk.cyan('\nFiles to translate:'));
+  console.log(
+    files.map((file) => `  - ${chalk.bold(file.fileName)}`).join('\n')
+  );
+  console.log();
+
   const spinner = await displayLoadingAnimation(
     `Sending ${files.length} file${files.length > 1 ? 's' : ''} to Translation API...`
   );
@@ -31,7 +37,6 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
   try {
     // Create form data
     const formData = new FormData();
-
     // Add each file to the form data
     files.forEach((file, index) => {
       formData.append(`file${index}`, new Blob([file.content]), file.fileName);
