@@ -119,6 +119,7 @@ type ClientProviderProps = {
     runtimeUrl?: string | null;
     onLocaleChange?: () => void;
     cookieName?: string;
+    gtServicesEnabled?: boolean;
 };
 
 declare const GTContext: React$1.Context<GTContextType | undefined>;

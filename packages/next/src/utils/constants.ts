@@ -1,3 +1,4 @@
-export const middlewareLocaleName = 'generaltranslation.middleware.locale';
+export const middlewareLocaleRoutingFlagName =
+  'generaltranslation.middleware.locale-routing';
 export const middlewareLocaleResetFlagName =
   'generaltranslation.middleware.locale-reset';

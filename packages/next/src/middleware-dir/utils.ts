@@ -10,10 +10,7 @@ import {
   localeCookieName,
   localeHeaderName,
 } from 'generaltranslation/internal';
-import {
-  middlewareLocaleName,
-  middlewareLocaleResetFlagName,
-} from '../utils/constants';
+import { middlewareLocaleResetFlagName } from '../utils/constants';
 
 export type PathConfig = {
   [key: string]: string | { [key: string]: string };
@@ -25,32 +22,6 @@ export type PathConfig = {
 export function extractLocale(pathname: string): string | null {
   const matches = pathname.match(/^\/([^\/]+)(?:\/|$)/);
   return matches ? matches[1] : null;
-}
-
-/**
- * Gets the shared path from a given pathname, handling both static and dynamic paths
- */
-export function getSharedPath(
-  pathname: string,
-  pathToSharedPath: { [key: string]: string }
-): string | undefined {
-  // Try exact match first
-  if (pathToSharedPath[pathname]) {
-    return pathToSharedPath[pathname];
-  }
-
-  // Try regex pattern match
-  for (const [pattern, sharedPath] of Object.entries(pathToSharedPath)) {
-    if (pattern.includes('[^/]+')) {
-      // Convert the pattern to a strict regex that matches the exact path structure
-      const regex = new RegExp(`^${pattern.replace(/\//g, '\\/')}$`);
-      if (regex.test(pathname)) {
-        return sharedPath;
-      }
-    }
-  }
-
-  return undefined;
 }
 
 /**
@@ -131,17 +102,52 @@ export function createPathToSharedPathMap(pathConfig: PathConfig): {
       }
 
       if (typeof localizedPath === 'object') {
-        Object.values(localizedPath).forEach((localizedPath) => {
+        Object.entries(localizedPath).forEach(([locale, localizedPath]) => {
           // Convert the localized path to a regex pattern
           // Replace [param] with [^/]+ to match any non-slash characters
           const pattern = localizedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
-          acc[pattern] = sharedPath;
+          acc[`/${locale}${pattern}`] = sharedPath;
         });
       }
       return acc;
     },
     {}
   );
+}
+
+/**
+ * Gets the shared path from a given pathname, handling both static and dynamic paths
+ */
+export function getSharedPath(
+  pathname: string,
+  pathToSharedPath: { [key: string]: string }
+): string | undefined {
+  // Try exact match first
+  if (pathToSharedPath[pathname]) {
+    return pathToSharedPath[pathname];
+  }
+
+  // Try with locale prefix replaced by
+  const pathnameWithoutLocale = pathname.replace(/^\/[^/]+/, '');
+  if (pathToSharedPath[pathnameWithoutLocale]) {
+    return pathToSharedPath[pathnameWithoutLocale];
+  }
+
+  // Try regex pattern match
+  let candidateSharedPath = undefined;
+  for (const [pattern, sharedPath] of Object.entries(pathToSharedPath)) {
+    if (pattern.includes('/[^/]+')) {
+      // Convert the pattern to a strict regex that matches the exact path structure
+      const regex = new RegExp(`^${pattern.replace(/\//g, '\\/')}$`);
+      if (regex.test(pathname)) {
+        return sharedPath;
+      }
+      if (!candidateSharedPath && regex.test(pathnameWithoutLocale)) {
+        candidateSharedPath = sharedPath;
+      }
+    }
+  }
+  return candidateSharedPath;
 }
 
 /**
@@ -180,8 +186,7 @@ export function getLocaleFromRequest(
   // Check cookie locale
   const cookieLocale = req.cookies.get(localeCookieName);
   if (cookieLocale?.value && isValidLocale(cookieLocale?.value)) {
-    const resetCookieName = middlewareLocaleResetFlagName;
-    const resetCookie = req.cookies.get(resetCookieName);
+    const resetCookie = req.cookies.get(middlewareLocaleResetFlagName);
     if (resetCookie?.value) {
       candidates.unshift(cookieLocale.value);
       clearResetCookie = true;
@@ -199,14 +204,6 @@ export function getLocaleFromRequest(
       if (isValidLocale(refererLocale || ''))
         candidates.push(refererLocale || '');
     }
-  }
-
-  // Check middleware cookie locale
-  let middlewareCookieLocale =
-    !unstandardizedPathnameLocale &&
-    req.cookies.get(middlewareLocaleName)?.value;
-  if (middlewareCookieLocale && isValidLocale(middlewareCookieLocale)) {
-    candidates.push(middlewareCookieLocale);
   }
 
   // Get locales from accept-language header

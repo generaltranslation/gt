@@ -10,8 +10,8 @@ import {
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  middlewareLocaleName,
   middlewareLocaleResetFlagName,
+  middlewareLocaleRoutingFlagName,
 } from '../utils/constants';
 import {
   PathConfig,
@@ -137,9 +137,7 @@ export default function createNextMiddleware({
     );
 
     res.headers.set(localeHeaderName, userLocale);
-
-    res.cookies.set(middlewareLocaleName, userLocale);
-
+    res.cookies.set(middlewareLocaleRoutingFlagName, localeRouting.toString());
     if (clearResetCookie) {
       res.cookies.delete(middlewareLocaleResetFlagName);
     }
@@ -147,11 +145,8 @@ export default function createNextMiddleware({
     if (localeRouting) {
       // ---------- GET PATHS ---------- //
 
+      // get pathname
       const { pathname } = req.nextUrl;
-      // Only strip off the locale if it's a valid locale (/fr/fr-about -> /about), (/blog -> /blog)
-      const unprefixedPathname = pathnameLocale
-        ? pathname.replace(new RegExp(`^/${unstandardizedPathnameLocale}`), '')
-        : pathname;
       const originalUrl = req.nextUrl;
 
       // standardize pathname (ie, /tg/welcome -> /fil/welcome), (/blog -> /blog)
@@ -164,7 +159,7 @@ export default function createNextMiddleware({
           : pathname;
 
       // Get the shared path for the unprefixed pathname
-      const sharedPath = getSharedPath(unprefixedPathname, pathToSharedPath);
+      const sharedPath = getSharedPath(standardizedPathname, pathToSharedPath);
 
       // Localized path (/en-US/blog, /fr/fr-about, /fr/dashboard/[id]/custom)
       const localizedPath =
@@ -179,7 +174,6 @@ export default function createNextMiddleware({
             : `/${userLocale}${standardizedPathname}`,
           localizedPath
         );
-
       // ---------- ROUTING LOGIC ---------- //
 
       // BASE CASE: default locale, same path (/en-US/blog -> /en-US/blog), (/en-US/dashboard/1/custom -> /en-US/dashboard/1/custom)
@@ -216,7 +210,7 @@ export default function createNextMiddleware({
           headers: headerList,
         });
         response.headers.set(localeHeaderName, userLocale);
-        response.cookies.set(middlewareLocaleName, userLocale);
+        response.cookies.set(middlewareLocaleRoutingFlagName, 'true');
         if (clearResetCookie) {
           response.cookies.delete(middlewareLocaleResetFlagName);
         }
@@ -236,7 +230,7 @@ export default function createNextMiddleware({
           headers: headerList,
         });
         response.headers.set(localeHeaderName, userLocale);
-        response.cookies.set(middlewareLocaleName, userLocale);
+        response.cookies.set(middlewareLocaleRoutingFlagName, 'true');
         if (clearResetCookie) {
           response.cookies.delete(middlewareLocaleResetFlagName);
         }
@@ -260,7 +254,8 @@ export default function createNextMiddleware({
         const redirectUrl = new URL(redirectPath, originalUrl);
         redirectUrl.search = originalUrl.search;
         const response = NextResponse.redirect(redirectUrl);
-        response.cookies.set(middlewareLocaleName, userLocale);
+        response.headers.set(localeHeaderName, userLocale);
+        response.cookies.set(middlewareLocaleRoutingFlagName, 'true');
         if (clearResetCookie) {
           response.cookies.delete(middlewareLocaleResetFlagName);
         }
@@ -272,7 +267,8 @@ export default function createNextMiddleware({
         const redirectUrl = new URL(localizedPathWithParameters, originalUrl);
         redirectUrl.search = originalUrl.search;
         const response = NextResponse.redirect(redirectUrl);
-        response.cookies.set(middlewareLocaleName, userLocale);
+        response.headers.set(localeHeaderName, userLocale);
+        response.cookies.set(middlewareLocaleRoutingFlagName, 'true');
         if (clearResetCookie) {
           response.cookies.delete(middlewareLocaleResetFlagName);
         }

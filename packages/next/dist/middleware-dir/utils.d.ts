@@ -9,12 +9,6 @@ export type PathConfig = {
  */
 export declare function extractLocale(pathname: string): string | null;
 /**
- * Gets the shared path from a given pathname, handling both static and dynamic paths
- */
-export declare function getSharedPath(pathname: string, pathToSharedPath: {
-    [key: string]: string;
-}): string | undefined;
-/**
  * Extracts dynamic parameters from a path based on a shared path pattern
  */
 export declare function extractDynamicParams(templatePath: string, path: string): string[];
@@ -32,6 +26,12 @@ export declare function getLocalizedPath(sharedPath: string, locale: string, pat
 export declare function createPathToSharedPathMap(pathConfig: PathConfig): {
     [key: string]: string;
 };
+/**
+ * Gets the shared path from a given pathname, handling both static and dynamic paths
+ */
+export declare function getSharedPath(pathname: string, pathToSharedPath: {
+    [key: string]: string;
+}): string | undefined;
 /**
  * Gets the locale from the request using various sources
  */

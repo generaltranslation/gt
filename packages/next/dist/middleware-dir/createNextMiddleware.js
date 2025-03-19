@@ -85,24 +85,21 @@ function createNextMiddleware(_a) {
         // ---------- LOCALE DETECTION ---------- //
         var _a = (0, utils_1.getLocaleFromRequest)(req, defaultLocale, approvedLocales, localeRouting, gtServicesEnabled), userLocale = _a.userLocale, pathnameLocale = _a.pathnameLocale, unstandardizedPathnameLocale = _a.unstandardizedPathnameLocale, clearResetCookie = _a.clearResetCookie;
         res.headers.set(internal_1.localeHeaderName, userLocale);
-        res.cookies.set(constants_1.middlewareLocaleName, userLocale);
+        res.cookies.set(constants_1.middlewareLocaleRoutingFlagName, localeRouting.toString());
         if (clearResetCookie) {
             res.cookies.delete(constants_1.middlewareLocaleResetFlagName);
         }
         if (localeRouting) {
             // ---------- GET PATHS ---------- //
+            // get pathname
             var pathname = req.nextUrl.pathname;
-            // Only strip off the locale if it's a valid locale (/fr/fr-about -> /about), (/blog -> /blog)
-            var unprefixedPathname = pathnameLocale
-                ? pathname.replace(new RegExp("^/".concat(unstandardizedPathnameLocale)), '')
-                : pathname;
             var originalUrl = req.nextUrl;
             // standardize pathname (ie, /tg/welcome -> /fil/welcome), (/blog -> /blog)
             var standardizedPathname = pathnameLocale && pathnameLocale !== unstandardizedPathnameLocale
                 ? pathname.replace(new RegExp("^/".concat(unstandardizedPathnameLocale)), "/".concat(userLocale))
                 : pathname;
             // Get the shared path for the unprefixed pathname
-            var sharedPath = (0, utils_1.getSharedPath)(unprefixedPathname, pathToSharedPath);
+            var sharedPath = (0, utils_1.getSharedPath)(standardizedPathname, pathToSharedPath);
             // Localized path (/en-US/blog, /fr/fr-about, /fr/dashboard/[id]/custom)
             var localizedPath = sharedPath && (0, utils_1.getLocalizedPath)(sharedPath, userLocale, pathConfig);
             // Combine localized path with dynamic parameters (/en-US/blog, /fr/fr-about, /fr/dashboard/1/fr-custom)
@@ -134,7 +131,7 @@ function createNextMiddleware(_a) {
                     headers: headerList,
                 });
                 response.headers.set(internal_1.localeHeaderName, userLocale);
-                response.cookies.set(constants_1.middlewareLocaleName, userLocale);
+                response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
                 if (clearResetCookie) {
                     response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
                 }
@@ -151,7 +148,7 @@ function createNextMiddleware(_a) {
                     headers: headerList,
                 });
                 response.headers.set(internal_1.localeHeaderName, userLocale);
-                response.cookies.set(constants_1.middlewareLocaleName, userLocale);
+                response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
                 if (clearResetCookie) {
                     response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
                 }
@@ -170,7 +167,8 @@ function createNextMiddleware(_a) {
                 var redirectUrl = new URL(redirectPath, originalUrl);
                 redirectUrl.search = originalUrl.search;
                 var response = server_1.NextResponse.redirect(redirectUrl);
-                response.cookies.set(constants_1.middlewareLocaleName, userLocale);
+                response.headers.set(internal_1.localeHeaderName, userLocale);
+                response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
                 if (clearResetCookie) {
                     response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
                 }
@@ -181,7 +179,8 @@ function createNextMiddleware(_a) {
                 var redirectUrl = new URL(localizedPathWithParameters, originalUrl);
                 redirectUrl.search = originalUrl.search;
                 var response = server_1.NextResponse.redirect(redirectUrl);
-                response.cookies.set(constants_1.middlewareLocaleName, userLocale);
+                response.headers.set(internal_1.localeHeaderName, userLocale);
+                response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
                 if (clearResetCookie) {
                     response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
                 }

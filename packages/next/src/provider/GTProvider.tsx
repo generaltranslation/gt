@@ -80,6 +80,9 @@ export default async function GTProvider({
       defaultLocale={defaultLocale}
       translationRequired={translationRequired}
       dialectTranslationRequired={dialectTranslationRequired}
+      gtServicesEnabled={
+        process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true'
+      }
       {...I18NConfig.getClientSideConfig()}
     >
       {children}
