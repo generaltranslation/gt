@@ -14,10 +14,10 @@ const errors_1 = require("../../console/errors");
  * @param filePath - The file path to save the translations to
  * @param dataFormat - The data format to save the translations as
  */
-function saveTranslations(translations, filepaths, dataFormat) {
+function saveTranslations(translations, placeholderPaths, dataFormat) {
     for (const translation of translations) {
         const locale = translation.locale;
-        const translationFiles = (0, parseFilesConfig_1.resolveLocaleFiles)(filepaths, locale);
+        const translationFiles = (0, parseFilesConfig_1.resolveLocaleFiles)(placeholderPaths, locale);
         if (!translationFiles.json) {
             console.error(errors_1.noFilesError);
             process.exit(1);

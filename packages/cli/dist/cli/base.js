@@ -59,7 +59,7 @@ const translate_1 = require("../formats/json/translate");
 const utils_1 = require("../fs/utils");
 const generateSettings_1 = require("../config/generateSettings");
 const chalk_1 = __importDefault(require("chalk"));
-const parseFilesConfig_1 = require("../fs/config/parseFilesConfig");
+const translate_2 = require("../formats/files/translate");
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 class BaseCLI {
     // Constructor is shared amongst all CLI class types
@@ -89,10 +89,10 @@ class BaseCLI {
             (0, console_1.displayAsciiTitle)();
             (0, console_2.displayInitializingText)();
             const settings = (0, generateSettings_1.generateSettings)(options);
-            yield this.handleTranslate(settings);
+            yield this.handleGenericTranslate(settings);
         }));
     }
-    handleTranslate(settings) {
+    handleGenericTranslate(settings) {
         return __awaiter(this, void 0, void 0, function* () {
             // Validate required settings are present
             if (!settings.locales) {
@@ -131,26 +131,36 @@ class BaseCLI {
             else {
                 dataFormat = 'JSX';
             }
-            const sourceFiles = (0, parseFilesConfig_1.resolveLocaleFiles)(settings.files, settings.defaultLocale);
+            const { resolvedPaths: sourceFiles, placeholderPaths } = settings.files;
             // ---- CREATING UPDATES ---- //
-            if (sourceFiles.json &&
-                this.library !== 'gt-react' &&
-                this.library !== 'gt-next') {
-                const rawSource = (0, findFilepath_1.readFile)(sourceFiles.json[0]);
-                if (!rawSource) {
-                    console.error(errors_1.noSourceFileError);
-                    process.exit(1);
+            if (sourceFiles.json) {
+                // Only translate JSON files if not using gt-react or gt-next
+                // ReactCLI will handle the JSON files differently
+                if (this.library !== 'gt-react' && this.library !== 'gt-next') {
+                    const rawSource = (0, findFilepath_1.readFile)(sourceFiles.json[0]);
+                    if (!rawSource) {
+                        console.error(errors_1.noSourceFileError);
+                        process.exit(1);
+                    }
+                    if (!dataFormat) {
+                        console.error(errors_1.noDataFormatError);
+                        process.exit(1);
+                    }
+                    else if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
+                        console.error(errors_1.noSupportedDataFormatError);
+                        process.exit(1);
+                    }
+                    const source = JSON.parse(rawSource);
+                    yield (0, translate_1.translateJson)(source, settings, dataFormat, placeholderPaths);
                 }
-                if (!dataFormat) {
-                    console.error(errors_1.noDataFormatError);
-                    process.exit(1);
+            }
+            if (sourceFiles.mdx || sourceFiles.md) {
+                if (sourceFiles.mdx) {
+                    yield (0, translate_2.translateFiles)(sourceFiles, placeholderPaths, 'MDX', settings);
                 }
-                else if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
-                    console.error(errors_1.noSupportedDataFormatError);
-                    process.exit(1);
+                if (sourceFiles.md) {
+                    yield (0, translate_2.translateFiles)(sourceFiles, placeholderPaths, 'MD', settings);
                 }
-                const source = JSON.parse(rawSource);
-                const result = yield (0, translate_1.translateJson)(source, settings, dataFormat, settings.files);
             }
         });
     }

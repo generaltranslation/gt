@@ -8,7 +8,6 @@ export interface FileToTranslate {
 type ApiOptions = Settings & {
     publish: boolean;
     wait: boolean;
-    timeout: string;
 };
 /**
  * Sends multiple files for translation to the API
@@ -16,5 +15,8 @@ type ApiOptions = Settings & {
  * @param options - The options for the API call
  * @returns The translated content or version ID
  */
-export declare function sendFiles(files: FileToTranslate[], options: ApiOptions): Promise<any>;
+export declare function sendFiles(files: FileToTranslate[], options: ApiOptions): Promise<{
+    data: any;
+    locales: any;
+}>;
 export {};

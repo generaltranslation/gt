@@ -33,3 +33,4 @@ export declare function readFile(filePath: string): string;
  * @returns {string} - The path to the file.
  */
 export declare function findFileInDir(dir: string, file: string): string;
+export declare function getRelative(absolutePath: string): string;

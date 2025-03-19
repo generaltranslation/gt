@@ -95,3 +95,8 @@ export function findFileInDir(dir: string, file: string): string {
   }
   return '';
 }
+
+export function getRelative(absolutePath: string): string {
+  const path2 = path.resolve(absolutePath);
+  return path.relative(process.cwd(), path2);
+}

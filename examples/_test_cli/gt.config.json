@@ -1,12 +1,11 @@
 {
   "defaultLocale": "en",
   "files": {
-    "json": {
-      "include": ["public/_gt/[locale].json"]
-    },
     "mdx": {
-      "include": ["mdx/*.mdx"]
+      "include": ["mdx/[locale]/*.mdx"]
     }
   },
-  "locales": ["es", "zh"]
+  "locales": ["es", "zh"],
+  "baseUrl": "http://localhost:10000",
+  "_versionId": "228da2dc31ebdf1844f8ff58f0da31e4162a4a47038246ffcb9dbf528a225f68"
 }

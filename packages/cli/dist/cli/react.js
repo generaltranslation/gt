@@ -154,10 +154,6 @@ class ReactCLI extends base_1.BaseCLI {
             (0, console_1.displayInitializingText)();
             const settings = (0, generateSettings_1.generateSettings)(initOptions);
             const options = Object.assign(Object.assign({}, initOptions), settings);
-            if (!settings.files.json) {
-                console.error(errors_1.noFilesError);
-                process.exit(1);
-            }
             if (!options.dictionary) {
                 options.dictionary = (0, findFilepath_1.default)([
                     './dictionary.js',
@@ -168,6 +164,8 @@ class ReactCLI extends base_1.BaseCLI {
                     './src/dictionary.ts',
                 ]);
             }
+            // User has to provide a dictionary file
+            // will not read from settings.files.resolvedPaths.json
             const { updates, errors } = yield this.createUpdates(options, options.dictionary);
             if (errors.length > 0) {
                 if (options.ignoreErrors) {
@@ -189,15 +187,15 @@ class ReactCLI extends base_1.BaseCLI {
                 const { hash } = metadata;
                 newData[hash] = source;
             }
-            const sourceFile = (0, parseFilesConfig_1.resolveLocaleFiles)(settings.files, settings.defaultLocale);
+            const { resolvedPaths, placeholderPaths } = settings.files;
             // Save source file if files.json is provided
-            if (sourceFile.json) {
+            if (resolvedPaths.json) {
                 console.log();
-                (0, saveJSON_1.saveJSON)(path_1.default.join(sourceFile.json[0], `${settings.defaultLocale}.json`), newData);
+                (0, saveJSON_1.saveJSON)(path_1.default.join(resolvedPaths.json[0], `${settings.defaultLocale}.json`), newData);
                 console.log(chalk_1.default.green('Source file saved successfully!\n'));
                 // Also save translations (after merging with existing translations)
                 for (const locale of settings.locales) {
-                    const translationsFile = (0, parseFilesConfig_1.resolveLocaleFiles)(settings.files, locale);
+                    const translationsFile = (0, parseFilesConfig_1.resolveLocaleFiles)(placeholderPaths, locale);
                     if (!translationsFile.json) {
                         continue;
                     }
@@ -364,16 +362,16 @@ class ReactCLI extends base_1.BaseCLI {
     }
     handleTranslateCommand(initOptions) {
         const _super = Object.create(null, {
-            handleTranslate: { get: () => super.handleTranslate }
+            handleGenericTranslate: { get: () => super.handleGenericTranslate }
         });
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
+            var _a, _b;
             (0, console_1.displayAsciiTitle)();
             (0, console_1.displayInitializingText)();
             const settings = (0, generateSettings_1.generateSettings)(initOptions);
             // First run the base class's handleTranslate method
             try {
-                yield _super.handleTranslate.call(this, settings);
+                yield _super.handleGenericTranslate.call(this, settings);
                 // If the base class's handleTranslate completes successfully, continue with ReactCLI-specific code
             }
             catch (error) {
@@ -398,7 +396,7 @@ class ReactCLI extends base_1.BaseCLI {
             }
             else {
                 // If it is not provided, use the first json file in the files object
-                const resolvedFiles = (0, parseFilesConfig_1.resolveLocaleFiles)(options.files, options.defaultLocale);
+                const resolvedFiles = options.files.resolvedPaths;
                 if (resolvedFiles.json) {
                     sourceFile = resolvedFiles.json[0];
                 }
@@ -427,7 +425,7 @@ class ReactCLI extends base_1.BaseCLI {
                 }
             }
             // If files.json is not provided, publish the translations
-            if (!((_a = settings.files) === null || _a === void 0 ? void 0 : _a.json)) {
+            if (!((_b = (_a = settings.files) === null || _a === void 0 ? void 0 : _a.resolvedPaths) === null || _b === void 0 ? void 0 : _b.json)) {
                 options.publish = true;
             }
             if (options.dryRun) {
@@ -444,10 +442,10 @@ class ReactCLI extends base_1.BaseCLI {
                 const updateResponse = yield (0, sendUpdates_1.sendUpdates)(updates, Object.assign(Object.assign({}, settings), { publish: options.publish, wait: options.wait, timeout: options.timeout, dataFormat: 'JSX' }));
                 const versionId = updateResponse === null || updateResponse === void 0 ? void 0 : updateResponse.versionId;
                 // Save translations to local directory if files.json is provided
-                if (versionId && options.files.json) {
+                if (versionId && options.files.placeholderPaths.json) {
                     console.log();
                     const translations = yield (0, fetchTranslations_1.fetchTranslations)(settings.baseUrl, settings.apiKey, versionId);
-                    (0, save_1.saveTranslations)(translations, options.files, 'JSX');
+                    (0, save_1.saveTranslations)(translations, options.files.placeholderPaths, 'JSX');
                 }
             }
             else {

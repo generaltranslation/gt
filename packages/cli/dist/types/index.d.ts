@@ -85,6 +85,9 @@ export type Settings = {
     projectId: string;
     defaultLocale: string;
     locales: string[];
-    files: ResolvedFiles;
+    files: {
+        resolvedPaths: ResolvedFiles;
+        placeholderPaths: ResolvedFiles;
+    };
     versionId?: string;
 };

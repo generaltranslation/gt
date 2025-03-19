@@ -20,12 +20,12 @@ import { ResolvedFiles } from '../../types';
  */
 export function saveTranslations(
   translations: RetrievedTranslations,
-  filepaths: ResolvedFiles,
+  placeholderPaths: ResolvedFiles,
   dataFormat: DataFormat
 ) {
   for (const translation of translations) {
     const locale = translation.locale;
-    const translationFiles = resolveLocaleFiles(filepaths, locale);
+    const translationFiles = resolveLocaleFiles(placeholderPaths, locale);
 
     if (!translationFiles.json) {
       console.error(noFilesError);

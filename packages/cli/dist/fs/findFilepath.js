@@ -9,6 +9,7 @@ exports.getRelativePath = getRelativePath;
 exports.findFile = findFile;
 exports.readFile = readFile;
 exports.findFileInDir = findFileInDir;
+exports.getRelative = getRelative;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 /**
@@ -92,4 +93,8 @@ function findFileInDir(dir, file) {
         console.error(error);
     }
     return '';
+}
+function getRelative(absolutePath) {
+    const path2 = path_1.default.resolve(absolutePath);
+    return path_1.default.relative(process.cwd(), path2);
 }

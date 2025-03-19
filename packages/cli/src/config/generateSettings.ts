@@ -6,7 +6,7 @@ import { Settings } from '../types';
 import { defaultBaseUrl } from 'generaltranslation/internal';
 import fs from 'fs';
 import createOrUpdateConfig from '../fs/config/setupConfig';
-import { resolveGlobFiles } from '../fs/config/parseFilesConfig';
+import { resolveFiles } from '../fs/config/parseFilesConfig';
 /**
  * Generates settings from any
  * @param options - The options to generate settings from
@@ -75,7 +75,10 @@ export function generateSettings(options: any): Settings {
   }
 
   // Resolve all glob patterns in the files object
-  mergedOptions.files = resolveGlobFiles(mergedOptions.files || {});
+  mergedOptions.files = resolveFiles(
+    mergedOptions.files || {},
+    mergedOptions.defaultLocale
+  );
 
   // if there's no existing config file, creates one
   // does not include the API key to avoid exposing it

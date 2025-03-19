@@ -22,7 +22,7 @@ export async function translateJson(
   sourceJson: any,
   settings: Settings,
   dataFormat: DataFormat,
-  filepaths: ResolvedFiles
+  placeholderPaths: ResolvedFiles
 ) {
   const flattened = flattenJsonDictionary(sourceJson);
   const updates: Updates = [];
@@ -53,6 +53,6 @@ export async function translateJson(
       settings.apiKey,
       updateResponse.versionId
     );
-    saveTranslations(translations, filepaths, dataFormat);
+    saveTranslations(translations, placeholderPaths, dataFormat);
   }
 }

@@ -61,7 +61,7 @@ function generateSettings(options) {
         }
     }
     // Resolve all glob patterns in the files object
-    mergedOptions.files = (0, parseFilesConfig_1.resolveGlobFiles)(mergedOptions.files || {});
+    mergedOptions.files = (0, parseFilesConfig_1.resolveFiles)(mergedOptions.files || {}, mergedOptions.defaultLocale);
     // if there's no existing config file, creates one
     // does not include the API key to avoid exposing it
     if (!fs_1.default.existsSync(mergedOptions.config)) {

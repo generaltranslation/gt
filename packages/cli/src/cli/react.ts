@@ -244,10 +244,6 @@ export class ReactCLI extends BaseCLI {
 
     const options = { ...initOptions, ...settings };
 
-    if (!settings.files.json) {
-      console.error(noFilesError);
-      process.exit(1);
-    }
     if (!options.dictionary) {
       options.dictionary = findFilepath([
         './dictionary.js',
@@ -259,6 +255,8 @@ export class ReactCLI extends BaseCLI {
       ]);
     }
 
+    // User has to provide a dictionary file
+    // will not read from settings.files.resolvedPaths.json
     const { updates, errors } = await this.createUpdates(
       options,
       options.dictionary
@@ -304,22 +302,19 @@ export class ReactCLI extends BaseCLI {
       newData[hash] = source;
     }
 
-    const sourceFile = resolveLocaleFiles(
-      settings.files,
-      settings.defaultLocale
-    );
+    const { resolvedPaths, placeholderPaths } = settings.files;
 
     // Save source file if files.json is provided
-    if (sourceFile.json) {
+    if (resolvedPaths.json) {
       console.log();
       saveJSON(
-        path.join(sourceFile.json[0], `${settings.defaultLocale}.json`),
+        path.join(resolvedPaths.json[0], `${settings.defaultLocale}.json`),
         newData
       );
       console.log(chalk.green('Source file saved successfully!\n'));
       // Also save translations (after merging with existing translations)
       for (const locale of settings.locales) {
-        const translationsFile = resolveLocaleFiles(settings.files, locale);
+        const translationsFile = resolveLocaleFiles(placeholderPaths, locale);
         if (!translationsFile.json) {
           continue;
         }
@@ -562,7 +557,7 @@ export class ReactCLI extends BaseCLI {
 
     // First run the base class's handleTranslate method
     try {
-      await super.handleTranslate(settings);
+      await super.handleGenericTranslate(settings);
       // If the base class's handleTranslate completes successfully, continue with ReactCLI-specific code
     } catch (error) {
       // Continue with ReactCLI-specific code even if base handleTranslate failed
@@ -588,10 +583,7 @@ export class ReactCLI extends BaseCLI {
       sourceFile = options.dictionary;
     } else {
       // If it is not provided, use the first json file in the files object
-      const resolvedFiles = resolveLocaleFiles(
-        options.files,
-        options.defaultLocale
-      );
+      const resolvedFiles = options.files.resolvedPaths;
       if (resolvedFiles.json) {
         sourceFile = resolvedFiles.json[0];
       }
@@ -647,7 +639,7 @@ export class ReactCLI extends BaseCLI {
     }
 
     // If files.json is not provided, publish the translations
-    if (!settings.files?.json) {
+    if (!settings.files?.resolvedPaths?.json) {
       options.publish = true;
     }
 
@@ -678,14 +670,14 @@ export class ReactCLI extends BaseCLI {
       const versionId = updateResponse?.versionId;
 
       // Save translations to local directory if files.json is provided
-      if (versionId && options.files.json) {
+      if (versionId && options.files.placeholderPaths.json) {
         console.log();
         const translations = await fetchTranslations(
           settings.baseUrl,
           settings.apiKey,
           versionId
         );
-        saveTranslations(translations, options.files, 'JSX');
+        saveTranslations(translations, options.files.placeholderPaths, 'JSX');
       }
     } else {
       throw new Error(noTranslationsError);

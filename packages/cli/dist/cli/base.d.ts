@@ -6,6 +6,6 @@ export declare class BaseCLI {
     init(): void;
     execute(): void;
     protected setupGTCommand(): void;
-    protected handleTranslate(settings: Settings): Promise<void>;
+    protected handleGenericTranslate(settings: Settings): Promise<void>;
     protected setupInitCommand(): void;
 }

@@ -15,8 +15,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendFiles = sendFiles;
 const chalk_1 = __importDefault(require("chalk"));
 const console_1 = require("../console/console");
-const updateConfig_1 = __importDefault(require("../fs/config/updateConfig"));
-const waitForUpdates_1 = require("./waitForUpdates");
 /**
  * Sends multiple files for translation to the API
  * @param files - Array of file objects to translate
@@ -25,16 +23,16 @@ const waitForUpdates_1 = require("./waitForUpdates");
  */
 function sendFiles(files, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { apiKey, projectId, defaultLocale } = options;
+        const { apiKey } = options;
         const spinner = yield (0, console_1.displayLoadingAnimation)(`Sending ${files.length} file${files.length > 1 ? 's' : ''} to Translation API...`);
         try {
-            const startTime = Date.now();
             // Create form data
             const formData = new FormData();
             // Add each file to the form data
             files.forEach((file, index) => {
                 formData.append(`file${index}`, new Blob([file.content]), file.fileName);
                 formData.append(`fileFormat${index}`, file.fileFormat);
+                formData.append(`fileName${index}`, file.fileName);
             });
             // Add number of files
             formData.append('fileCount', String(files.length));
@@ -44,7 +42,7 @@ function sendFiles(files, options) {
             formData.append('projectId', options.projectId);
             formData.append('publish', String(options.publish));
             formData.append('versionId', options.versionId || '');
-            const response = yield fetch(`${options.baseUrl}/v1/project/translations/files`, {
+            const response = yield fetch(`${options.baseUrl}/v1/project/translations/files/upload`, {
                 method: 'POST',
                 headers: Object.assign({}, (apiKey && { 'x-gt-api-key': apiKey })),
                 body: formData,
@@ -54,32 +52,11 @@ function sendFiles(files, options) {
                 spinner.fail(yield response.text());
                 process.exit(1);
             }
-            if (response.status === 204) {
-                spinner.succeed(yield response.text());
-                return;
-            }
             const responseData = yield response.json();
-            // Handle file translation response
-            if (responseData.translatedFiles) {
-                spinner.succeed(chalk_1.default.green('Files translated successfully'));
-                return responseData.translatedFiles;
-            }
             // Handle version ID response (for async processing)
-            const { versionId, message, locales } = responseData;
+            const { data, message, locales } = responseData;
             spinner.succeed(chalk_1.default.green(message || 'Translation job submitted successfully'));
-            if (options.config)
-                (0, updateConfig_1.default)({
-                    configFilepath: options.config,
-                    _versionId: versionId,
-                    locales,
-                });
-            // Wait for translations if wait is true
-            if (options.wait && locales) {
-                // timeout was validated earlier
-                const timeout = parseInt(options.timeout) * 1000;
-                const result = yield (0, waitForUpdates_1.waitForUpdates)(apiKey, options.baseUrl, versionId, locales, startTime, timeout);
-            }
-            return { versionId };
+            return { data, locales };
         }
         catch (error) {
             spinner.fail(chalk_1.default.red('Failed to send files for translation'));

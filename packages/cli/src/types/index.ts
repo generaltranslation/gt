@@ -117,6 +117,9 @@ export type Settings = {
   projectId: string;
   defaultLocale: string;
   locales: string[];
-  files: ResolvedFiles;
+  files: {
+    resolvedPaths: ResolvedFiles; // resolved paths for the default locale
+    placeholderPaths: ResolvedFiles; // placeholder paths for all locales containing [locale]
+  };
   versionId?: string;
 };

@@ -14,10 +14,10 @@ const parseFilesConfig_1 = require("../../fs/config/parseFilesConfig");
  * @param translationsDir - The directory to save the translations to
  * @param fileType - The file type to save the translations as (file extension)
  */
-function saveTranslations(translations, filepaths, dataFormat) {
+function saveTranslations(translations, placeholderPaths, dataFormat) {
     for (const translation of translations) {
         const locale = translation.locale;
-        const translationFiles = (0, parseFilesConfig_1.resolveLocaleFiles)(filepaths, locale);
+        const translationFiles = (0, parseFilesConfig_1.resolveLocaleFiles)(placeholderPaths, locale);
         if (!translationFiles.json) {
             console.error(errors_1.noFilesError);
             process.exit(1);

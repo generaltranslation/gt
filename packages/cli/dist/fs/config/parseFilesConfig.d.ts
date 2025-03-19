@@ -16,4 +16,7 @@ export declare function resolveLocaleFiles(files: ResolvedFiles, locale: string)
  * @param files - The files object
  * @returns The resolved files
  */
-export declare function resolveGlobFiles(files: FilesOptions): ResolvedFiles;
+export declare function resolveFiles(files: FilesOptions, locale: string): {
+    resolvedPaths: ResolvedFiles;
+    placeholderPaths: ResolvedFiles;
+};

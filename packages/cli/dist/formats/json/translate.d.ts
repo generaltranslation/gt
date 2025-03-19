@@ -13,4 +13,4 @@ import { ResolvedFiles } from '../../types';
  * @param translationsDir - The directory to save the translations to
  * @param fileType - The file type to save the translations as (file extension)
  */
-export declare function translateJson(sourceJson: any, settings: Settings, dataFormat: DataFormat, filepaths: ResolvedFiles): Promise<void>;
+export declare function translateJson(sourceJson: any, settings: Settings, dataFormat: DataFormat, placeholderPaths: ResolvedFiles): Promise<void>;

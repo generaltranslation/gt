@@ -7,4 +7,4 @@ import { ResolvedFiles } from '../../types';
  * @param filePath - The file path to save the translations to
  * @param dataFormat - The data format to save the translations as
  */
-export declare function saveTranslations(translations: RetrievedTranslations, filepaths: ResolvedFiles, dataFormat: DataFormat): void;
+export declare function saveTranslations(translations: RetrievedTranslations, placeholderPaths: ResolvedFiles, dataFormat: DataFormat): void;

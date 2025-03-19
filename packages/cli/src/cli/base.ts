@@ -23,10 +23,8 @@ import { resolveProjectId } from '../fs/utils';
 import { DataFormat, FileExtension } from '../types/data';
 import { generateSettings } from '../config/generateSettings';
 import chalk from 'chalk';
-import {
-  resolveGlobFiles,
-  resolveLocaleFiles,
-} from '../fs/config/parseFilesConfig';
+import { resolveFiles } from '../fs/config/parseFilesConfig';
+import { translateFiles } from '../formats/files/translate';
 
 type TranslateOptions = {
   config?: string;
@@ -91,11 +89,11 @@ export class BaseCLI {
         displayInitializingText();
 
         const settings = generateSettings(options);
-        await this.handleTranslate(settings);
+        await this.handleGenericTranslate(settings);
       });
   }
 
-  protected async handleTranslate(settings: Settings): Promise<void> {
+  protected async handleGenericTranslate(settings: Settings): Promise<void> {
     // Validate required settings are present
     if (!settings.locales) {
       console.error(noLocalesError);
@@ -132,38 +130,38 @@ export class BaseCLI {
       dataFormat = 'JSX';
     }
 
-    const sourceFiles = resolveLocaleFiles(
-      settings.files,
-      settings.defaultLocale
-    );
+    const { resolvedPaths: sourceFiles, placeholderPaths } = settings.files;
 
     // ---- CREATING UPDATES ---- //
-    if (
-      sourceFiles.json &&
-      this.library !== 'gt-react' &&
-      this.library !== 'gt-next'
-    ) {
-      const rawSource = readFile(sourceFiles.json[0]);
-      if (!rawSource) {
-        console.error(noSourceFileError);
-        process.exit(1);
-      }
+    if (sourceFiles.json) {
+      // Only translate JSON files if not using gt-react or gt-next
+      // ReactCLI will handle the JSON files differently
+      if (this.library !== 'gt-react' && this.library !== 'gt-next') {
+        const rawSource = readFile(sourceFiles.json[0]);
+        if (!rawSource) {
+          console.error(noSourceFileError);
+          process.exit(1);
+        }
 
-      if (!dataFormat) {
-        console.error(noDataFormatError);
-        process.exit(1);
-      } else if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
-        console.error(noSupportedDataFormatError);
-        process.exit(1);
-      }
-      const source = JSON.parse(rawSource);
+        if (!dataFormat) {
+          console.error(noDataFormatError);
+          process.exit(1);
+        } else if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
+          console.error(noSupportedDataFormatError);
+          process.exit(1);
+        }
+        const source = JSON.parse(rawSource);
 
-      const result = await translateJson(
-        source,
-        settings,
-        dataFormat,
-        settings.files
-      );
+        await translateJson(source, settings, dataFormat, placeholderPaths);
+      }
+    }
+    if (sourceFiles.mdx || sourceFiles.md) {
+      if (sourceFiles.mdx) {
+        await translateFiles(sourceFiles, placeholderPaths, 'MDX', settings);
+      }
+      if (sourceFiles.md) {
+        await translateFiles(sourceFiles, placeholderPaths, 'MD', settings);
+      }
     }
   }
   protected setupInitCommand(): void {

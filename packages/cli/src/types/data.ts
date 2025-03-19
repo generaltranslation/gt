@@ -24,7 +24,7 @@ export type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
 
 export type FileExtension = 'json' | 'yaml' | 'yml' | 'mdx' | 'md';
 
-export type FileFormats = 'JSON' | 'YAML' | 'MDX';
+export type FileFormats = 'JSON' | 'YAML' | 'MDX' | 'MD';
 
 export type JsxChildren = string | string[] | any;
 
