@@ -2,7 +2,7 @@ import { useState } from 'react';
 import reactLogo from './assets/react.svg';
 import viteLogo from '/vite.svg';
 import './App.css';
-import { LocaleSelector, T, Var } from 'gt-react';
+import { LocaleSelector, Num, T } from 'gt-react';
 
 function App() {
   const [count, setCount] = useState(0);
@@ -22,17 +22,12 @@ function App() {
       <T id='app.1'>
         <div className='card'>
           <button onClick={() => setCount((count) => count + 1)}>
-            count is <Var>{count}</Var>
+            count is <Num>{count}</Num>
           </button>
           <p>
             Edit <code>src/App.tsx</code> and save to test HMR
           </p>
-          <div>
-            Hello
-          </div>
         </div>
-      </T>
-      <T id='app.2'>
         <p className='read-the-docs'>
           Click on the Vite and React logos to learn more
         </p>
