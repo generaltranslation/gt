@@ -59,8 +59,8 @@ const translate_1 = require("../formats/json/translate");
 const utils_1 = require("../fs/utils");
 const generateSettings_1 = require("../config/generateSettings");
 const chalk_1 = __importDefault(require("chalk"));
-const translate_2 = require("../formats/files/translate");
 const internal_1 = require("generaltranslation/internal");
+const translate_2 = require("../formats/files/translate");
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 class BaseCLI {
     // Constructor is shared amongst all CLI class types
