@@ -19,6 +19,9 @@ export function generateSettings(options: any): Settings {
   // Load config file
   let gtConfig: Record<string, any> = {};
 
+  if (!options.config.endsWith('.json')) {
+    options.config = `${options.config}.json`;
+  }
   if (options.config) {
     gtConfig = loadConfig(options.config);
   } else if (fs.existsSync('gt.config.json')) {
