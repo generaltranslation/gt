@@ -11,33 +11,35 @@ export function useDetermineLocale({
   defaultLocale = libraryDefaultLocale,
   locales = [],
   cookieName = localeCookieName,
-  ssr = true // when false, breaks server side rendering by accessing document and navigator on first render 
+  ssr = true, // when false, breaks server side rendering by accessing document and navigator on first render
 }: {
   defaultLocale: string;
   locales: string[];
   locale?: string;
   cookieName?: string;
   ssr?: boolean;
-}): [
-  string, 
-  (locale: string) => void
-] {
-
+}): [string, (locale: string) => void] {
   // maintaining the state of locale
   const [locale, _setLocale] = useState<string>(
-    ssr ? 
-    (_locale ? determineLocale(_locale, locales) || '' : '') :
-    getNewLocale({ 
-      _locale, 
-      locale: _locale, 
-      locales, 
-      defaultLocale, 
-      cookieName
-    })
+    ssr
+      ? _locale
+        ? determineLocale(_locale, locales) || ''
+        : ''
+      : getNewLocale({
+          _locale,
+          locale: _locale,
+          locales,
+          defaultLocale,
+          cookieName,
+        })
   );
 
-  const setLocale = createSetLocale({
-    locale, locales, defaultLocale, cookieName, _setLocale
+  const [setLocale, internalSetLocale] = createSetLocale({
+    locale,
+    locales,
+    defaultLocale,
+    cookieName,
+    _setLocale,
   });
 
   // check brower for locales
@@ -47,9 +49,9 @@ export function useDetermineLocale({
       locale,
       locales,
       defaultLocale,
-      cookieName 
+      cookieName,
     });
-    setLocale(newLocale);
+    internalSetLocale(newLocale);
   }, [_locale, locale, locales, defaultLocale, cookieName]);
 
   return [locale, setLocale];
@@ -62,20 +64,20 @@ function getNewLocale({
   locale,
   locales,
   defaultLocale,
-  cookieName
+  cookieName,
 }: {
-  _locale: string,
-  locale: string,
-  locales: string[],
-  defaultLocale: string
-  cookieName: string
+  _locale: string;
+  locale: string;
+  locales: string[];
+  defaultLocale: string;
+  cookieName: string;
 }): string {
-
   if (
     _locale &&
     _locale === locale &&
     determineLocale(_locale, locales) === locale
-  ) return _locale;
+  )
+    return _locale;
 
   // check user's configured locales
   const browserLocales = (() => {
@@ -113,19 +115,19 @@ function getNewLocale({
 }
 
 function createSetLocale({
-  locale, 
-  locales, 
-  defaultLocale, 
-  cookieName, _setLocale
+  locale,
+  locales,
+  defaultLocale,
+  cookieName,
+  _setLocale,
 }: {
-  locale: string,
-  locales: string[],
-  defaultLocale: string,
-  cookieName: string,
-  _setLocale: any
+  locale: string;
+  locales: string[];
+  defaultLocale: string;
+  cookieName: string;
+  _setLocale: any;
 }) {
-  // update locale and store it in cookie
-  const setLocale = (newLocale: string): void => {
+  const internalSetLocale = (newLocale: string): string => {
     // validate locale
     const validatedLocale =
       determineLocale(newLocale, locales) || locale || defaultLocale;
@@ -134,7 +136,13 @@ function createSetLocale({
     }
     // persist locale
     _setLocale(validatedLocale);
+
+    return validatedLocale;
+  };
+  // update locale and store it in cookie
+  const setLocale = (newLocale: string): void => {
+    const validatedLocale = internalSetLocale(newLocale);
     document.cookie = `${cookieName}=${validatedLocale};path=/`;
   };
-  return setLocale;
+  return [setLocale, internalSetLocale];
 }

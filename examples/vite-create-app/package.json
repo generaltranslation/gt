@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "gt-react": "^9.2.7",
+    "gt-react": "^9.2.8",
     "gtx-cli": "^1.0.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

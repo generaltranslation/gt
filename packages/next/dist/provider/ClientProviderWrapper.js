@@ -45,6 +45,8 @@ function ClientProvider(props) {
             if (pathLocale &&
                 props.locales.includes(pathLocale) &&
                 pathLocale !== props.locale) {
+                // clear cookie (avoids infinite loop when there is no middleware)
+                document.cookie = "".concat(constants_1.middlewareLocaleRoutingFlagName, "=;path=/");
                 // reload server
                 router.refresh();
                 // reload client
