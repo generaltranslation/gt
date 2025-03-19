@@ -1,49 +1,60 @@
 {
-  "app.1": {
-    "type": "div",
-    "props": {
-      "children": [
-        {
-          "type": "button",
-          "props": {
-            "children": [
-              "count123 is ",
-              {
-                "variable": "variable",
-                "id": 3,
-                "key": "_gt_value_3"
-              }
-            ]
-          }
-        },
-        {
-          "type": "p",
-          "props": {
-            "children": [
-              "Edit ",
-              {
-                "type": "code",
-                "props": {
-                  "children": "src/App.tsx"
+  "98c1b63fd6f14077a07dbad17c82b80a85b18e287fc9fbd0cc29ba47af787725": [
+    {
+      "type": "div",
+      "props": {
+        "children": [
+          {
+            "type": "button",
+            "props": {
+              "children": [
+                "el contador es ",
+                {
+                  "id": 3,
+                  "key": "_gt_n_3",
+                  "variable": "number"
                 }
-              },
-              " and save to test HMR"
-            ]
+              ],
+              "data-_gt": {
+                "id": 2
+              }
+            }
+          },
+          {
+            "type": "p",
+            "props": {
+              "children": [
+                "Edita ",
+                {
+                  "type": "code",
+                  "props": {
+                    "children": "src/App.tsx",
+                    "data-_gt": {
+                      "id": 5
+                    }
+                  }
+                },
+                " y guarda para probar HMR"
+              ],
+              "data-_gt": {
+                "id": 4
+              }
+            }
           }
-        },
-        {
-          "type": "div",
-          "props": {
-            "children": "Hello"
-          }
+        ],
+        "data-_gt": {
+          "id": 1
         }
-      ]
+      }
+    },
+    {
+      "type": "p",
+      "props": {
+        "children": "Haz clic en los logotipos de Vite y React para aprender más",
+        "data-_gt": {
+          "id": 6
+        }
+      }
     }
-  },
-  "aa73a1ebc6b6f3f67ac8d8eabf33053b3f167ce274d9843ba0548d25063381ce": {
-    "type": "p",
-    "props": {
-      "children": "Click on the Vite and React logos to learn more"
-    }
-  }
+  ]
 }
