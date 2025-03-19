@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/supported-locales",
-  "version": "2.0.7-alpha.1",
+  "version": "2.0.7",
   "description": "List of supported locales for General Translation",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -41,7 +41,7 @@
     }
   },
   "dependencies": {
-    "generaltranslation": "^6.2.2-alpha.1"
+    "generaltranslation": "^6.2.2"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",
