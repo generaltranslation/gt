@@ -104,8 +104,21 @@ function getGT() {
                         if (!translationRequired)
                             return renderContent(source, [defaultLocale]);
                         // ----- GET TRANSLATION ----- //
-                        var hash = (0, id_1.hashJsxChildren)(__assign(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })), { dataFormat: 'JSX' }));
-                        var translationEntry = translations === null || translations === void 0 ? void 0 : translations[hash];
+                        var translationEntry = undefined;
+                        // Use id to index
+                        if (options === null || options === void 0 ? void 0 : options.id) {
+                            translationEntry = translations === null || translations === void 0 ? void 0 : translations[options === null || options === void 0 ? void 0 : options.id];
+                        }
+                        // Calculate hash
+                        var hash = '';
+                        var calcHash = function () {
+                            return (0, id_1.hashJsxChildren)(__assign(__assign(__assign({ source: source }, ((options === null || options === void 0 ? void 0 : options.context) && { context: options === null || options === void 0 ? void 0 : options.context })), ((options === null || options === void 0 ? void 0 : options.id) && { id: options === null || options === void 0 ? void 0 : options.id })), { dataFormat: 'JSX' }));
+                        };
+                        // Use hash to index
+                        if (!translationEntry) {
+                            hash = calcHash();
+                            translationEntry = translations === null || translations === void 0 ? void 0 : translations[hash];
+                        }
                         // ----- RENDER TRANSLATION ----- //
                         // If a translation already exists
                         if ((translationEntry === null || translationEntry === void 0 ? void 0 : translationEntry.state) === 'success')
@@ -119,6 +132,9 @@ function getGT() {
                             console.warn((0, createErrors_1.createStringTranslationError)(string, options === null || options === void 0 ? void 0 : options.id, 't'));
                             return renderContent(source, [defaultLocale]);
                         }
+                        // Get hash
+                        if (!hash)
+                            hash = calcHash();
                         // Translate on demand
                         I18NConfig.translateContent({
                             source: source,

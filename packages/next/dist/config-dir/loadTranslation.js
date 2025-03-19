@@ -90,7 +90,7 @@ function loadTranslations(props) {
                                         return [2 /*return*/, parseResult(result)];
                                     case 2:
                                         error_1 = _a.sent();
-                                        console.error((0, createErrors_1.customLoadTranslationsError)(), error_1);
+                                        console.error((0, createErrors_1.customLoadTranslationsError)(_props.targetLocale), error_1);
                                         return [2 /*return*/, undefined];
                                     case 3: return [2 /*return*/];
                                 }

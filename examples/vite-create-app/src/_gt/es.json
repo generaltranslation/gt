@@ -1,5 +1,5 @@
 {
-  "1622d9dcb13a5e2bc7656875d81f1aa29dca453662794fb478ff57300210785f": {
+  "app.1": {
     "type": "div",
     "props": {
       "children": [
@@ -7,61 +7,43 @@
           "type": "button",
           "props": {
             "children": [
-              "el contador es ",
+              "count123 is ",
               {
+                "variable": "variable",
                 "id": 3,
-                "key": "_gt_value_3",
-                "variable": "variable"
+                "key": "_gt_value_3"
               }
-            ],
-            "data-_gt": {
-              "id": 2
-            }
+            ]
           }
         },
         {
           "type": "p",
           "props": {
             "children": [
-              "Edita ",
+              "Edit ",
               {
                 "type": "code",
                 "props": {
-                  "children": "src/App.tsx",
-                  "data-_gt": {
-                    "id": 5
-                  }
+                  "children": "src/App.tsx"
                 }
               },
-              " y guarda para probar HMR"
-            ],
-            "data-_gt": {
-              "id": 4
-            }
+              " and save to test HMR"
+            ]
+          }
+        },
+        {
+          "type": "div",
+          "props": {
+            "children": "Hello"
           }
         }
-      ],
-      "data-_gt": {
-        "id": 1
-      }
-    }
-  },
-  "17d3b00e650565e271551bd16d9fe6504ca149aabba540034e6edf2d5a3eea85": {
-    "type": "h1",
-    "props": {
-      "children": "Vite + React",
-      "data-_gt": {
-        "id": 1
-      }
+      ]
     }
   },
   "aa73a1ebc6b6f3f67ac8d8eabf33053b3f167ce274d9843ba0548d25063381ce": {
     "type": "p",
     "props": {
-      "children": "Haz clic en los logotipos de Vite y React para obtener más información",
-      "data-_gt": {
-        "id": 1
-      }
+      "children": "Click on the Vite and React logos to learn more"
     }
   }
 }

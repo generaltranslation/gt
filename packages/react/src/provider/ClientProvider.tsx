@@ -51,7 +51,8 @@ export default function ClientProvider({
       .find((row) => row.startsWith(`${cookieName}=`))
       ?.split('=')[1];
     if (locale && cookieLocale && cookieLocale !== locale) {
-      document.cookie = `${cookieName}=${locale};path=/`;
+      // document.cookie = `${cookieName}=${locale};path=/`;
+      document.cookie = `${cookieName}=;path=/`;
     }
   }, [locale]);
 

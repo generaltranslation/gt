@@ -8,11 +8,12 @@ import {
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
   projectIdMissingWarn,
+  standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import { getLocaleProperties } from 'generaltranslation';
+import { getLocaleProperties, standardizeLocale } from 'generaltranslation';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -103,12 +104,6 @@ export function withGTConfig(
     _usingPlugin: true, // flag to indicate plugin usage
   };
 
-  // ----------- LOCALE STANDARDIZATION ----------- //
-  if (mergedConfig.locales && mergedConfig.defaultLocale) {
-    mergedConfig.locales.unshift(mergedConfig.defaultLocale);
-  }
-  mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
-
   // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
 
   // Resolve dictionary filepath
@@ -157,6 +152,46 @@ export function withGTConfig(
     typeof mergedConfig.loadTranslationsPath === 'string'
       ? mergedConfig.loadTranslationsPath
       : resolveConfigFilepath('loadTranslations');
+
+  // Resolve router
+  const customRouterPath =
+    typeof mergedConfig.routerPath === 'string'
+      ? mergedConfig.routerPath
+      : resolveConfigFilepath('routing', ['.ts', '.js']);
+
+  // ----------- LOCALE STANDARDIZATION ----------- //
+
+  // Check if using Services
+  const gtRuntimeTranslationEnabled = !!(
+    mergedConfig.runtimeUrl === defaultWithGTConfigProps.runtimeUrl &&
+    ((process.env.NODE_ENV === 'production' && mergedConfig.apiKey) ||
+      (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey))
+  );
+  const gtRemoteCacheEnabled = !!(
+    mergedConfig.cacheUrl === defaultWithGTConfigProps.cacheUrl &&
+    mergedConfig.loadTranslationsType === 'remote'
+  );
+  const gtServicesEnabled = !!(
+    (gtRuntimeTranslationEnabled || gtRemoteCacheEnabled) &&
+    mergedConfig.projectId
+  );
+
+  // Standardize locales
+  if (mergedConfig.locales && mergedConfig.defaultLocale) {
+    mergedConfig.locales.unshift(mergedConfig.defaultLocale);
+  }
+  const updatedLocales: string[] = [];
+  mergedConfig.locales = Array.from(new Set(mergedConfig.locales)).map(
+    (locale) => {
+      const updatedLocale = gtServicesEnabled
+        ? standardizeLocale(locale)
+        : locale;
+      if (updatedLocale !== locale) {
+        updatedLocales.push(`${locale} -> ${updatedLocale}`);
+      }
+      return updatedLocale;
+    }
+  );
 
   // ---------- ERROR CHECKS ---------- //
 
@@ -215,17 +250,13 @@ export function withGTConfig(
   }
 
   // Check: if using GT infrastructure, warn about unsupported locales
-  const gtRuntimeTranslationEnabled =
-    mergedConfig.runtimeUrl === defaultWithGTConfigProps.runtimeUrl &&
-    ((process.env.NODE_ENV === 'production' && mergedConfig.apiKey) ||
-      (process.env.NODE_ENV === 'development' && mergedConfig.devApiKey));
-  const gtRemoteCacheEnabled =
-    mergedConfig.cacheUrl === defaultWithGTConfigProps.cacheUrl &&
-    mergedConfig.loadTranslationsType === 'remote';
-  if (
-    (gtRuntimeTranslationEnabled || gtRemoteCacheEnabled) &&
-    mergedConfig.projectId
-  ) {
+  if (gtServicesEnabled) {
+    // Warn about standardized locales
+    if (updatedLocales.length) {
+      console.warn(standardizedLocalesWarning(updatedLocales));
+    }
+
+    // Warn about unsupported locales
     const warningLocales = (
       mergedConfig.locales || defaultWithGTConfigProps.locales
     ).filter((locale) => !getSupportedLocale(locale));
@@ -254,6 +285,7 @@ export function withGTConfig(
       _GENERALTRANSLATION_DEFAULT_LOCALE: (
         mergedConfig.defaultLocale || defaultWithGTConfigProps.defaultLocale
       ).toString(),
+      _GENERALTRANSLATION_GT_SERVICES_ENABLED: gtServicesEnabled.toString(),
     },
     experimental: {
       ...nextConfig.experimental,
@@ -267,6 +299,7 @@ export function withGTConfig(
                 'gt-next/_dictionary': resolvedDictionaryFilePath || '',
                 'gt-next/_load-translations': customLoadTranslationsPath || '',
                 'gt-next/_load-dictionary': customLoadDictionaryPath || '',
+                'gt-next/_routing': customRouterPath || '',
               },
             },
           }
@@ -299,6 +332,12 @@ export function withGTConfig(
         if (customLoadDictionaryPath) {
           webpackConfig.resolve.alias[`gt-next/_load-dictionary`] =
             path.resolve(webpackConfig.context, customLoadDictionaryPath);
+        }
+        if (customLoadDictionaryPath) {
+          webpackConfig.resolve.alias[`gt-next/_routing`] = path.resolve(
+            webpackConfig.context,
+            customLoadDictionaryPath
+          );
         }
       }
       if (typeof nextConfig?.webpack === 'function') {

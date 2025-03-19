@@ -31,7 +31,7 @@ import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
 import React from 'react';
-import useDetermineLocale from '../hooks/internal/useDetermineLocale';
+import { useDetermineLocale } from '../hooks/internal/useDetermineLocale';
 import { readAuthFromEnv } from '../utils/utils';
 import fetchTranslations from '../utils/fetchTranslations';
 import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
@@ -52,6 +52,7 @@ import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInterna
  * @param {string} [_versionId] - The version ID for fetching translations.
  * @param {string} [devApiKey] - The API key for development environments.
  * @param {object} [metadata] - Additional metadata to pass to the context.
+ * @param {React.ReactNode} [fallback = undefined] - Custom fallback to display while loading
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
@@ -68,6 +69,7 @@ export default function GTProvider({
   renderSettings = defaultRenderSettings,
   loadDictionary,
   loadTranslations,
+  fallback = undefined,
   _versionId,
   ...metadata
 }: {
@@ -105,6 +107,7 @@ export default function GTProvider({
     defaultLocale,
     locales,
     locale: _locale,
+    ssr: false,
   });
 
   // Translation at runtime during development is enabled
@@ -449,7 +452,7 @@ export default function GTProvider({
         renderSettings,
       }}
     >
-      {display && children}
+      {display ? children : fallback}
     </GTContext.Provider>
   );
 }

@@ -53,7 +53,7 @@ function Currency({
   // Format the number as currency according to the locale
   const formattedValue =
     typeof renderedValue === 'number'
-      ? formatCurrency({ value: renderedValue, currency, locales, options })
+      ? formatCurrency(renderedValue, currency, { locales, ...options })
       : renderedValue;
 
   return (

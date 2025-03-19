@@ -21,17 +21,11 @@ import findFilepath, {
   findFileInDir,
   findFilepaths,
 } from '../fs/findFilepath';
-import loadConfig from '../fs/config/loadConfig';
 import createESBuildConfig from '../react/config/createESBuildConfig';
-import { isValidLocale } from 'generaltranslation';
-import { warnApiKeyInConfig } from '../console/warnings';
-import { noSourceFileError, noTranslationsError } from '../console/errors';
-import { defaultBaseUrl } from 'generaltranslation/internal';
+import { noTranslationsError } from '../console/errors';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import chalk from 'chalk';
 import { select } from '@inquirer/prompts';
-import { waitForUpdates } from '../api/waitForUpdates';
-import updateConfig from '../fs/config/updateConfig';
-import createConfig from '../fs/config/setupConfig';
 import { detectFormatter, formatFiles } from '../hooks/postProcess';
 import { fetchTranslations } from '../api/fetchTranslations';
 import path from 'path';
@@ -44,6 +38,7 @@ import { sendUpdates } from '../api/sendUpdates';
 import { saveTranslations } from '../formats/gt/save';
 import { generateSettings } from '../config/generateSettings';
 import { saveJSON } from '../fs/saveJSON';
+
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 export class ReactCLI extends BaseCLI {
@@ -180,7 +175,7 @@ export class ReactCLI extends BaseCLI {
       .option(
         '--default-language, --default-locale <locale>',
         'Source locale (e.g., en)',
-        'en'
+        libraryDefaultLocale
       )
       .option(
         '--inline',
@@ -308,8 +303,12 @@ export class ReactCLI extends BaseCLI {
     const newData: Record<string, any> = {};
     for (const update of updates) {
       const { source, metadata } = update;
-      const { hash } = metadata;
-      newData[hash] = source;
+      const { hash, id } = metadata;
+      if (id) {
+        newData[id] = source;
+      } else {
+        newData[hash] = source;
+      }
     }
 
     // Save source file if translationsDir exists

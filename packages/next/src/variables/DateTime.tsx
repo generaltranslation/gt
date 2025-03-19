@@ -64,7 +64,7 @@ function DateTime({
 
   // Format the date according to the locale and options
   const dateString = dateValue
-    ? formatDateTime({ value: dateValue, locales, options })
+    ? formatDateTime(dateValue, { locales, ...options })
     : '';
   const formattedValue = dateString.replace(/[\u200F\u202B\u202E]/g, '');
 

@@ -1,3 +1,4 @@
+import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
 
 /**
@@ -13,7 +14,8 @@ export function _getLocaleName(
   defaultLanguage: string = libraryDefaultLocale
 ): string {
   try {
-    const displayNames = new Intl.DisplayNames(
+    const displayNames = intlCache.get(
+      'DisplayNames',
       [defaultLanguage, libraryDefaultLocale],
       { type: 'language' }
     );

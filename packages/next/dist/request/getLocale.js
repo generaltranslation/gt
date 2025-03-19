@@ -76,10 +76,13 @@ function getLocale() {
                     _a = _c.sent();
                     I18NConfig_1 = (0, getI18NConfig_1.default)();
                     getLocaleFunction = function () { return __awaiter(_this, void 0, void 0, function () {
+                        var res;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0: return [4 /*yield*/, (0, getNextLocale_1.getNextLocale)(I18NConfig_1.getDefaultLocale(), I18NConfig_1.getLocales())];
-                                case 1: return [2 /*return*/, _a.sent()];
+                                case 1:
+                                    res = _a.sent();
+                                    return [2 /*return*/, res];
                             }
                         });
                     }); };

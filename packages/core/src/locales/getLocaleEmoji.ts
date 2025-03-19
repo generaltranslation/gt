@@ -1,3 +1,4 @@
+import { intlCache } from '../cache/IntlCache';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 
 /**
@@ -14,7 +15,7 @@ export default function _getLocaleEmoji(
   if (customMapping[locale]) return customMapping[locale];
 
   // if a region is specified, use it!
-  const localeObject = new Intl.Locale(locale);
+  const localeObject = intlCache.get('Locale', locale);
   const { region } = localeObject;
   if (region && emojis[region]) return emojis[region];
 

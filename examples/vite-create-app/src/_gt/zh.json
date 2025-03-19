@@ -1,67 +1,67 @@
 {
-  "1622d9dcb13a5e2bc7656875d81f1aa29dca453662794fb478ff57300210785f": {
+  "13869f8d5b160434f2344a93e7bccf5999ecd3ef102987e0f99e73be6c7ba00e": {
     "type": "div",
     "props": {
+      "data-_gt": {
+        "id": 1
+      },
       "children": [
         {
           "type": "button",
           "props": {
-            "children": [
-              "计数为 ",
-              {
-                "id": 3,
-                "key": "_gt_value_3",
-                "variable": "variable"
-              }
-            ],
             "data-_gt": {
               "id": 2
-            }
+            },
+            "children": [
+              "count is ",
+              {
+                "variable": "variable",
+                "id": 3,
+                "key": "_gt_value_3"
+              }
+            ]
           }
         },
         {
           "type": "p",
           "props": {
+            "data-_gt": {
+              "id": 4
+            },
             "children": [
-              "编辑 ",
+              "Edit ",
               {
                 "type": "code",
                 "props": {
-                  "children": "src/App.tsx",
                   "data-_gt": {
                     "id": 5
-                  }
+                  },
+                  "children": "src/App.tsx"
                 }
               },
-              " 并保存以测试热模块替换（HMR）"
-            ],
+              " and save to test HMR"
+            ]
+          }
+        },
+        {
+          "type": "div",
+          "props": {
             "data-_gt": {
-              "id": 4
-            }
+              "id": 6
+            },
+            "children": "Hello"
           }
         }
-      ],
-      "data-_gt": {
-        "id": 1
-      }
-    }
-  },
-  "17d3b00e650565e271551bd16d9fe6504ca149aabba540034e6edf2d5a3eea85": {
-    "type": "h1",
-    "props": {
-      "children": "Vite + React",
-      "data-_gt": {
-        "id": 1
-      }
+      ]
     }
   },
   "aa73a1ebc6b6f3f67ac8d8eabf33053b3f167ce274d9843ba0548d25063381ce": {
     "type": "p",
     "props": {
-      "children": "点击 Vite 和 React 的标志以了解更多",
       "data-_gt": {
         "id": 1
-      }
+      },
+      "children": "Click on the Vite and React logos to learn more"
     }
   }
 }

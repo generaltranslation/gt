@@ -1,3 +1,5 @@
+import { intlCache } from "../cache/IntlCache";
+
 /**
  * Get the text direction for a given locale code using the Intl.Locale API.
  *
@@ -7,7 +9,7 @@
  */
 export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
   try {
-    const locale = new Intl.Locale(code);
+    const locale = intlCache.get('Locale', code);
     // Return 'rtl' if the text direction of the language is right-to-left, otherwise 'ltr'
     return (locale as any)?.textInfo?.direction === 'rtl' ? 'rtl' : 'ltr';
   } catch {

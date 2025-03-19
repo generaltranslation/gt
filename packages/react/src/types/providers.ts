@@ -55,4 +55,5 @@ export type ClientProviderProps = {
   runtimeUrl?: string | null;
   onLocaleChange?: () => void;
   cookieName?: string;
+  gtServicesEnabled?: boolean;
 };

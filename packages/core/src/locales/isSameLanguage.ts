@@ -1,3 +1,5 @@
+import { intlCache } from "src/cache/IntlCache";
+
 /**
  * @internal
  */
@@ -8,7 +10,7 @@ export default function _isSameLanguage(
     const flattenedCodes = locales.flat();
     // Get the language for each code
     const languages = flattenedCodes.map(
-      (locale) => new Intl.Locale(locale).language
+      (locale) => intlCache.get('Locale', locale).language
     );
     return languages.every((language) => language === languages[0]);
   } catch (error) {
