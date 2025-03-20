@@ -19,7 +19,7 @@ export function generateSettings(options: any): Settings {
   // Load config file
   let gtConfig: Record<string, any> = {};
 
-  if (!options.config.endsWith('.json')) {
+  if (options.config && !options.config.endsWith('.json')) {
     options.config = `${options.config}.json`;
   }
   if (options.config) {

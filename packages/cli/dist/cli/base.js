@@ -55,6 +55,7 @@ const generaltranslation_1 = require("generaltranslation");
 const findFilepath_1 = __importStar(require("../fs/findFilepath"));
 const errors_1 = require("../console/errors");
 const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 const translate_1 = require("../formats/json/translate");
 const utils_1 = require("../fs/utils");
 const generateSettings_1 = require("../config/generateSettings");
@@ -202,9 +203,16 @@ class BaseCLI {
                 ],
                 default: 'remote',
             });
+            let configFilepath = 'gt.config.json';
+            if (fs_1.default.existsSync('gt.config.json')) {
+                configFilepath = 'gt.config.json';
+            }
+            else if (fs_1.default.existsSync('src/gt.config.json')) {
+                configFilepath = 'src/gt.config.json';
+            }
             if (location === 'remote') {
                 // Create gt.config.json
-                (0, setupConfig_1.default)('gt.config.json', {
+                (0, setupConfig_1.default)(configFilepath, {
                     defaultLocale,
                     locales: locales.split(' '),
                 });
@@ -236,7 +244,7 @@ class BaseCLI {
                 // translationsDir/[locale].json
                 const translationsDirWithFormat = path_1.default.join(translationsDir, `[locale].${dataFormat}`);
                 // Create gt.config.json
-                (0, setupConfig_1.default)('gt.config.json', {
+                (0, setupConfig_1.default)(configFilepath, {
                     defaultLocale,
                     locales: locales.split(' '),
                     files: {
@@ -249,7 +257,7 @@ class BaseCLI {
             else {
                 const translationsDirWithFormat = path_1.default.join(translationsDir, `[locale].json`);
                 // Create gt.config.json
-                (0, setupConfig_1.default)('gt.config.json', {
+                (0, setupConfig_1.default)(configFilepath, {
                     defaultLocale,
                     locales: locales.split(' '),
                     files: {

@@ -21,6 +21,9 @@ function generateSettings(options) {
     var _a, _b;
     // Load config file
     let gtConfig = {};
+    if (!options.config.endsWith('.json')) {
+        options.config = `${options.config}.json`;
+    }
     if (options.config) {
         gtConfig = (0, loadConfig_1.default)(options.config);
     }
