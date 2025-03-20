@@ -277,7 +277,7 @@ export class BaseCLI {
             `[locale].json`
           );
           // Create gt.config.json
-          createOrUpdateConfig(configFilepath, {
+          createOrUpdateConfig('gt.config.json', {
             defaultLocale,
             locales: locales.split(' '),
             files: {

@@ -561,15 +561,16 @@ export class ReactCLI extends BaseCLI {
     const settings = generateSettings(initOptions);
 
     // First run the base class's handleTranslate method
-    try {
-      await super.handleGenericTranslate(settings);
-      // If the base class's handleTranslate completes successfully, continue with ReactCLI-specific code
-    } catch (error) {
-      // Continue with ReactCLI-specific code even if base handleTranslate failed
-    }
-
-    // only for typing purposes
     const options = { ...initOptions, ...settings };
+
+    if (!options.dryRun) {
+      try {
+        await super.handleGenericTranslate(settings);
+        // If the base class's handleTranslate completes successfully, continue with ReactCLI-specific code
+      } catch (error) {
+        // Continue with ReactCLI-specific code even if base handleTranslate failed
+      }
+    }
 
     if (!options.dictionary) {
       options.dictionary = findFilepath([
