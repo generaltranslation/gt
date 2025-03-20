@@ -64,10 +64,10 @@ export default function Page() {
 
 ### 🧠 Free AI-powered translation service
 
+- Translation hot reload in development
 - Libraries integrate natively with our translation platform.
 - Translations are generated for your app in seconds.
 - HTML content is re-arranged and customized according to the language.
-- Translations are generated on-demand, so you can view them in real-time in development.
 
 ## Examples
 
@@ -121,8 +121,7 @@ See the below for links to the relevant libraries:
 - [gt-react](packages/react/README.md): Automatic i18n for React
 - [generaltranslation](packages/core/README.md): Core library for General Translation
 - [supported-locales](packages/supported-locales/README.md): Currently supported locales
-- [gt-react-cli](packages/react-cli/README.md): CLI tool for React apps
-- [gt-next-cli](packages/next-cli/README.md): CLI tool for Next.js apps
+- [gtx-cli](packages/cli/README.md): CLI tool for React apps
 
 ## Installation
 
