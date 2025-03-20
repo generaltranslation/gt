@@ -9,9 +9,6 @@ export declare class NextCLI extends ReactCLI {
         filesUpdated: string[];
         warnings: string[];
     }>;
-    protected createDictionaryUpdates(options: Options & {
-        dictionary: string;
-    }, esbuildConfig: any): Promise<Updates>;
     protected createInlineUpdates(options: Options): Promise<{
         updates: Updates;
         errors: string[];

@@ -1,6 +1,0 @@
-{
-  "projectId": "a",
-  "defaultLocale": "en",
-  "locales": ["es", "fr", "zh"],
-  "translationsDir": "./locales/*.json"
-}

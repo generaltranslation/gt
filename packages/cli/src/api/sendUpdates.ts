@@ -81,7 +81,7 @@ export async function sendUpdates(updates: Updates, options: ApiOptions) {
     if (options.wait && locales) {
       // timeout was validated earlier
       const timeout = parseInt(options.timeout) * 1000;
-      const result = await waitForUpdates(
+      await waitForUpdates(
         apiKey,
         options.baseUrl,
         versionId,

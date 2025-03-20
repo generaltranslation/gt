@@ -12,7 +12,6 @@ import { select } from '@inquirer/prompts';
 import { detectFormatter, formatFiles } from '../hooks/postProcess';
 import findFilepath from '../fs/findFilepath';
 import scanForContent from '../next/parse/scanForContent';
-import createDictionaryUpdates from '../react/parse/createDictionaryUpdates';
 import createInlineUpdates from '../react/parse/createInlineUpdates';
 import handleInitGT from '../next/parse/handleInitGT';
 import { ReactCLI } from './react';
@@ -41,13 +40,6 @@ export class NextCLI extends ReactCLI {
     framework: SupportedFrameworks
   ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
     return scanForContent(options, pkg, framework);
-  }
-
-  protected createDictionaryUpdates(
-    options: Options & { dictionary: string },
-    esbuildConfig: any
-  ): Promise<Updates> {
-    return createDictionaryUpdates(options, esbuildConfig);
   }
 
   protected createInlineUpdates(

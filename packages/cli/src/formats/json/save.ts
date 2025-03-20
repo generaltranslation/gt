@@ -9,26 +9,34 @@ import {
   Translations,
   TranslationsMetadata,
 } from '../../types/data';
+import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
+import { noFilesError } from '../../console/errors';
+import { ResolvedFiles } from '../../types';
 /**
- * Saves translations to a local directory
+ * Saves translations to a file
  * @param translations - The translations to save
- * @param translationsDir - The directory to save the translations to
- * @param fileType - The file type to save the translations as (file extension)
+ * @param filePath - The file path to save the translations to
+ * @param dataFormat - The data format to save the translations as
  */
 export function saveTranslations(
   translations: RetrievedTranslations,
-  translationsDir: string,
-  dataFormat: DataFormat,
-  fileExtension: FileExtension
+  placeholderPaths: ResolvedFiles,
+  dataFormat: DataFormat
 ) {
   for (const translation of translations) {
     const locale = translation.locale;
+    const translationFiles = resolveLocaleFiles(placeholderPaths, locale);
+
+    if (!translationFiles.json) {
+      console.error(noFilesError);
+      process.exit(1);
+    }
+
     const translationData: Translations = translation.translation;
     const translationMetadata: TranslationsMetadata = translation.metadata;
-    const filepath = path.join(translationsDir, `${locale}.${fileExtension}`);
 
     // Ensure directory exists
-    fs.mkdirSync(path.dirname(filepath), { recursive: true });
+    fs.mkdirSync(path.dirname(translationFiles.json[0]), { recursive: true });
 
     // Handle different file types
     let writeData: string | undefined;
@@ -68,7 +76,7 @@ export function saveTranslations(
     //   writeData = yaml.stringify(translationData);
     // }
     if (writeData) {
-      fs.writeFileSync(filepath, writeData);
+      fs.writeFileSync(translationFiles.json[0], writeData);
     }
   }
 }

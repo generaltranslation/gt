@@ -55,12 +55,13 @@ const generaltranslation_1 = require("generaltranslation");
 const findFilepath_1 = __importStar(require("../fs/findFilepath"));
 const errors_1 = require("../console/errors");
 const path_1 = __importDefault(require("path"));
-const yaml_1 = __importDefault(require("yaml"));
+const fs_1 = __importDefault(require("fs"));
 const translate_1 = require("../formats/json/translate");
 const utils_1 = require("../fs/utils");
 const generateSettings_1 = require("../config/generateSettings");
 const chalk_1 = __importDefault(require("chalk"));
 const internal_1 = require("generaltranslation/internal");
+const translate_2 = require("../formats/files/translate");
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 class BaseCLI {
     // Constructor is shared amongst all CLI class types
@@ -86,11 +87,16 @@ class BaseCLI {
             .option('--project-id <id>', 'Project ID for the translation service', (0, utils_1.resolveProjectId)())
             .option('--default-language, --default-locale <locale>', 'Default locale (e.g., en)')
             .option('--new, --locales <locales...>', 'Space-separated list of locales (e.g., en fr es)')
-            .option('-t, --translations-dir, --translation-dir <path>', 'Directory containing your language files. Should be in the format path/to/translations/*.json or path/to/translations/*.yaml')
             .action((options) => __awaiter(this, void 0, void 0, function* () {
             (0, console_1.displayAsciiTitle)();
             (0, console_2.displayInitializingText)();
             const settings = (0, generateSettings_1.generateSettings)(options);
+            yield this.handleGenericTranslate(settings);
+        }));
+    }
+    handleGenericTranslate(settings) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Validate required settings are present
             if (!settings.locales) {
                 console.error(errors_1.noLocalesError);
                 process.exit(1);
@@ -99,8 +105,8 @@ class BaseCLI {
                 console.error(errors_1.noDefaultLocaleError);
                 process.exit(1);
             }
-            if (!settings.translationsDir) {
-                console.error(errors_1.noTranslationsDirError);
+            if (!settings.files) {
+                console.error(errors_1.noFilesError);
                 process.exit(1);
             }
             if (!settings.apiKey) {
@@ -111,17 +117,7 @@ class BaseCLI {
                 console.error(errors_1.noProjectIdError);
                 process.exit(1);
             }
-            // ---- CREATING UPDATES ---- //
-            // Find the source file in the translationsDir
-            const rawSource = (0, findFilepath_1.findFile)(settings.translationsDir, settings.defaultLocale);
-            if (!rawSource) {
-                console.error(errors_1.noSourceFileError);
-                process.exit(1);
-            }
-            // Get the data format from the ending of the translationsDir
-            const fileExtension = settings.translationsDir
-                .split('.')
-                .pop();
+            // dataFormat for JSONs
             let dataFormat;
             if (this.library === 'next-intl') {
                 dataFormat = 'ICU';
@@ -137,19 +133,38 @@ class BaseCLI {
             else {
                 dataFormat = 'JSX';
             }
-            if (!dataFormat) {
-                console.error(errors_1.noDataFormatError);
-                process.exit(1);
+            const { resolvedPaths: sourceFiles, placeholderPaths } = settings.files;
+            // ---- CREATING UPDATES ---- //
+            if (sourceFiles.json) {
+                // Only translate JSON files if not using gt-react or gt-next
+                // ReactCLI will handle the JSON files differently
+                if (this.library !== 'gt-react' && this.library !== 'gt-next') {
+                    const rawSource = (0, findFilepath_1.readFile)(sourceFiles.json[0]);
+                    if (!rawSource) {
+                        console.error(errors_1.noSourceFileError);
+                        process.exit(1);
+                    }
+                    if (!dataFormat) {
+                        console.error(errors_1.noDataFormatError);
+                        process.exit(1);
+                    }
+                    else if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
+                        console.error(errors_1.noSupportedDataFormatError);
+                        process.exit(1);
+                    }
+                    const source = JSON.parse(rawSource);
+                    yield (0, translate_1.translateJson)(source, settings, dataFormat, placeholderPaths);
+                }
             }
-            else if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
-                console.error(errors_1.noSupportedDataFormatError);
-                process.exit(1);
+            if (sourceFiles.mdx || sourceFiles.md) {
+                if (sourceFiles.mdx) {
+                    yield (0, translate_2.translateFiles)(sourceFiles, placeholderPaths, 'MDX', settings);
+                }
+                if (sourceFiles.md) {
+                    yield (0, translate_2.translateFiles)(sourceFiles, placeholderPaths, 'MD', settings);
+                }
             }
-            const source = fileExtension === 'json'
-                ? JSON.parse(rawSource)
-                : yaml_1.default.parse(rawSource);
-            const result = yield (0, translate_1.translateJson)(source, settings, dataFormat, fileExtension);
-        }));
+        });
     }
     setupInitCommand() {
         commander_1.program
@@ -181,16 +196,23 @@ class BaseCLI {
             });
             // Ask where the translations are stored
             const location = yield (0, prompts_1.select)({
-                message: 'Where are your language files stored? (CDN or local)',
+                message: `Where are your language files stored? ${chalk_1.default.gray('(remote or local)')}`,
                 choices: [
-                    { value: 'cdn', name: 'CDN' },
+                    { value: 'remote', name: 'Remote' },
                     { value: 'local', name: 'Local' },
                 ],
-                default: 'cdn',
+                default: 'remote',
             });
-            if (location === 'cdn') {
+            let configFilepath = 'gt.config.json';
+            if (fs_1.default.existsSync('gt.config.json')) {
+                configFilepath = 'gt.config.json';
+            }
+            else if (fs_1.default.existsSync('src/gt.config.json')) {
+                configFilepath = 'src/gt.config.json';
+            }
+            if (location === 'remote') {
                 // Create gt.config.json
-                (0, setupConfig_1.default)('gt.config.json', {
+                (0, setupConfig_1.default)(configFilepath, {
                     defaultLocale,
                     locales: locales.split(' '),
                 });
@@ -204,7 +226,7 @@ class BaseCLI {
             // Ask if using another i18n library
             const i18nLibrary = thirdPartyLibrary
                 ? yield (0, prompts_1.select)({
-                    message: `Are you using a third-party i18n library? (${chalk_1.default.gray(`Auto-detected: ${this.library}`)})`,
+                    message: `Are you using a 3rd-party i18n library? ${chalk_1.default.gray(`(Auto-detected: ${this.library === 'base' ? 'none' : this.library})`)}`,
                     choices: [
                         { value: true, name: 'Yes' },
                         { value: false, name: 'No' },
@@ -215,25 +237,34 @@ class BaseCLI {
             if (i18nLibrary) {
                 const dataFormat = yield (0, prompts_1.select)({
                     message: 'What is the format of your language files?',
-                    choices: ['.json', '.yaml'],
-                    default: '.json',
+                    choices: ['json'],
+                    default: 'json',
                 });
                 // combine translationsDir and dataFormat into something like
-                // translationsDir/*[.json|.yaml]
-                const translationsDirWithFormat = path_1.default.join(translationsDir, `*${dataFormat}`);
+                // translationsDir/[locale].json
+                const translationsDirWithFormat = path_1.default.join(translationsDir, `[locale].${dataFormat}`);
                 // Create gt.config.json
-                (0, setupConfig_1.default)('gt.config.json', {
+                (0, setupConfig_1.default)(configFilepath, {
                     defaultLocale,
                     locales: locales.split(' '),
-                    translationsDir: translationsDirWithFormat,
+                    files: {
+                        json: {
+                            include: [translationsDirWithFormat],
+                        },
+                    },
                 });
             }
             else {
+                const translationsDirWithFormat = path_1.default.join(translationsDir, `[locale].json`);
                 // Create gt.config.json
-                (0, setupConfig_1.default)('gt.config.json', {
+                (0, setupConfig_1.default)(configFilepath, {
                     defaultLocale,
                     locales: locales.split(' '),
-                    translationsDir: translationsDir,
+                    files: {
+                        json: {
+                            include: [translationsDirWithFormat],
+                        },
+                    },
                 });
             }
         }));

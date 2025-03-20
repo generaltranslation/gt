@@ -2,7 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'yaml';
 import { RetrievedTranslations } from '../../types/api';
+import { ResolvedFiles } from '../../types';
 import { DataFormat } from '../../types/data';
+import { noFilesError } from '../../console/errors';
+import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
 /**
  * Saves translations to a local directory
  * @param translations - The translations to save
@@ -11,14 +14,18 @@ import { DataFormat } from '../../types/data';
  */
 export function saveTranslations(
   translations: RetrievedTranslations,
-  translationsDir: string,
-  dataFormat: DataFormat,
-  fileExtension: string
+  placeholderPaths: ResolvedFiles,
+  dataFormat: DataFormat
 ) {
   for (const translation of translations) {
     const locale = translation.locale;
+    const translationFiles = resolveLocaleFiles(placeholderPaths, locale);
+    if (!translationFiles.json) {
+      console.error(noFilesError);
+      process.exit(1);
+    }
+    const filepath = translationFiles.json[0];
     const translationData = translation.translation;
-    const filepath = path.join(translationsDir, `${locale}.${fileExtension}`);
     // Ensure directory exists
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
 
