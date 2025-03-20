@@ -46,8 +46,10 @@ npm install
 Here is a list of steps done to reach this repo state:
 
 1. `npx create-next-app@latest`
-2. `npm install gt-next gt-next-cli`
-3. `npx gt-next-cli setup`
+2. `npm install gt-next gtx-cli`
+3. `npx gtx-cli setup && npx-gtx-cli init`
+   - Setup will automatically add the `<T>` components to your app.
+   - When calling `init` specify "remote" as the location of your language files and en, zh, and fr as your locales.
 4. Add locales to the `next.config.ts` file:
 
 ```ts
@@ -57,7 +59,7 @@ export default withGTConfig(nextConfig, {
 });
 ```
 
-6. (optional) Create a `.local.env` file and populate it with `GT_PROJECT_ID` and `GT_API_KEY`
+6. (optional) Create a `.local.env` file and populate it with `GT_PROJECT_ID` and `GT_API_KEY`.
    - These environment variables are needed for local translations during development. The `GT_API_KEY` should be a **development** API key. A separate **production API Key** is needed for subsequent steps when deploying to production.
 7. `npm run dev`
 
@@ -65,7 +67,7 @@ To deploy this app to production:
 
 1. Add `GT_PROJECT_ID` and `GT_API_KEY` to your `.env.local` file
    - The `GT_API_KEY` should be a **production** API key.
-2. `npx gt-next-cli translate --locales es fr zh`
+2. Add `npx gtx-cli translate` to your build step before the build command.
 3. Deploy to Vercel / Render / etc..
 
 ### Local Translations
@@ -74,10 +76,10 @@ This repo is setup to use local translations in production.
 
 If you are following the step-by-step guide, you will also need to follow these steps to use local translations. If you omit these steps, your production app will use the GT CDN for translation files.
 
-1. Add a `loadTranslation.ts` file under `./src` with the following content:
+1. Add a `loadTranslations.ts` file under `./src` with the following content:
 
 ```ts
-export default async function loadTranslation(locale: string) {
+export default async function loadTranslations(locale: string) {
   const t = await import(`../public/_gt/${locale}.json`);
   return t.default;
 }
@@ -85,6 +87,10 @@ export default async function loadTranslation(locale: string) {
 
 2. Instead of running the command in Step 2 above, run:
 
+- When calling `init` specify "local" as the location of your language files and en, zh, and fr as your locales
+
 ```bash
-npx gt-next-cli translate --locales es fr zh -t ./public/_gt --no-publish
+npx gtx-cli translate
 ```
+
+For more information on local translation, check out our [guide on local translation](https://generaltranslation.com/docs/next/reference/local-tx).
