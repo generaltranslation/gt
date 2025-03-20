@@ -7,6 +7,7 @@ import {
   getFallbackVariableName,
 } from '../../variables/getVariableName';
 import getPluralBranch from '../../branches/plurals/getPluralBranch';
+import { RenderVariable } from '../../types/types';
 
 export default function renderDefaultChildren({
   children,
@@ -19,18 +20,7 @@ export default function renderDefaultChildren({
   variables?: Record<string, any>;
   variablesOptions?: Record<string, any>;
   defaultLocale: string;
-  renderVariable: ({
-    variableType,
-    variableName,
-    variableValue,
-    variableOptions,
-  }: {
-    variableType: 'variable' | 'number' | 'datetime' | 'currency';
-    variableName: string;
-    variableValue: any;
-    variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
-    locales: string[];
-  }) => React.JSX.Element;
+  renderVariable: RenderVariable;
 }): React.ReactNode {
   const handleSingleChildElement = (child: ReactElement<any>) => {
     const generaltranslation = getGTProp(child);
@@ -64,12 +54,7 @@ export default function renderDefaultChildren({
       });
     }
     if (generaltranslation?.transformation === 'plural') {
-      const n =
-        typeof variables.n === 'number'
-          ? variables.n
-          : typeof child.props.n === 'number'
-            ? child.props.n
-            : child.props['data-_gt-n'];
+      const n = child.props.n;
       if (typeof n === 'number' && typeof variables.n === 'undefined')
         variables.n = n;
       const branches = generaltranslation.branches || {};
@@ -86,11 +71,16 @@ export default function renderDefaultChildren({
         ...branches
       } = child.props;
       name = name || child.props['data-_gt-name'] || 'branch';
-      branch = variables[name] || branch || child.props['data-_gt-branch-name'];
       branches = generaltranslation.branches || {};
       return handleChildren(
         branches[branch] !== undefined ? branches[branch] : children
       );
+    }
+    if (generaltranslation?.transformation === 'fragment') {
+      return React.createElement(child.type, {
+        key: child.props.key,
+        children: handleChildren(child.props.children),
+      });
     }
     if (child.props.children) {
       return React.cloneElement(child, {

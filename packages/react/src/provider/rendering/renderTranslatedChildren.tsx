@@ -1,5 +1,6 @@
 import React, { ReactElement, ReactNode } from 'react';
 import {
+  RenderVariable,
   TranslatedChildren,
   TranslatedElement,
   Variable,
@@ -28,18 +29,7 @@ function renderTranslatedElement({
   variables?: Record<string, any>;
   variablesOptions?: Record<string, any>;
   locales: string[];
-  renderVariable: ({
-    variableType,
-    variableName,
-    variableValue,
-    variableOptions,
-  }: {
-    variableType: 'variable' | 'number' | 'datetime' | 'currency';
-    variableName: string;
-    variableValue: any;
-    variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
-    locales: string[];
-  }) => React.JSX.Element;
+  renderVariable: RenderVariable;
 }): React.ReactNode {
   const { props } = sourceElement;
 
@@ -47,12 +37,7 @@ function renderTranslatedElement({
   const transformation = generaltranslation?.['transformation'];
 
   if (transformation === 'plural') {
-    const n =
-      typeof variables.n === 'number'
-        ? variables.n
-        : typeof sourceElement.props.n === 'number'
-          ? sourceElement.props.n
-          : sourceElement.props['data-_gt-n'];
+    const n = sourceElement.props.n;
     const sourceBranches = generaltranslation.branches || {};
     const sourceBranch =
       getPluralBranch(n, locales, sourceBranches) ||
@@ -76,8 +61,6 @@ function renderTranslatedElement({
   if (transformation === 'branch') {
     let { name, branch, children } = props;
     name = name || sourceElement.props['data-_gt-name'] || 'branch';
-    branch =
-      variables[name] || branch || sourceElement.props['data-_gt-branch-name'];
     const sourceBranch =
       (generaltranslation.branches || {})[branch] || children;
     const targetBranch =
@@ -93,6 +76,19 @@ function renderTranslatedElement({
     });
   }
 
+  if (transformation === 'fragment' && targetElement.props?.children) {
+    return React.createElement(sourceElement.type, {
+      key: sourceElement.props.key,
+      children: renderTranslatedChildren({
+        source: props.children,
+        target: targetElement.props.children,
+        variables,
+        variablesOptions,
+        locales,
+        renderVariable,
+      }),
+    });
+  }
   if (props?.children && targetElement.props?.children) {
     return React.cloneElement(sourceElement, {
       ...props,
@@ -184,15 +180,17 @@ export default function renderTranslatedChildren({
     const findMatchingSourceElement = (
       targetElement: TranslatedElement
     ): ReactElement | undefined => {
-      return sourceElements.find((sourceChild) => {
-        const generaltranslation = getGTProp(sourceChild);
-        if (typeof generaltranslation?.id !== 'undefined') {
-          const sourceId = generaltranslation.id;
-          const targetId = targetElement?.props?.['data-_gt']?.id;
-          return sourceId === targetId;
-        }
-        return false;
-      }) || sourceElements.shift(); // assumes fixed order, not recommended
+      return (
+        sourceElements.find((sourceChild) => {
+          const generaltranslation = getGTProp(sourceChild);
+          if (typeof generaltranslation?.id !== 'undefined') {
+            const sourceId = generaltranslation.id;
+            const targetId = targetElement?.props?.['data-_gt']?.id;
+            return sourceId === targetId;
+          }
+          return false;
+        }) || sourceElements.shift()
+      ); // assumes fixed order, not recommended
     };
 
     return target.map((targetChild, index) => {

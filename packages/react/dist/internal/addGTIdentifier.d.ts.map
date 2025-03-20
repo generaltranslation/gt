@@ -1,1 +1,1 @@
-{"version":3,"file":"addGTIdentifier.d.ts","sourceRoot":"","sources":["../../src/internal/addGTIdentifier.tsx"],"names":[],"mappings":"AAMA,OAAO,EAEL,QAAQ,EAGR,cAAc,EAGf,MAAM,gBAAgB,CAAC;AAExB,MAAM,CAAC,OAAO,UAAU,eAAe,CACrC,QAAQ,EAAE,QAAQ,EAClB,aAAa,GAAE,MAAU,GACxB,cAAc,CAuGhB"}
+{"version":3,"file":"addGTIdentifier.d.ts","sourceRoot":"","sources":["../../src/internal/addGTIdentifier.tsx"],"names":[],"mappings":"AAMA,OAAO,EAEL,QAAQ,EAGR,cAAc,EAGf,MAAM,gBAAgB,CAAC;AAExB,MAAM,CAAC,OAAO,UAAU,eAAe,CACrC,QAAQ,EAAE,QAAQ,EAClB,aAAa,GAAE,MAAU,GACxB,cAAc,CAmGhB"}

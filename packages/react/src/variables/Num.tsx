@@ -1,7 +1,5 @@
 import React, { useContext } from 'react';
 import { formatNum } from 'generaltranslation';
-import useLocale from '../hooks/useLocale';
-import useDefaultLocale from '../hooks/useDefaultLocale';
 import { GTContext } from '../provider/GTContext';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 
@@ -21,7 +19,6 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * ```
  *
  * @param {any} [children] - Optional content (typically a number) to render inside the component.
- * @param {string} [name="n"] - Optional name for the number field, used for metadata purposes.
  * @param {string|number} [value] - The default value for the number. Can be a string or number. Strings will be parsed to numbers.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {JSX.Element} The formatted number component.
@@ -29,12 +26,10 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 function Num({
   children,
   value,
-  name,
   locales,
   options = {},
 }: {
   children?: any;
-  name?: string;
   value?: any; // Optional default value for the number
   locales?: string[];
   options?: Intl.NumberFormatOptions; // Optional options for the number formatting
@@ -59,18 +54,7 @@ function Num({
     // Using Intl.NumberFormat for consistent number formatting
     formattedValue = formatNum(renderedValue, { locales, ...options });
   }
-
-  return (
-    <span
-      data-_gt-variable-name={name}
-      data-_gt-variable-type={'number'}
-      data-_gt-variable-options={JSON.stringify(options)}
-      style={{ display: 'contents' }}
-      suppressHydrationWarning
-    >
-      {formattedValue}
-    </span>
-  );
+  return <>{formattedValue}</>;
 }
 
 Num.gtTransformation = 'variable-number';

@@ -39,6 +39,7 @@ import {
   DictionaryContent,
   DictionaryObject,
   CustomLoader,
+  RenderVariable,
 } from './types/types';
 
 import { GTContextType, ClientProviderProps } from './types/providers';
@@ -84,4 +85,5 @@ export {
   DictionaryObject,
   LocalesDictionary,
   CustomLoader,
+  RenderVariable,
 };

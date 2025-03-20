@@ -59,6 +59,15 @@ type InlineTranslationOptions = {
     context?: string;
     id?: string;
 } & DictionaryTranslationOptions;
+type VariableProps = {
+    variableType: 'variable' | 'number' | 'datetime' | 'currency';
+    variableValue: any;
+    variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
+    variableName: string;
+};
+type RenderVariable = ({ variableType, variableValue, variableOptions, locales, }: VariableProps & {
+    locales: string[];
+}) => React__default.JSX.Element;
 
 type TranslateContentCallback = (params: {
     source: any;
@@ -143,13 +152,7 @@ declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId
     registerJsxForTranslation: TranslateChildrenCallback;
 };
 
-declare function renderVariable({ variableType, variableName, variableValue, variableOptions, locales, }: {
-    variableType: 'variable' | 'number' | 'datetime' | 'currency';
-    variableName: string;
-    variableValue: any;
-    variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
-    locales: string[];
-}): React.JSX.Element;
+declare const renderVariable: RenderVariable;
 
 declare function ClientProvider({ children, dictionary, initialTranslations, dictionaryTranslations, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
 
@@ -319,25 +322,20 @@ declare namespace T {
  *
  * @example
  * ```jsx
- * <Currency
- *    name="price"
- *    currency="USD"
- * >
+ * <Currency currency="USD">
  *    1000
  * </Currency>
  * ```
  *
  * @param {any} [children] - Optional content to render inside the currency component.
- * @param {string} [name] - Optional name for the currency field.
  * @param {any} [value] - The default value to be used.
  * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
  * @param {string[]} [locales] - Optional locales to use for currency formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {JSX.Element} The formatted currency component.
  */
-declare function Currency({ children, value, name, currency, locales, options, }: {
+declare function Currency({ children, value, currency, locales, options, }: {
     children?: any;
-    name?: string;
     value?: any;
     currency?: string;
     locales?: string[];
@@ -362,15 +360,13 @@ declare namespace Currency {
  * ```
  *
  * @param {any} [children] - Optional content (typically a date) to render inside the component.
- * @param {string} [name="date"] - Optional name for the date field, used for metadata purposes.
  * @param {string|number|Date} [value] - The default value for the date. Can be a string, number (timestamp), or `Date` object.
  * @param {string[]} [locales] - Optional locales to use for date formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {JSX.Element} The formatted date or time component.
  */
-declare function DateTime({ children, value, name, locales, options, }: {
+declare function DateTime({ children, value, locales, options, }: {
     children?: any;
-    name?: string;
     value?: any;
     locales?: string[];
     options?: Intl.DateTimeFormatOptions;
@@ -395,14 +391,12 @@ declare namespace DateTime {
  * ```
  *
  * @param {any} [children] - Optional content (typically a number) to render inside the component.
- * @param {string} [name="n"] - Optional name for the number field, used for metadata purposes.
  * @param {string|number} [value] - The default value for the number. Can be a string or number. Strings will be parsed to numbers.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {JSX.Element} The formatted number component.
  */
-declare function Num({ children, value, name, locales, options, }: {
+declare function Num({ children, value, locales, options, }: {
     children?: any;
-    name?: string;
     value?: any;
     locales?: string[];
     options?: Intl.NumberFormatOptions;
@@ -448,13 +442,11 @@ declare namespace Num {
  *
  *
  * @param {any} [children] - The content to render inside the component. If provided, it will take precedence over `value`.
- * @param {string} [name] - Optional name for the variable, used for metadata purposes.
  * @param {any} [value] - The default value to be displayed if `children` is not provided.
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
-declare function Var({ children, name, value, }: {
+declare function Var({ children, value, }: {
     children?: any;
-    name?: string;
     value?: any;
 }): React__default.JSX.Element;
 declare namespace Var {

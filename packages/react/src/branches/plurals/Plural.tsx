@@ -52,15 +52,7 @@ function Plural({
   if (typeof n !== 'number')
     throw new Error(createPluralMissingError(children));
   const branch = getPluralBranch(n, providerLocales, branches) || children;
-  return (
-    <span
-      data-_gt={generaltranslation}
-      data-_gt-n={n}
-      style={{ display: 'contents' }}
-    >
-      {branch}
-    </span>
-  );
+  return <>{branch}</>;
 }
 
 Plural.gtTransformation = 'plural';

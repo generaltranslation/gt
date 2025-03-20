@@ -37,30 +37,18 @@ import React from 'react';
  *
  *
  * @param {any} [children] - The content to render inside the component. If provided, it will take precedence over `value`.
- * @param {string} [name] - Optional name for the variable, used for metadata purposes.
  * @param {any} [value] - The default value to be displayed if `children` is not provided.
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
 function Var({
   children,
-  name,
   value,
 }: {
   children?: any;
-  name?: string;
   value?: any;
 }): React.JSX.Element {
   let final = typeof children !== 'undefined' ? children : value;
-
-  return (
-    <span
-      data-_gt-variable-name={name}
-      data-_gt-variable-type={'variable'}
-      style={{ display: 'contents' }}
-    >
-      {final}
-    </span>
-  );
+  return <>{final}</>;
 }
 
 Var.gtTransformation = 'variable-variable';

@@ -35,16 +35,7 @@ function Branch({
     branch && typeof branches[branch] !== 'undefined'
       ? branches[branch]
       : children;
-  return (
-    <span
-      data-_gt={generaltranslation}
-      data-_gt-branch-name={branch}
-      data-_gt-name={name || 'branch'}
-      style={{ display: 'contents' }}
-    >
-      {renderedBranch}
-    </span>
-  );
+  return <>{renderedBranch}</>;
 }
 
 Branch.gtTransformation = 'branch';

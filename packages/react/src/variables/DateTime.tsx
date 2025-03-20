@@ -18,7 +18,6 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * ```
  *
  * @param {any} [children] - Optional content (typically a date) to render inside the component.
- * @param {string} [name="date"] - Optional name for the date field, used for metadata purposes.
  * @param {string|number|Date} [value] - The default value for the date. Can be a string, number (timestamp), or `Date` object.
  * @param {string[]} [locales] - Optional locales to use for date formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
@@ -27,12 +26,10 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 function DateTime({
   children,
   value,
-  name,
   locales,
   options = {},
 }: {
   children?: any;
-  name?: string;
   value?: any; // The default value which can be string, number or Date
   locales?: string[];
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
@@ -67,19 +64,7 @@ function DateTime({
       ''
     );
   }
-
-  // Render the formatted date within a span element
-  return (
-    <span
-      data-_gt-variable-name={name}
-      data-_gt-variable-type={'date'}
-      data-_gt-variable-options={JSON.stringify(options)}
-      style={{ display: 'contents' }}
-      suppressHydrationWarning
-    >
-      {final}
-    </span>
-  );
+  return <>{final}</>;
 }
 
 // Static property for transformation type

@@ -18,6 +18,7 @@ export async function getNextLocale(
   defaultLocale: string = '',
   locales: string[]
 ): Promise<string> {
+  // TODO: add custom error message saying, if you are using nextjs Pages Router, please use gt-react
   const [headersList, cookieStore] = await Promise.all([headers(), cookies()]);
 
   let userLocale = (() => {
