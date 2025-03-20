@@ -376,15 +376,16 @@ class ReactCLI extends base_1.BaseCLI {
             (0, console_1.displayInitializingText)();
             const settings = (0, generateSettings_1.generateSettings)(initOptions);
             // First run the base class's handleTranslate method
-            try {
-                yield _super.handleGenericTranslate.call(this, settings);
-                // If the base class's handleTranslate completes successfully, continue with ReactCLI-specific code
-            }
-            catch (error) {
-                // Continue with ReactCLI-specific code even if base handleTranslate failed
-            }
-            // only for typing purposes
             const options = Object.assign(Object.assign({}, initOptions), settings);
+            if (!options.dryRun) {
+                try {
+                    yield _super.handleGenericTranslate.call(this, settings);
+                    // If the base class's handleTranslate completes successfully, continue with ReactCLI-specific code
+                }
+                catch (error) {
+                    // Continue with ReactCLI-specific code even if base handleTranslate failed
+                }
+            }
             if (!options.dictionary) {
                 options.dictionary = (0, findFilepath_1.default)([
                     './dictionary.js',

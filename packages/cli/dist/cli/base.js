@@ -257,7 +257,7 @@ class BaseCLI {
             else {
                 const translationsDirWithFormat = path_1.default.join(translationsDir, `[locale].json`);
                 // Create gt.config.json
-                (0, setupConfig_1.default)(configFilepath, {
+                (0, setupConfig_1.default)('gt.config.json', {
                     defaultLocale,
                     locales: locales.split(' '),
                     files: {
