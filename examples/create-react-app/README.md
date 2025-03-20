@@ -4,7 +4,7 @@ This is an example project showcasing a create-react-app boilerplate app using [
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-[See it live here]().
+[See it live here](example-create-react-qhttbgovz-general-translation.vercel.app).
 
 Change your browser language to see the translations in action.
 
@@ -17,7 +17,7 @@ Change your browser language to see the translations in action.
 
 One-click deploy to Vercel:
 
-[![Deploy with Vercel](https://vercel.com/button)]()
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/General-Translation/gt-libraries/tree/main/examples/example-create-react-app)
 
 Everything works out of the box!
 
