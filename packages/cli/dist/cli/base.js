@@ -133,7 +133,7 @@ class BaseCLI {
             else {
                 dataFormat = 'JSX';
             }
-            const { resolvedPaths: sourceFiles, placeholderPaths } = settings.files;
+            const { resolvedPaths: sourceFiles, placeholderPaths, transformPaths, } = settings.files;
             // ---- CREATING UPDATES ---- //
             if (sourceFiles.json) {
                 // Only translate JSON files if not using gt-react or gt-next
@@ -158,10 +158,10 @@ class BaseCLI {
             }
             if (sourceFiles.mdx || sourceFiles.md) {
                 if (sourceFiles.mdx) {
-                    yield (0, translate_2.translateFiles)(sourceFiles, placeholderPaths, 'MDX', settings);
+                    yield (0, translate_2.translateFiles)(sourceFiles, placeholderPaths, transformPaths, 'MDX', settings);
                 }
                 if (sourceFiles.md) {
-                    yield (0, translate_2.translateFiles)(sourceFiles, placeholderPaths, 'MD', settings);
+                    yield (0, translate_2.translateFiles)(sourceFiles, placeholderPaths, transformPaths, 'MD', settings);
                 }
             }
         });

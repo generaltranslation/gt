@@ -8,19 +8,23 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.translateFiles = translateFiles;
 const checkFileTranslations_1 = require("../../api/checkFileTranslations");
 const sendFiles_1 = require("../../api/sendFiles");
 const parseFilesConfig_1 = require("../../fs/config/parseFilesConfig");
 const findFilepath_1 = require("../../fs/findFilepath");
+const path_1 = __importDefault(require("path"));
 /**
  * Sends an entire file to the API for translation
  * @param fileContent - The raw content of the file to translate
  * @param options - Translation options including API settings
  * @returns The translated file content or null if translation failed
  */
-function translateFiles(filePaths, placeholderPaths, fileFormat, options) {
+function translateFiles(filePaths, placeholderPaths, transformPaths, fileFormat, options) {
     return __awaiter(this, void 0, void 0, function* () {
         let typeIndex = 'json';
         if (fileFormat === 'MDX') {
@@ -52,9 +56,21 @@ function translateFiles(filePaths, placeholderPaths, fileFormat, options) {
             const fileMapping = {};
             for (const locale of locales) {
                 const translatedPaths = (0, parseFilesConfig_1.resolveLocaleFiles)(placeholderPaths, locale);
-                const translatedFiles = translatedPaths[typeIndex];
+                let translatedFiles = translatedPaths[typeIndex];
                 if (!translatedFiles) {
                     continue; // shouldn't happen; typing
+                }
+                const transformPath = transformPaths[typeIndex];
+                if (transformPath) {
+                    translatedFiles = translatedFiles.map((filePath) => {
+                        const directory = path_1.default.dirname(filePath);
+                        const fileName = path_1.default.basename(filePath);
+                        const baseName = fileName.split('.')[0];
+                        const transformedFileName = transformPath
+                            .replace('*', baseName)
+                            .replace('[locale]', locale);
+                        return path_1.default.join(directory, transformedFileName);
+                    });
                 }
                 const localeMapping = {};
                 for (let i = 0; i < sourcePaths.length; i++) {

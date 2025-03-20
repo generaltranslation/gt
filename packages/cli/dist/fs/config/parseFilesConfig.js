@@ -35,10 +35,11 @@ function resolveLocaleFiles(files, locale) {
  * @returns The resolved files
  */
 function resolveFiles(files, locale) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     // Initialize result object with empty arrays for each file type
     const result = {};
     const placeholderResult = {};
+    const transformPaths = {};
     // Process JSON files
     if ((_a = files.json) === null || _a === void 0 ? void 0 : _a.include) {
         if (files.json.include.length > 1) {
@@ -67,7 +68,18 @@ function resolveFiles(files, locale) {
         result.mdx = mdxPaths.resolvedPaths;
         placeholderResult.mdx = mdxPaths.placeholderPaths;
     }
-    return { resolvedPaths: result, placeholderPaths: placeholderResult };
+    // ==== TRANSFORMS ==== //
+    if (((_d = files.mdx) === null || _d === void 0 ? void 0 : _d.transform) && !Array.isArray(files.mdx.transform)) {
+        transformPaths.mdx = files.mdx.transform;
+    }
+    if (((_e = files.md) === null || _e === void 0 ? void 0 : _e.transform) && !Array.isArray(files.md.transform)) {
+        transformPaths.md = files.md.transform;
+    }
+    return {
+        resolvedPaths: result,
+        placeholderPaths: placeholderResult,
+        transformPaths: transformPaths,
+    };
 }
 // Helper function to expand glob patterns
 function expandGlobPatterns(patterns, locale) {
