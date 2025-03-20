@@ -1,4 +1,4 @@
-import { FilesOptions, ResolvedFiles } from '../../types';
+import { FilesOptions, ResolvedFiles, TransformFiles } from '../../types';
 /**
  * Resolves the files from the files object
  * Replaces [locale] with the actual locale in the files
@@ -19,4 +19,5 @@ export declare function resolveLocaleFiles(files: ResolvedFiles, locale: string)
 export declare function resolveFiles(files: FilesOptions, locale: string): {
     resolvedPaths: ResolvedFiles;
     placeholderPaths: ResolvedFiles;
+    transformPaths: TransformFiles;
 };

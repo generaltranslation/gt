@@ -1,5 +1,5 @@
 import path from 'path';
-import { FilesOptions, ResolvedFiles } from '../../types';
+import { FilesOptions, ResolvedFiles, TransformFiles } from '../../types';
 import fg from 'fast-glob';
 
 /**
@@ -44,10 +44,15 @@ export function resolveLocaleFiles(
 export function resolveFiles(
   files: FilesOptions,
   locale: string
-): { resolvedPaths: ResolvedFiles; placeholderPaths: ResolvedFiles } {
+): {
+  resolvedPaths: ResolvedFiles;
+  placeholderPaths: ResolvedFiles;
+  transformPaths: TransformFiles;
+} {
   // Initialize result object with empty arrays for each file type
   const result: ResolvedFiles = {};
   const placeholderResult: ResolvedFiles = {};
+  const transformPaths: TransformFiles = {};
 
   // Process JSON files
   if (files.json?.include) {
@@ -83,7 +88,21 @@ export function resolveFiles(
     placeholderResult.mdx = mdxPaths.placeholderPaths;
   }
 
-  return { resolvedPaths: result, placeholderPaths: placeholderResult };
+  // ==== TRANSFORMS ==== //
+
+  if (files.mdx?.transform && !Array.isArray(files.mdx.transform)) {
+    transformPaths.mdx = files.mdx.transform;
+  }
+
+  if (files.md?.transform && !Array.isArray(files.md.transform)) {
+    transformPaths.md = files.md.transform;
+  }
+
+  return {
+    resolvedPaths: result,
+    placeholderPaths: placeholderResult,
+    transformPaths: transformPaths,
+  };
 }
 
 // Helper function to expand glob patterns

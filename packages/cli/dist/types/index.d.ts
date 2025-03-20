@@ -68,15 +68,22 @@ export type FilesOptions = {
     };
     md?: {
         include: string[];
+        transform?: string;
     };
     mdx?: {
         include: string[];
+        transform?: string;
     };
 };
 export type ResolvedFiles = {
     json?: string[];
     md?: string[];
     mdx?: string[];
+};
+export type TransformFiles = {
+    json?: string;
+    md?: string;
+    mdx?: string;
 };
 export type Settings = {
     config: string;
@@ -88,6 +95,7 @@ export type Settings = {
     files: {
         resolvedPaths: ResolvedFiles;
         placeholderPaths: ResolvedFiles;
+        transformPaths: TransformFiles;
     };
     versionId?: string;
 };

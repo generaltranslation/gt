@@ -428,7 +428,7 @@ export class ReactCLI extends BaseCLI {
       message: 'What framework are you using?',
       choices: [
         { value: 'next', name: chalk.blue('Next.js') },
-        { value: 'vite', name: chalk.green('Vite') },
+        { value: 'vite', name: chalk.green('Vite + React') },
         { value: 'gatsby', name: chalk.magenta('Gatsby') },
         { value: 'react', name: chalk.yellow('React') },
         { value: 'redwood', name: chalk.red('RedwoodJS') },

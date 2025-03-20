@@ -279,7 +279,7 @@ class ReactCLI extends base_1.BaseCLI {
                 message: 'What framework are you using?',
                 choices: [
                     { value: 'next', name: chalk_1.default.blue('Next.js') },
-                    { value: 'vite', name: chalk_1.default.green('Vite') },
+                    { value: 'vite', name: chalk_1.default.green('Vite + React') },
                     { value: 'gatsby', name: chalk_1.default.magenta('Gatsby') },
                     { value: 'react', name: chalk_1.default.yellow('React') },
                     { value: 'redwood', name: chalk_1.default.red('RedwoodJS') },

@@ -96,9 +96,11 @@ export type FilesOptions = {
   };
   md?: {
     include: string[];
+    transform?: string;
   };
   mdx?: {
     include: string[];
+    transform?: string;
   };
 };
 
@@ -107,6 +109,13 @@ export type ResolvedFiles = {
   // yaml?: string[];
   md?: string[];
   mdx?: string[];
+};
+
+export type TransformFiles = {
+  json?: string;
+  // yaml?: string;
+  md?: string;
+  mdx?: string;
 };
 
 // Shared settings between all API-related commands
@@ -120,6 +129,7 @@ export type Settings = {
   files: {
     resolvedPaths: ResolvedFiles; // resolved paths for the default locale
     placeholderPaths: ResolvedFiles; // placeholder paths for all locales containing [locale]
+    transformPaths: TransformFiles; // transform paths for all locales containing [locale]
   };
   versionId?: string;
 };

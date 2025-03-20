@@ -1,11 +1,8 @@
 import { checkFileTranslations } from '../../api/checkFileTranslations';
 import { sendFiles } from '../../api/sendFiles';
-import {
-  resolveFiles,
-  resolveLocaleFiles,
-} from '../../fs/config/parseFilesConfig';
+import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
 import { getRelative, readFile } from '../../fs/findFilepath';
-import { FilesOptions, ResolvedFiles, Settings } from '../../types';
+import { ResolvedFiles, Settings, TransformFiles } from '../../types';
 import { FileFormats } from '../../types/data';
 import path from 'path';
 /**
@@ -17,6 +14,7 @@ import path from 'path';
 export async function translateFiles(
   filePaths: ResolvedFiles,
   placeholderPaths: ResolvedFiles,
+  transformPaths: TransformFiles,
   fileFormat: FileFormats,
   options: Settings
 ): Promise<void> {
@@ -56,9 +54,21 @@ export async function translateFiles(
     const fileMapping: Record<string, Record<string, string>> = {};
     for (const locale of locales) {
       const translatedPaths = resolveLocaleFiles(placeholderPaths, locale);
-      const translatedFiles = translatedPaths[typeIndex];
+      let translatedFiles = translatedPaths[typeIndex];
       if (!translatedFiles) {
         continue; // shouldn't happen; typing
+      }
+      const transformPath = transformPaths[typeIndex];
+      if (transformPath) {
+        translatedFiles = translatedFiles.map((filePath) => {
+          const directory = path.dirname(filePath);
+          const fileName = path.basename(filePath);
+          const baseName = fileName.split('.')[0];
+          const transformedFileName = transformPath
+            .replace('*', baseName)
+            .replace('[locale]', locale);
+          return path.join(directory, transformedFileName);
+        });
       }
       const localeMapping: Record<string, string> = {};
       for (let i = 0; i < sourcePaths.length; i++) {

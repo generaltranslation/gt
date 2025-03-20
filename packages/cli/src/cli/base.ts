@@ -4,7 +4,7 @@ import { displayInitializingText } from '../console/console';
 import createOrUpdateConfig from '../fs/config/setupConfig';
 import { input, select } from '@inquirer/prompts';
 import { isValidLocale } from 'generaltranslation';
-import findFilepath, { findFile, readFile } from '../fs/findFilepath';
+import findFilepath, { readFile } from '../fs/findFilepath';
 import {
   noDefaultLocaleError,
   noLocalesError,
@@ -20,11 +20,10 @@ import fs from 'fs';
 import { translateJson } from '../formats/json/translate';
 import { FilesOptions, Settings, SupportedLibraries } from '../types';
 import { resolveProjectId } from '../fs/utils';
-import { DataFormat, FileExtension } from '../types/data';
+import { DataFormat } from '../types/data';
 import { generateSettings } from '../config/generateSettings';
 import chalk from 'chalk';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { resolveFiles } from '../fs/config/parseFilesConfig';
 import { translateFiles } from '../formats/files/translate';
 
 type TranslateOptions = {
@@ -131,7 +130,11 @@ export class BaseCLI {
       dataFormat = 'JSX';
     }
 
-    const { resolvedPaths: sourceFiles, placeholderPaths } = settings.files;
+    const {
+      resolvedPaths: sourceFiles,
+      placeholderPaths,
+      transformPaths,
+    } = settings.files;
 
     // ---- CREATING UPDATES ---- //
     if (sourceFiles.json) {
@@ -158,10 +161,22 @@ export class BaseCLI {
     }
     if (sourceFiles.mdx || sourceFiles.md) {
       if (sourceFiles.mdx) {
-        await translateFiles(sourceFiles, placeholderPaths, 'MDX', settings);
+        await translateFiles(
+          sourceFiles,
+          placeholderPaths,
+          transformPaths,
+          'MDX',
+          settings
+        );
       }
       if (sourceFiles.md) {
-        await translateFiles(sourceFiles, placeholderPaths, 'MD', settings);
+        await translateFiles(
+          sourceFiles,
+          placeholderPaths,
+          transformPaths,
+          'MD',
+          settings
+        );
       }
     }
   }
