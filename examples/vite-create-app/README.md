@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://generaltranslation.com" target="_blank">
+    <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation" width="100" height="100">
+  </a>
+</p>
+
 # gt-react + Vite Create App Example
 
 This is an example project showcasing a multilingual Vite App using [`gt-react`](https://generaltranslation.com/docs/react).
