@@ -9,9 +9,7 @@ export declare class ReactCLI extends BaseCLI {
         filesUpdated: string[];
         warnings: string[];
     }>;
-    protected createDictionaryUpdates(options: Options & {
-        dictionary: string;
-    }, esbuildConfig: any): Promise<Updates>;
+    protected createDictionaryUpdates(options: Options, dictionaryPath: string, esbuildConfig?: any): Promise<Updates>;
     protected createInlineUpdates(options: Options): Promise<{
         updates: Updates;
         errors: string[];
@@ -20,11 +18,11 @@ export declare class ReactCLI extends BaseCLI {
     protected setupGenerateSourceCommand(): void;
     protected setupSetupCommand(): void;
     protected setupScanCommand(): void;
-    protected handleGenerateSourceCommand(options: GenerateSourceOptions): Promise<void>;
+    protected handleGenerateSourceCommand(initOptions: GenerateSourceOptions): Promise<void>;
     protected handleScanCommand(options: WrapOptions): Promise<void>;
     protected handleSetupCommand(options: SetupOptions): Promise<void>;
     protected handleTranslateCommand(initOptions: Options): Promise<void>;
-    protected createUpdates(options: Options | GenerateSourceOptions): Promise<{
+    protected createUpdates(options: Options | GenerateSourceOptions, sourceDictionary: string | undefined): Promise<{
         updates: Updates;
         errors: string[];
     }>;

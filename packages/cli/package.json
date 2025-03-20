@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "scripts": {
@@ -52,9 +52,10 @@
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "esbuild": "^0.23.1",
+    "fast-glob": "^3.3.3",
+    "form-data": "^4.0.2",
     "generaltranslation": "^6.2.2",
-    "ora": "^8.2.0",
-    "yaml": "^2.7.0"
+    "ora": "^8.2.0"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

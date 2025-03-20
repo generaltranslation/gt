@@ -6,20 +6,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.saveTranslations = saveTranslations;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const parseFilesConfig_1 = require("../../fs/config/parseFilesConfig");
+const errors_1 = require("../../console/errors");
 /**
- * Saves translations to a local directory
+ * Saves translations to a file
  * @param translations - The translations to save
- * @param translationsDir - The directory to save the translations to
- * @param fileType - The file type to save the translations as (file extension)
+ * @param filePath - The file path to save the translations to
+ * @param dataFormat - The data format to save the translations as
  */
-function saveTranslations(translations, translationsDir, dataFormat, fileExtension) {
+function saveTranslations(translations, placeholderPaths, dataFormat) {
     for (const translation of translations) {
         const locale = translation.locale;
+        const translationFiles = (0, parseFilesConfig_1.resolveLocaleFiles)(placeholderPaths, locale);
+        if (!translationFiles.json) {
+            console.error(errors_1.noFilesError);
+            process.exit(1);
+        }
         const translationData = translation.translation;
         const translationMetadata = translation.metadata;
-        const filepath = path_1.default.join(translationsDir, `${locale}.${fileExtension}`);
         // Ensure directory exists
-        fs_1.default.mkdirSync(path_1.default.dirname(filepath), { recursive: true });
+        fs_1.default.mkdirSync(path_1.default.dirname(translationFiles.json[0]), { recursive: true });
         // Handle different file types
         let writeData;
         if (dataFormat === 'ICU' ||
@@ -54,7 +60,7 @@ function saveTranslations(translations, translationsDir, dataFormat, fileExtensi
         //   writeData = yaml.stringify(translationData);
         // }
         if (writeData) {
-            fs_1.default.writeFileSync(filepath, writeData);
+            fs_1.default.writeFileSync(translationFiles.json[0], writeData);
         }
     }
 }

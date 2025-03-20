@@ -15,9 +15,7 @@ const console_1 = require("../../console/console");
  */
 function createOrUpdateConfig(configFilepath, options) {
     // Filter out empty string values from the config object
-    const newContent = Object.assign(Object.assign(Object.assign({}, (options.projectId && { projectId: options.projectId })), (options.defaultLocale && { defaultLocale: options.defaultLocale })), (options.translationsDir && {
-        translationsDir: options.translationsDir,
-    }));
+    const newContent = Object.assign(Object.assign(Object.assign({}, (options.projectId && { projectId: options.projectId })), (options.defaultLocale && { defaultLocale: options.defaultLocale })), (options.files && { files: options.files }));
     try {
         // if file exists
         let oldContent = {};

@@ -1,3 +1,4 @@
+import { FilesOptions } from '../../types';
 /**
  * Checks if the config file exists.
  * If yes, make sure make sure projectId is correct
@@ -9,5 +10,5 @@ export default function createOrUpdateConfig(configFilepath: string, options: {
     projectId?: string;
     defaultLocale?: string;
     locales?: string[];
-    translationsDir?: string;
+    files?: FilesOptions;
 }): string;

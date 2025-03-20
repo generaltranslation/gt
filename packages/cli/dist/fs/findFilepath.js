@@ -7,7 +7,9 @@ exports.default = findFilepath;
 exports.findFilepaths = findFilepaths;
 exports.getRelativePath = getRelativePath;
 exports.findFile = findFile;
+exports.readFile = readFile;
 exports.findFileInDir = findFileInDir;
+exports.getRelative = getRelative;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 /**
@@ -64,6 +66,17 @@ function findFile(filePattern, file) {
     return '';
 }
 /**
+ * Read a file and return the contents.
+ * @param {string} filePath - The path to the file to read.
+ * @returns {string} - The contents of the file.
+ */
+function readFile(filePath) {
+    if (fs_1.default.existsSync(filePath) && fs_1.default.statSync(filePath).isFile()) {
+        return fs_1.default.readFileSync(filePath, 'utf8');
+    }
+    return '';
+}
+/**
  * Find a file in a directory.
  * @param {string} dir - The directory to search in.
  * @param {string} file - The file to search for.
@@ -80,4 +93,8 @@ function findFileInDir(dir, file) {
         console.error(error);
     }
     return '';
+}
+function getRelative(absolutePath) {
+    const path2 = path_1.default.resolve(absolutePath);
+    return path_1.default.relative(process.cwd(), path2);
 }

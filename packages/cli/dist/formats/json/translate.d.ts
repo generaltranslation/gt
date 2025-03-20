@@ -1,5 +1,6 @@
 import { Settings } from '../../types';
-import { DataFormat, FileExtension } from '../../types/data';
+import { DataFormat } from '../../types/data';
+import { ResolvedFiles } from '../../types';
 /**
  * Translates a JSON object and saves the translations to a local directory
  * @param sourceJson - The source JSON object
@@ -12,4 +13,4 @@ import { DataFormat, FileExtension } from '../../types/data';
  * @param translationsDir - The directory to save the translations to
  * @param fileType - The file type to save the translations as (file extension)
  */
-export declare function translateJson(sourceJson: any, settings: Settings, dataFormat: DataFormat, fileExtension: FileExtension): Promise<void>;
+export declare function translateJson(sourceJson: any, settings: Settings, dataFormat: DataFormat, placeholderPaths: ResolvedFiles): Promise<void>;

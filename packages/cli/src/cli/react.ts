@@ -9,18 +9,9 @@ import {
   GenerateSourceOptions,
   SupportedLibraries,
 } from '../types';
-import {
-  displayAsciiTitle,
-  displayInitializingText,
-  displayLoadingAnimation,
-  displayProjectId,
-} from '../console/console';
+import { displayAsciiTitle, displayInitializingText } from '../console/console';
 import loadJSON from '../fs/loadJSON';
-import findFilepath, {
-  findFile,
-  findFileInDir,
-  findFilepaths,
-} from '../fs/findFilepath';
+import findFilepath, { findFilepaths } from '../fs/findFilepath';
 import createESBuildConfig from '../react/config/createESBuildConfig';
 import { noTranslationsError } from '../console/errors';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
@@ -38,9 +29,12 @@ import { sendUpdates } from '../api/sendUpdates';
 import { saveTranslations } from '../formats/gt/save';
 import { generateSettings } from '../config/generateSettings';
 import { saveJSON } from '../fs/saveJSON';
+import { resolveLocaleFiles } from '../fs/config/parseFilesConfig';
+import fs from 'fs';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
+
 export class ReactCLI extends BaseCLI {
   constructor(
     library: SupportedLibraries,
@@ -66,10 +60,11 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected createDictionaryUpdates(
-    options: Options & { dictionary: string },
-    esbuildConfig: any
+    options: Options,
+    dictionaryPath: string,
+    esbuildConfig?: any
   ): Promise<Updates> {
-    return createDictionaryUpdates(options, esbuildConfig);
+    return createDictionaryUpdates(options, dictionaryPath, esbuildConfig);
   }
 
   protected createInlineUpdates(
@@ -139,9 +134,9 @@ export class ReactCLI extends BaseCLI {
         true // Default value of options.wait
       )
       .option(
-        '--no-publish',
-        'Do not publish updates to the CDN.',
-        true // Default value of options.publish
+        '--publish',
+        'Publish updates to the CDN.',
+        false // Default value of options.publish
       )
       .option(
         '-t, --translations-dir, --translation-dir <path>',
@@ -241,19 +236,15 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected async handleGenerateSourceCommand(
-    options: GenerateSourceOptions
+    initOptions: GenerateSourceOptions
   ): Promise<void> {
     displayAsciiTitle();
     displayInitializingText();
 
-    const settings = generateSettings(options);
+    const settings = generateSettings(initOptions);
 
-    options = { ...options, ...settings };
+    const options = { ...initOptions, ...settings };
 
-    if (!settings.translationsDir) {
-      console.log(chalk.red('Error: the translationsDir path is required'));
-      process.exit(1);
-    }
     if (!options.dictionary) {
       options.dictionary = findFilepath([
         './dictionary.js',
@@ -265,7 +256,12 @@ export class ReactCLI extends BaseCLI {
       ]);
     }
 
-    const { updates, errors } = await this.createUpdates(options);
+    // User has to provide a dictionary file
+    // will not read from settings.files.resolvedPaths.json
+    const { updates, errors } = await this.createUpdates(
+      options,
+      options.dictionary
+    );
 
     if (errors.length > 0) {
       if (options.ignoreErrors) {
@@ -311,19 +307,23 @@ export class ReactCLI extends BaseCLI {
       }
     }
 
-    // Save source file if translationsDir exists
-    if (settings.translationsDir) {
+    const { resolvedPaths, placeholderPaths } = settings.files;
+
+    // Save source file if files.json is provided
+    if (resolvedPaths.json) {
       console.log();
       saveJSON(
-        path.join(settings.translationsDir, `${settings.defaultLocale}.json`),
+        path.join(resolvedPaths.json[0], `${settings.defaultLocale}.json`),
         newData
       );
       console.log(chalk.green('Source file saved successfully!\n'));
       // Also save translations (after merging with existing translations)
       for (const locale of settings.locales) {
-        const existingTranslations = loadJSON(
-          path.join(settings.translationsDir, `${locale}.json`)
-        );
+        const translationsFile = resolveLocaleFiles(placeholderPaths, locale);
+        if (!translationsFile.json) {
+          continue;
+        }
+        const existingTranslations = loadJSON(translationsFile.json[0]);
         const mergedTranslations = {
           ...newData,
           ...existingTranslations,
@@ -332,10 +332,7 @@ export class ReactCLI extends BaseCLI {
         const filteredTranslations = Object.fromEntries(
           Object.entries(mergedTranslations).filter(([key]) => newData[key])
         );
-        saveJSON(
-          path.join(settings.translationsDir, `${locale}.json`),
-          filteredTranslations
-        );
+        saveJSON(translationsFile.json[0], filteredTranslations);
       }
       console.log(chalk.green('Merged translations successfully!\n'));
     }
@@ -563,6 +560,14 @@ export class ReactCLI extends BaseCLI {
 
     const settings = generateSettings(initOptions);
 
+    // First run the base class's handleTranslate method
+    try {
+      await super.handleGenericTranslate(settings);
+      // If the base class's handleTranslate completes successfully, continue with ReactCLI-specific code
+    } catch (error) {
+      // Continue with ReactCLI-specific code even if base handleTranslate failed
+    }
+
     // only for typing purposes
     const options = { ...initOptions, ...settings };
 
@@ -576,6 +581,19 @@ export class ReactCLI extends BaseCLI {
         './src/dictionary.ts',
       ]);
     }
+
+    let sourceFile: string | undefined;
+    // If options.dictionary is provided, use options.dictionary as the source file
+    if (options.dictionary) {
+      sourceFile = options.dictionary;
+    } else {
+      // If it is not provided, use the first json file in the files object
+      const resolvedFiles = options.files.resolvedPaths;
+      if (resolvedFiles.json) {
+        sourceFile = resolvedFiles.json[0];
+      }
+    }
+
     // Separate defaultLocale from locales
     options.locales = options.locales.filter(
       (locale) => locale !== options.defaultLocale
@@ -590,7 +608,7 @@ export class ReactCLI extends BaseCLI {
     }
     options.timeout = timeout.toString();
     // ---- CREATING UPDATES ---- //
-    const { updates, errors } = await this.createUpdates(options);
+    const { updates, errors } = await this.createUpdates(options, sourceFile);
 
     if (errors.length > 0) {
       if (options.ignoreErrors) {
@@ -625,6 +643,11 @@ export class ReactCLI extends BaseCLI {
       }
     }
 
+    // If files.json is not provided, publish the translations
+    if (!settings.files?.resolvedPaths?.json) {
+      options.publish = true;
+    }
+
     if (options.dryRun) {
       process.exit(0);
     }
@@ -644,22 +667,22 @@ export class ReactCLI extends BaseCLI {
 
       const updateResponse = await sendUpdates(updates, {
         ...settings,
-        publish: initOptions.publish,
-        wait: initOptions.wait,
-        timeout: initOptions.timeout,
+        publish: options.publish,
+        wait: options.wait,
+        timeout: options.timeout,
         dataFormat: 'JSX',
       });
       const versionId = updateResponse?.versionId;
 
-      // Save translations to local directory if translationsDir is provided
-      if (versionId && settings.translationsDir) {
+      // Save translations to local directory if files.json is provided
+      if (versionId && options.files.placeholderPaths.json) {
         console.log();
         const translations = await fetchTranslations(
           settings.baseUrl,
           settings.apiKey,
           versionId
         );
-        saveTranslations(translations, settings.translationsDir, 'JSX', 'json');
+        saveTranslations(translations, options.files.placeholderPaths, 'JSX');
       }
     } else {
       throw new Error(noTranslationsError);
@@ -667,43 +690,44 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected async createUpdates(
-    options: Options | GenerateSourceOptions
+    options: Options | GenerateSourceOptions,
+    sourceDictionary: string | undefined
   ): Promise<{ updates: Updates; errors: string[] }> {
     let updates: Updates = [];
     let errors: string[] = [];
 
     // Parse dictionary with esbuildConfig
-    if (options.dictionary) {
-      let esbuildConfig;
-      if (options.jsconfig) {
-        const jsconfig = loadJSON(options.jsconfig);
-        if (!jsconfig)
-          throw new Error(
-            `Failed to resolve jsconfig.json or tsconfig.json at provided filepath: "${options.jsconfig}"`
-          );
-        esbuildConfig = createESBuildConfig(jsconfig);
-      } else {
-        esbuildConfig = createESBuildConfig({});
-      }
-      updates = [
-        ...updates,
-        ...(await this.createDictionaryUpdates(options as any, esbuildConfig)),
-      ];
-    } else if (options.defaultLocale && options.translationsDir) {
-      // If options.dictionary is not provided, additionally check if the
-      // {defaultLocale}.json file exists in the translationsDir, and use that as a source
-      // instead
-      const sourceFile = findFileInDir(
-        options.translationsDir,
-        `${options.defaultLocale}.json`
-      );
-      if (sourceFile) {
-        options.dictionary = sourceFile;
+    if (
+      sourceDictionary &&
+      fs.existsSync(sourceDictionary) &&
+      fs.statSync(sourceDictionary).isFile()
+    ) {
+      if (sourceDictionary.endsWith('.json')) {
         updates = [
           ...updates,
           ...(await this.createDictionaryUpdates(
             options as any,
-            createESBuildConfig({})
+            sourceDictionary
+          )),
+        ];
+      } else {
+        let esbuildConfig;
+        if (options.jsconfig) {
+          const jsconfig = loadJSON(options.jsconfig);
+          if (!jsconfig)
+            throw new Error(
+              `Failed to resolve jsconfig.json or tsconfig.json at provided filepath: "${options.jsconfig}"`
+            );
+          esbuildConfig = createESBuildConfig(jsconfig);
+        } else {
+          esbuildConfig = createESBuildConfig({});
+        }
+        updates = [
+          ...updates,
+          ...(await this.createDictionaryUpdates(
+            options as any,
+            sourceDictionary,
+            esbuildConfig
           )),
         ];
       }

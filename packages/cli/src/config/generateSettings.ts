@@ -3,10 +3,13 @@ import { displayProjectId } from '../console/console';
 import { warnApiKeyInConfig } from '../console/warnings';
 import loadConfig from '../fs/config/loadConfig';
 import { Settings } from '../types';
-import { defaultBaseUrl, libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  defaultBaseUrl,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
 import fs from 'fs';
 import createOrUpdateConfig from '../fs/config/setupConfig';
-
+import { resolveFiles } from '../fs/config/parseFilesConfig';
 /**
  * Generates settings from any
  * @param options - The options to generate settings from
@@ -14,9 +17,23 @@ import createOrUpdateConfig from '../fs/config/setupConfig';
  */
 export function generateSettings(options: any): Settings {
   // Load config file
-  const gtConfig: Record<string, any> = options.config
-    ? loadConfig(options.config)
-    : loadConfig('gt.config.json');
+  let gtConfig: Record<string, any> = {};
+
+  if (options.config && !options.config.endsWith('.json')) {
+    options.config = `${options.config}.json`;
+  }
+  if (options.config) {
+    gtConfig = loadConfig(options.config);
+  } else if (fs.existsSync('gt.config.json')) {
+    options.config = 'gt.config.json';
+    gtConfig = loadConfig('gt.config.json');
+  } else if (fs.existsSync('src/gt.config.json')) {
+    options.config = 'src/gt.config.json';
+    gtConfig = loadConfig('src/gt.config.json');
+  } else {
+    // If neither config exists, use empty config
+    gtConfig = {};
+  }
 
   // Warn if apiKey is present in gt.config.json
   if (gtConfig.apiKey) {
@@ -43,7 +60,8 @@ export function generateSettings(options: any): Settings {
   mergedOptions.baseUrl = mergedOptions.baseUrl || defaultBaseUrl;
 
   // Add defaultLocale if not provided
-  mergedOptions.defaultLocale = mergedOptions.defaultLocale || libraryDefaultLocale;
+  mergedOptions.defaultLocale =
+    mergedOptions.defaultLocale || libraryDefaultLocale;
 
   // Add locales if not provided
   mergedOptions.locales = mergedOptions.locales || [];
@@ -74,6 +92,12 @@ export function generateSettings(options: any): Settings {
     }
   }
 
+  // Resolve all glob patterns in the files object
+  mergedOptions.files = resolveFiles(
+    mergedOptions.files || {},
+    mergedOptions.defaultLocale
+  );
+
   // if there's no existing config file, creates one
   // does not include the API key to avoid exposing it
   if (!fs.existsSync(mergedOptions.config)) {
@@ -82,7 +106,6 @@ export function generateSettings(options: any): Settings {
       defaultLocale: mergedOptions.defaultLocale as string,
       locales:
         mergedOptions.locales?.length > 0 ? mergedOptions.locales : undefined,
-      translationsDir: mergedOptions.translationsDir as string,
     });
   }
   return mergedOptions;

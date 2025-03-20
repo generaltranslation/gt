@@ -23,16 +23,16 @@ const generaltranslation_1 = require("generaltranslation");
 const loadJSON_1 = __importDefault(require("../../fs/loadJSON"));
 const id_1 = require("generaltranslation/id");
 const getEntryAndMetadata_1 = __importDefault(require("../utils/getEntryAndMetadata"));
-function createDictionaryUpdates(options, esbuildConfig) {
+function createDictionaryUpdates(options, dictionaryPath, esbuildConfig) {
     return __awaiter(this, void 0, void 0, function* () {
         let dictionary;
         // ---- HANDLE JSON STRING DICTIONARY ----- //
-        if (options.dictionary.endsWith('.json')) {
-            dictionary = (0, flattenDictionary_1.default)((0, loadJSON_1.default)(options.dictionary) || {});
+        if (dictionaryPath.endsWith('.json')) {
+            dictionary = (0, flattenDictionary_1.default)((0, loadJSON_1.default)(dictionaryPath) || {});
         }
         // ----- HANDLE REACT DICTIONARY ---- //
         else {
-            const result = yield (0, esbuild_1.build)(Object.assign(Object.assign({}, esbuildConfig), { entryPoints: [options.dictionary], write: false }));
+            const result = yield (0, esbuild_1.build)(Object.assign(Object.assign({}, esbuildConfig), { entryPoints: [dictionaryPath], write: false }));
             const bundledCode = result.outputFiles[0].text;
             const tempFilePath = path_1.default.join(os_1.default.tmpdir(), 'bundled-dictionary.js');
             fs_1.default.writeFileSync(tempFilePath, bundledCode);
