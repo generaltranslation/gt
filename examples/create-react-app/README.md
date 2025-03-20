@@ -4,7 +4,7 @@ This is an example project showcasing a create-react-app boilerplate app using [
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-[See it live here](example-create-react-qhttbgovz-general-translation.vercel.app).
+[See it live here](https://example-create-react-qhttbgovz-general-translation.vercel.app).
 
 Change your browser language to see the translations in action.
 
