@@ -6,13 +6,6 @@ This project was using the [Vercel AI Chatbot Template](https://github.com/verce
 
 [See it live here](https://example-ai-chatbot-ten.vercel.app/).
 
-Change your browser language to see the translations in action.
-
-- [Chrome](https://support.google.com/chrome/answer/95647)
-- [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
-- [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
-- [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
-
 ## Deploy to Vercel
 
 One-click deploy to Vercel:
@@ -48,8 +41,10 @@ npm install
 Here is a list of steps done to reach this repo state:
 
 1. `git clone -b base https://github.com/General-Translation/ai-chatbot.git && cd ai-chatbot`
-2. `npm install gt-next gt-next-cli`
-3. `npx gt-next-cli setup`
+2. `npm install gt-next gtx-cli`
+3. `npx gtx-cli setup && npx-gtx-cli init`
+   - Setup will automatically add the `<T>` components to your app.
+   - When calling `init` specify "remote" as the location of your language files and en, zh, and fr as your locales.
 4. Add locales to the `next.config.ts` file:
 
 ```ts
@@ -74,5 +69,5 @@ To deploy this app to production:
 
 1. Add `GT_PROJECT_ID` and `GT_API_KEY` to your `.env.local` file
    - The `GT_API_KEY` should be a **production** API key.
-2. `npx gt-next-cli translate --locales es fr zh`
+2. Add `npx gtx-cli translate` to your build step before the build command.
 3. Deploy to Vercel / Render / etc..

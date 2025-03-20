@@ -46,8 +46,10 @@ npm install
 Here is a list of steps done to reach this repo state:
 
 1. `npx create-next-app@latest`
-2. `npm install gt-next gt-next-cli`
-3. `npx gt-next-cli setup`
+2. `npm install gt-next gtx-cli`
+3. `npx gtx-cli setup && npx-gtx-cli init`
+   - Setup will automatically add the `<T>` components to your app.
+   - When calling `init` specify "remote" as the location of your language files and en, zh, and fr as your locales.
 4. Add locales to the `next.config.ts` file:
 
 ```ts
@@ -65,5 +67,5 @@ To deploy this app to production:
 
 1. Add `GT_PROJECT_ID` and `GT_API_KEY` to your `.env.local` file
    - The `GT_API_KEY` should be a **production** API key.
-2. `npx gt-next-cli translate --locales es fr zh`
+2. `npx gtx-cli translate`
 3. Deploy to Vercel / Render / etc..

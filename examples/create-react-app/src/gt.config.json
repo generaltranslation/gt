@@ -1,0 +1,15 @@
+{
+  "defaultLocale": "en",
+  "locales": [
+    "fr",
+    "zh"
+  ],
+  "files": {
+    "json": {
+      "include": [
+        "src/locales/[locale].json"
+      ]
+    }
+  },
+  "_versionId": "9241acdd0a764ea6687f6aa47785b091257fed0ba3ef9b72fa682846d49de11d"
+}

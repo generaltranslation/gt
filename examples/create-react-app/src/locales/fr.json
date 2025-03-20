@@ -1,0 +1,58 @@
+{
+  "a6018be8c1b163b9ca1ee7fe064d63a01f77a0b16fcc9134a6688baafcf6d05f": {
+    "type": "div",
+    "props": {
+      "children": {
+        "type": "header",
+        "props": {
+          "children": [
+            {
+              "type": "img",
+              "props": {
+                "data-_gt": {
+                  "id": 3
+                }
+              }
+            },
+            {
+              "type": "p",
+              "props": {
+                "children": [
+                  "Modifiez ",
+                  {
+                    "type": "code",
+                    "props": {
+                      "children": "src/App.js",
+                      "data-_gt": {
+                        "id": 5
+                      }
+                    }
+                  },
+                  " et enregistrez pour."
+                ],
+                "data-_gt": {
+                  "id": 4
+                }
+              }
+            },
+            {
+              "type": "a",
+              "props": {
+                "children": "Apprendre React",
+                "data-_gt": {
+                  "id": 6
+                }
+              }
+            }
+          ],
+          "data-_gt": {
+            "id": 2
+          }
+        }
+      },
+      "data-_gt": {
+        "id": 1
+      }
+    }
+  }
+}

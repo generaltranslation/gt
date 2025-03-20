@@ -12,3 +12,7 @@ This directory contains example apps that use gt-next and gt-react. All of these
 ## Vite
 
 - [vite-create-app](./vite-create-app)
+
+## Other
+
+- [create-react-app](./create-react-app)
