@@ -16,7 +16,7 @@ import {
   noFilesError,
 } from '../console/errors';
 import path from 'path';
-import yaml from 'yaml';
+import fs from 'fs';
 import { translateJson } from '../formats/json/translate';
 import { FilesOptions, Settings, SupportedLibraries } from '../types';
 import { resolveProjectId } from '../fs/utils';
@@ -210,9 +210,16 @@ export class BaseCLI {
           default: 'remote',
         });
 
+        let configFilepath = 'gt.config.json';
+        if (fs.existsSync('gt.config.json')) {
+          configFilepath = 'gt.config.json';
+        } else if (fs.existsSync('src/gt.config.json')) {
+          configFilepath = 'src/gt.config.json';
+        }
+
         if (location === 'remote') {
           // Create gt.config.json
-          createOrUpdateConfig('gt.config.json', {
+          createOrUpdateConfig(configFilepath, {
             defaultLocale,
             locales: locales.split(' '),
           });
@@ -255,7 +262,7 @@ export class BaseCLI {
             `[locale].${dataFormat}`
           );
           // Create gt.config.json
-          createOrUpdateConfig('gt.config.json', {
+          createOrUpdateConfig(configFilepath, {
             defaultLocale,
             locales: locales.split(' '),
             files: {
@@ -270,7 +277,7 @@ export class BaseCLI {
             `[locale].json`
           );
           // Create gt.config.json
-          createOrUpdateConfig('gt.config.json', {
+          createOrUpdateConfig(configFilepath, {
             defaultLocale,
             locales: locales.split(' '),
             files: {
