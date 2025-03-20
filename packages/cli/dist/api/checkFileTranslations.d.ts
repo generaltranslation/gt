@@ -11,6 +11,6 @@
 export declare function checkFileTranslations(apiKey: string, baseUrl: string, data: {
     [key: string]: {
         versionId: string;
-        canonicalName: string;
+        fileName: string;
     };
 }, locales: string[], timeoutDuration: number, resolveOutputPath: (sourcePath: string, locale: string) => string): Promise<boolean>;

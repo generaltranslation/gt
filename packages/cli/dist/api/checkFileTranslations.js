@@ -38,7 +38,7 @@ function checkFileTranslations(apiKey, baseUrl, data, locales, timeoutDuration, 
             for (const locale of locales) {
                 fileQueryData.push({
                     versionId: data[file].versionId,
-                    fileName: data[file].canonicalName,
+                    fileName: data[file].fileName,
                     locale,
                 });
             }
@@ -62,13 +62,14 @@ function checkFileTranslations(apiKey, baseUrl, data, locales, timeoutDuration, 
                     // Process available translations
                     for (const translation of translations) {
                         const locale = translation.locale;
-                        const fileName = data[translation.fileName].canonicalName;
+                        const fileName = translation.fileName;
+                        const translationId = translation.id;
                         if (translation.isReady && fileName) {
                             // Mark this file+locale as downloaded
                             downloadedFiles.add(`${fileName}:${locale}`);
                             // Download the file
                             const outputPath = resolveOutputPath(fileName, locale);
-                            yield (0, downloadFile_1.downloadFile)(baseUrl, apiKey, translation.fileId, outputPath);
+                            yield (0, downloadFile_1.downloadFile)(baseUrl, apiKey, translationId, outputPath);
                         }
                     }
                     // Update the spinner text
