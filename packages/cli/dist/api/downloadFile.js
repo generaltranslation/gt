@@ -46,10 +46,10 @@ exports.downloadFile = downloadFile;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 // Helper function to download a file
-function downloadFile(baseUrl, apiKey, fileId, outputPath) {
+function downloadFile(baseUrl, apiKey, translationId, outputPath) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const downloadResponse = yield fetch(`${baseUrl}/v1/project/translations/files/${fileId}/download`, {
+            const downloadResponse = yield fetch(`${baseUrl}/v1/project/translations/files/${translationId}/download`, {
                 method: 'GET',
                 headers: Object.assign({}, (apiKey && { 'x-gt-api-key': apiKey })),
             });

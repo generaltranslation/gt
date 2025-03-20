@@ -18,7 +18,7 @@ export async function checkFileTranslations(
   data: {
     [key: string]: {
       versionId: string;
-      canonicalName: string;
+      fileName: string;
     };
   },
   locales: string[],
@@ -40,7 +40,7 @@ export async function checkFileTranslations(
     for (const locale of locales) {
       fileQueryData.push({
         versionId: data[file].versionId,
-        fileName: data[file].canonicalName,
+        fileName: data[file].fileName,
         locale,
       });
     }
@@ -73,10 +73,12 @@ export async function checkFileTranslations(
       if (response.ok) {
         const responseData = await response.json();
         const translations = responseData.translations || [];
+
         // Process available translations
         for (const translation of translations) {
           const locale = translation.locale;
-          const fileName = data[translation.fileName].canonicalName;
+          const fileName = translation.fileName;
+          const translationId = translation.id;
           if (translation.isReady && fileName) {
             // Mark this file+locale as downloaded
             downloadedFiles.add(`${fileName}:${locale}`);
@@ -84,7 +86,7 @@ export async function checkFileTranslations(
             // Download the file
             const outputPath = resolveOutputPath(fileName, locale);
 
-            await downloadFile(baseUrl, apiKey, translation.fileId, outputPath);
+            await downloadFile(baseUrl, apiKey, translationId, outputPath);
           }
         }
 

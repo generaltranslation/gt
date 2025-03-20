@@ -5,12 +5,12 @@ import * as path from 'path';
 export async function downloadFile(
   baseUrl: string,
   apiKey: string,
-  fileId: string,
+  translationId: string,
   outputPath: string
 ) {
   try {
     const downloadResponse = await fetch(
-      `${baseUrl}/v1/project/translations/files/${fileId}/download`,
+      `${baseUrl}/v1/project/translations/files/${translationId}/download`,
       {
         method: 'GET',
         headers: {

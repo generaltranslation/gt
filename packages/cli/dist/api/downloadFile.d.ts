@@ -1,1 +1,1 @@
-export declare function downloadFile(baseUrl: string, apiKey: string, fileId: string, outputPath: string): Promise<boolean>;
+export declare function downloadFile(baseUrl: string, apiKey: string, translationId: string, outputPath: string): Promise<boolean>;
