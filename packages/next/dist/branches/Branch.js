@@ -42,16 +42,6 @@ function Branch(_a) {
     var renderedBranch = branch && typeof branches[branch] !== 'undefined'
         ? branches[branch]
         : children;
-    // return (
-    //   <span
-    //     data-_gt={generaltranslation}
-    //     data-_gt-name={name || 'branch'}
-    //     data-_gt-branch-name={branch}
-    //     style={{ display: 'contents' }}
-    //   >
-    //     {renderedBranch}
-    //   </span>
-    // );
     return (0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, { children: renderedBranch });
 }
 Branch.gtTransformation = 'branch';
