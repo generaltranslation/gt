@@ -32,7 +32,8 @@ export default function getI18NConfig(): I18NConfiguration {
 
     // Parse: apiKey, devApiKey
     let apiKey, devApiKey;
-    const envApiKey = process.env.GT_API_KEY || '';
+    const envApiKey =
+      process.env.GT_DEV_API_KEY || process.env.GT_API_KEY || '';
     const apiKeyType = envApiKey?.split('-')?.[1];
     if (apiKeyType === 'api') {
       apiKey = envApiKey;

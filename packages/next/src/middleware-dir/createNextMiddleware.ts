@@ -42,7 +42,7 @@ export default function createNextMiddleware({
   localeRouting?: boolean;
   prefixDefaultLocale?: boolean;
   pathConfig?: PathConfig;
-}) {
+} = {}) {
   // i18n config
   let envParams;
   if (process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS) {

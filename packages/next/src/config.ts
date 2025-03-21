@@ -75,7 +75,8 @@ export function withGTConfig(
   const projectId: string | undefined = process.env.GT_PROJECT_ID;
 
   // resolve API keys
-  const envApiKey: string | undefined = process.env.GT_API_KEY;
+  const envApiKey: string | undefined =
+    process.env.GT_DEV_API_KEY || process.env.GT_API_KEY;
   let apiKey, devApiKey;
   if (envApiKey) {
     const apiKeyType = envApiKey?.split('-')?.[1];

@@ -12,7 +12,7 @@ import { PathConfig } from './utils';
  * @param {boolean} [config.prefixDefaultLocale=false] - Flag to enable or disable prefixing the default locale to the pathname, i.e., /en/about -> /about
  * @returns {function} - A middleware function that processes the request and response.
  */
-export default function createNextMiddleware({ localeRouting, prefixDefaultLocale, pathConfig, }: {
+export default function createNextMiddleware({ localeRouting, prefixDefaultLocale, pathConfig, }?: {
     localeRouting?: boolean;
     prefixDefaultLocale?: boolean;
     pathConfig?: PathConfig;

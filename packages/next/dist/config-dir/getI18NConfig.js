@@ -40,7 +40,7 @@ function getI18NConfig() {
         var projectId = process.env.GT_PROJECT_ID || '';
         // Parse: apiKey, devApiKey
         var apiKey = void 0, devApiKey = void 0;
-        var envApiKey = process.env.GT_API_KEY || '';
+        var envApiKey = process.env.GT_DEV_API_KEY || process.env.GT_API_KEY || '';
         var apiKeyType = (_a = envApiKey === null || envApiKey === void 0 ? void 0 : envApiKey.split('-')) === null || _a === void 0 ? void 0 : _a[1];
         if (apiKeyType === 'api') {
             apiKey = envApiKey;

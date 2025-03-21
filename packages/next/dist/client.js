@@ -1,4 +1,5 @@
 "use strict";
+'use client';
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.useLocaleSelector = exports.LocaleSelector = exports.useDict = exports.useDefaultLocale = exports.useSetLocale = exports.useLocales = exports.useLocale = exports.useGT = exports.T = exports.GTClientProvider = void 0;
 var client_1 = require("gt-react/client");

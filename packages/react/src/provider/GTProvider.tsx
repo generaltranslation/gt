@@ -125,7 +125,9 @@ export default function GTProvider({
   // Loaders
   const loadTranslationsType = useMemo(
     () =>
-      (loadTranslations && 'custom') || (cacheUrl && 'default') || 'disabled',
+      (loadTranslations && 'custom') ||
+      (cacheUrl && projectId && 'default') ||
+      'disabled',
     [loadTranslations]
   );
 
@@ -272,11 +274,17 @@ export default function GTProvider({
    */
 
   const [translations, setTranslations] = useState<TranslationsObject | null>(
-    translationRequired ? null : {}
+    translationRequired && loadTranslationsType !== 'disabled' ? null : {}
   );
 
   // Reset translations if locale changes (null to trigger a new cache fetch)
-  useEffect(() => setTranslations(translationRequired ? null : {}), [locale]);
+  useEffect(
+    () =>
+      setTranslations(
+        translationRequired && loadTranslationsType !== 'disabled' ? null : {}
+      ),
+    [locale, loadTranslationsType]
+  );
 
   // Setup runtime translation
   const { registerContentForTranslation, registerJsxForTranslation } =
@@ -297,7 +305,7 @@ export default function GTProvider({
 
   useEffect(() => {
     // Early return if no need to load dictionaryTranslations
-    if (dictionaryTranslations || !translationRequired || !loadDictionary)
+    if (!loadDictionary || dictionaryTranslations || !translationRequired)
       return;
 
     // Load dictionaryTranslations
@@ -327,7 +335,12 @@ export default function GTProvider({
 
   useEffect(() => {
     // Early return if no need to translate
-    if (translations || !translationRequired) return;
+    if (
+      translations ||
+      !translationRequired ||
+      loadTranslationsType === 'disabled'
+    )
+      return;
 
     // Fetch translations
     let storeResults = true;
