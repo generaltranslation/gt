@@ -10,9 +10,7 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  *
  * @example
  * ```jsx
- * <DateTime
- *    name="createdAt"
- * >
+ * <DateTime>
  *    {new Date()}
  * </DateTime>
  * ```

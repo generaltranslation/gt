@@ -7,30 +7,13 @@ import React from 'react';
  * @example Inline usage:
  * ```jsx
  *  function MyComponent() {
+ *     const name = 'Archie';
  *     return (
- *          <T id="user">
+ *          <T>
  *              <p>
- *                  Hello, <Var> John </Var>!
+ *                  Hello, <Var> {name} </Var>!
  *              </p>
  *          </T>
- *      );
- *  }
- * ```
- *
- * @example Dictionary Usage:
- * ```jsx
- *  // dictionary.js
- *  const dictionary = {
- *      user: "Hello {user-name}! Your dog's name is {dog-name}",
- *  }
- *
- *  // component.jsx
- *  function MyComponent() {
- *      const t = useGT();
- *      return (
- *          <p>
- *              { t('user', { 'user-name': 'John', 'dog-name': 'Rex' }) }
- *          </p>
  *      );
  *  }
  * ```
