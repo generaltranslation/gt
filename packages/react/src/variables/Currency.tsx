@@ -15,7 +15,6 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * ```
  *
  * @param {any} [children] - Optional content to render inside the currency component.
- * @param {any} [value] - The default value to be used.
  * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
  * @param {string[]} [locales] - Optional locales to use for currency formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
@@ -23,13 +22,11 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  */
 function Currency({
   children,
-  value,
   currency = 'USD',
   locales,
   options = {},
 }: {
   children?: any;
-  value?: any;
   currency?: string;
   locales?: string[];
   options?: Intl.NumberFormatOptions;
@@ -45,15 +42,9 @@ function Currency({
   }
 
   let renderedValue =
-    typeof children !== 'undefined' && typeof value === 'undefined'
-      ? children
-      : value;
-  renderedValue =
-    typeof renderedValue === 'string'
-      ? parseFloat(renderedValue)
-      : renderedValue;
-  // Format the value using Intl.NumberFormat
+    typeof children === 'string' ? parseFloat(children) : children;
   if (typeof renderedValue === 'number') {
+    // Format the value using Intl.NumberFormat
     renderedValue = formatCurrency(renderedValue, currency, {
       locales,
       ...options,

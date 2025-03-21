@@ -12,25 +12,23 @@ const renderVariable: RenderVariable = ({
 }) => {
   if (variableType === 'number') {
     return (
-      <Num value={variableValue} options={variableOptions} locales={locales} />
+      <Num options={variableOptions} locales={locales}>
+        {variableValue}
+      </Num>
     );
   } else if (variableType === 'datetime') {
     return (
-      <DateTime
-        value={variableValue}
-        options={variableOptions}
-        locales={locales}
-      />
+      <DateTime options={variableOptions} locales={locales}>
+        {variableValue}
+      </DateTime>
     );
   } else if (variableType === 'currency') {
     return (
-      <Currency
-        value={variableValue}
-        options={variableOptions}
-        locales={locales}
-      />
+      <Currency options={variableOptions} locales={locales}>
+        {variableValue}
+      </Currency>
     );
   }
-  return <Var value={variableValue} />;
+  return <Var>{variableValue}</Var>;
 };
 export default renderVariable;

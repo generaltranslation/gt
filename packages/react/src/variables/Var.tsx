@@ -20,18 +20,10 @@ import React from 'react';
  *
  *
  * @param {any} [children] - The content to render inside the component. If provided, it will take precedence over `value`.
- * @param {any} [value] - The default value to be displayed if `children` is not provided.
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
-function Var({
-  children,
-  value,
-}: {
-  children?: any;
-  value?: any;
-}): React.JSX.Element {
-  let final = typeof children !== 'undefined' ? children : value;
-  return <>{final}</>;
+function Var({ children }: { children?: any }): React.JSX.Element {
+  return <>{children}</>;
 }
 
 Var.gtTransformation = 'variable-variable';

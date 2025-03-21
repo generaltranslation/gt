@@ -328,15 +328,13 @@ declare namespace T {
  * ```
  *
  * @param {any} [children] - Optional content to render inside the currency component.
- * @param {any} [value] - The default value to be used.
  * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
  * @param {string[]} [locales] - Optional locales to use for currency formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {JSX.Element} The formatted currency component.
  */
-declare function Currency({ children, value, currency, locales, options, }: {
+declare function Currency({ children, currency, locales, options, }: {
     children?: any;
-    value?: any;
     currency?: string;
     locales?: string[];
     options?: Intl.NumberFormatOptions;
@@ -352,22 +350,18 @@ declare namespace Currency {
  *
  * @example
  * ```jsx
- * <DateTime
- *    name="createdAt"
- * >
+ * <DateTime>
  *    {new Date()}
  * </DateTime>
  * ```
  *
  * @param {any} [children] - Optional content (typically a date) to render inside the component.
- * @param {string|number|Date} [value] - The default value for the date. Can be a string, number (timestamp), or `Date` object.
  * @param {string[]} [locales] - Optional locales to use for date formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {JSX.Element} The formatted date or time component.
  */
-declare function DateTime({ children, value, locales, options, }: {
+declare function DateTime({ children, locales, options, }: {
     children?: any;
-    value?: any;
     locales?: string[];
     options?: Intl.DateTimeFormatOptions;
 }): React__default.JSX.Element;
@@ -383,7 +377,6 @@ declare namespace DateTime {
  * @example
  * ```jsx
  * <Num
- *    name="quantity"
  *    options={{ style: "decimal", maximumFractionDigits: 2 }}
  * >
  *    1000
@@ -391,13 +384,11 @@ declare namespace DateTime {
  * ```
  *
  * @param {any} [children] - Optional content (typically a number) to render inside the component.
- * @param {string|number} [value] - The default value for the number. Can be a string or number. Strings will be parsed to numbers.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {JSX.Element} The formatted number component.
  */
-declare function Num({ children, value, locales, options, }: {
+declare function Num({ children, locales, options, }: {
     children?: any;
-    value?: any;
     locales?: string[];
     options?: Intl.NumberFormatOptions;
 }): React__default.JSX.Element;
@@ -412,42 +403,23 @@ declare namespace Num {
  * @example Inline usage:
  * ```jsx
  *  function MyComponent() {
+ *     const name = 'Archie';
  *     return (
- *          <T id="user">
+ *          <T>
  *              <p>
- *                  Hello, <Var> John </Var>!
+ *                  Hello, <Var> {name} </Var>!
  *              </p>
  *          </T>
  *      );
  *  }
  * ```
  *
- * @example Dictionary Usage:
- * ```jsx
- *  // dictionary.js
- *  const dictionary = {
- *      user: "Hello {user-name}! Your dog's name is {dog-name}",
- *  }
- *
- *  // component.jsx
- *  function MyComponent() {
- *      const t = useGT();
- *      return (
- *          <p>
- *              { t('user', { 'user-name': 'John', 'dog-name': 'Rex' }) }
- *          </p>
- *      );
- *  }
- * ```
- *
  *
  * @param {any} [children] - The content to render inside the component. If provided, it will take precedence over `value`.
- * @param {any} [value] - The default value to be displayed if `children` is not provided.
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
-declare function Var({ children, value, }: {
+declare function Var({ children }: {
     children?: any;
-    value?: any;
 }): React__default.JSX.Element;
 declare namespace Var {
     var gtTransformation: string;

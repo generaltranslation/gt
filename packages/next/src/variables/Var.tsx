@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * The `<Var>` component renders a variable value, which can either be passed as `children` or a `value`.
  * If `children` is provided, it will be used; otherwise, the `value` is rendered.
@@ -32,17 +34,17 @@ function Var({
   if (typeof children !== 'undefined' && typeof value === 'undefined')
     value = children;
 
-  return (
-    <span
-      data-_gt={generaltranslation}
-      data-_gt-variable-name={name}
-      data-_gt-variable-type={'variable'}
-      style={{ display: 'contents' }}
-      suppressHydrationWarning
-    >
-      {value}
-    </span>
-  );
+  // return (
+  //   <span
+  //     data-_gt={generaltranslation}
+  //     data-_gt-variable-name={name}
+  //     data-_gt-variable-type={'variable'}
+  //     style={{ display: 'contents' }}
+  //     suppressHydrationWarning
+  //   >
+  //     {value}
+  //   </span>
+  return <React.Fragment>{value}</React.Fragment>;
 }
 
 Var.gtTransformation = 'variable-variable'; // keep this because Var is imported in other functions
