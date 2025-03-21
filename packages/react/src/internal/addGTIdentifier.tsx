@@ -95,11 +95,7 @@ export default function addGTIdentifier(
       newProps.children = handleChildren(props.children as Children);
     }
     if (child.type === React.Fragment) {
-      newProps['data-_gt'].transformation === 'fragment';
-      const fragment = (
-        <span style={{ all: 'unset', display: 'contents' }} {...newProps} />
-      );
-      return fragment as TaggedElement;
+      newProps['data-_gt'].transformation = 'fragment';
     }
     return React.cloneElement(child, newProps) as TaggedElement;
   }

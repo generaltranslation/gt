@@ -20,7 +20,7 @@ var utils_1 = require("./utils");
  * @returns {function} - A middleware function that processes the request and response.
  */
 function createNextMiddleware(_a) {
-    var _b = _a.localeRouting, localeRouting = _b === void 0 ? true : _b, _c = _a.prefixDefaultLocale, prefixDefaultLocale = _c === void 0 ? false : _c, _d = _a.pathConfig, pathConfig = _d === void 0 ? {} : _d;
+    var _b = _a === void 0 ? {} : _a, _c = _b.localeRouting, localeRouting = _c === void 0 ? true : _c, _d = _b.prefixDefaultLocale, prefixDefaultLocale = _d === void 0 ? false : _d, _e = _b.pathConfig, pathConfig = _e === void 0 ? {} : _e;
     // i18n config
     var envParams;
     if (process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS) {

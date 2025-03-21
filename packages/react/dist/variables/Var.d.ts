@@ -6,44 +6,23 @@ import React from 'react';
  * @example Inline usage:
  * ```jsx
  *  function MyComponent() {
+ *     const name = 'Archie';
  *     return (
- *          <T id="user">
+ *          <T>
  *              <p>
- *                  Hello, <Var> John </Var>!
+ *                  Hello, <Var> {name} </Var>!
  *              </p>
  *          </T>
  *      );
  *  }
  * ```
  *
- * @example Dictionary Usage:
- * ```jsx
- *  // dictionary.js
- *  const dictionary = {
- *      user: "Hello {user-name}! Your dog's name is {dog-name}",
- *  }
- *
- *  // component.jsx
- *  function MyComponent() {
- *      const t = useGT();
- *      return (
- *          <p>
- *              { t('user', { 'user-name': 'John', 'dog-name': 'Rex' }) }
- *          </p>
- *      );
- *  }
- * ```
- *
  *
  * @param {any} [children] - The content to render inside the component. If provided, it will take precedence over `value`.
- * @param {string} [name] - Optional name for the variable, used for metadata purposes.
- * @param {any} [value] - The default value to be displayed if `children` is not provided.
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
-declare function Var({ children, name, value, }: {
+declare function Var({ children }: {
     children?: any;
-    name?: string;
-    value?: any;
 }): React.JSX.Element;
 declare namespace Var {
     var gtTransformation: string;

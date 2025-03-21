@@ -21,10 +21,13 @@ export function _formatNum({
   locales?: string | string[];
   options?: Intl.NumberFormatOptions;
 }): string {
-  return intlCache.get('NumberFormat', locales, {
-    numberingSystem: 'latn',
-    ...options,
-  }).format(value);
+  const res = intlCache
+    .get('NumberFormat', locales, {
+      numberingSystem: 'latn',
+      ...options,
+    })
+    .format(value);
+  return res;
 }
 
 /**
@@ -47,11 +50,13 @@ export function _formatDateTime({
   locales?: string | string[];
   options?: Intl.DateTimeFormatOptions;
 }): string {
-  return intlCache.get('DateTimeFormat', locales, {
-    calendar: 'gregory',
-    numberingSystem: 'latn',
-    ...options,
-  }).format(value);
+  return intlCache
+    .get('DateTimeFormat', locales, {
+      calendar: 'gregory',
+      numberingSystem: 'latn',
+      ...options,
+    })
+    .format(value);
 }
 
 /**
@@ -78,12 +83,14 @@ export function _formatCurrency({
   locales?: string | string[];
   options?: Intl.NumberFormatOptions;
 }): string {
-  return intlCache.get('NumberFormat', locales, {
-    style: 'currency',
-    currency,
-    numberingSystem: 'latn',
-    ...options,
-  }).format(value);
+  return intlCache
+    .get('NumberFormat', locales, {
+      style: 'currency',
+      currency,
+      numberingSystem: 'latn',
+      ...options,
+    })
+    .format(value);
 }
 
 /**
@@ -106,11 +113,13 @@ export function _formatList({
   locales?: string | string[];
   options?: Intl.ListFormatOptions;
 }): string {
-  return intlCache.get('ListFormat', locales, {
-    type: 'conjunction', // Default type, can be overridden via options
-    style: 'long', // Default style, can be overridden via options
-    ...options,
-  }).format(value);
+  return intlCache
+    .get('ListFormat', locales, {
+      type: 'conjunction', // Default type, can be overridden via options
+      style: 'long', // Default style, can be overridden via options
+      ...options,
+    })
+    .format(value);
 }
 
 /**
@@ -136,9 +145,11 @@ export function _formatRelativeTime({
   locales?: string | string[];
   options?: Intl.RelativeTimeFormatOptions;
 }): string {
-  return intlCache.get('RelativeTimeFormat', locales, {
-    style: 'long',
-    numeric: 'auto',
-    ...options,
-  }).format(value, unit);
+  return intlCache
+    .get('RelativeTimeFormat', locales, {
+      style: 'long',
+      numeric: 'auto',
+      ...options,
+    })
+    .format(value, unit);
 }

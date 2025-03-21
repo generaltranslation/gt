@@ -8,9 +8,7 @@ import getDictionaryEntry, {
 import getEntryAndMetadata from './provider/helpers/getEntryAndMetadata';
 import getVariableProps from './variables/_getVariableProps';
 import isVariableObject from './provider/helpers/isVariableObject';
-import getVariableName, {
-  getFallbackVariableName,
-} from './variables/getVariableName';
+import getVariableName from './variables/getVariableName';
 import renderDefaultChildren from './provider/rendering/renderDefaultChildren';
 import renderTranslatedChildren from './provider/rendering/renderTranslatedChildren';
 import { defaultRenderSettings } from './provider/rendering/defaultRenderSettings';
@@ -39,6 +37,8 @@ import {
   DictionaryContent,
   DictionaryObject,
   CustomLoader,
+  RenderVariable,
+  VariableProps,
 } from './types/types';
 
 import { GTContextType, ClientProviderProps } from './types/providers';
@@ -59,7 +59,6 @@ export {
   getPluralBranch,
   getEntryAndMetadata,
   getVariableName,
-  getFallbackVariableName,
   renderDefaultChildren,
   renderTranslatedChildren,
   renderSkeleton,
@@ -84,4 +83,6 @@ export {
   DictionaryObject,
   LocalesDictionary,
   CustomLoader,
+  RenderVariable,
+  VariableProps,
 };

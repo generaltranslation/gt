@@ -94,4 +94,13 @@ export declare class GTTranslationError extends Error {
     constructor(error: string, code: number);
     toTranslationError(): TranslationError;
 }
+export type VariableProps = {
+    variableType: 'variable' | 'number' | 'datetime' | 'currency';
+    variableValue: any;
+    variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
+    variableName: string;
+};
+export type RenderVariable = ({ variableType, variableValue, variableOptions, locales, }: Omit<VariableProps, 'variableName'> & {
+    locales: string[];
+}) => React.JSX.Element;
 //# sourceMappingURL=types.d.ts.map

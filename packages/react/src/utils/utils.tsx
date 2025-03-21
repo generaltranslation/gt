@@ -22,7 +22,9 @@ export function readAuthFromEnv(
         '',
       devApiKey:
         devApiKey ||
+        import.meta.env.VITE_GT_DEV_API_KEY ||
         import.meta.env.VITE_GT_API_KEY ||
+        import.meta.env.REDWOOD_ENV_GT_DEV_API_KEY ||
         import.meta.env.REDWOOD_ENV_GT_API_KEY,
     };
   } catch {}
@@ -38,9 +40,13 @@ export function readAuthFromEnv(
         '',
       devApiKey:
         devApiKey ||
+        process.env.GT_DEV_API_KEY ||
         process.env.GT_API_KEY ||
+        process.env.REACT_APP_GT_DEV_API_KEY ||
         process.env.REACT_APP_GT_API_KEY ||
+        process.env.NEXT_PUBLIC_GT_DEV_API_KEY ||
         process.env.NEXT_PUBLIC_GT_API_KEY ||
+        process.env.GATSBY_GT_DEV_API_KEY ||
         process.env.GATSBY_GT_API_KEY,
     };
   } catch (e) {

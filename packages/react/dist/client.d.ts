@@ -59,6 +59,15 @@ type InlineTranslationOptions = {
     context?: string;
     id?: string;
 } & DictionaryTranslationOptions;
+type VariableProps = {
+    variableType: 'variable' | 'number' | 'datetime' | 'currency';
+    variableValue: any;
+    variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
+    variableName: string;
+};
+type RenderVariable = ({ variableType, variableValue, variableOptions, locales, }: Omit<VariableProps, 'variableName'> & {
+    locales: string[];
+}) => React__default.JSX.Element;
 
 type TranslateContentCallback = (params: {
     source: any;
@@ -143,13 +152,7 @@ declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId
     registerJsxForTranslation: TranslateChildrenCallback;
 };
 
-declare function renderVariable({ variableType, variableName, variableValue, variableOptions, locales, }: {
-    variableType: 'variable' | 'number' | 'datetime' | 'currency';
-    variableName: string;
-    variableValue: any;
-    variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
-    locales: string[];
-}): React.JSX.Element;
+declare const renderVariable: RenderVariable;
 
 declare function ClientProvider({ children, dictionary, initialTranslations, dictionaryTranslations, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React__default.JSX.Element;
 
@@ -161,7 +164,11 @@ declare function ClientProvider({ children, dictionary, initialTranslations, dic
  *
  * @example
  * ```jsx
- * <Branch branch="summary" summary={<p>This is a summary</p>} details={<p>Details here</p>}>
+ * <Branch
+ *  branch="summary"
+ * summary={<p>This is a summary</p>}
+ * details={<p>Details here</p>}
+ * >
  *   <p>Fallback content</p>
  * </Branch>
  * ```
@@ -170,10 +177,10 @@ declare function ClientProvider({ children, dictionary, initialTranslations, dic
  * @param {any} [children] - Fallback content to render if no matching branch is found.
  * @param {string} [name="branch"] - Optional name for the component, used for metadata or tracking purposes.
  * @param {string} [branch] - The name of the branch to render. The component looks for this key in the `...branches` object.
- * @param {object} [branches] - An object containing possible branches as keys and their corresponding content as values.
- * @returns {JSX.Element} The rendered branch or fallback content.
+ * @param {...{[key: string]: any}} [branches] - A spread object containing possible branches as keys and their corresponding content as values.
+ * @returns {React.JSX.Element} The rendered branch or fallback content.
  */
-declare function Branch({ children, name, branch, ...props }: {
+declare function Branch({ children, branch, ...branches }: {
     children?: any;
     name?: string;
     branch?: string;
@@ -191,9 +198,11 @@ declare namespace Branch {
  *
  * @example
  * ```jsx
- * <Plural n={1} one="There is 1 item">
- *   There are {n} items
- * </Plural>
+ * <Plural
+ *  n={1}
+ *  one="There is 1 item"
+ *  other="There are {n} items"
+ * />
  * ```
  * In this example, if `n` is 1, it renders `"There is 1 item"`. If `n` is a different number, it renders
  * `"There are {n} items"`.
@@ -203,10 +212,12 @@ declare namespace Branch {
  * @param {string} [locale] - Optional parameter, the locale to use for pluralization format. If not provided and wrapped
  *  in <GTProvider> will automatically populate this value as user's current locale. If not provided and not wrapped in
  *  <GTProvider>, will use the library default locale (en-US).
- * @returns {JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
+ * @param {...{[key: string]: any}} [branches] - A spread object containing possible plural branches, typically including `one` for singular
+ * and `other` for plural forms, but it may vary depending on the locale.
+ * @returns {React.JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
  * @throws {Error} If `n` is not provided or not a valid number.
  */
-declare function Plural({ children, n, locale, ...props }: {
+declare function Plural({ children, n, locale, ...branches }: {
     children?: any;
     n?: number;
     locale?: string;
@@ -319,26 +330,19 @@ declare namespace T {
  *
  * @example
  * ```jsx
- * <Currency
- *    name="price"
- *    currency="USD"
- * >
+ * <Currency currency="USD">
  *    1000
  * </Currency>
  * ```
  *
  * @param {any} [children] - Optional content to render inside the currency component.
- * @param {string} [name] - Optional name for the currency field.
- * @param {any} [value] - The default value to be used.
  * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
  * @param {string[]} [locales] - Optional locales to use for currency formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {JSX.Element} The formatted currency component.
  */
-declare function Currency({ children, value, name, currency, locales, options, }: {
+declare function Currency({ children, currency, locales, options, }: {
     children?: any;
-    name?: string;
-    value?: any;
     currency?: string;
     locales?: string[];
     options?: Intl.NumberFormatOptions;
@@ -354,24 +358,18 @@ declare namespace Currency {
  *
  * @example
  * ```jsx
- * <DateTime
- *    name="createdAt"
- * >
+ * <DateTime>
  *    {new Date()}
  * </DateTime>
  * ```
  *
  * @param {any} [children] - Optional content (typically a date) to render inside the component.
- * @param {string} [name="date"] - Optional name for the date field, used for metadata purposes.
- * @param {string|number|Date} [value] - The default value for the date. Can be a string, number (timestamp), or `Date` object.
  * @param {string[]} [locales] - Optional locales to use for date formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {JSX.Element} The formatted date or time component.
  */
-declare function DateTime({ children, value, name, locales, options, }: {
+declare function DateTime({ children, locales, options, }: {
     children?: any;
-    name?: string;
-    value?: any;
     locales?: string[];
     options?: Intl.DateTimeFormatOptions;
 }): React__default.JSX.Element;
@@ -387,7 +385,6 @@ declare namespace DateTime {
  * @example
  * ```jsx
  * <Num
- *    name="quantity"
  *    options={{ style: "decimal", maximumFractionDigits: 2 }}
  * >
  *    1000
@@ -395,15 +392,11 @@ declare namespace DateTime {
  * ```
  *
  * @param {any} [children] - Optional content (typically a number) to render inside the component.
- * @param {string} [name="n"] - Optional name for the number field, used for metadata purposes.
- * @param {string|number} [value] - The default value for the number. Can be a string or number. Strings will be parsed to numbers.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {JSX.Element} The formatted number component.
  */
-declare function Num({ children, value, name, locales, options, }: {
+declare function Num({ children, locales, options, }: {
     children?: any;
-    name?: string;
-    value?: any;
     locales?: string[];
     options?: Intl.NumberFormatOptions;
 }): React__default.JSX.Element;
@@ -418,44 +411,23 @@ declare namespace Num {
  * @example Inline usage:
  * ```jsx
  *  function MyComponent() {
+ *     const name = 'Archie';
  *     return (
- *          <T id="user">
+ *          <T>
  *              <p>
- *                  Hello, <Var> John </Var>!
+ *                  Hello, <Var> {name} </Var>!
  *              </p>
  *          </T>
  *      );
  *  }
  * ```
  *
- * @example Dictionary Usage:
- * ```jsx
- *  // dictionary.js
- *  const dictionary = {
- *      user: "Hello {user-name}! Your dog's name is {dog-name}",
- *  }
- *
- *  // component.jsx
- *  function MyComponent() {
- *      const t = useGT();
- *      return (
- *          <p>
- *              { t('user', { 'user-name': 'John', 'dog-name': 'Rex' }) }
- *          </p>
- *      );
- *  }
- * ```
- *
  *
  * @param {any} [children] - The content to render inside the component. If provided, it will take precedence over `value`.
- * @param {string} [name] - Optional name for the variable, used for metadata purposes.
- * @param {any} [value] - The default value to be displayed if `children` is not provided.
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
-declare function Var({ children, name, value, }: {
+declare function Var({ children }: {
     children?: any;
-    name?: string;
-    value?: any;
 }): React__default.JSX.Element;
 declare namespace Var {
     var gtTransformation: string;

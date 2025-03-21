@@ -1,3 +1,4 @@
+import { VariableProps } from '../types/types';
 import getVariableName from './getVariableName';
 
 export default function getVariableProps(props: {
@@ -6,18 +7,13 @@ export default function getVariableProps(props: {
     [key: string]: any;
   };
   [key: string]: any;
-}) {
+}): VariableProps {
   const variableType: 'variable' | 'number' | 'datetime' | 'currency' =
     props['data-_gt']?.variableType || 'variable';
 
-  const result: {
-    variableName: string;
-    variableType: typeof variableType;
-    variableValue?: any;
-    variableOptions?: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
-  } = {
-    variableType,
+  const result: VariableProps = {
     variableName: getVariableName(props, variableType),
+    variableType,
     variableValue: (() => {
       if (typeof props.value !== 'undefined') return props.value;
       if (typeof props['data-_gt-unformatted-value'] !== 'undefined')

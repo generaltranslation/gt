@@ -6,7 +6,11 @@
  *
  * @example
  * ```jsx
- * <Branch branch="summary" summary={<p>This is a summary</p>} details={<p>Details here</p>}>
+ * <Branch
+ *  branch="summary"
+ * summary={<p>This is a summary</p>}
+ * details={<p>Details here</p>}
+ * >
  *   <p>Fallback content</p>
  * </Branch>
  * ```
@@ -15,36 +19,25 @@
  * @param {any} [children] - Fallback content to render if no matching branch is found.
  * @param {string} [name="branch"] - Optional name for the component, used for metadata or tracking purposes.
  * @param {string} [branch] - The name of the branch to render. The component looks for this key in the `...branches` object.
- * @param {object} [branches] - An object containing possible branches as keys and their corresponding content as values.
- * @returns {JSX.Element} The rendered branch or fallback content.
+ * @param {...{[key: string]: any}} [branches] - A spread object containing possible branches as keys and their corresponding content as values.
+ * @returns {React.JSX.Element} The rendered branch or fallback content.
  */
 function Branch({
   children,
-  name = 'branch',
   branch,
-  ...props
+  ...branches
 }: {
   children?: any;
   name?: string;
   branch?: string;
   [key: string]: any;
 }) {
-  const { 'data-_gt': generaltranslation, ...branches } = props;
   branch = branch?.toString();
   const renderedBranch =
     branch && typeof branches[branch] !== 'undefined'
       ? branches[branch]
       : children;
-  return (
-    <span
-      data-_gt={generaltranslation}
-      data-_gt-branch-name={branch}
-      data-_gt-name={name || 'branch'}
-      style={{ display: 'contents' }}
-    >
-      {renderedBranch}
-    </span>
-  );
+  return <>{renderedBranch}</>;
 }
 
 Branch.gtTransformation = 'branch';

@@ -129,3 +129,21 @@ export class GTTranslationError extends Error {
     };
   }
 }
+
+// ----- VARIABLES ----- //
+
+export type VariableProps = {
+  variableType: 'variable' | 'number' | 'datetime' | 'currency';
+  variableValue: any;
+  variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
+  variableName: string;
+};
+
+export type RenderVariable = ({
+  variableType,
+  variableValue,
+  variableOptions,
+  locales,
+}: Omit<VariableProps, 'variableName'> & {
+  locales: string[];
+}) => React.JSX.Element;
