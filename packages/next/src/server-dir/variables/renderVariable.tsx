@@ -2,47 +2,34 @@ import Num from '../../variables/Num';
 import Var from '../../variables/Var';
 import Currency from '../../variables/Currency';
 import DateTime from '../../variables/DateTime';
+import { RenderVariable } from 'gt-react/internal';
 
-export default function renderVariable({
+const renderVariable: RenderVariable = ({
   variableType,
-  variableName,
   variableValue,
   variableOptions,
   locales,
-}: {
-  variableType: 'variable' | 'number' | 'datetime' | 'currency';
-  variableName: string;
-  variableValue: any;
-  variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
-  locales: string[];
-}) {
+}) => {
   if (variableType === 'number') {
     return (
-      <Num
-        name={variableName}
-        value={variableValue}
-        options={variableOptions}
-        locales={locales}
-      />
+      <Num options={variableOptions} locales={locales}>
+        {variableValue}
+      </Num>
     );
   } else if (variableType === 'datetime') {
     return (
-      <DateTime
-        name={variableName}
-        value={variableValue}
-        options={variableOptions}
-        locales={locales}
-      />
+      <DateTime options={variableOptions} locales={locales}>
+        {variableValue}
+      </DateTime>
     );
   } else if (variableType === 'currency') {
     return (
-      <Currency
-        name={variableName}
-        value={variableValue}
-        options={variableOptions}
-        locales={locales}
-      />
+      <Currency options={variableOptions} locales={locales}>
+        {variableValue}
+      </Currency>
     );
   }
-  return <Var name={variableName} value={variableValue} />;
-}
+  return <Var>{variableValue}</Var>;
+};
+
+export default renderVariable;

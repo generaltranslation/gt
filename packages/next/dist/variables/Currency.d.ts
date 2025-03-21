@@ -4,7 +4,6 @@
  * @example
  * ```jsx
  * <Currency
- *    name="price"
  *    currency="USD"
  * >
  *    1000
@@ -12,21 +11,16 @@
  * ```
  *
  * @param {any} [children] - Optional content to render inside the currency component.
- * @param {string} [name] - Optional name for the currency field.
- * @param {any} [value] - The default value to be used.
  * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
- * @returns {JSX.Element} The formatted currency component.
+ * @returns {Promise<React.JSX.Element>} The formatted currency component.
  */
-declare function Currency({ children, name, value, currency, options, locales, ...props }: {
+declare function Currency({ children, currency, options, locales, }: {
     children?: any;
-    name?: string;
-    value?: any;
     currency?: string;
     options?: Intl.NumberFormatOptions;
     locales?: string[];
-    'data-_gt'?: any;
-}): React.JSX.Element;
+}): Promise<React.JSX.Element>;
 declare namespace Currency {
     var gtTransformation: string;
 }

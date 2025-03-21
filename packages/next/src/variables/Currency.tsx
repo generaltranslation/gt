@@ -1,5 +1,6 @@
 import { formatCurrency } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
+import getLocale from '../request/getLocale';
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
@@ -7,7 +8,6 @@ import getI18NConfig from '../config-dir/getI18NConfig';
  * @example
  * ```jsx
  * <Currency
- *    name="price"
  *    currency="USD"
  * >
  *    1000
@@ -15,40 +15,26 @@ import getI18NConfig from '../config-dir/getI18NConfig';
  * ```
  *
  * @param {any} [children] - Optional content to render inside the currency component.
- * @param {string} [name] - Optional name for the currency field.
- * @param {any} [value] - The default value to be used.
  * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
- * @returns {JSX.Element} The formatted currency component.
+ * @returns {Promise<React.JSX.Element>} The formatted currency component.
  */
-function Currency({
+async function Currency({
   children,
-  name,
-  value,
   currency = 'USD',
   options = {},
   locales = [getI18NConfig().getDefaultLocale()],
-  ...props
 }: {
   children?: any;
-  name?: string;
-  value?: any;
   currency?: string;
   options?: Intl.NumberFormatOptions;
   locales?: string[];
-  'data-_gt'?: any;
-}): React.JSX.Element {
-  const { 'data-_gt': generaltranslation } = props;
+}): Promise<React.JSX.Element> {
+  locales = [await getLocale(), ...locales];
 
   // Determine the value to be formatted
-  let renderedValue =
-    typeof children !== 'undefined' && typeof value === 'undefined'
-      ? children
-      : value;
-  renderedValue =
-    typeof renderedValue === 'string'
-      ? parseFloat(renderedValue)
-      : renderedValue;
+  const renderedValue =
+    typeof children === 'string' ? parseFloat(children) : children;
 
   // Format the number as currency according to the locale
   const formattedValue =
@@ -56,27 +42,7 @@ function Currency({
       ? formatCurrency(renderedValue, currency, { locales, ...options })
       : renderedValue;
 
-  return (
-    <span
-      data-_gt={generaltranslation}
-      data-_gt-variable-name={name}
-      data-_gt-variable-type={'currency'}
-      data-_gt-variable-options={JSON.stringify({
-        style: 'currency',
-        currency,
-        ...options,
-      })}
-      data-_gt-unformatted-value={
-        typeof renderedValue === 'number' && !isNaN(renderedValue)
-          ? renderedValue
-          : undefined
-      }
-      style={{ display: 'contents' }}
-      suppressHydrationWarning
-    >
-      {typeof formattedValue === 'string' ? formattedValue : undefined}
-    </span>
-  );
+  return <>{formattedValue}</>;
 }
 
 Currency.gtTransformation = 'variable-currency';

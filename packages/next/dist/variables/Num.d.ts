@@ -5,7 +5,6 @@
  * @example
  * ```jsx
  * <Num
- *    name="quantity"
  *    options={{ style: "decimal", maximumFractionDigits: 2 }}
  * >
  *    1000
@@ -13,19 +12,14 @@
  * ```
  *
  * @param {any} [children] - Optional content (typically a number) to render inside the component.
- * @param {string} [name="n"] - Optional name for the number field, used for metadata purposes.
- * @param {string|number} [value] - The default value for the number. Can be a string or number. Strings will be parsed to numbers.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
- * @returns {Promise<JSX.Element>} The formatted number component.
+ * @returns {Promise<React.JSX.Element>} The formatted number component.
  */
-declare function Num({ children, name, value, options, locales, ...props }: {
+declare function Num({ children, options, locales, }: {
     children?: any;
-    name?: string;
-    value?: any;
     options?: Intl.NumberFormatOptions;
     locales?: string[];
-    'data-_gt'?: any;
-}): React.JSX.Element;
+}): Promise<React.JSX.Element>;
 declare namespace Num {
     var gtTransformation: string;
 }
