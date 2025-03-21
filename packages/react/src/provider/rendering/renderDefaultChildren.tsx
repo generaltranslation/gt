@@ -11,15 +11,13 @@ export default function renderDefaultChildren({
   renderVariable,
 }: {
   children: ReactNode;
-  variables?: Record<string, any>;
-  variablesOptions?: Record<string, any>;
   defaultLocale: string;
   renderVariable: RenderVariable;
 }): React.ReactNode {
   const handleSingleChildElement = (child: ReactElement<any>) => {
     const generaltranslation = getGTProp(child);
     if (generaltranslation?.transformation === 'variable') {
-      let { variableType, variableValue, variableOptions } = getVariableProps(
+      const { variableType, variableValue, variableOptions } = getVariableProps(
         child.props as any
       );
       return renderVariable({
