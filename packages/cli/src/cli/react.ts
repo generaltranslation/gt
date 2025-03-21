@@ -686,7 +686,8 @@ export class ReactCLI extends BaseCLI {
         saveTranslations(translations, options.files.placeholderPaths, 'JSX');
       }
     } else {
-      throw new Error(noTranslationsError);
+      console.log(chalk.red(noTranslationsError));
+      process.exit(0);
     }
   }
 

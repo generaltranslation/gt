@@ -35,7 +35,7 @@ function resolveLocaleFiles(files, locale) {
  * @returns The resolved files
  */
 function resolveFiles(files, locale) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     // Initialize result object with empty arrays for each file type
     const result = {};
     const placeholderResult = {};
@@ -47,7 +47,7 @@ function resolveFiles(files, locale) {
             process.exit(1);
         }
         if (files.json.include.length === 1) {
-            const jsonPaths = expandGlobPatterns([files.json.include[0]], locale);
+            const jsonPaths = expandGlobPatterns([files.json.include[0]], ((_b = files.json) === null || _b === void 0 ? void 0 : _b.exclude) || [], locale);
             if (jsonPaths.resolvedPaths.length > 1) {
                 console.error('JSON glob pattern matched multiple files. Only one JSON file is supported.');
                 process.exit(1);
@@ -57,22 +57,22 @@ function resolveFiles(files, locale) {
         }
     }
     // Process MD files
-    if ((_b = files.md) === null || _b === void 0 ? void 0 : _b.include) {
-        const mdPaths = expandGlobPatterns(files.md.include, locale);
+    if ((_c = files.md) === null || _c === void 0 ? void 0 : _c.include) {
+        const mdPaths = expandGlobPatterns(files.md.include, ((_d = files.md) === null || _d === void 0 ? void 0 : _d.exclude) || [], locale);
         result.md = mdPaths.resolvedPaths;
         placeholderResult.md = mdPaths.placeholderPaths;
     }
     // Process MDX files
-    if ((_c = files.mdx) === null || _c === void 0 ? void 0 : _c.include) {
-        const mdxPaths = expandGlobPatterns(files.mdx.include, locale);
+    if ((_e = files.mdx) === null || _e === void 0 ? void 0 : _e.include) {
+        const mdxPaths = expandGlobPatterns(files.mdx.include, ((_f = files.mdx) === null || _f === void 0 ? void 0 : _f.exclude) || [], locale);
         result.mdx = mdxPaths.resolvedPaths;
         placeholderResult.mdx = mdxPaths.placeholderPaths;
     }
     // ==== TRANSFORMS ==== //
-    if (((_d = files.mdx) === null || _d === void 0 ? void 0 : _d.transform) && !Array.isArray(files.mdx.transform)) {
+    if (((_g = files.mdx) === null || _g === void 0 ? void 0 : _g.transform) && !Array.isArray(files.mdx.transform)) {
         transformPaths.mdx = files.mdx.transform;
     }
-    if (((_e = files.md) === null || _e === void 0 ? void 0 : _e.transform) && !Array.isArray(files.md.transform)) {
+    if (((_h = files.md) === null || _h === void 0 ? void 0 : _h.transform) && !Array.isArray(files.md.transform)) {
         transformPaths.md = files.md.transform;
     }
     return {
@@ -82,11 +82,12 @@ function resolveFiles(files, locale) {
     };
 }
 // Helper function to expand glob patterns
-function expandGlobPatterns(patterns, locale) {
+function expandGlobPatterns(includePatterns, excludePatterns, locale) {
     // Expand glob patterns to include all matching files
     const resolvedPaths = [];
     const placeholderPaths = [];
-    for (const pattern of patterns) {
+    // Process include patterns
+    for (const pattern of includePatterns) {
         // Track positions where [locale] appears in the original pattern
         const localePositions = [];
         let searchIndex = 0;
@@ -105,8 +106,13 @@ function expandGlobPatterns(patterns, locale) {
             expandedPattern.includes('{')) {
             // Resolve the absolute pattern path
             const absolutePattern = path_1.default.resolve(process.cwd(), expandedPattern);
-            // Use fast-glob to find all matching files
-            const matches = fast_glob_1.default.sync(absolutePattern, { absolute: true });
+            // Prepare exclude patterns with locale replaced
+            const expandedExcludePatterns = excludePatterns.map((p) => path_1.default.resolve(process.cwd(), p.replace(/\[locale\]/g, locale)));
+            // Use fast-glob to find all matching files, excluding the patterns
+            const matches = fast_glob_1.default.sync(absolutePattern, {
+                absolute: true,
+                ignore: expandedExcludePatterns,
+            });
             resolvedPaths.push(...matches);
             // For each match, create a version with [locale] in the correct positions
             matches.forEach((match) => {
@@ -136,13 +142,28 @@ function expandGlobPatterns(patterns, locale) {
             });
         }
         else {
-            // If it's not a glob pattern, just add the resolved path
+            // If it's not a glob pattern, just add the resolved path if it's not excluded
             const absolutePath = path_1.default.resolve(process.cwd(), expandedPattern);
-            resolvedPaths.push(absolutePath);
-            // For non-glob patterns, we can directly replace locale with [locale]
-            // at the tracked positions in the resolved path
-            let originalPath = path_1.default.resolve(process.cwd(), pattern);
-            placeholderPaths.push(originalPath);
+            // Check if this path should be excluded
+            const expandedExcludePatterns = excludePatterns.map((p) => path_1.default.resolve(process.cwd(), p.replace(/\[locale\]/g, locale)));
+            // Only include if not matched by any exclude pattern
+            const shouldExclude = expandedExcludePatterns.some((excludePattern) => {
+                if (excludePattern.includes('*') ||
+                    excludePattern.includes('?') ||
+                    excludePattern.includes('{')) {
+                    return fast_glob_1.default
+                        .sync(excludePattern, { absolute: true })
+                        .includes(absolutePath);
+                }
+                return absolutePath === excludePattern;
+            });
+            if (!shouldExclude) {
+                resolvedPaths.push(absolutePath);
+                // For non-glob patterns, we can directly replace locale with [locale]
+                // at the tracked positions in the resolved path
+                let originalPath = path_1.default.resolve(process.cwd(), pattern);
+                placeholderPaths.push(originalPath);
+            }
         }
     }
     return { resolvedPaths, placeholderPaths };

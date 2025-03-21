@@ -62,7 +62,11 @@ export function resolveFiles(
     }
 
     if (files.json.include.length === 1) {
-      const jsonPaths = expandGlobPatterns([files.json.include[0]], locale);
+      const jsonPaths = expandGlobPatterns(
+        [files.json.include[0]],
+        files.json?.exclude || [],
+        locale
+      );
       if (jsonPaths.resolvedPaths.length > 1) {
         console.error(
           'JSON glob pattern matched multiple files. Only one JSON file is supported.'
@@ -76,14 +80,22 @@ export function resolveFiles(
 
   // Process MD files
   if (files.md?.include) {
-    const mdPaths = expandGlobPatterns(files.md.include, locale);
+    const mdPaths = expandGlobPatterns(
+      files.md.include,
+      files.md?.exclude || [],
+      locale
+    );
     result.md = mdPaths.resolvedPaths;
     placeholderResult.md = mdPaths.placeholderPaths;
   }
 
   // Process MDX files
   if (files.mdx?.include) {
-    const mdxPaths = expandGlobPatterns(files.mdx.include, locale);
+    const mdxPaths = expandGlobPatterns(
+      files.mdx.include,
+      files.mdx?.exclude || [],
+      locale
+    );
     result.mdx = mdxPaths.resolvedPaths;
     placeholderResult.mdx = mdxPaths.placeholderPaths;
   }
@@ -107,7 +119,8 @@ export function resolveFiles(
 
 // Helper function to expand glob patterns
 function expandGlobPatterns(
-  patterns: string[],
+  includePatterns: string[],
+  excludePatterns: string[],
   locale: string
 ): {
   resolvedPaths: string[];
@@ -117,7 +130,8 @@ function expandGlobPatterns(
   const resolvedPaths: string[] = [];
   const placeholderPaths: string[] = [];
 
-  for (const pattern of patterns) {
+  // Process include patterns
+  for (const pattern of includePatterns) {
     // Track positions where [locale] appears in the original pattern
     const localePositions: number[] = [];
     let searchIndex = 0;
@@ -140,8 +154,18 @@ function expandGlobPatterns(
     ) {
       // Resolve the absolute pattern path
       const absolutePattern = path.resolve(process.cwd(), expandedPattern);
-      // Use fast-glob to find all matching files
-      const matches = fg.sync(absolutePattern, { absolute: true });
+
+      // Prepare exclude patterns with locale replaced
+      const expandedExcludePatterns = excludePatterns.map((p) =>
+        path.resolve(process.cwd(), p.replace(/\[locale\]/g, locale))
+      );
+
+      // Use fast-glob to find all matching files, excluding the patterns
+      const matches = fg.sync(absolutePattern, {
+        absolute: true,
+        ignore: expandedExcludePatterns,
+      });
+
       resolvedPaths.push(...matches);
 
       // For each match, create a version with [locale] in the correct positions
@@ -175,14 +199,36 @@ function expandGlobPatterns(
         placeholderPaths.push(originalPath);
       });
     } else {
-      // If it's not a glob pattern, just add the resolved path
+      // If it's not a glob pattern, just add the resolved path if it's not excluded
       const absolutePath = path.resolve(process.cwd(), expandedPattern);
-      resolvedPaths.push(absolutePath);
 
-      // For non-glob patterns, we can directly replace locale with [locale]
-      // at the tracked positions in the resolved path
-      let originalPath = path.resolve(process.cwd(), pattern);
-      placeholderPaths.push(originalPath);
+      // Check if this path should be excluded
+      const expandedExcludePatterns = excludePatterns.map((p) =>
+        path.resolve(process.cwd(), p.replace(/\[locale\]/g, locale))
+      );
+
+      // Only include if not matched by any exclude pattern
+      const shouldExclude = expandedExcludePatterns.some((excludePattern) => {
+        if (
+          excludePattern.includes('*') ||
+          excludePattern.includes('?') ||
+          excludePattern.includes('{')
+        ) {
+          return fg
+            .sync(excludePattern, { absolute: true })
+            .includes(absolutePath);
+        }
+        return absolutePath === excludePattern;
+      });
+
+      if (!shouldExclude) {
+        resolvedPaths.push(absolutePath);
+
+        // For non-glob patterns, we can directly replace locale with [locale]
+        // at the tracked positions in the resolved path
+        let originalPath = path.resolve(process.cwd(), pattern);
+        placeholderPaths.push(originalPath);
+      }
     }
   }
 
