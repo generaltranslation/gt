@@ -90,16 +90,20 @@ export interface ContentScanner {
 export type FilesOptions = {
   json?: {
     include: string[];
+    exclude?: string[];
   };
   yaml?: {
     include: string[];
+    exclude?: string[];
   };
   md?: {
     include: string[];
+    exclude?: string[];
     transform?: string;
   };
   mdx?: {
     include: string[];
+    exclude?: string[];
     transform?: string;
   };
 };

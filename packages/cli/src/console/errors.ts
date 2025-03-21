@@ -1,4 +1,4 @@
-export const noTranslationsError = `No updates found! Are you sure you're running this command in the right directory?`;
+export const noTranslationsError = `No in-line content or dictionaries were found. Are you sure you're running this command in the right directory?`;
 export const noLocalesError = `No locales found! Please provide a list of locales to translate to, or specify them in your gt.config.json file.`;
 export const noDefaultLocaleError = `No default locale found! Please provide a default locale, or specify it in your gt.config.json file.`;
 export const noFilesError = `No files configuration found! Please make sure your files are configured correctly in your gt.config.json file.`;

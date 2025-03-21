@@ -456,7 +456,8 @@ class ReactCLI extends base_1.BaseCLI {
                 }
             }
             else {
-                throw new Error(errors_1.noTranslationsError);
+                console.log(chalk_1.default.red(errors_1.noTranslationsError));
+                process.exit(0);
             }
         });
     }
