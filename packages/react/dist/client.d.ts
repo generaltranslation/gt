@@ -65,7 +65,7 @@ type VariableProps = {
     variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
     variableName: string;
 };
-type RenderVariable = ({ variableType, variableValue, variableOptions, locales, }: VariableProps & {
+type RenderVariable = ({ variableType, variableValue, variableOptions, locales, }: Omit<VariableProps, 'variableName'> & {
     locales: string[];
 }) => React__default.JSX.Element;
 

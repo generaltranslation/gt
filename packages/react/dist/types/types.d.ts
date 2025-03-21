@@ -100,7 +100,7 @@ export type VariableProps = {
     variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
     variableName: string;
 };
-export type RenderVariable = ({ variableType, variableValue, variableOptions, locales, }: VariableProps & {
+export type RenderVariable = ({ variableType, variableValue, variableOptions, locales, }: Omit<VariableProps, 'variableName'> & {
     locales: string[];
 }) => React.JSX.Element;
 //# sourceMappingURL=types.d.ts.map

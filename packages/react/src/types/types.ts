@@ -136,7 +136,7 @@ export type VariableProps = {
   variableType: 'variable' | 'number' | 'datetime' | 'currency';
   variableValue: any;
   variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
-  variableName: string; // TODO: remove
+  variableName: string;
 };
 
 export type RenderVariable = ({
@@ -144,6 +144,6 @@ export type RenderVariable = ({
   variableValue,
   variableOptions,
   locales,
-}: VariableProps & {
+}: Omit<VariableProps, 'variableName'> & {
   locales: string[];
 }) => React.JSX.Element;
