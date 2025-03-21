@@ -164,7 +164,11 @@ declare function ClientProvider({ children, dictionary, initialTranslations, dic
  *
  * @example
  * ```jsx
- * <Branch branch="summary" summary={<p>This is a summary</p>} details={<p>Details here</p>}>
+ * <Branch
+ *  branch="summary"
+ * summary={<p>This is a summary</p>}
+ * details={<p>Details here</p>}
+ * >
  *   <p>Fallback content</p>
  * </Branch>
  * ```
@@ -173,10 +177,10 @@ declare function ClientProvider({ children, dictionary, initialTranslations, dic
  * @param {any} [children] - Fallback content to render if no matching branch is found.
  * @param {string} [name="branch"] - Optional name for the component, used for metadata or tracking purposes.
  * @param {string} [branch] - The name of the branch to render. The component looks for this key in the `...branches` object.
- * @param {object} [branches] - An object containing possible branches as keys and their corresponding content as values.
- * @returns {JSX.Element} The rendered branch or fallback content.
+ * @param {...{[key: string]: any}} [branches] - A spread object containing possible branches as keys and their corresponding content as values.
+ * @returns {React.JSX.Element} The rendered branch or fallback content.
  */
-declare function Branch({ children, name, branch, ...props }: {
+declare function Branch({ children, branch, ...branches }: {
     children?: any;
     name?: string;
     branch?: string;
@@ -194,9 +198,11 @@ declare namespace Branch {
  *
  * @example
  * ```jsx
- * <Plural n={1} one="There is 1 item">
- *   There are {n} items
- * </Plural>
+ * <Plural
+ *  n={1}
+ *  one="There is 1 item"
+ *  other="There are {n} items"
+ * />
  * ```
  * In this example, if `n` is 1, it renders `"There is 1 item"`. If `n` is a different number, it renders
  * `"There are {n} items"`.
@@ -206,10 +212,12 @@ declare namespace Branch {
  * @param {string} [locale] - Optional parameter, the locale to use for pluralization format. If not provided and wrapped
  *  in <GTProvider> will automatically populate this value as user's current locale. If not provided and not wrapped in
  *  <GTProvider>, will use the library default locale (en-US).
- * @returns {JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
+ * @param {...{[key: string]: any}} [branches] - A spread object containing possible plural branches, typically including `one` for singular
+ * and `other` for plural forms, but it may vary depending on the locale.
+ * @returns {React.JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
  * @throws {Error} If `n` is not provided or not a valid number.
  */
-declare function Plural({ children, n, locale, ...props }: {
+declare function Plural({ children, n, locale, ...branches }: {
     children?: any;
     n?: number;
     locale?: string;

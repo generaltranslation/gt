@@ -12,9 +12,11 @@ import { GTContext } from '../../provider/GTContext';
  *
  * @example
  * ```jsx
- * <Plural n={1} one="There is 1 item">
- *   There are {n} items
- * </Plural>
+ * <Plural
+ *  n={1}
+ *  one="There is 1 item"
+ *  other="There are {n} items"
+ * />
  * ```
  * In this example, if `n` is 1, it renders `"There is 1 item"`. If `n` is a different number, it renders
  * `"There are {n} items"`.
@@ -24,21 +26,22 @@ import { GTContext } from '../../provider/GTContext';
  * @param {string} [locale] - Optional parameter, the locale to use for pluralization format. If not provided and wrapped
  *  in <GTProvider> will automatically populate this value as user's current locale. If not provided and not wrapped in
  *  <GTProvider>, will use the library default locale (en-US).
- * @returns {JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
+ * @param {...{[key: string]: any}} [branches] - A spread object containing possible plural branches, typically including `one` for singular
+ * and `other` for plural forms, but it may vary depending on the locale.
+ * @returns {React.JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
  * @throws {Error} If `n` is not provided or not a valid number.
  */
 function Plural({
   children,
   n,
   locale,
-  ...props
+  ...branches
 }: {
   children?: any;
   n?: number;
   locale?: string;
   [key: string]: any;
 }) {
-  const { 'data-_gt': generaltranslation, ...branches } = props;
   const context = useContext(GTContext);
   let defaultLocale;
   if (context) {
