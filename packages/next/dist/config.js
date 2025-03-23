@@ -61,6 +61,7 @@ var generaltranslation_1 = require("generaltranslation");
  * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
  * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
+ * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {NextConfig} nextConfig - The Next.js configuration object to extend
@@ -70,7 +71,7 @@ var generaltranslation_1 = require("generaltranslation");
  * @throws {Error} If the project ID is missing and default URLs are used, or if the API key is required and missing.
  */
 function withGTConfig(nextConfig, props) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g;
     if (nextConfig === void 0) { nextConfig = {}; }
     if (props === void 0) { props = {}; }
     // ---------- LOAD GT CONFIG FILE ---------- //
@@ -228,9 +229,10 @@ function withGTConfig(nextConfig, props) {
     var I18NConfigParams = JSON.stringify(mergedConfig);
     return __assign(__assign({}, nextConfig), { env: __assign(__assign(__assign(__assign({}, nextConfig.env), { _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams }), (resolvedDictionaryFilePathType && {
             _GENERALTRANSLATION_DICTIONARY_FILE_TYPE: resolvedDictionaryFilePathType,
-        })), { _GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED: mergedConfig.loadDictionaryEnabled.toString(), _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (mergedConfig.loadTranslationsType === 'custom').toString(), _GENERALTRANSLATION_DEFAULT_LOCALE: (mergedConfig.defaultLocale || defaultWithGTConfigProps_1.default.defaultLocale).toString(), _GENERALTRANSLATION_GT_SERVICES_ENABLED: gtServicesEnabled.toString() }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_c = nextConfig.experimental) === null || _c === void 0 ? void 0 : _c.turbo)
+        })), { _GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED: mergedConfig.loadDictionaryEnabled.toString(), _GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED: (mergedConfig.loadTranslationsType === 'custom').toString(), _GENERALTRANSLATION_DEFAULT_LOCALE: (mergedConfig.defaultLocale || defaultWithGTConfigProps_1.default.defaultLocale).toString(), _GENERALTRANSLATION_GT_SERVICES_ENABLED: gtServicesEnabled.toString(), _GENERALTRANSLATION_IGNORE_BROWSER_LOCALES: ((_c = mergedConfig.ignoreBrowserLocales) === null || _c === void 0 ? void 0 : _c.toString()) ||
+                defaultWithGTConfigProps_1.default.ignoreBrowserLocales.toString() }), experimental: __assign(__assign({}, nextConfig.experimental), (process.env.TURBOPACK === '1' || ((_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo)
             ? {
-                turbo: __assign(__assign({}, (((_d = nextConfig.experimental) === null || _d === void 0 ? void 0 : _d.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_f = (_e = nextConfig.experimental) === null || _e === void 0 ? void 0 : _e.turbo) === null || _f === void 0 ? void 0 : _f.resolveAlias) || {})), { 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translations': customLoadTranslationsPath || '', 'gt-next/_load-dictionary': customLoadDictionaryPath || '', 'gt-next/_routing': customRouterPath || '' }) }),
+                turbo: __assign(__assign({}, (((_e = nextConfig.experimental) === null || _e === void 0 ? void 0 : _e.turbo) || {})), { resolveAlias: __assign(__assign({}, (((_g = (_f = nextConfig.experimental) === null || _f === void 0 ? void 0 : _f.turbo) === null || _g === void 0 ? void 0 : _g.resolveAlias) || {})), { 'gt-next/_dictionary': resolvedDictionaryFilePath || '', 'gt-next/_load-translations': customLoadTranslationsPath || '', 'gt-next/_load-dictionary': customLoadDictionaryPath || '', 'gt-next/_routing': customRouterPath || '' }) }),
             }
             : {})), webpack: function webpack() {
             var _a = [];

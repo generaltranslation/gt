@@ -11,6 +11,7 @@ type withGTConfigProps = {
     cacheExpiryTime?: number;
     locales?: string[];
     defaultLocale?: string;
+    ignoreBrowserLocales?: boolean;
     getLocale?: () => Promise<string>;
     renderSettings?: {
         method: RenderMethod;

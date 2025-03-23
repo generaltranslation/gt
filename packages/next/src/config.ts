@@ -45,6 +45,7 @@ import { getLocaleProperties, standardizeLocale } from 'generaltranslation';
  * @param {number} [maxConcurrentRequests=defaultInitGTProps.maxConcurrentRequests] - Maximum number of concurrent requests allowed.
  * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
+ * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {NextConfig} nextConfig - The Next.js configuration object to extend
@@ -287,6 +288,9 @@ export function withGTConfig(
         mergedConfig.defaultLocale || defaultWithGTConfigProps.defaultLocale
       ).toString(),
       _GENERALTRANSLATION_GT_SERVICES_ENABLED: gtServicesEnabled.toString(),
+      _GENERALTRANSLATION_IGNORE_BROWSER_LOCALES:
+        mergedConfig.ignoreBrowserLocales?.toString() ||
+        defaultWithGTConfigProps.ignoreBrowserLocales.toString(),
     },
     experimental: {
       ...nextConfig.experimental,
