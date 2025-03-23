@@ -44,10 +44,10 @@ var internal_1 = require("generaltranslation/internal");
  * Retrieves the 'accept-language' header from the headers list.
  * If the 'next/headers' module is not available, it attempts to load it. If the
  * headers function is available, it returns the primary language from the 'accept-language'
- * header. If the headers function or 'accept-language' header is not available, returns null.
+ * header.
  *
- * @returns {Promise<string | null>} A promise that resolves to the primary language from the
- * 'accept-language' header, or null if not available.
+ * @returns {Promise<string>} A promise that resolves to the primary language from the
+ * 'accept-language' header.
  */
 function getNextLocale() {
     return __awaiter(this, arguments, void 0, function (defaultLocale, locales) {
@@ -70,10 +70,12 @@ function getNextLocale() {
                             preferredLocales.push(cookieLocale.value);
                         }
                         // Browser languages, in preference order
-                        var acceptedLocales = (_a = headersList
-                            .get('accept-language')) === null || _a === void 0 ? void 0 : _a.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); });
-                        if (acceptedLocales)
-                            preferredLocales.push.apply(preferredLocales, acceptedLocales);
+                        if (process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false') {
+                            var acceptedLocales = (_a = headersList
+                                .get('accept-language')) === null || _a === void 0 ? void 0 : _a.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); });
+                            if (acceptedLocales)
+                                preferredLocales.push.apply(preferredLocales, acceptedLocales);
+                        }
                         // add defaultLocale just in case there are no matches
                         preferredLocales.push(defaultLocale);
                         return (0, generaltranslation_1.determineLocale)(preferredLocales, locales) || defaultLocale;

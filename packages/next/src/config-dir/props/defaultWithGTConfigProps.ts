@@ -18,6 +18,7 @@ const defaultWithGTConfigProps = {
   cacheExpiryTime: 60000,
   renderSettings: defaultRenderSettings,
   _usingPlugin: false,
+  ignoreBrowserLocales: false,
 } as const;
 
 export default defaultWithGTConfigProps;

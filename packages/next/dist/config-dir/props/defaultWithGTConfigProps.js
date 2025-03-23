@@ -53,6 +53,7 @@ var defaultWithGTConfigProps = {
     cacheExpiryTime: 60000,
     renderSettings: internal_2.defaultRenderSettings,
     _usingPlugin: false,
+    ignoreBrowserLocales: false,
 };
 exports.default = defaultWithGTConfigProps;
 //# sourceMappingURL=defaultWithGTConfigProps.js.map

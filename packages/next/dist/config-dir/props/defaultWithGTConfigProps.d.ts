@@ -14,6 +14,7 @@ declare const defaultWithGTConfigProps: {
         timeout: number;
     };
     readonly _usingPlugin: false;
+    readonly ignoreBrowserLocales: false;
 };
 export default defaultWithGTConfigProps;
 //# sourceMappingURL=defaultWithGTConfigProps.d.ts.map

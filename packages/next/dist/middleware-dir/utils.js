@@ -162,9 +162,12 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
         }
     }
     // Get locales from accept-language header
-    var acceptedLocales = ((_b = headerList
-        .get('accept-language')) === null || _b === void 0 ? void 0 : _b.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); })) || [];
-    candidates.push.apply(candidates, acceptedLocales);
+    if (process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false') {
+        var acceptedLocales = ((_b = headerList
+            .get('accept-language')) === null || _b === void 0 ? void 0 : _b.split(',').map(function (item) { var _a; return (_a = item.split(';')) === null || _a === void 0 ? void 0 : _a[0].trim(); })) || [];
+        if (acceptedLocales)
+            candidates.push.apply(candidates, acceptedLocales);
+    }
     // Get default locale
     candidates.push(defaultLocale);
     // determine userLocale
