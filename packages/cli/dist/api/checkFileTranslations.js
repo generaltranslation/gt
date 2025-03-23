@@ -72,8 +72,10 @@ function checkFileTranslations(apiKey, baseUrl, data, locales, timeoutDuration, 
                             yield (0, downloadFile_1.downloadFile)(baseUrl, apiKey, translationId, outputPath);
                         }
                     }
-                    // Update the spinner text
-                    spinner.suffixText = generateStatusSuffixText(downloadedFiles, fileQueryData);
+                    // Force a refresh of the spinner display
+                    const statusText = generateStatusSuffixText(downloadedFiles, fileQueryData);
+                    // Clear and reapply the suffix to force a refresh
+                    spinner.suffixText = statusText;
                 }
                 if (downloadedFiles.size === fileQueryData.length) {
                     return true;
@@ -93,44 +95,69 @@ function checkFileTranslations(apiKey, baseUrl, data, locales, timeoutDuration, 
          */
         function generateStatusSuffixText(downloadedFiles, fileQueryData) {
             var _a;
-            const newSuffixText = [
-                `\n\n` +
-                    chalk_1.default.green(`${downloadedFiles.size}/${fileQueryData.length}`) +
-                    ` translations completed\n`,
-            ];
-            // Group by filename for better organization
-            const fileGroups = new Map();
+            // Simple progress indicator
+            const progressText = chalk_1.default.green(`[${downloadedFiles.size}/${fileQueryData.length}]`) +
+                ` translations completed`;
+            // Get terminal height to adapt our output
+            const terminalHeight = process.stdout.rows || 24; // Default to 24 if undefined
+            // If terminal is very small, just show the basic progress
+            if (terminalHeight < 6) {
+                return `\n${progressText}`;
+            }
+            const newSuffixText = [`\n${progressText}`];
+            // Organize data by filename
+            const fileStatus = new Map();
             // Initialize with all files and locales from fileQueryData
             for (const item of fileQueryData) {
-                if (!fileGroups.has(item.fileName)) {
-                    fileGroups.set(item.fileName, new Set());
+                if (!fileStatus.has(item.fileName)) {
+                    fileStatus.set(item.fileName, {
+                        completed: new Set(),
+                        pending: new Set([item.locale]),
+                    });
                 }
-                (_a = fileGroups.get(item.fileName)) === null || _a === void 0 ? void 0 : _a.add(item.locale);
+                else {
+                    (_a = fileStatus.get(item.fileName)) === null || _a === void 0 ? void 0 : _a.pending.add(item.locale);
+                }
             }
             // Mark which ones are completed
             for (const fileLocale of downloadedFiles) {
                 const [fileName, locale] = fileLocale.split(':');
-                const completedLocales = fileGroups.get(fileName);
-                if (completedLocales) {
-                    completedLocales.delete(locale); // Remove from pending
+                const status = fileStatus.get(fileName);
+                if (status) {
+                    status.pending.delete(locale);
+                    status.completed.add(locale);
                 }
             }
-            // Display each file with its status
-            for (const [fileName, pendingLocales] of fileGroups.entries()) {
-                newSuffixText.push(`\n${chalk_1.default.bold(fileName)}`);
-                // Show completed locales for this file
-                for (const fileLocale of downloadedFiles) {
-                    const [currentFileName, locale] = fileLocale.split(':');
-                    if (currentFileName === fileName) {
-                        const localeProperties = (0, generaltranslation_1.getLocaleProperties)(locale);
-                        newSuffixText.push(`  ${chalk_1.default.green('✓')} ${chalk_1.default.green(localeProperties.code)}`);
-                    }
+            // Calculate how many files we can show based on terminal height
+            // Each file takes 1 line now
+            const filesArray = Array.from(fileStatus.entries());
+            const maxFilesToShow = Math.min(filesArray.length, terminalHeight - 3 // Header + progress + buffer
+            );
+            // Display each file with its status on a single line
+            for (let i = 0; i < maxFilesToShow; i++) {
+                const [fileName, status] = filesArray[i];
+                // Create condensed locale status
+                const localeStatuses = [];
+                // Add completed locales
+                if (status.completed.size > 0) {
+                    const completedCodes = Array.from(status.completed)
+                        .map((locale) => (0, generaltranslation_1.getLocaleProperties)(locale).code)
+                        .join(', ');
+                    localeStatuses.push(chalk_1.default.green(`${completedCodes}`));
                 }
-                // Show pending locales for this file
-                for (const locale of pendingLocales) {
-                    const localeProperties = (0, generaltranslation_1.getLocaleProperties)(locale);
-                    newSuffixText.push(`  ${chalk_1.default.yellow('[==>')} ${chalk_1.default.yellow(localeProperties.code)}`);
+                // Add pending locales
+                if (status.pending.size > 0) {
+                    const pendingCodes = Array.from(status.pending)
+                        .map((locale) => (0, generaltranslation_1.getLocaleProperties)(locale).code)
+                        .join(', ');
+                    localeStatuses.push(chalk_1.default.yellow(`${pendingCodes}`));
                 }
+                // Format the line
+                newSuffixText.push(`${chalk_1.default.bold(fileName)} [${localeStatuses.join(', ')}]`);
+            }
+            // If we couldn't show all files, add an indicator
+            if (filesArray.length > maxFilesToShow) {
+                newSuffixText.push(`... and ${filesArray.length - maxFilesToShow} more files`);
             }
             return newSuffixText.join('\n');
         }
