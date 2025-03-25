@@ -16,7 +16,7 @@ var jsx_runtime_1 = require("react/jsx-runtime");
  * @returns {React.JSX.Element} The rendered variable component with either `children` or `value`.
  */
 function Var(_a) {
-    var children = _a.children;
+    var children = _a.children, name = _a.name;
     return (0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, { children: children });
 }
 Var.gtTransformation = 'variable-variable'; // keep this because Var is imported in other functions

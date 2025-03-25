@@ -17,10 +17,11 @@ import React from 'react';
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {JSX.Element} The formatted number component.
  */
-declare function Num({ children, locales, options, }: {
+declare function Num({ children, name, locales, options, }: {
     children?: any;
     locales?: string[];
     options?: Intl.NumberFormatOptions;
+    name?: string;
 }): React.JSX.Element;
 declare namespace Num {
     var gtTransformation: string;

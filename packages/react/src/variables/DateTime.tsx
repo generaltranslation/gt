@@ -23,10 +23,12 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 function DateTime({
   children,
   locales,
+  name,
   options = {},
 }: {
   children?: any;
   locales?: string[];
+  name?: string;
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
 }): React.JSX.Element {
   const context = useContext(GTContext);

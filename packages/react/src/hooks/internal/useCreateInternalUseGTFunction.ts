@@ -60,30 +60,22 @@ export default function useCreateInternalUseGTFunction(
       const id = options?.id;
       const translationWithIdExists = id && translations?.[id as string];
 
-      // Calculate hash
-      const hash = useMemo(() => {
-        // Skip hashing:
-        if (
-          !translationRequired || // Translation not required
-          translationWithIdExists // Translation already exists under the id
-        ) {
-          return '';
-        }
+      // Calculate hash - moved out of useMemo
+      let hash = '';
 
+      // Skip hashing:
+      if (
+        translationRequired && // Translation is required
+        !translationWithIdExists // Translation doesn't exist under the id
+      ) {
         // Calculate hash
-        return hashJsxChildren({
+        hash = hashJsxChildren({
           source,
           ...(options?.context && { context: options.context }),
           ...(id && { id }),
           dataFormat: 'JSX',
         });
-      }, [
-        translationRequired,
-        translationWithIdExists,
-        source,
-        options?.context,
-        id,
-      ]);
+      }
 
       // Get translation
       let translationEntry = translationWithIdExists
