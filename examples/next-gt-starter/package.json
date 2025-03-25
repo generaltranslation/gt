@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "generaltranslation": "^6.1.10",
-    "gt-next": "^5.2.6",
-    "gtx-cli": "^1.0.0",
-    "next": "15.1.6",
+    "gt-next": "^5.2.13",
+    "gtx-cli": "^1.1.5",
+    "next": "^15.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
