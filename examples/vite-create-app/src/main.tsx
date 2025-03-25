@@ -11,6 +11,8 @@ createRoot(document.getElementById('root')!).render(
     <GTProvider 
       {...gtConfig} 
       loadTranslations={loadTranslations}
+      projectId={import.meta.env.VITE_GT_PROJECT_ID}
+      devApiKey={import.meta.env.VITE_GT_API_KEY}
     >
       <App />
     </GTProvider>
