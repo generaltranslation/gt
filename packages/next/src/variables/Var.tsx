@@ -16,9 +16,10 @@ import React from 'react';
  */
 function Var({
   children,
+  name,
 }: {
   children?: any;
-  'data-_gt'?: any;
+  name?: string;
 }): React.JSX.Element {
   return <>{children}</>;
 }

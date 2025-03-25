@@ -21,14 +21,18 @@ import getLocale from '../request/getLocale';
  */
 async function Num({
   children,
+  name,
+  locales,
   options = {},
-  locales = [getI18NConfig().getDefaultLocale()],
 }: {
   children?: any;
+  name?: string;
   options?: Intl.NumberFormatOptions;
   locales?: string[];
 }): Promise<React.JSX.Element> {
-  locales = [await getLocale(), ...locales];
+  if (!locales) {
+    locales = [await getLocale(), getI18NConfig().getDefaultLocale()];
+  }
 
   // Determine the value to be used
   const renderedValue =

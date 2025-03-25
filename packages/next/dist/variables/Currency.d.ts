@@ -15,9 +15,10 @@
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {Promise<React.JSX.Element>} The formatted currency component.
  */
-declare function Currency({ children, currency, options, locales, }: {
+declare function Currency({ children, currency, name, locales, options, }: {
     children?: any;
     currency?: string;
+    name?: string;
     options?: Intl.NumberFormatOptions;
     locales?: string[];
 }): Promise<React.JSX.Element>;

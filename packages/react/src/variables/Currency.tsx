@@ -23,11 +23,13 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 function Currency({
   children,
   currency = 'USD',
+  name,
   locales,
   options = {},
 }: {
   children?: any;
   currency?: string;
+  name?: string;
   locales?: string[];
   options?: Intl.NumberFormatOptions;
 }): React.JSX.Element {
@@ -40,7 +42,6 @@ function Currency({
   } else {
     locales ||= [libraryDefaultLocale];
   }
-
   let renderedValue =
     typeof children === 'string' ? parseFloat(children) : children;
   if (typeof renderedValue === 'number') {

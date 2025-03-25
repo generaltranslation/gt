@@ -16,9 +16,10 @@ import React from 'react';
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {JSX.Element} The formatted date or time component.
  */
-declare function DateTime({ children, locales, options, }: {
+declare function DateTime({ children, locales, name, options, }: {
     children?: any;
     locales?: string[];
+    name?: string;
     options?: Intl.DateTimeFormatOptions;
 }): React.JSX.Element;
 declare namespace DateTime {

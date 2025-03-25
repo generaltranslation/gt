@@ -13,8 +13,9 @@
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {Promise<React.JSX.Element>} The formatted date or time component.
  */
-declare function DateTime({ children, options, locales, }: {
+declare function DateTime({ children, name, locales, options, }: {
     children?: any;
+    name?: string;
     options?: Intl.DateTimeFormatOptions;
     locales?: string[];
 }): Promise<React.JSX.Element>;
