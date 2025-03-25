@@ -46,15 +46,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -83,12 +74,16 @@ var getLocale_1 = __importDefault(require("../request/getLocale"));
 function Num(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
         var renderedValue, formattedValue;
-        var children = _b.children, _c = _b.options, options = _c === void 0 ? {} : _c, _d = _b.locales, locales = _d === void 0 ? [(0, getI18NConfig_1.default)().getDefaultLocale()] : _d;
-        return __generator(this, function (_e) {
-            switch (_e.label) {
-                case 0: return [4 /*yield*/, (0, getLocale_1.default)()];
+        var children = _b.children, name = _b.name, locales = _b.locales, _c = _b.options, options = _c === void 0 ? {} : _c;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
+                case 0:
+                    if (!!locales) return [3 /*break*/, 2];
+                    return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    locales = __spreadArray.apply(void 0, [[_e.sent()], locales, true]);
+                    locales = [_d.sent(), (0, getI18NConfig_1.default)().getDefaultLocale()];
+                    _d.label = 2;
+                case 2:
                     renderedValue = typeof children === 'string' ? parseFloat(children) : children;
                     formattedValue = typeof renderedValue === 'number'
                         ? (0, generaltranslation_1.formatNum)(renderedValue, __assign({ locales: locales }, options))

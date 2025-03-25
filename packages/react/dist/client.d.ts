@@ -341,9 +341,10 @@ declare namespace T {
  * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
  * @returns {JSX.Element} The formatted currency component.
  */
-declare function Currency({ children, currency, locales, options, }: {
+declare function Currency({ children, currency, name, locales, options, }: {
     children?: any;
     currency?: string;
+    name?: string;
     locales?: string[];
     options?: Intl.NumberFormatOptions;
 }): React__default.JSX.Element;
@@ -368,9 +369,10 @@ declare namespace Currency {
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {JSX.Element} The formatted date or time component.
  */
-declare function DateTime({ children, locales, options, }: {
+declare function DateTime({ children, locales, name, options, }: {
     children?: any;
     locales?: string[];
+    name?: string;
     options?: Intl.DateTimeFormatOptions;
 }): React__default.JSX.Element;
 declare namespace DateTime {
@@ -395,10 +397,11 @@ declare namespace DateTime {
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {JSX.Element} The formatted number component.
  */
-declare function Num({ children, locales, options, }: {
+declare function Num({ children, name, locales, options, }: {
     children?: any;
     locales?: string[];
     options?: Intl.NumberFormatOptions;
+    name?: string;
 }): React__default.JSX.Element;
 declare namespace Num {
     var gtTransformation: string;
@@ -426,8 +429,9 @@ declare namespace Num {
  * @param {any} [children] - The content to render inside the component. If provided, it will take precedence over `value`.
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
-declare function Var({ children }: {
+declare function Var({ children, name, }: {
     children?: any;
+    name?: string;
 }): React__default.JSX.Element;
 declare namespace Var {
     var gtTransformation: string;

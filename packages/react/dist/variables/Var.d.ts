@@ -21,8 +21,9 @@ import React from 'react';
  * @param {any} [children] - The content to render inside the component. If provided, it will take precedence over `value`.
  * @returns {JSX.Element} The rendered variable component with either `children` or `value`.
  */
-declare function Var({ children }: {
+declare function Var({ children, name, }: {
     children?: any;
+    name?: string;
 }): React.JSX.Element;
 declare namespace Var {
     var gtTransformation: string;

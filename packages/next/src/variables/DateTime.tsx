@@ -19,14 +19,18 @@ import getLocale from '../request/getLocale';
  */
 async function DateTime({
   children,
+  name,
+  locales,
   options = {},
-  locales = [getI18NConfig().getDefaultLocale()],
 }: {
   children?: any;
+  name?: string;
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
   locales?: string[];
 }): Promise<React.JSX.Element> {
-  locales = [await getLocale(), ...locales];
+  if (!locales) {
+    locales = [await getLocale(), getI18NConfig().getDefaultLocale()];
+  }
 
   let final;
   let dateValue: Date | undefined;

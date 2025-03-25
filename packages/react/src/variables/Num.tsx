@@ -23,12 +23,14 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  */
 function Num({
   children,
+  name,
   locales,
   options = {},
 }: {
   children?: any;
   locales?: string[];
   options?: Intl.NumberFormatOptions; // Optional options for the number formatting
+  name?: string;
 }): React.JSX.Element {
   const context = useContext(GTContext);
   if (context) {
