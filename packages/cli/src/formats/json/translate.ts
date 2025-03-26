@@ -17,6 +17,7 @@ import { ResolvedFiles } from '../../types';
  * @param config - The config file path
  * @param translationsDir - The directory to save the translations to
  * @param fileType - The file type to save the translations as (file extension)
+ * @deprecated Use translateFiles instead
  */
 export async function translateJson(
   sourceJson: any,

@@ -401,13 +401,6 @@ class ReactCLI extends base_1.BaseCLI {
             if (options.dictionary) {
                 sourceFile = options.dictionary;
             }
-            else {
-                // If it is not provided, use the first json file in the files object
-                const resolvedFiles = options.files.resolvedPaths;
-                if (resolvedFiles.json) {
-                    sourceFile = resolvedFiles.json[0];
-                }
-            }
             // Separate defaultLocale from locales
             options.locales = options.locales.filter((locale) => locale !== options.defaultLocale);
             // validate timeout
@@ -431,8 +424,8 @@ class ReactCLI extends base_1.BaseCLI {
                     process.exit(1);
                 }
             }
-            // If files.json is not provided, publish the translations
-            if (!((_b = (_a = settings.files) === null || _a === void 0 ? void 0 : _a.resolvedPaths) === null || _b === void 0 ? void 0 : _b.json)) {
+            // If files.gt.output is not provided in the config, publish the translations
+            if (!((_b = (_a = settings.files) === null || _a === void 0 ? void 0 : _a.resolvedPaths) === null || _b === void 0 ? void 0 : _b.gt)) {
                 options.publish = true;
             }
             if (options.dryRun) {
@@ -448,8 +441,8 @@ class ReactCLI extends base_1.BaseCLI {
                     throw new Error('No General Translation Project ID found. Use the --project-id flag to provide one.');
                 const updateResponse = yield (0, sendUpdates_1.sendUpdates)(updates, Object.assign(Object.assign({}, settings), { publish: options.publish, wait: options.wait, timeout: options.timeout, dataFormat: 'JSX' }));
                 const versionId = updateResponse === null || updateResponse === void 0 ? void 0 : updateResponse.versionId;
-                // Save translations to local directory if files.json is provided
-                if (versionId && options.files.placeholderPaths.json) {
+                // Save translations to local directory if files.gt.output is provided
+                if (versionId && options.files.placeholderPaths.gt) {
                     console.log();
                     const translations = yield (0, fetchTranslations_1.fetchTranslations)(settings.baseUrl, settings.apiKey, versionId);
                     (0, save_1.saveTranslations)(translations, options.files.placeholderPaths, 'JSX');

@@ -30,6 +30,8 @@ export function resolveLocaleFiles(
   result.mdx = files.mdx?.map((filepath) =>
     filepath.replace(/\[locale\]/g, locale)
   );
+  // Replace [locale] with locale in all paths
+  result.gt = files.gt?.replace(/\[locale\]/g, locale);
 
   return result;
 }
@@ -54,28 +56,20 @@ export function resolveFiles(
   const placeholderResult: ResolvedFiles = {};
   const transformPaths: TransformFiles = {};
 
+  // Process GT files
+  if (files.gt?.output) {
+    placeholderResult.gt = files.gt.output;
+  }
+
   // Process JSON files
   if (files.json?.include) {
-    if (files.json.include.length > 1) {
-      console.error('Only one JSON file is supported at the moment.');
-      process.exit(1);
-    }
-
-    if (files.json.include.length === 1) {
-      const jsonPaths = expandGlobPatterns(
-        [files.json.include[0]],
-        files.json?.exclude || [],
-        locale
-      );
-      if (jsonPaths.resolvedPaths.length > 1) {
-        console.error(
-          'JSON glob pattern matched multiple files. Only one JSON file is supported.'
-        );
-        process.exit(1);
-      }
-      result.json = jsonPaths.resolvedPaths;
-      placeholderResult.json = jsonPaths.placeholderPaths;
-    }
+    const jsonPaths = expandGlobPatterns(
+      files.json.include,
+      files.json?.exclude || [],
+      locale
+    );
+    result.json = jsonPaths.resolvedPaths;
+    placeholderResult.json = jsonPaths.placeholderPaths;
   }
 
   // Process MD files
@@ -105,7 +99,6 @@ export function resolveFiles(
   if (files.mdx?.transform && !Array.isArray(files.mdx.transform)) {
     transformPaths.mdx = files.mdx.transform;
   }
-
   if (files.md?.transform && !Array.isArray(files.md.transform)) {
     transformPaths.md = files.md.transform;
   }

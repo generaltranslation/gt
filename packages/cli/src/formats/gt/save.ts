@@ -20,11 +20,11 @@ export function saveTranslations(
   for (const translation of translations) {
     const locale = translation.locale;
     const translationFiles = resolveLocaleFiles(placeholderPaths, locale);
-    if (!translationFiles.json) {
+    if (!translationFiles.gt) {
       console.error(noFilesError);
       process.exit(1);
     }
-    const filepath = translationFiles.json[0];
+    const filepath = translationFiles.gt;
     const translationData = translation.translation;
     // Ensure directory exists
     fs.mkdirSync(path.dirname(filepath), { recursive: true });

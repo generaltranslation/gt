@@ -88,6 +88,9 @@ export interface ContentScanner {
 }
 
 export type FilesOptions = {
+  gt?: {
+    output: string; // Output glob: /path/[locale].json
+  };
   json?: {
     include: string[];
     exclude?: string[];
@@ -113,6 +116,7 @@ export type ResolvedFiles = {
   // yaml?: string[];
   md?: string[];
   mdx?: string[];
+  gt?: string; // Output glob: /path/[locale].json
 };
 
 export type TransformFiles = {

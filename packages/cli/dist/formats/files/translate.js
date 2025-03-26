@@ -15,68 +15,113 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.translateFiles = translateFiles;
 const checkFileTranslations_1 = require("../../api/checkFileTranslations");
 const sendFiles_1 = require("../../api/sendFiles");
+const errors_1 = require("../../console/errors");
 const parseFilesConfig_1 = require("../../fs/config/parseFilesConfig");
 const findFilepath_1 = require("../../fs/findFilepath");
+const flattenDictionary_1 = require("../../react/utils/flattenDictionary");
 const path_1 = __importDefault(require("path"));
+const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 /**
- * Sends an entire file to the API for translation
- * @param fileContent - The raw content of the file to translate
+ * Sends multiple files to the API for translation
+ * @param filePaths - Resolved file paths for different file types
+ * @param placeholderPaths - Placeholder paths for translated files
+ * @param transformPaths - Transform paths for file naming
+ * @param fileFormat - Format of the files
+ * @param dataFormat - Format of the data within the files
  * @param options - Translation options including API settings
- * @returns The translated file content or null if translation failed
+ * @returns Promise that resolves when translation is complete
  */
-function translateFiles(filePaths, placeholderPaths, transformPaths, fileFormat, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let typeIndex = 'json';
-        if (fileFormat === 'MDX') {
-            typeIndex = 'mdx';
-        }
-        else if (fileFormat === 'MD') {
-            typeIndex = 'md';
-        }
-        else if (fileFormat === 'JSON') {
-            typeIndex = 'json';
-        }
-        const sourcePaths = filePaths[typeIndex];
-        try {
-            if (!sourcePaths) {
-                console.error('No files to translate');
-                return;
+function translateFiles(filePaths_1, placeholderPaths_1, transformPaths_1) {
+    return __awaiter(this, arguments, void 0, function* (filePaths, placeholderPaths, transformPaths, dataFormat = 'JSX', options) {
+        // Collect all files to translate
+        const allFiles = [];
+        // Process JSON files
+        if (filePaths.json) {
+            if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
+                console.error(errors_1.noSupportedDataFormatError);
+                process.exit(1);
             }
-            const files = sourcePaths.map((filePath) => {
+            const jsonFiles = filePaths.json.map((filePath) => {
+                const content = (0, findFilepath_1.readFile)(filePath);
+                const json = JSON.parse(content);
+                // Just to validate the JSON is valid
+                (0, flattenDictionary_1.flattenJsonDictionary)(json);
+                const relativePath = (0, findFilepath_1.getRelative)(filePath);
+                return {
+                    content,
+                    fileName: relativePath,
+                    fileFormat: 'JSON',
+                    dataFormat,
+                };
+            });
+            allFiles.push(...jsonFiles);
+        }
+        // Process MDX files
+        if (filePaths.mdx) {
+            const mdxFiles = filePaths.mdx.map((filePath) => {
                 const content = (0, findFilepath_1.readFile)(filePath);
                 const relativePath = (0, findFilepath_1.getRelative)(filePath);
                 return {
                     content,
                     fileName: relativePath,
-                    fileFormat,
+                    fileFormat: 'MDX',
+                    dataFormat,
                 };
             });
-            const response = yield (0, sendFiles_1.sendFiles)(files, Object.assign(Object.assign({}, options), { publish: false, wait: true }));
+            allFiles.push(...mdxFiles);
+        }
+        // Process MD files
+        if (filePaths.md) {
+            const mdFiles = filePaths.md.map((filePath) => {
+                const content = (0, findFilepath_1.readFile)(filePath);
+                const relativePath = (0, findFilepath_1.getRelative)(filePath);
+                return {
+                    content,
+                    fileName: relativePath,
+                    fileFormat: 'MD',
+                    dataFormat,
+                };
+            });
+            allFiles.push(...mdFiles);
+        }
+        if (allFiles.length === 0) {
+            console.error('No files to translate');
+            return;
+        }
+        try {
+            // Send all files in a single API call
+            const response = yield (0, sendFiles_1.sendFiles)(allFiles, Object.assign(Object.assign({}, options), { publish: false, wait: true }));
             const { data, locales } = response;
+            // Create file mapping for all file types
             const fileMapping = {};
             for (const locale of locales) {
                 const translatedPaths = (0, parseFilesConfig_1.resolveLocaleFiles)(placeholderPaths, locale);
-                let translatedFiles = translatedPaths[typeIndex];
-                if (!translatedFiles) {
-                    continue; // shouldn't happen; typing
-                }
-                const transformPath = transformPaths[typeIndex];
-                if (transformPath) {
-                    translatedFiles = translatedFiles.map((filePath) => {
-                        const directory = path_1.default.dirname(filePath);
-                        const fileName = path_1.default.basename(filePath);
-                        const baseName = fileName.split('.')[0];
-                        const transformedFileName = transformPath
-                            .replace('*', baseName)
-                            .replace('[locale]', locale);
-                        return path_1.default.join(directory, transformedFileName);
-                    });
-                }
                 const localeMapping = {};
-                for (let i = 0; i < sourcePaths.length; i++) {
-                    const sourceFile = (0, findFilepath_1.getRelative)(sourcePaths[i]);
-                    const translatedFile = (0, findFilepath_1.getRelative)(translatedFiles[i]);
-                    localeMapping[sourceFile] = translatedFile;
+                // Process each file type
+                for (const typeIndex of ['json', 'mdx', 'md']) {
+                    if (!filePaths[typeIndex] || !translatedPaths[typeIndex])
+                        continue;
+                    const sourcePaths = filePaths[typeIndex];
+                    let translatedFiles = translatedPaths[typeIndex];
+                    if (!translatedFiles)
+                        continue;
+                    const transformPath = transformPaths[typeIndex];
+                    if (transformPath) {
+                        translatedFiles = translatedFiles.map((filePath) => {
+                            const directory = path_1.default.dirname(filePath);
+                            const fileName = path_1.default.basename(filePath);
+                            const baseName = fileName.split('.')[0];
+                            const transformedFileName = transformPath
+                                .replace('*', baseName)
+                                .replace('[locale]', locale);
+                            return path_1.default.join(directory, transformedFileName);
+                        });
+                    }
+                    for (let i = 0; i < sourcePaths.length; i++) {
+                        const sourceFile = (0, findFilepath_1.getRelative)(sourcePaths[i]);
+                        const translatedFile = (0, findFilepath_1.getRelative)(translatedFiles[i]);
+                        localeMapping[sourceFile] = translatedFile;
+                    }
                 }
                 fileMapping[locale] = localeMapping;
             }
@@ -85,7 +130,7 @@ function translateFiles(filePaths, placeholderPaths, transformPaths, fileFormat,
             });
         }
         catch (error) {
-            console.error('Error translating file:', error);
+            console.error('Error translating files:', error);
         }
     });
 }

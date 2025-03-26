@@ -25,6 +25,7 @@ const save_1 = require("./save");
  * @param config - The config file path
  * @param translationsDir - The directory to save the translations to
  * @param fileType - The file type to save the translations as (file extension)
+ * @deprecated Use translateFiles instead
  */
 function translateJson(sourceJson, settings, dataFormat, placeholderPaths) {
     return __awaiter(this, void 0, void 0, function* () {

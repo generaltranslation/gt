@@ -1,49 +1,98 @@
 import { checkFileTranslations } from '../../api/checkFileTranslations';
 import { sendFiles } from '../../api/sendFiles';
+import { noSupportedDataFormatError } from '../../console/errors';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
 import { getRelative, readFile } from '../../fs/findFilepath';
+import { flattenJsonDictionary } from '../../react/utils/flattenDictionary';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types';
-import { FileFormats } from '../../types/data';
+import { FileFormats, DataFormat } from '../../types/data';
 import path from 'path';
+
+const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
+
 /**
- * Sends an entire file to the API for translation
- * @param fileContent - The raw content of the file to translate
+ * Sends multiple files to the API for translation
+ * @param filePaths - Resolved file paths for different file types
+ * @param placeholderPaths - Placeholder paths for translated files
+ * @param transformPaths - Transform paths for file naming
+ * @param fileFormat - Format of the files
+ * @param dataFormat - Format of the data within the files
  * @param options - Translation options including API settings
- * @returns The translated file content or null if translation failed
+ * @returns Promise that resolves when translation is complete
  */
 export async function translateFiles(
   filePaths: ResolvedFiles,
   placeholderPaths: ResolvedFiles,
   transformPaths: TransformFiles,
-  fileFormat: FileFormats,
+  dataFormat: DataFormat = 'JSX',
   options: Settings
 ): Promise<void> {
-  let typeIndex: keyof ResolvedFiles = 'json';
-  if (fileFormat === 'MDX') {
-    typeIndex = 'mdx';
-  } else if (fileFormat === 'MD') {
-    typeIndex = 'md';
-  } else if (fileFormat === 'JSON') {
-    typeIndex = 'json';
-  }
-  const sourcePaths = filePaths[typeIndex];
+  // Collect all files to translate
+  const allFiles = [];
 
-  try {
-    if (!sourcePaths) {
-      console.error('No files to translate');
-      return;
+  // Process JSON files
+  if (filePaths.json) {
+    if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
+      console.error(noSupportedDataFormatError);
+      process.exit(1);
     }
-    const files = sourcePaths.map((filePath) => {
+
+    const jsonFiles = filePaths.json.map((filePath) => {
+      const content = readFile(filePath);
+      const json = JSON.parse(content);
+
+      // Just to validate the JSON is valid
+      flattenJsonDictionary(json);
+
+      const relativePath = getRelative(filePath);
+      return {
+        content,
+        fileName: relativePath,
+        fileFormat: 'JSON' as FileFormats,
+        dataFormat,
+      };
+    });
+    allFiles.push(...jsonFiles);
+  }
+
+  // Process MDX files
+  if (filePaths.mdx) {
+    const mdxFiles = filePaths.mdx.map((filePath) => {
       const content = readFile(filePath);
       const relativePath = getRelative(filePath);
       return {
         content,
         fileName: relativePath,
-        fileFormat,
+        fileFormat: 'MDX' as FileFormats,
+        dataFormat,
       };
     });
+    allFiles.push(...mdxFiles);
+  }
 
-    const response = await sendFiles(files, {
+  // Process MD files
+  if (filePaths.md) {
+    const mdFiles = filePaths.md.map((filePath) => {
+      const content = readFile(filePath);
+      const relativePath = getRelative(filePath);
+      return {
+        content,
+        fileName: relativePath,
+        fileFormat: 'MD' as FileFormats,
+        dataFormat,
+      };
+    });
+    allFiles.push(...mdFiles);
+  }
+
+  if (allFiles.length === 0) {
+    console.error('No files to translate');
+    return;
+  }
+
+  try {
+    // Send all files in a single API call
+    const response = await sendFiles(allFiles, {
       ...options,
       publish: false,
       wait: true,
@@ -51,31 +100,40 @@ export async function translateFiles(
 
     const { data, locales } = response;
 
+    // Create file mapping for all file types
     const fileMapping: Record<string, Record<string, string>> = {};
     for (const locale of locales) {
       const translatedPaths = resolveLocaleFiles(placeholderPaths, locale);
-      let translatedFiles = translatedPaths[typeIndex];
-      if (!translatedFiles) {
-        continue; // shouldn't happen; typing
-      }
-      const transformPath = transformPaths[typeIndex];
-      if (transformPath) {
-        translatedFiles = translatedFiles.map((filePath) => {
-          const directory = path.dirname(filePath);
-          const fileName = path.basename(filePath);
-          const baseName = fileName.split('.')[0];
-          const transformedFileName = transformPath
-            .replace('*', baseName)
-            .replace('[locale]', locale);
-          return path.join(directory, transformedFileName);
-        });
-      }
       const localeMapping: Record<string, string> = {};
-      for (let i = 0; i < sourcePaths.length; i++) {
-        const sourceFile = getRelative(sourcePaths[i]);
-        const translatedFile = getRelative(translatedFiles[i]);
-        localeMapping[sourceFile] = translatedFile;
+
+      // Process each file type
+      for (const typeIndex of ['json', 'mdx', 'md'] as const) {
+        if (!filePaths[typeIndex] || !translatedPaths[typeIndex]) continue;
+
+        const sourcePaths = filePaths[typeIndex];
+        let translatedFiles = translatedPaths[typeIndex];
+        if (!translatedFiles) continue;
+
+        const transformPath = transformPaths[typeIndex];
+        if (transformPath) {
+          translatedFiles = translatedFiles.map((filePath) => {
+            const directory = path.dirname(filePath);
+            const fileName = path.basename(filePath);
+            const baseName = fileName.split('.')[0];
+            const transformedFileName = transformPath
+              .replace('*', baseName)
+              .replace('[locale]', locale);
+            return path.join(directory, transformedFileName);
+          });
+        }
+
+        for (let i = 0; i < sourcePaths.length; i++) {
+          const sourceFile = getRelative(sourcePaths[i]);
+          const translatedFile = getRelative(translatedFiles[i]);
+          localeMapping[sourceFile] = translatedFile;
+        }
       }
+
       fileMapping[locale] = localeMapping;
     }
 
@@ -90,6 +148,6 @@ export async function translateFiles(
       }
     );
   } catch (error) {
-    console.error('Error translating file:', error);
+    console.error('Error translating files:', error);
   }
 }

@@ -1,37 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -52,17 +19,15 @@ const console_2 = require("../console/console");
 const setupConfig_1 = __importDefault(require("../fs/config/setupConfig"));
 const prompts_1 = require("@inquirer/prompts");
 const generaltranslation_1 = require("generaltranslation");
-const findFilepath_1 = __importStar(require("../fs/findFilepath"));
+const findFilepath_1 = __importDefault(require("../fs/findFilepath"));
 const errors_1 = require("../console/errors");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
-const translate_1 = require("../formats/json/translate");
 const utils_1 = require("../fs/utils");
 const generateSettings_1 = require("../config/generateSettings");
 const chalk_1 = __importDefault(require("chalk"));
 const internal_1 = require("generaltranslation/internal");
-const translate_2 = require("../formats/files/translate");
-const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
+const translate_1 = require("../formats/files/translate");
 class BaseCLI {
     // Constructor is shared amongst all CLI class types
     constructor(library, additionalModules) {
@@ -134,36 +99,8 @@ class BaseCLI {
                 dataFormat = 'JSX';
             }
             const { resolvedPaths: sourceFiles, placeholderPaths, transformPaths, } = settings.files;
-            // ---- CREATING UPDATES ---- //
-            if (sourceFiles.json) {
-                // Only translate JSON files if not using gt-react or gt-next
-                // ReactCLI will handle the JSON files differently
-                if (this.library !== 'gt-react' && this.library !== 'gt-next') {
-                    const rawSource = (0, findFilepath_1.readFile)(sourceFiles.json[0]);
-                    if (!rawSource) {
-                        console.error(errors_1.noSourceFileError);
-                        process.exit(1);
-                    }
-                    if (!dataFormat) {
-                        console.error(errors_1.noDataFormatError);
-                        process.exit(1);
-                    }
-                    else if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
-                        console.error(errors_1.noSupportedDataFormatError);
-                        process.exit(1);
-                    }
-                    const source = JSON.parse(rawSource);
-                    yield (0, translate_1.translateJson)(source, settings, dataFormat, placeholderPaths);
-                }
-            }
-            if (sourceFiles.mdx || sourceFiles.md) {
-                if (sourceFiles.mdx) {
-                    yield (0, translate_2.translateFiles)(sourceFiles, placeholderPaths, transformPaths, 'MDX', settings);
-                }
-                if (sourceFiles.md) {
-                    yield (0, translate_2.translateFiles)(sourceFiles, placeholderPaths, transformPaths, 'MD', settings);
-                }
-            }
+            // Process all file types at once with a single call
+            yield (0, translate_1.translateFiles)(sourceFiles, placeholderPaths, transformPaths, dataFormat, settings);
         });
     }
     setupInitCommand() {
@@ -261,8 +198,8 @@ class BaseCLI {
                     defaultLocale,
                     locales: locales.split(' '),
                     files: {
-                        json: {
-                            include: [translationsDirWithFormat],
+                        gt: {
+                            output: translationsDirWithFormat,
                         },
                     },
                 });

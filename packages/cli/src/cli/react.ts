@@ -587,12 +587,6 @@ export class ReactCLI extends BaseCLI {
     // If options.dictionary is provided, use options.dictionary as the source file
     if (options.dictionary) {
       sourceFile = options.dictionary;
-    } else {
-      // If it is not provided, use the first json file in the files object
-      const resolvedFiles = options.files.resolvedPaths;
-      if (resolvedFiles.json) {
-        sourceFile = resolvedFiles.json[0];
-      }
     }
 
     // Separate defaultLocale from locales
@@ -644,8 +638,8 @@ export class ReactCLI extends BaseCLI {
       }
     }
 
-    // If files.json is not provided, publish the translations
-    if (!settings.files?.resolvedPaths?.json) {
+    // If files.gt.output is not provided in the config, publish the translations
+    if (!settings.files?.resolvedPaths?.gt) {
       options.publish = true;
     }
 
@@ -675,8 +669,8 @@ export class ReactCLI extends BaseCLI {
       });
       const versionId = updateResponse?.versionId;
 
-      // Save translations to local directory if files.json is provided
-      if (versionId && options.files.placeholderPaths.json) {
+      // Save translations to local directory if files.gt.output is provided
+      if (versionId && options.files.placeholderPaths.gt) {
         console.log();
         const translations = await fetchTranslations(
           settings.baseUrl,

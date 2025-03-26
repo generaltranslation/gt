@@ -17,6 +17,7 @@ import { ResolvedFiles } from '../../types';
  * @param translations - The translations to save
  * @param filePath - The file path to save the translations to
  * @param dataFormat - The data format to save the translations as
+ * @deprecated Use saveFiles instead
  */
 export function saveTranslations(
   translations: RetrievedTranslations,

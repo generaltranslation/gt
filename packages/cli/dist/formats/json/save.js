@@ -13,6 +13,7 @@ const errors_1 = require("../../console/errors");
  * @param translations - The translations to save
  * @param filePath - The file path to save the translations to
  * @param dataFormat - The data format to save the translations as
+ * @deprecated Use saveFiles instead
  */
 function saveTranslations(translations, placeholderPaths, dataFormat) {
     for (const translation of translations) {

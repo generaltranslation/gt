@@ -16,7 +16,7 @@ const fast_glob_1 = __importDefault(require("fast-glob"));
  * @returns The resolved files
  */
 function resolveLocaleFiles(files, locale) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const result = {};
     // Replace [locale] with locale in all paths
     result.json = (_a = files.json) === null || _a === void 0 ? void 0 : _a.map((filepath) => filepath.replace(/\[locale\]/g, locale));
@@ -24,6 +24,8 @@ function resolveLocaleFiles(files, locale) {
     result.md = (_b = files.md) === null || _b === void 0 ? void 0 : _b.map((filepath) => filepath.replace(/\[locale\]/g, locale));
     // Replace [locale] with locale in all paths
     result.mdx = (_c = files.mdx) === null || _c === void 0 ? void 0 : _c.map((filepath) => filepath.replace(/\[locale\]/g, locale));
+    // Replace [locale] with locale in all paths
+    result.gt = (_d = files.gt) === null || _d === void 0 ? void 0 : _d.replace(/\[locale\]/g, locale);
     return result;
 }
 /**
@@ -35,44 +37,38 @@ function resolveLocaleFiles(files, locale) {
  * @returns The resolved files
  */
 function resolveFiles(files, locale) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     // Initialize result object with empty arrays for each file type
     const result = {};
     const placeholderResult = {};
     const transformPaths = {};
+    // Process GT files
+    if ((_a = files.gt) === null || _a === void 0 ? void 0 : _a.output) {
+        placeholderResult.gt = files.gt.output;
+    }
     // Process JSON files
-    if ((_a = files.json) === null || _a === void 0 ? void 0 : _a.include) {
-        if (files.json.include.length > 1) {
-            console.error('Only one JSON file is supported at the moment.');
-            process.exit(1);
-        }
-        if (files.json.include.length === 1) {
-            const jsonPaths = expandGlobPatterns([files.json.include[0]], ((_b = files.json) === null || _b === void 0 ? void 0 : _b.exclude) || [], locale);
-            if (jsonPaths.resolvedPaths.length > 1) {
-                console.error('JSON glob pattern matched multiple files. Only one JSON file is supported.');
-                process.exit(1);
-            }
-            result.json = jsonPaths.resolvedPaths;
-            placeholderResult.json = jsonPaths.placeholderPaths;
-        }
+    if ((_b = files.json) === null || _b === void 0 ? void 0 : _b.include) {
+        const jsonPaths = expandGlobPatterns(files.json.include, ((_c = files.json) === null || _c === void 0 ? void 0 : _c.exclude) || [], locale);
+        result.json = jsonPaths.resolvedPaths;
+        placeholderResult.json = jsonPaths.placeholderPaths;
     }
     // Process MD files
-    if ((_c = files.md) === null || _c === void 0 ? void 0 : _c.include) {
-        const mdPaths = expandGlobPatterns(files.md.include, ((_d = files.md) === null || _d === void 0 ? void 0 : _d.exclude) || [], locale);
+    if ((_d = files.md) === null || _d === void 0 ? void 0 : _d.include) {
+        const mdPaths = expandGlobPatterns(files.md.include, ((_e = files.md) === null || _e === void 0 ? void 0 : _e.exclude) || [], locale);
         result.md = mdPaths.resolvedPaths;
         placeholderResult.md = mdPaths.placeholderPaths;
     }
     // Process MDX files
-    if ((_e = files.mdx) === null || _e === void 0 ? void 0 : _e.include) {
-        const mdxPaths = expandGlobPatterns(files.mdx.include, ((_f = files.mdx) === null || _f === void 0 ? void 0 : _f.exclude) || [], locale);
+    if ((_f = files.mdx) === null || _f === void 0 ? void 0 : _f.include) {
+        const mdxPaths = expandGlobPatterns(files.mdx.include, ((_g = files.mdx) === null || _g === void 0 ? void 0 : _g.exclude) || [], locale);
         result.mdx = mdxPaths.resolvedPaths;
         placeholderResult.mdx = mdxPaths.placeholderPaths;
     }
     // ==== TRANSFORMS ==== //
-    if (((_g = files.mdx) === null || _g === void 0 ? void 0 : _g.transform) && !Array.isArray(files.mdx.transform)) {
+    if (((_h = files.mdx) === null || _h === void 0 ? void 0 : _h.transform) && !Array.isArray(files.mdx.transform)) {
         transformPaths.mdx = files.mdx.transform;
     }
-    if (((_h = files.md) === null || _h === void 0 ? void 0 : _h.transform) && !Array.isArray(files.md.transform)) {
+    if (((_j = files.md) === null || _j === void 0 ? void 0 : _j.transform) && !Array.isArray(files.md.transform)) {
         transformPaths.md = files.md.transform;
     }
     return {

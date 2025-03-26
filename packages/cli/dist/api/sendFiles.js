@@ -35,6 +35,7 @@ function sendFiles(files, options) {
             files.forEach((file, index) => {
                 formData.append(`file${index}`, new Blob([file.content]), file.fileName);
                 formData.append(`fileFormat${index}`, file.fileFormat);
+                formData.append(`fileDataFormat${index}`, file.dataFormat); // Only used when translating JSON files
                 formData.append(`fileName${index}`, file.fileName);
             });
             // Add number of files

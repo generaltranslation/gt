@@ -8,16 +8,12 @@ import findFilepath, { readFile } from '../fs/findFilepath';
 import {
   noDefaultLocaleError,
   noLocalesError,
-  noSourceFileError,
-  noDataFormatError,
-  noSupportedDataFormatError,
   noApiKeyError,
   noProjectIdError,
   noFilesError,
 } from '../console/errors';
 import path from 'path';
 import fs from 'fs';
-import { translateJson } from '../formats/json/translate';
 import { FilesOptions, Settings, SupportedLibraries } from '../types';
 import { resolveProjectId } from '../fs/utils';
 import { DataFormat } from '../types/data';
@@ -34,8 +30,6 @@ type TranslateOptions = {
   apiKey?: string;
   projectId?: string;
 };
-
-const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 export class BaseCLI {
   private library: SupportedLibraries;
@@ -136,49 +130,14 @@ export class BaseCLI {
       transformPaths,
     } = settings.files;
 
-    // ---- CREATING UPDATES ---- //
-    if (sourceFiles.json) {
-      // Only translate JSON files if not using gt-react or gt-next
-      // ReactCLI will handle the JSON files differently
-      if (this.library !== 'gt-react' && this.library !== 'gt-next') {
-        const rawSource = readFile(sourceFiles.json[0]);
-        if (!rawSource) {
-          console.error(noSourceFileError);
-          process.exit(1);
-        }
-
-        if (!dataFormat) {
-          console.error(noDataFormatError);
-          process.exit(1);
-        } else if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
-          console.error(noSupportedDataFormatError);
-          process.exit(1);
-        }
-        const source = JSON.parse(rawSource);
-
-        await translateJson(source, settings, dataFormat, placeholderPaths);
-      }
-    }
-    if (sourceFiles.mdx || sourceFiles.md) {
-      if (sourceFiles.mdx) {
-        await translateFiles(
-          sourceFiles,
-          placeholderPaths,
-          transformPaths,
-          'MDX',
-          settings
-        );
-      }
-      if (sourceFiles.md) {
-        await translateFiles(
-          sourceFiles,
-          placeholderPaths,
-          transformPaths,
-          'MD',
-          settings
-        );
-      }
-    }
+    // Process all file types at once with a single call
+    await translateFiles(
+      sourceFiles,
+      placeholderPaths,
+      transformPaths,
+      dataFormat,
+      settings
+    );
   }
   protected setupInitCommand(): void {
     program
@@ -296,8 +255,8 @@ export class BaseCLI {
             defaultLocale,
             locales: locales.split(' '),
             files: {
-              json: {
-                include: [translationsDirWithFormat],
+              gt: {
+                output: translationsDirWithFormat,
               },
             },
           });

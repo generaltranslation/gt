@@ -1,13 +1,14 @@
 import chalk from 'chalk';
 import { displayLoadingAnimation } from '../console/console';
 import { Settings } from '../types';
-import { FileFormats } from '../types/data';
+import { FileFormats, DataFormat } from '../types/data';
 
 // Define a file object structure
 export interface FileToTranslate {
   content: string;
   fileName: string;
   fileFormat: FileFormats;
+  dataFormat: DataFormat;
 }
 
 type ApiOptions = Settings & {
@@ -41,6 +42,7 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
     files.forEach((file, index) => {
       formData.append(`file${index}`, new Blob([file.content]), file.fileName);
       formData.append(`fileFormat${index}`, file.fileFormat);
+      formData.append(`fileDataFormat${index}`, file.dataFormat); // Only used when translating JSON files
       formData.append(`fileName${index}`, file.fileName);
     });
 

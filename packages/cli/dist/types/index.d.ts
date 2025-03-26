@@ -60,6 +60,9 @@ export interface ContentScanner {
     }>;
 }
 export type FilesOptions = {
+    gt?: {
+        output: string;
+    };
     json?: {
         include: string[];
         exclude?: string[];
@@ -83,6 +86,7 @@ export type ResolvedFiles = {
     json?: string[];
     md?: string[];
     mdx?: string[];
+    gt?: string;
 };
 export type TransformFiles = {
     json?: string;
