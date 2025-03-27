@@ -1,13 +1,14 @@
 import chalk from 'chalk';
 import { displayLoadingAnimation } from '../console/console';
 import { Settings } from '../types';
-import { FileFormats } from '../types/data';
+import { FileFormats, DataFormat } from '../types/data';
 
 // Define a file object structure
 export interface FileToTranslate {
   content: string;
   fileName: string;
   fileFormat: FileFormats;
+  dataFormat: DataFormat;
 }
 
 type ApiOptions = Settings & {
@@ -31,7 +32,7 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
   console.log();
 
   const spinner = await displayLoadingAnimation(
-    `Sending ${files.length} file${files.length > 1 ? 's' : ''} to Translation API...`
+    `Sending ${files.length} file${files.length > 1 ? 's' : ''} to General Translation API...`
   );
 
   try {
@@ -41,6 +42,7 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
     files.forEach((file, index) => {
       formData.append(`file${index}`, new Blob([file.content]), file.fileName);
       formData.append(`fileFormat${index}`, file.fileFormat);
+      formData.append(`fileDataFormat${index}`, file.dataFormat); // Only used when translating JSON files
       formData.append(`fileName${index}`, file.fileName);
     });
 
@@ -75,12 +77,12 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
     const responseData = await response.json();
 
     // Handle version ID response (for async processing)
-    const { data, message, locales } = responseData;
+    const { data, message, locales, translations } = responseData;
     spinner.succeed(
       chalk.green(message || 'Translation job submitted successfully')
     );
 
-    return { data, locales };
+    return { data, locales, translations };
   } catch (error) {
     spinner.fail(chalk.red('Failed to send files for translation'));
     throw error;

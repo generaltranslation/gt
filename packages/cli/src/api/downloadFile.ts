@@ -6,37 +6,64 @@ export async function downloadFile(
   baseUrl: string,
   apiKey: string,
   translationId: string,
-  outputPath: string
+  outputPath: string,
+  maxRetries = 3,
+  retryDelay = 1000
 ) {
-  try {
-    const downloadResponse = await fetch(
-      `${baseUrl}/v1/project/translations/files/${translationId}/download`,
-      {
-        method: 'GET',
-        headers: {
-          ...(apiKey && { 'x-gt-api-key': apiKey }),
-        },
+  let retries = 0;
+
+  while (retries <= maxRetries) {
+    try {
+      const downloadResponse = await fetch(
+        `${baseUrl}/v1/project/translations/files/${translationId}/download`,
+        {
+          method: 'GET',
+          headers: {
+            ...(apiKey && { 'x-gt-api-key': apiKey }),
+          },
+        }
+      );
+
+      if (downloadResponse.ok) {
+        // Ensure the directory exists
+        const dir = path.dirname(outputPath);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+
+        // Get the file data as an ArrayBuffer
+        const fileData = await downloadResponse.arrayBuffer();
+
+        // Write the file to disk
+        fs.writeFileSync(outputPath, Buffer.from(fileData));
+
+        return true;
       }
-    );
 
-    if (downloadResponse.ok) {
-      // Ensure the directory exists
-      const dir = path.dirname(outputPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      // If we get here, the response was not OK
+      if (retries >= maxRetries) {
+        console.error(
+          `Failed to download file ${outputPath}. Status: ${downloadResponse.status} after ${maxRetries + 1} attempts.`
+        );
+        return false;
       }
 
-      // Get the file data as an ArrayBuffer
-      const fileData = await downloadResponse.arrayBuffer();
+      // Increment retry counter and wait before next attempt
+      retries++;
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+    } catch (error) {
+      if (retries >= maxRetries) {
+        console.error(
+          `Error downloading file ${outputPath} after ${maxRetries + 1} attempts:`,
+          error
+        );
+        return false;
+      }
 
-      // Write the file to disk
-      fs.writeFileSync(outputPath, Buffer.from(fileData));
-
-      return true;
+      retries++;
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
-    return false;
-  } catch (error) {
-    console.error('Error downloading file:', error);
-    return false;
   }
+
+  return false;
 }

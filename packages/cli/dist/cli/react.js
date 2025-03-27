@@ -52,13 +52,11 @@ const console_1 = require("../console/console");
 const loadJSON_1 = __importDefault(require("../fs/loadJSON"));
 const findFilepath_1 = __importStar(require("../fs/findFilepath"));
 const createESBuildConfig_1 = __importDefault(require("../react/config/createESBuildConfig"));
-const errors_1 = require("../console/errors");
 const internal_1 = require("generaltranslation/internal");
 const chalk_1 = __importDefault(require("chalk"));
 const prompts_1 = require("@inquirer/prompts");
 const postProcess_1 = require("../hooks/postProcess");
 const fetchTranslations_1 = require("../api/fetchTranslations");
-const path_1 = __importDefault(require("path"));
 const base_1 = require("./base");
 const scanForContent_1 = __importDefault(require("../react/parse/scanForContent"));
 const createDictionaryUpdates_1 = __importDefault(require("../react/parse/createDictionaryUpdates"));
@@ -70,6 +68,7 @@ const generateSettings_1 = require("../config/generateSettings");
 const saveJSON_1 = require("../fs/saveJSON");
 const parseFilesConfig_1 = require("../fs/config/parseFilesConfig");
 const fs_1 = __importDefault(require("fs"));
+const errors_1 = require("../console/errors");
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 class ReactCLI extends base_1.BaseCLI {
@@ -193,23 +192,28 @@ class ReactCLI extends base_1.BaseCLI {
                     newData[hash] = source;
                 }
             }
-            const { resolvedPaths, placeholderPaths } = settings.files;
+            const { placeholderPaths } = settings.files;
             // Save source file if files.json is provided
-            if (resolvedPaths.json) {
+            if (placeholderPaths.gt) {
+                const translationFiles = (0, parseFilesConfig_1.resolveLocaleFiles)(placeholderPaths, settings.defaultLocale);
+                if (!translationFiles.gt) {
+                    console.error(errors_1.noFilesError);
+                    process.exit(1);
+                }
                 console.log();
-                (0, saveJSON_1.saveJSON)(path_1.default.join(resolvedPaths.json[0], `${settings.defaultLocale}.json`), newData);
+                (0, saveJSON_1.saveJSON)(translationFiles.gt, newData);
                 console.log(chalk_1.default.green('Source file saved successfully!\n'));
                 // Also save translations (after merging with existing translations)
                 for (const locale of settings.locales) {
                     const translationsFile = (0, parseFilesConfig_1.resolveLocaleFiles)(placeholderPaths, locale);
-                    if (!translationsFile.json) {
+                    if (!translationsFile.gt) {
                         continue;
                     }
-                    const existingTranslations = (0, loadJSON_1.default)(translationsFile.json[0]);
+                    const existingTranslations = (0, loadJSON_1.default)(translationsFile.gt);
                     const mergedTranslations = Object.assign(Object.assign({}, newData), existingTranslations);
                     // Filter out keys that don't exist in newData
                     const filteredTranslations = Object.fromEntries(Object.entries(mergedTranslations).filter(([key]) => newData[key]));
-                    (0, saveJSON_1.saveJSON)(translationsFile.json[0], filteredTranslations);
+                    (0, saveJSON_1.saveJSON)(translationsFile.gt, filteredTranslations);
                 }
                 console.log(chalk_1.default.green('Merged translations successfully!\n'));
             }
@@ -401,13 +405,6 @@ class ReactCLI extends base_1.BaseCLI {
             if (options.dictionary) {
                 sourceFile = options.dictionary;
             }
-            else {
-                // If it is not provided, use the first json file in the files object
-                const resolvedFiles = options.files.resolvedPaths;
-                if (resolvedFiles.json) {
-                    sourceFile = resolvedFiles.json[0];
-                }
-            }
             // Separate defaultLocale from locales
             options.locales = options.locales.filter((locale) => locale !== options.defaultLocale);
             // validate timeout
@@ -431,8 +428,8 @@ class ReactCLI extends base_1.BaseCLI {
                     process.exit(1);
                 }
             }
-            // If files.json is not provided, publish the translations
-            if (!((_b = (_a = settings.files) === null || _a === void 0 ? void 0 : _a.resolvedPaths) === null || _b === void 0 ? void 0 : _b.json)) {
+            // If files.gt.output is not provided in the config, publish the translations
+            if (!((_b = (_a = settings.files) === null || _a === void 0 ? void 0 : _a.resolvedPaths) === null || _b === void 0 ? void 0 : _b.gt)) {
                 options.publish = true;
             }
             if (options.dryRun) {
@@ -446,17 +443,17 @@ class ReactCLI extends base_1.BaseCLI {
                 // Error if no projectId at this point
                 if (!settings.projectId)
                     throw new Error('No General Translation Project ID found. Use the --project-id flag to provide one.');
-                const updateResponse = yield (0, sendUpdates_1.sendUpdates)(updates, Object.assign(Object.assign({}, settings), { publish: options.publish, wait: options.wait, timeout: options.timeout, dataFormat: 'JSX' }));
+                const updateResponse = yield (0, sendUpdates_1.sendUpdates)(updates, Object.assign(Object.assign({}, settings), { publish: options.publish, wait: options.wait, timeout: options.timeout, dataFormat: 'JSX' }), this.library);
                 const versionId = updateResponse === null || updateResponse === void 0 ? void 0 : updateResponse.versionId;
-                // Save translations to local directory if files.json is provided
-                if (versionId && options.files.placeholderPaths.json) {
+                // Save translations to local directory if files.gt.output is provided
+                if (versionId && options.files.placeholderPaths.gt) {
                     console.log();
                     const translations = yield (0, fetchTranslations_1.fetchTranslations)(settings.baseUrl, settings.apiKey, versionId);
                     (0, save_1.saveTranslations)(translations, options.files.placeholderPaths, 'JSX');
                 }
             }
             else {
-                console.log(chalk_1.default.red(errors_1.noTranslationsError));
+                console.log(chalk_1.default.red(`No in-line content or dictionaries were found for ${chalk_1.default.green(this.library)}. Are you sure you're running this command in the right directory?`));
                 process.exit(0);
             }
         });

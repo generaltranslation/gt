@@ -46,30 +46,45 @@ exports.downloadFile = downloadFile;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 // Helper function to download a file
-function downloadFile(baseUrl, apiKey, translationId, outputPath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const downloadResponse = yield fetch(`${baseUrl}/v1/project/translations/files/${translationId}/download`, {
-                method: 'GET',
-                headers: Object.assign({}, (apiKey && { 'x-gt-api-key': apiKey })),
-            });
-            if (downloadResponse.ok) {
-                // Ensure the directory exists
-                const dir = path.dirname(outputPath);
-                if (!fs.existsSync(dir)) {
-                    fs.mkdirSync(dir, { recursive: true });
+function downloadFile(baseUrl_1, apiKey_1, translationId_1, outputPath_1) {
+    return __awaiter(this, arguments, void 0, function* (baseUrl, apiKey, translationId, outputPath, maxRetries = 3, retryDelay = 1000) {
+        let retries = 0;
+        while (retries <= maxRetries) {
+            try {
+                const downloadResponse = yield fetch(`${baseUrl}/v1/project/translations/files/${translationId}/download`, {
+                    method: 'GET',
+                    headers: Object.assign({}, (apiKey && { 'x-gt-api-key': apiKey })),
+                });
+                if (downloadResponse.ok) {
+                    // Ensure the directory exists
+                    const dir = path.dirname(outputPath);
+                    if (!fs.existsSync(dir)) {
+                        fs.mkdirSync(dir, { recursive: true });
+                    }
+                    // Get the file data as an ArrayBuffer
+                    const fileData = yield downloadResponse.arrayBuffer();
+                    // Write the file to disk
+                    fs.writeFileSync(outputPath, Buffer.from(fileData));
+                    return true;
                 }
-                // Get the file data as an ArrayBuffer
-                const fileData = yield downloadResponse.arrayBuffer();
-                // Write the file to disk
-                fs.writeFileSync(outputPath, Buffer.from(fileData));
-                return true;
+                // If we get here, the response was not OK
+                if (retries >= maxRetries) {
+                    console.error(`Failed to download file ${outputPath}. Status: ${downloadResponse.status} after ${maxRetries + 1} attempts.`);
+                    return false;
+                }
+                // Increment retry counter and wait before next attempt
+                retries++;
+                yield new Promise((resolve) => setTimeout(resolve, retryDelay));
             }
-            return false;
+            catch (error) {
+                if (retries >= maxRetries) {
+                    console.error(`Error downloading file ${outputPath} after ${maxRetries + 1} attempts:`, error);
+                    return false;
+                }
+                retries++;
+                yield new Promise((resolve) => setTimeout(resolve, retryDelay));
+            }
         }
-        catch (error) {
-            console.error('Error downloading file:', error);
-            return false;
-        }
+        return false;
     });
 }

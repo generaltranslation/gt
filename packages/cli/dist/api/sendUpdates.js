@@ -23,7 +23,7 @@ const waitForUpdates_1 = require("./waitForUpdates");
  * @param options - The options for the API call
  * @returns The versionId of the updated project
  */
-function sendUpdates(updates, options) {
+function sendUpdates(updates, options, library) {
     return __awaiter(this, void 0, void 0, function* () {
         const { apiKey, projectId, defaultLocale, dataFormat } = options;
         const globalMetadata = Object.assign(Object.assign({}, (projectId && { projectId })), (defaultLocale && { sourceLocale: defaultLocale }));
@@ -31,7 +31,8 @@ function sendUpdates(updates, options) {
         // If not, then options.locales will be translated
         // If neither, then project.current_locales will be translated
         const body = Object.assign(Object.assign(Object.assign(Object.assign({ updates }, (options.locales && { locales: options.locales })), { metadata: globalMetadata, publish: options.publish }), (dataFormat && { dataFormat })), (options.versionId && { versionId: options.versionId }));
-        const spinner = yield (0, console_1.displayLoadingAnimation)('Sending updates to General Translation API...');
+        console.log();
+        const spinner = yield (0, console_1.displayLoadingAnimation)(`Sending ${library} updates to General Translation API...`);
         try {
             const startTime = Date.now();
             const response = yield fetch(`${options.baseUrl}/v1/project/translations/update`, {

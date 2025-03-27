@@ -1,4 +1,4 @@
-import { Settings, Updates } from '../types';
+import { Settings, SupportedLibraries, Updates } from '../types';
 import { DataFormat } from '../types/data';
 type ApiOptions = Settings & {
     publish: boolean;
@@ -12,7 +12,7 @@ type ApiOptions = Settings & {
  * @param options - The options for the API call
  * @returns The versionId of the updated project
  */
-export declare function sendUpdates(updates: Updates, options: ApiOptions): Promise<{
+export declare function sendUpdates(updates: Updates, options: ApiOptions, library: SupportedLibraries): Promise<{
     versionId: any;
 } | undefined>;
 export {};

@@ -1,9 +1,10 @@
 import { Settings } from '../types';
-import { FileFormats } from '../types/data';
+import { FileFormats, DataFormat } from '../types/data';
 export interface FileToTranslate {
     content: string;
     fileName: string;
     fileFormat: FileFormats;
+    dataFormat: DataFormat;
 }
 type ApiOptions = Settings & {
     publish: boolean;
@@ -18,5 +19,6 @@ type ApiOptions = Settings & {
 export declare function sendFiles(files: FileToTranslate[], options: ApiOptions): Promise<{
     data: any;
     locales: any;
+    translations: any;
 }>;
 export {};

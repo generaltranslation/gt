@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { displayLoadingAnimation } from '../console/console';
-import { Settings, Updates } from '../types';
+import { Settings, SupportedLibraries, Updates } from '../types';
 import updateConfig from '../fs/config/updateConfig';
 import { waitForUpdates } from './waitForUpdates';
 import { DataFormat } from '../types/data';
@@ -18,7 +18,11 @@ type ApiOptions = Settings & {
  * @param options - The options for the API call
  * @returns The versionId of the updated project
  */
-export async function sendUpdates(updates: Updates, options: ApiOptions) {
+export async function sendUpdates(
+  updates: Updates,
+  options: ApiOptions,
+  library: SupportedLibraries
+) {
   const { apiKey, projectId, defaultLocale, dataFormat } = options;
 
   const globalMetadata = {
@@ -38,8 +42,9 @@ export async function sendUpdates(updates: Updates, options: ApiOptions) {
     ...(options.versionId && { versionId: options.versionId }),
   };
 
+  console.log();
   const spinner = await displayLoadingAnimation(
-    'Sending updates to General Translation API...'
+    `Sending ${library} updates to General Translation API...`
   );
 
   try {

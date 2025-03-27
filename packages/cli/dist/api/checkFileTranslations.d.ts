@@ -13,4 +13,7 @@ export declare function checkFileTranslations(apiKey: string, baseUrl: string, d
         versionId: string;
         fileName: string;
     };
-}, locales: string[], timeoutDuration: number, resolveOutputPath: (sourcePath: string, locale: string) => string): Promise<boolean>;
+}, locales: string[], timeoutDuration: number, resolveOutputPath: (sourcePath: string, locale: string) => string, downloadStatus: {
+    downloaded: Set<string>;
+    failed: Set<string>;
+}): Promise<boolean>;

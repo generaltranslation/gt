@@ -18,11 +18,11 @@ function saveTranslations(translations, placeholderPaths, dataFormat) {
     for (const translation of translations) {
         const locale = translation.locale;
         const translationFiles = (0, parseFilesConfig_1.resolveLocaleFiles)(placeholderPaths, locale);
-        if (!translationFiles.json) {
+        if (!translationFiles.gt) {
             console.error(errors_1.noFilesError);
             process.exit(1);
         }
-        const filepath = translationFiles.json[0];
+        const filepath = translationFiles.gt;
         const translationData = translation.translation;
         // Ensure directory exists
         fs_1.default.mkdirSync(path_1.default.dirname(filepath), { recursive: true });
