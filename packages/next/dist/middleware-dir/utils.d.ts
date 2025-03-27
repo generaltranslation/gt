@@ -23,8 +23,11 @@ export declare function getLocalizedPath(sharedPath: string, locale: string, pat
 /**
  * Creates a map of localized paths to shared paths using regex patterns
  */
-export declare function createPathToSharedPathMap(pathConfig: PathConfig): {
-    [key: string]: string;
+export declare function createPathToSharedPathMap(pathConfig: PathConfig, prefixDefaultLocale: boolean, defaultLocale: string): {
+    pathToSharedPath: {
+        [key: string]: string;
+    };
+    defaultLocalePaths: string[];
 };
 /**
  * Gets the shared path from a given pathname, handling both static and dynamic paths
@@ -35,7 +38,7 @@ export declare function getSharedPath(pathname: string, pathToSharedPath: {
 /**
  * Gets the locale from the request using various sources
  */
-export declare function getLocaleFromRequest(req: NextRequest, defaultLocale: string, approvedLocales: string[], localeRouting: boolean, gtServicesEnabled: boolean): {
+export declare function getLocaleFromRequest(req: NextRequest, defaultLocale: string, approvedLocales: string[], localeRouting: boolean, gtServicesEnabled: boolean, prefixDefaultLocale: boolean, defaultLocalePaths: string[]): {
     userLocale: string;
     pathnameLocale: string | undefined;
     unstandardizedPathnameLocale: string | null | undefined;
