@@ -61,7 +61,6 @@ function createNextMiddleware(_a) {
     }, {});
     // Create the path mapping
     var _f = (0, utils_1.createPathToSharedPathMap)(pathConfig, prefixDefaultLocale, defaultLocale), pathToSharedPath = _f.pathToSharedPath, defaultLocalePaths = _f.defaultLocalePaths;
-    // List of paths that are customized unprefixed default locale paths (e.g. /en-about , /en-dashboard/1/en-custom)
     /**
      * Processes the incoming request to determine the user's locale and sets a locale cookie.
      * Optionally redirects the user based on the locale if locale-based routing is enabled.
@@ -165,7 +164,7 @@ function createNextMiddleware(_a) {
             }
             // REDIRECT CASE: no localization prefix (invalid path), redirect to a localized path (ie, /blog -> /en-US/blog) (/dashboard -> /fr/fr-dashboard)
             // REDIRECT CASE: locale prefix mismatch userLocale (invalid path), redirect to a localized path (ie, /en-US/blog -> /fr/blog) (/tl/dashboard -> /fil/tl-dashboard)
-            // REDIRECT CASE: displayed path doesnt match localized path (invalid path) (/fr/about -> /fr/fr-about)
+            // REDIRECT CASE: displayed path doesnt match localized path (invalid path) (/fr/about -> /fr/fr-about) (NOT: /en/fr-about -> /en/en-about, /en/fr-about should 404)
             if (!pathnameLocale ||
                 unstandardizedPathnameLocale !== userLocale ||
                 localizedPathWithParameters !== standardizedPathname) {

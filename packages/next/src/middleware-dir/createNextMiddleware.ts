@@ -102,7 +102,6 @@ export default function createNextMiddleware({
     prefixDefaultLocale,
     defaultLocale
   );
-  // List of paths that are customized unprefixed default locale paths (e.g. /en-about , /en-dashboard/1/en-custom)
 
   /**
    * Processes the incoming request to determine the user's locale and sets a locale cookie.
@@ -257,7 +256,7 @@ export default function createNextMiddleware({
 
       // REDIRECT CASE: no localization prefix (invalid path), redirect to a localized path (ie, /blog -> /en-US/blog) (/dashboard -> /fr/fr-dashboard)
       // REDIRECT CASE: locale prefix mismatch userLocale (invalid path), redirect to a localized path (ie, /en-US/blog -> /fr/blog) (/tl/dashboard -> /fil/tl-dashboard)
-      // REDIRECT CASE: displayed path doesnt match localized path (invalid path) (/fr/about -> /fr/fr-about)
+      // REDIRECT CASE: displayed path doesnt match localized path (invalid path) (/fr/about -> /fr/fr-about) (NOT: /en/fr-about -> /en/en-about, /en/fr-about should 404)
       if (
         !pathnameLocale ||
         unstandardizedPathnameLocale !== userLocale ||

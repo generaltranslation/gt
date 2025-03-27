@@ -84,11 +84,9 @@ function createPathToSharedPathMap(pathConfig, prefixDefaultLocale, defaultLocal
                 // Replace [param] with [^/]+ to match any non-slash characters
                 var pattern = localizedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
                 pathToSharedPath["/".concat(locale).concat(pattern)] = sharedPath;
-                if (!prefixDefaultLocale) {
+                if (!prefixDefaultLocale && locale === defaultLocale) {
                     pathToSharedPath[pattern] = sharedPath;
-                    if (locale === defaultLocale) {
-                        defaultLocalePaths.push(pattern);
-                    }
+                    defaultLocalePaths.push(pattern);
                 }
             });
         }
@@ -103,7 +101,7 @@ function getSharedPath(pathname, pathToSharedPath) {
     if (pathToSharedPath[pathname]) {
         return pathToSharedPath[pathname];
     }
-    // Try with locale prefix replaced by
+    // Without locale prefix
     var pathnameWithoutLocale = pathname.replace(/^\/[^/]+/, '');
     if (pathToSharedPath[pathnameWithoutLocale]) {
         return pathToSharedPath[pathnameWithoutLocale];
