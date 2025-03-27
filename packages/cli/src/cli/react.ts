@@ -30,6 +30,7 @@ import { generateSettings } from '../config/generateSettings';
 import { saveJSON } from '../fs/saveJSON';
 import { resolveLocaleFiles } from '../fs/config/parseFilesConfig';
 import fs from 'fs';
+import { noFilesError } from '../console/errors';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
@@ -306,23 +307,28 @@ export class ReactCLI extends BaseCLI {
       }
     }
 
-    const { resolvedPaths, placeholderPaths } = settings.files;
-
+    const { placeholderPaths } = settings.files;
     // Save source file if files.json is provided
-    if (resolvedPaths.json) {
-      console.log();
-      saveJSON(
-        path.join(resolvedPaths.json[0], `${settings.defaultLocale}.json`),
-        newData
+    if (placeholderPaths.gt) {
+      const translationFiles = resolveLocaleFiles(
+        placeholderPaths,
+        settings.defaultLocale
       );
+      if (!translationFiles.gt) {
+        console.error(noFilesError);
+        process.exit(1);
+      }
+      console.log();
+      saveJSON(translationFiles.gt, newData);
       console.log(chalk.green('Source file saved successfully!\n'));
       // Also save translations (after merging with existing translations)
       for (const locale of settings.locales) {
         const translationsFile = resolveLocaleFiles(placeholderPaths, locale);
-        if (!translationsFile.json) {
+
+        if (!translationsFile.gt) {
           continue;
         }
-        const existingTranslations = loadJSON(translationsFile.json[0]);
+        const existingTranslations = loadJSON(translationsFile.gt);
         const mergedTranslations = {
           ...newData,
           ...existingTranslations,
@@ -331,7 +337,7 @@ export class ReactCLI extends BaseCLI {
         const filteredTranslations = Object.fromEntries(
           Object.entries(mergedTranslations).filter(([key]) => newData[key])
         );
-        saveJSON(translationsFile.json[0], filteredTranslations);
+        saveJSON(translationsFile.gt, filteredTranslations);
       }
       console.log(chalk.green('Merged translations successfully!\n'));
     }

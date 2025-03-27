@@ -57,7 +57,6 @@ const chalk_1 = __importDefault(require("chalk"));
 const prompts_1 = require("@inquirer/prompts");
 const postProcess_1 = require("../hooks/postProcess");
 const fetchTranslations_1 = require("../api/fetchTranslations");
-const path_1 = __importDefault(require("path"));
 const base_1 = require("./base");
 const scanForContent_1 = __importDefault(require("../react/parse/scanForContent"));
 const createDictionaryUpdates_1 = __importDefault(require("../react/parse/createDictionaryUpdates"));
@@ -69,6 +68,7 @@ const generateSettings_1 = require("../config/generateSettings");
 const saveJSON_1 = require("../fs/saveJSON");
 const parseFilesConfig_1 = require("../fs/config/parseFilesConfig");
 const fs_1 = __importDefault(require("fs"));
+const errors_1 = require("../console/errors");
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 class ReactCLI extends base_1.BaseCLI {
@@ -192,23 +192,28 @@ class ReactCLI extends base_1.BaseCLI {
                     newData[hash] = source;
                 }
             }
-            const { resolvedPaths, placeholderPaths } = settings.files;
+            const { placeholderPaths } = settings.files;
             // Save source file if files.json is provided
-            if (resolvedPaths.json) {
+            if (placeholderPaths.gt) {
+                const translationFiles = (0, parseFilesConfig_1.resolveLocaleFiles)(placeholderPaths, settings.defaultLocale);
+                if (!translationFiles.gt) {
+                    console.error(errors_1.noFilesError);
+                    process.exit(1);
+                }
                 console.log();
-                (0, saveJSON_1.saveJSON)(path_1.default.join(resolvedPaths.json[0], `${settings.defaultLocale}.json`), newData);
+                (0, saveJSON_1.saveJSON)(translationFiles.gt, newData);
                 console.log(chalk_1.default.green('Source file saved successfully!\n'));
                 // Also save translations (after merging with existing translations)
                 for (const locale of settings.locales) {
                     const translationsFile = (0, parseFilesConfig_1.resolveLocaleFiles)(placeholderPaths, locale);
-                    if (!translationsFile.json) {
+                    if (!translationsFile.gt) {
                         continue;
                     }
-                    const existingTranslations = (0, loadJSON_1.default)(translationsFile.json[0]);
+                    const existingTranslations = (0, loadJSON_1.default)(translationsFile.gt);
                     const mergedTranslations = Object.assign(Object.assign({}, newData), existingTranslations);
                     // Filter out keys that don't exist in newData
                     const filteredTranslations = Object.fromEntries(Object.entries(mergedTranslations).filter(([key]) => newData[key]));
-                    (0, saveJSON_1.saveJSON)(translationsFile.json[0], filteredTranslations);
+                    (0, saveJSON_1.saveJSON)(translationsFile.gt, filteredTranslations);
                 }
                 console.log(chalk_1.default.green('Merged translations successfully!\n'));
             }

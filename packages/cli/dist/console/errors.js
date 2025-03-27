@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.noProjectIdError = exports.noApiKeyError = exports.noSupportedDataFormatError = exports.noDataFormatError = exports.noSourceFileError = exports.noFilesError = exports.noDefaultLocaleError = exports.noLocalesError = void 0;
 exports.noLocalesError = `No locales found! Please provide a list of locales to translate to, or specify them in your gt.config.json file.`;
 exports.noDefaultLocaleError = `No default locale found! Please provide a default locale, or specify it in your gt.config.json file.`;
-exports.noFilesError = `No files configuration found! Please make sure your files are configured correctly in your gt.config.json file.`;
+exports.noFilesError = `Incorrect or missing files configuration! Please make sure your files are configured correctly in your gt.config.json file.`;
 exports.noSourceFileError = `No source file found! Please double check your translations directory and default locale.`;
 exports.noDataFormatError = `No data format found! Please make sure your translationsDir parameter ends with a supported file extension.`;
 exports.noSupportedDataFormatError = `Unsupported data format! Please make sure your translationsDir parameter ends with a supported file extension.`;

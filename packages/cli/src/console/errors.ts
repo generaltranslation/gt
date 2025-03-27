@@ -1,6 +1,6 @@
 export const noLocalesError = `No locales found! Please provide a list of locales to translate to, or specify them in your gt.config.json file.`;
 export const noDefaultLocaleError = `No default locale found! Please provide a default locale, or specify it in your gt.config.json file.`;
-export const noFilesError = `No files configuration found! Please make sure your files are configured correctly in your gt.config.json file.`;
+export const noFilesError = `Incorrect or missing files configuration! Please make sure your files are configured correctly in your gt.config.json file.`;
 export const noSourceFileError = `No source file found! Please double check your translations directory and default locale.`;
 export const noDataFormatError = `No data format found! Please make sure your translationsDir parameter ends with a supported file extension.`;
 export const noSupportedDataFormatError = `Unsupported data format! Please make sure your translationsDir parameter ends with a supported file extension.`;
