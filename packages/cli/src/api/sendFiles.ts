@@ -32,7 +32,7 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
   console.log();
 
   const spinner = await displayLoadingAnimation(
-    `Sending ${files.length} file${files.length > 1 ? 's' : ''} to Translation API...`
+    `Sending ${files.length} file${files.length > 1 ? 's' : ''} to General Translation API...`
   );
 
   try {
@@ -77,12 +77,10 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
     const responseData = await response.json();
 
     // Handle version ID response (for async processing)
-    const { data, message, locales } = responseData;
-    spinner.succeed(
-      chalk.green(message || 'Translation job submitted successfully')
-    );
+    const { data, message, locales, translations } = responseData;
+    spinner.succeed(message || 'Translation job submitted successfully');
 
-    return { data, locales };
+    return { data, locales, translations };
   } catch (error) {
     spinner.fail(chalk.red('Failed to send files for translation'));
     throw error;

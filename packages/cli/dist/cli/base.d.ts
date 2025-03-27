@@ -1,7 +1,7 @@
 import { Settings, SupportedLibraries } from '../types';
 export declare class BaseCLI {
-    private library;
-    private additionalModules;
+    protected library: SupportedLibraries;
+    protected additionalModules: SupportedLibraries[];
     constructor(library: SupportedLibraries, additionalModules?: SupportedLibraries[]);
     init(): void;
     execute(): void;

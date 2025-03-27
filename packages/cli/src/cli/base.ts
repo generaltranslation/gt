@@ -32,8 +32,8 @@ type TranslateOptions = {
 };
 
 export class BaseCLI {
-  private library: SupportedLibraries;
-  private additionalModules: SupportedLibraries[];
+  protected library: SupportedLibraries;
+  protected additionalModules: SupportedLibraries[];
   // Constructor is shared amongst all CLI class types
   public constructor(
     library: SupportedLibraries,

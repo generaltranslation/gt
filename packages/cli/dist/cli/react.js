@@ -52,7 +52,6 @@ const console_1 = require("../console/console");
 const loadJSON_1 = __importDefault(require("../fs/loadJSON"));
 const findFilepath_1 = __importStar(require("../fs/findFilepath"));
 const createESBuildConfig_1 = __importDefault(require("../react/config/createESBuildConfig"));
-const errors_1 = require("../console/errors");
 const internal_1 = require("generaltranslation/internal");
 const chalk_1 = __importDefault(require("chalk"));
 const prompts_1 = require("@inquirer/prompts");
@@ -449,7 +448,7 @@ class ReactCLI extends base_1.BaseCLI {
                 }
             }
             else {
-                console.log(chalk_1.default.red(errors_1.noTranslationsError));
+                console.log(chalk_1.default.red(`No in-line content or dictionaries were found for ${chalk_1.default.green(this.library)}. Are you sure you're running this command in the right directory?`));
                 process.exit(0);
             }
         });

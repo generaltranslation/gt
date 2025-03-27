@@ -7,7 +7,10 @@ import { flattenJsonDictionary } from '../../react/utils/flattenDictionary';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types';
 import { FileFormats, DataFormat } from '../../types/data';
 import path from 'path';
-
+import chalk from 'chalk';
+import { downloadFile } from '../../api/downloadFile';
+import { downloadFileBatch } from '../../api/downloadFileBatch';
+import { displayLoadingAnimation } from '../../console/console';
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 /**
@@ -98,56 +101,176 @@ export async function translateFiles(
       wait: true,
     });
 
-    const { data, locales } = response;
+    const { data, locales, translations } = response;
 
     // Create file mapping for all file types
-    const fileMapping: Record<string, Record<string, string>> = {};
-    for (const locale of locales) {
-      const translatedPaths = resolveLocaleFiles(placeholderPaths, locale);
-      const localeMapping: Record<string, string> = {};
+    const fileMapping = createFileMapping(
+      filePaths,
+      placeholderPaths,
+      transformPaths,
+      locales
+    );
 
-      // Process each file type
-      for (const typeIndex of ['json', 'mdx', 'md'] as const) {
-        if (!filePaths[typeIndex] || !translatedPaths[typeIndex]) continue;
+    // Process any translations that were already completed and returned with the initial response
+    const downloadStatus = await processInitialTranslations(
+      translations,
+      fileMapping,
+      options
+    );
 
-        const sourcePaths = filePaths[typeIndex];
-        let translatedFiles = translatedPaths[typeIndex];
-        if (!translatedFiles) continue;
-
-        const transformPath = transformPaths[typeIndex];
-        if (transformPath) {
-          translatedFiles = translatedFiles.map((filePath) => {
-            const directory = path.dirname(filePath);
-            const fileName = path.basename(filePath);
-            const baseName = fileName.split('.')[0];
-            const transformedFileName = transformPath
-              .replace('*', baseName)
-              .replace('[locale]', locale);
-            return path.join(directory, transformedFileName);
-          });
-        }
-
-        for (let i = 0; i < sourcePaths.length; i++) {
-          const sourceFile = getRelative(sourcePaths[i]);
-          const translatedFile = getRelative(translatedFiles[i]);
-          localeMapping[sourceFile] = translatedFile;
-        }
-      }
-
-      fileMapping[locale] = localeMapping;
-    }
-
+    // Check for remaining translations
     await checkFileTranslations(
       options.apiKey,
       options.baseUrl,
       data,
       locales,
       600,
-      (sourcePath, locale) => {
-        return fileMapping[locale][sourcePath];
-      }
+      (sourcePath, locale) => fileMapping[locale][sourcePath],
+      downloadStatus // Pass the already downloaded files to avoid duplicate requests
     );
   } catch (error) {
     console.error('Error translating files:', error);
   }
+}
+
+/**
+ * Creates a mapping between source files and their translated counterparts for each locale
+ */
+function createFileMapping(
+  filePaths: ResolvedFiles,
+  placeholderPaths: ResolvedFiles,
+  transformPaths: TransformFiles,
+  locales: string[]
+): Record<string, Record<string, string>> {
+  const fileMapping: Record<string, Record<string, string>> = {};
+
+  for (const locale of locales) {
+    const translatedPaths = resolveLocaleFiles(placeholderPaths, locale);
+    const localeMapping: Record<string, string> = {};
+
+    // Process each file type
+    for (const typeIndex of ['json', 'mdx', 'md'] as const) {
+      if (!filePaths[typeIndex] || !translatedPaths[typeIndex]) continue;
+
+      const sourcePaths = filePaths[typeIndex];
+      let translatedFiles = translatedPaths[typeIndex];
+      if (!translatedFiles) continue;
+
+      const transformPath = transformPaths[typeIndex];
+      if (transformPath) {
+        translatedFiles = translatedFiles.map((filePath) => {
+          const directory = path.dirname(filePath);
+          const fileName = path.basename(filePath);
+          const baseName = fileName.split('.')[0];
+          const transformedFileName = transformPath
+            .replace('*', baseName)
+            .replace('[locale]', locale);
+          return path.join(directory, transformedFileName);
+        });
+      }
+
+      for (let i = 0; i < sourcePaths.length; i++) {
+        const sourceFile = getRelative(sourcePaths[i]);
+        const translatedFile = getRelative(translatedFiles[i]);
+        localeMapping[sourceFile] = translatedFile;
+      }
+    }
+
+    fileMapping[locale] = localeMapping;
+  }
+
+  return fileMapping;
+}
+
+/**
+ * Processes translations that were already completed and returned with the initial API response
+ * @returns Set of downloaded file+locale combinations
+ */
+async function processInitialTranslations(
+  translations: any[] = [],
+  fileMapping: Record<string, Record<string, string>>,
+  options: Settings
+): Promise<{ downloaded: Set<string>; failed: Set<string> }> {
+  const downloadStatus: { downloaded: Set<string>; failed: Set<string> } = {
+    downloaded: new Set(),
+    failed: new Set(),
+  };
+
+  if (!translations || translations.length === 0) {
+    return downloadStatus;
+  }
+
+  // Filter for ready translations
+  const readyTranslations = translations.filter(
+    (translation) => translation.isReady && translation.fileName
+  );
+
+  if (readyTranslations.length > 0) {
+    const spinner = await displayLoadingAnimation(
+      'Downloading translations...'
+    );
+
+    // Prepare batch download data
+    const batchFiles = readyTranslations
+      .map((translation) => {
+        const { locale, fileName, id } = translation;
+        const outputPath = fileMapping[locale][fileName];
+
+        if (!outputPath) {
+          return null;
+        }
+
+        return {
+          translationId: id,
+          outputPath,
+          fileLocale: `${fileName}:${locale}`,
+        };
+      })
+      .filter(Boolean);
+
+    if (batchFiles.length === 0 || batchFiles[0] === null) {
+      return downloadStatus;
+    }
+
+    // Use batch download if there are multiple files
+    if (batchFiles.length > 1) {
+      const batchResult = await downloadFileBatch(
+        options.baseUrl,
+        options.apiKey,
+        batchFiles.map(({ translationId, outputPath }: any) => ({
+          translationId,
+          outputPath,
+        }))
+      );
+
+      // Process results
+      batchFiles.forEach((file: any) => {
+        const { translationId, fileLocale } = file;
+        if (batchResult.successful.includes(translationId)) {
+          downloadStatus.downloaded.add(fileLocale);
+        } else if (batchResult.failed.includes(translationId)) {
+          downloadStatus.failed.add(fileLocale);
+        }
+      });
+    } else if (batchFiles.length === 1) {
+      // For a single file, use the original downloadFile method
+      const file = batchFiles[0];
+      const result = await downloadFile(
+        options.baseUrl,
+        options.apiKey,
+        file.translationId,
+        file.outputPath
+      );
+
+      if (result) {
+        downloadStatus.downloaded.add(file.fileLocale);
+      } else {
+        downloadStatus.failed.add(file.fileLocale);
+      }
+    }
+
+    spinner.succeed('Downloaded cached translations');
+  }
+
+  return downloadStatus;
 }

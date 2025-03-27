@@ -19,5 +19,6 @@ type ApiOptions = Settings & {
 export declare function sendFiles(files: FileToTranslate[], options: ApiOptions): Promise<{
     data: any;
     locales: any;
+    translations: any;
 }>;
 export {};

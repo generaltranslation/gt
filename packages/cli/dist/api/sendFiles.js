@@ -58,9 +58,9 @@ function sendFiles(files, options) {
             }
             const responseData = yield response.json();
             // Handle version ID response (for async processing)
-            const { data, message, locales } = responseData;
-            spinner.succeed(chalk_1.default.green(message || 'Translation job submitted successfully'));
-            return { data, locales };
+            const { data, message, locales, translations } = responseData;
+            spinner.succeed(message || 'Translation job submitted successfully');
+            return { data, locales, translations };
         }
         catch (error) {
             spinner.fail(chalk_1.default.red('Failed to send files for translation'));

@@ -13,7 +13,6 @@ import { displayAsciiTitle, displayInitializingText } from '../console/console';
 import loadJSON from '../fs/loadJSON';
 import findFilepath, { findFilepaths } from '../fs/findFilepath';
 import createESBuildConfig from '../react/config/createESBuildConfig';
-import { noTranslationsError } from '../console/errors';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import chalk from 'chalk';
 import { select } from '@inquirer/prompts';
@@ -680,7 +679,13 @@ export class ReactCLI extends BaseCLI {
         saveTranslations(translations, options.files.placeholderPaths, 'JSX');
       }
     } else {
-      console.log(chalk.red(noTranslationsError));
+      console.log(
+        chalk.red(
+          `No in-line content or dictionaries were found for ${chalk.green(
+            this.library
+          )}. Are you sure you're running this command in the right directory?`
+        )
+      );
       process.exit(0);
     }
   }
