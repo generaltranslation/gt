@@ -78,7 +78,9 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
 
     // Handle version ID response (for async processing)
     const { data, message, locales, translations } = responseData;
-    spinner.succeed(message || 'Translation job submitted successfully');
+    spinner.succeed(
+      chalk.green(message || 'Translation job submitted successfully')
+    );
 
     return { data, locales, translations };
   } catch (error) {

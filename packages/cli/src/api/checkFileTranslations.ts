@@ -44,7 +44,7 @@ export async function checkFileTranslations(
   );
 
   if (initialCheck) {
-    spinner.succeed(chalk.green('Done!'));
+    spinner.succeed(chalk.green('Files translated!'));
     return true;
   }
 

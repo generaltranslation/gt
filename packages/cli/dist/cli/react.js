@@ -438,7 +438,7 @@ class ReactCLI extends base_1.BaseCLI {
                 // Error if no projectId at this point
                 if (!settings.projectId)
                     throw new Error('No General Translation Project ID found. Use the --project-id flag to provide one.');
-                const updateResponse = yield (0, sendUpdates_1.sendUpdates)(updates, Object.assign(Object.assign({}, settings), { publish: options.publish, wait: options.wait, timeout: options.timeout, dataFormat: 'JSX' }));
+                const updateResponse = yield (0, sendUpdates_1.sendUpdates)(updates, Object.assign(Object.assign({}, settings), { publish: options.publish, wait: options.wait, timeout: options.timeout, dataFormat: 'JSX' }), this.library);
                 const versionId = updateResponse === null || updateResponse === void 0 ? void 0 : updateResponse.versionId;
                 // Save translations to local directory if files.gt.output is provided
                 if (versionId && options.files.placeholderPaths.gt) {

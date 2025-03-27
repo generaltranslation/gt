@@ -27,7 +27,7 @@ function sendFiles(files, options) {
         console.log(chalk_1.default.cyan('\nFiles to translate:'));
         console.log(files.map((file) => `  - ${chalk_1.default.bold(file.fileName)}`).join('\n'));
         console.log();
-        const spinner = yield (0, console_1.displayLoadingAnimation)(`Sending ${files.length} file${files.length > 1 ? 's' : ''} to Translation API...`);
+        const spinner = yield (0, console_1.displayLoadingAnimation)(`Sending ${files.length} file${files.length > 1 ? 's' : ''} to General Translation API...`);
         try {
             // Create form data
             const formData = new FormData();
@@ -59,7 +59,7 @@ function sendFiles(files, options) {
             const responseData = yield response.json();
             // Handle version ID response (for async processing)
             const { data, message, locales, translations } = responseData;
-            spinner.succeed(message || 'Translation job submitted successfully');
+            spinner.succeed(chalk_1.default.green(message || 'Translation job submitted successfully'));
             return { data, locales, translations };
         }
         catch (error) {

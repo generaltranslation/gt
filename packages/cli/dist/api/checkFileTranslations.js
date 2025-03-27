@@ -37,7 +37,7 @@ function checkFileTranslations(apiKey, baseUrl, data, locales, timeoutDuration, 
         // Do first check immediately
         const initialCheck = yield checkTranslationDeployment(baseUrl, apiKey, fileQueryData, downloadStatus, spinner, resolveOutputPath);
         if (initialCheck) {
-            spinner.succeed(chalk_1.default.green('Done!'));
+            spinner.succeed(chalk_1.default.green('Files translated!'));
             return true;
         }
         // Calculate time until next 5-second interval since startTime

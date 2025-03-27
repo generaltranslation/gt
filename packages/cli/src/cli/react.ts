@@ -659,13 +659,17 @@ export class ReactCLI extends BaseCLI {
           'No General Translation Project ID found. Use the --project-id flag to provide one.'
         );
 
-      const updateResponse = await sendUpdates(updates, {
-        ...settings,
-        publish: options.publish,
-        wait: options.wait,
-        timeout: options.timeout,
-        dataFormat: 'JSX',
-      });
+      const updateResponse = await sendUpdates(
+        updates,
+        {
+          ...settings,
+          publish: options.publish,
+          wait: options.wait,
+          timeout: options.timeout,
+          dataFormat: 'JSX',
+        },
+        this.library
+      );
       const versionId = updateResponse?.versionId;
 
       // Save translations to local directory if files.gt.output is provided
