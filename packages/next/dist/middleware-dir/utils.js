@@ -65,28 +65,33 @@ function getLocalizedPath(sharedPath, locale, pathConfig) {
 /**
  * Creates a map of localized paths to shared paths using regex patterns
  */
-function createPathToSharedPathMap(pathConfig) {
+function createPathToSharedPathMap(pathConfig, prefixDefaultLocale, defaultLocale) {
     return Object.entries(pathConfig).reduce(function (acc, _a) {
-        var sharedPath = _a[0], localizedPath = _a[1];
+        var sharedPath = _a[0], localizedPaths = _a[1];
+        var pathToSharedPath = acc.pathToSharedPath, defaultLocalePaths = acc.defaultLocalePaths;
         // Add the shared path itself, converting to regex pattern if it has dynamic segments
         if (sharedPath.includes('[')) {
             var pattern = sharedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
-            acc[pattern] = sharedPath;
+            pathToSharedPath[pattern] = sharedPath;
         }
         else {
-            acc[sharedPath] = sharedPath;
+            pathToSharedPath[sharedPath] = sharedPath;
         }
-        if (typeof localizedPath === 'object') {
-            Object.entries(localizedPath).forEach(function (_a) {
+        if (typeof localizedPaths === 'object') {
+            Object.entries(localizedPaths).forEach(function (_a) {
                 var locale = _a[0], localizedPath = _a[1];
                 // Convert the localized path to a regex pattern
                 // Replace [param] with [^/]+ to match any non-slash characters
                 var pattern = localizedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
-                acc["/".concat(locale).concat(pattern)] = sharedPath;
+                pathToSharedPath["/".concat(locale).concat(pattern)] = sharedPath;
+                if (!prefixDefaultLocale && locale === defaultLocale) {
+                    pathToSharedPath[pattern] = sharedPath;
+                    defaultLocalePaths.push(pattern);
+                }
             });
         }
         return acc;
-    }, {});
+    }, { pathToSharedPath: {}, defaultLocalePaths: [] });
 }
 /**
  * Gets the shared path from a given pathname, handling both static and dynamic paths
@@ -96,7 +101,7 @@ function getSharedPath(pathname, pathToSharedPath) {
     if (pathToSharedPath[pathname]) {
         return pathToSharedPath[pathname];
     }
-    // Try with locale prefix replaced by
+    // Without locale prefix
     var pathnameWithoutLocale = pathname.replace(/^\/[^/]+/, '');
     if (pathToSharedPath[pathnameWithoutLocale]) {
         return pathToSharedPath[pathnameWithoutLocale];
@@ -119,16 +124,37 @@ function getSharedPath(pathname, pathToSharedPath) {
     return candidateSharedPath;
 }
 /**
+ *
+ * @returns
+ */
+function inDefaultLocalePaths(pathname, defaultLocalePaths) {
+    // Try exact match first
+    if (defaultLocalePaths.includes(pathname)) {
+        return true;
+    }
+    // Try regex pattern match
+    for (var _i = 0, defaultLocalePaths_1 = defaultLocalePaths; _i < defaultLocalePaths_1.length; _i++) {
+        var path = defaultLocalePaths_1[_i];
+        if (path.includes('/[^/]+')) {
+            var regex = new RegExp("^".concat(path.replace(/\//g, '\\/'), "$"));
+            if (regex.test(pathname)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+/**
  * Gets the locale from the request using various sources
  */
-function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting, gtServicesEnabled) {
+function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting, gtServicesEnabled, prefixDefaultLocale, defaultLocalePaths) {
     var _a, _b;
     var headerList = new Headers(req.headers);
     var candidates = [];
     var clearResetCookie = false;
+    var pathname = req.nextUrl.pathname;
     // Check pathname locales
     var pathnameLocale, unstandardizedPathnameLocale;
-    var pathname = req.nextUrl.pathname;
     if (localeRouting) {
         unstandardizedPathnameLocale = extractLocale(pathname);
         var extractedLocale = gtServicesEnabled
@@ -138,6 +164,13 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
             pathnameLocale = extractedLocale;
             candidates.push(pathnameLocale);
         }
+    }
+    // Check pathname for a customized unprefixed default locale path (e.g. /en-about , /en-dashboard/1/en-custom)
+    if (localeRouting &&
+        !prefixDefaultLocale &&
+        !pathnameLocale &&
+        inDefaultLocalePaths(pathname, defaultLocalePaths)) {
+        candidates.push(defaultLocale); // will override other candidates
     }
     // Check cookie locale
     var cookieLocale = req.cookies.get(internal_1.localeCookieName);

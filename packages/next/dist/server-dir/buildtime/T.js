@@ -75,7 +75,7 @@ function Resolver(_a) {
  * ```jsx
  * // Basic usage:
  * <T id="welcome_message">
- *  Hello, <Var name="name" value={firstname}>!
+ *  Hello, <Var>{name}</Var>!
  * </T>
  * ```
  *
@@ -83,8 +83,8 @@ function Resolver(_a) {
  * ```jsx
  * // Translating a plural
  * <T id="item_count">
- *  <Plural n={3} singular={<>You have <Num value={n}/> item.</>}>
- *      You have <Num value={n}/> items.
+ *  <Plural n={3} singular={<>You have <Num children={n}/> item.</>}>
+ *      You have <Num children={n}/> items.
  *  </Plural>
  * </T>
  * ```

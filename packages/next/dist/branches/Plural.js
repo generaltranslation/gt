@@ -63,8 +63,8 @@ var getI18NConfig_1 = __importDefault(require("../config-dir/getI18NConfig"));
  * ```jsx
  * <Plural
  *  n={n}
- *  one={<>There is <Num value={n}/> item.</>}
- *  other={<>There are <Num value={n}/> items.</>}
+ *  one={<>There is <Num children={n}/> item.</>}
+ *  other={<>There are <Num children={n}/> items.</>}
  * />
  * ```
  * In this example, if `n` is 1, it renders `"There is 1 item"`. If `n` is a different number, it renders
