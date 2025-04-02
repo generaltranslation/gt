@@ -96,6 +96,9 @@ export function resolveFiles(
 
   // ==== TRANSFORMS ==== //
 
+  if (files.json?.transform && !Array.isArray(files.json.transform)) {
+    transformPaths.json = files.json.transform;
+  }
   if (files.mdx?.transform && !Array.isArray(files.mdx.transform)) {
     transformPaths.mdx = files.mdx.transform;
   }
