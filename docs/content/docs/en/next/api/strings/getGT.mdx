@@ -1,0 +1,114 @@
+---
+title: getGT()
+description: API Reference for the getGT() string translation function
+---
+
+## Overview
+
+The `getGT()` function is a server-side function for translating strings at build times.
+
+```jsx
+const t = await getGT();
+
+<p>{  t('This text will be translated')  }</p>;
+```
+
+<Callout>
+**Buildtime Translation:**
+`getGT()` translations occur at buildtime, before your app deploys.
+Though you can pass variables to the translated string, you can only translate content known at build time.
+</Callout>
+
+## Reference
+### Parameters
+None
+
+### Returns
+
+A promise of a callback function, `t()`, which translates the provided content.
+
+```jsx
+Promise<(content: string, options?: InlineTranslationOptions) => string>
+```
+
+| Name                  | Type | Description                                                                 |
+|-----------------------|--|-----------------------------------------------------------------------------|
+| `content`             | `string` | The string content to be translated.                                     |
+| `options?`            | [`InlineTranslationOptions`](/docs/next/api/types/InlineTranslationOptions) | Translation options to customize the behavior of `t()`. |
+
+---
+
+## Behavior
+
+
+### Production
+During the CD process, any content inside of a `t()` function will be translated before your application is deployed.
+This ensures fast load times for all locales, but it can only translate content known at build time.
+
+Once generated, translations are either (1) stored in the CDN or (2) stored in your app's build output, according to your configuration.
+From there, the translated content is served to your users.
+If a translation is not found, it will fallback to the originial content.
+
+Make sure to follow the [deployment guide here](/docs/next/tutorials/quickdeploy).
+
+### Development
+During development, the `t()` function will translate content on demand.
+This is useful for prototyping what your app will look like in different languages.
+Remember to add a Dev API key to your environment to enable this behavior.
+
+You will see a delay during on demand translation in development.
+This will not occur during for production builds unless content is explicitly being translated on demand,
+i.e., using [`tx()`](/docs/next/api/strings/tx) or [`<Tx>`](/docs/next/api/components/tx).
+
+---
+
+
+## Example
+
+### Basic Usage
+You can use `getGT()` to translate strings.
+
+```javascript copy
+import { getGT } from 'gt-next/server';
+
+export default async function TranslateGreeting() {
+  const t = await getGT();
+
+  return (
+    <p>
+      {t('Hello, Alice!')}
+    </p>
+  );
+}
+```
+Note: "Alice" will be translated to the user's preferred language.
+
+
+### Using variables [#variables]
+You can pass variables to dictionary translations.
+
+```javascript copy
+import { getGT } from 'gt-next/server';
+
+export default async function TranslateGreeting() {
+  const t = await getGT();
+
+  return (
+    <p>
+      {t('Hello, {name}!', { variables: { name: 'Alice' } })}
+    </p>
+  );
+}
+```
+Note: "Alice" will not translated to the user's preferred language because it is a variable.
+
+---
+
+## Notes
+ * The `getGT()` function is a server-side function that translates strings.
+ * Translations strings with `getGT()` happen before runtime, during the build process (unless in development).
+
+## Next steps
+ * See [`useGT()`](/docs/next/api/strings/useGT) for client-side string translations at buildtime.
+ * For runtime translations, see [`tx()`](/docs/next/api/strings/tx) and [`<Tx>`](/docs/next/api/components/tx).
+ * See [`InlineTranslationOptions`](/docs/next/api/types/InlineTranslationOptions) for more information on customizing translations.

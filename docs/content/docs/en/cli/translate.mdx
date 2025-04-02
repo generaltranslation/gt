@@ -1,0 +1,145 @@
+---
+title: Translate
+description: How to translate your project
+---
+## Usage
+
+<Callout type="error">
+    Run this in your CI pipeline **before** you build your Next.js app for production.
+</Callout>
+
+```bash
+npx gtx-cli translate
+```
+<Callout type="info">
+    **Note:**
+    This command requires a production API key! Get one on the [platform](https://generaltranslation.com/dashboard).
+</Callout>
+
+## Overview
+
+The `gtx-cli translate` command translates your project. It traverses your project's file tree and translates any content wrapped in a `<T>` component.
+
+Additionally, it includes content from the dictionary file (if one is provided).
+
+This command is the primary way of using the General Translation API and related services.
+
+<Callout type="warn">
+    **For Production Use Only!**
+
+    This command is meant for production builds and **should not be used in development**.
+    Before running this command, please make sure you are on the branch that will be used for production.
+    Remember to also specify your production API key (`GT_API_KEY`) and Project ID (`GT_PROJECT_ID`) in your environment variables.
+</Callout>
+
+
+## Usage
+
+There are four ways to use the `translate` command. Methods 2, 3, and 4 require a production API key:
+
+<Callout type="info">
+    We recommend running [`npx gtx-cli init`](/docs/cli/init) to first configure your project before running the `translate` command.
+    Depending on how your project is configured, the behavior of the translate command may change.
+</Callout>
+
+
+### Method 1: Translate your project's JSON files. [#translate-json]
+
+If you are using other i18n libraries such as `next-intl`, `react-i18next`, or `next-i18next`, you can use this method to translate your project's JSON files.
+
+Translations will be automatically saved to your codebase, as well as optionally published to the GT CDN.
+
+When running [`npx gtx-cli init`](/docs/cli/init), specify that you are using a 3rd party i18n library before running the `translate` command.
+
+See the [CLI config docs](/docs/cli/reference/config) for more details.
+
+```bash
+npx gtx-cli translate
+```
+<Callout type="info">
+    The CLI tool will automatically detect your i18n library by reading your `package.json` file, and will translate your content while respecting your i18n library's syntax.
+</Callout>
+
+### Method 2: Translate your project and save the translations on the GT CDN.
+
+If you are using `gt-next` or `gt-react`, you can use this method to translate your project.
+
+When running [`npx gtx-cli init`](/docs/cli/init), if you select the option to save translations remotely, the `translate` command will save the translations on the GT CDN.
+
+```bash
+npx gtx-cli translate
+```
+
+### Method 3: Translate your project and save the translations to your codebase.
+
+When running [`npx gtx-cli init`](/docs/cli/init), if you select the option to save translations locally, the `translate` command will save the translations to your codebase.
+
+`gt-next` and `gt-react` can then serve these local translations to your users, rather than using General Translation's public CDN.
+
+```bash
+npx gtx-cli translate
+```
+<Callout type="info">
+    This method is useful if you are using a custom content management system, or do not want to use the GT CDN.
+</Callout>
+
+### Method 4: Validate your project's `<T>` components and dictionary file. [#validate]
+
+This method is useful for validating your project's `<T>` components and dictionary file.
+
+This ensures that your project is correctly configured and that the translations will be valid and accurate.
+
+No translations will be generated if the `--dry-run` flag is provided.
+
+```bash
+npx gtx-cli translate --dry-run
+```
+
+
+
+
+---
+
+## Flags
+
+| Parameter       | Description                                      | Type    | Optional | Default         |
+|-----------------|--------------------------------------------------|---------|----------|-----------------|
+| `--api-key`       | Specify a production API key                                | `string`  | `true`     |                 |
+| `--project-id`    | Specify the project ID                                      | `string`  | `true`     |                 |
+| `--version-id`    | Specify a version ID (by default, a hash of the content)    | `string`  | `true`     |                 |
+| `--config <path>`| Specify a path to the GT config file                       | `string`  | `true`     | `"gt.config.json"`  |
+| `--tsconfig, --jsconfig <path>`| Specify a path to the TS or JS config file | `string`  | `true`     |                 |
+| `--src <paths>`   | Specify the source directory(s) to scan                     | `[string]`  | `true`     | `./src && ./app && ./pages && ./components`      |
+| `--dictionary <path>`    | Specify a path to the dictionary file                | `string`  | `true`     |                 |
+| `--inline`        | Include inline `<T>` tags in addition to the dictionary     | `boolean` | `true`     | `true`            |
+| `--timeout`       | The timeout for the translation request in seconds          | `number`  | `true`     | `600`              |
+| `--new, --locales <locales>`| Locales to translate your project into            | `[string]`  | `true`     |                 |
+| `--default-locale <locale>`| The source locale for the project                  | `string`  | `true`     |  `en`               |
+| `--ignore-errors` | Ignore errors and force translation for valid content       | `flag` | `true`     | `false`           |
+| `--dry-run`       | Dry run the command                                         | `flag` | `true`     | `false`           |
+| `--no-wait`       | Do not wait for the translations to complete before exiting | `flag` | `true`     | `false`           |
+| `--publish`    | Publish the translations to the CDN                  | `flag` | `true`     | `false`           |
+
+All of these parameters are optional and can be alternatively provided in the `gt.config.json` file.
+
+<Callout type="warn">
+    Do not add your API key to the `gt.config.json` file!
+    You should set it as an environment variable instead. The CLI will automatically read `GT_API_KEY` if it is set.
+</Callout>
+
+There are a few key parameters:
+
+| Parameter       | Description                                      |
+|-----------------|--------------------------------------------------|
+| `--dry-run` | This flag will cause the CLI to parse and validate your project, but will not communicate with the GT API. This is useful for validating your codebase.
+| `--api-key` | Unless you are using `--dry-run`, you must provide a production API key.
+| `--project-id` | Similarly, unless you are using `--dry-run`, you must provide a project ID.
+| `--publish` | If you are using local translations, and want to make your translations publicly available on the GT CDN, you can use this flag.
+| `--new, --locales <locales>` | Locales to translate your project into. These will be appended to the locales specified in your `gt.config.json` file.
+
+### Configuration file
+
+When running the CLI tool for the first time, it will attempt to create a `gt.config.json` file in the root of your project.
+This file contains metadata about your project that is used to translate your content.
+
+Read more about the `gt.config.json` file [here](/docs/cli/reference/config).

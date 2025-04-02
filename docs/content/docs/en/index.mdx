@@ -1,0 +1,300 @@
+---
+title: Introduction
+description: Docs for General Translation's localization libraries
+---
+
+## Getting started
+We have quickstart guides for many popular React frameworks.
+<AllLogoCards />
+
+## What is General Translation?
+
+General Translation is an entire internationalization (i18n) stack that allows you to ship multilingual apps quickly and easily.
+
+General Translation includes the following:
+
+- Open-source developer libraries for React and Next.js
+- An AI translation service
+- A complete infrastructure package for serving translation content
+
+If you would like to use GT libraries with your own translation provider, please see our [standalone](/docs/reference/standalone) docs.
+
+If you would like to use your own i18n library, but still want to use General Translation's AI translation service, please see our [CLI tool](/docs/cli/tutorials/quickstart) docs.
+
+If you would like to use General Translation to translate your JSON, Markdown, or MDX files, please see our [CLI tool](/docs/cli/tutorials/quickstart) docs.
+
+## Features
+
+### ⚛️ Translate entire React components in-line
+- A single opening and closing `<T>` component is all you need to translate an entire React component.
+  - No need for complex refactoring or messy function calls.
+- Content is in-line and in the same location as your code.
+  - No keys, strings, or additional files are needed!
+- The library manages all i18n logic behind the scenes, so you don't have to.
+- Translations are always kept in sync with your source code.
+- Translations contain contextual information about the content, so they are more accurate.
+
+```jsx title="Page.jsx" copy
+export default function Page() {
+  return (
+    // [!code highlight]
+    <T>
+      <p>You can write any JSX as children of the {"<T>"} component.</p>
+      <p>
+        For example, you could write a <a href="/">link</a> and have the text be
+        translated in context.
+      </p>
+      <div>
+        <div>
+          <p>Even deeply nested components are translated in context.</p>
+          <button>Click me!</button>
+        </div>
+      </div>
+    </T> // [!code highlight]
+  );
+}
+```
+
+### 🔎 Feature parity with existing libraries
+- GT libraries also support the same features as existing libraries like `i18next`, `react-intl`, and `next-intl`.
+- Features such as dictionaries, plurals, currencies, and automatic routing are all supported.
+
+### 🧠 Free AI-powered translation service
+- Our free AI-powered translation service allows you to create translations for your app in seconds.
+- **Translation hot reload** will automatically update your translations as you write them.
+- HTML content is re-arranged and customized according to the language.
+
+### 🔧 Developer-friendly
+- Setup is simple and can be done in minutes.
+- All GT libraries are open-source and work standalone.
+  - You can use your own translation provider or use our free AI-powered translation service.
+- No more wasting time managing translation keys like `t('menu.header.title')`.
+  - Just write everything in-line!
+
+See our [Github repo](https://github.com/General-Translation/gt-libraries) for the source code and some example projects.
+
+
+<Callout>
+  These docs are under construction. Please create an issue on our [GitHub repository](https://github.com/General-Translation/gt-docs/issues)
+  if what you're looking for isn't here.
+</Callout>
+---
+
+## Why choose General Translation?
+
+**General Translation is an entire i18n stack**, including developer libraries, AI translations, and a complete infrastructure package for multilingual apps.
+
+You can mix and match our libraries with your own translation provider, or use our free AI-powered translation service with your own i18n library.
+
+For a seamless, end-to-end i18n experience, we recommend using our libraries with our translation service.
+
+With GT libraries like `gt-react` and `gt-next`, you can:
+
+### 1. Translate entire React components, not just strings
+
+UI passed as the children of the `<T>` component will be translated regardless of how complicated the JSX tree is. For example:
+
+```javascript title="page.jsx"
+import { T } from "gt-next";
+
+export default function Page() {
+  return (
+    // [!code highlight]
+    <T>
+      <p>Any children of <b>the {`<T>`} component</b> will be translated.</p>
+      <p>
+        Things like <a href="/">links</a>{', '}
+        <button>buttons</button>{', '}
+        and even <div> <div> <div> deeply nested components </div> </div> </div>  are translated.
+      </p>
+    </T> // [!code highlight]
+  );
+}
+```
+
+### 2. Translate both client and server components
+
+With first class support for the Next.js [App Router](https://nextjs.org/docs/app) and
+[React Server Components](https://react.dev/reference/rsc/server-components),
+you can translate both client and server components.
+
+```jsx title="src/components/MyServerComponent.jsx" copy
+import getName from "@/getName";
+import { T, Var } from "gt-next";
+
+export default async function MyServerComponent() {
+  const name = await getName();
+
+  return (
+    <T>
+      {/* [!code highlight] */}
+      Hello, <Var>{name}</Var>
+    </T>
+  );
+}
+```
+
+```jsx title="src/components/MyClientComponent.jsx" copy
+"use client";
+
+import { useState } from "react";
+import { T, Var } from "gt-next";
+
+export default function MyClientComponent() {
+  const [name, setName] = useState("Alice");
+
+  return (
+    <T>
+      {/* [!code highlight] */}
+      Hello, <Var>{name}</Var>
+    </T>
+  );
+}
+```
+
+### 3. Write content inline or in dictionaries
+
+JSX content placed inside a `<T>` component is marked for translation:
+
+```jsx title="Page.jsx" copy
+import { T } from "gt-next";
+
+export default function Page() {
+  return (
+    <T>
+      {/* [!code highlight] */}
+      <p>Hello, World!</p>  {/* translates <p>Hello, World!</p> */}
+    </T>
+  )
+}
+```
+
+Alternatively, if you prefer using the historic dictionary approach, you can write your content in a dictionary file:
+<Tabs items={['.json', '.js', '.ts']}>
+  <Tab value=".json">
+  ```json title="dictionary.json" copy
+  {
+    "greeting": "Hello, World!"
+  }
+  ```
+  </Tab>
+  <Tab value=".js">
+  ```js title="dictionary.js" copy
+  const dictionary = {
+    greeting: "Hello, World!"
+  }
+  export default dictionary;
+  ```
+  </Tab>
+  <Tab value=".ts">
+  ```ts title="dictionary.ts" copy
+  const dictionary = {
+    greeting: "Hello, World!" 
+  }
+  export default dictionary;
+  ```
+  </Tab>
+</Tabs>
+```jsx title="page.jsx" copy
+import { useDict } from "gt-next";
+
+export default function Page() {
+  const d = useDict();
+  return d('greeting'); // translates "Hello, World!" // [!code highlight]
+}
+```
+
+### 4. View translated content in development
+
+No need to worry about how UI looks in different languages,
+**General Translation will automatically translate your content as you write it in real-time.**
+
+Instead of having to continuously revise your UI multiple times in production,
+simply write your content in English **once** and let General Translation handle the rest.
+
+Need to see how your UI elements look in German before deploying? No problem, General Translation will automatically translate them for you!
+
+### 5. Translate content on-demand
+
+Apps often need to translate content only known at runtime.
+For Next.js, GT libraries support the ability to translate content on demand.
+
+Some common examples include:
+ - User-specific information
+ - Remotely stored content
+ - Content that is generated dynamically
+
+Once the translation is loaded, it will rewrite your component in real time with the new translation content.
+
+
+## Get started
+
+
+<Tabs items={['Next.js', 'React']}>
+  <Tab value="Next.js">
+  Follow the [Quickstart](/docs/next/tutorials/quickstart) guide to ship your first translations.
+    <Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
+      <Tab value="npm">
+      ```bash 
+      npm i gt-next
+      ``` 
+      </Tab>
+      <Tab value="yarn">
+      ```bash 
+      yarn add gt-next
+      ```
+      </Tab>
+
+      <Tab value="bun">
+      ```bash 
+      bun add gt-next
+      ```
+      </Tab>
+
+      <Tab value="pnpm">
+      ```bash 
+      pnpm add gt-next
+      ```
+      </Tab>
+    </Tabs>
+  </Tab>
+  <Tab value="React">
+  Follow the [Quickstart](/docs/react/tutorials/quickstart) guide to ship your first translations.
+    <Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
+      <Tab value="npm">
+      ```bash 
+      npm i gt-react
+      ``` 
+      </Tab>
+      <Tab value="yarn">
+      ```bash 
+      yarn add gt-react
+      ```
+      </Tab>
+
+      <Tab value="bun">
+      ```bash 
+      bun add gt-react
+      ```
+      </Tab>
+      <Tab value="pnpm">
+      ```bash 
+      pnpm add gt-react
+      ```
+      </Tab>
+    </Tabs>
+  </Tab>
+</Tabs>
+
+Ready to go global? Start translating your app in minutes and reach users worldwide! 
+
+<Cards>
+  <Card
+    title="Next.js Quickstart"
+    href="/docs/next/tutorials/quickstart"
+  />
+  <Card
+    title="React Quickstart"
+    href="/docs/react/tutorials/quickstart"
+  />
+</Cards>

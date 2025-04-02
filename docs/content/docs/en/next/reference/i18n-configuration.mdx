@@ -1,0 +1,156 @@
+---
+title: i18n Configuration
+description: Configuring i18n behavior in your Next.js application
+---
+
+## Overview
+
+The [`withGTConfig()`](/docs/next/api/config/withGTConfig) function initializes General Translation (GT) settings for a Next.js application.
+By passing props to this function, we can control the internationalization (i18n) behavior of the app.
+This includes setting the default locale (a.k.a. the fallback language), supported locales, and other translation-related options.
+
+
+## Adding the plugin
+
+The first step is to add the `withGTConfig()` plugin function to your next config file.
+
+### Locating your next config file
+
+In the root directory of your project, there should be a file called `next.config.js` (or `.ts`, `.mjs`, `.cjs`).
+
+<Files>
+  <Folder name="my-app" defaultOpen={true}>
+    <Folder name="src" defaultOpen>
+      <Folder name="app">
+        <File name="page.js" />
+      </Folder>
+      <Folder name="components">
+        <File name="Header.js" />
+        <File name="Footer.js" />
+      </Folder>
+    </Folder>
+    <Folder name="public">
+      <File name="favicon.ico" />
+    </Folder>
+    <File name="next.config.js" />
+    <File name=".gitignore" />
+    <File name="package.json" />
+    <File name="README.md" />
+  </Folder>
+</Files>
+
+### Add the plugin
+
+Set up a basic configuration for the plugin in your `next.config.js` file.
+This will fallback to the default values.
+
+```js title="next.config.mjs" copy
+import { withGTConfig } from 'gt-next/config';
+
+const nextConfig = {}
+
+export default withGTConfig(nextConfig);
+```
+
+## Some Examples
+
+### Basic Usage
+
+In this configuration, we specify that the app is available in `English`, `Spanish`, and `French`.
+We also specify that the default language is `English`.
+We also add the description `"A personal blog about technology and travel"`.
+This description will accounted in every translation that is performed.
+
+```js title="next.config.mjs" copy
+import { withGTConfig } from 'gt-next/config'
+
+const nextConfig = {}
+
+export default withGTConfig(nextConfig, {
+  defaultLocale: "en-US", // the default language of your app, usually "en" or "en-US"
+  locales: ["en-US", "es", "fr"], // the languages your app is available in
+  description: "A personal website for John Smith" // a natural language description of your site used to aid in translation
+});
+```
+
+### Include Locales [#include-locales]
+
+`withGTConfig()` allows you to specify a list of locales you would like to include.
+For example, this configuration specifies that the app will be made available in English, Chinese, and Japanese.
+
+This means that the app will only be available in these languages.
+Any locales not included in this list will not be translated.
+For instance, if a user tries to access the app in a language not listed, the app will default to the specified default locale.
+
+<Callout>
+    By default, your app can be translated into all available languages.
+</Callout>
+
+```js title="next.config.mjs"
+import { withGTConfig } from 'gt-next/config'
+
+const nextConfig = {}
+
+export default withGTConfig(nextConfig, {
+  defaultLocale: "en-US",
+  locales: ["en-US", "zh", "jp"]
+});
+
+```
+
+To see a list of supported locales, refer to the [Supported Locales](/docs/reference/supported-locales).
+For a more detailed guide on selecting locales, refer to the [Locale Management Guide](/docs/next/reference/locale-management).
+
+### Configuring `getLocale()`
+
+`i18n` is a string that specifies a custom path to a file that defines a `getLocale()` function.
+You can specify custom behavior for determining the user's locale by creating a file that exports a function called `getLocale()`.
+
+```js title="myapp/next.config.mjs" copy
+import { withGTConfig } from 'gt-next/config'
+
+const nextConfig = {};
+
+export default withGTConfig(nextConfig, {
+  defaultLocale: "en-US", // the default language of your app, usually "en" or "en-US"
+  i18n: "./i18n.js"
+});
+```
+
+
+```js title="myapp/i18n.js" copy
+import { cookies } from "next/headers";
+
+export async function getLocale() {
+  const cookieStore = await cookies();
+  return cookieStore.get('myCustomLocaleCookie') || 'en';
+}
+```
+
+### Preferred Provider [#preferred-provider]
+
+`preferredModelProvider` allows you to specify a preferred model provider.
+Currently, only Anthropic and OpenAI are enabled, but more providers will be added in the future.
+
+We will route all your translations to your preferred LLM provider, but if your preferred model is not available or is not readily accessible, we will fallback on a different provider.
+
+```js title="next.config.mjs" copy
+import { withGTConfig } from 'gt-next/config'
+
+const nextConfig = {};
+
+export default withGTConfig(nextConfig, {
+  defaultLocale: "en-US",
+  preferredModelProvider: "anthropic"
+});
+```
+
+---
+
+## Notes
+ * `withGTConfig()` allows you to configure the behavior of GT in your Next.js application.
+ * You can specify the default locale, supported locales, and other translation-related options.
+
+
+## Next Steps
+ * Read the API documentation for [`withGTConfig()`](/docs/next/api/config/withGTConfig).

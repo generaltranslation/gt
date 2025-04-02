@@ -1,0 +1,139 @@
+---
+title: loadTranslations()
+description: API Reference for the loadTranslations() function.
+---
+
+## Overview
+
+
+Use `loadTranslations()` to specify translation loading behavior.
+By default, your app will load translations from the GT CDN in production.
+You can specify a `loadTranslations()` function to load translations from a different source, such as:
+ * From your app's bundle (most common)
+ * From a database
+ * From an API
+ * From a different CDN
+
+We have integrated support for loading translations from local files in your app's bundle.
+Follow [this guide](/docs/next/reference/local-tx) to set up local translations in your Next.js app.
+
+If you are looking to manually define your own translations, check out the [custom translations guide](/docs/next/reference/stand-alone)
+ and the [`loadDictionary()`](/docs/next/api/config/load-dictionary) function.
+
+## Reference
+
+### Parameters
+<TypeTable
+  type={{
+    "locale": {
+        type: 'string',
+        optional: false,
+    },
+  }}
+/>
+
+### Description
+| Type | Description |
+| ---- | ----------- |
+| `locale` | The locale for which translations should be loaded. |
+
+### Returns
+
+A `Promise<any>` that resolves to dictionary mapping ids to translations for the given locale.
+
+---
+
+## Setup
+
+Define your `loadTranslations()` as the default export for a file with the name `loadTranslations.js` or `loadTranslations.ts` either in the `src/` directory or the root.
+Make sure to have the function return a promise that resolves to an object with translations for the given locale.
+
+```js title="src/loadTranslations.js"
+export default async function loadTranslations(locale) {
+  const translations = await import(`../public/locales/${locale}.json`);
+  return translations.default;
+};
+```
+
+If you want to use a different name or path, pass the relative path through the `loadTranslationsPath` parameter in [`withGTConfig()`](/docs/next/api/config/withGTConfig).
+
+---
+
+
+
+## Examples
+
+### Fetching translations from your bundle
+
+```js title="src/loadTranslations.js"
+export default async function loadTranslations(locale) {
+  const translations = await import(`../public/locales/${locale}.json`);
+  return translations.default;
+};
+```
+
+When configured to use [local translations](/docs/next/reference/local-tx), the [`gtx-cli translate`](/docs/cli/translate) command,
+will save translations in your project's file tree.
+
+You can  translation files for your bundle with this command:
+
+```bash
+npx gtx-cli translate --no-publish --translations-dir ./public/locales
+```
+
+
+
+### Load translations from a CDN
+
+```js title="loadTranslations.js"
+export default async function loadTranslations(locale) {
+  try {
+    const translations = await fetch(`https://your-cdn.com/translations/${locale}.json`);
+    const data = await translations.json();
+    return data;
+  } catch (e) {
+    console.error(e);
+    return {};
+  }
+};
+```
+
+### Load translations from your own database
+
+```js title="loadTranslations.js"
+export default async function loadTranslations(locale) {
+  try {
+    const translations = await prisma.translation.findUnique({
+      where: {
+        locale: locale,
+      },
+    });
+    return translations;
+  } catch (e) {
+    console.error(e);
+    return {};
+  }
+};
+```
+
+
+<Callout>
+  **Question:** What's the difference between [`loadTranslations()`](/docs/next/api/config/load-translations) and [`loadDictionary()`](/docs/next/api/config/load-dictionary)?
+
+  * [`loadTranslations()`](/docs/next/api/config/load-translations) is used to define custom loading behavior for fetching translations for your app.
+  This could be getting translations from a CDN, a database, or your app's bundle.
+  These are usually machine generated translations, managed by the cli tool, and not very user friendly to edit.
+  * [`loadDictionary()`](/docs/next/api/config/load-dictionary) is intended for implementations of `gt-next` as a standalone library.
+  Users bring their own translations and no translation infrastructure is used.
+</Callout>
+
+---
+
+## Notes
+ * `loadTranslations()` gives you the ability to customize how translations are loaded in your app in production.
+ * Its most common use case is for adding [local translations](/docs/next/reference/local-tx)
+
+## Next steps
+ * Learn about why you might want to use [local translations](/docs/next/reference/local-tx)
+ * Add your own translations with the [custom translations guide](/docs/next/reference/stand-alone)
+

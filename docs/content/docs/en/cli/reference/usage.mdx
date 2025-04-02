@@ -1,0 +1,197 @@
+---
+title: Usage Guide
+description: Usage guide for the GT command line tool
+---
+
+## Overview
+
+This guide will walk you through the process of using General Translation's CLI tool (`gtx-cli`) to translate your project.
+
+The CLI tool is compatible with any i18n library, whether you are using `gt-next`, `gt-react`, or third-party libraries like [`next-intl`](/docs/cli/tutorials/next-intl-quickstart) or [`react-i18next`](/docs/cli/tutorials/react-i18next-quickstart).
+
+The CLI tool is responsible for connecting your project to General Translation's AI translation service.
+
+There are several ways to use the CLI tool, please navigate to the relevant section for your use case.
+
+## Installation
+
+To install the CLI tool, run the following command:
+
+
+<Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
+  <Tab value="npm">
+  ```bash 
+  npm i --save-dev gtx-cli
+  ``` 
+  </Tab>
+  <Tab value="yarn">
+  ```bash 
+  yarn add --dev gtx-cli
+  ```
+  </Tab>
+
+  <Tab value="bun">
+  ```bash 
+  bun add --dev gtx-cli
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash 
+  pnpm add --save-dev gtx-cli
+  ```
+  </Tab>
+</Tabs>
+
+---
+
+## Use Cases
+
+
+### Translating GT projects
+
+The CLI tool can be used to translate your projects which use `gt-next` or `gt-react`.
+
+This guide assumes you have already setup your codebase to use `gt-next` or `gt-react` according to the [gt-next](/docs/next/tutorials/quickstart) or [gt-react](/docs/react/tutorials/quickstart) tutorials.
+
+
+<Accordions>
+  <Accordion title="My project is already in multiple languages in development, what's the point of this step?">
+    If you followed the quickstart guides for `gt-next` or `gt-react`, your project has only been internationalized in your
+    development environment. When shipping your project to production, you will need to actually generate and save the translations.
+  
+    This step is necessary to ensure that your API keys are not exposed to the public, due to client-side vulnerabilities for frameworks like React.
+   
+  </Accordion>
+</Accordions>
+
+1. First, you will need to initialize the CLI tool in your project.
+
+```bash
+npx gtx-cli init
+```
+
+2. Next, you will need to create a project in the [General Translation dashboard](https://generaltranslation.com/dashboard).
+
+After creating a project, you will need to generate a production API key. Navigate to the "API Keys" page and click the "Create API Key" button.
+
+3. Then, add your API key and Project ID to your environment variables.
+
+```bash title=".env"
+GT_API_KEY=<your-api-key>
+GT_PROJECT_ID=<your-project-id>
+```
+
+4. Finally, run the translation command.
+
+```bash
+npx gtx-cli translate
+```
+
+<Callout type="info">
+  By default, the CLI tool will publish the translations to the General Translation CDN, so they are ready to be used in your project.
+  If you would like to disable this behavior (for example, if you are loading translations from a different source), add the `--no-publish` flag to the command.
+</Callout>
+
+See the [API reference](/docs/cli/translate) for more information on the `translate` command.
+
+
+
+### Translating language files (3rd party i18n libraries or standalone GT projects)
+
+The CLI tool allows you to translate language files for 3rd party i18n libraries or with a stand-alone implementation of [`gt-next`](/docs/next/reference/stand-alone) or [`gt-react`](/docs/react/reference/stand-alone).
+
+Most i18n libraries rely on JSON files to store translation data.
+The CLI tool can be used to automatically translate these JSON files into your desired languages.
+
+1. First, you will need to initialize the CLI tool in your project.
+
+```bash
+npx gtx-cli init
+```
+This command will create a `gt.config.json` file in the root of your project, containing some basic configuration settings, such as your project's default locale and supported locales.
+
+2. Next, you will need to create a project in the [General Translation dashboard](https://generaltranslation.com/dashboard).
+
+After creating a project, you will need to generate a production API key. Navigate to the "API Keys" page and click the "Create API Key" button.
+
+3. Then, add your API key and Project ID to your environment variables.
+
+```bash title=".env"
+GT_API_KEY=<your-api-key>
+GT_PROJECT_ID=<your-project-id>
+```
+
+4. Finally, run the translation command.
+
+```bash
+npx gtx-cli translate
+```
+
+<Callout type="info">
+  By default, the CLI tool will look in the `translationsDir` directory specified in your `gt.config.json` file for language files to translate.
+  It will use the `defaultLocale` specified in your `gt.config.json` file as the source language.
+
+  It will also publish the translations to the General Translation CDN, so they are ready to be used in your project.
+  If you would like to disable this behavior, add the `--no-publish` flag to the command.
+</Callout>
+
+
+<Accordions>
+  <Accordion title="Why are my files not being translated?">
+    If your files are not being translated, it is likely that your `gt.config.json` file is not configured correctly.
+
+    The `translationsDir` should be set to the directory containing your language files, and contain a wildcard (`*`) to match all language files.
+
+    For example, if your language files are stored in the `src/locales` directory, your `gt.config.json` file should look like this:
+
+    ```json
+    {
+      "defaultLocale": "en",
+      "supportedLocales": ["en", "fr", "es"],
+      "translationsDir": "src/locales/*.json"
+    }
+    ```
+  </Accordion>
+</Accordions>
+
+### Generating language files for GT projects
+
+The CLI tool can be used to generate language files for projects which use `gt-next` or `gt-react`.
+
+This use case is useful if you would like to use your own translation provider. 
+
+Unlike other i18n libraries, `gt-next` and `gt-react` support in-line translations, meaning there is no traditional JSON file structure containing keys and values for each language.
+
+This means that in order to track changes to text, GT libraries store the hashes of the original text in the source code.
+
+This internal data structure (containing hashes) is hard to work with, and therefore the CLI tool provides a handy command to generate language files for your project.
+
+1. First, you will need to initialize the CLI tool in your project.
+
+```bash
+npx gtx-cli init
+```
+
+When asked "Where are your language files stored?", select the "Local" option.
+
+2. Run:
+
+```bash
+npx gtx-cli generate
+```
+
+This command will generate a source file for your default locale, and all other locales you have configured for your project.
+
+The content for each file is the same, and will be merged with any previous translations you have in your project.
+
+See the [API reference](/docs/cli/generate) for more information on the `generate` command.
+
+---
+
+## Notes
+ * [`gtx-cli translate`](/docs/cli/translate) is used to automatically generate translations for your project.
+ * If you are using a 3rd party i18n library, you can automatically update all of your translation JSON files every time your project changes. Just add the [`gtx-cli translate`](/docs/cli/translate) command to your build or CD process before the build command to automatically add translations to your project.
+
+## Next steps
+ * See the [CLI API reference](/docs/cli) for more information.
+ * If you want to see live translations in development (think hot reload), check out the [`<T>` component](/docs/usage/t).

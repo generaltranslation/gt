@@ -1,0 +1,13 @@
+{
+  "defaultLocale": "en",
+  "files": {
+    "json": {
+      "include": ["content/ui.[locale].json"]
+    },
+    "mdx": {
+      "include": ["content/docs/[locale]/**/*.mdx"]
+    }
+  },
+  "locales": ["zh", "de", "fr", "es", "ja"],
+  "_versionId": "e98f842a4df65ed6aba079824f9a3569d1a7576cff76f33046849045594b3184"
+}

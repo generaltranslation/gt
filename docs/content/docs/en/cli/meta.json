@@ -1,0 +1,26 @@
+{
+  "title": "CLI Tool",
+  "icon": "Terminal",
+  "pages": [
+    "[House][Home](/docs)",
+    "tutorials/quickstart",
+    "---Commands---",
+    "init",
+    "setup",
+    "scan",
+    "translate",
+    "generate",
+    "---Automated Translation---",
+    "tutorials/gt",
+    "tutorials/next-intl-quickstart",
+    "tutorials/i18next-quickstart",
+    "tutorials/json",
+    "tutorials/mdx",
+    "---Reference---",
+    "reference/config",
+    "reference/usage",
+    "reference/wrapping"
+  ],
+  "root": true,
+  "description": "gtx-cli"
+}

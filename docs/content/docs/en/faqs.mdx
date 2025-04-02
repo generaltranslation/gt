@@ -1,0 +1,86 @@
+---
+title: FAQs
+---
+## Technical FAQs
+
+### Where does the `<T>` get its translations? What translations does it use?
+
+`<T>` can technically load translations from anywhere depending on how you've configured the library. 
+If you have a project ID, the library can hit a free CDN. 
+It can also store translations locally, or do a mix of the two. 
+See the [load-translations docs](/docs/next/api/config/load-translations#fetching-translations-from-your-bundle) for more details.
+
+During development, so you can see the translations hot-reload when you change content, the `<T>` component hits an API which uses a small AI model to create temporary translations. These translations aren't stored anywhere, they're just served back to the app.
+
+In production, `<T>` won't do this in order to not leak your API keys.
+
+### Why do I have to install the CLI tool?
+
+The CLI tool parses the content inside all `<T>` components and generates translations for that content in advance, 
+so that all the translations are ready when your app is deployed to production. 
+In development, you don't need it because you can use development API keys to translate on demand. 
+
+
+### Is there an automatic fallback for missing translations in production?
+
+Yes, if in production, a translation for some content is missing, the library will automatically fallback to the original source text.
+
+### Does the AI translation also work with dynamic content and variables?
+
+The `<T>` component doesn't support translating dynamic content and variables, 
+because this means the translations could potentially change with every re-render. 
+However, you can still include dynamic content and variables inside a `<T>` by wrapping them with 
+`<Var>`, `<Datetime>`, `<Currency>` components. 
+This is similar to how other libraries do string interpolation.
+
+For gt-next, there is also a `<Tx>` server-side component which does actually do translations on the spot in production, 
+and supports any form of dynamic content, but it requires an API key.
+
+### How does the offline system work? Can I deploy an application with GT without dependency on your servers?
+
+Yes you can, but you'd have to do the translations yourself, 
+then load them either from your own bundle or your own CDN. 
+See our docs on that: [here](/docs/next/api/config/load-translations#fetching-translations-from-your-bundle).
+
+## Business FAQs
+
+### Do I own my translations?
+
+**Yes.** 
+
+> You, the customer, retain full ownership and rights to any translated output produced through the Services. We make no claim to your output.
+
+For more, see our [Terms of Use](https://generaltranslation.com/terms).
+
+## General FAQs
+
+### What are tokens?
+
+When text is sent to [GT](https://www.generaltranslation.com) APIs, it is broken down into chunks called *tokens*.
+Think of tokens as small pieces of your input text, like words or parts of words, that an AI model uses to understand and translate your content.
+
+> A helpful rule of thumb is that one token generally corresponds to ~4 characters of text for common English text. This translates to roughly ¾ of a word (so 100 tokens ~= 75 words).
+
+For example, the string `Hello, world!` has 13 characters, and 4 tokens: `Hello`, `,`, ` world`, and `!`.
+
+If you go over the token limit for your plan, we begin to charge based on token usage. 
+We only ever charge based on the length of your input — never the length of the translation.
+Read more about our available plans [here](https://generaltranslation.com/pricing).
+
+For example, imagine you have the string `"Hello, world!"`, and your project's languages are `"fr"` (French), `"es"` (Spanish), and "`de"` (German).
+Token usage will be calculated as `4 * 3 = 12`. That is, the 4 tokens of `"Hello, world!"`, translated 3 times.
+
+We currently tokenize with OpenAI's `tiktoken`, which is the same tokenizer used by [GPT-4](https://openai.com/index/gpt-4/). You can explore this tokenizer [here](https://platform.openai.com/tokenizer).
+
+### Locales? Languages? Regions? What's the difference?
+
+Throughout this documentation, you will see us use the term *locale* and *language* somewhat interchangeably.
+For the most part, they do mean the same thing, but there are some subtle differences, and these will be made clear when necessary.
+
+*Language* refers to a spoken or written form of communication used by humans.
+
+*Region* refers to the area where a language is spoken or written. Of course, the language may remain the same, but vary between regions. For example, Canadian French versus French as spoken in France.
+
+*Locale* is a combination of a language and a region, and is used to specify a particular language in a particular region. For example, `en-US` is English as spoken in the United States.
+
+These differences are detailed further in our documentation on [Locale Strings](/docs/reference/locale-strings).

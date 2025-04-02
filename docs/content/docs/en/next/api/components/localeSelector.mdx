@@ -1,0 +1,44 @@
+---
+title: <LocaleSelector>
+description: API Reference for the <LocaleSelector> component
+---
+
+## Overview
+
+The `<LocaleSelector>` component is used to select the user's locale.
+It is a client side component that provides a dropdown to select the locale.
+
+## Reference
+
+### Returns
+
+A component that allows the user to select their locale.
+
+---
+
+## Examples
+
+### Basic Usage
+
+```jsx
+"use client";
+import { LocaleSelector } from 'gt-next/client';
+
+export default function MyComponent() {
+    return (
+        <LocaleSelector />
+    );
+}
+```
+
+---
+
+## Notes
+* The `<LocaleSelector>` component allows you to select a different locale for your app.
+* The `<LocaleSelector>` component is not available in the server component.
+
+## Next Steps
+
+* Learn more about the [`useLocale()`](/docs/next/api/helpers/useLocale) hook.
+* Check out the [`useLocaleSelector()`](/docs/next/api/helpers/useLocaleSelector) hook for defining a custom locale selector.
+* Learn more about locale strings [here](/docs/reference/locale-strings).

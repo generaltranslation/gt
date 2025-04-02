@@ -1,0 +1,317 @@
+---
+title: React Quickstart
+description: Internationalize your React App in 5 minutes with gt-react
+---
+
+## Overview
+
+This guide describes how to internationalize an existing [React](https://react.dev) project.
+
+We will cover 4 simple steps:
+
+<Steps>
+  <Step>
+    Installing the required libraries
+  </Step>
+  <Step>
+    Select languages
+  </Step>
+  <Step>
+    Add the `<T>` component
+  </Step>
+  <Step>
+    Add your environment variables
+  </Step>
+</Steps>
+
+This entire process should take under **5 minutes**.
+
+---
+
+## Setup
+
+### 1. Install libraries
+
+Install the [gt-react](https://www.npmjs.com/package/gt-react) and [gtx-cli](https://www.npmjs.com/package/gtx-cli) libraries.
+
+<Tabs items={["npm", "yarn", "bun", "pnpm"]}>
+  <Tab value="npm">
+  ```bash 
+  npm i gt-react
+  npm i gtx-cli --save-dev
+  ``` 
+  </Tab>
+  <Tab value="yarn">
+  ```bash 
+  yarn add gt-react
+  yarn add gtx-cli --dev
+  ```
+  </Tab>
+  <Tab value="bun">
+  ```bash 
+  bun add gt-react
+  bun add -d gtx-cli
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash 
+  pnpm add gt-react
+  pnpm add -D gtx-cli
+  ```
+  </Tab>
+</Tabs>
+
+
+### 2. Select languages
+
+[`<GTProvider>`](/docs/react/api/components/gtprovider) is used to configure the behavior of `gt-react`. 
+It should be placed as high up in your app as possible, ideally at the root.
+
+Just pass a list of [locale codes](/docs/reference/supported-locales) to add them to your app.
+
+```jsx title="App.js" copy
+import { GTProvider } from "gt-react";
+import MyApp from "./MyApp";
+
+export default function App() {
+  return (
+    // French and Chinese support 
+    // [!code highlight]
+    <GTProvider locales={['fr', 'zh']}> 
+      <MyApp />
+    </GTProvider> // [!code highlight]
+  );
+}
+```
+
+For a full list of `<GTProvider>` props and extended documentation, see the [API reference](/docs/react/api/components/gtprovider).
+
+### 3. Add the `<T>` component
+
+Wrap any nested JSX content in the [`<T>` component](/docs/react/api/components/t) to make it translatable.
+For more information, check out the [guide on using `<T>` components](/docs/react/reference/t-reference).
+
+```jsx title="Example.js" copy
+import { T } from "gt-react";
+
+export default function Example() {
+  return (
+    // [!code highlight]
+    <T>
+      <p>
+        This gets translated.
+      </p>
+    </T>  // [!code highlight]
+  );
+}
+```
+
+Use the [`<Var>` component](/docs/react/api/components/var) to designate JSX content that should not be translated.
+
+```jsx title="Example.js" copy
+import { T, Var } from "gt-react";
+
+export default function Example() {
+  return (
+    // [!code highlight]
+    <T>
+      <p>
+        This gets translated. <Var>This does not.</Var>
+      </p>
+    </T>  // [!code highlight]
+  );
+}
+```
+
+<Callout type="info">
+  **Tip:**
+  To save time, run [the setup command](/docs/cli/setup).
+  This will scan your codebase for translatable JSX and insert the [`<T>`](/docs/react/api/components/t) tags for you.
+
+  ```bash title="shell" copy
+  npx gtx-cli setup
+  ```
+</Callout>
+
+For strings, you can use [`useGT()`](/docs/react/api/strings/useGT) for translation.
+For more information, check out [this guide](/docs/react/reference/translating-strings).
+
+```jsx title="Example.js" copy
+import { useGT } from "gt-react";
+
+export default function Example() {
+  const t = useGT(); // [!code highlight]
+  return (
+    <p>
+      {/* [!code highlight] */}
+      {t("This gets translated.")}
+    </p>
+  );
+}
+```
+
+### 4. Add your environment variables
+
+Add your API key and Project ID to your environment variables.
+
+<Steps>
+    <Step>
+        Navigate to the [Dashboard](https://generaltranslation.com/dashboard).
+            * Navigate to the **Developer Keys** page in the sidebar.
+    </Step>
+
+    <Step>
+        Click **Create Dev API Key** then copy the API key and Project ID to your clipboard.
+    </Step>
+    <Step>
+        Add the Project ID and API Key to your environment variables.
+        Depending on your React framework, the environment variables may look slightly different.
+        These instructions are for **DEVELOPMENT ENVIRONMENTS ONLY**.
+        <Tabs items={["Vite", "Gatsby", "RedwoodJS", "create-react-app", "Other"]}>
+            <Tab value="Vite">
+            ```bash copy
+            VITE_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            VITE_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="Gatsby">
+            ```bash copy
+            GATSBY_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            GATSBY_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="RedwoodJS">
+            ```bash copy
+            REDWOOD_ENV_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            REDWOOD_ENV_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="create-react-app">
+            ```bash copy
+            REACT_APP_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            REACT_APP_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="Other">
+            Many react frameworks each have a unique way of exporting environment variables to the client.
+            In development environments, both `GT_API_KEY` and `GT_PROJECT_ID` need to be exported to the client.
+
+            We have added support for a few libraries so far,
+            but please let us know if your framework is not listed by creating an issue on our [GitHub repository](https://github.com/General-Translation/gt-libraries/issues/new).
+            </Tab>
+        </Tabs>
+    </Step>
+</Steps>
+<Callout type="warn">
+    **Protect Your API Keys!**
+
+    React environment variables are often bundled into your application at build time and are publicly visible in the client-side code.
+    For security reasons, you should:
+    
+    - Only use development API keys during local development
+    - Only use production API keys with the CLI tool for deployment
+    - **Never include any API keys as environment variables in production**
+</Callout>
+
+
+---
+
+## Let's try it out!
+
+Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
+
+### See Your App in a Different Language
+
+<Steps>
+  <Step>
+    Add the [`<LocaleSelector>`](/docs/react/api/components/localeSelector) component to your app.
+    This will allow you to select a different language for your app.
+    <Callout>
+      **Tip:**
+      You can also change your language in your browser settings.
+    </Callout>
+  </Step>
+  <Step>
+    Start your React app in development mode.
+    <Tabs items={["npm", "yarn", "bun", "pnpm"]}>
+      <Tab value="npm">
+      ```bash
+      npm run dev 
+      ```
+      </Tab>
+      <Tab value="yarn">
+      ```bash 
+      yarn run dev 
+      ```
+      </Tab>
+      <Tab value="bun">
+      ```bash
+      bun run dev 
+      ```
+      </Tab>
+      <Tab value="pnpm">
+      ```bash
+      pnpm run dev 
+      ```
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step>
+    Open up your app in your preferred browser (usually at
+    [http://localhost:3000](http://localhost:3000)).
+  </Step>
+</Steps>
+
+### Troubleshooting
+
+<Accordions>
+  <Accordion title="My app's language is not changing, even though I've changed my browser's language.">
+    **Browser Cookies**
+
+    If you are deciding to test different languages by changing your browser's language, this issue may occur.
+
+    Check your browser's cookies for your app.
+    General translation uses cookies to store the user's language preference.
+    The cookie is called `generaltranslation.locale`, and all you need to do is delete it.
+    Then, just double check you are using the desired perferred language and then
+    refresh the page.
+
+    How to check cookies:
+    * [Chrome](https://support.google.com/chrome/answer/95647)
+    * [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
+    * [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
+    * [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
+
+    If this does not work, make sure that the list of locales in your [`<GTProvider>`](/docs/react/api/components/gtprovider) is up to date.
+  </Accordion>
+  <Accordion title="Why do new languages take a long time to load?">
+    **On-Demand Translation**
+
+    You may notice when loading languages in development, translations will take a few seconds to be displayed.
+    This happens because your app is being translated in real time.
+    We refer to this process as an "on-demand translation".
+    
+    This **only happens in dev** so you can easily prototype your website in different languages.
+    All translations are preloaded in production, so there will be no delay.
+    Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
+  </Accordion>
+  <Accordion title="Why are some things translating and others not?">
+    **JSX Translation**
+
+    Right now, the setup tool automatically adds `<T>` components around text content.
+    We are currently working on a solution that will automatically setup string translations.
+    Until then, if you are rendering a string, please follow [this guide](/docs/react/reference/translating-strings) for translating strings.
+  </Accordion>
+</Accordions>
+
+---
+
+## Shipping to Production
+
+Follow our guide on [shipping to production](/docs/react/tutorials/quickdeploy).
+
+---
+
+## Next steps
+ * See our [React API reference](/docs/react/api/components/t) for detailed information about the `<T>` component and other available components.
+ * Create a list of approved languages for your app with the [React plugin](/docs/react/reference/local-management#include-locales).
