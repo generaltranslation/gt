@@ -1,0 +1,199 @@
+---
+title: <T>
+description: API Reference for the <T> component
+---
+
+## Overview
+
+The `<T>` component is the main translation method in `gt-react`.
+
+```jsx
+<T id="example"> // [!code highlight]
+    Today, I went to
+    {" the store"}
+    <p>
+        to <b>buy</b> some <i>groceries</i>.
+    </p>
+</T> // [!code highlight]
+```
+
+The `<T>` component supports translating plain text as well as complex JSX structures.
+Additionally, it provides features for handling variables, plurals, and context-specific translations.
+
+<Callout>
+**Buildtime Translation:**
+`<T>` translations occur at buildtime.
+This means translation happens before deployment to reduce latency.
+Make sure to follow the [deployment guide here](/docs/react/tutorials/quickdeploy).
+</Callout>
+
+
+
+## Reference
+
+### Props
+<TypeTable
+  type={{
+    "children": {
+        type: 'any',
+        optional: false,
+    },
+    "id": {
+        type: 'string',
+        optional: false,
+    },
+    "context?": {
+        type: 'string',
+        optional: true,
+        default: 'undefined',
+    },
+  }}
+/>
+
+### Descriptions
+| Prop            | Description                                                                                     |
+|-----------------|-------------------------------------------------------------------------------------------------|
+| `children`  | The content to be translated. This can include plain text or JSX structures.                    |
+| `id`        | A unique identifier for the translation string. This ensures consistent translation across your app. |
+| `context`   | Additional context to refine the translation. Useful for resolving ambiguous phrases.           |
+
+### Returns
+
+
+`React.JSX.Element|undefined` which contains the rendered translation or fallback content based on the provided configuration.
+
+---
+
+## Behavior
+
+### Production
+During the CD process, any children inside of a `<T>` will be translated before your application is deployed.
+This ensures fast load times for all locales, but it can only translate content known at build time.
+
+Once generated, translations are either (1) stored in the CDN or (2) stored in your app's build output, according to your configuration.
+From there, the translated content is served to your users.
+If a translation is not found, it will fallback to the originial content.
+
+Make sure to follow the [deployment guide here](/docs/react/tutorials/quickdeploy).
+
+### Development
+During development, the `<T>` function will translate content on demand.
+This is useful for prototyping what your app will look like in different languages.
+Remember to add a Dev API key to your environment to enable this behavior.
+
+While loading, `<T>` will return undefined unless languages are similar (en-US vs en-GB), though this behavior can be customized with render settings.
+If an error occurs, `<T>` will return the original content.
+
+You will see a delay during on-demand translation in development.
+This delay will not occur during for production builds as everything will already be translated.
+
+---
+
+## Examples
+
+### Basic usage
+
+The `<T>` component can translate simple strings using an `id` and its children.
+Remember, the `<T>` component must be used inside a [`<GTProvider>`](/docs/react/reference/t-reference#gtprovider) to access the translations.
+
+```jsx title="SimpleTranslation.jsx" copy
+import { T } from 'gt-react';
+
+export default function Greeting() {
+    return (
+        <T id="greeting"> // [!code highlight]
+            Hello, world!
+        </T> // [!code highlight]
+    );
+}
+```
+
+
+### With variables
+The `<T>` component can include variables for dynamic content within translations.
+
+```jsx title="DynamicGreeting.jsx" copy
+import { T, Var } from 'gt-react';
+
+export default function DynamicGreeting(user) {
+    return (
+        <T id="greeting">
+            Hello, <Var>{user.name}</Var>! // [!code highlight]
+        </T>
+    );
+}
+```
+
+### With plurals
+The `<T>` component also supports pluralization using the `<Plural>` component.
+
+```jsx title="ItemCount.jsx" copy
+import { T, Plural } from 'gt-react';
+
+export default function ItemCount({ count }) {
+    return (
+        <T id="item_count">
+            <Plural n={count}  // [!code highlight] 
+                singular={<>You have an item.</>}  // [!code highlight] 
+                plural={<>You have items.</>}  // [!code highlight] 
+            />  // [!code highlight]
+        </T>
+    );
+}
+```
+
+### Limitations
+
+The `<T>` component does not translate content that is dynamic.
+
+```jsx title="DynamicContent.jsx" copy
+import { T } from 'gt-react';
+
+export default function DynamicContent({greeting}) {
+    return (
+        <T>
+            {greeting} // will create an error // [!code highlight]
+        </T>
+    );
+}
+```
+
+The `<T>` function translates its descendants.
+
+```jsx title="Example.jsx" copy
+import { T } from 'gt-react';
+
+const ValidTranslation = ({ children }) => (<div><b>{children}</b></div>);
+
+const InvalidTranslation = ({ children }) => (<div><b>No translation</b></div>);
+
+export default function Example() {
+    return (
+        <T>
+            <div><b>This is valid!</b></div> // will be translated // [!code highlight]
+
+            <ValidTranslation> // will be translated // [!code highlight]
+                Hello, world! // [!code highlight]
+            </ValidTranslation> // [!code highlight]
+
+            <InvalidTranslation /> // will not be translated
+        </T>
+    );
+}
+```
+<Callout>
+    **Note:** A good rule of thumb is that any content that is *literally* between the two `<T>` in the file will be translated.
+    You can always add another `<T>` to translate the content that is not being translated, though nesting `<T>` components is not recommended.
+</Callout>
+
+---
+
+## Notes
+ * The `<T>` component is designed for translating content in your application. It is the primary method for localization in `gt-react`.
+ * Use the `<T>` component to translate plain text or JSX structures, including variables and pluralization.
+ * Ensure the `<T>` component is wrapped in a [`<GTProvider>`](/docs/react/reference/t-reference#gtprovider) to access the translation context.
+
+## Next steps
+ * Look into more advanced features like on-demand translation, variables, context, and handling plurals, refer to the [`<T>` Design Patterns](/docs/react/reference/t-reference) documentation.
+ * For translating strings, look into [`useGT()`](/docs/react/api/strings/useGT).
+ * Checkout [using variable components](/docs/react/reference/using-variable-components) and [using branching components](/docs/react/reference/using-branching-components) for more advanced translation patterns.

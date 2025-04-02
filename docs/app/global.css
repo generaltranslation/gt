@@ -1,0 +1,202 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+@source '../node_modules/fumadocs-ui/dist/**/*.js';
+
+/* --------------- FUMADOCS --------------- */
+@theme {
+  --color-fd-background: hsl(0, 0%, 100%);
+  --color-fd-foreground: hsl(0, 0%, 0%);
+  --color-fd-muted: hsl(0, 0%, 98%);
+  --color-fd-muted-foreground: hsl(0, 0%, 45.1%);
+  --color-fd-popover: hsl(0, 0%, 100%);
+  --color-fd-popover-foreground: hsl(0, 0%, 10%);
+  --color-fd-card: hsl(0, 0%, 100%);
+  --color-fd-card-foreground: hsl(0, 0%, 0%);
+  --color-fd-border: hsl(0, 0%, 92%);
+  --color-fd-primary: hsl(0, 0%, 0%);
+  --color-fd-primary-foreground: hsl(0, 0%, 100%);
+  --color-fd-secondary: hsl(0, 0%, 96%);
+  --color-fd-secondary-foreground: hsl(0, 0%, 0%);
+  --color-fd-accent: hsl(0, 0%, 94%);
+  --color-fd-accent-foreground: hsl(0, 0%, 0%);
+  --color-fd-ring: hsl(0, 0%, 70%);
+}
+
+.dark {
+  --color-fd-background: hsl(0, 0%, 4%);
+  --color-fd-foreground: hsl(0, 0%, 100%);
+  --color-fd-muted: hsl(0, 0%, 10%);
+  --color-fd-muted-foreground: hsl(0, 0%, 70%);
+  --color-fd-popover: hsl(0, 0%, 7%);
+  --color-fd-popover-foreground: hsl(0, 0%, 100%);
+  --color-fd-card: hsl(0, 0%, 7%);
+  --color-fd-card-foreground: hsl(0, 0%, 100%);
+  --color-fd-border: hsl(0, 0%, 15%);
+  --color-fd-primary: hsl(0, 0%, 100%);
+  --color-fd-primary-foreground: hsl(0, 0%, 0%);
+  --color-fd-secondary: hsl(0, 0%, 12%);
+  --color-fd-secondary-foreground: hsl(0, 0%, 100%);
+  --color-fd-accent: hsl(0, 0%, 15%);
+  --color-fd-accent-foreground: hsl(0, 0%, 100%);
+  --color-fd-ring: hsl(0, 0%, 60%);
+}
+
+#nd-sidebar {
+  --color-fd-primary: hsl(270, 70%, 55%); /* Lighter purple background */
+  --color-fd-accent: hsl(270, 70%, 95%); /* Same as primary for consistency */
+}
+
+.dark #nd-sidebar {
+  --color-fd-primary: hsl(270, 70%, 85%); /* Light purple text for dark mode */
+  --color-fd-muted: hsl(0, 0%, 20%); /* Lightened from 16% to 20% */
+  --color-fd-secondary: hsl(0, 0%, 22%); /* Lightened from 18% to 22% */
+  --color-fd-muted-foreground: hsl(0, 0%, 75%); /* Slightly lighter text */
+  --color-fd-accent: hsl(
+    270,
+    50%,
+    25%
+  ); /* Darkened from 35% to 25% for better contrast */
+}
+
+/* --------------- SHAD CN --------------- */
+
+:root {
+  /* Background */
+  --fd-layout-width: 1400px;
+  /* Links */
+  --color-link: #458dff;
+  --color-link-dark: #6ba5ff;
+
+  /* Cards */
+  --hover-shine-color: rgba(255, 255, 255, 0.1);
+  --hover-shine-inverse-color: rgba(0, 0, 0, 0.15);
+  --hover-shine-color-dark: rgba(0, 0, 0, 0.1);
+  --hover-shine-inverse-color-dark: rgba(255, 255, 255, 0.3);
+}
+
+.dark {
+  --color-link: var(--color-link-dark);
+  --hover-shine-color: var(--hover-shine-color-dark);
+  --hover-shine-inverse-color: var(--hover-shine-inverse-color-dark);
+}
+
+/* ---------- LINKS ---------- */
+
+.link {
+  position: relative;
+  text-decoration: none;
+  color: var(--color-link);
+}
+
+.link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px; /* Adjust this for underline positioning */
+  width: 100%;
+  height: 2px; /* Adjust thickness */
+  background-color: var(--color-link);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease-in-out;
+}
+
+.link:hover::after {
+  transform: scaleX(1);
+}
+
+/* ---------- LOGO CARDS ---------- */
+
+@keyframes logo-card-shine {
+  0% {
+    transform: translateX(-100%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes logo-card-shadow {
+  0% {
+    box-shadow: 0 0 15px 0 var(--hover-shine-inverse-color);
+  }
+  100% {
+    box-shadow: 0 0 5px 0 var(--hover-shine-inverse-color);
+  }
+}
+
+.logo-card {
+  width: 180px;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  border-radius: 0.5rem; /* rounded-lg */
+  border: 1px solid var(--border); /* border */
+  background-color: var(--card); /* bg-card */
+  color: var(--card-foreground); /* text-card-foreground */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  position: relative;
+  overflow: hidden;
+  /* Ensures shine effect stays within the card */
+}
+
+/* Light mode hover effect */
+.logo-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+  transform: scale(1.05);
+  animation: logo-card-shadow 0.3s ease-in-out;
+  box-shadow: 0 0 5px 0 var(--hover-shine-inverse-color);
+}
+
+/* Dark mode hover effect - inverted (inset) shadow */
+.dark .logo-card:hover {
+  box-shadow: 0 0 5px 0 var(--hover-shine-inverse-color);
+  animation: logo-card-shadow 0.3s ease-in-out;
+}
+
+/* Shine Effect */
+.logo-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 150%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    var(--hover-shine-color) 25%,
+    var(--hover-shine-inverse-color) 50%,
+    var(--hover-shine-color) 75%
+  );
+  transform: skewX(-30deg);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.logo-card:hover::before {
+  animation: logo-card-shine 0.3s ease-in-out;
+}
+
+.logo-card-image {
+  width: 50px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin-bottom: 0.5rem; /* Reduced spacing */
+}
+
+.logo-card-content {
+  margin-bottom: 0.5rem; /* Reduced spacing */
+  padding-bottom: 1rem;
+  font-size: 0.875rem; /* text-sm */
+}

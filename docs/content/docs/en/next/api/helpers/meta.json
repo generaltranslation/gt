@@ -1,0 +1,13 @@
+{
+  "title": "Helpers",
+  "pages": [
+    "---Client---",
+    "./useDefaultLocale",
+    "./useLocale",
+    "./useSetLocale",
+    "./useLocaleSelector",
+    "---Server---",
+    "./getDefaultLocale",
+    "./getLocale"
+  ]
+}

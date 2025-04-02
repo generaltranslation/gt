@@ -1,0 +1,143 @@
+---
+title: Speedrun Next.js
+description: Let's speedrun creating a new app and internationalizing it with GT.
+---
+
+## Overview
+
+In this guide, we'll go over two things:
+ - Creating a new Next.js app
+ - Internationalizing it with General Translation
+
+In total, this should take less than 10 minutes.
+
+
+## Prerequisites
+
+We assume that you either have experience using React in some capacity and are familiar with Typescript.
+
+---
+
+## Step 1: Create a new Next.js app
+
+First, navigate to the directory of your choice in terminal and run the following command:
+
+```bash copy
+npx create-next-app next-quickstart --ts --tailwind --eslint --app --use-npm --src-dir
+```
+
+A set up wizard will appear, you can just select the default value for each option.
+
+
+## Step 2: Install the libraries
+
+Navigate to your Next.js project's root directory and run:
+
+```bash copy
+cd next-quickstart
+npm i gt-next
+npm i gtx-cli --save-dev
+```
+
+## Step 3: Add your environment variables.
+
+Navigate to the [Dashboard](https://generaltranslation.com/en-US/signin).
+Go to the Dev Api Keys page on the nav bar and create a new API key and Project ID.
+Then add them to your `.env` file.
+
+```bash copy
+GT_API_KEY="YOUR_GT_API_KEY"
+GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+```
+
+## Step 4: Run the CLI tool
+
+Run the CLI tool to setup your codebase for translation.
+
+```bash copy
+npx gtx-cli setup
+```
+
+## Step 5: Modify the root layout
+
+Modify the `lang` prop in the `<html>` tag in the `src/app/layout.tsx` file.
+
+It should use `await getLocale()` to get the current locale.
+
+```javascript title="src/app/layout.tsx" copy
+import { GTProvider, getLocale } from "gt-next"; // [!code highlight]
+...
+export default async function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const locale = await getLocale(); // [!code highlight]
+  return (
+    <html lang={locale}> // [!code highlight]
+      <GTProvider>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
+        {children}
+        </body>
+      </GTProvider>
+    </html>
+  );
+}
+```
+
+
+## Step 6: Start your app
+
+Your app is internationalized! 🎉
+Let's test it!
+
+
+Let's change your browser's language settings.
+ * Change your language in [Chrome](https://support.google.com/chrome/answer/173424)
+ * Change your language in [Firefox](https://support.mozilla.org/en-US/kb/use-firefox-another-language)
+ * Change your language in [Edge](https://support.microsoft.com/en-us/microsoft-edge/use-microsoft-edge-in-another-language-4da8b5e0-11ce-7ea4-81d7-4e332eec551f)
+
+Start your Next.js app.
+```bash copy
+npm run dev
+```
+
+Open up your app in your preferred browser (usually at [http://localhost:3000](http://localhost:3000)).
+If you have set up everything correctly, you should see your app in the language you set in your browser.
+
+---
+
+## Troubleshooting
+<Accordions>
+    <Accordion title="My app's language is not changing, even though I've changed my browser's language.">
+        **Browser Cookies**
+
+        Check your browser's cookies for your app.
+        General translation uses cookies to store the user's language preference.
+        The cookie is called `generaltranslation.locale`, and all you need to do is delete it.
+        It will be under `localhost:3000`.
+        Then, just double check you are using the desired perferred language and then
+        refresh the page.
+
+        After this, you won't have to worry about clearing the cookies.
+
+        How to check cookies:
+        * [Chrome](https://support.google.com/chrome/answer/95647)
+        * [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
+        * [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
+        * [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
+    </Accordion>
+</Accordions>
+
+---
+
+## Notes
+ * Translate arbitrary jsx with the `<T>` component.
+ * If translation is not working when you change your language, check your browser's cookies.
+
+## Next steps
+ * Star our GitHub repo [gt-next](https://github.com/General-Translation/gt-next).
+ * Set up [Right to Left language support](https://generaltranslation.com/docs/next/reference/rtl).
+ * Try a more [advanced example](/docs/next/tutorials/examples/currency-converter/setup).

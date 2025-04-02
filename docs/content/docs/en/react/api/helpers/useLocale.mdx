@@ -1,0 +1,66 @@
+---
+title: useLocale()
+description: API Reference for the useLocale hook
+---
+
+## Overview
+
+The `useLocale` hook retrieves the user's current locale from the [`<GTProvider>` context](/docs/react/api/components/gtprovider).
+The returned locale is [formatted as a string](/docs/reference/locale-strings), e.g., `'en-US'`.
+
+<Callout>
+    Ensure your app is wrapped in a [`<GTProvider>`](/docs/react/api/components/gtprovider).
+</Callout>
+
+## Reference
+
+### Returns
+
+A string representing the user's current locale, e.g., `'en-US'`.
+
+---
+
+## Fallback behavior
+When an unsupported locale is requested, a fallback locale will be selected.
+
+For instance, in the event of an unsupported locale,
+if (1) the user has configured multiple preferred locales in their browser settings,
+and (2) one of these locales are supported by your application,
+then the locale will fallback to the best language.
+
+Additionally, if no possible fallback locales are available,
+but two locales share the same language (e.g., `en-US` and `en-GB`),
+then the locale will fallback to the supported locale that shares the same language.
+
+If neither condition can be met, then the the default locale will be used.
+
+See [`<GTProvider>`](/docs/react/api/config/gtprovider) for information on configuring supported locales.
+
+---
+
+## Examples
+
+### Basic Usage
+
+Retrieve the current locale and display it in your component.
+
+```jsx title="CurrentLocale.jsx" copy
+import { useLocale } from 'gt-react';
+
+export default function CurrentLocale() {
+    const locale = useLocale(); // [!code highlight]
+    return <p>Current locale: {locale}</p>;
+}
+```
+
+---
+
+
+## Notes
+ * The `useLocale()` hook relies on the [`<GTProvider>`](/docs/react/api/components/gtprovider) to access the context.
+   Ensure your app is wrapped with a provider at the root level.
+ * Learn more about locale strings [here](/docs/reference/locale-strings).
+
+## Next Steps
+ * Learn how to manage and specify supported locales in your application with [locale management](/docs/react/reference/local-management).
+ * To access the fallback language, see [`useDefaultLocale()`](/docs/react/api/helpers/useDefaultLocale).

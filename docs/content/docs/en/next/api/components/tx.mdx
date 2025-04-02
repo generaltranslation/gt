@@ -1,0 +1,173 @@
+---
+title: <Tx>
+description: API Reference for the <Tx> component
+---
+
+
+## Overview
+
+The `<Tx>` component translates jsx content at runtime.
+
+```jsx
+<Tx> // [!code highlight]
+    Today, I went to
+    {" the store"}
+    <p>
+        to <b>buy</b> some <i>groceries</i>.
+    </p>
+</Tx> // [!code highlight]
+```
+
+The `<Tx>` component supports translating plain text as well as complex JSX structures.
+Additionally, it provides features for handling variables, plurals, and context-specific translations.
+`<Tx>` is server side only.
+
+<Callout>
+**Runtime Translation:**
+`<Tx>` translations occur at runtime.
+This means translation will be performed live.
+</Callout>
+
+---
+
+## Reference
+### Props
+<TypeTable
+  type={{
+    "children": {
+        type: 'any',
+        optional: false,
+    },
+    "context?": {
+        type: 'string',
+        optional: true,
+        default: 'undefined',
+    },
+    "locale?": {
+        type: 'string',
+        optional: true,
+        default: 'undefined',
+    },
+  }}
+/>
+
+### Descriptions
+| Prop            | Description                                                                                     |
+|-----------------|-------------------------------------------------------------------------------------------------|
+| `children`  | The content to be translated. This can include plain text or JSX structures.                    |
+| `context`   | Additional context to refine the translation. Useful for resolving ambiguous phrases.           |
+| `locale`    | An optional locale to use for the translation. Will default to browser's most preferred locale that is supported by your app. |
+
+---
+
+## Behavior
+
+`<Tx>` translates jsx at runtime.
+This means that translations are performed live, so you can translate content that is only known at runtime.
+The trade off is that there is a delay while waiting for an on-demand translation to load is significantly slower.
+
+While loading, `<Tx>` will return undefined unless languages are similar (en-US vs en-GB), though this behavior can be customized with render settings.
+If an error occurs, `<Tx>` will return the original content.
+
+Our advice is to translate everything you can at build time using [`<T>`](/docs/next/api/components/t), [`getGT()`](/docs/next/api/strings/useGT), or [`useGT()`](/docs/next/api/strings/useGT),
+and only use on-demand translations, like `<Tx>`and [`tx()`](/docs/next/api/strings/tx) when necessary.
+
+Make sure to follow the [deployment guide here](/docs/next/tutorials/quickdeploy).
+
+---
+
+## Examples
+
+### Basic usage
+
+The `<Tx>` component will translate its children at runtime.
+
+```jsx title="SimpleTranslation.jsx" copy
+import { Tx } from 'gt-next';
+
+export default function Greeting() {
+    return (
+        <Tx id="greeting"> // [!code highlight]
+            Hello, world!
+        </Tx> // [!code highlight]
+    );
+}
+```
+
+
+### With variables
+You can use the `<Var>` component to mark children as variables.
+This allows you to mark content that should not be translated.
+
+```jsx title="DynamicGreeting.jsx" copy
+import { Tx, Var } from 'gt-next';
+
+export default function DynamicGreeting(user) {
+    return (
+        <Tx>
+            Hello, <Var>{user.name}</Var>! // [!code highlight]
+        </Tx>
+    );
+}
+```
+
+### With plurals
+The `<T>` component also supports pluralization using the `<Plural>` component.
+
+```jsx title="ItemCount.jsx" copy
+import { Tx, Plural } from 'gt-next';
+
+export default function ItemCount({ count }) {
+    return (
+        <Tx>
+            <Plural n={count}  // [!code highlight] 
+                singular={<>You have an item.</>}  // [!code highlight] 
+                plural={<>You have items.</>}  // [!code highlight] 
+            />  // [!code highlight]
+        </Tx>
+    );
+}
+```
+
+
+### Limitations
+
+The `<Tx>` function only translates its descendants.
+
+```jsx title="Example.jsx" copy
+import { Tx } from 'gt-next';
+
+const ValidTranslation = ({ children }) => (<div><b>{children}</b></div>);
+
+const InvalidTranslation = ({ children }) => (<div><b>No translation</b></div>);
+
+export default function Example() {
+    return (
+        <Tx>
+            <div><b>This is valid!</b></div> // will be translated // [!code highlight]
+
+            <ValidTranslation> // will be translated // [!code highlight]
+                Hello, world! // [!code highlight]
+            </ValidTranslation> // [!code highlight]
+
+            <InvalidTranslation /> // will not be translated
+        </Tx>
+    );
+}
+```
+<Callout>
+**Note:** A good rule of thumb is that any content that is *literally* between the two `<Tx>` in the file will be translated.
+You can always add another `<Tx>` to translate the content that is not being translated, though nesting `<Tx>` components is not recommended.
+</Callout>
+
+---
+    
+## Notes
+ * The `<Tx>` component is designed for translating content in your application at runtime.
+ * Use the `<Tx>` component to translate plain text or JSX structures, including variables and pluralization.
+
+## Next steps
+ * For buildtime translations, look into the [`<T>`](/docs/next/api/components/T) component.
+ * Look into more advanced features see the [`<T>` Reference](/docs/next/reference/t-reference).
+ * For translating strings, look into [`tx()`](/docs/next/api/strings/tx), [`getGT()`](/docs/next/api/dictionary/getGT), and [`useGT()`](/docs/next/api/dictionary/useGT).
+ * Checkout [using variable components](/docs/next/reference/using-variable-components) and [using branching components](/docs/next/reference/using-branching-components) for more advanced translation patterns.

@@ -1,0 +1,26 @@
+{
+  "pages": [
+    "index",
+    "---Quickstart---",
+    "react/tutorials/quickstart",
+    "next/tutorials/quickstart",
+    "cli/tutorials/quickstart",
+    "---Usage---",
+    "usage/t",
+    "usage/dictionary",
+    "usage/cli-tool",
+    "usage/apikeys",
+    "---Libraries---",
+    "react",
+    "next",
+    "cli",
+    "---Reference---",
+    "reference/terminology",
+    "reference/standalone",
+    "reference/examples",
+    "reference/cli",
+    "reference/supported-locales",
+    "reference/locale-strings",
+    "faqs"
+  ]
+}

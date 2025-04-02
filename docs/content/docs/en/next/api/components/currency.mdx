@@ -1,0 +1,155 @@
+---
+title: <Currency>
+description: API Reference for the <Currency> component
+---
+
+## Overview
+
+The `<Currency>` component renders a numerical value as a currency.
+The number is formatted based on the current locale and any optional parameters passed.
+The currency component only handles formatting and does not perform any exchange rate calculations.
+
+```jsx
+<Currency>{100}</Currency>
+// Output: $100.00
+```
+
+All reformatting is handled locally using the [`Intl.NumberFormat`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) library.
+
+## Reference
+
+### Props
+
+<TypeTable
+  type={{
+    "children?": {
+        type: 'any',
+        optional: true,
+        default: 'undefined',
+    },
+    "name?": {
+        type: 'string',
+        optional: true,
+        default: 'undefined',
+    },
+    "value?": {
+        decription: 'Optional value. children will be used for value if not provided.',
+        type: 'string | number',
+        optional: true,
+        default: 'undefined',
+    },
+    "currency?": {
+        type: 'string',
+        optional: true,
+        default: '"USD"',
+    },
+    "options?": {
+        type: 'Intl.NumberFormatOptions',
+        optional: true,
+        default: '{}',
+    },
+    "locales?": {
+        type: 'string[]',
+        optional: true,
+        default: 'undefined',
+    },
+  }}
+/>
+
+### Description
+| Prop      | Description                                                                                                                                            |
+|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `children`  | The content to render inside the component. Typically a number representing the value to be formatted as currency. If provided, it takes precedence over the `value` prop. |
+| `name`      | Optional name for the currency field, used for metadata purposes.                                                                                      |
+| `value`     | The default value for the currency. Will fallback to children if not provided. Can be a string or number. Strings will be parsed into numbers before formatting.                                  |
+| `currency`  | The currency type, such as "USD" or "EUR". This determines the symbol and formatting used for the currency.                                            |
+| `options`   | Optional formatting options for the currency, following the [`Intl.NumberFormatOptions` specification](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat). Use this to define styles such as maximum fraction digits, grouping, etc. |
+| `locales`   | Optional locales to specify the formatting locale. If not provided, the default user's locale is used. Read more about specifying locales [here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl#locales_argument).                                            |
+
+### Returns
+
+`JSX.Element` containing the formatted currency as a string.
+
+---
+
+## Examples
+### Basic example
+
+The `<Currency>` component can be used to display localized currency values.
+
+```jsx title="PriceDisplay.jsx" copy
+import { Currency } from 'gt-next';
+
+export default function PriceDisplay(item) {
+  return (
+    <Currency> {item.price} </Currency>
+  );
+}
+```
+
+### Specifying currency
+Here we are displaying the price in Euros.
+
+```jsx title="PriceDisplay.jsx" copy
+import { Currency } from 'gt-next';
+
+export default function PriceDisplay(item) {
+  return (
+    <Currency currency="EUR"> {item.price} </Currency> 
+  );
+}
+```
+
+### Translating `<Currency>` components
+Say that you want the currency to be displayed in a sentence that is also translated.
+You can wrap the `<Currency>` component in a `<T>` component.
+
+```jsx title="PriceDisplay.jsx" copy
+import { T, Currency } from 'gt-next';
+
+export default function PriceDisplay(item) {
+  return (
+    {/* [!code highlight] */}
+    <T id="itemPrice">
+      The price is <Currency> {item.price} </Currency>.
+    </T> // [!code highlight]
+  );
+}
+```
+
+### Custom formatting
+
+Here we are displaying the price in GBP that specifies exactly decimal places and uses the narrow symbol for the currency (i.e., "$100" rather than "US$100").
+Read more about the [Intl.NumberFormatOptions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) for more options.
+
+```jsx title="PriceDisplay.jsx" copy
+import { Currency } from 'gt-next';
+
+export default function PriceDisplay(item) {
+  return (
+    <Currency
+      currency="GBP"
+      options={{ // [!code highlight]
+        currencyDisplay: 'narrowSymbol', // [!code highlight]
+        minimumFractionDigits: 2, // [!code highlight]
+        maximumFractionDigits: 2, // [!code highlight]
+      }} // [!code highlight]
+    >
+      {item.price}
+    </Currency>
+  );
+}
+```
+
+---
+
+
+## Notes
+ * The `<Currency>` component is used to format currency values based on the current locale and any optional parameters passed.
+ * The currency component only handles formatting and does not perform any exchange rate calculations.
+ * The contents of the `<Currency>` component will not be sent to the API for translation.
+   All reformatting is done locally using the [`Intl.NumberFormat`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) library.
+
+## Next Steps
+ * For more details and usage examples of the `<Currency>` component and other variable components like `<Num>`, `<DateTime>`, and `<Var>`,
+   see the [Using Variable Components](/docs/next/reference/using-variable-components) documentation.

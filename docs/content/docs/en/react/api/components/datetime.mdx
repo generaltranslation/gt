@@ -1,0 +1,137 @@
+---
+title: <DateTime>
+description: API Reference for the <DateTime> component
+---
+
+## Overview
+
+The `<DateTime>` component renders a formatted date or time string, supporting customization such as formatting options and locale.
+The date or time is formatted according to the current locale and any optional parameters passed.
+
+```jsx
+<DateTime>{1738010355}</DateTime>
+// Output: 1/27/2025
+```
+
+All formatting is handled locally using the [`Intl.DateTimeFormat`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat) library.
+
+## Reference
+
+### Props
+
+<TypeTable
+  type={{
+    "children?": {
+        description: 'Date content to be formatted.',
+        type: 'any',
+        optional: true,
+        default: 'undefined',
+    },
+    "name?": {
+        type: 'string',
+        optional: true,
+        default: 'undefined',
+    },
+    "value?": {
+        type: 'string | number | Date',
+        optional: true,
+        default: 'undefined',
+    },
+    "options?": {
+        type: 'Intl.DateTimeFormatOptions',
+        optional: true,
+        default: '{}',
+    },
+    "locales?": {
+        type: 'string[]',
+        optional: true,
+        default: 'undefined',
+    },
+  }}
+/>
+
+### Description
+| Prop Name | Description |
+|-----------|-------------|
+| `children` | The content to render inside the component. Typically a date or time value. If provided, it takes precedence over the `value` prop. |
+| `value`    | The default value for the date or time. Can be a string, number (timestamp), or Date object. |
+| `options`  | Optional formatting options for the date or time, following the [`Intl.DateTimeFormatOptions` specification](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat). Use this to define styles such as weekday names, time zones, and more. |
+| `locales`  | Optional locales to specify the formatting locale. If not provided, the user's locale is used. Read more about specifying locales [here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl#locales_argument).|
+
+### Returns
+
+`JSX.Element` containing the formatted date or time as a string.
+
+---
+## Examples
+
+### Basic usage
+The `<DateTime>` component can be used to display localized date or time values.
+
+```jsx title="EventDate.jsx" copy
+import { DateTime } from 'gt-react';
+
+export default function EventDate(event) {
+    return (
+        <DateTime> {event.date} </DateTime>. // [!code highlight]
+    );
+}
+```
+
+### Specifying locales
+The `<DateTime>` component can be used to display date or time values in a specific locale.
+
+```jsx title="EventDate.jsx" copy
+
+import { DateTime } from 'gt-react';
+
+export default function EventDate(event) {
+    return (
+        <DateTime locales={['fr-FR']}> {event.date} </DateTime>. // [!code highlight]
+    );
+}
+```
+
+
+### Translating `<DateTime>`
+Say that you want the datetime to be displayed in a sentence that is also being translated.
+You can wrap the `<DateTime>` component in a `<T>` component.
+```jsx title="EventDate.jsx" copy
+import { T, DateTime } from 'gt-react';
+
+export default function EventDate(event) {
+    return (
+        <T id="eventDate">
+            The time of the event is <DateTime> {event.date} </DateTime>. // [!code highlight]
+        </T>
+    );
+}
+```
+
+### Custom formatting
+The `<DateTime>` component supports custom formatting options.
+```jsx title="EventDate.jsx" copy
+import { DateTime } from 'gt-react';
+
+export default function EventDate(event) {
+    return (
+        <DateTime options={{
+            dateStyle: 'full', // [!code highlight]
+            timeStyle: 'long', // [!code highlight]
+            timeZone: 'Australia/Sydney', // [!code highlight]
+        }}>
+            {event.date}
+        </DateTime>.
+    );
+}
+```
+
+---
+
+## Notes
+ * The `<DateTime>` component is a variable component that can be used to format date and time values.
+ * The component uses the [`Intl.DateTimeFormat`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat) library for formatting.
+
+## Next Steps
+ * For more details and usage examples of the `<DateTime>` component and other variable components like `<Currency>`, `<Num>`, and `<Var>`,
+  see the [Using Variable Components](/docs/react/reference/using-variable-components) documentation.

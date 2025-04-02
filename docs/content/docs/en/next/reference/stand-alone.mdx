@@ -1,0 +1,180 @@
+---
+title: Migrating to gt-next
+description: Migrating from another i18n library to gt-next
+---
+
+## Overview
+
+This guide will walk you through internationalizing your existing Next.js app using `gt-next` as a stand-alone i18n library.
+This guide can also be used to help you migrate from another i18n library to `gt-next`.
+
+All translations are stored in your project's repository and are managed by you.
+Furthermore, you bring your own translations. This means you won't have to add API keys.
+
+<Callout>
+  If you would like to automatically generate translations for your JSON files, please refer to the [CLI tool](/docs/cli/tutorials/json).
+</Callout>
+
+### How it works
+
+Translations can live in JSON files called "dictionaries" (`en.json`, `fr.json`, etc.).
+The keys are used as references, and the values are the translated content:
+```json title="public/dictionaries/en.json"
+// [!code word:greeting]
+{
+  "greeting": "Hello, World!",
+}
+```
+
+```json title="public/dictionaries/fr.json"
+// [!code word:greeting]
+{
+  "greeting": "Bonjour, le monde!",
+}
+```
+
+Translations are then referenced in your app with the [`useDict()`](/docs/next/api/dictionary/useGT) hook and [`getDict()`](/docs/next/api/dictionary/getDict) function:
+```jsx title="components/MyComponent.js"
+// [!code word:greeting]
+import { useDict } from 'gt-next/client';
+import { getDict } from 'gt-next/server';
+
+export default function MyComponent() {
+  const d = useDict(); // client-side
+  const d = await getDict(); // server-side
+  return (
+    <div>
+      <h1>{d('greeting')}</h1>
+    </div>
+  );
+}
+```
+
+<Callout>
+  **Note:** Because these translations are managed by you, you will need to update them manually as your app evolves.
+  That means each time you add or change content, you will need to update your translation files.
+
+  Consider using [`the CLI tool`](/docs/cli/tutorials/json) if you are interested in automating this process.
+</Callout>
+
+---
+
+
+## Setup
+
+### 1. Enable translations
+
+Use the [`withGTConfig()`](/docs/next/api/config/with-gt-config) plugin to set up your Next.js app i18n behavior.
+
+```jsx title="next.config.js" copy
+import { withGTConfig } from 'gt-next';
+
+const nextConfig = {
+  // Your Next.js config
+};
+
+export default withGTConfig(nextConfig, {
+  locales: ['en', 'fr'], // Supported locales (English, French)
+});
+```
+
+### 2. Add the dictionary loader file
+
+This [`loadDictionary()`](/docs/next/api/config/load-dictionary) is responsible for loading your translations.
+All translations are stored in nested JSON files called dictionaries.
+
+Here, we specify that our translation files are stored in the `/public/dictionaries/` directory.
+```jsx title="src/loadDictionary.js" copy
+export default async function loadDictionary(locale) {
+  const t = await import(`../public/dictionaries/${locale}.json`);
+  return t.default;
+}
+```
+
+### 3. Wrap your app in a `<GTProvider>`
+Wrap your app in a [`<GTProvider>`](/docs/next/api/components/gtprovider) to enable translation context.
+This allows you to access translations in client-side components.
+
+
+```jsx title="layout.js" copy
+import { GTProvider } from 'gt-next';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        {/* [!code highlight] */}
+        <GTProvider>
+          {children}
+          {/* [!code highlight] */}
+        </GTProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+### 4. Create your translation files
+
+Your translation files should be stored in the `./public/dictionaries` directory.
+Each file should be named after the locale it represents, e.g. `en.json`, `fr.json`, etc.
+
+```json title="public/dictionaries/en.json"
+{
+  "greeting": "Hello, World!",
+}
+```
+
+Then add the corresponding French dictionary translation files:
+```json title="public/dictionaries/fr.json"
+{
+  "greeting": "Bonjour, le monde!",
+}
+```
+
+### 5. Use your translations!
+
+You can now access your translations with [`useDict()`](/docs/next/api/dictionary/useDict) and [`getDict()`](/docs/next/api/dictionary/getDict).
+
+```jsx title="components/MyComponent.js" copy
+import { useDict } from 'gt-next/client';
+import { getDict } from 'gt-next/server';
+
+export default function MyComponent() {
+  const d = useDict(); // client-side  // [!code highlight]
+  const d = await getDict(); // server-side  // [!code highlight]
+  return (
+    <div>
+     {/* en: "Hello, World!"  fr: "Bonjour, le monde!" */}
+      <h1>{d('greeting')}</h1> // [!code highlight]
+    </div>
+  );
+}
+```
+
+<Callout>
+  **Tip:** For more information on dictionary syntax, such as inserting variables, see the [dictionary reference](/docs/next/reference/dictionary-reference).
+</Callout>
+
+---
+
+## Compatibility
+
+This guide helps you migrate from another i18n library to `gt-next`. The dictionary format is generally compatible with other libraries.
+
+Our dictionaries support variables, dates, and number interpolation. See the [dictionary options](/docs/next/api/types/DictionaryTranslationOptions) for more information.
+
+However, if your project is using complex syntax such as plurals or branches, you will need to convert those to the `gt-next` syntax.
+
+See the [Branching Components](/docs/next/reference/using-branching-components) page for more information on the `gt-next` syntax.
+
+---
+
+## Notes
+ * Use `gt-next` to manually manage translations in your project.
+ * Translations are stored in JSON files called "dictionaries" (`en.json`, `fr.json`, etc.).
+ * Use [`useDict()`](/docs/next/api/dictionary/useDict) and [`getDict()`](/docs/next/api/dictionary/getDict) to access your translations.
+
+## Next steps
+ * For more information on dictionary syntax, see the [dictionary reference](/docs/next/reference/dictionary-reference).
+ * Consider using [`the translate command`](/docs/cli/tutorials/translate-json) if you are interested in automating the translation process.

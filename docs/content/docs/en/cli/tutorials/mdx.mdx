@@ -1,0 +1,126 @@
+---
+title: Markdown
+description: How to use General Translation to set up automatic translation for your project's Markdown files
+---
+
+## Overview
+
+`gtx-cli` can be used to automatically translate your project's Markdown (MD and MDX) files.
+
+<Callout type="info">
+  All syntax and formatting present in the original files will be preserved in
+  the translated files.
+</Callout>
+
+We will follow these 4 steps:
+
+<Steps>
+  <Step>
+    Add your environment variables
+  </Step>
+  <Step>
+    Install [`gtx-cli`](/docs/cli)
+  </Step>
+  <Step>
+    Configure your project's [`gt.config.json`](/docs/cli/reference/config) file
+  </Step>
+  <Step>
+    Run [`gtx-cli translate`](/docs/cli/translate#translate-mdx)
+  </Step>
+</Steps>
+
+---
+
+## Step 1: Add your environment variables
+
+Add your production API key and project ID to your environment variables.
+This is necessary to use the `gtx-cli` tool.
+You get these from the [General Translation dashboard](https://generaltranslation.com/dashboard).
+
+```bash title=".env"
+GT_API_KEY=<your-api-key>
+GT_PROJECT_ID=<your-project-id>
+```
+
+## Step 2: Install `gtx-cli`
+
+Install the `gtx-cli` tool in your project.
+
+<Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
+  <Tab value="npm">
+  ```bash 
+  npm i --save-dev gtx-cli
+  ``` 
+  </Tab>
+  <Tab value="yarn">
+  ```bash 
+  yarn add --dev gtx-cli
+  ```
+  </Tab>
+
+  <Tab value="bun">
+  ```bash 
+  bun add --dev gtx-cli
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash 
+  pnpm add --save-dev gtx-cli
+  ```
+  </Tab>
+</Tabs>
+
+## Step 3: Configure your project's `gt.config.json` file
+
+Create a `gt.config.json` file in the root of your project, with the following content:
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["es", "fr"],
+  "files": {
+    "mdx": {
+      "include": ["docs/[locale]/**/*.mdx"]
+    }
+  }
+}
+```
+
+Change the `defaultLocale` and `locales` to match your project's locales.
+
+If your files are MD files, you can use the `md` key instead of `mdx`. The string array in the `include` key should be a glob pattern that matches all of your MDX files.
+
+It should use the `[locale]` placeholder to match the locale of the file.
+
+See the [configuration](/docs/cli/reference/config) docs for more information on the `gt.config.json` file.
+
+
+## Step 4: Add the `gtx-cli translate` command to your build process
+
+Add the `gtx-cli translate` command to your build or CI process before the build command to automatically add translations to your project.
+
+```json title="package.json"
+{
+  "scripts": {
+    "translate": "npx gtx-cli translate",
+    "build": "npm run translate && <your build command>"
+  }
+}
+```
+
+This will generate translations for all of your locales and save them to your project.
+If you want to commit these files to your repo, you can instead run this command before committing.
+
+You're done! Now your project will automatically update all of your Markdown files any time your project changes.
+
+---
+
+## Notes
+
+- You can automatically add translations to your project with the [`gtx-cli translate`](/docs/cli/translate#translate-json) command.
+- If you want to commit your translation files, you should run the `gtx-cli translate` command before committing.
+- To configure the output path for your translations, see the [configuration](/docs/cli/reference/config) docs.
+
+## Next steps
+
+- See the [usage guide](/docs/cli/reference/usage) for the cli tool.

@@ -1,0 +1,82 @@
+---
+title: Deploy to Production (5m)
+description: Let's deploy your Next.js app with GT.
+---
+
+## Overview
+
+This is a short tutorial to help you deploy your Next.js app with GT.
+
+We will do this in 3 steps:
+<Steps>
+  <Step>
+    Add your production API keys.
+  </Step>
+  <Step>
+    Run the init command to configure your project.
+  </Step>
+  <Step>
+    Add the translate command to your build script.
+  </Step>
+</Steps>
+
+## Prerequisites
+
+Make sure that you have followed the [Quick Start Guide](/docs/next/tutorials/quickstart) to set up your Next.js app with GT.
+
+## Step 1: Add your production API keys 🔑
+
+Add your **production** API key and Project ID to your production environment variables.
+
+From your [dashboard](https://generaltranslation.com/signin), go to **API Keys** in the sidebar.
+Click on **Create API Key**, and add them to your production envrionment.
+
+```bash copy
+GT_API_KEY="YOUR_GT_API_KEY"
+GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+```
+
+<Callout type="warn">
+    **Protect Your API Keys!**
+
+    Production keys should **only** ever be used in production.
+    Likewise, development keys should **only** ever be used in development.
+    *Never commit your API keys to a public repository!*
+</Callout>
+
+## Step 2: Run the init command 🔧
+
+Run the init command to configure your project.
+
+```bash copy
+npx gtx-cli init
+```
+
+<Callout>
+  If you do not want your translations to be hosted on the GT CDN, select "Local" when asked where your
+  language files are stored. You will also need to configure the [`loadTranslations()`](/docs/next/api/config/load-translations) function.
+</Callout>
+
+
+## Step 3: Add the translate command to your build script 🏗️
+
+The next step is to add the [translate command](/docs/cli/translate) to your build script,
+and specify the [locales](/docs/reference/supported-locales) that you would like to ship to production.
+
+```json title="package.json" copy
+{
+  "scripts": {
+    "build": "npx gtx-cli translate && <YOUR_BUILD_COMMAND>"
+  }
+}
+```
+
+That's it! You are now ready to deploy your Next.js with GT!
+
+---
+
+## Next steps
+ * See the [CLI docs](/docs/cli/tutorials/quickstart) for more information on the CLI tool.
+ * Follow this guide on [How to Manage Locales](/docs/next/reference/locale-management).
+ * Learn how to [Translate Strings](/docs/next/reference/translating-strings).
+ * Learn about the [`<T>` component](/docs/usage/t).
