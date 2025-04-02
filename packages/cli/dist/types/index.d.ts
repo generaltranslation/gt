@@ -66,6 +66,7 @@ export type FilesOptions = {
     json?: {
         include: string[];
         exclude?: string[];
+        transform?: string;
     };
     yaml?: {
         include: string[];

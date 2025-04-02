@@ -37,7 +37,7 @@ function resolveLocaleFiles(files, locale) {
  * @returns The resolved files
  */
 function resolveFiles(files, locale) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
     // Initialize result object with empty arrays for each file type
     const result = {};
     const placeholderResult = {};
@@ -65,10 +65,13 @@ function resolveFiles(files, locale) {
         placeholderResult.mdx = mdxPaths.placeholderPaths;
     }
     // ==== TRANSFORMS ==== //
-    if (((_h = files.mdx) === null || _h === void 0 ? void 0 : _h.transform) && !Array.isArray(files.mdx.transform)) {
+    if (((_h = files.json) === null || _h === void 0 ? void 0 : _h.transform) && !Array.isArray(files.json.transform)) {
+        transformPaths.json = files.json.transform;
+    }
+    if (((_j = files.mdx) === null || _j === void 0 ? void 0 : _j.transform) && !Array.isArray(files.mdx.transform)) {
         transformPaths.mdx = files.mdx.transform;
     }
-    if (((_j = files.md) === null || _j === void 0 ? void 0 : _j.transform) && !Array.isArray(files.md.transform)) {
+    if (((_k = files.md) === null || _k === void 0 ? void 0 : _k.transform) && !Array.isArray(files.md.transform)) {
         transformPaths.md = files.md.transform;
     }
     return {
