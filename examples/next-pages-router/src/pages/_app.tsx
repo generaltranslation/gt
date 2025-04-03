@@ -5,8 +5,10 @@ import gtConfig from '../../gt.config.json';
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <GTProvider {...gtConfig}>
-      <Component {...pageProps} />
-    </GTProvider>
+    <>
+      <GTProvider {...gtConfig} ssr={false}>
+        <Component {...pageProps} />
+      </GTProvider>
+    </>
   );
 }

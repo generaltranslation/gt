@@ -1,8 +1,7 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback } from 'react';
 import {
   Dictionary,
   DictionaryTranslationOptions,
-  InlineTranslationOptions,
   DictionaryObject,
   RenderMethod,
   TranslationsObject,

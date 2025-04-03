@@ -70,6 +70,7 @@ export default function GTProvider({
   loadDictionary,
   loadTranslations,
   fallback = undefined,
+  ssr = false,
   _versionId,
   ...metadata
 }: {
@@ -89,6 +90,7 @@ export default function GTProvider({
   loadDictionary?: CustomLoader;
   loadTranslations?: CustomLoader;
   _versionId?: string;
+  ssr?: boolean;
   [key: string]: any;
 }): React.JSX.Element {
   // ---------- SANITIZATION ---------- //
@@ -107,7 +109,7 @@ export default function GTProvider({
     defaultLocale,
     locales,
     locale: _locale,
-    ssr: false,
+    ssr,
   });
 
   // Translation at runtime during development is enabled

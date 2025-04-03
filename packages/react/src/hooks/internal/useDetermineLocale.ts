@@ -89,10 +89,13 @@ function getNewLocale({
   })() as string[];
 
   // Check for locale in cookie
-  const cookieLocale = document.cookie
-    .split('; ')
-    .find((row) => row.startsWith(`${cookieName}=`))
-    ?.split('=')[1];
+  const cookieLocale =
+    typeof document !== 'undefined'
+      ? document.cookie
+          .split('; ')
+          .find((row) => row.startsWith(`${cookieName}=`))
+          ?.split('=')[1]
+      : undefined;
 
   // determine locale
   const newLocale =
