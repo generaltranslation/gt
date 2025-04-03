@@ -44,16 +44,27 @@ export default function ClientProvider({
     _locale ? determineLocale(_locale, locales) || '' : ''
   );
 
-  // Check for an invalid cookie and correct it
+  // Monitor for changes in _locale parameter
   useEffect(() => {
-    const cookieLocale = document.cookie
-      .split('; ')
-      .find((row) => row.startsWith(`${cookieName}=`))
-      ?.split('=')[1];
-    if (locale && cookieLocale && cookieLocale !== locale) {
-      document.cookie = `${cookieName}=;path=/`;
+    const newLocale = _locale ? determineLocale(_locale, locales) || '' : '';
+    if (newLocale !== locale) {
+      _setLocale(newLocale);
     }
-  }, [locale]);
+  }, [_locale, locales]);
+
+  console.log('[CLIENT] locale', locale);
+
+  // Want to persist the cookie
+  // // Check for an invalid cookie and correct it
+  // useEffect(() => {
+  //   const cookieLocale = document.cookie
+  //     .split('; ')
+  //     .find((row) => row.startsWith(`${cookieName}=`))
+  //     ?.split('=')[1];
+  //   if (locale && cookieLocale && cookieLocale !== locale) {
+  //     document.cookie = `${cookieName}=;path=/`;
+  //   }
+  // }, [locale]);
 
   // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
   const setLocale = (newLocale: string): void => {

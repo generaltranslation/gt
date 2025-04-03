@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = ClientProvider;
 var jsx_runtime_1 = require("react/jsx-runtime");
 var client_1 = require("gt-react/client");
+var internal_1 = require("gt-react/internal");
 var navigation_1 = require("next/navigation");
 var react_1 = require("react");
 var constants_1 = require("../utils/constants");
@@ -27,16 +28,21 @@ function ClientProvider(props) {
         document.cookie = "".concat(constants_1.middlewareLocaleResetFlagName, "=true;path=/");
         router.refresh();
     };
-    // Trigger page reload when locale changes
-    // When nav to same route but in diff locale, client components were cached and not re-rendered
     var pathname = (0, navigation_1.usePathname)();
     (0, react_1.useEffect)(function () {
         var _a;
-        // Get the cookie value
-        var cookieValue = (_a = document.cookie
+        // ----- Referrer Locale ----- //
+        if (props.locale) {
+            // TODO: if this is the same as the brower's accepted locale, don't set the cookie (GDPR)
+            document.cookie = "".concat(internal_1.defaultReferrerLocaleCookieName, "=").concat(props.locale, ";path=/");
+        }
+        // ----- Middleware ----- //
+        // Trigger page reload when locale changes
+        // When nav to same route but in diff locale (ie, /en/blog -> /fr/blog), client components were cached and not re-rendered
+        var middlewareEnabled = ((_a = document.cookie
             .split('; ')
-            .find(function (row) { return row.startsWith("".concat(constants_1.middlewareLocaleRoutingFlagName, "=")); })) === null || _a === void 0 ? void 0 : _a.split('=')[1];
-        if (cookieValue === 'true') {
+            .find(function (row) { return row.startsWith("".concat(constants_1.middlewareLocaleRoutingFlagName, "=")); })) === null || _a === void 0 ? void 0 : _a.split('=')[1]) === 'true';
+        if (middlewareEnabled) {
             // Extract locale from pathname
             var extractedLocale = (0, utils_1.extractLocale)(pathname) || props.defaultLocale;
             var pathLocale = props.gtServicesEnabled

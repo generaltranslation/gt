@@ -145,6 +145,7 @@ function GTProvider(_a) {
                     return [4 /*yield*/, cachedTranslationsPromise];
                 case 6:
                     translations = _e.sent();
+                    console.log('[SERVER] locale', locale);
                     return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, dictionaryTranslations: dictionaryTranslations, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, gtServicesEnabled: process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true' }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });

@@ -1,6 +1,9 @@
 'use client';
 import { ClientProvider as _ClientProvider } from 'gt-react/client';
-import { ClientProviderProps } from 'gt-react/internal';
+import {
+  ClientProviderProps,
+  defaultReferrerLocaleCookieName,
+} from 'gt-react/internal';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import {
@@ -20,16 +23,23 @@ export default function ClientProvider(
     router.refresh();
   };
 
-  // Trigger page reload when locale changes
-  // When nav to same route but in diff locale, client components were cached and not re-rendered
   const pathname = usePathname();
   useEffect(() => {
-    // Get the cookie value
-    const cookieValue = document.cookie
-      .split('; ')
-      .find((row) => row.startsWith(`${middlewareLocaleRoutingFlagName}=`))
-      ?.split('=')[1];
-    if (cookieValue === 'true') {
+    // ----- Referrer Locale ----- //
+    if (props.locale) {
+      // TODO: if this is the same as the brower's accepted locale, don't set the cookie (GDPR)
+      document.cookie = `${defaultReferrerLocaleCookieName}=${props.locale};path=/`;
+    }
+
+    // ----- Middleware ----- //
+    // Trigger page reload when locale changes
+    // When nav to same route but in diff locale (ie, /en/blog -> /fr/blog), client components were cached and not re-rendered
+    const middlewareEnabled =
+      document.cookie
+        .split('; ')
+        .find((row) => row.startsWith(`${middlewareLocaleRoutingFlagName}=`))
+        ?.split('=')[1] === 'true';
+    if (middlewareEnabled) {
       // Extract locale from pathname
       const extractedLocale = extractLocale(pathname) || props.defaultLocale;
       const pathLocale = props.gtServicesEnabled

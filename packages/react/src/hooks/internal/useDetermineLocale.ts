@@ -6,6 +6,7 @@ import {
 } from 'generaltranslation/internal';
 import { createUnsupportedLocaleWarning } from '../../errors/createErrors';
 
+// TODO: update cookie name
 export function useDetermineLocale({
   locale: _locale = '',
   defaultLocale = libraryDefaultLocale,
