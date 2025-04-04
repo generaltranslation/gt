@@ -111,10 +111,6 @@ function createNextMiddleware(_a) {
                 (0, utils_1.replaceDynamicSegments)(pathnameLocale
                     ? standardizedPathname
                     : "/".concat(userLocale).concat(standardizedPathname), localizedPath);
-            console.log('--------------------------------');
-            console.log('userLocale', userLocale);
-            console.log('pathname', pathname);
-            console.log('localizedPathWithParameters', localizedPathWithParameters);
             // ---------- ROUTING LOGIC ---------- //
             // CASE: no localized path exists
             if (!localizedPathWithParameters) {
