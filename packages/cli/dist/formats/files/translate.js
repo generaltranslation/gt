@@ -23,6 +23,7 @@ const path_1 = __importDefault(require("path"));
 const downloadFile_1 = require("../../api/downloadFile");
 const downloadFileBatch_1 = require("../../api/downloadFileBatch");
 const console_1 = require("../../console/console");
+const supportedFiles_1 = require("./supportedFiles");
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 /**
  * Sends multiple files to the API for translation
@@ -59,33 +60,22 @@ function translateFiles(filePaths_1, placeholderPaths_1, transformPaths_1) {
             });
             allFiles.push(...jsonFiles);
         }
-        // Process MDX files
-        if (filePaths.mdx) {
-            const mdxFiles = filePaths.mdx.map((filePath) => {
-                const content = (0, findFilepath_1.readFile)(filePath);
-                const relativePath = (0, findFilepath_1.getRelative)(filePath);
-                return {
-                    content,
-                    fileName: relativePath,
-                    fileFormat: 'MDX',
-                    dataFormat,
-                };
-            });
-            allFiles.push(...mdxFiles);
-        }
-        // Process MD files
-        if (filePaths.md) {
-            const mdFiles = filePaths.md.map((filePath) => {
-                const content = (0, findFilepath_1.readFile)(filePath);
-                const relativePath = (0, findFilepath_1.getRelative)(filePath);
-                return {
-                    content,
-                    fileName: relativePath,
-                    fileFormat: 'MD',
-                    dataFormat,
-                };
-            });
-            allFiles.push(...mdFiles);
+        for (const fileType of supportedFiles_1.SUPPORTED_FILE_EXTENSIONS) {
+            if (fileType === 'json')
+                continue;
+            if (filePaths[fileType]) {
+                const files = filePaths[fileType].map((filePath) => {
+                    const content = (0, findFilepath_1.readFile)(filePath);
+                    const relativePath = (0, findFilepath_1.getRelative)(filePath);
+                    return {
+                        content,
+                        fileName: relativePath,
+                        fileFormat: fileType.toUpperCase(),
+                        dataFormat,
+                    };
+                });
+                allFiles.push(...files);
+            }
         }
         if (allFiles.length === 0) {
             console.error('No files to translate');
@@ -117,7 +107,7 @@ function createFileMapping(filePaths, placeholderPaths, transformPaths, locales)
         const translatedPaths = (0, parseFilesConfig_1.resolveLocaleFiles)(placeholderPaths, locale);
         const localeMapping = {};
         // Process each file type
-        for (const typeIndex of ['json', 'mdx', 'md']) {
+        for (const typeIndex of supportedFiles_1.SUPPORTED_FILE_EXTENSIONS) {
             if (!filePaths[typeIndex] || !translatedPaths[typeIndex])
                 continue;
             const sourcePaths = filePaths[typeIndex];
