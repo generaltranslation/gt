@@ -9,7 +9,7 @@ exports.getSharedPath = getSharedPath;
 exports.getLocaleFromRequest = getLocaleFromRequest;
 var generaltranslation_1 = require("generaltranslation");
 var internal_1 = require("generaltranslation/internal");
-var constants_1 = require("../utils/constants");
+var internal_2 = require("gt-react/internal");
 /**
  * Extracts the locale from the given pathname.
  */
@@ -175,10 +175,7 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
     // Check cookie locale
     var cookieLocale = req.cookies.get(internal_1.localeCookieName);
     if ((cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value) && (0, generaltranslation_1.isValidLocale)(cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value)) {
-        var resetCookie = req.cookies.get(constants_1.middlewareLocaleResetFlagName);
-        console.log('........');
-        console.log('[MIDDLEWARE] resetCookie', resetCookie);
-        console.log('[MIDDLEWARE] cookieLocale', cookieLocale);
+        var resetCookie = req.cookies.get(internal_2.middlewareLocaleResetFlagName);
         if (resetCookie === null || resetCookie === void 0 ? void 0 : resetCookie.value) {
             candidates.unshift(cookieLocale.value);
             clearResetCookie = true;
@@ -191,11 +188,8 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
     var refererLocale;
     if (localeRouting) {
         var referer = headerList.get('referer');
-        console.log('........');
-        console.log('[MIDDLEWARE] referer', referer);
         if (referer && typeof referer === 'string') {
             refererLocale = extractLocale((_a = new URL(referer)) === null || _a === void 0 ? void 0 : _a.pathname);
-            console.log('[MIDDLEWARE] refererLocale', refererLocale);
             if ((0, generaltranslation_1.isValidLocale)(refererLocale || ''))
                 candidates.push(refererLocale || '');
         }

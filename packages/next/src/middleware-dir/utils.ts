@@ -5,7 +5,7 @@ import {
   standardizeLocale,
 } from 'generaltranslation';
 import { localeCookieName } from 'generaltranslation/internal';
-import { middlewareLocaleResetFlagName } from '../utils/constants';
+import { middlewareLocaleResetFlagName } from 'gt-react/internal';
 
 export type PathConfig = {
   [key: string]: string | { [key: string]: string };
@@ -233,9 +233,6 @@ export function getLocaleFromRequest(
   const cookieLocale = req.cookies.get(localeCookieName);
   if (cookieLocale?.value && isValidLocale(cookieLocale?.value)) {
     const resetCookie = req.cookies.get(middlewareLocaleResetFlagName);
-    console.log('........');
-    console.log('[MIDDLEWARE] resetCookie', resetCookie);
-    console.log('[MIDDLEWARE] cookieLocale', cookieLocale);
     if (resetCookie?.value) {
       candidates.unshift(cookieLocale.value);
       clearResetCookie = true;
@@ -248,11 +245,8 @@ export function getLocaleFromRequest(
   let refererLocale;
   if (localeRouting) {
     const referer = headerList.get('referer');
-    console.log('........');
-    console.log('[MIDDLEWARE] referer', referer);
     if (referer && typeof referer === 'string') {
       refererLocale = extractLocale(new URL(referer)?.pathname);
-      console.log('[MIDDLEWARE] refererLocale', refererLocale);
       if (isValidLocale(refererLocale || ''))
         candidates.push(refererLocale || '');
     }

@@ -42,6 +42,7 @@ import {
 } from './types/types';
 
 import { GTContextType, ClientProviderProps } from './types/providers';
+import { middlewareLocaleResetFlagName } from './utils/utils';
 
 export {
   addGTIdentifier,
@@ -85,4 +86,5 @@ export {
   CustomLoader,
   RenderVariable,
   VariableProps,
+  middlewareLocaleResetFlagName,
 };

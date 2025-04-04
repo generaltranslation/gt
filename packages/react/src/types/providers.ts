@@ -53,7 +53,6 @@ export type ClientProviderProps = {
   projectId?: string;
   devApiKey?: string;
   runtimeUrl?: string | null;
-  onLocaleChange?: () => void;
   cookieName?: string;
   gtServicesEnabled?: boolean;
 };

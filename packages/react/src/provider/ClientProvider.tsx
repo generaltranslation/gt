@@ -9,6 +9,7 @@ import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { localeCookieName } from 'generaltranslation/internal';
 import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
 import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
+import { middlewareLocaleResetFlagName } from '../utils/utils';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -27,7 +28,6 @@ export default function ClientProvider({
   devApiKey,
   runtimeUrl,
   runtimeTranslationEnabled,
-  onLocaleChange = () => {},
   cookieName = localeCookieName,
 }: ClientProviderProps): React.JSX.Element {
   // ---------- SET UP ---------- //
@@ -52,29 +52,23 @@ export default function ClientProvider({
       .find((row) => row.startsWith(`${cookieName}=`))
       ?.split('=')[1];
     if (locale && cookieLocale && cookieLocale !== locale) {
-      console.log('[CLIENT] invalid cookie locale', cookieLocale);
       document.cookie = `${cookieName}=;path=/`;
     }
   }, [locale]);
 
   // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
   const setLocale = (newLocale: string): void => {
-    console.log('[CLIENT] setLocale', locale, '->', newLocale);
     // validate locale
     newLocale = determineLocale(newLocale, locales) || locale || defaultLocale;
 
     // persist locale
-    console.log('[CLIENT] setting cookie locale to', newLocale);
     document.cookie = `${cookieName}=${newLocale};path=/`;
+    document.cookie = `${middlewareLocaleResetFlagName}=true;path=/`;
 
     // set locale
     _setLocale(newLocale);
 
-    // re-render server components
-    onLocaleChange();
-
     // re-render client components
-    console.log('[CLIENT] refreshing client');
     window.location.reload();
   };
 

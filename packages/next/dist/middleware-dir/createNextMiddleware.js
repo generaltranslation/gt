@@ -6,6 +6,7 @@ var internal_1 = require("generaltranslation/internal");
 var createErrors_1 = require("../errors/createErrors");
 var server_1 = require("next/server");
 var constants_1 = require("../utils/constants");
+var internal_2 = require("gt-react/internal");
 var utils_1 = require("./utils");
 /**
  * Middleware factory to create a Next.js middleware for i18n routing and locale detection.
@@ -75,7 +76,6 @@ function createNextMiddleware(_a) {
      * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
      */
     function nextMiddleware(req) {
-        console.log('--------------------------------');
         var headerList = new Headers(req.headers);
         var res = server_1.NextResponse.next({
             request: {
@@ -88,7 +88,7 @@ function createNextMiddleware(_a) {
         res.headers.set(internal_1.localeHeaderName, userLocale);
         res.cookies.set(constants_1.middlewareLocaleRoutingFlagName, localeRouting.toString());
         if (clearResetCookie) {
-            res.cookies.delete(constants_1.middlewareLocaleResetFlagName);
+            res.cookies.delete(internal_2.middlewareLocaleResetFlagName);
         }
         if (localeRouting) {
             // ---------- GET PATHS ---------- //
@@ -112,14 +112,6 @@ function createNextMiddleware(_a) {
                 (0, utils_1.replaceDynamicSegments)(pathnameLocale
                     ? standardizedPathname
                     : "/".concat(userLocale).concat(standardizedPathname), localizedPath);
-            console.log('........');
-            console.log('[MIDDLEWARE] userLocale', userLocale);
-            console.log('[MIDDLEWARE] pathnameLocale', pathnameLocale);
-            console.log('[MIDDLEWARE] unstandardizedPathnameLocale', unstandardizedPathnameLocale);
-            console.log('........');
-            console.log('[MIDDLEWARE] pathname', pathname);
-            console.log('[MIDDLEWARE] localizedPathWithParameters', localizedPathWithParameters);
-            console.log('........');
             // ---------- ROUTING LOGIC ---------- //
             // CASE: no localized path exists
             if (!localizedPathWithParameters) {
@@ -127,7 +119,6 @@ function createNextMiddleware(_a) {
                 if (pathnameLocale) {
                     // BASE CASE: no localized path exists, so no change
                     if (userLocale === unstandardizedPathnameLocale) {
-                        console.log("[MIDDLEWARE] BASE CASE: no localized path exists, so no change: ".concat(pathname));
                         return res;
                     }
                     // REDIRECT CASE: wrong pathname locale (/fr -> /en)
@@ -137,10 +128,9 @@ function createNextMiddleware(_a) {
                     var response_1 = server_1.NextResponse.redirect(redirectUrl_1);
                     response_1.headers.set(internal_1.localeHeaderName, userLocale);
                     response_1.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
-                    // if (clearResetCookie) {
-                    //   response.cookies.delete(middlewareLocaleResetFlagName);
-                    // }
-                    console.log("[MIDDLEWARE] REDIRECT CASE: wrong pathname locale: ".concat(pathname, " -> ").concat(redirectPath_1));
+                    if (clearResetCookie) {
+                        response_1.cookies.delete(internal_2.middlewareLocaleResetFlagName);
+                    }
                     return response_1;
                 }
                 // REWRITE: no default locale prefix (/customers -> /en/customers)
@@ -155,10 +145,9 @@ function createNextMiddleware(_a) {
                     });
                     response_2.headers.set(internal_1.localeHeaderName, userLocale);
                     response_2.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
-                    // if (clearResetCookie) {
-                    //   response.cookies.delete(middlewareLocaleResetFlagName);
-                    // }
-                    console.log("[MIDDLEWARE] REWRITE CASE: no default locale prefix: ".concat(pathname, " -> ").concat(rewritePath));
+                    if (clearResetCookie) {
+                        response_2.cookies.delete(internal_2.middlewareLocaleResetFlagName);
+                    }
                     return response_2;
                 }
                 // REDIRECT CASE: no/invalid pathnameLocale, add a default locale prefix
@@ -168,10 +157,9 @@ function createNextMiddleware(_a) {
                 var response = server_1.NextResponse.redirect(redirectUrl);
                 response.headers.set(internal_1.localeHeaderName, userLocale);
                 response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
-                // if (clearResetCookie) {
-                //   response.cookies.delete(middlewareLocaleResetFlagName);
-                // }
-                console.log("[MIDDLEWARE] REDIRECT CASE: no/invalid pathnameLocale, add a default locale prefix: ".concat(pathname, " -> ").concat(redirectPath));
+                if (clearResetCookie) {
+                    response.cookies.delete(internal_2.middlewareLocaleResetFlagName);
+                }
                 return response;
             }
             // CASE: remove default locale prefix
@@ -188,9 +176,8 @@ function createNextMiddleware(_a) {
                     response_3.headers.set(internal_1.localeHeaderName, userLocale);
                     response_3.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
                     if (clearResetCookie) {
-                        response_3.cookies.delete(constants_1.middlewareLocaleResetFlagName);
+                        response_3.cookies.delete(internal_2.middlewareLocaleResetFlagName);
                     }
-                    console.log("[MIDDLEWARE] REDIRECT CASE: displaying wrong path, convert to non-prefixed localized path: ".concat(pathname, " -> ").concat(redirectPath));
                     return response_3;
                 }
                 // REWRITE CASE: displaying correct path (/blog -> /en/blog) (/en-dashboard/1/en-custom -> /en/dashboard/1/custom) (/en-about -> /en/about)
@@ -206,9 +193,8 @@ function createNextMiddleware(_a) {
                 response.headers.set(internal_1.localeHeaderName, userLocale);
                 response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
                 if (clearResetCookie) {
-                    response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
+                    response.cookies.delete(internal_2.middlewareLocaleResetFlagName);
                 }
-                console.log("[MIDDLEWARE] REWRITE CASE: displaying correct path: ".concat(pathname, " -> ").concat(rewritePath));
                 return response;
             }
             // REDIRECT CASE: no localization prefix (invalid path), redirect to a localized path (ie, /blog -> /en-US/blog) (/dashboard -> /fr/fr-dashboard)
@@ -224,9 +210,8 @@ function createNextMiddleware(_a) {
                 response.headers.set(internal_1.localeHeaderName, userLocale);
                 response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
                 if (clearResetCookie) {
-                    response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
+                    response.cookies.delete(internal_2.middlewareLocaleResetFlagName);
                 }
-                console.log("[MIDDLEWARE] REDIRECT CASE: no localization prefix (invalid path), redirect to a localized path: ".concat(pathname, " -> ").concat(redirectPath));
                 return response;
             }
             // REWRITE CASE: displaying correct path at localized path, which is the same as the shared path (/fil/blog => /fil/blog) (/fr/fr-dashboard/1/fr-custom => /fr/dashboard/1/custom)
@@ -243,13 +228,11 @@ function createNextMiddleware(_a) {
                 response.headers.set(internal_1.localeHeaderName, userLocale);
                 response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
                 if (clearResetCookie) {
-                    response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
+                    response.cookies.delete(internal_2.middlewareLocaleResetFlagName);
                 }
-                console.log("[MIDDLEWARE] REWRITE CASE: displaying correct path at localized path, which is the same as the shared path: ".concat(pathname, " -> ").concat(rewritePath));
                 return response;
             }
             // BASE CASE
-            console.log('[MIDDLEWARE] BASE CASE: no change', pathname);
         }
         return res;
     }
