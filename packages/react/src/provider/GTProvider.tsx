@@ -1,10 +1,9 @@
-import { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import {
   getLocaleProperties,
   isSameLanguage,
   requiresTranslation,
 } from 'generaltranslation';
-import { useEffect, useState } from 'react';
 import { GTContext } from './GTContext';
 import {
   CustomLoader,
@@ -30,12 +29,12 @@ import {
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { defaultRenderSettings } from './rendering/defaultRenderSettings';
-import React from 'react';
 import { useDetermineLocale } from '../hooks/internal/useDetermineLocale';
 import { readAuthFromEnv } from '../utils/utils';
 import fetchTranslations from '../utils/fetchTranslations';
 import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
 import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
+import { isSSREnabled } from './helpers/isSSREnabled';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -70,6 +69,7 @@ export default function GTProvider({
   loadDictionary,
   loadTranslations,
   fallback = undefined,
+  ssr = isSSREnabled(),
   _versionId,
   ...metadata
 }: {
@@ -89,8 +89,10 @@ export default function GTProvider({
   loadDictionary?: CustomLoader;
   loadTranslations?: CustomLoader;
   _versionId?: string;
+  ssr?: boolean;
   [key: string]: any;
 }): React.JSX.Element {
+
   // ---------- SANITIZATION ---------- //
 
   // Read env
@@ -98,8 +100,7 @@ export default function GTProvider({
 
   // Locale standardization
   locales = useMemo(() => {
-    locales.unshift(defaultLocale);
-    return Array.from(new Set(locales));
+    return Array.from(new Set([defaultLocale, ...locales]));
   }, [defaultLocale, locales]);
 
   // Get locale
@@ -107,7 +108,7 @@ export default function GTProvider({
     defaultLocale,
     locales,
     locale: _locale,
-    ssr: false,
+    ssr,
   });
 
   // Translation at runtime during development is enabled
@@ -443,6 +444,7 @@ export default function GTProvider({
   // ----- RETURN ----- //
 
   const display = !!((!translationRequired || translations) && locale);
+  
 
   // hang until cache response, then render translations or loading state (when waiting on API response)
   return (

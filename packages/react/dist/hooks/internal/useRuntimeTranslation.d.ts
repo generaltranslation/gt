@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { RenderMethod } from '../../types/types';
 import { TranslateContentCallback, TranslateChildrenCallback } from '../../types/runtime';
 export default function useRuntimeTranslation({ projectId, devApiKey, locale, versionId, defaultLocale, runtimeUrl, renderSettings, setTranslations, runtimeTranslationEnabled, ...globalMetadata }: {

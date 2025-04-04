@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { determineLocale } from 'generaltranslation';
 import {
   libraryDefaultLocale,
@@ -89,10 +89,13 @@ function getNewLocale({
   })() as string[];
 
   // Check for locale in cookie
-  const cookieLocale = document.cookie
-    .split('; ')
-    .find((row) => row.startsWith(`${cookieName}=`))
-    ?.split('=')[1];
+  const cookieLocale =
+    typeof document !== 'undefined'
+      ? document.cookie
+          .split('; ')
+          .find((row) => row.startsWith(`${cookieName}=`))
+          ?.split('=')[1]
+      : undefined;
 
   // determine locale
   const newLocale =
@@ -106,7 +109,11 @@ function getNewLocale({
     ) || defaultLocale;
 
   // if cookie not valid, change it back to whatever we use for fallback
-  if (cookieLocale && cookieLocale !== newLocale) {
+  if (
+    cookieLocale &&
+    cookieLocale !== newLocale &&
+    typeof document !== 'undefined'
+  ) {
     document.cookie = `${cookieName}=${newLocale};path=/`;
   }
 
@@ -142,7 +149,9 @@ function createSetLocale({
   // update locale and store it in cookie
   const setLocale = (newLocale: string): void => {
     const validatedLocale = internalSetLocale(newLocale);
-    document.cookie = `${cookieName}=${validatedLocale};path=/`;
+    if (typeof document !== 'undefined') {
+      document.cookie = `${cookieName}=${validatedLocale};path=/`;
+    }
   };
   return [setLocale, internalSetLocale];
 }

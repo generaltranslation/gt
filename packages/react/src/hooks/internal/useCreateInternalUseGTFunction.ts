@@ -3,7 +3,8 @@ import {
   splitStringToContent,
 } from 'generaltranslation';
 import { hashJsxChildren } from 'generaltranslation/id';
-import { useCallback, useMemo } from 'react';
+import * as React from 'react';
+import { useCallback } from 'react';
 import {
   InlineTranslationOptions,
   TranslationsObject,
@@ -60,7 +61,6 @@ export default function useCreateInternalUseGTFunction(
       const id = options?.id;
       const translationWithIdExists = id && translations?.[id as string];
 
-      // Calculate hash - moved out of useMemo
       let hash = '';
 
       // Skip hashing:

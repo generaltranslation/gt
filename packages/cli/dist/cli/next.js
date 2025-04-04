@@ -71,7 +71,7 @@ class NextCLI extends react_1.ReactCLI {
                 default: 'app',
             });
             if (routerType === 'pages') {
-                console.log(chalk_1.default.red('\nPlease use gt-react and gt-react-cli instead. gt-next is currently not supported for the Pages router.'));
+                console.log(chalk_1.default.red('\nPlease install gt-react instead. gt-next is currently not supported for the Pages router.'));
                 process.exit(0);
             }
             const addGTProvider = yield (0, prompts_1.select)({
