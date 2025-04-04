@@ -55,6 +55,7 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
     formData.append('projectId', options.projectId);
     formData.append('publish', String(options.publish));
     formData.append('versionId', options.versionId || '');
+    formData.append('description', options.description || '');
 
     const response = await fetch(
       `${options.baseUrl}/v1/project/translations/files/upload`,
