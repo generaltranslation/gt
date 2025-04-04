@@ -5,7 +5,7 @@ import {
   standardizeLocale,
 } from 'generaltranslation';
 import { localeCookieName } from 'generaltranslation/internal';
-import { middlewareLocaleResetFlagName } from '../utils/constants';
+import { middlewareLocaleResetFlagName } from 'gt-react/internal';
 
 export type PathConfig = {
   [key: string]: string | { [key: string]: string };

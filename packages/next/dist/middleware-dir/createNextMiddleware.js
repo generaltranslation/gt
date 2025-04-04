@@ -6,6 +6,7 @@ var internal_1 = require("generaltranslation/internal");
 var createErrors_1 = require("../errors/createErrors");
 var server_1 = require("next/server");
 var constants_1 = require("../utils/constants");
+var internal_2 = require("gt-react/internal");
 var utils_1 = require("./utils");
 /**
  * Middleware factory to create a Next.js middleware for i18n routing and locale detection.
@@ -87,7 +88,7 @@ function createNextMiddleware(_a) {
         res.headers.set(internal_1.localeHeaderName, userLocale);
         res.cookies.set(constants_1.middlewareLocaleRoutingFlagName, localeRouting.toString());
         if (clearResetCookie) {
-            res.cookies.delete(constants_1.middlewareLocaleResetFlagName);
+            res.cookies.delete(internal_2.middlewareLocaleResetFlagName);
         }
         if (localeRouting) {
             // ---------- GET PATHS ---------- //
@@ -127,13 +128,16 @@ function createNextMiddleware(_a) {
                     var response_1 = server_1.NextResponse.redirect(redirectUrl_1);
                     response_1.headers.set(internal_1.localeHeaderName, userLocale);
                     response_1.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
+                    if (clearResetCookie) {
+                        response_1.cookies.delete(internal_2.middlewareLocaleResetFlagName);
+                    }
                     return response_1;
                 }
                 // REWRITE: no default locale prefix (/customers -> /en/customers)
                 if (!pathnameLocale &&
                     !prefixDefaultLocale &&
                     (0, generaltranslation_1.isSameDialect)(userLocale, defaultLocale)) {
-                    var rewritePath = "/".concat(userLocale).concat(pathname);
+                    var rewritePath = "/".concat(defaultLocale).concat(pathname);
                     var rewriteUrl = new URL(rewritePath, originalUrl);
                     rewriteUrl.search = originalUrl.search;
                     var response_2 = server_1.NextResponse.rewrite(rewriteUrl, {
@@ -141,6 +145,9 @@ function createNextMiddleware(_a) {
                     });
                     response_2.headers.set(internal_1.localeHeaderName, userLocale);
                     response_2.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
+                    if (clearResetCookie) {
+                        response_2.cookies.delete(internal_2.middlewareLocaleResetFlagName);
+                    }
                     return response_2;
                 }
                 // REDIRECT CASE: no/invalid pathnameLocale, add a default locale prefix
@@ -150,6 +157,9 @@ function createNextMiddleware(_a) {
                 var response = server_1.NextResponse.redirect(redirectUrl);
                 response.headers.set(internal_1.localeHeaderName, userLocale);
                 response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
+                if (clearResetCookie) {
+                    response.cookies.delete(internal_2.middlewareLocaleResetFlagName);
+                }
                 return response;
             }
             // CASE: remove default locale prefix
@@ -157,7 +167,7 @@ function createNextMiddleware(_a) {
                 !prefixDefaultLocale &&
                 (0, generaltranslation_1.isSameDialect)(userLocale, defaultLocale)) {
                 // REDIRECT CASE: displaying wrong path, convert to non-prefixed localized path (/about -> /en-about) (/dashboard/1/custom -> /en-dashboard/1/en-custom)
-                if (localizedPathWithParameters !== "/".concat(userLocale).concat(pathname)) {
+                if (localizedPathWithParameters !== "/".concat(defaultLocale).concat(pathname)) {
                     // remove locale prefix
                     var redirectPath = localizedPathWithParameters.replace(new RegExp("^/".concat(userLocale)), '');
                     var redirectUrl = new URL(redirectPath, originalUrl);
@@ -166,7 +176,7 @@ function createNextMiddleware(_a) {
                     response_3.headers.set(internal_1.localeHeaderName, userLocale);
                     response_3.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
                     if (clearResetCookie) {
-                        response_3.cookies.delete(constants_1.middlewareLocaleResetFlagName);
+                        response_3.cookies.delete(internal_2.middlewareLocaleResetFlagName);
                     }
                     return response_3;
                 }
@@ -183,7 +193,7 @@ function createNextMiddleware(_a) {
                 response.headers.set(internal_1.localeHeaderName, userLocale);
                 response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
                 if (clearResetCookie) {
-                    response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
+                    response.cookies.delete(internal_2.middlewareLocaleResetFlagName);
                 }
                 return response;
             }
@@ -200,7 +210,7 @@ function createNextMiddleware(_a) {
                 response.headers.set(internal_1.localeHeaderName, userLocale);
                 response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
                 if (clearResetCookie) {
-                    response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
+                    response.cookies.delete(internal_2.middlewareLocaleResetFlagName);
                 }
                 return response;
             }
@@ -218,7 +228,7 @@ function createNextMiddleware(_a) {
                 response.headers.set(internal_1.localeHeaderName, userLocale);
                 response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, 'true');
                 if (clearResetCookie) {
-                    response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
+                    response.cookies.delete(internal_2.middlewareLocaleResetFlagName);
                 }
                 return response;
             }

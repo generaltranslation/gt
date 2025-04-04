@@ -126,7 +126,6 @@ type ClientProviderProps = {
     projectId?: string;
     devApiKey?: string;
     runtimeUrl?: string | null;
-    onLocaleChange?: () => void;
     cookieName?: string;
     gtServicesEnabled?: boolean;
 };
@@ -154,7 +153,7 @@ declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId
 
 declare const renderVariable: RenderVariable;
 
-declare function ClientProvider({ children, dictionary, initialTranslations, dictionaryTranslations, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React.JSX.Element;
+declare function ClientProvider({ children, dictionary, initialTranslations, dictionaryTranslations, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, cookieName, }: ClientProviderProps): React.JSX.Element;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.

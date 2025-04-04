@@ -9,6 +9,7 @@ import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
 import { localeCookieName } from 'generaltranslation/internal';
 import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
 import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
+import { middlewareLocaleResetFlagName } from '../utils/utils';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -27,7 +28,6 @@ export default function ClientProvider({
   devApiKey,
   runtimeUrl,
   runtimeTranslationEnabled,
-  onLocaleChange = () => {},
   cookieName = localeCookieName,
 }: ClientProviderProps): React.JSX.Element {
   // ---------- SET UP ---------- //
@@ -63,12 +63,10 @@ export default function ClientProvider({
 
     // persist locale
     document.cookie = `${cookieName}=${newLocale};path=/`;
+    document.cookie = `${middlewareLocaleResetFlagName}=true;path=/`;
 
     // set locale
     _setLocale(newLocale);
-
-    // re-render server components
-    onLocaleChange();
 
     // re-render client components
     window.location.reload();

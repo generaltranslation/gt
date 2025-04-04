@@ -9,10 +9,8 @@ import {
 } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  middlewareLocaleResetFlagName,
-  middlewareLocaleRoutingFlagName,
-} from '../utils/constants';
+import { middlewareLocaleRoutingFlagName } from '../utils/constants';
+import { middlewareLocaleResetFlagName } from 'gt-react/internal';
 import {
   PathConfig,
   getSharedPath,
@@ -211,6 +209,9 @@ export default function createNextMiddleware({
           const response = NextResponse.redirect(redirectUrl);
           response.headers.set(localeHeaderName, userLocale);
           response.cookies.set(middlewareLocaleRoutingFlagName, 'true');
+          if (clearResetCookie) {
+            response.cookies.delete(middlewareLocaleResetFlagName);
+          }
           return response;
         }
 
@@ -220,7 +221,7 @@ export default function createNextMiddleware({
           !prefixDefaultLocale &&
           isSameDialect(userLocale, defaultLocale)
         ) {
-          const rewritePath = `/${userLocale}${pathname}`;
+          const rewritePath = `/${defaultLocale}${pathname}`;
           const rewriteUrl = new URL(rewritePath, originalUrl);
           rewriteUrl.search = originalUrl.search;
           const response = NextResponse.rewrite(rewriteUrl, {
@@ -228,6 +229,9 @@ export default function createNextMiddleware({
           });
           response.headers.set(localeHeaderName, userLocale);
           response.cookies.set(middlewareLocaleRoutingFlagName, 'true');
+          if (clearResetCookie) {
+            response.cookies.delete(middlewareLocaleResetFlagName);
+          }
           return response;
         }
 
@@ -238,6 +242,9 @@ export default function createNextMiddleware({
         const response = NextResponse.redirect(redirectUrl);
         response.headers.set(localeHeaderName, userLocale);
         response.cookies.set(middlewareLocaleRoutingFlagName, 'true');
+        if (clearResetCookie) {
+          response.cookies.delete(middlewareLocaleResetFlagName);
+        }
         return response;
       }
 
@@ -248,7 +255,7 @@ export default function createNextMiddleware({
         isSameDialect(userLocale, defaultLocale)
       ) {
         // REDIRECT CASE: displaying wrong path, convert to non-prefixed localized path (/about -> /en-about) (/dashboard/1/custom -> /en-dashboard/1/en-custom)
-        if (localizedPathWithParameters !== `/${userLocale}${pathname}`) {
+        if (localizedPathWithParameters !== `/${defaultLocale}${pathname}`) {
           // remove locale prefix
           const redirectPath = localizedPathWithParameters.replace(
             new RegExp(`^/${userLocale}`),
@@ -328,7 +335,6 @@ export default function createNextMiddleware({
 
       // BASE CASE
     }
-
     return res;
   }
 

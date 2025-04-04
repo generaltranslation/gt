@@ -21,12 +21,6 @@ var constants_1 = require("../utils/constants");
 var utils_1 = require("../middleware-dir/utils");
 var generaltranslation_1 = require("generaltranslation");
 function ClientProvider(props) {
-    // locale change on client, trigger page reload
-    var router = (0, navigation_1.useRouter)();
-    var onLocaleChange = function () {
-        document.cookie = "".concat(constants_1.middlewareLocaleResetFlagName, "=true;path=/");
-        router.refresh();
-    };
     // Trigger page reload when locale changes
     // When nav to same route but in diff locale, client components were cached and not re-rendered
     var pathname = (0, navigation_1.usePathname)();
@@ -47,9 +41,7 @@ function ClientProvider(props) {
                 pathLocale !== props.locale) {
                 // clear cookie (avoids infinite loop when there is no middleware)
                 document.cookie = "".concat(constants_1.middlewareLocaleRoutingFlagName, "=;path=/");
-                // reload server
-                router.refresh();
-                // reload client
+                // reload page
                 window.location.reload();
             }
         }
@@ -60,6 +52,6 @@ function ClientProvider(props) {
         props.defaultLocale,
         props.gtServicesEnabled,
     ]);
-    return (0, jsx_runtime_1.jsx)(client_1.ClientProvider, __assign({ onLocaleChange: onLocaleChange }, props));
+    return (0, jsx_runtime_1.jsx)(client_1.ClientProvider, __assign({}, props));
 }
 //# sourceMappingURL=ClientProviderWrapper.js.map
