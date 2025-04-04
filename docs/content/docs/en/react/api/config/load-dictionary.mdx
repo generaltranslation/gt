@@ -1,0 +1,87 @@
+---
+title: loadDictionary()
+description: API Reference for the loadDictionary() function.
+---
+
+## Overview
+
+`loadDictionary()` will load a translation json file for a given locale.
+
+This function is intended for those who which to use `gt-react` as a stand-alone i18n library.
+
+This function is primarily used to migrate existing projects with i18n to General Translation while keeping their existing translations.
+
+
+If multiple translations exist, translations from dictionaries loaded by `loadDictionary()` will always take precedence over others.
+`loadDictionary()` only supports the use of JSON files with string translations.
+
+
+## Reference
+
+### Parameters
+<TypeTable
+  type={{
+    "locale": {
+        type: 'string',
+        optional: false,
+    },
+  }}
+/>
+
+### Description
+| Type | Description |
+| ---- | ----------- |
+| `locale` | The locale for which translations should be loaded. |
+
+### Returns
+
+A `Promise<any>` that resolves to dictionary mapping ids to translations for the given locale.
+
+---
+
+## Setup
+
+Generally, you will load the dictionary from the `./public/locales` directory.
+
+Define your `loadDictionary()` in a file.
+Make sure to have the function return a promise that resolves to an object with translations for the given locale.
+
+```jsx title="src/loadDictionary.js"
+export default async function loadDictionary(locale) {
+  const translations = await import(`../public/locales/${locale}.json`);
+  return translations.default;
+}
+```
+
+Then pass it to your `<GTProvider>` component:
+
+```jsx title="src/App.js"
+import { GTProvider } from 'gt-react';
+import loadDictionary from './loadDictionary';
+
+<GTProvider loadDictionary={loadDictionary}>
+  <App />
+</GTProvider>
+```
+
+
+<Callout>
+  **Question:** What's the difference between [`loadTranslations()`](/docs/react/api/config/load-translations) and [`loadDictionary()`](/docs/react/api/config/load-dictionary)?
+
+  * [`loadTranslations()`](/docs/react/api/config/load-translations) is used to define custom loading behavior for fetching translations for your app.
+  This could be getting translations from a CDN, a database, or your app's bundle.
+  These are usually machine generated translations, managed by the cli tool, and not very user friendly to edit.
+  * [`loadDictionary()`](/docs/react/api/config/load-dictionary) is intended for implementations of `gt-react` as a standalone library.
+  Users bring their own translations and no translation infrastructure is used.
+</Callout>
+
+---
+
+## Notes
+ * `loadDictionary()` is used to load custom translations for your app.
+ * Dictionaries loaded by `loadDictionary()` will take precedence over translations loaded by [`loadTranslations()`](/docs/react/api/config/load-translations).
+
+## Next steps
+ * If you want to write your own translations check out [custom translations](/docs/react/reference/stand-alone).
+ * See [`loadTranslations()`](/docs/react/api/config/load-translations) for more information on writing a custom translation loader.
+

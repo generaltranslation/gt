@@ -1,6 +1,7 @@
 import path from 'path';
 import { FilesOptions, ResolvedFiles, TransformFiles } from '../../types';
 import fg from 'fast-glob';
+import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles';
 
 /**
  * Resolves the files from the files object
@@ -16,20 +17,12 @@ export function resolveLocaleFiles(
 ): ResolvedFiles {
   const result: ResolvedFiles = {};
 
-  // Replace [locale] with locale in all paths
-  result.json = files.json?.map((filepath) =>
-    filepath.replace(/\[locale\]/g, locale)
-  );
+  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    result[fileType] = files[fileType]?.map((filepath) =>
+      filepath.replace(/\[locale\]/g, locale)
+    );
+  }
 
-  // Replace [locale] with locale in all paths
-  result.md = files.md?.map((filepath) =>
-    filepath.replace(/\[locale\]/g, locale)
-  );
-
-  // Replace [locale] with locale in all paths
-  result.mdx = files.mdx?.map((filepath) =>
-    filepath.replace(/\[locale\]/g, locale)
-  );
   // Replace [locale] with locale in all paths
   result.gt = files.gt?.replace(/\[locale\]/g, locale);
 
@@ -61,49 +54,26 @@ export function resolveFiles(
     placeholderResult.gt = files.gt.output;
   }
 
-  // Process JSON files
-  if (files.json?.include) {
-    const jsonPaths = expandGlobPatterns(
-      files.json.include,
-      files.json?.exclude || [],
-      locale
-    );
-    result.json = jsonPaths.resolvedPaths;
-    placeholderResult.json = jsonPaths.placeholderPaths;
-  }
-
-  // Process MD files
-  if (files.md?.include) {
-    const mdPaths = expandGlobPatterns(
-      files.md.include,
-      files.md?.exclude || [],
-      locale
-    );
-    result.md = mdPaths.resolvedPaths;
-    placeholderResult.md = mdPaths.placeholderPaths;
-  }
-
-  // Process MDX files
-  if (files.mdx?.include) {
-    const mdxPaths = expandGlobPatterns(
-      files.mdx.include,
-      files.mdx?.exclude || [],
-      locale
-    );
-    result.mdx = mdxPaths.resolvedPaths;
-    placeholderResult.mdx = mdxPaths.placeholderPaths;
+  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    if (files[fileType]?.include) {
+      const filePaths = expandGlobPatterns(
+        files[fileType].include,
+        files[fileType]?.exclude || [],
+        locale
+      );
+      result[fileType] = filePaths.resolvedPaths;
+      placeholderResult[fileType] = filePaths.placeholderPaths;
+    }
   }
 
   // ==== TRANSFORMS ==== //
-
-  if (files.json?.transform && !Array.isArray(files.json.transform)) {
-    transformPaths.json = files.json.transform;
-  }
-  if (files.mdx?.transform && !Array.isArray(files.mdx.transform)) {
-    transformPaths.mdx = files.mdx.transform;
-  }
-  if (files.md?.transform && !Array.isArray(files.md.transform)) {
-    transformPaths.md = files.md.transform;
+  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    if (
+      files[fileType]?.transform &&
+      !Array.isArray(files[fileType].transform)
+    ) {
+      transformPaths[fileType] = files[fileType].transform;
+    }
   }
 
   return {

@@ -1,0 +1,129 @@
+---
+title: RuntimeTranslationOptions
+description: API Reference for the RuntimeTranslationOptions type
+---
+
+## Overview
+
+The `RuntimeTranslationOptions` type is used to pass variables to inline translations and specify their render behavior.
+You can also add a locale to specify a different language for the translation.
+This is used with the [`tx()`](/docs/next/api/strings/tx) function.
+
+<Callout>
+  **Runtime Translation:**
+  To translate a variable on demand, include them directly in the string passed to [`tx()`](/docs/next/api/strings/tx).
+  Variables passed to `tx()` via the `options` object are not translated.
+</Callout>
+
+## Reference
+
+### Parameters
+
+<TypeTable
+  type={{
+    "locale?": {
+        type: 'string',
+        optional: true,
+        default: 'undefined',
+    },
+    "variables?": {
+        type: 'Record<string, any>',
+        optional: true,
+        default: 'undefined',
+    },
+    "variablesOptions?": {
+        type: 'Record<string, Intl.NumberFormatOptions | Intl.DateTimeFormatOptions>',
+        optional: true,
+        default: 'undefined',
+    },
+  }}
+/>
+
+### Description
+
+| Prop | Description |
+| ---- | ----------- |
+| `locale` | An optional locale to use for the translation. Will default to browser's most preferred locale that is supported by your app. |
+| `variables` | An object where the keys identify where each value is mapped to in the string.|
+| `variablesOptions` | An object where the keys identify the variable and the values define the variables behavior. See [`Intl.NumberFormatOptions`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) and [`Intl.DateTimeFormatOptions`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat) for more information. |
+
+---
+
+## Examples
+
+
+### Passing variables
+In order to add a variable to the string, we use the `{variable-name}` syntax, where curleybraces wrap the name of the variable.
+
+```jsx title="Component.tsx"
+// [!code word:username]
+import { tx } from 'gt-next/server';
+
+const Component = () => {
+  return <div>
+    {tx(`Hello, {username}!`,{ variables: { 'username' : 'Brian123' } })}
+  </div>;
+};
+```
+
+
+### Adding variable options
+
+You can also customize how your variables render with the `variablesOptions` prop.
+```jsx title="Component.tsx"
+// [!code word:account-balance]
+import { tx } from 'gt-next/server';
+
+const Component = () => {
+  return <div>
+    { tx(
+      'Your account balance: {account-balance}!',
+      {
+        variables: { "account-balance" : 1000000 },
+        variableOptions: { "account-balance": { style: 'currency', currency: 'USD' } }
+      }
+    ) }
+  </div>;
+};
+```
+
+
+### Translating variables
+In order to translate a variable, include it directly in the string passed to `tx()`.
+
+```jsx title="Component.tsx"
+import { tx } from 'gt-next/server';
+
+const Component = ({ hairColor }: { hairColor: string }) => {
+  return <div>{tx(
+    `Hello, {username}! Your haircolor is ${hairColor}`,
+    { variables: { 'username' : 'Brian123' } }
+  )}</div>;
+};
+```
+
+Note that the variable `hairColor` gets translated, but `username` does not.
+
+
+### Specifying a locale
+You can specify a locale to use for the translation.
+```jsx title="Component.tsx"
+import { tx } from 'gt-next/server';
+
+const Component = () => {
+  return <div>{tx('Hello, world!', { locale: 'fr' })}</div>;
+};
+```
+This will always be translated to french.
+
+---
+
+## Notes
+ * `RuntimeTranslationOptions` is used for string translations at runtime.
+ * The `variables` object passes values to the text.
+ * The `variablesOptions` object defines the behavior of the variables.
+
+
+## Next steps
+ * See [`tx()`](/docs/next/api/strings/tx) for more information on inline string translations.
+ * See [`Intl.NumberFormatOptions`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) and [`Intl.DateTimeFormatOptions`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat) for more information on formatting options.

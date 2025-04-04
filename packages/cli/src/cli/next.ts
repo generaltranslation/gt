@@ -81,7 +81,7 @@ export class NextCLI extends ReactCLI {
     if (routerType === 'pages') {
       console.log(
         chalk.red(
-          '\nPlease use gt-react and gt-react-cli instead. gt-next is currently not supported for the Pages router.'
+          '\nPlease install gt-react instead. gt-next is currently not supported for the Pages router.'
         )
       );
       process.exit(0);

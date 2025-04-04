@@ -1,0 +1,357 @@
+---
+title: Configuration
+description: Config docs for the gt.config.json file
+---
+
+## Overview
+
+The `gt.config.json` file is used to configure your project's GT settings. It should be placed in the root of your project.
+
+The CLI command `npx gtx-cli init` will create a `gt.config.json` file for you in your project.
+
+## Configuration
+
+The `gt.config.json` file contains the following settings:
+
+- `defaultLocale`: The default locale for your project. This is the locale that your source content is written in. This is also the fallback locale for your project (if using `gt-next` or `gt-react`).
+
+- `locales`: An array of locales for your project. These are the locales that you want to translate your project into. See the [supported locales](/docs/reference/supported-locales) for more information. 
+If you are using `gt-next` or `gt-react`, these are also the locales that your app supports.
+
+- `files`: This is an object that contains information about the content you want to translate.
+
+
+Here is an skeleton of the `gt.config.json` file:
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "es"],
+  "files": {
+    "gt": {
+      "output": "..."
+    },
+    "json": {
+      "include": [...]
+    },
+    "mdx": {
+      "include": [...]
+    },
+    "md": {
+      "include": [...]
+    }
+  }
+}
+```
+
+---
+
+## Example Configuration
+
+Let's break down an example `gt.config.json` file:
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "es"],
+  "files": {
+    "gt": {
+      "output": "public/i18n/[locale].json"
+    },
+    "mdx": {
+      "include": ["content/docs/[locale]/**/*.mdx"],
+      "transform": "*.[locale].mdx"
+    },
+    "json": {
+      "include": ["resources/[locale]/**/*.json"],
+      "exclude": ["resources/[locale]/exclude/**/*.json"]
+    }
+  }
+}
+```
+
+In this example, we are translating the following files with a single call to [`gtx-cli translate`](/docs/cli/translate):
+
+- All MDX files in the `content/docs/en` directory.
+- All JSON files in the `resources/en` directory (excluding any files in the `resources/en/exclude` directory).
+- All in-line `<T>` components in your React or Next.js project.
+- Your `dictionary.[json|js|ts]` file.
+
+GT: Translations will be saved to `public/i18n/es.json` and `public/i18n/fr.json`. These files can be loaded using [`loadTranslations()`](/docs/react/api/config/load-translations).
+
+MDX: Translations will be saved to the `content/docs/fr` and `content/docs/es` directories.
+The file extensions will be changed to `.fr.mdx` and `.es.mdx` respectively (from `.mdx`).
+
+JSON: Translations will be saved to the `resources/fr` and `resources/es` directories.
+
+---
+
+## Supported File Types
+
+`files` should contain a key for each file type that you want to translate.
+You can configure your project to mix and match different file types, and have them all be translated.
+We currently support the following file types:
+
+- `gt`: General Translation files.
+- `json`: JSON files.
+- `mdx`: Markdown component (MDX) files.
+- `md`: Markdown (MD) files.
+- `js`: JavaScript files.
+- `ts`: TypeScript files.
+
+Each file type should correspond to an object that contains one or more of the following keys:
+
+- `include`
+- `exclude`
+- `transform`
+- `output`
+
+### `include`
+
+If used, the value of the `include` key should be an array of glob patterns that match the files you want to translate.
+
+You should use the `[locale]` placeholder in your glob patterns to ensure that the correct locale is used.
+The CLI tool will replace the `[locale]` placeholder with the `defaultLocale` value when searching for translatable files.
+
+The CLI tool will save translated files to the corresponding path, with the `[locale]` placeholder replaced with the locale code.
+
+```json
+{
+  "include": ["docs/[locale]/**/*.json"]
+}
+```
+
+### `exclude`
+
+If used, the value of the `exclude` key should be an array of glob patterns that match the files you want to exclude from translation.
+
+The pattern is the same as the `include` pattern.
+
+```json
+{
+  "exclude": ["docs/[locale]/exclude/**/*.json"]
+}
+```
+
+### `transform`
+
+If used, the value of the `transform` key should be a string defining a remapping of the file name. It should contain a wildcard `*` that will be replaced with the original file name (anything before the first `.`).
+
+For example, if you want the extension of all of your translated files to have `.[locale].json` instead of `.json`, you can use the following configuration:
+
+```json
+{
+  "transform": "*.[locale].json"
+}
+```
+
+<Callout type="info">
+
+This is useful if your docs or i18n framework requires a specific file extension for translated files instead of subdirectory-based locale routing.
+
+</Callout>
+
+
+### `output`
+
+This key is exclusively used for General Translation files, specifically for saving translations locally. If you are using the GT CDN, this key is not needed.
+
+The value should be a string containing a `[locale]` placeholder indicating the location where the translations will be saved.
+
+For example, if you want to your Spanish translations to a file called `ui.es.json` in the `public/i18n` directory, you should use the following string:
+
+```json 
+{
+  "output": "public/i18n/[locale].json"
+}
+```
+
+<Callout type="info">
+
+This option should only be used if you are using `gt-next` or `gt-react`, and want to save translations locally, instead of using the GT CDN.
+
+Currently, only one file for each locale can be generated.
+
+</Callout>
+
+---
+
+## File Type: `gt`
+
+**Supported Keys**
+
+- `output` (Required)
+
+**Example**
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "es"],
+  "files": {
+    "gt": {
+      "output": "public/i18n/[locale].json"
+    },
+  }
+}
+```
+
+This configuration will the CLI tool to save your French and Spanish translations to the `public/i18n/[locale].json` directory.
+
+By default, the CLI tool will not publish your translations to the GT CDN with this configuration.
+
+---
+
+## File Type: `json`
+
+**Supported Keys**
+
+- `include` (Required)
+- `exclude` (Optional)
+- `transform` (Optional)
+
+**Example**
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "es"],
+  "files": {
+    "json": {
+      "include": ["json_files/[locale]/**/*.json"],
+      "exclude": ["json_files/[locale]/exclude/**/*.json"]
+    }
+  }
+}
+```
+
+Let's say your project's default locale is `en`, and you want to translate your project into `fr` and `es`.
+
+With this configuration, the CLI will search for all JSON files under the subdirectory `json_files/en/` and save the translated files to `json_files/fr/` and `json_files/es/`.
+
+It will ignore any files in the subdirectory `json_files/en/exclude/`.
+
+---
+
+## File Type: `mdx`
+
+**Supported Keys**
+
+- `include` (Required)
+- `exclude` (Optional)
+- `transform` (Optional)
+
+**Example**
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["ja"],
+  "files": {
+    "mdx": {
+      "include": ["content/docs/[locale]/**/*.mdx"],
+      "transform": "*.[locale].mdx"
+    }
+  }
+}
+```
+
+This configuration will tell the CLI tool to search for all MDX files under the `content/docs/en` directory and save the translated files to the `content/docs/ja` directory.
+
+The `transform` key causes the extension of the translated files to be changed to `.ja.mdx`.
+
+---
+
+## File Type: `md`
+
+**Supported Keys**
+
+- `include` (Required)
+- `exclude` (Optional)
+- `transform` (Optional)
+
+**Example**
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["ja"],
+  "files": {
+    "md": {
+      "include": ["content/docs/[locale]/**/*.md"],
+      "exclude": ["content/docs/[locale]/exclude/**/*.md"],
+      "transform": "*.[locale].md"
+    }
+  }
+}
+```
+
+This configuration will tell the CLI tool to search for all MD files under the `content/docs/en` directory and save the translated files to the `content/docs/ja` directory.
+
+The `transform` key causes the extension of the translated files to be changed to `.ja.md`.
+
+All files in the `content/docs/en/exclude` directory will be ignored.
+
+---
+
+## File Type: `js`
+
+**Supported Keys**
+
+- `include` (Required)
+- `exclude` (Optional)
+- `transform` (Optional)
+
+**Example**
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "es"],
+  "files": {
+    "js": {
+      "include": ["scripts/[locale]/**/*.js"]
+    }
+  }
+}
+```
+
+This configuration will tell the CLI tool to search for all JavaScript files under the `scripts/en` directory and save the translated files to the `scripts/fr` and `scripts/es` directories.
+
+The `transform` key causes the extension of the translated files to be changed to `.fr.js` and `.es.js` respectively (from `.js`).
+
+---
+
+## File Type: `ts`
+
+**Supported Keys**
+
+- `include` (Required)
+- `exclude` (Optional)
+- `transform` (Optional)
+
+**Example**
+
+```json title="gt.config.json"
+{ 
+  "defaultLocale": "en",
+  "locales": ["fr", "es"],
+  "files": {
+    "ts": {
+      "include": ["scripts/[locale]/**/*.ts"]
+    }
+  }
+}
+```
+
+This configuration will tell the CLI tool to search for all TypeScript files under the `scripts/en` directory and save the translated files to the `scripts/fr` and `scripts/es` directories.
+
+The `transform` key causes the extension of the translated files to be changed to `.fr.ts` and `.es.ts` respectively (from `.ts`).
+
+---
+
+
+
+## Next Steps
+
+Learn how to use the [init command](/docs/cli/init) to generate this configuration file.

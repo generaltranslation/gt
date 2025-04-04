@@ -1,0 +1,249 @@
+---
+title: The CLI Tool
+description: The General Translations CLI tool 
+---
+
+## Overview
+
+This is a reference doc on the General Translation CLI tool.
+Read more about `gtx-cli` [here](/docs/cli).
+
+For a step by step guide, check out the [Deploying to Production](/docs/react/tutorials/quickdeploy) guide.
+
+## Installation
+
+<Tabs items={["npm", "yarn", "bun", "pnpm"]}>
+  <Tab value="npm">
+  ```bash 
+  npm i gtx-cli --save-dev
+  ``` 
+  </Tab>
+  <Tab value="yarn">
+  ```bash 
+  yarn add gtx-cli --dev
+  ```
+  </Tab>
+  <Tab value="bun">
+  ```bash 
+  bun add gtx-cli --dev
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash 
+  pnpm add gtx-cli --save-dev
+  ```
+  </Tab>
+</Tabs>
+
+## What does the CLI tool do?
+
+The CLI tool is used for managing your project and your translations.
+There are a two main commands you should be aware of: `translate` and `setup`.
+
+ * [The `translate` command](/docs/cli/translate) is meant to be added to the CD pipeline.
+   It is used to scan your project for content to be translated.
+   The content is then uploaded to a CDN or added to your app bundle to be used at runtime.
+ * [The `setup` command ](/docs/cli/setup) is used to automatically integrate the General Translation library into your project.
+   It will scan through your project and wrap any JSX content with a `<T>` component.
+
+### Translating
+
+To use the CLI tool, run the following command from the root of your project:
+
+```bash title="shell" copy
+npx gtx-cli translate
+```
+
+<Callout type="warn">
+    **For Production Use Only!**
+
+    Because this CLI tool publishes translated content to the CDN, it is meant to only be used for production builds and **should not be used in development**.
+    Before running this command, please make sure you are on the branch that will be used for production.
+    Remember to also specify your production API key and Project ID in your environment variables.
+</Callout>
+
+### Flags
+
+
+<TypeTable
+  type={{
+    "--api-key": {
+        description:
+            'Production API key',
+        type: 'string',
+        optional: true,
+    },
+    "--project-id": {
+        description:
+            'The project ID',
+        type: 'string',
+        optional: true,
+    },
+    "--options": {
+        description:
+            'Path to the GT options file',
+        type: 'string',
+        optional: true,
+        default: 'gt.config.json',
+    },
+    "--new": {
+        description:
+            'New locales to translate your project into',
+        type: 'string',
+        optional: true,
+    },
+    "--dictionary": {
+        description:
+            'Path to the dictionary file',
+        type: 'string',
+        optional: true,
+    },
+    "--dry-run": {
+        description:
+            'Dry run the command',
+        type: 'boolean',
+        optional: true,
+        default: 'false',
+    },
+    "--ignore-errors": {
+        description:
+            'Ignore errors and force translation for valid content',
+        type: 'boolean',
+        optional: true,
+        default: 'false',
+    },
+    "--inline": {
+        description:
+            'Include inline <T> tags in addition to the dictionary',
+        type: 'boolean',
+        optional: true,
+        default: 'true',
+    },
+  }}
+/>
+
+When running the CLI tool for the first time, it will attempt to create a `gt.config.json` file in the root of your project.
+This file contains metadata about your project that is used to translate your content.
+
+---
+
+## Setup
+
+Additionally, the CLI tool can automatically scan and setup your project for translation.
+If you are using General Translation for the first time, we recommend running the setup to get started.
+
+```bash title="shell" copy
+npx gtx-cli setup
+```
+
+<Callout type="warn">
+    **Stash your changes!**
+
+    This will modify your codebase, so make sure to either stash or commit your changes first.
+</Callout>
+
+Running this command will wrap `<T>` components around the top level of JSX elements which contain translatable content.
+
+It will also wrap any non-static content with `<Var>` components. 
+
+Here are some examples of what the scan will convert:
+
+
+<Tabs items={["Example 1", "Example 2", "Example 3", "Example 4", "Example 5"]}>
+  <Tab value="Example 1">
+
+
+  ```jsx
+  <div>Hello, World!</div>
+  ```
+
+  Will be converted to:
+
+  ```jsx
+  <T id="">Hello, World!</T>
+  ```
+
+  </Tab>
+  <Tab value="Example 2">
+
+
+  ```jsx
+  <div>Hello, {name}</div>
+  ```
+
+  Will be converted to:
+
+  ```jsx
+  <T id="">Hello, <Var>{name}</Var></T>
+  ```
+
+  </Tab>
+  <Tab value="Example 3">
+
+
+  ```jsx
+  <p>{true && "Hello, World!"}</p>;
+  ```
+
+  Will be converted to:
+
+  ```jsx
+  <T id=""><p><Var>{true && <T id="">{"Hello, World!"}</T>}</Var></p></T>;
+  ```
+
+  </Tab>
+  <Tab value="Example 4">
+
+
+  ```jsx
+  <p>{"Hello," + " World!"}</p>
+  ```
+
+  Will be converted to:
+
+  ```jsx
+  <T id=""><p>{"Hello," + " World!"}</p></T>
+  ```
+
+  </Tab>
+  <Tab value="Example 5">
+
+
+  ```jsx
+  <p>{`${temp}`}</p>
+  ```
+
+  Will be converted to:
+
+  ```jsx
+  <T id=""><p><Var>{`${temp}`}</Var></p></T>
+  ```
+
+  </Tab>
+</Tabs>
+
+The CLI will only wrap direct children inside JSX elements. It will wrap other JSX elements separately with their own `<T>` components.
+
+
+<Callout type="warn">
+    **Experimental**
+
+    This feature is currently experimental and may not work perfectly.
+    After running the scan, you should manually review the output and make sure it is correct.
+    In particular, note that any non-static JSX Expressions `{...}` will be wrapped in `<Var>` components.
+    You may need to manually review and edit these cases.
+    Please report any issues you run into [here](https://github.com/General-Translation/gt-libraries/issues).
+</Callout>
+
+### Flags
+
+<TypeTable
+  type={{
+    "--src": {
+        description:
+            'The source directory to scan',
+        type: 'string',
+        optional: true,
+    },
+  }}
+/>

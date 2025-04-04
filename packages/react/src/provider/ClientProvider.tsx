@@ -1,5 +1,6 @@
 'use client';
-import React, { use, useEffect, useState } from 'react';
+import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { determineLocale } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/providers';

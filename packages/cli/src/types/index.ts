@@ -1,4 +1,5 @@
 import { JsxChildren } from 'generaltranslation/internal';
+import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles';
 
 export type Updates = ({ metadata: Record<string, any> } & (
   | {
@@ -87,44 +88,32 @@ export interface ContentScanner {
   }>;
 }
 
-export type FilesOptions = {
-  gt?: {
-    output: string; // Output glob: /path/[locale].json
-  };
-  json?: {
-    include: string[];
-    exclude?: string[];
-    transform?: string;
-  };
-  yaml?: {
-    include: string[];
-    exclude?: string[];
-  };
-  md?: {
-    include: string[];
-    exclude?: string[];
-    transform?: string;
-  };
-  mdx?: {
-    include: string[];
-    exclude?: string[];
-    transform?: string;
-  };
-};
+// Create a type based on the supported file extensions
+export type SupportedFileExtension = (typeof SUPPORTED_FILE_EXTENSIONS)[number];
 
+// Update ResolvedFiles to use the dynamic keys
 export type ResolvedFiles = {
-  json?: string[];
-  // yaml?: string[];
-  md?: string[];
-  mdx?: string[];
+  [K in SupportedFileExtension]?: string[];
+} & {
   gt?: string; // Output glob: /path/[locale].json
 };
 
+// Update TransformFiles similarly
 export type TransformFiles = {
-  json?: string;
-  // yaml?: string;
-  md?: string;
-  mdx?: string;
+  [K in SupportedFileExtension]?: string;
+};
+
+// Update FilesOptions to fix the error
+export type FilesOptions = {
+  [K in SupportedFileExtension]?: {
+    include: string[];
+    exclude?: string[];
+    transform?: string;
+  };
+} & {
+  gt?: {
+    output: string; // Output glob: /path/[locale].json
+  };
 };
 
 // Shared settings between all API-related commands

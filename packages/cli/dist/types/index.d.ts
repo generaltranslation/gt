@@ -1,4 +1,5 @@
 import { JsxChildren } from 'generaltranslation/internal';
+import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles';
 export type Updates = ({
     metadata: Record<string, any>;
 } & ({
@@ -59,40 +60,25 @@ export interface ContentScanner {
         warnings: string[];
     }>;
 }
-export type FilesOptions = {
-    gt?: {
-        output: string;
-    };
-    json?: {
-        include: string[];
-        exclude?: string[];
-        transform?: string;
-    };
-    yaml?: {
-        include: string[];
-        exclude?: string[];
-    };
-    md?: {
-        include: string[];
-        exclude?: string[];
-        transform?: string;
-    };
-    mdx?: {
-        include: string[];
-        exclude?: string[];
-        transform?: string;
-    };
-};
+export type SupportedFileExtension = (typeof SUPPORTED_FILE_EXTENSIONS)[number];
 export type ResolvedFiles = {
-    json?: string[];
-    md?: string[];
-    mdx?: string[];
+    [K in SupportedFileExtension]?: string[];
+} & {
     gt?: string;
 };
 export type TransformFiles = {
-    json?: string;
-    md?: string;
-    mdx?: string;
+    [K in SupportedFileExtension]?: string;
+};
+export type FilesOptions = {
+    [K in SupportedFileExtension]?: {
+        include: string[];
+        exclude?: string[];
+        transform?: string;
+    };
+} & {
+    gt?: {
+        output: string;
+    };
 };
 export type Settings = {
     config: string;

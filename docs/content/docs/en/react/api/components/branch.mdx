@@ -1,0 +1,158 @@
+---
+title: <Branch>
+description: API Reference for the <Branch> component
+---
+
+## Overview
+
+The `<Branch>` component allows you to add conditional logic to a translation.
+
+```jsx
+const status = 'active';
+<Branch branch={status}
+    active={<p>The user is active.</p>}
+    inactive={<p>The user is inactive.</p>}
+/>
+```
+You pass a value to the `branch` parameter, and this gets matched with an output value based on the keys you provide.
+
+## Reference
+
+### Props
+
+<TypeTable
+  type={{
+    "branch": {
+        description: 'The name of the branch to render.',
+        type: 'string',
+        optional: false,
+    },
+    "children?": {
+        description: 'Fallback content',
+        type: 'any',
+        optional: true,
+        default: 'undefined',
+    },
+    "name?": {
+        type: 'string',
+        optional: true,
+        default: 'undefined',
+    },
+    "[key]: string": {
+        type: 'string | JSX.Element',
+        optional: false,
+    },
+  }}
+/>
+
+The `[key]: string` syntax indicates arbitrary keys representing potential branches.
+For example, branches like `active` and `inactive` can be added as parameters.
+
+| Prop       | Description                                                                 |
+|------------|-----------------------------------------------------------------------------|
+| `branch`     | The name of the branch to render.                                           |
+| `children`   | Fallback content to render if no matching branch is found.                  |
+| `[key]: string` | Branches representing possible content for the given branch value. Each key corresponds to a branch, and its value is the content to render. |
+
+### Returns
+
+`JSX.Element` containing the content corresponding to the specified branch or the fallback content.
+
+### Throws
+
+`Error` if the `branch` prop is not provided or is invalid.
+
+## Examples
+
+### Basic usage
+`<Branch>` needs to have a different output for each possible value of the `branch` prop.
+
+In this example, the `user.hairColor` value is used to determine the output.
+We have defined props `black`, `brown`, and `blonde` to match the possible values of `user.hairColor`.
+```jsx title="BranchExample.jsx" copy
+import { Branch } from 'gt-react';
+
+export default function HairColor({ user }) {
+  return (
+    <Branch branch={user.hairColor} // [!code highlight]
+      black={<p>Their hair is dark.</p>}
+      brown="Their hair is in the middle." // (you can pass a string if you prefer)
+      blonde={<p>Their hair is light.</p>}
+    />
+  );
+}
+```
+
+### Fallback content
+The `children` will always be used as a fallback if no prop matches the value passed to `branch`.
+
+```jsx title="BranchExample.jsx" copy
+import { Branch } from 'gt-react';
+
+export default function HairColor({ user }) {
+  return (
+    <Branch branch={user.hairColor}
+      black={<p>Their hair is dark.</p>}
+      brown={<p>Their hair is in the middle.</p>}
+      blonde={<p>Their hair is light.</p>}
+    >
+      <p>Their hair is unknown.</p> // [!code highlight]
+    </Branch>
+  );
+}
+```
+
+
+### Translating `<Branch>`
+
+If you want to translate the content, simply wrap it in a `<T>` component.
+
+```jsx title="BranchExample.jsx" copy
+import { T, Branch } from 'gt-react';
+
+export default function HairColor({ user }) {
+  return (
+    <T id="example"> // [!code highlight]
+      <Branch branch={user.hairColor}
+        black={<p>Their hair is dark.</p>}
+        brown={<p>Their hair is in the middle.</p>}
+        blonde={<p>Their hair is light.</p>}
+      >
+        <p>Their hair is unknown.</p> 
+      </Branch>
+    </T> // [!code highlight]
+  );
+}
+```
+
+### Adding variables
+If you want to render dynamic values in the branch, make sure to wrap them in `<Currency>`, `<DateTime>`, `<Num>`, or `<Var>` components.
+
+```jsx title="BranchExample.jsx" copy
+import { Branch, T, Var } from 'gt-react';
+
+export default function HairColor({ user }) {
+  return (
+    <T id="example">
+      <Branch branch={user.hairColor}
+        black={<p>Their hair is dark.</p>}
+        brown={<p>Their hair is in the middle.</p>}
+        blonde={<p>Their hair is light.</p>}
+      >
+        <p>Unhandled hair color: <Var>{user.hairColor}</Var></p> // [!code highlight]
+      </Branch>
+    </T>
+  );
+}
+```
+
+---
+
+
+## Notes
+ * The keys for branches can be any string value that matches the branch prop. This flexibility makes it easy to adapt `<Branch>` to a wide range of use cases.
+ * Combine `<Branch>` with other components, such as `<T>` for translations and [variable components](/docs/react/reference/using-branching-components) for dynamic content, to create rich and localized interfaces.
+
+## Next steps
+ * For more advanced usage and examples, refer to [Using Branching Components](/docs/react/reference/using-branching-components).
+ * To learn more about variable components like `<Currency>`, `<DateTime>`, `<Num>`, and `<Var>`, see the [Using Variable Components](/docs/react/reference/using-variable-components) documentation.

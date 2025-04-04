@@ -1,0 +1,105 @@
+---
+title: Dynamic Content
+description: A brief overview of working with Dynamic Content in GT.
+---
+
+## Overview
+
+**Dynamic Content** is generally any content that can change based on the user, context, environment, etc.
+This exists in contrast to **Static Content**, which remains the same regardless of the user, context, environment, etc.
+
+<Accordions>
+    <Accordion title="What's the difference between dynamic and static content?">
+        TL;DR
+        * Static Content never changes (raw strings, text, etc.).
+        * Dynamic Content can change (names, emails, time, language, etc.).
+
+        **What is Static Content?**
+
+        Static Content generally refers to any raw text that exists in the bundle that is served to your users.
+        A good rule of thumb is any text or strings that a developer can read in the source code is static text.
+
+        For example, consider this file:
+
+        ```jsx title="Landing.jsx" copy
+
+        export default function Landing() {
+            return (
+                <> Welcome to my app!</>
+            );
+        }
+        ```
+        
+        The text, "Welcome to my app!", is Static Content because it never changes.
+
+        But, what if we wanted to change the page such that it would respond if the user was logged in:
+
+        ```jsx title="Landing.jsx" copy
+
+        export default function Landing(user) {
+
+            if (user) {
+                return (
+                    <h1> Welcome to my app, {user.name}! </h1>
+                );
+            }
+            
+            return (
+                <h1> Welcome to my app!</h1>
+            );
+        }
+        ```
+        Even though these two phrases are being conditionally rendered, these two phrases are both considered static text.
+        Remember our rule of thumb: we can see this content by reading the source code in `landing.jsx`.
+
+        However, `{user.name}` is considered dynamic content, because it can change.
+        We cannot know what will get rendered on the user's screen by just reading the `landing.jsx` file.
+    </Accordion>
+</Accordions>
+
+
+## "To Tx or not to Tx"
+Sometimes, we want to translate dynamic content, but other times we want it to remain the same.
+
+
+A good example would be a user's email address or name.
+Another example might be a bank account balance or a user's SSN.
+Such items are (1) not likely to need translation when your app is being rendered in a different language and (2) can vary (in this case between each user).
+
+
+### Example
+
+```jsx title="Greeting.jsx" copy
+import { T, Var } from 'gt-next'
+
+export default function Greeting(name) {
+    return (
+        <T id='greeting'>
+            Hello, <Var>{name}</Var>!
+        </T>
+    );
+}
+```
+
+As far as translation goes this has two benefits:
+1. You do not have to create a translation for every possible name.
+    * Using `<Var>`, we only generate one translation that essentially would look like this:
+        * \`¡Hola, $\{name\}!\`
+    * If we do not use `<Var>`, we would have to perform an on-demand translation for every unique name:
+        * "¡Hola, Alice!", "¡Hola, Bob!", "¡Hola, Charlie!", "¡Hola, David!", ...
+2. You also don't have to worry about the names themselves changing into a translated form of their name: (i.e. "¡Hola, Alicia!", "¡Hola, Roberto!", ...).
+
+As you can see, the `<Var>` component should be used to wrap any contents that should remain the same regardless of locale.
+This way, we avoid the need to create translations for every possible value of the dynamic content.
+
+
+By wrapping private information in a `<Var>` component, you can ensure that the information is not sent to the General Translations API.
+<Callout>
+    **Exceptions**
+
+    The exceptions to the statement above is (1) in the case of a nested `<T>` component used inside of a `<Var>` component (ie, the children of the nested `<T>` component will be translated)
+    or (2) when data is passed intentionally to our API via some other means within a child of the `<Var>` component (i.e., a fetch call).
+    However, this is not the intended use of the `<Var>` component nor the General Translations API and doing so can harm load times and performance.
+
+</Callout>
+

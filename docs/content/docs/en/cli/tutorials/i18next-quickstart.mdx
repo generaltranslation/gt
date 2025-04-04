@@ -1,0 +1,108 @@
+---
+title: i18next
+description: Automatically translate your i18next project (<5 min)
+---
+
+## Overview
+
+This tutorial will show you how to automatically manage your project's translation files in [`i18next`](https://i18next.com/).
+
+
+We will follow these 4 steps:
+<Steps>
+  <Step>
+    Add your environment variables
+  </Step>
+  <Step>
+    Install [`gtx-cli`](/docs/cli)
+  </Step>
+  <Step>
+    Initialize your project with the [`gtx-cli init`](/docs/cli/init) command
+  </Step>
+  <Step>
+    Run [`gtx-cli translate`](/docs/cli/translate#translate-json)
+  </Step>
+</Steps>
+
+<Callout>
+  **Tip:**
+  Avoid the hassle of using translation files with the [`<T>` component](/docs/usage/t).
+</Callout>
+
+---
+
+## Step 1: Add your environment variables
+
+Add your production API key and project ID to your environment variables.
+This is necessary to use the `gtx-cli` tool.
+You get these from the [General Translation dashboard](https://generaltranslation.com/dashboard).
+
+```bash title=".env"
+GT_API_KEY=<your-api-key>
+GT_PROJECT_ID=<your-project-id>
+```
+
+## Step 2: Install `gtx-cli`
+
+Install the `gtx-cli` tool in your project.
+
+<Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
+  <Tab value="npm">
+  ```bash 
+  npm i --save-dev gtx-cli
+  ``` 
+  </Tab>
+  <Tab value="yarn">
+  ```bash 
+  yarn add --dev gtx-cli
+  ```
+  </Tab>
+
+  <Tab value="bun">
+  ```bash 
+  bun add --dev gtx-cli
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash 
+  pnpm add --save-dev gtx-cli
+  ```
+  </Tab>
+</Tabs>
+
+## Step 3: Initialize your project with the `gtx-cli init` command
+
+Run the `gtx-cli init` command to configure your project.
+
+```bash
+npx gtx-cli init
+```
+
+## Step 4: Add the `gtx-cli translate` command to your build process
+
+Add the `gtx-cli translate` command to your build or CI process before the build command to automatically add translations to your project.
+
+```json title="package.json"
+{
+  "scripts": {
+    "translate": "npx gtx-cli translate",
+    "build": "npm run translate && <your build command>"
+  }
+}
+```
+This will generate translations for all of your locales and save them to your project.
+If you want to commit these files to your repo, you can instead run this command before committing.
+
+
+You're done! Now your project will automatically update all of your translation JSON files any time your project changes.
+
+---
+
+## Notes
+ * You can automatically add translations to your project with the [`gtx-cli translate`](/docs/cli/translate#translate-json) command.
+ * If you want to commit your translation files, you can instead run the `gtx-cli translate` command before committing.
+ * To configure the output path for your translations, see the [configuration](/docs/cli/reference/config) docs.
+
+## Next steps
+ * See the [usage guide](/docs/cli/reference/usage) for the cli tool.
+ * If you want to see live translations in development (think hot reload), check out the [`<T>` component](/docs/usage/t).

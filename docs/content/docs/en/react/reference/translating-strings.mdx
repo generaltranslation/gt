@@ -1,0 +1,61 @@
+---
+title: Translating Strings
+description: How to translate strings
+---
+
+## Overview
+
+This guide is a step by step tutorial on how to translate strings in your React app
+with [`useGT()`](/docs/react/api/strings/useGT).
+
+
+## Setup
+
+### Prerequisites
+
+We assume that you already have installed `gt-react` in your project and have followed or are currently following the [Quick Start Guide](/docs/react/tutorials/quickstart).
+
+
+### Translating Strings
+For any strings, use [`useGT()`](/docs/react/api/strings/useGT).
+Remember that `useGT()` must be called within a child component of [`<GTProvider>`](/docs/react/api/components/gtprovider).
+
+```jsx title="src/components/MyComponent.jsx" copy
+import { useGT } from 'gt-react';
+
+export default function MyComponent() {
+  const t = useGT(); // [!code highlight]
+  return (
+    <div>
+      <h1>{t('This is a string that gets translated')}</h1> // [!code highlight]
+    </div>
+  );
+}
+```
+
+### Adding Variables
+Variables are values that may change, but do not get translated.
+To add variables to your strings, use the following pattern:
+
+```jsx title="MyComponent.jsx" copy
+import { useGT } from 'gt-react';
+
+export default function MyComponent() {
+  const t = useGT(); // [!code highlight]
+  return (
+    <div>
+      <h1>{t('Hello there, {username}', { variables: { username: 'Brian123' }})}</h1> // [!code highlight]
+    </div>
+  );
+}
+```
+
+---
+
+## Notes
+ * For string translation, use [`useGT()`](/docs/react/api/strings/useGT).
+ * Variables can be added to strings using the `{ variables: { key: value } }` pattern.
+
+## Next Steps
+ * Return to the [Quick Start Guide](/docs/react/tutorials/quickstart) to finish setting up your project for translation.
+ * See the API reference for [`useGT()`](/docs/next/react/strings/useGT).

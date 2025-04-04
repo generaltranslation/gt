@@ -1,0 +1,68 @@
+---
+title: Changing Languages
+description: How to change the language of your Next.js app
+---
+
+## Overview
+
+In this guide, we'll show you how to change the language of your Next.js app.
+
+If you have not yet setup your app with `gt-next`, please refer to the [setup guide](/docs/next) before continuing.
+
+## Setup
+
+There are three ways to change the language of your app using `gt-next`.
+
+1. Using the [`useSetLocale()`](/docs/next/api/helpers/useSetLocale) hook
+2. Using the [`<LocaleSelector>`](/docs/next/api/components/localeSelector) component
+3. Using the [`useLocaleSelector()`](/docs/next/api/helpers/useLocaleSelector) hook
+
+We'll cover all three methods in this guide.
+
+## Using the `useSetLocale` hook
+
+The `useSetLocale` hook is a client-side hook that allows you to change the language of your app. It must be used within a `GTProvider` component.
+
+```tsx
+import { useSetLocale } from 'gt-next/client';
+export default function MyComponent() {
+  const setLocale = useSetLocale();
+
+  return <button onClick={() => setLocale('en')}>Set Locale</button>;
+}
+```
+
+Simply provide the locale you want to change to as the argument to the callback function returned by the `useSetLocale` hook.
+
+## Using the `<LocaleSelector>` component
+
+The `<LocaleSelector>` component is a client-side component that allows you to change the language of your app. It must be used within a `GTProvider` component.
+
+This is a bare-bones UI dropdown that displays all the locales you have enabled in your project, and allows users to select a different locale.
+
+```tsx
+'use client';
+import { LocaleSelector } from 'gt-next/client';
+
+export default function MyComponent() {
+  return <LocaleSelector />;
+}
+```
+
+## Using the `useLocaleSelector` hook
+
+Alternatively, if you would like to create your own locale selector component, you can use the `useLocaleSelector` hook.
+
+This hook returns the current locale, the list of locales, and the `useSetLocale` hook.
+
+```tsx
+import { useLocaleSelector } from 'gt-next/client';
+```
+
+See the [API reference](/docs/next/api/helpers/useLocaleSelector) for more information.
+
+## Next steps
+
+- Learn more about the [`useSetLocale`](/docs/next/api/helpers/useSetLocale) hook.
+- Learn more about the [`<LocaleSelector>`](/docs/next/api/components/localeSelector) component.
+- Learn more about the [`useLocaleSelector`](/docs/next/api/helpers/useLocaleSelector) hook.

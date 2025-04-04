@@ -1,0 +1,31 @@
+{
+  "title": "React",
+  "icon": "Atom",
+  "pages": [
+    "[House][Home](/docs)",
+    "index",
+    "---Key Concepts---",
+    "reference/t-reference",
+    "reference/local-management",
+    "reference/dictionary-reference",
+    "reference/cli",
+    "reference/change-language",
+    "---Advanced---",
+    "reference/using-branching-components",
+    "reference/local-tx",
+    "reference/translating-strings",
+    "reference/using-variable-components",
+    "---Tutorials---",
+    "tutorials/quickstart",
+    "tutorials/quickdeploy",
+    "---API---",
+    "api/config",
+    "api/components",
+    "api/strings",
+    "api/dictionary",
+    "api/helpers",
+    "api/types"
+  ],
+  "root": true,
+  "description": "React SDK"
+}

@@ -1,0 +1,276 @@
+---
+title: Setup
+description: Set up a tutorial project
+---
+
+## Introduction
+
+This is a more in depth tutorial guide on how to set up a very simple NextJS Project using `gt-next`.
+We will take you from start to finish, including setting up the project then translating it.
+Over the course of this tutorial we will build our way up from simple to more advanced concepts.
+This tutorial assumes you have a general understanding of Typescript, Next.js, and React.
+
+Here is a list of items that we will cover in this tutorial:
+* Setting up a new Next.js project
+* Using the `<T>` component to translate an app
+* Using variable components like `<Var>`, `<Currency>`, `<DateTime>`, and `<Num>` to translate dynamic content
+* Using branch components like `<Plural>`, and `<Branch>` to translate conditional content
+* Using i18n routing in your app
+
+Our app will be a simple app that will allow us to check the conversion rate between currencies.
+We will only use inline styling and only the `gt-next` library to keep things as bare-bones as possible.
+This example was built based off of the [Currency Converter](https://www.geeksforgeeks.org/how-to-create-a-currency-converter-app-in-reactjs/) tutorial on GeeksforGeeks.
+
+## Set Up Your Next App
+
+First, let's create a new NextJS app. You can do this by running the following command:
+
+```bash copy
+npx create-next-app@latest
+```
+This will take you to the set up wizard, where you can choose the name of your app and the template you want to use.
+For this tutorial, use the name `currencies` and select `Yes` when asked if you want to use TypeScript.
+
+Navigate to the project directory, and let's start the app!
+
+```bash copy
+cd currencies
+npm install
+npm run dev
+```
+
+This will start the app on `http://localhost:3000`.
+
+## Let's Add Some Content!
+
+Now that we have our app set up, let's overwrite the content of our app to display a simple currency converter.
+Just copy and paste the following code into the `src/app/page.tsx` file and `src/app/layout.tsx` files.
+
+
+Don't worry too much about how it works for now.
+All this code does is simulate a fetch to a currency exchange API and displays the exchange rate between two currencies.
+
+<Tabs items={['layout.tsx', 'page.tsx']}>
+<Tab value="page.tsx">
+```jsx title="src/app/page.tsx" copy
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+
+// A map between two currencies and their exchange rate (from -> to)
+type ExchTable = Record<string, Record<string, number>>;
+
+const EXCH_RATES: ExchTable = {
+  usd: { usd: 1, inr: 73.5, eur: 0.85, jpy: 105.45, gbp: 0.72 },
+  inr: { usd: 0.014, inr: 1, eur: 0.012, jpy: 1.46, gbp: 0.01 },
+  eur: { usd: 1.18, inr: 85.5, eur: 1, jpy: 123.5, gbp: 0.85 },
+  jpy: { usd: 0.0095, inr: 0.68, eur: 0.0081, jpy: 1, gbp: 0.0068 },
+  gbp: { usd: 1.39, inr: 99.5, eur: 1.17, jpy: 146.5, gbp: 1 },
+};
+
+// some styles for button
+const buttonStyle = {
+  backgroundColor: "#007bff",
+  color: "white",
+  border: "none",
+  padding: "10px 20px",
+  cursor: "pointer",
+  borderRadius: "5px",
+  fontSize: "16px",
+  margin: "20px",
+};
+
+/**
+ * This function is meant to simulate an api fetch request to get the current exchange.
+ * Waits for 1 second before returning the exchange rate.
+ * @returns the exchange rate between two currencies
+ */
+async function fetchExchangeRate(from: string, to: string): Promise<number> {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  return EXCH_RATES[from][to];
+}
+
+function Page() {
+  // exch rates
+  const [info, setInfo] = useState<ExchTable>({});
+  const options = ["usd", "inr", "eur", "jpy", "gbp"];
+
+  // currencies
+  const [from, setFrom] = useState("usd");
+  const [to, setTo] = useState("inr");
+
+  // values
+  const [input, setInput] = useState(0);
+  const [output, setOutput] = useState(0);
+
+  // Function to convert the currency
+  const convert = useCallback(() => {
+    if (info?.[from]?.[to]) {
+      const rate = info[from][to];
+      setOutput(input * rate);
+    } else {
+      setOutput(0);
+    }
+  }, [info, input, to, from]);
+
+  // Calling the api whenever from or to currency changes
+  useEffect(() => {
+    // If the exchange rate is already present, then convert
+    if (info?.[from]?.[to]) {
+      convert();
+      return;
+    }
+    // Fetch the exchange rate
+    (async () => {
+      const response = await fetchExchangeRate(from, to);
+      // Enter new response without overwriting old info
+      setInfo((prevInfo) => ({
+        ...prevInfo,
+        [from]: {
+          ...(prevInfo?.[from] || undefined),
+          [to]: response,
+        },
+      }));
+    })();
+  }, [from, to, convert, info]);
+
+  // Call convert whenever a user switches the currency
+  useEffect(() => {
+    convert();
+  }, [info, convert]);
+
+  // Function to switch between two currency
+  function flip() {
+    const temp = from;
+    setFrom(to);
+    setTo(temp);
+  }
+
+  return (
+    <div style={{ margin: "0 auto", width: "50%", textAlign: "center" }}>
+      <div style={{ margin: "20px 0", paddingBottom: "20px" }}>
+        <h1 style={{ fontSize: "2.5em", fontWeight: "bold" }}>
+          Currency Converter
+        </h1>
+      </div>
+      <div style={{ flex: 2, textAlign: "center", margin: "20px 0" }}>
+        <h3>Amount</h3>
+        <input
+          type="text"
+          placeholder="Enter the amount"
+          style={{ textAlign: "center" }}
+          onChange={(e) => {
+            setInput(Number(e.target.value));
+          }}
+        />
+      </div>
+      <div
+        style={{ display: "flex", justifyContent: "center", margin: "20px 0" }}
+      >
+        <div style={{ flex: 1, textAlign: "center" }}>
+          <label htmlFor="from">
+            <h3>From</h3>
+          </label>
+          <select
+            name="from"
+            id="from"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+          >
+            {options.map((option) => (
+              <option key={option} value={option}>
+                {option.toUpperCase()}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div style={{ flex: 1, textAlign: "center" }}>
+          <button
+            onClick={() => {
+              flip();
+            }}
+            style={buttonStyle}
+          >
+            Switch
+          </button>
+        </div>
+        <div style={{ flex: 1, textAlign: "center" }}>
+          <label htmlFor="to">
+            <h3>To</h3>
+          </label>
+          <select
+            name="to"
+            id="to"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          >
+            {options.map((option) => (
+              <option key={option} value={option}>
+                {option.toUpperCase()}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div style={{ margin: "0 auto", width: "50%", textAlign: "center" }}>
+        <button
+          onClick={() => {
+            convert();
+          }}
+          style={buttonStyle}
+        >
+          Convert
+        </button>
+        <h2>Converted Amount:</h2>
+        <p>{input + " " + from + " = " + output.toFixed(2) + " " + to}</p>
+      </div>
+    </div>
+  );
+}
+
+export default Page;
+```
+</Tab>
+<Tab value="layout.tsx">
+```jsx title="src/app/layout.tsx" copy
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Currency Converter",
+  description: "A simple currency converter",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        {children}
+      </body>
+    </html>
+  );
+}
+
+```
+</Tab>
+</Tabs>
+## Conclusion
+
+Now you have a normal NextJS app set up and ready to be translated using `gt-next`.

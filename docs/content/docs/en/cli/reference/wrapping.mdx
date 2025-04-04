@@ -1,0 +1,170 @@
+---
+title: <T> Wrapping Behavior
+description: Specific behavior of how the CLI tool wraps the `<T>` component
+---
+
+## Overview
+
+This page describes the exact behavior of how the CLI tool wraps the `<T>` component.
+
+As a rule of thumb, the CLI will wrap the [`<T>`](/docs/next/api/components/t) component around any static, meaningful content.
+It will also wrap a [`<Var>`](/docs/next/api/components/var) component around any dynamic subcontent contained within a `<T>` component.
+
+For example, the following will be wrapped in a `<T>` component:
+```jsx
+<div>Hello, World!</div> -> <T id="SOME_ID"><div>Hello, World!</div></T>
+```
+
+but the following will not:
+```jsx
+<div><img src="logo.png" /></div> -> <div><img src="logo.png" /></div>
+```
+
+The CLI tool will always ensure that the final output is valid JSX and correctly uses the `<T>` component.
+
+In some cases, such as with [logical operators](#logical-operators), some human intervention could be useful to ensure better translations with more context.
+
+<Accordions>
+  <Accordion title="Why can't <T> components wrap dynamic content?">
+    Since the `<T>` component is typically pre-translated and cached, it is important to ensure that the content is not changed at runtime.
+    If dynamic content were allowed, every user could potentially see a different translation of the same content.
+
+    If you would like to translate content that changes at runtime, you should use the [`<Tx>`](/docs/next/api/components/t) component instead.
+  </Accordion>
+  <Accordion title='What is considered "static" content?'>
+    Static content is content that cannot change at runtime.
+    For example, the following is static:
+    ```jsx
+    <div>Hello, World!</div>
+    ```
+    but the following is dynamic:
+    ```jsx
+    <div>{name}</div>
+    ```
+  </Accordion>
+  <Accordion title='What is considered "meaningful" content?'>
+    
+Meaningful content is content that could feasibly be translated and has a different meaning in a different language.
+
+For example, this is meaningful:
+```jsx
+<div>Hello, World!</div> -> <T id="SOME_ID"><div>Hello, World!</div></T>
+```
+while these are not:
+```jsx
+<div><img src="logo.png" /></div>
+<div><span></span></div>
+<div><div></div></div>
+<div><CustomButton/></div>
+```
+
+Regardless of what language the content is viewed in, the results are always the same.
+
+<Callout type="info">
+  Symbols such as '!', '?', '.', and "@" are considered not-meaningful, since they typically have the same meaning across languages and 
+  translate to the same symbol.
+  
+  The regex used to determine if content is meaningful is:
+  ```/[\p{L}\p{N}]/u;```
+</Callout>
+  </Accordion>
+</Accordions>
+
+<Callout type="info">
+  Please report any bugs or unexpected behavior to us on [Github](https://github.com/General-Translation/gt-libraries/issues).
+</Callout>
+
+
+### JSX expressions
+
+The CLI will automatically wrap expressions `{...}` in [`<Var>`](/docs/next/api/components/var) components.
+This is because expressions are typically dynamic. 
+
+```jsx
+<div>Hello, {name}</div> -> <T id="SOME_ID"><div>Hello, <Var>{name}</Var></div></T>
+```
+
+<Callout type="warn">
+  Content contained within a `<Var>` component will not be translated. 
+  
+  If you would like to translate dynamic content, you should use the [`<Tx>`](/docs/next/api/components/t) component instead.
+</Callout>
+
+### Static content in JSX expressions
+
+The exception to the expression-wrapping rule is when the expression contains static content.
+
+For example, the following will not be wrapped in a `<Var>` component:
+```jsx
+<p>{"Hello," + " World!"}</p> -> <T id="SOME_ID"><p>{"Hello," + " World!"}</p></T>
+```
+
+
+### Template literals in JSX expressions
+
+The CLI will wrap template literals containing quasis (`${}`) in a [`<Var>`](/docs/next/api/components/var) component, since they can be dynamic.
+```jsx
+<p>{`${temp}`}</p> -> <T id="SOME_ID"><p><Var>{`${temp}`}</Var></p></T>
+```
+
+### Logical operators
+
+JSX expressions containing logical operators such as `&&`, `||`, and `?` 
+will be wrapped in a [`<Var>`](/docs/next/api/components/var) component,
+if a `<T>` component is necessary at the top level. (i.e. if there is other meaningful content outside of the expression)
+
+<Tabs items={["Before", "After"]}>
+  <Tab value="Before">
+    ```jsx
+    <div>Hello, {name && {name}} World!</div>
+    ```
+  </Tab>
+  <Tab value="After">
+    ```jsx
+    <T id="SOME_ID">
+      <div>Hello, <Var>{name && {name}}</Var> World!</div>
+    </T>
+    ```
+  </Tab>
+</Tabs>
+
+Within the expression, the CLI will treat elements as if they are completely independent of the rest of the expression.
+
+This means that they will be wrapped in their own `<T>` components (to ensure all content is translatable)
+
+<Tabs items={["Before", "After"]}>
+  <Tab value="Before">
+    ```jsx
+    <div>{name ? <>Hello, </> : <>Goodbye, </>}</div>
+    ```
+  </Tab>
+  <Tab value="After">
+    ```jsx
+    <T id="SOME_ID">
+      <div>
+        <Var>
+          {name ? <T id="HELLO"><>Hello, </></T> : <T id="GOODBYE"><>Goodbye, </></T>}
+        </Var> World!
+      </div>
+    </T>
+    ```
+  </Tab>
+</Tabs>
+<Callout type="warn">
+  In cases such as these, you should be using a [`<Branch>`](/docs/next/api/components/branch) or [`<Plural>`](/docs/next/api/components/plural) component instead.
+
+  The CLI tool currently does not automatically use these components in a `<T>` component, so you will need to change the code manually.
+
+  The previous example should be rewritten as:
+  ```jsx
+  <T id="SOME_ID">
+    <div>
+      <Branch branch={name == null}
+        true={<>Hello, </>}
+        false={<>Goodbye, </>}
+      />
+      World!
+    </div>
+  </T>
+  ```
+</Callout>

@@ -1,0 +1,176 @@
+---
+title: <Plural>
+description: API Reference for the <Plural> component
+---
+
+## Overview
+
+We use the `<Plural>` component for handling conjugating sentences.
+Think of the difference between the sentences: "You have one item." and "You have two items."
+
+In English, you have to define two different sentences based on the number of items.
+In other languages, you have to define up to six.
+
+```jsx
+const count = 1;
+<Plural n={count}
+  singular={You have one item.}
+  plural={You have some items.}
+/>
+```
+
+## Reference
+
+### Props
+
+<TypeTable
+  type={{
+    "n": {
+      description: 'The number used to determine the plural form.',
+      type: 'number',
+      optional: false,
+    },
+    "children?": {
+      description: 'Fallback when no plural forms match',
+      type: 'any',
+      optional: true,
+      default: 'undefined',
+    },
+    "locales?": {
+      type: 'string[]',
+      optional: true,
+      default: 'undefined',
+    },
+    "[key]: string": {
+      type: 'string | JSX.Element',
+      optional: false,
+    },
+  }}
+/>
+
+The `[key]: string` syntax indicates arbitrary keys representing potential pluralization branches.
+For example, branches like `singular` and `plural` can be added as parameters.
+
+### Description
+| Prop Name | Description |
+|-----------|-------------|
+| `n` | The number used to determine the plural form. This is required for pluralization. |
+| `children` | Fallback content to render if no matching plural branch is found. |
+| `locales`   | Optional locales to specify the formatting locale. If not provided, the default user's locale is used. Read more about specifying locales [here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl#locales_argument).                                            |
+| `[key]: string` | Branches representing plural forms. The exact branches depend on the locale. |
+
+
+### Returns
+
+`JSX.Element` containing the content corresponding to the plural form of `n`, or the fallback content.
+
+### Throws
+
+`Error` if `n` is not provided or is not a valid number.
+
+---
+
+## Which forms should I add?
+
+You only need to use the plural forms in your language.
+
+The possible forms are: `"singular"`, `"plural"`, `"dual"`, `"zero"`, `"one"`, `"two"`, `"few"`, `"many"`, `"other"`.
+
+ * If you are a developer using `"en-US"`, only use two: `"singular"` and `"plural"`.
+ * If you are a developer in `"zh-CN"`, only use `"other"`.
+
+Read more about the different forms [here](https://cldr.unicode.org/index/cldr-spec/plural-rules).
+
+
+---
+
+## Examples
+
+### Basic usage
+Use the `<Plural>` component to handle pluralization.
+
+```jsx title="BasicExample.jsx" copy
+import { Plural } from 'gt-react';
+
+export default function ItemCount({ count }) {
+  return (
+    <Plural n={count} // [!code highlight]
+      singular={You have one item.}
+      plural={You have some items.}
+    />
+  );
+}
+```
+
+### Fallbacks
+You can provide a fallback in case the value passed to `n` has no matching branches.
+
+```jsx title="FallbackExample.jsx" copy
+import { Plural } from 'gt-react';
+
+export default function ItemCount({ count }) {
+  return (
+    <Plural n={count}
+      singular={You have one item.}
+    >
+      You have some items. // [!code highlight]
+    </Plural>
+  );
+}
+```
+
+### Translating plurals
+All you have to do to translate, is add the `<T>` component.
+
+```jsx title="PluralExample.jsx" copy
+import { T, Plural } from 'gt-react';
+
+export default function ItemCount({ count }) {
+  return (
+  <T id="itemCount">
+    <Plural n={count}
+      singular={You have an item.} // [!code highlight]
+      plural={You have some items.} // [!code highlight]
+    />
+  );
+}
+```
+
+### Adding variables
+What if we want to add some variables to the pluralized sentence?
+
+```jsx title="PluralExample.jsx" copy
+import { T, Plural, Num } from 'gt-react';
+
+export default function ItemCount({ count }) {
+  return (
+    <Plural n={count}
+      singular={You have <Num>{count}</Num> item.} // [!code highlight]
+      plural={You have <Num>{count}</Num> items.} // [!code highlight]
+    />
+  );
+}
+```
+
+When inside of a `<T>` component, wrap all dynamic content with a `<Currency>`, `<DateTime>`, `<Num>`, or `<Var>`.
+```jsx
+<T id="itemCount">
+  <Plural n={count}
+    singular={You have <Num>{count}</Num> item.} // [!code highlight]
+    plural={You have <Num>{count}</Num> items.} // [!code highlight]
+  />
+</T>
+```
+
+---
+
+## Notes
+ * The `<Plural>` component is used to handle pluralization.
+ * The available plural branches (e.g., one, other, few, many) depend on the locale and follow [Unicode CLDR pluralization rules](https://cldr.unicode.org/index/cldr-spec/plural-rules).
+
+## Next steps
+ * For more examples, check out the reference doc on branching components [here](/docs/react/reference/using-branching-components).
+ * For more advanced usage, combine `<Plural>` with variable components like `<Currency>`, `<DateTime>`, `<Num>`, and `<Var>`. Read more about variable components [here](/docs/react/reference/using-variable-components).
+
+
+For a deeper dive into pluralization and branching, visit [Using Branching Components](/docs/react/reference/using-branching-components).

@@ -1,0 +1,126 @@
+---
+title: DictionaryTranslationOptions
+description: API Reference for the DictionaryTranslationOptions type
+---
+
+## Overview
+
+The `DictionaryTranslationOptions` type is used to pass variables to dictionary entries and specify their render behavior.
+It is used with [`useDict()`](/docs/react/api/dictionary/useDict) to pass variables to dictionary entries.
+
+
+<Callout>
+  **Buildtime Translation:**
+  `useDict()` translations occur at buildtime; however, variables are never translated.
+  Instead, they are inserted into the translation with formatting.
+  Make sure to follow the [deployment guide here](/docs/next/tutorials/quickdeploy).
+</Callout>
+
+
+## Reference
+
+
+### Parameters
+
+<TypeTable
+  type={{
+    "variables?": {
+        type: 'Record<string, any>',
+        optional: true,
+        default: 'undefined',
+    },
+    "variablesOptions?": {
+        type: 'Record<string, Intl.NumberFormatOptions | Intl.DateTimeFormatOptions>',
+        optional: true,
+        default: 'undefined',
+    },
+  }}
+/>
+
+### Description
+
+| Prop | Description |
+| ---- | ----------- |
+| `variables` | An object where the keys identify where each value is mapped to in the dictionary entry.|
+| `variablesOptions` | An object where the keys identify the variable and the values define the variables behavior. See [`Intl.NumberFormatOptions`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) and [`Intl.DateTimeFormatOptions`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat) for more information. |
+
+
+---
+
+## Examples
+
+### Passing variables
+
+In order to pass a variable to the dictionary entry, we need to do two things: (1) add a variable to the entry and (2) reference said variable in the [`d()`](/docs/react/api/dictionary/useGT) invocation.
+
+First, we add a variable to the dictionary entry with the following syntax: `{username}`.
+`username` is the name of the variable.
+```jsx title="dictionary.ts"
+// [!code word:username]
+const dictionary = {
+  greeting: {
+    hello: 'Hello, {username}!',
+  },
+};
+
+export default dictionary;
+```
+
+Next, we reference the variable:
+```jsx title="Component.tsx"
+// [!code word:username]
+import { useDict } from 'gt-react';
+
+const Component = () => {
+  const d = useDict();
+  return <div>{d('greeting.hello', { variables: { username : 'Brian123' } })}</div>;
+};
+```
+
+### Adding variable options
+
+Variable options allow you to customize how a variable is rendered.
+It uses the same syntax as the `variables` object.
+
+```jsx title="dictionary.ts"
+// [!code word:account-balance]
+const dictionary = {
+  account: {
+    balance: 'Your account balance: {account-balance}!',
+  },
+};
+
+export default dictionary;
+```
+
+Next, we reference the variable:
+```jsx title="Component.tsx"
+// [!code word:account-balance]
+import { useDict } from 'gt-react';
+
+const Component = () => {
+  const d = useDict();
+  return <div>
+    { d(
+      'account.balance',
+      {
+        variables: { "account-balance" : 1000000 },
+        variableOptions: { "account-balance": { style: 'currency', currency: 'USD' } }
+      }
+    ) }
+  </div>;
+};
+```
+
+
+
+---
+
+## Notes
+ * The `variables` object passes values to a dictionary entry.
+ * The `variablesOptions` object defines the behavior of the variables.
+
+### Next steps
+ * See [dictionaries](/docs/react/reference/dictionary-reference) for more information on dictionaries and common practices.
+ * See [`useDict()`](/docs/react/api/dictionary/useDict) for more information on dictionaries interface.
+ * See [`Intl.NumberFormatOptions`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) and [`Intl.DateTimeFormatOptions`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat) for more information on formatting options.

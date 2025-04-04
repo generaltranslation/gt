@@ -7,6 +7,7 @@ exports.resolveLocaleFiles = resolveLocaleFiles;
 exports.resolveFiles = resolveFiles;
 const path_1 = __importDefault(require("path"));
 const fast_glob_1 = __importDefault(require("fast-glob"));
+const supportedFiles_1 = require("../../formats/files/supportedFiles");
 /**
  * Resolves the files from the files object
  * Replaces [locale] with the actual locale in the files
@@ -16,16 +17,13 @@ const fast_glob_1 = __importDefault(require("fast-glob"));
  * @returns The resolved files
  */
 function resolveLocaleFiles(files, locale) {
-    var _a, _b, _c, _d;
+    var _a, _b;
     const result = {};
+    for (const fileType of supportedFiles_1.SUPPORTED_FILE_EXTENSIONS) {
+        result[fileType] = (_a = files[fileType]) === null || _a === void 0 ? void 0 : _a.map((filepath) => filepath.replace(/\[locale\]/g, locale));
+    }
     // Replace [locale] with locale in all paths
-    result.json = (_a = files.json) === null || _a === void 0 ? void 0 : _a.map((filepath) => filepath.replace(/\[locale\]/g, locale));
-    // Replace [locale] with locale in all paths
-    result.md = (_b = files.md) === null || _b === void 0 ? void 0 : _b.map((filepath) => filepath.replace(/\[locale\]/g, locale));
-    // Replace [locale] with locale in all paths
-    result.mdx = (_c = files.mdx) === null || _c === void 0 ? void 0 : _c.map((filepath) => filepath.replace(/\[locale\]/g, locale));
-    // Replace [locale] with locale in all paths
-    result.gt = (_d = files.gt) === null || _d === void 0 ? void 0 : _d.replace(/\[locale\]/g, locale);
+    result.gt = (_b = files.gt) === null || _b === void 0 ? void 0 : _b.replace(/\[locale\]/g, locale);
     return result;
 }
 /**
@@ -37,7 +35,7 @@ function resolveLocaleFiles(files, locale) {
  * @returns The resolved files
  */
 function resolveFiles(files, locale) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+    var _a, _b, _c, _d;
     // Initialize result object with empty arrays for each file type
     const result = {};
     const placeholderResult = {};
@@ -46,33 +44,19 @@ function resolveFiles(files, locale) {
     if ((_a = files.gt) === null || _a === void 0 ? void 0 : _a.output) {
         placeholderResult.gt = files.gt.output;
     }
-    // Process JSON files
-    if ((_b = files.json) === null || _b === void 0 ? void 0 : _b.include) {
-        const jsonPaths = expandGlobPatterns(files.json.include, ((_c = files.json) === null || _c === void 0 ? void 0 : _c.exclude) || [], locale);
-        result.json = jsonPaths.resolvedPaths;
-        placeholderResult.json = jsonPaths.placeholderPaths;
-    }
-    // Process MD files
-    if ((_d = files.md) === null || _d === void 0 ? void 0 : _d.include) {
-        const mdPaths = expandGlobPatterns(files.md.include, ((_e = files.md) === null || _e === void 0 ? void 0 : _e.exclude) || [], locale);
-        result.md = mdPaths.resolvedPaths;
-        placeholderResult.md = mdPaths.placeholderPaths;
-    }
-    // Process MDX files
-    if ((_f = files.mdx) === null || _f === void 0 ? void 0 : _f.include) {
-        const mdxPaths = expandGlobPatterns(files.mdx.include, ((_g = files.mdx) === null || _g === void 0 ? void 0 : _g.exclude) || [], locale);
-        result.mdx = mdxPaths.resolvedPaths;
-        placeholderResult.mdx = mdxPaths.placeholderPaths;
+    for (const fileType of supportedFiles_1.SUPPORTED_FILE_EXTENSIONS) {
+        if ((_b = files[fileType]) === null || _b === void 0 ? void 0 : _b.include) {
+            const filePaths = expandGlobPatterns(files[fileType].include, ((_c = files[fileType]) === null || _c === void 0 ? void 0 : _c.exclude) || [], locale);
+            result[fileType] = filePaths.resolvedPaths;
+            placeholderResult[fileType] = filePaths.placeholderPaths;
+        }
     }
     // ==== TRANSFORMS ==== //
-    if (((_h = files.json) === null || _h === void 0 ? void 0 : _h.transform) && !Array.isArray(files.json.transform)) {
-        transformPaths.json = files.json.transform;
-    }
-    if (((_j = files.mdx) === null || _j === void 0 ? void 0 : _j.transform) && !Array.isArray(files.mdx.transform)) {
-        transformPaths.mdx = files.mdx.transform;
-    }
-    if (((_k = files.md) === null || _k === void 0 ? void 0 : _k.transform) && !Array.isArray(files.md.transform)) {
-        transformPaths.md = files.md.transform;
+    for (const fileType of supportedFiles_1.SUPPORTED_FILE_EXTENSIONS) {
+        if (((_d = files[fileType]) === null || _d === void 0 ? void 0 : _d.transform) &&
+            !Array.isArray(files[fileType].transform)) {
+            transformPaths[fileType] = files[fileType].transform;
+        }
     }
     return {
         resolvedPaths: result,
