@@ -18,7 +18,7 @@ export default function ClientProvider(
   const onLocaleChange = () => {
     console.log('[CLIENT] Prioritize locale cookie and refresh server pages');
     document.cookie = `${middlewareLocaleResetFlagName}=true;path=/`;
-    router.refresh();
+    // router.refresh();
   };
 
   // Trigger page reload when locale changes
@@ -51,7 +51,7 @@ export default function ClientProvider(
           pathLocale
         );
         // reload server
-        router.refresh();
+        // router.refresh();
         // reload client
         window.location.reload();
       }

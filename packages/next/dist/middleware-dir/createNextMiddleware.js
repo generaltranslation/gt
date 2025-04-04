@@ -147,7 +147,7 @@ function createNextMiddleware(_a) {
                 if (!pathnameLocale &&
                     !prefixDefaultLocale &&
                     (0, generaltranslation_1.isSameDialect)(userLocale, defaultLocale)) {
-                    var rewritePath = "/".concat(userLocale).concat(pathname);
+                    var rewritePath = "/".concat(defaultLocale).concat(pathname);
                     var rewriteUrl = new URL(rewritePath, originalUrl);
                     rewriteUrl.search = originalUrl.search;
                     var response_2 = server_1.NextResponse.rewrite(rewriteUrl, {
@@ -179,7 +179,7 @@ function createNextMiddleware(_a) {
                 !prefixDefaultLocale &&
                 (0, generaltranslation_1.isSameDialect)(userLocale, defaultLocale)) {
                 // REDIRECT CASE: displaying wrong path, convert to non-prefixed localized path (/about -> /en-about) (/dashboard/1/custom -> /en-dashboard/1/en-custom)
-                if (localizedPathWithParameters !== "/".concat(userLocale).concat(pathname)) {
+                if (localizedPathWithParameters !== "/".concat(defaultLocale).concat(pathname)) {
                     // remove locale prefix
                     var redirectPath = localizedPathWithParameters.replace(new RegExp("^/".concat(userLocale)), '');
                     var redirectUrl = new URL(redirectPath, originalUrl);

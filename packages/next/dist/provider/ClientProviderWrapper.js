@@ -26,7 +26,7 @@ function ClientProvider(props) {
     var onLocaleChange = function () {
         console.log('[CLIENT] Prioritize locale cookie and refresh server pages');
         document.cookie = "".concat(constants_1.middlewareLocaleResetFlagName, "=true;path=/");
-        router.refresh();
+        // router.refresh();
     };
     // Trigger page reload when locale changes
     // When nav to same route but in diff locale, client components were cached and not re-rendered
@@ -50,7 +50,7 @@ function ClientProvider(props) {
                 document.cookie = "".concat(constants_1.middlewareLocaleRoutingFlagName, "=;path=/");
                 console.log('[CLIENT] reloading pages provider does not match path locale. Provider:', props.locale, 'Path:', pathLocale);
                 // reload server
-                router.refresh();
+                // router.refresh();
                 // reload client
                 window.location.reload();
             }

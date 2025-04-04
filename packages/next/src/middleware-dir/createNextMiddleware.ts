@@ -245,7 +245,7 @@ export default function createNextMiddleware({
           !prefixDefaultLocale &&
           isSameDialect(userLocale, defaultLocale)
         ) {
-          const rewritePath = `/${userLocale}${pathname}`;
+          const rewritePath = `/${defaultLocale}${pathname}`;
           const rewriteUrl = new URL(rewritePath, originalUrl);
           rewriteUrl.search = originalUrl.search;
           const response = NextResponse.rewrite(rewriteUrl, {
@@ -285,7 +285,7 @@ export default function createNextMiddleware({
         isSameDialect(userLocale, defaultLocale)
       ) {
         // REDIRECT CASE: displaying wrong path, convert to non-prefixed localized path (/about -> /en-about) (/dashboard/1/custom -> /en-dashboard/1/en-custom)
-        if (localizedPathWithParameters !== `/${userLocale}${pathname}`) {
+        if (localizedPathWithParameters !== `/${defaultLocale}${pathname}`) {
           // remove locale prefix
           const redirectPath = localizedPathWithParameters.replace(
             new RegExp(`^/${userLocale}`),
