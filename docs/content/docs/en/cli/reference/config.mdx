@@ -96,6 +96,8 @@ We currently support the following file types:
 - `json`: JSON files.
 - `mdx`: Markdown component (MDX) files.
 - `md`: Markdown (MD) files.
+- `js`: JavaScript files.
+- `ts`: TypeScript files.
 
 Each file type should correspond to an object that contains one or more of the following keys:
 
@@ -291,6 +293,64 @@ The `transform` key causes the extension of the translated files to be changed t
 All files in the `content/docs/en/exclude` directory will be ignored.
 
 ---
+
+## File Type: `js`
+
+**Supported Keys**
+
+- `include` (Required)
+- `exclude` (Optional)
+- `transform` (Optional)
+
+**Example**
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "es"],
+  "files": {
+    "js": {
+      "include": ["scripts/[locale]/**/*.js"]
+    }
+  }
+}
+```
+
+This configuration will tell the CLI tool to search for all JavaScript files under the `scripts/en` directory and save the translated files to the `scripts/fr` and `scripts/es` directories.
+
+The `transform` key causes the extension of the translated files to be changed to `.fr.js` and `.es.js` respectively (from `.js`).
+
+---
+
+## File Type: `ts`
+
+**Supported Keys**
+
+- `include` (Required)
+- `exclude` (Optional)
+- `transform` (Optional)
+
+**Example**
+
+```json title="gt.config.json"
+{ 
+  "defaultLocale": "en",
+  "locales": ["fr", "es"],
+  "files": {
+    "ts": {
+      "include": ["scripts/[locale]/**/*.ts"]
+    }
+  }
+}
+```
+
+This configuration will tell the CLI tool to search for all TypeScript files under the `scripts/en` directory and save the translated files to the `scripts/fr` and `scripts/es` directories.
+
+The `transform` key causes the extension of the translated files to be changed to `.fr.ts` and `.es.ts` respectively (from `.ts`).
+
+---
+
+
 
 ## Next Steps
 
