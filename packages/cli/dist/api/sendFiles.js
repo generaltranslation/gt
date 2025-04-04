@@ -46,6 +46,7 @@ function sendFiles(files, options) {
             formData.append('projectId', options.projectId);
             formData.append('publish', String(options.publish));
             formData.append('versionId', options.versionId || '');
+            formData.append('description', options.description || '');
             const response = yield fetch(`${options.baseUrl}/v1/project/translations/files/upload`, {
                 method: 'POST',
                 headers: Object.assign({}, (apiKey && { 'x-gt-api-key': apiKey })),

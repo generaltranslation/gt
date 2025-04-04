@@ -93,4 +93,5 @@ export type Settings = {
         transformPaths: TransformFiles;
     };
     versionId?: string;
+    description?: string;
 };

@@ -130,4 +130,5 @@ export type Settings = {
     transformPaths: TransformFiles; // transform paths for all locales containing [locale]
   };
   versionId?: string;
+  description?: string;
 };

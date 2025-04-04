@@ -5,6 +5,7 @@ type ApiOptions = Settings & {
     wait: boolean;
     timeout: string;
     dataFormat: DataFormat;
+    description?: string;
 };
 /**
  * Sends updates to the API

@@ -30,7 +30,7 @@ function sendUpdates(updates, options, library) {
         // If additionalLocales is provided, additionalLocales + project.current_locales will be translated
         // If not, then options.locales will be translated
         // If neither, then project.current_locales will be translated
-        const body = Object.assign(Object.assign(Object.assign(Object.assign({ updates }, (options.locales && { locales: options.locales })), { metadata: globalMetadata, publish: options.publish }), (dataFormat && { dataFormat })), (options.versionId && { versionId: options.versionId }));
+        const body = Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ updates }, (options.locales && { locales: options.locales })), { metadata: globalMetadata, publish: options.publish }), (dataFormat && { dataFormat })), (options.versionId && { versionId: options.versionId })), (options.description && { description: options.description }));
         console.log();
         const spinner = yield (0, console_1.displayLoadingAnimation)(`Sending ${library} updates to General Translation API...`);
         try {

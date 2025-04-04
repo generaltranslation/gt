@@ -10,6 +10,7 @@ type ApiOptions = Settings & {
   wait: boolean;
   timeout: string;
   dataFormat: DataFormat;
+  description?: string;
 };
 
 /**
@@ -40,6 +41,7 @@ export async function sendUpdates(
     publish: options.publish,
     ...(dataFormat && { dataFormat }),
     ...(options.versionId && { versionId: options.versionId }),
+    ...(options.description && { description: options.description }),
   };
 
   console.log();
