@@ -2,7 +2,7 @@
 import { ClientProvider as _ClientProvider } from 'gt-react/client';
 import {
   ClientProviderProps,
-  defaultReferrerLocaleCookieName,
+  defaultLocaleCookieName,
 } from 'gt-react/internal';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -28,7 +28,7 @@ export default function ClientProvider(
     // ----- Referrer Locale ----- //
     if (props.locale) {
       // TODO: if this is the same as the brower's accepted locale, don't set the cookie (GDPR)
-      document.cookie = `${defaultReferrerLocaleCookieName}=${props.locale};path=/`;
+      document.cookie = `${defaultLocaleCookieName}=${props.locale};path=/`;
     }
 
     // ----- Middleware ----- //

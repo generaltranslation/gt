@@ -1,5 +1,4 @@
 /**
  * Cookie name for tracking the referrer locale
  */
-export const defaultReferrerLocaleCookieName =
-  'generaltranslation.referrerLocale';
+export const defaultLocaleCookieName = 'generaltranslation.locale';

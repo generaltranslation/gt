@@ -42,7 +42,7 @@ import {
 } from './types/types';
 
 import { GTContextType, ClientProviderProps } from './types/providers';
-import { defaultReferrerLocaleCookieName } from './utils/cookies';
+import { defaultLocaleCookieName } from './utils/cookies';
 
 export {
   addGTIdentifier,
@@ -86,5 +86,5 @@ export {
   CustomLoader,
   RenderVariable,
   VariableProps,
-  defaultReferrerLocaleCookieName,
+  defaultLocaleCookieName,
 };

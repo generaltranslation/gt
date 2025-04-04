@@ -10,7 +10,7 @@ import {
 } from '../utils/constants';
 import { localeHeaderName } from 'generaltranslation/internal';
 import { NextURL } from 'next/dist/server/web/next-url';
-import { defaultReferrerLocaleCookieName } from 'gt-react/internal';
+import { defaultLocaleCookieName } from 'gt-react/internal';
 
 export type PathConfig = {
   [key: string]: string | { [key: string]: string };
@@ -306,7 +306,7 @@ export function getLocaleFromRequest(
   // }
 
   // Check referrer locale
-  const referrerLocale = req.cookies.get(defaultReferrerLocaleCookieName);
+  const referrerLocale = req.cookies.get(defaultLocaleCookieName);
   if (referrerLocale?.value && isValidLocale(referrerLocale?.value)) {
     candidates.push(referrerLocale.value);
     console.log('[MIDDLEWARE] referrerLocale', referrerLocale.value);

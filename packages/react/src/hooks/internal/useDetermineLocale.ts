@@ -5,13 +5,14 @@ import {
   localeCookieName,
 } from 'generaltranslation/internal';
 import { createUnsupportedLocaleWarning } from '../../errors/createErrors';
+import { defaultLocaleCookieName } from '../../utils/cookies';
 
 // TODO: update cookie name
 export function useDetermineLocale({
   locale: _locale = '',
   defaultLocale = libraryDefaultLocale,
   locales = [],
-  cookieName = localeCookieName,
+  cookieName = defaultLocaleCookieName,
   ssr = true, // when false, breaks server side rendering by accessing document and navigator on first render
 }: {
   defaultLocale: string;

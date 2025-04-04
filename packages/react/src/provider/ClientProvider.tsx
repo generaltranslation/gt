@@ -6,9 +6,9 @@ import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/providers';
 import { TranslationsObject } from '../types/types';
 import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
-import { localeCookieName } from 'generaltranslation/internal';
 import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
 import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
+import { defaultLocaleCookieName } from '../utils/cookies';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -28,7 +28,7 @@ export default function ClientProvider({
   runtimeUrl,
   runtimeTranslationEnabled,
   onLocaleChange = () => {},
-  cookieName = localeCookieName,
+  cookieName = defaultLocaleCookieName,
 }: ClientProviderProps): React.JSX.Element {
   // ---------- SET UP ---------- //
 
@@ -55,7 +55,7 @@ export default function ClientProvider({
 
   console.log('[CLIENT] locale', locale);
 
-  // Want to persist the cookie
+  // // Want to persist the cookie
   // // Check for an invalid cookie and correct it
   // useEffect(() => {
   //   const cookieLocale = document.cookie
