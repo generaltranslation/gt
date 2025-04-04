@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { determineLocale } from 'generaltranslation';
 import {
   libraryDefaultLocale,
@@ -109,7 +109,7 @@ function getNewLocale({
     ) || defaultLocale;
 
   // if cookie not valid, change it back to whatever we use for fallback
-  if (cookieLocale && cookieLocale !== newLocale) {
+  if (cookieLocale && cookieLocale !== newLocale && typeof document !== 'undefined') {
     document.cookie = `${cookieName}=${newLocale};path=/`;
   }
 

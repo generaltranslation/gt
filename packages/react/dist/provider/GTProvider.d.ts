@@ -1,5 +1,5 @@
-import { CustomLoader, RenderMethod } from '../types/types';
 import React from 'react';
+import { CustomLoader, RenderMethod } from '../types/types';
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *

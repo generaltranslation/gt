@@ -14,15 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export default function Home() {
-  console.log('Home');
-  if (typeof window === 'undefined') {
-    return <div>Loading...</div>;
-  }
   return (
-    // <T id='pages.index.0'>
-    //   <div>Hello, world!</div>
-    //   <LocaleSelector />
-    // </T>
-    <div>To be or not to be</div>
+    
+    <div>
+     <T id='pages.index.0'>
+      <div>Hello, world!</div>
+     <LocaleSelector />
+    </T>
+    </div>
   );
 }

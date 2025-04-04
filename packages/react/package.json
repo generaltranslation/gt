@@ -1,11 +1,12 @@
 {
   "name": "gt-react",
-  "version": "9.2.12-alpha.3",
+  "version": "9.2.12-alpha.10",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
   "types": "./dist/index.d.ts",
   "peerDependencies": {
+    "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
   },
   "dependencies": {
