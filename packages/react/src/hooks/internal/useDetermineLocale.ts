@@ -109,7 +109,11 @@ function getNewLocale({
     ) || defaultLocale;
 
   // if cookie not valid, change it back to whatever we use for fallback
-  if (cookieLocale && cookieLocale !== newLocale && typeof document !== 'undefined') {
+  if (
+    cookieLocale &&
+    cookieLocale !== newLocale &&
+    typeof document !== 'undefined'
+  ) {
     document.cookie = `${cookieName}=${newLocale};path=/`;
   }
 
@@ -145,7 +149,9 @@ function createSetLocale({
   // update locale and store it in cookie
   const setLocale = (newLocale: string): void => {
     const validatedLocale = internalSetLocale(newLocale);
-    document.cookie = `${cookieName}=${validatedLocale};path=/`;
+    if (typeof document !== 'undefined') {
+      document.cookie = `${cookieName}=${validatedLocale};path=/`;
+    }
   };
   return [setLocale, internalSetLocale];
 }
