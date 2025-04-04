@@ -194,12 +194,44 @@ export default function createNextMiddleware({
 
       // CASE: no localized path exists
       if (!localizedPathWithParameters) {
-        // BASE CASE: no localized path exists, so no change
-        if (pathnameLocale && pathnameLocale === unstandardizedPathnameLocale) {
-          return res;
+        // CASE: path locale is valid
+        if (pathnameLocale) {
+          // BASE CASE: no localized path exists, so no change
+          if (userLocale === unstandardizedPathnameLocale) {
+            return res;
+          }
+
+          // REDIRECT CASE: wrong pathname locale (/fr -> /en)
+          const redirectPath = pathname.replace(
+            new RegExp(`^/${unstandardizedPathnameLocale}`),
+            `/${userLocale}`
+          );
+          const redirectUrl = new URL(redirectPath, originalUrl);
+          redirectUrl.search = originalUrl.search;
+          const response = NextResponse.redirect(redirectUrl);
+          response.headers.set(localeHeaderName, userLocale);
+          response.cookies.set(middlewareLocaleRoutingFlagName, 'true');
+          return response;
         }
 
-        // REDIRECT CASE: no/invalide pathnameLocale, add a default locale prefix
+        // REWRITE: no default locale prefix (/customers -> /en/customers)
+        if (
+          !pathnameLocale &&
+          !prefixDefaultLocale &&
+          isSameDialect(userLocale, defaultLocale)
+        ) {
+          const rewritePath = `/${userLocale}${pathname}`;
+          const rewriteUrl = new URL(rewritePath, originalUrl);
+          rewriteUrl.search = originalUrl.search;
+          const response = NextResponse.rewrite(rewriteUrl, {
+            headers: headerList,
+          });
+          response.headers.set(localeHeaderName, userLocale);
+          response.cookies.set(middlewareLocaleRoutingFlagName, 'true');
+          return response;
+        }
+
+        // REDIRECT CASE: no/invalid pathnameLocale, add a default locale prefix
         const redirectPath = `/${userLocale}${pathname}`;
         const redirectUrl = new URL(redirectPath, originalUrl);
         redirectUrl.search = originalUrl.search;

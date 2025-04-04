@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { DataFormat, FileExtension } from '../../types/data';
+import { DataFormat } from '../../types/data';
 
 /**
  * Saves translated MDX/MD file content to the appropriate location

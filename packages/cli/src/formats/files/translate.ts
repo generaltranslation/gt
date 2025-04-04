@@ -11,6 +11,7 @@ import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile';
 import { downloadFileBatch } from '../../api/downloadFileBatch';
 import { displayLoadingAnimation } from '../../console/console';
+import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles';
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 /**
@@ -58,34 +59,21 @@ export async function translateFiles(
     allFiles.push(...jsonFiles);
   }
 
-  // Process MDX files
-  if (filePaths.mdx) {
-    const mdxFiles = filePaths.mdx.map((filePath) => {
-      const content = readFile(filePath);
-      const relativePath = getRelative(filePath);
-      return {
-        content,
-        fileName: relativePath,
-        fileFormat: 'MDX' as FileFormats,
-        dataFormat,
-      };
-    });
-    allFiles.push(...mdxFiles);
-  }
-
-  // Process MD files
-  if (filePaths.md) {
-    const mdFiles = filePaths.md.map((filePath) => {
-      const content = readFile(filePath);
-      const relativePath = getRelative(filePath);
-      return {
-        content,
-        fileName: relativePath,
-        fileFormat: 'MD' as FileFormats,
-        dataFormat,
-      };
-    });
-    allFiles.push(...mdFiles);
+  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    if (fileType === 'json') continue;
+    if (filePaths[fileType]) {
+      const files = filePaths[fileType].map((filePath) => {
+        const content = readFile(filePath);
+        const relativePath = getRelative(filePath);
+        return {
+          content,
+          fileName: relativePath,
+          fileFormat: fileType.toUpperCase() as FileFormats,
+          dataFormat,
+        };
+      });
+      allFiles.push(...files);
+    }
   }
 
   if (allFiles.length === 0) {
@@ -149,7 +137,7 @@ function createFileMapping(
     const localeMapping: Record<string, string> = {};
 
     // Process each file type
-    for (const typeIndex of ['json', 'mdx', 'md'] as const) {
+    for (const typeIndex of SUPPORTED_FILE_EXTENSIONS) {
       if (!filePaths[typeIndex] || !translatedPaths[typeIndex]) continue;
 
       const sourcePaths = filePaths[typeIndex];
