@@ -16,6 +16,7 @@ export default function ClientProvider(
   // locale change on client, trigger page reload
   const router = useRouter();
   const onLocaleChange = () => {
+    console.log('[CLIENT] Prioritize locale cookie and refresh server pages');
     document.cookie = `${middlewareLocaleResetFlagName}=true;path=/`;
     router.refresh();
   };
@@ -42,6 +43,13 @@ export default function ClientProvider(
       ) {
         // clear cookie (avoids infinite loop when there is no middleware)
         document.cookie = `${middlewareLocaleRoutingFlagName}=;path=/`;
+
+        console.log(
+          '[CLIENT] reloading pages provider does not match path locale. Provider:',
+          props.locale,
+          'Path:',
+          pathLocale
+        );
         // reload server
         router.refresh();
         // reload client

@@ -52,16 +52,19 @@ export default function ClientProvider({
       .find((row) => row.startsWith(`${cookieName}=`))
       ?.split('=')[1];
     if (locale && cookieLocale && cookieLocale !== locale) {
+      console.log('[CLIENT] invalid cookie locale', cookieLocale);
       document.cookie = `${cookieName}=;path=/`;
     }
   }, [locale]);
 
   // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
   const setLocale = (newLocale: string): void => {
+    console.log('[CLIENT] setLocale', locale, '->', newLocale);
     // validate locale
     newLocale = determineLocale(newLocale, locales) || locale || defaultLocale;
 
     // persist locale
+    console.log('[CLIENT] setting cookie locale to', newLocale);
     document.cookie = `${cookieName}=${newLocale};path=/`;
 
     // set locale
@@ -71,6 +74,7 @@ export default function ClientProvider({
     onLocaleChange();
 
     // re-render client components
+    console.log('[CLIENT] refreshing client');
     window.location.reload();
   };
 
