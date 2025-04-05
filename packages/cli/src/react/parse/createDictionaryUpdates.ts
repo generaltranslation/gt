@@ -1,4 +1,3 @@
-import React from 'react';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -33,8 +32,6 @@ export default async function createDictionaryUpdates(
     const bundledCode = result.outputFiles[0].text;
     const tempFilePath = path.join(os.tmpdir(), 'bundled-dictionary.js');
     fs.writeFileSync(tempFilePath, bundledCode);
-
-    globalThis.React = React;
 
     // Load the module using require
     let dictionaryModule;
