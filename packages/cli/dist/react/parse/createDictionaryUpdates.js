@@ -13,7 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = createDictionaryUpdates;
-const react_1 = __importDefault(require("react"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const os_1 = __importDefault(require("os"));
@@ -36,7 +35,6 @@ function createDictionaryUpdates(options, dictionaryPath, esbuildConfig) {
             const bundledCode = result.outputFiles[0].text;
             const tempFilePath = path_1.default.join(os_1.default.tmpdir(), 'bundled-dictionary.js');
             fs_1.default.writeFileSync(tempFilePath, bundledCode);
-            globalThis.React = react_1.default;
             // Load the module using require
             let dictionaryModule;
             try {
