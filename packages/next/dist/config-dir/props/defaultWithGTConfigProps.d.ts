@@ -15,6 +15,13 @@ declare const defaultWithGTConfigProps: {
     };
     readonly _usingPlugin: false;
     readonly ignoreBrowserLocales: false;
+    readonly headersAndCookies: {
+        readonly localeHeaderName: "x-generaltranslation-locale";
+        readonly localeCookieName: "generaltranslation.locale";
+        readonly referrerLocaleCookieName: "generaltranslation.referrer-locale";
+        readonly localeRoutingEnabledCookieName: "generaltranslation.locale-routing-enabled";
+        readonly resetLocaleCookieName: "generaltranslation.locale-reset";
+    };
 };
 export default defaultWithGTConfigProps;
 //# sourceMappingURL=defaultWithGTConfigProps.d.ts.map

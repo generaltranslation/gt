@@ -3,7 +3,16 @@ import {
   defaultCacheUrl,
   defaultRuntimeApiUrl,
 } from 'generaltranslation/internal';
-import { defaultRenderSettings } from 'gt-react/internal';
+import {
+  defaultLocaleCookieName,
+  defaultRenderSettings,
+} from 'gt-react/internal';
+import { defaultLocaleHeaderName } from '../../utils/headers';
+import {
+  defaultLocaleRoutingEnabledCookieName,
+  defaultReferrerLocaleCookieName,
+  defaultResetLocaleCookieName,
+} from '../../utils/cookies';
 
 const defaultWithGTConfigProps = {
   config: './gt.config.json',
@@ -19,6 +28,13 @@ const defaultWithGTConfigProps = {
   renderSettings: defaultRenderSettings,
   _usingPlugin: false,
   ignoreBrowserLocales: false,
+  headersAndCookies: {
+    localeHeaderName: defaultLocaleHeaderName,
+    localeCookieName: defaultLocaleCookieName,
+    referrerLocaleCookieName: defaultReferrerLocaleCookieName,
+    localeRoutingEnabledCookieName: defaultLocaleRoutingEnabledCookieName,
+    resetLocaleCookieName: defaultResetLocaleCookieName,
+  },
 } as const;
 
 export default defaultWithGTConfigProps;

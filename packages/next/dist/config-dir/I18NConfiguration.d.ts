@@ -1,6 +1,7 @@
 import { RenderMethod, TranslatedChildren, TranslatedContent, DictionaryObject } from 'gt-react/internal';
 import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TranslationsObject } from 'gt-react/internal';
+import { HeadersAndCookies } from './props/withGTConfigProps';
 type I18NConfigurationParams = {
     apiKey?: string;
     devApiKey?: string;
@@ -19,6 +20,7 @@ type I18NConfigurationParams = {
     maxConcurrentRequests: number;
     maxBatchSize: number;
     batchInterval: number;
+    headersAndCookies: HeadersAndCookies;
     _usingPlugin: boolean;
     [key: string]: any;
 };
@@ -49,7 +51,12 @@ export default class I18NConfiguration {
     private _queue;
     private _activeRequests;
     private _translationCache;
-    constructor({ apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, loadTranslationsType, loadDictionaryEnabled, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, _usingPlugin, ...metadata }: I18NConfigurationParams);
+    private localeHeaderName;
+    private localeCookieName;
+    private referrerLocaleCookieName;
+    private localeRoutingEnabledCookieName;
+    private resetLocaleCookieName;
+    constructor({ apiKey, devApiKey, projectId, _versionId, runtimeUrl, cacheUrl, cacheExpiryTime, loadTranslationsType, loadDictionaryEnabled, defaultLocale, locales, renderSettings, dictionary, maxConcurrentRequests, maxBatchSize, batchInterval, _usingPlugin, headersAndCookies, ...metadata }: I18NConfigurationParams);
     /**
      * Get the rendering instructions
      * @returns An object containing the current method and timeout.
@@ -74,6 +81,10 @@ export default class I18NConfiguration {
             timeout?: number;
         };
         runtimeTranslationEnabled: boolean;
+        localeRoutingEnabledCookieName: string;
+        referrerLocaleCookieName: string;
+        localeCookieName: string;
+        resetLocaleCookieName: string;
     };
     /**
      * Gets the application's default locale
@@ -85,6 +96,8 @@ export default class I18NConfiguration {
      * @returns {string[]} A list of BCP-47 locale tags, or undefined if none were provided
      */
     getLocales(): string[];
+    getLocaleCookieName(): string;
+    getLocaleHeaderName(): string;
     /**
      * @returns true if build time translation is enabled
      */

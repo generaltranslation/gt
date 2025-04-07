@@ -70,7 +70,6 @@ export default async function GTProvider({
   // Block until cache check resolves
   const translations = await cachedTranslationsPromise;
 
-  console.log('[SERVER] locale', locale);
   return (
     <ClientProvider
       dictionary={dictionary}

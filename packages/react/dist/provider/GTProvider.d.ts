@@ -15,11 +15,13 @@ import { CustomLoader, RenderMethod } from '../types/types';
  * @param {string} [_versionId] - The version ID for fetching translations.
  * @param {string} [devApiKey] - The API key for development environments.
  * @param {object} [metadata] - Additional metadata to pass to the context.
+ * @param {boolean} [ssr=isSSREnabled()] - Whether to enable server-side rendering.
+ * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the cookie to store the locale.
  * @param {React.ReactNode} [fallback = undefined] - Custom fallback to display while loading
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadDictionary, loadTranslations, fallback, ssr, _versionId, ...metadata }: {
+export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadDictionary, loadTranslations, fallback, ssr, localeCookieName, _versionId, ...metadata }: {
     children?: React.ReactNode;
     projectId?: string;
     devApiKey?: string;
@@ -37,6 +39,7 @@ export default function GTProvider({ children, projectId: _projectId, devApiKey:
     loadTranslations?: CustomLoader;
     _versionId?: string;
     ssr?: boolean;
+    localeCookieName?: string;
     [key: string]: any;
 }): React.JSX.Element;
 //# sourceMappingURL=GTProvider.d.ts.map

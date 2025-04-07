@@ -1,24 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { determineLocale } from 'generaltranslation';
-import {
-  libraryDefaultLocale,
-  localeCookieName,
-} from 'generaltranslation/internal';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocaleWarning } from '../../errors/createErrors';
 import { defaultLocaleCookieName } from '../../utils/cookies';
 
-// TODO: update cookie name
 export function useDetermineLocale({
   locale: _locale = '',
   defaultLocale = libraryDefaultLocale,
   locales = [],
-  cookieName = defaultLocaleCookieName,
+  localeCookieName = defaultLocaleCookieName,
   ssr = true, // when false, breaks server side rendering by accessing document and navigator on first render
 }: {
   defaultLocale: string;
   locales: string[];
   locale?: string;
-  cookieName?: string;
+  localeCookieName?: string;
   ssr?: boolean;
 }): [string, (locale: string) => void] {
   // maintaining the state of locale
@@ -32,7 +28,7 @@ export function useDetermineLocale({
           locale: _locale,
           locales,
           defaultLocale,
-          cookieName,
+          localeCookieName,
         })
   );
 
@@ -40,7 +36,7 @@ export function useDetermineLocale({
     locale,
     locales,
     defaultLocale,
-    cookieName,
+    localeCookieName,
     _setLocale,
   });
 
@@ -51,10 +47,10 @@ export function useDetermineLocale({
       locale,
       locales,
       defaultLocale,
-      cookieName,
+      localeCookieName,
     });
     internalSetLocale(newLocale);
-  }, [_locale, locale, locales, defaultLocale, cookieName]);
+  }, [_locale, locale, locales, defaultLocale, localeCookieName]);
 
   return [locale, setLocale];
 }
@@ -66,13 +62,13 @@ function getNewLocale({
   locale,
   locales,
   defaultLocale,
-  cookieName,
+  localeCookieName,
 }: {
   _locale: string;
   locale: string;
   locales: string[];
   defaultLocale: string;
-  cookieName: string;
+  localeCookieName: string;
 }): string {
   if (
     _locale &&
@@ -95,7 +91,7 @@ function getNewLocale({
     typeof document !== 'undefined'
       ? document.cookie
           .split('; ')
-          .find((row) => row.startsWith(`${cookieName}=`))
+          .find((row) => row.startsWith(`${localeCookieName}=`))
           ?.split('=')[1]
       : undefined;
 
@@ -116,7 +112,7 @@ function getNewLocale({
     cookieLocale !== newLocale &&
     typeof document !== 'undefined'
   ) {
-    document.cookie = `${cookieName}=${newLocale};path=/`;
+    document.cookie = `${localeCookieName}=${newLocale};path=/`;
   }
 
   // return new locale
@@ -127,13 +123,13 @@ function createSetLocale({
   locale,
   locales,
   defaultLocale,
-  cookieName,
+  localeCookieName,
   _setLocale,
 }: {
   locale: string;
   locales: string[];
   defaultLocale: string;
-  cookieName: string;
+  localeCookieName: string;
   _setLocale: any;
 }) {
   const internalSetLocale = (newLocale: string): string => {
@@ -152,7 +148,7 @@ function createSetLocale({
   const setLocale = (newLocale: string): void => {
     const validatedLocale = internalSetLocale(newLocale);
     if (typeof document !== 'undefined') {
-      document.cookie = `${cookieName}=${validatedLocale};path=/`;
+      document.cookie = `${localeCookieName}=${validatedLocale};path=/`;
     }
   };
   return [setLocale, internalSetLocale];

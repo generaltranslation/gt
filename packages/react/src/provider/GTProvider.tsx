@@ -113,7 +113,7 @@ export default function GTProvider({
     locales,
     locale: _locale,
     ssr,
-    cookieName: localeCookieName,
+    localeCookieName,
   });
 
   // Translation at runtime during development is enabled

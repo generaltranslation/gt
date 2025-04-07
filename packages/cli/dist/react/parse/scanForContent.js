@@ -117,11 +117,19 @@ function scanForContent(options, pkg, framework) {
                     if (framework === 'next-pages' &&
                         options.addGTProvider &&
                         (baseFileName === '_app.tsx' || baseFileName === '_app.jsx')) {
-                        // Check if this is the top-level JSX element in the default export
-                        let isDefaultExport = false;
-                        let currentPath = path;
+                        // Check if this is the Component element with pageProps
+                        const isComponentWithPageProps = t.isJSXElement(path.node) &&
+                            t.isJSXIdentifier(path.node.openingElement.name) &&
+                            path.node.openingElement.name.name === 'Component' &&
+                            path.node.openingElement.attributes.some((attr) => t.isJSXSpreadAttribute(attr) &&
+                                t.isIdentifier(attr.argument) &&
+                                attr.argument.name === 'pageProps');
+                        if (!isComponentWithPageProps) {
+                            return;
+                        }
                         // Check if GTProvider already exists in the ancestors
                         let hasGTProvider = false;
+                        let currentPath = path;
                         while (currentPath.parentPath) {
                             if (t.isJSXElement(currentPath.node) &&
                                 t.isJSXIdentifier(currentPath.node.openingElement.name) &&
@@ -129,13 +137,10 @@ function scanForContent(options, pkg, framework) {
                                 hasGTProvider = true;
                                 break;
                             }
-                            if (t.isExportDefaultDeclaration(currentPath.parentPath.node)) {
-                                isDefaultExport = true;
-                            }
                             currentPath = currentPath.parentPath;
                         }
-                        if (isDefaultExport && !hasGTProvider) {
-                            // Wrap the JSX element with GTProvider
+                        if (!hasGTProvider) {
+                            // Wrap the Component element with GTProvider
                             const gtProviderJsx = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('GTProvider'), [t.jsxSpreadAttribute(t.identifier('gtConfig'))], false), t.jsxClosingElement(t.jsxIdentifier('GTProvider')), [path.node]);
                             path.replaceWith(gtProviderJsx);
                             usedImports.push('GTProvider');

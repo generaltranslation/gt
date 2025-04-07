@@ -27,8 +27,8 @@ export default function ClientProvider({
   devApiKey,
   runtimeUrl,
   runtimeTranslationEnabled,
-  onLocaleChange = () => {},
-  cookieName = defaultLocaleCookieName,
+  resetLocaleCookieName,
+  localeCookieName = defaultLocaleCookieName,
 }: ClientProviderProps): React.JSX.Element {
   // ---------- SET UP ---------- //
 
@@ -53,19 +53,16 @@ export default function ClientProvider({
     }
   }, [_locale, locales]);
 
-  console.log('[CLIENT] locale', locale);
-
-  // // Want to persist the cookie
-  // // Check for an invalid cookie and correct it
-  // useEffect(() => {
-  //   const cookieLocale = document.cookie
-  //     .split('; ')
-  //     .find((row) => row.startsWith(`${cookieName}=`))
-  //     ?.split('=')[1];
-  //   if (locale && cookieLocale && cookieLocale !== locale) {
-  //     document.cookie = `${cookieName}=;path=/`;
-  //   }
-  // }, [locale]);
+  // Check for an invalid cookie
+  useEffect(() => {
+    const cookieLocale = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith(`${localeCookieName}=`))
+      ?.split('=')[1];
+    if (locale && cookieLocale && cookieLocale !== locale) {
+      document.cookie = `${localeCookieName}=;path=/`;
+    }
+  }, [locale, localeCookieName]);
 
   // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
   const setLocale = (newLocale: string): void => {
@@ -73,13 +70,11 @@ export default function ClientProvider({
     newLocale = determineLocale(newLocale, locales) || locale || defaultLocale;
 
     // persist locale
-    document.cookie = `${cookieName}=${newLocale};path=/`;
+    document.cookie = `${localeCookieName}=${newLocale};path=/`;
+    document.cookie = `${resetLocaleCookieName}=true;path=/`;
 
     // set locale
     _setLocale(newLocale);
-
-    // re-render server components
-    onLocaleChange();
 
     // re-render client components
     window.location.reload();

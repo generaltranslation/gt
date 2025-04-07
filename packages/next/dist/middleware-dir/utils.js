@@ -10,11 +10,8 @@ exports.getSharedPath = getSharedPath;
 exports.getLocaleFromRequest = getLocaleFromRequest;
 var server_1 = require("next/server");
 var generaltranslation_1 = require("generaltranslation");
-var constants_1 = require("../utils/constants");
-var internal_1 = require("generaltranslation/internal");
-var internal_2 = require("gt-react/internal");
 function getResponse(_a) {
-    var type = _a.type, originalUrl = _a.originalUrl, _b = _a.responsePath, responsePath = _b === void 0 ? originalUrl.pathname : _b, userLocale = _a.userLocale, clearResetCookie = _a.clearResetCookie, headerList = _a.headerList, localeRouting = _a.localeRouting;
+    var type = _a.type, originalUrl = _a.originalUrl, _b = _a.responsePath, responsePath = _b === void 0 ? originalUrl.pathname : _b, userLocale = _a.userLocale, clearResetCookie = _a.clearResetCookie, headerList = _a.headerList, localeRouting = _a.localeRouting, localeRoutingEnabledCookieName = _a.localeRoutingEnabledCookieName, localeCookieName = _a.localeCookieName, resetLocaleCookieName = _a.resetLocaleCookieName, localeHeaderName = _a.localeHeaderName;
     // Get Response
     var response;
     if (type === 'next') {
@@ -37,13 +34,13 @@ function getResponse(_a) {
                 });
     }
     // Set Headers & Cookies
-    response.headers.set(internal_1.localeHeaderName, userLocale);
-    response.cookies.set(constants_1.middlewareLocaleRoutingFlagName, localeRouting.toString());
-    if (clearResetCookie) {
-        response.cookies.delete(constants_1.middlewareLocaleResetFlagName);
+    response.headers.set(localeHeaderName, userLocale);
+    response.cookies.set(localeRoutingEnabledCookieName, localeRouting.toString());
+    // Clear setLocale cookies
+    if (clearResetCookie && type !== 'redirect') {
+        response.cookies.delete(resetLocaleCookieName);
+        response.cookies.delete(localeCookieName);
     }
-    // Log
-    console.log("[MIDDLEWARE] ".concat(type === 'next' ? 'NEXT' : type === 'rewrite' ? 'REWRITE' : 'REDIRECT', " ").concat(originalUrl.pathname, " -> ").concat(responsePath));
     return response;
 }
 /**
@@ -132,15 +129,19 @@ function createPathToSharedPathMap(pathConfig, prefixDefaultLocale, defaultLocal
 /**
  * Gets the shared path from a given pathname, handling both static and dynamic paths
  */
-function getSharedPath(pathname, pathToSharedPath) {
+function getSharedPath(standardizedPathname, pathToSharedPath, pathnameLocale) {
     // Try exact match first
-    if (pathToSharedPath[pathname]) {
-        return pathToSharedPath[pathname];
+    if (pathToSharedPath[standardizedPathname]) {
+        return pathToSharedPath[standardizedPathname];
     }
     // Without locale prefix
-    var pathnameWithoutLocale = pathname.replace(/^\/[^/]+/, '');
-    if (pathToSharedPath[pathnameWithoutLocale]) {
-        return pathToSharedPath[pathnameWithoutLocale];
+    var pathnameWithoutLocale = undefined;
+    // Only remove locale prefix if the locale prefix is valid
+    if (pathnameLocale) {
+        pathnameWithoutLocale = standardizedPathname.replace(/^\/[^/]+/, '');
+        if (pathToSharedPath[pathnameWithoutLocale]) {
+            return pathToSharedPath[pathnameWithoutLocale];
+        }
     }
     // Try regex pattern match
     var candidateSharedPath = undefined;
@@ -149,10 +150,14 @@ function getSharedPath(pathname, pathToSharedPath) {
         if (pattern.includes('/[^/]+')) {
             // Convert the pattern to a strict regex that matches the exact path structure
             var regex = new RegExp("^".concat(pattern.replace(/\//g, '\\/'), "$"));
-            if (regex.test(pathname)) {
+            // Exact match
+            if (regex.test(standardizedPathname)) {
                 return sharedPath;
             }
-            if (!candidateSharedPath && regex.test(pathnameWithoutLocale)) {
+            // Without locale prefix
+            if (!candidateSharedPath &&
+                pathnameLocale &&
+                regex.test(pathnameWithoutLocale)) {
                 candidateSharedPath = sharedPath;
             }
         }
@@ -160,8 +165,10 @@ function getSharedPath(pathname, pathToSharedPath) {
     return candidateSharedPath;
 }
 /**
- *
- * @returns
+ * Checks if the pathname is in the default locale paths
+ * @param pathname - The pathname to check
+ * @param defaultLocalePaths - The default locale paths
+ * @returns true if the pathname is in the default locale paths, false otherwise
  */
 function inDefaultLocalePaths(pathname, defaultLocalePaths) {
     // Try exact match first
@@ -183,7 +190,7 @@ function inDefaultLocalePaths(pathname, defaultLocalePaths) {
 /**
  * Gets the locale from the request using various sources
  */
-function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting, gtServicesEnabled, prefixDefaultLocale, defaultLocalePaths) {
+function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting, gtServicesEnabled, prefixDefaultLocale, defaultLocalePaths, referrerLocaleCookieName, localeCookieName, resetLocaleCookieName) {
     var _a;
     var headerList = new Headers(req.headers);
     var candidates = [];
@@ -196,10 +203,9 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
         var extractedLocale = gtServicesEnabled
             ? (0, generaltranslation_1.standardizeLocale)(unstandardizedPathnameLocale || '')
             : unstandardizedPathnameLocale;
-        if (extractedLocale && (0, generaltranslation_1.isValidLocale)(extractedLocale)) {
+        if (extractedLocale && approvedLocales.includes(extractedLocale)) {
             pathnameLocale = extractedLocale;
             candidates.push(pathnameLocale);
-            console.log('[MIDDLEWARE] pathnameLocale', pathnameLocale);
         }
     }
     // Check pathname for a customized unprefixed default locale path (e.g. /en-about , /en-dashboard/1/en-custom)
@@ -209,55 +215,25 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
         inDefaultLocalePaths(pathname, defaultLocalePaths)) {
         candidates.push(defaultLocale); // will override other candidates
     }
-    // // Check cookie locale
-    // const cookieLocale = req.cookies.get(localeCookieName);
-    // if (cookieLocale?.value && isValidLocale(cookieLocale?.value)) {
-    //   const resetCookie = req.cookies.get(middlewareLocaleResetFlagName);
-    //   console.log('[MIDDLEWARE] cookieLocale', cookieLocale.value);
-    //   if (resetCookie?.value) {
-    //     candidates.unshift(cookieLocale.value);
-    //     clearResetCookie = true;
-    //   } else {
-    //     candidates.push(cookieLocale.value);
-    //   }
-    // }
-    // Check referrer locale
-    var referrerLocale = req.cookies.get(internal_2.defaultReferrerLocaleCookieName);
-    if ((referrerLocale === null || referrerLocale === void 0 ? void 0 : referrerLocale.value) && (0, generaltranslation_1.isValidLocale)(referrerLocale === null || referrerLocale === void 0 ? void 0 : referrerLocale.value)) {
-        candidates.push(referrerLocale.value);
-        console.log('[MIDDLEWARE] referrerLocale', referrerLocale.value);
-        // TODO: if combine with other cookie, add logic for override pathnameLocale
+    // Check cookie locale
+    var cookieLocale = req.cookies.get(localeCookieName);
+    if ((cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value) && (0, generaltranslation_1.isValidLocale)(cookieLocale === null || cookieLocale === void 0 ? void 0 : cookieLocale.value)) {
+        var resetCookie = req.cookies.get(resetLocaleCookieName);
+        if (resetCookie === null || resetCookie === void 0 ? void 0 : resetCookie.value) {
+            candidates.unshift(cookieLocale.value);
+            clearResetCookie = true;
+        }
+        else {
+            candidates.push(cookieLocale.value);
+        }
     }
-    // Replacing this with referrer cookie, maybe keep it as a backup?
-    // // Check referer locale
-    // let refererLocale;
-    // if (localeRouting) {
-    //   const referer = headerList.get('referer');
-    //   console.log('referer', referer);
-    //   if (referer && typeof referer === 'string') {
-    //     try {
-    //       const refererUrl = new URL(referer);
-    //       // Only use referer if it's from the same domain
-    //       if (refererUrl.hostname === req.nextUrl.hostname) {
-    //         refererLocale = extractLocale(refererUrl.pathname);
-    //         if (isValidLocale(refererLocale || '')) {
-    //           candidates.push(refererLocale || '');
-    //           console.log('refererLocale (same domain):', refererLocale);
-    //         } else {
-    //           console.log(
-    //             'refererLocale (same domain, invalid locale):',
-    //             refererLocale
-    //           );
-    //           candidates.push(defaultLocale);
-    //         }
-    //       } else {
-    //         console.log('refererLocale (different domain):', refererLocale);
-    //       }
-    //     } catch (error) {
-    //       console.warn('Invalid referer URL:', referer);
-    //     }
-    //   }
-    // }
+    // Check referrer locale
+    var referrerLocale = req.cookies.get(referrerLocaleCookieName);
+    if ((referrerLocale === null || referrerLocale === void 0 ? void 0 : referrerLocale.value) &&
+        (0, generaltranslation_1.isValidLocale)(referrerLocale === null || referrerLocale === void 0 ? void 0 : referrerLocale.value) &&
+        !clearResetCookie) {
+        candidates.push(referrerLocale.value);
+    }
     // Get locales from accept-language header
     if (process.env._GENERALTRANSLATION_IGNORE_BROWSER_LOCALES === 'false') {
         var acceptedLocales = ((_a = headerList
@@ -267,7 +243,6 @@ function getLocaleFromRequest(req, defaultLocale, approvedLocales, localeRouting
     }
     // Get default locale
     candidates.push(defaultLocale);
-    console.log('[MIDDLEWARE] defaultLocale', defaultLocale);
     // determine userLocale
     var unstandardizedUserLocale = (0, generaltranslation_1.determineLocale)(candidates.filter(generaltranslation_1.isValidLocale), approvedLocales) ||
         defaultLocale;

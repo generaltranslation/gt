@@ -126,9 +126,9 @@ type ClientProviderProps = {
     projectId?: string;
     devApiKey?: string;
     runtimeUrl?: string | null;
-    onLocaleChange?: () => void;
-    cookieName?: string;
     gtServicesEnabled?: boolean;
+    localeCookieName?: string;
+    resetLocaleCookieName: string;
 };
 
 declare const GTContext: React.Context<GTContextType | undefined>;
@@ -154,7 +154,7 @@ declare function useRuntimeTranslation({ projectId, devApiKey, locale, versionId
 
 declare const renderVariable: RenderVariable;
 
-declare function ClientProvider({ children, dictionary, initialTranslations, dictionaryTranslations, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, onLocaleChange, cookieName, }: ClientProviderProps): React.JSX.Element;
+declare function ClientProvider({ children, dictionary, initialTranslations, dictionaryTranslations, locale: _locale, _versionId, defaultLocale, translationRequired, dialectTranslationRequired, locales, renderSettings, projectId, devApiKey, runtimeUrl, runtimeTranslationEnabled, resetLocaleCookieName, localeCookieName, }: ClientProviderProps): React.JSX.Element;
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -462,11 +462,13 @@ declare function LocaleSelector({ locales: _locales, ...props }: {
  * @param {string} [_versionId] - The version ID for fetching translations.
  * @param {string} [devApiKey] - The API key for development environments.
  * @param {object} [metadata] - Additional metadata to pass to the context.
+ * @param {boolean} [ssr=isSSREnabled()] - Whether to enable server-side rendering.
+ * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the cookie to store the locale.
  * @param {React.ReactNode} [fallback = undefined] - Custom fallback to display while loading
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-declare function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadDictionary, loadTranslations, fallback, ssr, _versionId, ...metadata }: {
+declare function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadDictionary, loadTranslations, fallback, ssr, localeCookieName, _versionId, ...metadata }: {
     children?: React__default.ReactNode;
     projectId?: string;
     devApiKey?: string;
@@ -484,6 +486,7 @@ declare function GTProvider({ children, projectId: _projectId, devApiKey: _devAp
     loadTranslations?: CustomLoader;
     _versionId?: string;
     ssr?: boolean;
+    localeCookieName?: string;
     [key: string]: any;
 }): React__default.JSX.Element;
 

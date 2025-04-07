@@ -1,4 +1,11 @@
 import { RenderMethod } from 'gt-react/internal';
+export type HeadersAndCookies = {
+    localeHeaderName?: string;
+    localeCookieName?: string;
+    referrerLocaleCookieName?: string;
+    localeRoutingEnabledCookieName?: string;
+    resetLocaleCookieName?: string;
+};
 type withGTConfigProps = {
     dictionary?: string;
     config?: string;
@@ -21,6 +28,7 @@ type withGTConfigProps = {
     maxBatchSize?: number;
     batchInterval?: number;
     description?: string;
+    headersAndCookies?: HeadersAndCookies;
     _usingPlugin?: boolean;
     [key: string]: any;
 };
