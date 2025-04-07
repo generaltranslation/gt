@@ -1,5 +1,13 @@
 import { RenderMethod } from 'gt-react/internal';
 
+export type HeadersAndCookies = {
+  localeHeaderName?: string;
+  localeCookieName?: string;
+  referrerLocaleCookieName?: string;
+  localeRoutingEnabledCookieName?: string;
+  resetLocaleCookieName?: string;
+};
+
 type withGTConfigProps = {
   // Request scoped filepath
   dictionary?: string;
@@ -29,6 +37,7 @@ type withGTConfigProps = {
   // Translation assistance
   description?: string;
   // Other
+  headersAndCookies?: HeadersAndCookies;
   _usingPlugin?: boolean;
   [key: string]: any;
 };

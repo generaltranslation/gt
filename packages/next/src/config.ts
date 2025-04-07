@@ -46,6 +46,7 @@ import { getLocaleProperties, standardizeLocale } from 'generaltranslation';
  * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
+ * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {NextConfig} nextConfig - The Next.js configuration object to extend
@@ -97,12 +98,19 @@ export function withGTConfig(
 
   // ---------- MERGE CONFIGS ---------- //
 
+  // Merge cookie and header names
+  const mergedHeadersAndCookies = {
+    ...defaultWithGTConfigProps.headersAndCookies,
+    ...props.headersAndCookies,
+  };
+
   // precedence: input > env > config file > defaults
   const mergedConfig: withGTConfigProps = {
     ...defaultWithGTConfigProps,
     ...loadedConfig,
     ...envConfig,
     ...props,
+    headersAndCookies: mergedHeadersAndCookies,
     _usingPlugin: true, // flag to indicate plugin usage
   };
 

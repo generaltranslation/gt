@@ -3,8 +3,6 @@ declare const defaultBaseUrl: "https://api.gtx.dev";
 declare const defaultRuntimeApiUrl: "https://runtime.gtx.dev";
 
 declare const libraryDefaultLocale: "en";
-declare const localeCookieName: "generaltranslation.locale";
-declare const localeHeaderName = "x-generaltranslation-locale";
 
 declare const pluralForms: readonly ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other"];
 type PluralType = (typeof pluralForms)[number];
@@ -39,4 +37,4 @@ type JsxElement = {
 type JsxChild = string | JsxElement | Variable;
 type JsxChildren = JsxChild | JsxChild[];
 
-export { type Content, type JsxChild, type JsxChildren, type JsxElement, defaultBaseUrl, defaultCacheUrl, defaultRuntimeApiUrl, _getPluralForm as getPluralForm, isAcceptedPluralForm, libraryDefaultLocale, localeCookieName, localeHeaderName, pluralForms };
+export { type Content, type JsxChild, type JsxChildren, type JsxElement, defaultBaseUrl, defaultCacheUrl, defaultRuntimeApiUrl, _getPluralForm as getPluralForm, isAcceptedPluralForm, libraryDefaultLocale, pluralForms };

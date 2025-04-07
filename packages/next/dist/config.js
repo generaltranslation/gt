@@ -62,6 +62,7 @@ var generaltranslation_1 = require("generaltranslation");
  * @param {number} [maxBatchSize=defaultInitGTProps.maxBatchSize] - Maximum translation requests in the same batch.
  * @param {number} [batchInterval=defaultInitGTProps.batchInterval] - The interval in milliseconds between batched translation requests.
  * @param {boolean} [ignoreBrowserLocales=defaultWithGTConfigProps.ignoreBrowserLocales] - Whether to ignore browser's preferred locales.
+ * @param {object} headersAndCookies - Additional headers and cookies that can be passed for extended configuration.
  * @param {object} metadata - Additional metadata that can be passed for extended configuration.
  *
  * @param {NextConfig} nextConfig - The Next.js configuration object to extend
@@ -104,8 +105,10 @@ function withGTConfig(nextConfig, props) {
     // conditionally add environment variables to config
     var envConfig = __assign(__assign(__assign({}, (projectId ? { projectId: projectId } : {})), (apiKey ? { apiKey: apiKey } : {})), (devApiKey ? { devApiKey: devApiKey } : {}));
     // ---------- MERGE CONFIGS ---------- //
+    // Merge cookie and header names
+    var mergedHeadersAndCookies = __assign(__assign({}, defaultWithGTConfigProps_1.default.headersAndCookies), props.headersAndCookies);
     // precedence: input > env > config file > defaults
-    var mergedConfig = __assign(__assign(__assign(__assign(__assign({}, defaultWithGTConfigProps_1.default), loadedConfig), envConfig), props), { _usingPlugin: true });
+    var mergedConfig = __assign(__assign(__assign(__assign(__assign({}, defaultWithGTConfigProps_1.default), loadedConfig), envConfig), props), { headersAndCookies: mergedHeadersAndCookies, _usingPlugin: true });
     // ----------- RESOLVE ANY EXTERNAL FILES ----------- //
     // Resolve dictionary filepath
     var resolvedDictionaryFilePath = typeof mergedConfig.dictionary === 'string'

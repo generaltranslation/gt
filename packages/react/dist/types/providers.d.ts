@@ -40,7 +40,8 @@ export type ClientProviderProps = {
     projectId?: string;
     devApiKey?: string;
     runtimeUrl?: string | null;
-    cookieName?: string;
     gtServicesEnabled?: boolean;
+    localeCookieName?: string;
+    resetLocaleCookieName: string;
 };
 //# sourceMappingURL=providers.d.ts.map

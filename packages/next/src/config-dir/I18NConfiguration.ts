@@ -7,6 +7,7 @@ import {
   defaultRenderSettings,
   GTTranslationError,
   DictionaryObject,
+  defaultLocaleCookieName,
 } from 'gt-react/internal';
 import {
   createMismatchingHashWarning,
@@ -16,6 +17,13 @@ import { Content, JsxChildren } from 'generaltranslation/internal';
 import { TranslationsObject } from 'gt-react/internal';
 import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import dictionaryManager, { DictionaryManager } from './DictionaryManager';
+import { HeadersAndCookies } from './props/withGTConfigProps';
+import {
+  defaultLocaleRoutingEnabledCookieName,
+  defaultReferrerLocaleCookieName,
+  defaultResetLocaleCookieName,
+} from '../utils/cookies';
+import { defaultLocaleHeaderName } from '../utils/headers';
 type I18NConfigurationParams = {
   apiKey?: string;
   devApiKey?: string;
@@ -34,6 +42,7 @@ type I18NConfigurationParams = {
   maxConcurrentRequests: number;
   maxBatchSize: number;
   batchInterval: number;
+  headersAndCookies: HeadersAndCookies;
   _usingPlugin: boolean;
   [key: string]: any;
 };
@@ -95,7 +104,12 @@ export default class I18NConfiguration {
   private _activeRequests: number;
   // Cache for ongoing translation requests
   private _translationCache: Map<string, Promise<any>>;
-
+  // Headers and cookies
+  private localeHeaderName: string;
+  private localeCookieName: string;
+  private referrerLocaleCookieName: string;
+  private localeRoutingEnabledCookieName: string;
+  private resetLocaleCookieName: string;
   constructor({
     // Cloud integration
     apiKey,
@@ -121,6 +135,7 @@ export default class I18NConfiguration {
     // Internal
     _usingPlugin,
     // Other metadata
+    headersAndCookies,
     ...metadata
   }: I18NConfigurationParams) {
     // ----- CLOUD INTEGRATION ----- //
@@ -200,6 +215,19 @@ export default class I18NConfiguration {
     this._activeRequests = 0;
     this._translationCache = new Map(); // cache for ongoing promises, so things aren't translated twice
     this._startBatching();
+    // Headers and cookies
+    this.localeHeaderName =
+      headersAndCookies.localeHeaderName || defaultLocaleHeaderName;
+    this.localeCookieName =
+      headersAndCookies.localeCookieName || defaultLocaleCookieName;
+    this.referrerLocaleCookieName =
+      headersAndCookies.referrerLocaleCookieName ||
+      defaultReferrerLocaleCookieName;
+    this.localeRoutingEnabledCookieName =
+      headersAndCookies.localeRoutingEnabledCookieName ||
+      defaultLocaleRoutingEnabledCookieName;
+    this.resetLocaleCookieName =
+      headersAndCookies.resetLocaleCookieName || defaultResetLocaleCookieName;
   }
 
   // ------ CONFIG ----- //
@@ -229,6 +257,10 @@ export default class I18NConfiguration {
       developmentApiEnabled,
       dictionaryEnabled,
       renderSettings,
+      localeRoutingEnabledCookieName,
+      referrerLocaleCookieName,
+      localeCookieName,
+      resetLocaleCookieName,
     } = this;
     return {
       projectId,
@@ -238,6 +270,10 @@ export default class I18NConfiguration {
       dictionaryEnabled,
       renderSettings,
       runtimeTranslationEnabled: developmentApiEnabled,
+      localeRoutingEnabledCookieName,
+      referrerLocaleCookieName,
+      localeCookieName,
+      resetLocaleCookieName,
     };
   }
 
@@ -257,6 +293,16 @@ export default class I18NConfiguration {
    */
   getLocales(): string[] {
     return this.locales;
+  }
+
+  // ----- COOKIES AND HEADERS ----- //
+
+  getLocaleCookieName(): string {
+    return this.localeCookieName;
+  }
+
+  getLocaleHeaderName(): string {
+    return this.localeHeaderName;
   }
 
   // ----- FEATURE FLAGS ----- //

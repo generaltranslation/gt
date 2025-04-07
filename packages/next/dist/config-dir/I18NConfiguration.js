@@ -67,6 +67,8 @@ var internal_1 = require("gt-react/internal");
 var createErrors_1 = require("../errors/createErrors");
 var defaultWithGTConfigProps_1 = __importDefault(require("./props/defaultWithGTConfigProps"));
 var DictionaryManager_1 = __importDefault(require("./DictionaryManager"));
+var cookies_1 = require("../utils/cookies");
+var headers_1 = require("../utils/headers");
 var I18NConfiguration = /** @class */ (function () {
     function I18NConfiguration(_a) {
         // ----- CLOUD INTEGRATION ----- //
@@ -84,7 +86,7 @@ var I18NConfiguration = /** @class */ (function () {
         // Internal
         _usingPlugin = _a._usingPlugin, 
         // Other metadata
-        metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "loadTranslationsType", "loadDictionaryEnabled", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "_usingPlugin"]);
+        headersAndCookies = _a.headersAndCookies, metadata = __rest(_a, ["apiKey", "devApiKey", "projectId", "_versionId", "runtimeUrl", "cacheUrl", "cacheExpiryTime", "loadTranslationsType", "loadDictionaryEnabled", "defaultLocale", "locales", "renderSettings", "dictionary", "maxConcurrentRequests", "maxBatchSize", "batchInterval", "_usingPlugin", "headersAndCookies"]);
         this.apiKey = apiKey;
         this.devApiKey = devApiKey;
         this.projectId = projectId;
@@ -142,6 +144,19 @@ var I18NConfiguration = /** @class */ (function () {
         this._activeRequests = 0;
         this._translationCache = new Map(); // cache for ongoing promises, so things aren't translated twice
         this._startBatching();
+        // Headers and cookies
+        this.localeHeaderName =
+            headersAndCookies.localeHeaderName || headers_1.defaultLocaleHeaderName;
+        this.localeCookieName =
+            headersAndCookies.localeCookieName || internal_1.defaultLocaleCookieName;
+        this.referrerLocaleCookieName =
+            headersAndCookies.referrerLocaleCookieName ||
+                cookies_1.defaultReferrerLocaleCookieName;
+        this.localeRoutingEnabledCookieName =
+            headersAndCookies.localeRoutingEnabledCookieName ||
+                cookies_1.defaultLocaleRoutingEnabledCookieName;
+        this.resetLocaleCookieName =
+            headersAndCookies.resetLocaleCookieName || cookies_1.defaultResetLocaleCookieName;
     }
     // ------ CONFIG ----- //
     /**
@@ -157,7 +172,7 @@ var I18NConfiguration = /** @class */ (function () {
      * Gets config for dynamic translation on the client side.
      */
     I18NConfiguration.prototype.getClientSideConfig = function () {
-        var _a = this, projectId = _a.projectId, translationEnabled = _a.translationEnabled, runtimeUrl = _a.runtimeUrl, devApiKey = _a.devApiKey, developmentApiEnabled = _a.developmentApiEnabled, dictionaryEnabled = _a.dictionaryEnabled, renderSettings = _a.renderSettings;
+        var _a = this, projectId = _a.projectId, translationEnabled = _a.translationEnabled, runtimeUrl = _a.runtimeUrl, devApiKey = _a.devApiKey, developmentApiEnabled = _a.developmentApiEnabled, dictionaryEnabled = _a.dictionaryEnabled, renderSettings = _a.renderSettings, localeRoutingEnabledCookieName = _a.localeRoutingEnabledCookieName, referrerLocaleCookieName = _a.referrerLocaleCookieName, localeCookieName = _a.localeCookieName, resetLocaleCookieName = _a.resetLocaleCookieName;
         return {
             projectId: projectId,
             translationEnabled: translationEnabled,
@@ -166,6 +181,10 @@ var I18NConfiguration = /** @class */ (function () {
             dictionaryEnabled: dictionaryEnabled,
             renderSettings: renderSettings,
             runtimeTranslationEnabled: developmentApiEnabled,
+            localeRoutingEnabledCookieName: localeRoutingEnabledCookieName,
+            referrerLocaleCookieName: referrerLocaleCookieName,
+            localeCookieName: localeCookieName,
+            resetLocaleCookieName: resetLocaleCookieName,
         };
     };
     // ----- LOCALES ----- //
@@ -182,6 +201,13 @@ var I18NConfiguration = /** @class */ (function () {
      */
     I18NConfiguration.prototype.getLocales = function () {
         return this.locales;
+    };
+    // ----- COOKIES AND HEADERS ----- //
+    I18NConfiguration.prototype.getLocaleCookieName = function () {
+        return this.localeCookieName;
+    };
+    I18NConfiguration.prototype.getLocaleHeaderName = function () {
+        return this.localeHeaderName;
     };
     // ----- FEATURE FLAGS ----- //
     /**

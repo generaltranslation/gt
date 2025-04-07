@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { PathConfig } from './utils';
 /**
  * Middleware factory to create a Next.js middleware for i18n routing and locale detection.
@@ -16,5 +16,5 @@ export default function createNextMiddleware({ localeRouting, prefixDefaultLocal
     localeRouting?: boolean;
     prefixDefaultLocale?: boolean;
     pathConfig?: PathConfig;
-}): (req: NextRequest) => NextResponse<unknown>;
+}): (req: NextRequest) => import("next/server").NextResponse<unknown>;
 //# sourceMappingURL=createNextMiddleware.d.ts.map

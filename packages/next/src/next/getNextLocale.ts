@@ -1,9 +1,10 @@
 import { cookies, headers } from 'next/headers';
 import { determineLocale } from 'generaltranslation';
-import {
-  localeCookieName,
-  localeHeaderName,
-} from 'generaltranslation/internal';
+import getI18NConfig from '../config-dir/getI18NConfig';
+
+// locale header name and cookie name
+let localeHeaderName = '';
+let localeCookieName = '';
 
 /**
  * Retrieves the 'accept-language' header from the headers list.
@@ -20,14 +21,17 @@ export async function getNextLocale(
 ): Promise<string> {
   const [headersList, cookieStore] = await Promise.all([headers(), cookies()]);
 
+  const I18NConfig = getI18NConfig();
+
   let userLocale = (() => {
     const preferredLocales: string[] = [];
 
     // Language routed to by middleware
-    const headerLocale = headersList.get(localeHeaderName);
-    if (headerLocale) preferredLocales.push(headerLocale);
-
-    const cookieLocale = cookieStore.get(localeCookieName);
+    const headerLocale = headersList.get(I18NConfig.getLocaleHeaderName());
+    if (headerLocale) {
+      preferredLocales.push(headerLocale);
+    }
+    const cookieLocale = cookieStore.get(I18NConfig.getLocaleCookieName());
     if (cookieLocale?.value) {
       preferredLocales.push(cookieLocale.value);
     }

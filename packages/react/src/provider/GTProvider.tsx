@@ -35,6 +35,7 @@ import fetchTranslations from '../utils/fetchTranslations';
 import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
 import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
 import { isSSREnabled } from './helpers/isSSREnabled';
+import { defaultLocaleCookieName } from '../utils/cookies';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -51,6 +52,8 @@ import { isSSREnabled } from './helpers/isSSREnabled';
  * @param {string} [_versionId] - The version ID for fetching translations.
  * @param {string} [devApiKey] - The API key for development environments.
  * @param {object} [metadata] - Additional metadata to pass to the context.
+ * @param {boolean} [ssr=isSSREnabled()] - Whether to enable server-side rendering.
+ * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the cookie to store the locale.
  * @param {React.ReactNode} [fallback = undefined] - Custom fallback to display while loading
  *
  * @returns {JSX.Element} The provider component for General Translation context.
@@ -70,6 +73,7 @@ export default function GTProvider({
   loadTranslations,
   fallback = undefined,
   ssr = isSSREnabled(),
+  localeCookieName = defaultLocaleCookieName,
   _versionId,
   ...metadata
 }: {
@@ -90,9 +94,9 @@ export default function GTProvider({
   loadTranslations?: CustomLoader;
   _versionId?: string;
   ssr?: boolean;
+  localeCookieName?: string;
   [key: string]: any;
 }): React.JSX.Element {
-
   // ---------- SANITIZATION ---------- //
 
   // Read env
@@ -109,6 +113,7 @@ export default function GTProvider({
     locales,
     locale: _locale,
     ssr,
+    localeCookieName,
   });
 
   // Translation at runtime during development is enabled
@@ -444,7 +449,6 @@ export default function GTProvider({
   // ----- RETURN ----- //
 
   const display = !!((!translationRequired || translations) && locale);
-  
 
   // hang until cache response, then render translations or loading state (when waiting on API response)
   return (

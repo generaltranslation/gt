@@ -1,9 +1,6 @@
 import React from 'react';
 import { TaggedElement, TaggedElementProps } from '../types/types';
 
-export const middlewareLocaleResetFlagName =
-  'generaltranslation.middleware.locale-reset';
-
 export function isValidTaggedElement(target: unknown): target is TaggedElement {
   return React.isValidElement<TaggedElementProps>(target);
 }

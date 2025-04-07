@@ -6,10 +6,9 @@ import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/providers';
 import { TranslationsObject } from '../types/types';
 import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
-import { localeCookieName } from 'generaltranslation/internal';
 import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
 import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
-import { middlewareLocaleResetFlagName } from '../utils/utils';
+import { defaultLocaleCookieName } from '../utils/cookies';
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -28,7 +27,8 @@ export default function ClientProvider({
   devApiKey,
   runtimeUrl,
   runtimeTranslationEnabled,
-  cookieName = localeCookieName,
+  resetLocaleCookieName,
+  localeCookieName = defaultLocaleCookieName,
 }: ClientProviderProps): React.JSX.Element {
   // ---------- SET UP ---------- //
 
@@ -45,16 +45,24 @@ export default function ClientProvider({
     _locale ? determineLocale(_locale, locales) || '' : ''
   );
 
-  // Check for an invalid cookie and correct it
+  // Monitor for changes in _locale parameter
+  useEffect(() => {
+    const newLocale = _locale ? determineLocale(_locale, locales) || '' : '';
+    if (newLocale !== locale) {
+      _setLocale(newLocale);
+    }
+  }, [_locale, locales]);
+
+  // Check for an invalid cookie
   useEffect(() => {
     const cookieLocale = document.cookie
       .split('; ')
-      .find((row) => row.startsWith(`${cookieName}=`))
+      .find((row) => row.startsWith(`${localeCookieName}=`))
       ?.split('=')[1];
     if (locale && cookieLocale && cookieLocale !== locale) {
-      document.cookie = `${cookieName}=;path=/`;
+      document.cookie = `${localeCookieName}=;path=/`;
     }
-  }, [locale]);
+  }, [locale, localeCookieName]);
 
   // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
   const setLocale = (newLocale: string): void => {
@@ -62,8 +70,8 @@ export default function ClientProvider({
     newLocale = determineLocale(newLocale, locales) || locale || defaultLocale;
 
     // persist locale
-    document.cookie = `${cookieName}=${newLocale};path=/`;
-    document.cookie = `${middlewareLocaleResetFlagName}=true;path=/`;
+    document.cookie = `${localeCookieName}=${newLocale};path=/`;
+    document.cookie = `${resetLocaleCookieName}=true;path=/`;
 
     // set locale
     _setLocale(newLocale);

@@ -38,6 +38,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var internal_1 = require("generaltranslation/internal");
 var internal_2 = require("gt-react/internal");
+var headers_1 = require("../../utils/headers");
+var cookies_1 = require("../../utils/cookies");
 var defaultWithGTConfigProps = {
     config: './gt.config.json',
     runtimeUrl: internal_1.defaultRuntimeApiUrl,
@@ -54,6 +56,13 @@ var defaultWithGTConfigProps = {
     renderSettings: internal_2.defaultRenderSettings,
     _usingPlugin: false,
     ignoreBrowserLocales: false,
+    headersAndCookies: {
+        localeHeaderName: headers_1.defaultLocaleHeaderName,
+        localeCookieName: internal_2.defaultLocaleCookieName,
+        referrerLocaleCookieName: cookies_1.defaultReferrerLocaleCookieName,
+        localeRoutingEnabledCookieName: cookies_1.defaultLocaleRoutingEnabledCookieName,
+        resetLocaleCookieName: cookies_1.defaultResetLocaleCookieName,
+    },
 };
 exports.default = defaultWithGTConfigProps;
 //# sourceMappingURL=defaultWithGTConfigProps.js.map
