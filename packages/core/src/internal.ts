@@ -3,11 +3,7 @@ export {
   defaultCacheUrl,
   defaultRuntimeApiUrl,
 } from './settings/settingsUrls';
-export {
-  libraryDefaultLocale,
-  localeCookieName,
-  localeHeaderName,
-} from './settings/settings';
+export { libraryDefaultLocale } from './settings/settings';
 export { pluralForms, isAcceptedPluralForm } from './settings/plurals';
 import _getPluralForm from './locales/getPluralForm';
 import { Content, JsxChild, JsxChildren, JsxElement } from './types';
