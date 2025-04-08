@@ -85,6 +85,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = GTProvider;
 var jsx_runtime_1 = require("react/jsx-runtime");
+var internal_1 = require("gt-react/internal");
 var react_1 = require("react");
 var getI18NConfig_1 = __importDefault(require("../config-dir/getI18NConfig"));
 var getLocale_1 = __importDefault(require("../request/getLocale"));
@@ -148,10 +149,12 @@ function GTProvider(_a) {
                             return _a = {}, _a[prefix] = acc, _a;
                         }, dictionary);
                     }
+                    // Merge dictionary with dictionary translations
+                    dictionary = (0, internal_1.mergeDictionaries)(dictionary, dictionaryTranslations);
                     return [4 /*yield*/, cachedTranslationsPromise];
                 case 7:
                     translations = _f.sent();
-                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, dictionaryTranslations: dictionaryTranslations, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, gtServicesEnabled: process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true' }, I18NConfig.getClientSideConfig(), { children: children })))];
+                    return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, gtServicesEnabled: process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true' }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });
     });

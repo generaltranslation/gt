@@ -26,7 +26,6 @@ export type GTContextType = {
   setLocale: (locale: string) => void;
   defaultLocale: string;
   translations: TranslationsObject | null;
-  dictionaryTranslations: DictionaryObject | null;
   translationRequired: boolean;
   dialectTranslationRequired: boolean;
   renderSettings: { method: RenderMethod; timeout?: number };
@@ -37,7 +36,6 @@ export type ClientProviderProps = {
   children: any;
   dictionary: Dictionary;
   initialTranslations: TranslationsObject;
-  dictionaryTranslations: DictionaryObject;
   locale: string;
   locales: string[];
   _versionId?: string;
