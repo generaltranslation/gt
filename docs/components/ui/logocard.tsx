@@ -119,6 +119,7 @@ const LogoCard = React.forwardRef<
     <div
       ref={ref}
       className={cn('logo-card', className)}
+      style={{"cursor": "pointer"}}
       onClick={handleClick}
       {...props}
     />
