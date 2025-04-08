@@ -96,37 +96,43 @@ var ClientProviderWrapper_1 = __importDefault(require("./ClientProviderWrapper")
  *
  * @param {React.ReactNode} children - The children components that will use the translation context.
  * @param {string} id - ID of a nested dictionary, so that only a subset of a large dictionary needs to be sent to the client.
+ * @param {string} locale - The locale to use for the translation context.
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
 function GTProvider(_a) {
     return __awaiter(this, arguments, void 0, function (_b) {
-        var I18NConfig, locale, defaultLocale, _c, translationRequired, dialectTranslationRequired, dictionaryTranslations, cachedTranslationsPromise, dictionary, _d, prefixPath, translations;
-        var children = _b.children, prefixId = _b.id;
-        return __generator(this, function (_e) {
-            switch (_e.label) {
+        var I18NConfig, locale, _c, defaultLocale, _d, translationRequired, dialectTranslationRequired, dictionaryTranslations, cachedTranslationsPromise, dictionary, _e, prefixPath, translations;
+        var children = _b.children, prefixId = _b.id, _locale = _b.locale;
+        return __generator(this, function (_f) {
+            switch (_f.label) {
                 case 0:
                     I18NConfig = (0, getI18NConfig_1.default)();
+                    _c = _locale;
+                    if (_c) return [3 /*break*/, 2];
                     return [4 /*yield*/, (0, getLocale_1.default)()];
                 case 1:
-                    locale = _e.sent();
-                    defaultLocale = I18NConfig.getDefaultLocale();
-                    _c = I18NConfig.requiresTranslation(locale), translationRequired = _c[0], dialectTranslationRequired = _c[1];
-                    return [4 /*yield*/, I18NConfig.getDictionaryTranslations(locale)];
+                    _c = (_f.sent());
+                    _f.label = 2;
                 case 2:
-                    dictionaryTranslations = (_e.sent()) || {};
+                    locale = _c;
+                    defaultLocale = I18NConfig.getDefaultLocale();
+                    _d = I18NConfig.requiresTranslation(locale), translationRequired = _d[0], dialectTranslationRequired = _d[1];
+                    return [4 /*yield*/, I18NConfig.getDictionaryTranslations(locale)];
+                case 3:
+                    dictionaryTranslations = (_f.sent()) || {};
                     cachedTranslationsPromise = translationRequired
                         ? I18NConfig.getCachedTranslations(locale)
                         : {};
-                    if (!prefixId) return [3 /*break*/, 3];
-                    _d = (0, getDictionary_1.getDictionaryEntry)(prefixId);
-                    return [3 /*break*/, 5];
-                case 3: return [4 /*yield*/, (0, getDictionary_1.default)()];
-                case 4:
-                    _d = _e.sent();
-                    _e.label = 5;
+                    if (!prefixId) return [3 /*break*/, 4];
+                    _e = (0, getDictionary_1.getDictionaryEntry)(prefixId);
+                    return [3 /*break*/, 6];
+                case 4: return [4 /*yield*/, (0, getDictionary_1.default)()];
                 case 5:
-                    dictionary = (_d) || {};
+                    _e = _f.sent();
+                    _f.label = 6;
+                case 6:
+                    dictionary = (_e) || {};
                     // Check provisional dictionary
                     if ((0, react_1.isValidElement)(dictionary) ||
                         Array.isArray(dictionary) ||
@@ -143,8 +149,8 @@ function GTProvider(_a) {
                         }, dictionary);
                     }
                     return [4 /*yield*/, cachedTranslationsPromise];
-                case 6:
-                    translations = _e.sent();
+                case 7:
+                    translations = _f.sent();
                     return [2 /*return*/, ((0, jsx_runtime_1.jsx)(ClientProviderWrapper_1.default, __assign({ dictionary: dictionary, initialTranslations: translations, dictionaryTranslations: dictionaryTranslations, locale: locale, locales: I18NConfig.getLocales(), defaultLocale: defaultLocale, translationRequired: translationRequired, dialectTranslationRequired: dialectTranslationRequired, gtServicesEnabled: process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true' }, I18NConfig.getClientSideConfig(), { children: children })))];
             }
         });

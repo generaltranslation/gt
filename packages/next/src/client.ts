@@ -10,6 +10,12 @@ import {
   useLocales,
   useSetLocale,
   useLocaleSelector,
+  Var,
+  Currency,
+  DateTime,
+  Num,
+  Plural,
+  Branch,
 } from 'gt-react/client';
 
 export {
@@ -23,4 +29,10 @@ export {
   useDict,
   LocaleSelector,
   useLocaleSelector,
+  Var,
+  Currency,
+  DateTime,
+  Num,
+  Plural,
+  Branch,
 };
