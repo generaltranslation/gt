@@ -43,6 +43,7 @@ import {
 
 import { GTContextType, ClientProviderProps } from './types/providers';
 import { defaultLocaleCookieName } from './utils/cookies';
+import mergeDictionaries from './provider/helpers/mergeDictionaries';
 
 export {
   addGTIdentifier,
@@ -87,4 +88,5 @@ export {
   RenderVariable,
   VariableProps,
   defaultLocaleCookieName,
+  mergeDictionaries,
 };

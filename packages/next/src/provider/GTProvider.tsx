@@ -1,4 +1,4 @@
-import { DictionaryEntry } from 'gt-react/internal';
+import { DictionaryEntry, mergeDictionaries } from 'gt-react/internal';
 import { isValidElement, ReactNode } from 'react';
 import getI18NConfig from '../config-dir/getI18NConfig';
 import getLocale from '../request/getLocale';
@@ -70,6 +70,9 @@ export default async function GTProvider({
     }, dictionary as Dictionary);
   }
 
+  // Merge dictionary with dictionary translations
+  dictionary = mergeDictionaries(dictionary, dictionaryTranslations);
+
   // Block until cache check resolves
   const translations = await cachedTranslationsPromise;
 
@@ -77,7 +80,6 @@ export default async function GTProvider({
     <ClientProvider
       dictionary={dictionary}
       initialTranslations={translations}
-      dictionaryTranslations={dictionaryTranslations}
       locale={locale}
       locales={I18NConfig.getLocales()}
       defaultLocale={defaultLocale}

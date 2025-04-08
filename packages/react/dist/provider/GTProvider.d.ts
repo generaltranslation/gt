@@ -1,5 +1,5 @@
 import React from 'react';
-import { CustomLoader, RenderMethod } from '../types/types';
+import { CustomLoader, RenderMethod, TranslationsObject } from '../types/types';
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -17,11 +17,12 @@ import { CustomLoader, RenderMethod } from '../types/types';
  * @param {object} [metadata] - Additional metadata to pass to the context.
  * @param {boolean} [ssr=isSSREnabled()] - Whether to enable server-side rendering.
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the cookie to store the locale.
+ * @param {TranslationsObject | null} [translations=null] - The translations to use for the context.
  * @param {React.ReactNode} [fallback = undefined] - Custom fallback to display while loading
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
-export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadDictionary, loadTranslations, fallback, ssr, localeCookieName, _versionId, ...metadata }: {
+export default function GTProvider({ children, projectId: _projectId, devApiKey: _devApiKey, dictionary: _dictionary, locales, defaultLocale, locale: _locale, cacheUrl, runtimeUrl, renderSettings, loadDictionary, loadTranslations, fallback, ssr, localeCookieName, translations: _translations, _versionId, ...metadata }: {
     children?: React.ReactNode;
     projectId?: string;
     devApiKey?: string;
@@ -35,6 +36,7 @@ export default function GTProvider({ children, projectId: _projectId, devApiKey:
         method: RenderMethod;
         timeout?: number;
     };
+    translations?: TranslationsObject | null;
     loadDictionary?: CustomLoader;
     loadTranslations?: CustomLoader;
     _versionId?: string;

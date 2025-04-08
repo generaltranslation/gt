@@ -26,7 +26,6 @@ import { TranslateContentCallback } from '../../types/runtime';
 export default function useCreateInternalUseDictFunction(
   dictionary: Dictionary | undefined,
   translations: TranslationsObject | null,
-  dictionaryTranslations: DictionaryObject | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
@@ -80,21 +79,6 @@ export default function useCreateInternalUseDictFunction(
 
       // Check: translation not required
       if (!translationRequired) return renderContent(source, [defaultLocale]);
-
-      // ----- CHECK DICTIONARY TRANSLATIONS ----- //
-
-      // Get dictionary translation
-      const dictionaryTranslation = dictionaryTranslations?.[id];
-
-      // Render translation
-      if (dictionaryTranslation) {
-        return renderContentToString(
-          splitStringToContent(dictionaryTranslation),
-          [locale, defaultLocale],
-          options.variables,
-          options.variablesOptions
-        );
-      }
 
       // ----- CHECK TRANSLATIONS ----- //
 

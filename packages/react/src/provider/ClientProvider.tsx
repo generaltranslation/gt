@@ -15,7 +15,6 @@ export default function ClientProvider({
   children,
   dictionary,
   initialTranslations,
-  dictionaryTranslations,
   locale: _locale,
   _versionId,
   defaultLocale,
@@ -120,7 +119,6 @@ export default function ClientProvider({
   const _internalUseDictFunction = useCreateInternalUseDictFunction(
     dictionary,
     translations,
-    dictionaryTranslations,
     locale,
     defaultLocale,
     translationRequired,
@@ -132,7 +130,7 @@ export default function ClientProvider({
 
   // ---------- RENDER LOGIC ---------- //
 
-  // Block rendering until all dictionary translations are resolved
+  // Block rendering until all translations are resolved
   const display = !!(!translationRequired || translations) && locale;
 
   return (
@@ -147,7 +145,6 @@ export default function ClientProvider({
         locales,
         defaultLocale,
         translations,
-        dictionaryTranslations: dictionaryTranslations,
         translationRequired,
         dialectTranslationRequired,
         renderSettings,

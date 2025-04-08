@@ -36,6 +36,8 @@ import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalU
 import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
 import { isSSREnabled } from './helpers/isSSREnabled';
 import { defaultLocaleCookieName } from '../utils/cookies';
+import loadDictionaryHelper from './helpers/loadDictionaryHelper';
+import mergeDictionaries from './helpers/mergeDictionaries';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -54,6 +56,7 @@ import { defaultLocaleCookieName } from '../utils/cookies';
  * @param {object} [metadata] - Additional metadata to pass to the context.
  * @param {boolean} [ssr=isSSREnabled()] - Whether to enable server-side rendering.
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the cookie to store the locale.
+ * @param {TranslationsObject | null} [translations=null] - The translations to use for the context.
  * @param {React.ReactNode} [fallback = undefined] - Custom fallback to display while loading
  *
  * @returns {JSX.Element} The provider component for General Translation context.
@@ -74,6 +77,7 @@ export default function GTProvider({
   fallback = undefined,
   ssr = isSSREnabled(),
   localeCookieName = defaultLocaleCookieName,
+  translations: _translations = null,
   _versionId,
   ...metadata
 }: {
@@ -90,6 +94,7 @@ export default function GTProvider({
     method: RenderMethod;
     timeout?: number;
   };
+  translations?: TranslationsObject | null;
   loadDictionary?: CustomLoader;
   loadTranslations?: CustomLoader;
   _versionId?: string;
@@ -151,25 +156,23 @@ export default function GTProvider({
     let storeResults = true;
 
     (async () => {
-      let result;
-      // Check for [defaultLocale.json] file
-      try {
-        result = await loadDictionary(defaultLocale);
-      } catch {}
+      // Load dictionary for default locale
+      const defaultLocaleDictionary =
+        (await loadDictionaryHelper(defaultLocale, loadDictionary)) || {};
 
-      // Check the simplified locale name ('en' instead of 'en-US')
-      const languageCode = getLocaleProperties(defaultLocale)?.languageCode;
-      if (!dictionary && languageCode && languageCode !== defaultLocale) {
-        try {
-          result = await loadDictionary(languageCode);
-        } catch (error) {
-          console.warn(dictionaryMissingWarning, error);
-        }
-      }
+      // Load dictionary for locale
+      const localeDictionary =
+        (await loadDictionaryHelper(locale, loadDictionary)) || {};
+
+      // Merge dictionaries
+      const mergedDictionary = mergeDictionaries(
+        defaultLocaleDictionary,
+        localeDictionary
+      );
 
       // Update dictionary
       if (storeResults) {
-        setDictionary(result || {});
+        setDictionary(mergedDictionary || {});
       }
     })();
 
@@ -177,7 +180,7 @@ export default function GTProvider({
     return () => {
       storeResults = false;
     };
-  }, [dictionary, loadDictionary]);
+  }, [dictionary, loadDictionary, locale, defaultLocale]);
 
   // ---------- MEMOIZED CHECKS ---------- //
 
@@ -248,18 +251,6 @@ export default function GTProvider({
     return [translationRequired, dialectTranslationRequired];
   }, [defaultLocale, locale, locales]);
 
-  // ---------- TRANSLATION DICTIONARY STATE ---------- //
-
-  // Null -> not loaded, {} -> Loaded (or not required/load failed)
-  const [dictionaryTranslations, setDictionaryTranslations] =
-    useState<DictionaryObject | null>(translationRequired ? null : {});
-
-  // Reset dictionaryTranslations if locale changes (null to trigger a new load)
-  useEffect(
-    () => setDictionaryTranslations(translationRequired ? null : {}),
-    [locale]
-  );
-
   // ---------- TRANSLATION STATE ---------- //
 
   /** Key for translation tracking:
@@ -280,7 +271,10 @@ export default function GTProvider({
    */
 
   const [translations, setTranslations] = useState<TranslationsObject | null>(
-    translationRequired && loadTranslationsType !== 'disabled' ? null : {}
+    _translations ||
+      (translationRequired && loadTranslationsType !== 'disabled')
+      ? null
+      : {}
   );
 
   // Reset translations if locale changes (null to trigger a new cache fetch)
@@ -306,36 +300,6 @@ export default function GTProvider({
       setTranslations,
       ...metadata,
     });
-
-  // ---------- ATTEMPT TO LOAD DICTIONARY TRANSLATOINS ---------- //
-
-  useEffect(() => {
-    // Early return if no need to load dictionaryTranslations
-    if (!loadDictionary || dictionaryTranslations || !translationRequired)
-      return;
-
-    // Load dictionaryTranslations
-    let storeResults = true;
-    (async () => {
-      let result = {};
-      try {
-        result = await loadDictionary(locale);
-      } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(customLoadDictionaryWarning(locale), error);
-        }
-      }
-
-      if (storeResults) {
-        setDictionaryTranslations(result);
-      }
-    })();
-
-    // cancel load if a dep changes
-    return () => {
-      storeResults = false;
-    };
-  }, [locale, loadDictionary, translationRequired, dictionaryTranslations]);
 
   // ---------- ATTEMPT TO LOAD TRANSLATIONS ---------- //
 
@@ -436,7 +400,6 @@ export default function GTProvider({
   const _internalUseDictFunction = useCreateInternalUseDictFunction(
     dictionary,
     translations,
-    dictionaryTranslations,
     locale,
     defaultLocale,
     translationRequired,
@@ -464,7 +427,6 @@ export default function GTProvider({
         setLocale,
         defaultLocale,
         translations,
-        dictionaryTranslations: dictionaryTranslations,
         translationRequired,
         dialectTranslationRequired,
         projectId,
