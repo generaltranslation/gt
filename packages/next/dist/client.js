@@ -1,7 +1,7 @@
 "use strict";
 'use client';
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useLocaleSelector = exports.LocaleSelector = exports.useDict = exports.useDefaultLocale = exports.useSetLocale = exports.useLocales = exports.useLocale = exports.useGT = exports.T = exports.GTClientProvider = void 0;
+exports.Branch = exports.Plural = exports.Num = exports.DateTime = exports.Currency = exports.Var = exports.useLocaleSelector = exports.LocaleSelector = exports.useDict = exports.useDefaultLocale = exports.useSetLocale = exports.useLocales = exports.useLocale = exports.useGT = exports.T = exports.GTClientProvider = void 0;
 var client_1 = require("gt-react/client");
 Object.defineProperty(exports, "T", { enumerable: true, get: function () { return client_1.T; } });
 Object.defineProperty(exports, "useGT", { enumerable: true, get: function () { return client_1.useGT; } });
@@ -13,4 +13,10 @@ Object.defineProperty(exports, "GTClientProvider", { enumerable: true, get: func
 Object.defineProperty(exports, "useLocales", { enumerable: true, get: function () { return client_1.useLocales; } });
 Object.defineProperty(exports, "useSetLocale", { enumerable: true, get: function () { return client_1.useSetLocale; } });
 Object.defineProperty(exports, "useLocaleSelector", { enumerable: true, get: function () { return client_1.useLocaleSelector; } });
+Object.defineProperty(exports, "Var", { enumerable: true, get: function () { return client_1.Var; } });
+Object.defineProperty(exports, "Currency", { enumerable: true, get: function () { return client_1.Currency; } });
+Object.defineProperty(exports, "DateTime", { enumerable: true, get: function () { return client_1.DateTime; } });
+Object.defineProperty(exports, "Num", { enumerable: true, get: function () { return client_1.Num; } });
+Object.defineProperty(exports, "Plural", { enumerable: true, get: function () { return client_1.Plural; } });
+Object.defineProperty(exports, "Branch", { enumerable: true, get: function () { return client_1.Branch; } });
 //# sourceMappingURL=client.js.map
