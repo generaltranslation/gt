@@ -151,7 +151,7 @@ export default function GTProvider({
   // Resolve dictionary when not provided, but using custom dictionary loader
   useEffect(() => {
     // Early return if dictionary is provided or not loading translation dictionary
-    if (dictionary || !loadDictionary) return;
+    if (!loadDictionary) return;
 
     let storeResults = true;
 
@@ -180,7 +180,7 @@ export default function GTProvider({
     return () => {
       storeResults = false;
     };
-  }, [dictionary, loadDictionary, locale, defaultLocale]);
+  }, [loadDictionary, locale, defaultLocale]);
 
   // ---------- MEMOIZED CHECKS ---------- //
 
