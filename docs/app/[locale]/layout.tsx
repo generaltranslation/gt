@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import { baseOptions } from '@/app/[locale]/layout.config';
 import { source } from '@/lib/source';
 import { I18nProvider } from 'fumadocs-ui/i18n';
-import { getLocale, GTProvider } from 'gt-next/server';
+import { GTProvider } from 'gt-next';
 import { getLocaleProperties } from 'generaltranslation';
 import { SiGithub } from '@icons-pack/react-simple-icons';
 
@@ -50,9 +50,15 @@ function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-export default async function Layout({ children }: { children: ReactNode }) {
-  const locale = await getLocale();
-  const options = await baseOptions();
+export default async function Layout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const options = await baseOptions(locale);
   const locales = [
     {
       name: capitalize(getLocaleProperties('en', 'en').languageName),
@@ -96,10 +102,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
             }[locale]
           }
         >
-          <GTProvider>
-            {/* <Banner variant="rainbow" id="home_banner">
-              <T>Contact us</T>
-            </Banner> */}
+          <GTProvider locale={locale}>
             <RootProvider>
               <DocsLayout
                 sidebar={{

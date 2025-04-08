@@ -9,7 +9,8 @@ description: API Reference for the <Tx> component
 The `<Tx>` component translates jsx content at runtime.
 
 ```jsx
-<Tx> // [!code highlight]
+{/* [!code highlight] */}
+<Tx>
     Today, I went to
     {" the store"}
     <p>
@@ -87,7 +88,8 @@ import { Tx } from 'gt-next';
 
 export default function Greeting() {
     return (
-        <Tx id="greeting"> // [!code highlight]
+        {/* [!code highlight] */}
+        <Tx id="greeting">
             Hello, world!
         </Tx> // [!code highlight]
     );
@@ -105,7 +107,8 @@ import { Tx, Var } from 'gt-next';
 export default function DynamicGreeting(user) {
     return (
         <Tx>
-            Hello, <Var>{user.name}</Var>! // [!code highlight]
+            {/* [!code highlight] */}
+            Hello, <Var>{user.name}</Var>
         </Tx>
     );
 }
@@ -123,7 +126,8 @@ export default function ItemCount({ count }) {
             <Plural n={count}  // [!code highlight] 
                 singular={<>You have an item.</>}  // [!code highlight] 
                 plural={<>You have items.</>}  // [!code highlight] 
-            />  // [!code highlight]
+            // [!code highlight]
+            />  
         </Tx>
     );
 }
@@ -144,11 +148,15 @@ const InvalidTranslation = ({ children }) => (<div><b>No translation</b></div>);
 export default function Example() {
     return (
         <Tx>
-            <div><b>This is valid!</b></div> // will be translated // [!code highlight]
+            {/* [!code highlight] */}
+            <div><b>This is valid!</b></div> // will be translated 
 
-            <ValidTranslation> // will be translated // [!code highlight]
-                Hello, world! // [!code highlight]
-            </ValidTranslation> // [!code highlight]
+            {/* [!code highlight] */}
+            <ValidTranslation> // will be translated 
+            {/* [!code highlight] */}
+                Hello, world!
+            {/* [!code highlight] */}
+            </ValidTranslation>
 
             <InvalidTranslation /> // will not be translated
         </Tx>

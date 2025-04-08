@@ -1,0 +1,153 @@
+# General Translation
+
+> General Translation is an entire internationalization (i18n) stack that allows you to ship multilingual apps quickly and easily. It includes open-source developer libraries for React and Next.js, an AI translation service, and a complete infrastructure package for serving translation content.
+
+This documentation covers everything from getting started to advanced features, APIs, and best practices for working with General Translation. The documentation is organized into key sections covering different aspects of the General Translation ecosystem.
+
+General Translation provides a seamless end-to-end i18n solution that integrates naturally into your development workflow. With minimal configuration, it handles the entire pipeline from content extraction to translation delivery. Developers can write code naturally without cluttering their codebase with complex i18n logic.
+
+The core components include:
+
+- **gt-react**: Core React library with hooks and components for translations and formatting. Supports in-line translations without the need for a dictionary.
+
+- **gt-next**: Extends gt-react with a Next.js integration, providing SSR support, dynamic content translation, and more.
+
+- **gtx-cli**: Command-line tool for managing translations and content. Connects to the General Translation API to automatically translate projects with AI. The CLI tool also supports translating different file formats, including JSON, MDX, and Markdown.
+
+
+## Cli
+- [<T> Wrapping Behavior](https://generaltranslation.com/en/docs/cli/reference/wrapping): Specific behavior of how the CLI tool wraps the `<T>` component
+- [Automatic Translation](https://generaltranslation.com/en/docs/cli): How to automatically translate your project using the General Translation CLI tool
+- [Automatic Translation](https://generaltranslation.com/en/docs/cli/tutorials/quickstart): How to automatically translate your project using the General Translation CLI tool
+- [Configuration](https://generaltranslation.com/en/docs/cli/reference/config): Config docs for the gt.config.json file
+- [Generate Source Template](https://generaltranslation.com/en/docs/cli/generate): How to generate a source template for your project
+- [GT Libraries](https://generaltranslation.com/en/docs/cli/tutorials/gt): Automatically translate your project with GT Libraries
+- [i18next](https://generaltranslation.com/en/docs/cli/tutorials/i18next-quickstart): Automatically translate your i18next project (<5 min)
+- [Init](https://generaltranslation.com/en/docs/cli/init): Configures your projects GT settings.
+- [JSON Files](https://generaltranslation.com/en/docs/cli/tutorials/json): How to use General Translation to set up automatic translation for your projects JSON files
+- [Markdown](https://generaltranslation.com/en/docs/cli/tutorials/mdx): How to use General Translation to set up automatic translation for your projects Markdown files
+- [next-intl](https://generaltranslation.com/en/docs/cli/tutorials/next-intl-quickstart): Automatically translate your next-intl project (<5 min)
+- [Scan](https://generaltranslation.com/en/docs/cli/scan): Scans your project for translatable content
+- [Setup](https://generaltranslation.com/en/docs/cli/setup): Integrates gt-next or gt-react with your project.
+- [Translate](https://generaltranslation.com/en/docs/cli/translate): How to translate your project
+- [Usage Guide](https://generaltranslation.com/en/docs/cli/reference/usage): Usage guide for the GT command line tool
+
+## Faqs
+- [FAQs](https://generaltranslation.com/en/docs/faqs)
+
+## Generaltranslation
+- [Formatting variables](https://generaltranslation.com/en/docs/generaltranslation/formatting): TBD
+- [Language codes](https://generaltranslation.com/en/docs/generaltranslation/codes): TBD
+- [Project APIs](https://generaltranslation.com/en/docs/generaltranslation/project): TBD
+- [Translation APIs](https://generaltranslation.com/en/docs/generaltranslation/translation): TBD
+
+## Index
+- [Introduction](https://generaltranslation.com/en/docs/index): Docs for General Translations localization libraries
+
+## Key-concepts
+- [Dynamic Content](https://generaltranslation.com/en/docs/key-concepts/dynamic-content): A brief overview of working with Dynamic Content in GT.
+- [On-Demand vs Proactive Translation](https://generaltranslation.com/en/docs/key-concepts/tx-loading): What is the difference between performing translation on-demand and translating ahead of time?
+- [Private Information](https://generaltranslation.com/en/docs/key-concepts/private-information): A brief overview of working with Private Information in GT.
+
+## Next
+- [<Branch>](https://generaltranslation.com/en/docs/next/api/components/branch): API Reference for the <Branch> component
+- [<Currency>](https://generaltranslation.com/en/docs/next/api/components/currency): API Reference for the <Currency> component
+- [<DateTime>](https://generaltranslation.com/en/docs/next/api/components/datetime): API Reference for the <DateTime> component
+- [<GTProvider>](https://generaltranslation.com/en/docs/next/api/components/gtprovider): API Reference for the <GTProvider> component
+- [<LocaleSelector>](https://generaltranslation.com/en/docs/next/api/components/localeSelector): API Reference for the <LocaleSelector> component
+- [<Num>](https://generaltranslation.com/en/docs/next/api/components/num): API Reference for the <Num> component
+- [<Plural>](https://generaltranslation.com/en/docs/next/api/components/plural): API Reference for the <Plural> component
+- [<T>](https://generaltranslation.com/en/docs/next/api/components/t): API Reference for the <T> component
+- [<T> Reference](https://generaltranslation.com/en/docs/next/reference/t-reference): This is a detailed dive into the <T> component and the gt-next library.
+- [<Tx>](https://generaltranslation.com/en/docs/next/api/components/tx): API Reference for the <Tx> component
+- [<Var>](https://generaltranslation.com/en/docs/next/api/components/var): API Reference for the <Var> component
+- [Add gt-next](https://generaltranslation.com/en/docs/next/tutorials/examples/currency-converter/preptx): Lets get your project ready for translation!
+- [Branching Components](https://generaltranslation.com/en/docs/next/reference/using-branching-components): Comprehensive reference for Branching Components in gt-next
+- [Changing Languages](https://generaltranslation.com/en/docs/next/reference/change-language): How to change the language of your Next.js app
+- [Config File](https://generaltranslation.com/en/docs/next/reference/gt-config): Configuration file for gt-next.
+- [createNextMiddleware()](https://generaltranslation.com/en/docs/next/api/middleware/createNextMiddleware): API Reference for the createNextMiddleware() method.
+- [Deploy to Production (5m)](https://generaltranslation.com/en/docs/next/tutorials/quickdeploy): Lets deploy your Next.js app with GT.
+- [Dictionaries Reference](https://generaltranslation.com/en/docs/next/reference/dictionary-reference): An overview of the Dictionary Pattern
+- [DictionaryTranslationOptions](https://generaltranslation.com/en/docs/next/api/types/DictionaryTranslationOptions): API Reference for the DictionaryTranslationOptions type
+- [getDefaultLocale()](https://generaltranslation.com/en/docs/next/api/helpers/getDefaultLocale): API Reference for the getDefaultLocale server-side method
+- [getDict()](https://generaltranslation.com/en/docs/next/api/dictionary/getDict): API Reference for the getDict server-side translation function
+- [getGT()](https://generaltranslation.com/en/docs/next/api/strings/getGT): API Reference for the getGT() string translation function
+- [getLocale()](https://generaltranslation.com/en/docs/next/api/helpers/getLocale): API Reference for the getLocale server-side method
+- [i18n Configuration](https://generaltranslation.com/en/docs/next/reference/i18n-configuration): Configuring i18n behavior in your Next.js application
+- [i18n Routing](https://generaltranslation.com/en/docs/next/reference/i18n-routing): A step by step guide on adding internationalization (i18n) routing to your application
+- [InlineTranslationOptions](https://generaltranslation.com/en/docs/next/api/types/InlineTranslationOptions): API Reference for the InlineTranslationOptions type
+- [loadDictionary()](https://generaltranslation.com/en/docs/next/api/config/load-dictionary): API Reference for the loadDictionary() function.
+- [loadTranslations()](https://generaltranslation.com/en/docs/next/api/config/load-translations): API Reference for the loadTranslations() function.
+- [Local Translations](https://generaltranslation.com/en/docs/next/reference/local-tx): Setup local translations for your Next.js app
+- [Manage Locales](https://generaltranslation.com/en/docs/next/reference/locale-management): How to manage your apps locales
+- [Migrating to gt-next](https://generaltranslation.com/en/docs/next/reference/stand-alone): Migrating from another i18n library to gt-next
+- [Next.js Quickstart](https://generaltranslation.com/en/docs/next): Internationalize your Next.js App in 5 minutes with gt-next
+- [Next.js Quickstart](https://generaltranslation.com/en/docs/next/tutorials/quickstart): Internationalize your Next.js App in 5 minutes with gt-next
+- [Right-to-Left Support](https://generaltranslation.com/en/docs/next/reference/rtl): A step by step guide on adding Right-to-Left (RTL) support to your application
+- [RuntimeTranslationOptions](https://generaltranslation.com/en/docs/next/api/types/RuntimeTranslationOptions): API Reference for the RuntimeTranslationOptions type
+- [Setup](https://generaltranslation.com/en/docs/next/tutorials/dictionary/setup): Set up a tutorial project
+- [Setup](https://generaltranslation.com/en/docs/next/tutorials/examples/currency-converter/setup): Set up a tutorial project
+- [Speedrun Next.js](https://generaltranslation.com/en/docs/next/tutorials/examples/next-speedrun): Lets speedrun creating a new app and internationalizing it with GT.
+- [The CLI Tool](https://generaltranslation.com/en/docs/next/reference/cli): The General Translations CLI tool
+- [Translating Strings](https://generaltranslation.com/en/docs/next/tutorials/translating-strings): How to translate strings
+- [tx()](https://generaltranslation.com/en/docs/next/api/strings/tx): API Reference for the tx string translation function
+- [useDefaultLocale()](https://generaltranslation.com/en/docs/next/api/helpers/useDefaultLocale): API Reference for the useDefaultLocale hook
+- [useDict()](https://generaltranslation.com/en/docs/next/api/dictionary/useDict): API Reference for the useDict hook
+- [useGT()](https://generaltranslation.com/en/docs/next/api/strings/useGT): API Reference for the useGT() string translation function
+- [useLocale](https://generaltranslation.com/en/docs/next/api/utilities/useLocale): API Reference for the useLocale hook
+- [useLocale()](https://generaltranslation.com/en/docs/next/api/helpers/useLocale): API Reference for the useLocale hook
+- [useLocales](https://generaltranslation.com/en/docs/next/api/utilities/useLocales): API Reference for the useLocales hook
+- [useLocaleSelector](https://generaltranslation.com/en/docs/next/api/utilities/useLocaleSelector): API Reference for the useLocaleSelector hook
+- [useLocaleSelector()](https://generaltranslation.com/en/docs/next/api/helpers/useLocaleSelector): API Reference for the useLocaleSelector hook
+- [useSetLocale](https://generaltranslation.com/en/docs/next/api/utilities/useSetLocale): API Reference for the useSetLocale hook
+- [useSetLocale()](https://generaltranslation.com/en/docs/next/api/helpers/useSetLocale): API Reference for the useSetLocale hook
+- [Using Branches](https://generaltranslation.com/en/docs/next/tutorials/examples/currency-converter/branches): Lets add some plurals and conditional behavior
+- [Using the <T> Component](https://generaltranslation.com/en/docs/next/tutorials/examples/currency-converter/t): Lets do some translation!
+- [Using Variables](https://generaltranslation.com/en/docs/next/tutorials/examples/currency-converter/variables): Lets add some variables to our translations
+- [Variable Components](https://generaltranslation.com/en/docs/next/reference/using-variable-components): Comprehensive reference for Variable Components in gt-next
+- [withGTConfig()](https://generaltranslation.com/en/docs/next/api/config/withGTConfig): API Reference for the withGTConfig(), formerly initGT()
+
+## React
+- [<Branch>](https://generaltranslation.com/en/docs/react/api/components/branch): API Reference for the <Branch> component
+- [<Currency>](https://generaltranslation.com/en/docs/react/api/components/currency): API Reference for the <Currency> component
+- [<DateTime>](https://generaltranslation.com/en/docs/react/api/components/datetime): API Reference for the <DateTime> component
+- [<GTProvider>](https://generaltranslation.com/en/docs/react/api/components/gtprovider): API Reference for the <GTProvider> component
+- [<LocaleSelector>](https://generaltranslation.com/en/docs/react/api/components/localeSelector): API Reference for the <LocaleSelector> component
+- [<Num>](https://generaltranslation.com/en/docs/react/api/components/num): API Reference for the <Num> component
+- [<Plural>](https://generaltranslation.com/en/docs/react/api/components/plural): API Reference for the <Plural> component
+- [<T>](https://generaltranslation.com/en/docs/react/api/components/t): API Reference for the <T> component
+- [<T> Reference](https://generaltranslation.com/en/docs/react/reference/t-reference): This is a detailed dive into the <T> component and the gt-react library.
+- [<Var>](https://generaltranslation.com/en/docs/react/api/components/var): API Reference for the <Var> component
+- [Branching Components](https://generaltranslation.com/en/docs/react/reference/using-branching-components): Comprehensive reference for Branching Components in gt-react
+- [Changing Language](https://generaltranslation.com/en/docs/react/reference/change-language): How to change the language of your React app
+- [Deploying to Production (5m)](https://generaltranslation.com/en/docs/react/tutorials/quickdeploy): Lets deploy your react app with GT.
+- [Dictionaries Reference](https://generaltranslation.com/en/docs/react/reference/dictionary-reference): An overview of the Dictionary Pattern
+- [DictionaryTranslationOptions](https://generaltranslation.com/en/docs/react/api/types/DictionaryTranslationOptions): API Reference for the DictionaryTranslationOptions type
+- [InlineTranslationOptions](https://generaltranslation.com/en/docs/react/api/types/InlineTranslationOptions): API Reference for the InlineTranslationOptions type
+- [loadDictionary()](https://generaltranslation.com/en/docs/react/api/config/load-dictionary): API Reference for the loadDictionary() function.
+- [loadTranslations()](https://generaltranslation.com/en/docs/react/api/config/load-translations): API Reference for the loadTranslations() function.
+- [Local Translations](https://generaltranslation.com/en/docs/react/reference/local-tx): Setup local translations for your React app
+- [Manage Locales](https://generaltranslation.com/en/docs/react/reference/locale-management): How to manage your apps locales
+- [React Quickstart](https://generaltranslation.com/en/docs/react): Internationalize your React App in 5 minutes with gt-react
+- [React Quickstart](https://generaltranslation.com/en/docs/react/tutorials/quickstart): Internationalize your React App in 5 minutes with gt-react
+- [The CLI Tool](https://generaltranslation.com/en/docs/react/reference/cli): The General Translations CLI tool
+- [Translating Strings](https://generaltranslation.com/en/docs/react/reference/translating-strings): How to translate strings
+- [useDefaultLocale()](https://generaltranslation.com/en/docs/react/api/helpers/useDefaultLocale): API Reference for the useDefaultLocale hook
+- [useDict()](https://generaltranslation.com/en/docs/react/api/dictionary/useDict): API Reference for the useDict hook
+- [useGT()](https://generaltranslation.com/en/docs/react/api/strings/useGT): API Reference for the useGT() string translation function
+- [useLocale()](https://generaltranslation.com/en/docs/react/api/helpers/useLocale): API Reference for the useLocale hook
+- [useLocaleSelector()](https://generaltranslation.com/en/docs/react/api/helpers/useLocaleSelector): API Reference for the useLocaleSelector hook
+- [useSetLocale()](https://generaltranslation.com/en/docs/react/api/helpers/useSetLocale): API Reference for the useSetLocale hook
+- [Variable Components](https://generaltranslation.com/en/docs/react/reference/using-variable-components): Comprehensive reference for Variable Components in gt-react
+
+## Reference
+- [Examples](https://generaltranslation.com/en/docs/reference/examples): Example projects using General Translation
+- [Locale Strings](https://generaltranslation.com/en/docs/reference/locale-strings): How to interpret locale strings in GT
+- [Open Source](https://generaltranslation.com/en/docs/reference/standalone): General Translation libraries are open source!
+- [Supported Languages](https://generaltranslation.com/en/docs/reference/supported-locales): List of currently supported languages for translation
+- [Terminology](https://generaltranslation.com/en/docs/reference/terminology): A guide to the key terminology used in the General Translation libraries
+
+## Usage
+- [<T>](https://generaltranslation.com/en/docs/usage/t): How to use the <T> component
+- [API Keys](https://generaltranslation.com/en/docs/usage/apikeys): How to use API keys with General Translation
+- [Dictionaries](https://generaltranslation.com/en/docs/usage/dictionary): How to use dictionaries

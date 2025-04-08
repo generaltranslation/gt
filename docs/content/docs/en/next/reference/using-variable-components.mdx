@@ -148,10 +148,10 @@ export default function OrderSummary({ order }) {
   return (
     <>
       <T id="orderSummary">
-        Your total is <Currency currency={curr}>{order.total}</Currency>.
+        Your total is <Currency currency={"USD"}>{order.total}</Currency>.
       </T>
       <Badge>
-        <Currency value={order.total} currency={curr} />
+        <Currency value={order.total} currency={"USD"} />
       </Badge>
     </>
   );
