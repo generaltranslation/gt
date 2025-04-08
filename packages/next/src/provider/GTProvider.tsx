@@ -12,19 +12,22 @@ import ClientProvider from './ClientProviderWrapper';
  *
  * @param {React.ReactNode} children - The children components that will use the translation context.
  * @param {string} id - ID of a nested dictionary, so that only a subset of a large dictionary needs to be sent to the client.
+ * @param {string} locale - The locale to use for the translation context.
  *
  * @returns {JSX.Element} The provider component for General Translation context.
  */
 export default async function GTProvider({
   children,
   id: prefixId,
+  locale: _locale,
 }: {
   children?: ReactNode;
   id?: string;
+  locale?: string;
 }) {
   // ---------- SETUP ---------- //
   const I18NConfig = getI18NConfig();
-  const locale = await getLocale();
+  const locale = _locale || (await getLocale());
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired, dialectTranslationRequired] =
     I18NConfig.requiresTranslation(locale);
