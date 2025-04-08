@@ -3,7 +3,6 @@ import Logo from '@/components/Logo';
 
 import { Earth, MessageSquareText } from 'lucide-react';
 import { SiDiscord } from '@icons-pack/react-simple-icons';
-import { getDict } from 'gt-next/server';
 
 /**
  * Shared layout configurations
@@ -12,8 +11,15 @@ import { getDict } from 'gt-next/server';
  * Home Layout: app/(home)/layout.tsx
  * Docs Layout: app/docs/layout.tsx
  */
-export async function baseOptions(): Promise<BaseLayoutProps> {
-  const t = await getDict();
+export async function baseOptions(locale: string): Promise<BaseLayoutProps> {
+  const translations = {
+    en: (await import('@/content/ui.en.json')).default,
+    zh: (await import('@/content/ui.zh.json')).default,
+    de: (await import('@/content/ui.de.json')).default,
+    fr: (await import('@/content/ui.fr.json')).default,
+    es: (await import('@/content/ui.es.json')).default,
+    ja: (await import('@/content/ui.ja.json')).default,
+  }[locale];
   return {
     i18n: true,
     nav: {
@@ -27,13 +33,13 @@ export async function baseOptions(): Promise<BaseLayoutProps> {
     },
     links: [
       {
-        text: t('dashboard'),
+        text: translations?.dashboard || 'Dashboard',
         url: '/dashboard',
         active: 'nested-url',
         icon: <Earth />,
       },
       {
-        text: t('blog'),
+        text: translations?.blog || 'Blog',
         url: '/blog',
         active: 'nested-url',
         icon: <MessageSquareText />,

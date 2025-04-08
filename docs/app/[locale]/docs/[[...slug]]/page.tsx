@@ -29,8 +29,8 @@ import {
   AllLogoCards,
 } from '@/components/ui/logocard';
 import SupportedLocales from '@/components/SupportedLocales';
-import { getLocale } from 'gt-next/server';
 import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
+
 const customMdxComponents = {
   a: (props: React.ComponentProps<'a'>) => (
     <a
@@ -46,11 +46,10 @@ const customMdxComponents = {
   SupportedLocales,
 };
 export default async function Page(props: {
-  params: Promise<{ slug?: string[] }>;
+  params: Promise<{ slug?: string[]; locale: string }>;
 }) {
-  const params = await props.params;
-  const locale = await getLocale();
-  const page = source.getPage(params.slug, locale);
+  const { slug, locale } = await props.params;
+  const page = source.getPage(slug, locale);
   if (!page) notFound();
 
   const MDX = page.data.body;
@@ -106,21 +105,41 @@ export default async function Page(props: {
 }
 
 export async function generateStaticParams() {
-  return source.generateParams();
+  return source.generateParams('slug', 'locale');
 }
 
 export async function generateMetadata(props: {
-  params: Promise<{ slug?: string[] }>;
+  params: Promise<{ slug?: string[]; locale: string }>;
 }) {
-  const params = await props.params;
-  const locale = await getLocale();
-  const page = source.getPage(params.slug, locale);
+  const { slug, locale } = await props.params;
+  const page = source.getPage(slug, locale);
   if (!page) notFound();
+
+  // Construct the canonical URL path
+  const slugPath = slug ? slug.join('/') : '';
+  const canonicalPath = `/${locale}/docs/${slugPath}`;
+
+  // Clean up the path (remove trailing slashes, handle empty slugs)
+  const cleanCanonicalPath =
+    canonicalPath
+      .replace(/\/+$/, '') // Remove trailing slashes
+      .replace(/\/+/g, '/') || // Replace multiple slashes with single slash
+    '/docs'; // Default to /docs if path is empty
 
   return {
     title: page.data.title,
     description: page.data.description,
+    // Add canonical URL pointing to your main domain
+    alternates: {
+      canonical: `https://generaltranslation.com${cleanCanonicalPath}`,
+    },
+    // Optional: Add Open Graph metadata with the canonical URL
+    openGraph: {
+      title: page.data.title,
+      description: page.data.description,
+      url: `https://generaltranslation.com${cleanCanonicalPath}`,
+    },
   };
 }
 
-export const dynamic = 'force-dynamic'; // Always render on server at request time
+// export const dynamic = 'force-dynamic'; // Always render on server at request time
