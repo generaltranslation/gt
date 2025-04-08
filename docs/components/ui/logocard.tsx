@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { useLayoutEffect, useState } from 'react';
+import Image from 'next/image';
 
 const BASE_URL = 'https://gt-docs-ten.vercel.app/';
 const REACT_QUICK_START = '/docs/react/tutorials/quickstart';
@@ -119,7 +120,7 @@ const LogoCard = React.forwardRef<
     <div
       ref={ref}
       className={cn('logo-card', className)}
-      style={{"cursor": "pointer"}}
+      style={{ cursor: 'pointer' }}
       onClick={handleClick}
       {...props}
     />
@@ -147,7 +148,7 @@ const LogoCardImage = React.forwardRef<
 
   return (
     <div ref={ref} className={className} {...props}>
-      <img
+      <Image
         src={logoSrc}
         alt={LOGOS[src]?.alt || 'Logo'}
         className="logo-card-image"
