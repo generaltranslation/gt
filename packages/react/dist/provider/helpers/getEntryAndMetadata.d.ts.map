@@ -1,1 +1,0 @@
-{"version":3,"file":"getEntryAndMetadata.d.ts","sourceRoot":"","sources":["../../../src/provider/helpers/getEntryAndMetadata.ts"],"names":[],"mappings":"AAAA,OAAO,EACL,eAAe,EAEf,QAAQ,EACT,MAAM,mBAAmB,CAAC;AAE3B,MAAM,CAAC,OAAO,UAAU,mBAAmB,CACzC,KAAK,EAAE,eAAe,GACrB;IACD,KAAK,EAAE,MAAM,CAAC;IACd,QAAQ,CAAC,EAAE,QAAQ,CAAC;CACrB,CAUA"}

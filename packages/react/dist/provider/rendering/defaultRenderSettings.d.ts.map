@@ -1,1 +1,0 @@
-{"version":3,"file":"defaultRenderSettings.d.ts","sourceRoot":"","sources":["../../../src/provider/rendering/defaultRenderSettings.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,YAAY,EAAE,MAAM,mBAAmB,CAAC;AASjD,eAAO,MAAM,qBAAqB,EAAE;IAClC,MAAM,EAAE,YAAY,CAAC;IACrB,OAAO,EAAE,MAAM,CAAC;CAIR,CAAC"}

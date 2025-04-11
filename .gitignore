@@ -9,3 +9,4 @@ _test_cli
 .env
 .env.local
 _testing
+dist/
