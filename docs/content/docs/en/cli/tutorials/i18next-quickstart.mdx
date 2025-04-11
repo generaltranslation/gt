@@ -17,7 +17,7 @@ We will follow these 4 steps:
     Install [`gtx-cli`](/docs/cli)
   </Step>
   <Step>
-    Initialize your project with the [`gtx-cli init`](/docs/cli/init) command
+    Create a `gt.config.json` file
   </Step>
   <Step>
     Run [`gtx-cli translate`](/docs/cli/translate#translate-json)
@@ -70,13 +70,28 @@ Install the `gtx-cli` tool in your project.
   </Tab>
 </Tabs>
 
-## Step 3: Initialize your project with the `gtx-cli init` command
+## Step 3: Create a `gt.config.json` file
 
-Run the `gtx-cli init` command to configure your project.
+Create a `gt.config.json` file in the root of your project.
 
-```bash
-npx gtx-cli init
+```json title="gt.config.json" copy
+{
+  "defaultLocale": "en",
+  "locales": ["zh", "es", "ja"],
+  "files": {
+    "json": {
+      "include": ["messages/[locale]/*.json"]
+    },
+  },
+}
 ```
+Feel free to customize the `gt.config.json` file to your needs. See the [configuration](/docs/cli/reference/config) docs for more information.
+
+Update the `json` file format such that the `include` path matches your project structure.
+
+<Callout>
+  Translations will preserve the original string syntax.
+</Callout>
 
 ## Step 4: Add the `gtx-cli translate` command to your build process
 
