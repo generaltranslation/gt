@@ -3,8 +3,13 @@
 import main from './index';
 import dotenv from 'dotenv';
 
-dotenv.config({ path: '.env' });
-dotenv.config({ path: '.env.local', override: true });
-dotenv.config({ path: '.env.production', override: true });
+for (const path of [
+    ".env",
+    ".env.local",
+    ".env.production",
+    ".env.production.local"
+]) {
+    dotenv.config({ path, override: true });
+};
 
 main();
