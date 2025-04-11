@@ -1,0 +1,5 @@
+# GitHub workflow files
+/.github/workflows/ @General-Translation/maintainers
+
+# Package definitions
+/packages/*/package.json @General-Translation/maintainers

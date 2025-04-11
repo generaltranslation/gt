@@ -6,9 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { useLayoutEffect, useState } from 'react';
-import Image from 'next/image';
 
-const BASE_URL = 'https://gt-docs-ten.vercel.app/';
+const BASE_URL = '/';
 const REACT_QUICK_START = '/docs/react/tutorials/quickstart';
 const NEXT_QUICK_START = '/docs/next/tutorials/quickstart';
 
@@ -79,10 +78,10 @@ const LOGOS: Record<
     alt: 'React Logo',
   },
   other: {
-    lightLogo: '/gt-logo-light.svg',
-    darkLogo: '/gt-logo-dark.svg',
-    lightWordmark: '/gt-logo-light.svg',
-    darkWordmark: '/gt-logo-dark.svg',
+    lightLogo: 'gt-logo-light.svg',
+    darkLogo: 'gt-logo-dark.svg',
+    lightWordmark: 'gt-logo-light.svg',
+    darkWordmark: 'gt-logo-dark.svg',
     name: 'Other',
     href: REACT_QUICK_START,
     alt: 'General Translation Inc. Logo',
@@ -148,7 +147,7 @@ const LogoCardImage = React.forwardRef<
 
   return (
     <div ref={ref} className={className} {...props}>
-      <Image
+      <img
         src={logoSrc}
         alt={LOGOS[src]?.alt || 'Logo'}
         className="logo-card-image"

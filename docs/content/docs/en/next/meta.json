@@ -19,6 +19,7 @@
     "reference/rtl",
     "reference/translating-strings",
     "reference/using-variable-components",
+    "reference/ssg",
     "---Tutorials---",
     "tutorials/quickstart",
     "tutorials/quickdeploy",
