@@ -15,7 +15,7 @@ on:
       release_type:
         description: 'Release type'
         required: false
-        default: 'minor'
+        default: 'patch'
         type: choice
         options:
           - patch
@@ -34,12 +34,12 @@ on:
         default: 'auto'
 
 jobs:
-  detect-changes:
-    name: Detect Changed Packages
+  release-please:
+    name: Release Please
     runs-on: ubuntu-latest
     outputs:
-      changed_packages: ${{ steps.detect-packages.outputs.changed_packages }}
-      has_changes: ${{ steps.detect-packages.outputs.has_changes }}
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      paths_released: ${{ steps.release.outputs.paths_released }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,109 +47,30 @@ jobs:
 
       - name: Check for manual package selection
         id: check-manual
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.package != ''
         run: |
-          if [[ -n "${{ github.event.inputs.package }}" ]]; then
-            PACKAGE_JSON=$(echo "${{ github.event.inputs.package }}" | jq -R -s -c 'split(" ") | map(select(length > 0))')
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "changed_packages=$PACKAGE_JSON" >> $GITHUB_OUTPUT
-            echo "Manually selected package: ${{ github.event.inputs.package }}"
-            exit 0
-          fi
-
-      - name: Detect changed packages
-        id: detect-packages
-        if: steps.check-manual.outputs.has_changes != 'true'
-        run: |
-          # Get all package directories
-          PACKAGE_DIRS=$(find packages -maxdepth 1 -mindepth 1 -type d | sort)
-
-          # Initialize arrays for changed packages
-          CHANGED_PACKAGES=()
-
-          # Process each package directory
-          for PKG_DIR in $PACKAGE_DIRS; do
-            PKG_NAME=$(basename $PKG_DIR)
-            
-            # Check if package.json exists
-            if [ -f "$PKG_DIR/package.json" ]; then
-              PKG_FULLNAME=$(node -p "try { require('./$PKG_DIR/package.json').name } catch(e) { '' }")
-              
-              if [[ -n "$PKG_FULLNAME" ]]; then
-                echo "Checking $PKG_FULLNAME for changes..."
-                
-                # Find the latest tag for this package
-                LATEST_TAG=$(git tag -l "$PKG_FULLNAME@*" | sort -V | tail -n 1 || echo "")
-                
-                # If no tag exists, consider the package changed
-                if [[ -z "$LATEST_TAG" ]]; then
-                  echo "No previous tag found for $PKG_FULLNAME, considering it changed"
-                  CHANGED_PACKAGES+=("$PKG_NAME")
-                else
-                  # Check if there are changes since the latest tag
-                  CHANGES=$(git diff --name-only $LATEST_TAG..HEAD -- $PKG_DIR || true)
-                  
-                  if [[ -n "$CHANGES" ]]; then
-                    echo "Changes detected in $PKG_FULLNAME since tag $LATEST_TAG"
-                    CHANGED_PACKAGES+=("$PKG_NAME")
-                  else
-                    echo "No changes detected in $PKG_FULLNAME since tag $LATEST_TAG"
-                  fi
-                fi
-              fi
-            fi
-          done
-
-          # Convert the array to JSON for GitHub Actions output
-          PACKAGES_JSON=$(printf '%s\n' "${CHANGED_PACKAGES[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
-
-          # Set the output variables
-          if [[ ${#CHANGED_PACKAGES[@]} -gt 0 ]]; then
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "changed_packages=$PACKAGES_JSON" >> $GITHUB_OUTPUT
-            echo "Detected changes in packages: ${CHANGED_PACKAGES[*]}"
-          else
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "changed_packages=[]" >> $GITHUB_OUTPUT
-            echo "No package changes detected"
-          fi
-
-  release-please:
-    name: Release Please
-    needs: detect-changes
-    if: needs.detect-changes.outputs.has_changes == 'true'
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package: ${{ fromJson(needs.detect-changes.outputs.changed_packages) }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get package details
-        id: package-details
-        run: |
-          PKG_DIR="packages/${{ matrix.package }}"
-          PKG_NAME=$(node -p "require('./$PKG_DIR/package.json').name")
-          echo "name=$PKG_NAME" >> $GITHUB_OUTPUT
-          echo "directory=$PKG_DIR" >> $GITHUB_OUTPUT
+          echo "Manually selected package: ${{ github.event.inputs.package }}"
+          echo "Using release type: ${{ github.event.inputs.release_type || 'patch' }}"
 
       - name: Release Please
-        id: release-please
-        uses: googleapis/release-please-action@v3
+        id: release
+        uses: googleapis/release-please-action@v4
         with:
+          token: ${{ secrets.GH_PAT }}
           command: ${{ github.event.inputs.release_type != '' && 'release-pr' || github.event_name == 'workflow_dispatch' && 'release-pr' || 'manifest' }}
           default-branch: main
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           release-as: ${{ github.event.inputs.release_type }}
-          path: ${{ steps.package-details.outputs.directory }}
-          component: ${{ matrix.package }}
+          path: ${{ github.event.inputs.package != '' && format('packages/{0}', github.event.inputs.package) || '' }}
+          component: ${{ github.event.inputs.package }}
+          monorepo-tags: true
+          debug: true
 
   publish:
     name: Publish Packages
-    needs: [detect-changes, release-please]
-    if: needs.release-please.outputs.release_created
+    needs: [release-please]
+    if: needs.release-please.outputs.releases_created == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -172,39 +93,39 @@ jobs:
       - name: Determine release tag
         id: release-tag
         run: |
-          VERSION="${{ needs.release-please.outputs.version }}"
           MANUAL_TAG="${{ github.event.inputs.npm_tag }}"
-
+          PATHS_RELEASED="${{ needs.release-please.outputs.paths_released }}"
+          
+          # Default to latest tag
+          NPM_TAG="latest"
+          
+          # Use manually specified tag if provided and not "auto"
           if [[ "$MANUAL_TAG" != "" && "$MANUAL_TAG" != "auto" ]]; then
-            echo "npm_tag=$MANUAL_TAG" >> $GITHUB_OUTPUT
-            echo "Using manually specified npm tag: $MANUAL_TAG"
-          elif [[ "$VERSION" == *"-alpha"* ]]; then
-            echo "npm_tag=alpha" >> $GITHUB_OUTPUT
-            echo "Using alpha tag for version $VERSION"
-          elif [[ "$VERSION" == *"-beta"* ]]; then
-            echo "npm_tag=beta" >> $GITHUB_OUTPUT
-            echo "Using beta tag for version $VERSION"
-          elif [[ "$VERSION" == *"-rc"* ]]; then
-            echo "npm_tag=rc" >> $GITHUB_OUTPUT
-            echo "Using rc tag for version $VERSION"
+            NPM_TAG="$MANUAL_TAG"
+            echo "Using manually specified npm tag: $NPM_TAG"
           else
-            echo "npm_tag=latest" >> $GITHUB_OUTPUT
-            echo "Using latest tag for version $VERSION"
+            # Check for prerelease versions (alpha, beta, rc)
+            # This provides a fallback but release-please will handle most of this
+            echo "Using default tag: $NPM_TAG"
           fi
+          
+          echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
+          echo "Released paths: $PATHS_RELEASED"
 
       - name: Publish to npm
         run: |
-          for PKG_DIR in packages/*/; do
-            if [[ -f "$PKG_DIR/package.json" ]]; then
-              PKG_NAME=$(node -p "require('./$PKG_DIR/package.json').name")
-              TAG="${{ needs.release-please.outputs.tag_name }}"
-              
-              if [[ "$TAG" == "$PKG_NAME@"* ]]; then
-                echo "Publishing $PKG_NAME with tag ${{ steps.release-tag.outputs.npm_tag }}"
-                cd $PKG_DIR
-                npm publish --access public --tag ${{ steps.release-tag.outputs.npm_tag }}
-                cd ../..
-              fi
+          PATHS_RELEASED="${{ needs.release-please.outputs.paths_released }}"
+          PATHS_ARRAY=($(echo "$PATHS_RELEASED" | tr ',' '\n'))
+          
+          echo "Publishing packages"
+          
+          for PKG_PATH in "${PATHS_ARRAY[@]}"; do
+            if [[ -f "$PKG_PATH/package.json" ]]; then
+              PKG_NAME=$(node -p "require('./$PKG_PATH/package.json').name")
+              echo "Publishing $PKG_NAME with tag ${{ steps.release-tag.outputs.npm_tag }}"
+              cd $PKG_PATH
+              npm publish --access public --tag ${{ steps.release-tag.outputs.npm_tag }}
+              cd - > /dev/null
             fi
           done
         env:
