@@ -61,9 +61,9 @@ jobs:
           default-branch: main
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          release-as: ${{ github.event.inputs.release_type }}
+          release-type: node
+          package-name: ${{ github.event.inputs.package != '' && format('@gt-libraries/{0}', github.event.inputs.package) || '' }}
           path: ${{ github.event.inputs.package != '' && format('packages/{0}', github.event.inputs.package) || '' }}
-          component: ${{ github.event.inputs.package }}
           monorepo-tags: true
           debug: true
 
@@ -76,6 +76,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: main # Make sure we're on the main branch with the newly created release tags
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -94,7 +95,6 @@ jobs:
         id: release-tag
         run: |
           MANUAL_TAG="${{ github.event.inputs.npm_tag }}"
-          PATHS_RELEASED="${{ needs.release-please.outputs.paths_released }}"
           
           # Default to latest tag
           NPM_TAG="latest"
@@ -104,26 +104,68 @@ jobs:
             NPM_TAG="$MANUAL_TAG"
             echo "Using manually specified npm tag: $NPM_TAG"
           else
-            # Check for prerelease versions (alpha, beta, rc)
-            # This provides a fallback but release-please will handle most of this
             echo "Using default tag: $NPM_TAG"
           fi
           
           echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
-          echo "Released paths: $PATHS_RELEASED"
+          echo "Release created: ${{ needs.release-please.outputs.releases_created }}"
+
+      - name: List packages for publishing
+        id: list-packages
+        run: |
+          # If a specific package was released via manual workflow
+          if [[ -n "${{ github.event.inputs.package }}" ]]; then
+            PKG_DIR="packages/${{ github.event.inputs.package }}"
+            if [[ -f "$PKG_DIR/package.json" ]]; then
+              echo "Found package $PKG_DIR for publishing"
+              echo "packages=$PKG_DIR" >> $GITHUB_OUTPUT
+            else
+              echo "Package $PKG_DIR not found"
+              exit 1
+            fi
+          else
+            # For automatic detection, look for packages with new tags
+            PACKAGES=""
+            for PKG_DIR in packages/*/; do
+              if [[ -f "$PKG_DIR/package.json" ]]; then
+                PKG_NAME=$(node -p "require('./$PKG_DIR/package.json').name")
+                echo "Checking package $PKG_NAME for new releases..."
+                
+                # If it was released, it should have a tag matching the release
+                LATEST_TAG=$(git tag -l "$PKG_NAME@*" | sort -V | tail -n1)
+                if [[ -n "$LATEST_TAG" ]]; then
+                  # Check if this tag was just created (in the last 5 minutes)
+                  TAG_DATE=$(git log -1 --format=%at "$LATEST_TAG")
+                  NOW=$(date +%s)
+                  
+                  # If the tag is newer than 5 minutes, consider it as just released
+                  if (( NOW - TAG_DATE < 300 )); then
+                    echo "Found recently released package: $PKG_NAME"
+                    PACKAGES="${PACKAGES}${PKG_DIR},"
+                  fi
+                fi
+              fi
+            done
+            
+            # Remove trailing comma
+            PACKAGES=${PACKAGES%,}
+            echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
+            echo "Packages to publish: $PACKAGES"
+          fi
 
       - name: Publish to npm
+        if: steps.list-packages.outputs.packages != ''
         run: |
-          PATHS_RELEASED="${{ needs.release-please.outputs.paths_released }}"
-          PATHS_ARRAY=($(echo "$PATHS_RELEASED" | tr ',' '\n'))
+          PACKAGES="${{ steps.list-packages.outputs.packages }}"
+          IFS=',' read -ra PKG_DIRS <<< "$PACKAGES"
           
           echo "Publishing packages"
           
-          for PKG_PATH in "${PATHS_ARRAY[@]}"; do
-            if [[ -f "$PKG_PATH/package.json" ]]; then
-              PKG_NAME=$(node -p "require('./$PKG_PATH/package.json').name")
+          for PKG_DIR in "${PKG_DIRS[@]}"; do
+            if [[ -f "$PKG_DIR/package.json" ]]; then
+              PKG_NAME=$(node -p "require('./$PKG_DIR/package.json').name")
               echo "Publishing $PKG_NAME with tag ${{ steps.release-tag.outputs.npm_tag }}"
-              cd $PKG_PATH
+              cd $PKG_DIR
               npm publish --access public --tag ${{ steps.release-tag.outputs.npm_tag }}
               cd - > /dev/null
             fi
