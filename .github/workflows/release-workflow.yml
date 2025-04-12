@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       package:
-        description: 'Package directory name (under packages/)'
+        description: 'Package to release (e.g., core, cli)'
         required: false
         type: string
       release_type:
@@ -22,20 +22,22 @@ on:
           - minor
           - major
       npm_tag:
-        description: 'NPM tag (overrides automatic detection)'
+        description: 'NPM tag'
         required: false
         type: choice
         options:
-          - auto
           - latest
           - alpha
           - beta
           - rc
-        default: 'auto'
+        default: 'latest'
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   release-please:
-    name: Release Please
     runs-on: ubuntu-latest
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
@@ -45,128 +47,92 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for manual package selection
-        id: check-manual
+      # Workflow dispatch for manual release
+      - name: Manual release
+        id: manual-release
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.package != ''
         run: |
-          echo "Manually selected package: ${{ github.event.inputs.package }}"
-          echo "Using release type: ${{ github.event.inputs.release_type || 'patch' }}"
+          echo "Manual release requested for package: ${{ github.event.inputs.package }}"
+          echo "Release type: ${{ github.event.inputs.release_type }}"
+          echo "NPM tag: ${{ github.event.inputs.npm_tag }}"
 
-      - name: Release Please
+      # Run release-please action
+      - uses: googleapis/release-please-action@v4
         id: release
-        uses: googleapis/release-please-action@v4
         with:
-          token: ${{ secrets.GH_PAT }}
-          command: ${{ github.event.inputs.release_type != '' && 'release-pr' || github.event_name == 'workflow_dispatch' && 'release-pr' || 'manifest' }}
-          default-branch: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: node
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          release-type: node
-          package-name: ${{ github.event.inputs.package != '' && format('@gt-libraries/{0}', github.event.inputs.package) || '' }}
+          command: ${{ github.event.inputs.package != '' && 'release-pr' || 'manifest' }}
           path: ${{ github.event.inputs.package != '' && format('packages/{0}', github.event.inputs.package) || '' }}
+          component: ${{ github.event.inputs.package != '' && github.event.inputs.package || '' }}
+          release-as: ${{ github.event.inputs.release_type != '' && github.event.inputs.release_type || '' }}
           monorepo-tags: true
-          debug: true
 
   publish:
-    name: Publish Packages
-    needs: [release-please]
-    if: needs.release-please.outputs.releases_created == 'true'
+    needs: release-please
+    if: ${{ needs.release-please.outputs.releases_created }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: main # Make sure we're on the main branch with the newly created release tags
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
+      - run: npm run build
 
-      - name: Build package
-        run: npm run build
-
-      - name: Determine release tag
-        id: release-tag
+      # Determine which packages to publish
+      - name: Determine packages to publish
+        id: packages-to-publish
         run: |
-          MANUAL_TAG="${{ github.event.inputs.npm_tag }}"
-          
-          # Default to latest tag
-          NPM_TAG="latest"
-          
-          # Use manually specified tag if provided and not "auto"
-          if [[ "$MANUAL_TAG" != "" && "$MANUAL_TAG" != "auto" ]]; then
-            NPM_TAG="$MANUAL_TAG"
-            echo "Using manually specified npm tag: $NPM_TAG"
-          else
-            echo "Using default tag: $NPM_TAG"
-          fi
-          
-          echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
-          echo "Release created: ${{ needs.release-please.outputs.releases_created }}"
-
-      - name: List packages for publishing
-        id: list-packages
-        run: |
-          # If a specific package was released via manual workflow
+          # For workflow dispatch (manual release)
           if [[ -n "${{ github.event.inputs.package }}" ]]; then
-            PKG_DIR="packages/${{ github.event.inputs.package }}"
-            if [[ -f "$PKG_DIR/package.json" ]]; then
-              echo "Found package $PKG_DIR for publishing"
-              echo "packages=$PKG_DIR" >> $GITHUB_OUTPUT
+            PACKAGE_DIR="packages/${{ github.event.inputs.package }}"
+            if [[ -f "$PACKAGE_DIR/package.json" ]]; then
+              echo "package_dirs=$PACKAGE_DIR" >> $GITHUB_OUTPUT
+              echo "npm_tag=${{ github.event.inputs.npm_tag || 'latest' }}" >> $GITHUB_OUTPUT
             else
-              echo "Package $PKG_DIR not found"
+              echo "Error: $PACKAGE_DIR/package.json not found"
               exit 1
             fi
+          # For automatic release via release-please
           else
-            # For automatic detection, look for packages with new tags
-            PACKAGES=""
+            PACKAGE_DIRS=""
+            # Parse release-please output to identify which packages were released
             for PKG_DIR in packages/*/; do
               if [[ -f "$PKG_DIR/package.json" ]]; then
                 PKG_NAME=$(node -p "require('./$PKG_DIR/package.json').name")
-                echo "Checking package $PKG_NAME for new releases..."
-                
-                # If it was released, it should have a tag matching the release
-                LATEST_TAG=$(git tag -l "$PKG_NAME@*" | sort -V | tail -n1)
-                if [[ -n "$LATEST_TAG" ]]; then
-                  # Check if this tag was just created (in the last 5 minutes)
-                  TAG_DATE=$(git log -1 --format=%at "$LATEST_TAG")
-                  NOW=$(date +%s)
-                  
-                  # If the tag is newer than 5 minutes, consider it as just released
-                  if (( NOW - TAG_DATE < 300 )); then
-                    echo "Found recently released package: $PKG_NAME"
-                    PACKAGES="${PACKAGES}${PKG_DIR},"
-                  fi
+                # Check if this package was released in this run
+                if [[ "${{ needs.release-please.outputs.paths_released }}" == *"$PKG_DIR"* ]]; then
+                  PACKAGE_DIRS="${PACKAGE_DIRS}${PKG_DIR},"
+                  echo "Package to publish: $PKG_NAME ($PKG_DIR)"
                 fi
               fi
             done
             
             # Remove trailing comma
-            PACKAGES=${PACKAGES%,}
-            echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
-            echo "Packages to publish: $PACKAGES"
+            PACKAGE_DIRS=${PACKAGE_DIRS%,}
+            echo "package_dirs=$PACKAGE_DIRS" >> $GITHUB_OUTPUT
+            echo "npm_tag=latest" >> $GITHUB_OUTPUT
           fi
 
-      - name: Publish to npm
-        if: steps.list-packages.outputs.packages != ''
+      # Publish packages
+      - name: Publish packages to npm
+        if: steps.packages-to-publish.outputs.package_dirs != ''
         run: |
-          PACKAGES="${{ steps.list-packages.outputs.packages }}"
-          IFS=',' read -ra PKG_DIRS <<< "$PACKAGES"
-          
-          echo "Publishing packages"
-          
-          for PKG_DIR in "${PKG_DIRS[@]}"; do
-            if [[ -f "$PKG_DIR/package.json" ]]; then
-              PKG_NAME=$(node -p "require('./$PKG_DIR/package.json').name")
-              echo "Publishing $PKG_NAME with tag ${{ steps.release-tag.outputs.npm_tag }}"
-              cd $PKG_DIR
-              npm publish --access public --tag ${{ steps.release-tag.outputs.npm_tag }}
+          IFS=',' read -ra DIRS <<< "${{ steps.packages-to-publish.outputs.package_dirs }}"
+          for dir in "${DIRS[@]}"; do
+            if [[ -f "$dir/package.json" ]]; then
+              echo "Publishing $dir with tag ${{ steps.packages-to-publish.outputs.npm_tag }}"
+              cd $dir
+              npm publish --access public --tag ${{ steps.packages-to-publish.outputs.npm_tag }}
               cd - > /dev/null
             fi
           done
