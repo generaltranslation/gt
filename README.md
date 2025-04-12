@@ -139,29 +139,3 @@ Usage of the libraries is documented on our [docs](https://generaltranslation.co
 ## Contributing
 
 We welcome any contributions to our libraries. Please submit a pull request!
-
-## CI/CD Workflows
-
-This repository uses GitHub Actions for continuous integration and deployment:
-
-### Package CI Workflow
-
-The `package-ci.yml` workflow runs when changes are pushed to packages in the `packages/` directory:
-
-1. Detects which packages have been changed
-2. Runs CI for each changed package (build steps)
-3. Automatically creates a version bump PR that:
-   - Bumps the package.json version (patch)
-   - Opens a pull request with the version change
-
-### Package Release Workflow
-
-The `package-release.yml` workflow runs when a version bump PR is merged to main:
-
-1. Detects which packages have version changes
-2. For each package with a version change:
-   - Builds the package
-   - Runs `npm run release` to publish to npm
-   - Creates a GitHub release with the new version tag
-
-You can also manually trigger a release for a specific package using the workflow dispatch.
