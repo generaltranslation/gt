@@ -110,8 +110,9 @@ jobs:
             for PKG_DIR in packages/*/; do
               if [[ -f "$PKG_DIR/package.json" ]]; then
                 PKG_NAME=$(node -p "require('./$PKG_DIR/package.json').name")
-                # Check if this package was released in this run
-                if [[ "${{ needs.release-please.outputs.paths_released }}" == *"$PKG_DIR"* ]]; then
+                PKG_PATH=${PKG_DIR%/}
+                # Check if this package was released by looking for path-specific release_created output
+                if [[ "${{ toJSON(needs.release-please.outputs) }}" == *"\"$PKG_PATH--release_created\":\"true\""* ]]; then
                   PACKAGE_DIRS="${PACKAGE_DIRS}${PKG_DIR},"
                   echo "Package to publish: $PKG_NAME ($PKG_DIR)"
                 fi

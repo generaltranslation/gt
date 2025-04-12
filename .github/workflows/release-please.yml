@@ -2,6 +2,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'packages/**'
+  workflow_dispatch:
+    inputs:
+      package_path:
+        description: 'Package path to release (leave empty for all packages)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -10,14 +19,75 @@ permissions:
 
 name: release-please
 jobs:
+  determine-package:
+    runs-on: ubuntu-latest
+    outputs:
+      package_path: ${{ steps.set-path.outputs.package_path }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Determine package path
+        id: set-path
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.package_path }}" ]]; then
+            # Manual trigger with specified package
+            echo "package_path=${{ github.event.inputs.package_path }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+            
+            # Count how many package directories have changes
+            CLI_CHANGES=$(echo "$CHANGED_FILES" | grep -c "^packages/cli/" || echo 0)
+            CORE_CHANGES=$(echo "$CHANGED_FILES" | grep -c "^packages/core/" || echo 0)
+            NEXT_CHANGES=$(echo "$CHANGED_FILES" | grep -c "^packages/next/" || echo 0)
+            REACT_CHANGES=$(echo "$CHANGED_FILES" | grep -c "^packages/react/" || echo 0)
+            LOCALES_CHANGES=$(echo "$CHANGED_FILES" | grep -c "^packages/supported-locales/" || echo 0)
+            
+            # Calculate the total number of packages with changes
+            CLI_HAS_CHANGES=$([[ $CLI_CHANGES -gt 0 ]] && echo 1 || echo 0)
+            CORE_HAS_CHANGES=$([[ $CORE_CHANGES -gt 0 ]] && echo 1 || echo 0)
+            NEXT_HAS_CHANGES=$([[ $NEXT_CHANGES -gt 0 ]] && echo 1 || echo 0)
+            REACT_HAS_CHANGES=$([[ $REACT_CHANGES -gt 0 ]] && echo 1 || echo 0)
+            LOCALES_HAS_CHANGES=$([[ $LOCALES_CHANGES -gt 0 ]] && echo 1 || echo 0)
+            
+            TOTAL_CHANGED_PACKAGES=$(($CLI_HAS_CHANGES + $CORE_HAS_CHANGES + $NEXT_HAS_CHANGES + $REACT_HAS_CHANGES + $LOCALES_HAS_CHANGES))
+            
+            # If only one package changed, use that specific path
+            if [[ $TOTAL_CHANGED_PACKAGES -eq 1 ]]; then
+              if [[ $CLI_CHANGES -gt 0 ]]; then
+                echo "package_path=packages/cli" >> $GITHUB_OUTPUT
+              elif [[ $CORE_CHANGES -gt 0 ]]; then
+                echo "package_path=packages/core" >> $GITHUB_OUTPUT
+              elif [[ $NEXT_CHANGES -gt 0 ]]; then
+                echo "package_path=packages/next" >> $GITHUB_OUTPUT
+              elif [[ $REACT_CHANGES -gt 0 ]]; then
+                echo "package_path=packages/react" >> $GITHUB_OUTPUT
+              elif [[ $LOCALES_CHANGES -gt 0 ]]; then
+                echo "package_path=packages/supported-locales" >> $GITHUB_OUTPUT
+              fi
+            else
+              # Multiple packages or no packages changed - process all packages
+              echo "package_path=" >> $GITHUB_OUTPUT
+            fi
+          else
+            # Default: empty means all packages
+            echo "package_path=" >> $GITHUB_OUTPUT
+          fi
+          
   release-please:
     runs-on: ubuntu-latest
+    needs: determine-package
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: node
+          include-component-in-tag: true
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          path: ${{ needs.determine-package.outputs.package_path }}
+          
       # The logic below handles the npm publication:
       - uses: actions/checkout@v4
         # these if statements ensure that a publication only occurs when
@@ -28,10 +98,35 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
         if: ${{ steps.release.outputs.release_created }}
-
-      - run: npm ci && npm run build
+        
+      # Extract tag name from the release output for dynamic publishing
+      - name: Set release tags
+        id: set-tags
         if: ${{ steps.release.outputs.release_created }}
-      - run: npm publish
+        run: |
+          echo "CLI_TAG=$(echo '${{ steps.release.outputs["packages/cli--tag_name"] }}' | grep -oP 'v\d+\.\d+\.\d+-\K\w+' || echo 'latest')" >> $GITHUB_ENV
+          echo "CORE_TAG=$(echo '${{ steps.release.outputs["packages/core--tag_name"] }}' | grep -oP 'v\d+\.\d+\.\d+-\K\w+' || echo 'latest')" >> $GITHUB_ENV
+          echo "NEXT_TAG=$(echo '${{ steps.release.outputs["packages/next--tag_name"] }}' | grep -oP 'v\d+\.\d+\.\d+-\K\w+' || echo 'latest')" >> $GITHUB_ENV
+          echo "REACT_TAG=$(echo '${{ steps.release.outputs["packages/react--tag_name"] }}' | grep -oP 'v\d+\.\d+\.\d+-\K\w+' || echo 'latest')" >> $GITHUB_ENV
+          echo "LOCALES_TAG=$(echo '${{ steps.release.outputs["packages/supported-locales--tag_name"] }}' | grep -oP 'v\d+\.\d+\.\d+-\K\w+' || echo 'latest')" >> $GITHUB_ENV
+
+      - run: npm ci --workspace=packages/cli && npm run release:${{ env.CLI_TAG }} --workspace=packages/cli
+        if: ${{ steps.release.outputs['packages/cli--release_created'] }}
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
-        if: ${{ steps.release.outputs.release_created }}
+      - run: npm ci --workspace=packages/core && npm run release:${{ env.CORE_TAG }} --workspace=packages/core
+        if: ${{ steps.release.outputs['packages/core--release_created'] }}
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+      - run: npm ci --workspace=packages/next && npm run release:${{ env.NEXT_TAG }} --workspace=packages/next
+        if: ${{ steps.release.outputs['packages/next--release_created'] }}
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+      - run: npm ci --workspace=packages/react && npm run release:${{ env.REACT_TAG }} --workspace=packages/react
+        if: ${{ steps.release.outputs['packages/react--release_created'] }}
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+      - run: npm ci --workspace=packages/supported-locales && npm run release:${{ env.LOCALES_TAG }} --workspace=packages/supported-locales
+        if: ${{ steps.release.outputs['packages/supported-locales--release_created'] }}
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
