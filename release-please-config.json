@@ -1,37 +1,24 @@
 {
-  "bootstrap-sha": "main",
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "node",
-  "prerelease-type": "alpha",
-  "bump-minor-pre-major": true,
-  "bump-patch-for-minor-pre-major": true,
   "pull-request-title-pattern": "chore${scope}: release${component} ${version}",
   "pull-request-header": "Release PR for GT Libraries",
   "pull-request-footer": "This PR was created by GitHub Actions",
   "packages": {
     "packages/cli": {
-      "release-type": "node",
-      "component": "cli",
-      "package-name": "gtx-cli"
+      "release-type": "node"
     },
     "packages/core": {
-      "release-type": "node",
-      "component": "core",
-      "package-name": "generaltranslation"
+      "release-type": "node"
     },
     "packages/next": {
-      "release-type": "node",
-      "component": "next",
-      "package-name": "gt-next"
+      "release-type": "node"
     },
     "packages/react": {
-      "release-type": "node",
-      "component": "react",
-      "package-name": "gt-react"
+      "release-type": "node"
     },
     "packages/supported-locales": {
-      "release-type": "node",
-      "component": "supported-locales",
-      "package-name": "@generaltranslation/supported-locales"
+      "release-type": "node"
     }
   }
 }
