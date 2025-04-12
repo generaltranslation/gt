@@ -8,10 +8,30 @@
   "pull-request-header": "Release PR for GT Libraries",
   "pull-request-footer": "This PR was created by GitHub Actions",
   "packages": {
-    "packages/cli": {},
-    "packages/core": {},
-    "packages/next": {},
-    "packages/react": {},
-    "packages/supported-locales": {}
+    "packages/cli": {
+      "release-type": "node",
+      "component": "cli",
+      "package-name": "gtx-cli"
+    },
+    "packages/core": {
+      "release-type": "node",
+      "component": "core",
+      "package-name": "generaltranslation"
+    },
+    "packages/next": {
+      "release-type": "node",
+      "component": "next",
+      "package-name": "gt-next"
+    },
+    "packages/react": {
+      "release-type": "node",
+      "component": "react",
+      "package-name": "gt-react"
+    },
+    "packages/supported-locales": {
+      "release-type": "node",
+      "component": "supported-locales",
+      "package-name": "@generaltranslation/supported-locales"
+    }
   }
 }
