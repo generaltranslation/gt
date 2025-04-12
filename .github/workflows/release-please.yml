@@ -104,11 +104,42 @@ jobs:
         id: set-tags
         if: ${{ steps.release.outputs.release_created }}
         run: |
-          echo "CLI_TAG=$(echo '${{ steps.release.outputs["packages/cli--tag_name"] }}' | grep -oP 'v\d+\.\d+\.\d+-\K\w+' || echo 'latest')" >> $GITHUB_ENV
-          echo "CORE_TAG=$(echo '${{ steps.release.outputs["packages/core--tag_name"] }}' | grep -oP 'v\d+\.\d+\.\d+-\K\w+' || echo 'latest')" >> $GITHUB_ENV
-          echo "NEXT_TAG=$(echo '${{ steps.release.outputs["packages/next--tag_name"] }}' | grep -oP 'v\d+\.\d+\.\d+-\K\w+' || echo 'latest')" >> $GITHUB_ENV
-          echo "REACT_TAG=$(echo '${{ steps.release.outputs["packages/react--tag_name"] }}' | grep -oP 'v\d+\.\d+\.\d+-\K\w+' || echo 'latest')" >> $GITHUB_ENV
-          echo "LOCALES_TAG=$(echo '${{ steps.release.outputs["packages/supported-locales--tag_name"] }}' | grep -oP 'v\d+\.\d+\.\d+-\K\w+' || echo 'latest')" >> $GITHUB_ENV
+          CLI_TAG_NAME="${{ steps.release.outputs['packages/cli--tag_name'] }}"
+          CORE_TAG_NAME="${{ steps.release.outputs['packages/core--tag_name'] }}"
+          NEXT_TAG_NAME="${{ steps.release.outputs['packages/next--tag_name'] }}"
+          REACT_TAG_NAME="${{ steps.release.outputs['packages/react--tag_name'] }}"
+          LOCALES_TAG_NAME="${{ steps.release.outputs['packages/supported-locales--tag_name'] }}"
+          
+          # Extract tag portion or default to latest
+          if [[ "$CLI_TAG_NAME" =~ v[0-9]+\.[0-9]+\.[0-9]+-(.*) ]]; then
+            echo "CLI_TAG=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+          else
+            echo "CLI_TAG=latest" >> $GITHUB_ENV
+          fi
+          
+          if [[ "$CORE_TAG_NAME" =~ v[0-9]+\.[0-9]+\.[0-9]+-(.*) ]]; then
+            echo "CORE_TAG=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+          else
+            echo "CORE_TAG=latest" >> $GITHUB_ENV
+          fi
+          
+          if [[ "$NEXT_TAG_NAME" =~ v[0-9]+\.[0-9]+\.[0-9]+-(.*) ]]; then
+            echo "NEXT_TAG=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+          else
+            echo "NEXT_TAG=latest" >> $GITHUB_ENV
+          fi
+          
+          if [[ "$REACT_TAG_NAME" =~ v[0-9]+\.[0-9]+\.[0-9]+-(.*) ]]; then
+            echo "REACT_TAG=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+          else
+            echo "REACT_TAG=latest" >> $GITHUB_ENV
+          fi
+          
+          if [[ "$LOCALES_TAG_NAME" =~ v[0-9]+\.[0-9]+\.[0-9]+-(.*) ]]; then
+            echo "LOCALES_TAG=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+          else
+            echo "LOCALES_TAG=latest" >> $GITHUB_ENV
+          fi
 
       - run: npm ci --workspace=packages/cli && npm run release:${{ env.CLI_TAG }} --workspace=packages/cli
         if: ${{ steps.release.outputs['packages/cli--release_created'] }}
