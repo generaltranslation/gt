@@ -1,22 +1,29 @@
 {
-  "packages/cli": {
-    "release-type": "node",
-    "package-name": "@generaltranslation/cli"
-  },
-  "packages/core": {
-    "release-type": "node",
-    "package-name": "generaltranslation"
-  },
-  "packages/next": {
-    "release-type": "node",
-    "package-name": "@generaltranslation/next"
-  },
-  "packages/react": {
-    "release-type": "node",
-    "package-name": "@generaltranslation/react"
-  },
-  "packages/supported-locales": {
-    "release-type": "node",
-    "package-name": "@generaltranslation/supported-locales"
+  "packages": {
+    "packages/cli": {
+      "release-type": "node",
+      "component": "cli",
+      "package-name": "gtx-cli"
+    },
+    "packages/core": {
+      "release-type": "node",
+      "component": "core",
+      "package-name": "generaltranslation"
+    },
+    "packages/next": {
+      "release-type": "node",
+      "component": "next",
+      "package-name": "gt-next"
+    },
+    "packages/react": {
+      "release-type": "node",
+      "component": "react",
+      "package-name": "gt-react"
+    },
+    "packages/supported-locales": {
+      "release-type": "node",
+      "component": "supported-locales",
+      "package-name": "@generaltranslation/supported-locales"
+    }
   }
 }
