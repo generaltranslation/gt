@@ -1,7 +1,7 @@
 {
-  "gtx-cli": "1.1.13",
-  "generaltranslation": "6.2.3",
-  "gt-next": "5.2.22",
-  "gt-react": "9.2.16",
-  "@generaltranslation/supported-locales": "2.0.7"
+  "packages/cli": "1.1.13",
+  "packages/core": "6.2.3",
+  "packages/next": "5.2.22",
+  "packages/react": "9.2.16",
+  "packages/supported-locales": "2.0.7"
 }
