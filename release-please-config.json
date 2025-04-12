@@ -1,0 +1,30 @@
+{
+  "bootstrap-sha": "e802cff6",
+  "release-type": "node",
+  "packages": {
+    "packages/cli": {
+      "component": "cli"
+    },
+    "packages/core": {
+      "component": "core"
+    },
+    "packages/next": {
+      "component": "next"
+    },
+    "packages/react": {
+      "component": "react"
+    },
+    "packages/supported-locales": {
+      "component": "supported-locales"
+    }
+  },
+  "plugins": [
+    {
+      "type": "linked-versions",
+      "groupName": "main components",
+      "components": ["cli", "core", "next", "react", "supported-locales"]
+    }
+  ],
+  "pull-request-header": "🚀 Release PR for General Translation Libraries",
+  "pull-request-footer": "This PR was created by GitHub Actions using [release-please](https://github.com/googleapis/release-please)"
+}

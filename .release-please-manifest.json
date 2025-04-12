@@ -1,0 +1,22 @@
+{
+  "packages/cli": {
+    "release-type": "node",
+    "package-name": "@generaltranslation/cli"
+  },
+  "packages/core": {
+    "release-type": "node",
+    "package-name": "generaltranslation"
+  },
+  "packages/next": {
+    "release-type": "node",
+    "package-name": "@generaltranslation/next"
+  },
+  "packages/react": {
+    "release-type": "node",
+    "package-name": "@generaltranslation/react"
+  },
+  "packages/supported-locales": {
+    "release-type": "node",
+    "package-name": "@generaltranslation/supported-locales"
+  }
+}
