@@ -25,5 +25,6 @@
       "component": "supported-locales",
       "package-name": "@generaltranslation/supported-locales"
     }
-  }
+  },
+  ".": "1.0.0"
 }
