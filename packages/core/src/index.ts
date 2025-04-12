@@ -40,15 +40,6 @@ import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { defaultBaseUrl, libraryDefaultLocale } from './internal';
 import _isSameDialect from './locales/isSameDialect';
 
-// ----- HELPER FUNCTIONS ----- //
-
-const getDefaultFromEnv = (VARIABLE: string): string => {
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env[VARIABLE] || '';
-  }
-  return '';
-};
-
 // ----- CORE CLASS ----- //
 
 /**
@@ -88,9 +79,9 @@ class GT {
     projectId = '',
     baseUrl = defaultBaseUrl,
   }: GTConstructorParams = {}) {
-    this.apiKey = apiKey || getDefaultFromEnv('GT_API_KEY');
-    this.devApiKey = devApiKey || getDefaultFromEnv('GT_DEV_API_KEY');
-    this.projectId = projectId || getDefaultFromEnv('GT_PROJECT_ID');
+    this.apiKey = apiKey || process.env.GT_API_KEY || '';
+    this.devApiKey = devApiKey || process.env.GT_DEV_API_KEY || '';
+    this.projectId = projectId || process.env.GT_PROJECT_ID || '';
     this.sourceLocale = _standardizeLocale(sourceLocale) || '';
     this.baseUrl = baseUrl;
   }
@@ -330,10 +321,10 @@ export function formatNum(
     locales?: string | string[];
   } & Intl.NumberFormatOptions
 ): string {
-  return _formatNum({ 
-    value: number, 
-    locales: options?.locales, 
-    options
+  return _formatNum({
+    value: number,
+    locales: options?.locales,
+    options,
   });
 }
 
@@ -352,9 +343,9 @@ export function formatDateTime(
   } & Intl.DateTimeFormatOptions
 ): string {
   return _formatDateTime({
-    value: date, 
-    locales: options?.locales, 
-    options
+    value: date,
+    locales: options?.locales,
+    options,
   });
 }
 
@@ -375,10 +366,10 @@ export function formatCurrency(
   } & Intl.NumberFormatOptions
 ): string {
   return _formatCurrency({
-    value, 
+    value,
     currency,
-    locales: options?.locales, 
-    options
+    locales: options?.locales,
+    options,
   });
 }
 
@@ -399,7 +390,7 @@ export function formatList(
   return _formatList({
     value: array,
     locales: options?.locales,
-    options: options
+    options: options,
   });
 }
 
@@ -420,7 +411,10 @@ export function formatRelativeTime(
   } & Intl.RelativeTimeFormatOptions
 ): string {
   return _formatRelativeTime({
-    value, unit, locales: options?.locales, options
+    value,
+    unit,
+    locales: options?.locales,
+    options,
   });
 }
 
