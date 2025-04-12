@@ -1,4 +1,4 @@
-name: Release Please
+name: Prepare Releases
 
 on:
   push:
@@ -51,10 +51,10 @@ jobs:
         run: |
           # Get all package directories
           PACKAGE_DIRS=$(find packages -maxdepth 1 -mindepth 1 -type d | sort)
-          
+
           # Initialize arrays for changed packages
           CHANGED_PACKAGES=()
-          
+
           # Process each package directory
           for PKG_DIR in $PACKAGE_DIRS; do
             PKG_NAME=$(basename $PKG_DIR)
@@ -87,10 +87,10 @@ jobs:
               fi
             fi
           done
-          
+
           # Convert the array to JSON for GitHub Actions output
           PACKAGES_JSON=$(printf '%s\n' "${CHANGED_PACKAGES[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
-          
+
           # Set the output variables
           if [[ ${#CHANGED_PACKAGES[@]} -gt 0 ]]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
@@ -162,7 +162,7 @@ jobs:
         id: release-tag
         run: |
           VERSION="${{ needs.release-please.outputs.version }}"
-          
+
           if [[ "$VERSION" == *"-alpha"* ]]; then
             echo "npm_tag=alpha" >> $GITHUB_OUTPUT
             echo "Using alpha tag for version $VERSION"
