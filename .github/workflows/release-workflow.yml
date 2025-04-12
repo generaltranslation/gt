@@ -21,6 +21,17 @@ on:
           - patch
           - minor
           - major
+      npm_tag:
+        description: 'NPM tag (overrides automatic detection)'
+        required: false
+        type: choice
+        options:
+          - auto
+          - latest
+          - alpha
+          - beta
+          - rc
+        default: 'auto'
 
 jobs:
   detect-changes:
@@ -162,8 +173,12 @@ jobs:
         id: release-tag
         run: |
           VERSION="${{ needs.release-please.outputs.version }}"
+          MANUAL_TAG="${{ github.event.inputs.npm_tag }}"
 
-          if [[ "$VERSION" == *"-alpha"* ]]; then
+          if [[ "$MANUAL_TAG" != "" && "$MANUAL_TAG" != "auto" ]]; then
+            echo "npm_tag=$MANUAL_TAG" >> $GITHUB_OUTPUT
+            echo "Using manually specified npm tag: $MANUAL_TAG"
+          elif [[ "$VERSION" == *"-alpha"* ]]; then
             echo "npm_tag=alpha" >> $GITHUB_OUTPUT
             echo "Using alpha tag for version $VERSION"
           elif [[ "$VERSION" == *"-beta"* ]]; then
