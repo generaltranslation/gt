@@ -1,29 +1,7 @@
 {
-  "packages": {
-    "packages/cli": {
-      "release-type": "node",
-      "component": "cli",
-      "package-name": "gtx-cli"
-    },
-    "packages/core": {
-      "release-type": "node",
-      "component": "core",
-      "package-name": "generaltranslation"
-    },
-    "packages/next": {
-      "release-type": "node",
-      "component": "next",
-      "package-name": "gt-next"
-    },
-    "packages/react": {
-      "release-type": "node",
-      "component": "react",
-      "package-name": "gt-react"
-    },
-    "packages/supported-locales": {
-      "release-type": "node",
-      "component": "supported-locales",
-      "package-name": "@generaltranslation/supported-locales"
-    }
-  }
+  "packages/cli": "1.1.13",
+  "packages/core": "6.2.3",
+  "packages/next": "5.2.22",
+  "packages/react": "9.2.16",
+  "packages/supported-locales": "2.0.7"
 }

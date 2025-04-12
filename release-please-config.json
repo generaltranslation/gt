@@ -1,6 +1,7 @@
 {
   "bootstrap-sha": "main",
   "release-type": "node",
+  "prerelease-type": "alpha",
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": true,
   "pull-request-title-pattern": "chore${scope}: release${component} ${version}",
