@@ -108,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: ${{ github.event_name == 'workflow_dispatch' && fromJson('["' + github.event.inputs.package_dir + '"]') || fromJson(needs.detect-changes.outputs.changed_packages) }}
+        package: ${{ github.event_name == 'workflow_dispatch' && fromJson(format('["{}"]', github.event.inputs.package_dir)) || fromJson(needs.detect-changes.outputs.changed_packages) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
