@@ -1,0 +1,145 @@
+name: Release After Version Bump
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Create Release
+    # Only run when a version-bump PR is merged (not closed without merging)
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'version-bump')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Extract package info from PR title
+        id: extract-info
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          # Extract package name and version from PR title format: "chore(release): bump package-name to version x.y.z"
+          # Support for scoped packages (@scope/package) and prerelease versions (x.y.z-beta.n)
+          if [[ "$PR_TITLE" =~ bump[[:space:]]([^[:space:]]+)[[:space:]]to[[:space:]]version[[:space:]]([0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.[0-9]+)?) ]]; then
+            PACKAGE_NAME="${BASH_REMATCH[1]}"
+            VERSION="${BASH_REMATCH[2]}"
+            echo "Found package $PACKAGE_NAME version $VERSION"
+            echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            
+            # Find the package directory by searching for package.json files
+            # Handle both regular and scoped package names
+            if [[ "$PACKAGE_NAME" == @*/* ]]; then
+              # For scoped packages, handle the @ and / characters in grep
+              SCOPE=$(echo "$PACKAGE_NAME" | cut -d'/' -f1 | sed 's/@/\\@/')
+              PKG=$(echo "$PACKAGE_NAME" | cut -d'/' -f2)
+              PACKAGE_DIR=$(find packages -name "package.json" -exec grep -l "\"name\":[[:space:]]*\"$SCOPE/$PKG\"" {} \; | xargs dirname)
+            else
+              PACKAGE_DIR=$(find packages -name "package.json" -exec grep -l "\"name\":[[:space:]]*\"$PACKAGE_NAME\"" {} \; | xargs dirname)
+            fi
+            
+            if [ -n "$PACKAGE_DIR" ]; then
+              echo "package_dir=$PACKAGE_DIR" >> $GITHUB_OUTPUT
+            else
+              echo "Could not find directory for package $PACKAGE_NAME"
+              exit 1
+            fi
+          else
+            echo "Could not extract package name and version from PR title: $PR_TITLE"
+            exit 1
+          fi
+
+      - name: Verify package version
+        run: |
+          PACKAGE_DIR="${{ steps.extract-info.outputs.package_dir }}"
+          EXPECTED_VERSION="${{ steps.extract-info.outputs.version }}"
+          ACTUAL_VERSION=$(node -p "require('./$PACKAGE_DIR/package.json').version")
+          
+          if [[ "$EXPECTED_VERSION" != "$ACTUAL_VERSION" ]]; then
+            echo "Version mismatch: PR title says $EXPECTED_VERSION but package.json has $ACTUAL_VERSION"
+            exit 1
+          fi
+          
+          echo "Verified package version: $ACTUAL_VERSION"
+
+      - name: Determine release type
+        id: release-type
+        run: |
+          VERSION="${{ steps.extract-info.outputs.version }}"
+          
+          if [[ "$VERSION" == *"-alpha"* ]]; then
+            echo "npm_tag=alpha" >> $GITHUB_OUTPUT
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          elif [[ "$VERSION" == *"-beta"* ]]; then
+            echo "npm_tag=beta" >> $GITHUB_OUTPUT
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          elif [[ "$VERSION" == *"-rc"* ]]; then
+            echo "npm_tag=rc" >> $GITHUB_OUTPUT
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "npm_tag=latest" >> $GITHUB_OUTPUT
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build package
+        run: |
+          cd ${{ steps.extract-info.outputs.package_dir }}
+          npm run build
+
+      - name: Extract changelog
+        id: changelog
+        run: |
+          PACKAGE_DIR="${{ steps.extract-info.outputs.package_dir }}"
+          VERSION="${{ steps.extract-info.outputs.version }}"
+
+          if [ -f "$PACKAGE_DIR/CHANGELOG.md" ]; then
+            # Extract the section for the current version
+            CHANGELOG_CONTENT=$(awk -v ver="## $VERSION" '
+              $0 ~ ver {flag=1; next}
+              flag && /^## / {flag=0}
+              flag {print}
+            ' "$PACKAGE_DIR/CHANGELOG.md")
+            
+            # Escape newlines for GitHub Actions
+            CHANGELOG_CONTENT="${CHANGELOG_CONTENT//'%'/'%25'}"
+            CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\n'/'%0A'}"
+            CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\r'/'%0D'}"
+            
+            echo "content<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "content=Release version $VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.extract-info.outputs.package_name }}@${{ steps.extract-info.outputs.version }}
+          name: ${{ steps.extract-info.outputs.package_name }} v${{ steps.extract-info.outputs.version }}
+          body: ${{ steps.changelog.outputs.content }}
+          draft: false
+          prerelease: ${{ steps.release-type.outputs.is_prerelease }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to npm
+        run: |
+          cd ${{ steps.extract-info.outputs.package_dir }}
+          npm publish --access public --tag ${{ steps.release-type.outputs.npm_tag }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
