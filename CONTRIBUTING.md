@@ -9,7 +9,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 > And if you like the project, but just don't have time to contribute, that's fine. There are other easy ways to support the project and show your appreciation, which we would also be very happy about:
 >
 > - Star the project
-> - Tweet about it
+> - Post about it
 > - Tell your friends/colleagues!
 
 <!-- omit in toc -->
@@ -18,7 +18,6 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 
 - [Contributing to General Translation](#contributing-to-general-translation)
   - [Table of Contents](#table-of-contents)
-  - [Code of Conduct](#code-of-conduct)
   - [I Have a Question](#i-have-a-question)
   - [I Want To Contribute](#i-want-to-contribute)
     - [Reporting Bugs](#reporting-bugs)
@@ -33,13 +32,6 @@ All types of contributions are encouraged and valued. See the [Table of Contents
     - [Commit Messages](#commit-messages)
   - [Join The Project Team](#join-the-project-team)
   - [Attribution](#attribution)
-
-## Code of Conduct
-
-This project and everyone participating in it is governed by the
-[General Translation Code of Conduct](https://github.com/General-Translation/gt-libraries/blob/main/CODE_OF_CONDUCT.md).
-By participating, you are expected to uphold this code. Please report unacceptable behavior
-to <contact@generaltranslation.com>.
 
 ## I Have a Question
 
