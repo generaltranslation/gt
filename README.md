@@ -6,15 +6,17 @@
 
 # Overview
 
-General Translation is a **one-stop solution** for all your translation needs. It includes:
+General Translation (GT) is a **one-stop solution** for all your translation needs. It includes:
 
 - A set of libraries for React and Next.js
 - A translation platform
 - A free AI-powered translation service
 
-With General Translation, you never need to worry about localization again. Just install the libraries in your project, wrap your content as you code, and we'll take care of the rest.
+With GT, you never need to worry about localization again. Just install the libraries in your project, tag your content as you code, and we'll take care of the rest. 
 
-With General Translation, you can internationalize your entire app in minutes.
+You can internationalize your entire app in minutes and see projected translations as you code.
+
+![Demo](./docs/public/live_translations.gif)
 
 Get started at [generaltranslation.com](https://generaltranslation.com)!
 
