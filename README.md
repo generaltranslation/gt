@@ -8,15 +8,15 @@
 
 General Translation (GT) is a **one-stop solution** for all your translation needs. It includes:
 
-- A set of libraries for React and Next.js
-- A translation platform
-- A free AI-powered translation service
+- Open source developer libraries
+- Context-aware translation APIs
+- A platform for translation management
 
-With GT, you never need to worry about localization again. Just install the libraries in your project, tag your content as you code, and we'll take care of the rest. 
-
-You can internationalize your entire app in minutes and see projected translations as you code.
+With GT, you never need to worry about localization again. Install the libraries in your project, tag your content as you code, and we'll take care of the rest. 
 
 ![Demo](./docs/public/live_translations.gif)
+
+Internationalize your app in minutes and see projected translations as you code.
 
 Get started at [generaltranslation.com](https://generaltranslation.com)!
 
@@ -29,7 +29,7 @@ Join our [Discord community](https://discord.gg/W99K6fchSu) to get help and stay
 ### ⚛️ Translate entire React components, not just strings
 
 - Just wrap your content in a `<T>` component!
-- No need for complex refactoring or messy function calls.
+- No need for complex refactoring or managing JSON files.
 
 ```tsx
 export default function Page() {
@@ -53,7 +53,7 @@ export default function Page() {
 
 ### 🔎 Feature parity with existing libraries
 
-- GT libraries also support the same features as existing libraries like `i18next`, `react-intl`, and `next-intl`.
+- GT libraries also support the same features as existing libraries like `next-intl` and `react-i18next`.
 - Features such as dictionaries, plurals, currencies, and automatic routing are all supported.
 
 ### 🔧 Developer-friendly
@@ -61,7 +61,7 @@ export default function Page() {
 - Setup is simple and can be done in minutes.
 - All GT libraries are open-source and work standalone.
   - You can use your own translation provider or use our free AI-powered translation service.
-- No more wasting time managing translation keys like `t('menu.header.title')`.
+- No more managing translation keys like `t('menu.header.title')`.
   - Just write everything in-line!
 
 ### 🧠 Free AI-powered translation service
@@ -80,8 +80,8 @@ Simple interface for native pluralization and conditional logic:
 ```tsx
 <Plural
   n={count}
-  singular={<>There is {count} item</>}
-  plural={<>There are {count} items</>}
+  singular={<>There is <Num>{count}</Num> item</>}
+  plural={<>There are <Num>{count}</Num> items</>}
 />
 ```
 
@@ -106,11 +106,11 @@ Intuitive i18n formatting syntax:
 return (
   <T>
     <h1> Your account information: </h1>
-    Account balance: <Currency>{account.bal}</Currency> // Currency Formatting
+    Account balance: <Currency>{account.bal}</Currency> {/* Currency Formatting */}
     <br />
-    Updated at: <DateTime>{account.updateTime}</DateTime> // Datetime Formatting
+    Updated at: <DateTime>{account.updateTime}</DateTime> {/* Datetime Formatting */}
     <br />
-    Transactions this month: <Num>{account.txCount}</Num> // Number Formatting
+    Transactions this month: <Num>{account.txCount}</Num> {/* Number Formatting */}
   </T>
 );
 ```
@@ -136,7 +136,7 @@ npm install gt-next
 yarn add gt-next
 ```
 
-Usage of the libraries is documented on our [docs](https://generaltranslation.com/docs).
+See our [docs](https://generaltranslation.com/docs) for more information.
 
 ## Contributing
 
