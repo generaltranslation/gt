@@ -1,10 +1,14 @@
 <p align="center">
   <a href="https://generaltranslation.com" target="_blank">
-    <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation" width="100" height="100">
+    <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation" width="50" height="50">
   </a>
 </p>
 
-# Overview
+<div align="center">
+
+# GT
+
+</div>
 
 General Translation (GT) is a **one-stop solution** for all your translation needs. It includes:
 
