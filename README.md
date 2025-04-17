@@ -1,12 +1,12 @@
 <p align="center">
   <a href="https://generaltranslation.com" target="_blank">
-    <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation" width="50" height="50">
+    <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation">
   </a>
 </p>
 
 <div align="center">
 
-# GT
+# General Translation
 
 </div>
 
@@ -19,8 +19,6 @@ General Translation (GT) is a **one-stop solution** for all your translation nee
 With GT, you never need to worry about localization again. Install the libraries in your project, tag your content as you code, and we'll take care of the rest. 
 
 ![Demo](./docs/public/live_translations.gif)
-
-Internationalize your app in minutes and see projected translations as you code.
 
 Get started at [generaltranslation.com](https://generaltranslation.com)!
 
