@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://generaltranslation.com" target="_blank">
-    <img src="./docs/public/gt-logo-light.svg" alt="General Translation, Inc." width="100" height="100">
+    <img src="./docs/public/gt-logo-light.svg" alt="General Translation, Inc." width="64" height="64">
   </a>
 </div>
 
