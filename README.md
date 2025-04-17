@@ -1,8 +1,8 @@
-<p align="center">
+<div align="center">
   <a href="https://generaltranslation.com" target="_blank">
     <img src="https://generaltranslation.com/gt-logo-light.svg" alt="General Translation" width="100" height="100">
   </a>
-</p>
+</div>
 
 <div align="center">
 
@@ -10,15 +10,15 @@
 
 </div>
 
-General Translation (GT) is a **one-stop solution** to ship apps and websites in multiple languages. 
+General Translation (GT) is a **one-stop solution** for launching software in multiple languages. 
 
-The full-stack solution includes:
+The full GT stack includes:
 
 - Open source developer libraries
 - Context-aware translation APIs
 - A platform for translation management
 
-Install the libraries in your project, add `<T>` tags, and see translations as you code. 
+Install the libraries in your project, add `<T>` tags, and see translations as you code: 
 
 ![Demo](./docs/public/live_translations.gif)
 
@@ -68,7 +68,7 @@ export default function Page() {
 - No more managing translation keys like `t('menu.header.title')`.
   - Just write everything in-line!
 
-### 🧠 Free AI-powered translation service
+### 🧠 Free, context-aware AI translation service
 
 - Translation hot reload in development
 - Libraries integrate natively with our translation platform.
