@@ -18,7 +18,7 @@ The full GT stack includes:
 - Context-aware translation APIs
 - A platform for translation management
 
-Install the libraries in your project, add `<T>` tags, and see translations as you code: 
+**Install the libraries in your project, add `<T>` tags, and see translations as you code:** 
 
 ![Demo](./docs/public/live_translations.gif)
 
