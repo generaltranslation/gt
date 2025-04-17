@@ -10,19 +10,21 @@
 
 </div>
 
-General Translation (GT) is a **one-stop solution** for all your translation needs. It includes:
+General Translation (GT) is a **one-stop solution** to ship apps and websites in multiple languages. 
+
+The full-stack solution includes:
 
 - Open source developer libraries
 - Context-aware translation APIs
 - A platform for translation management
 
-With GT, you never need to worry about localization again. Install the libraries in your project, tag your content as you code, and we'll take care of the rest. 
+Install the libraries in your project, add `<T>` tags, and see translations as you code. 
 
 ![Demo](./docs/public/live_translations.gif)
 
-Get started at [generaltranslation.com](https://generaltranslation.com)!
-
 Full documentation, including guides, examples, and API references, can be found in the [docs](https://generaltranslation.com/docs).
+
+Create an API key at [generaltranslation.com](https://generaltranslation.com)!
 
 Join our [Discord community](https://discord.gg/W99K6fchSu) to get help and stay updated!
 
