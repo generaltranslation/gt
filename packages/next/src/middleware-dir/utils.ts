@@ -296,7 +296,6 @@ export function getLocaleFromRequest(
       isValidLocale(extractedLocale) &&
       determineLocale([extractedLocale], approvedLocales)
     ) {
-      // NOTICE HERE: we are checking extractedLocale agains the list of approved locales
       const determinedLocale = determineLocale(
         [extractedLocale],
         approvedLocales
@@ -338,7 +337,6 @@ export function getLocaleFromRequest(
     !clearResetCookie
   ) {
     const referrerLocale = referrerLocaleCookie.value;
-    // NOTICE HERE: we are checking referrerLocale agains the list of approved locales
     if (determineLocale([referrerLocale], approvedLocales)) {
       candidates.push(referrerLocale);
     }
