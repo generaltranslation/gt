@@ -290,7 +290,12 @@ export function getLocaleFromRequest(
     const extractedLocale = gtServicesEnabled
       ? standardizeLocale(unstandardizedPathnameLocale || '')
       : unstandardizedPathnameLocale;
-    if (extractedLocale && approvedLocales.includes(extractedLocale)) {
+
+    if (
+      extractedLocale &&
+      isValidLocale(extractedLocale) &&
+      determineLocale([extractedLocale], approvedLocales)
+    ) {
       pathnameLocale = extractedLocale;
       candidates.push(pathnameLocale);
     }
