@@ -132,7 +132,7 @@ export default function createNextMiddleware({
    * @param {NextRequest} req - The incoming request object, containing URL and headers.
    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
    */
-  function nextMiddleware(req: NextRequest) {
+  async function middleware(req: NextRequest) {
     // ---------- LOCALE DETECTION ---------- //
 
     const {
@@ -325,5 +325,5 @@ export default function createNextMiddleware({
     return getNextResponse();
   }
 
-  return nextMiddleware;
+  return middleware;
 }
