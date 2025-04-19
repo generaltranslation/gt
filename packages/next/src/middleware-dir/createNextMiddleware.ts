@@ -5,7 +5,7 @@ import {
 } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
@@ -23,6 +23,8 @@ import {
 } from './utils';
 import { defaultLocaleHeaderName } from '../utils/headers';
 
+const NEXT_JS_SOURCE_MAP_PATH = '/__nextjs_source-map';
+
 /**
  * Middleware factory to create a Next.js middleware for i18n routing and locale detection.
  *
@@ -33,15 +35,19 @@ import { defaultLocaleHeaderName } from '../utils/headers';
  *
  * @param {boolean} [config.localeRouting=true] - Flag to enable or disable automatic locale-based routing.
  * @param {boolean} [config.prefixDefaultLocale=false] - Flag to enable or disable prefixing the default locale to the pathname, i.e., /en/about -> /about
+ * @param {boolean} [config.ignoreSourceMaps=true] - Flag to enable or disable ignoring source maps
+ * @param {PathConfig} [config.pathConfig] - Path configuration for locale routing
  * @returns {function} - A middleware function that processes the request and response.
  */
 export default function createNextMiddleware({
   localeRouting = true,
   prefixDefaultLocale = false,
+  ignoreSourceMaps = true,
   pathConfig = {},
 }: {
   localeRouting?: boolean;
   prefixDefaultLocale?: boolean;
+  ignoreSourceMaps?: boolean;
   pathConfig?: PathConfig;
 } = {}) {
   // i18n config
@@ -132,7 +138,15 @@ export default function createNextMiddleware({
    * @param {NextRequest} req - The incoming request object, containing URL and headers.
    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
    */
-  async function middleware(req: NextRequest) {
+  function middleware(req: NextRequest) {
+    // Ignore source maps
+    if (
+      ignoreSourceMaps &&
+      req.nextUrl.pathname.startsWith(NEXT_JS_SOURCE_MAP_PATH)
+    ) {
+      return NextResponse.next();
+    }
+
     // ---------- LOCALE DETECTION ---------- //
 
     const {
