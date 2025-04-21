@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/General-Translation/gt-libraries.git"
+    "url": "git+https://github.com/generaltranslation/gt.git"
   },
   "keywords": [
     "internal"
@@ -26,7 +26,7 @@
   "author": "General Translation, Inc.",
   "license": "FSL-1.1-ALv2",
   "bugs": {
-    "url": "https://github.com/General-Translation/gt-libraries/issues"
+    "url": "https://github.com/generaltranslation/gt/issues"
   },
   "homepage": "https://generaltranslation.com/",
   "typescript": {

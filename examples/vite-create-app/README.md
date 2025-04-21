@@ -14,7 +14,7 @@ This is an example project showcasing a multilingual Vite App using [`gt-react`]
 
 One-click deploy to Vercel:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/General-Translation/gt-libraries/tree/main/examples/vite-create-app)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/generaltranslation/gt/tree/main/examples/vite-create-app)
 
 Everything works out of the box!
 
@@ -29,7 +29,7 @@ To clone this example and see it in action yourself, follow the following steps:
 1. Run
 
 ```bash
-git clone https://github.com/General-Translation/gt-libraries.git
+git clone https://github.com/generaltranslation/gt.git
 cd gt-libraries/examples/vite-create-app
 npm install
 ```

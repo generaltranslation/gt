@@ -762,7 +762,7 @@ Regardless of what language the content is viewed in, the results are always the
 </Accordions>
 
 <Callout type="info">
-  Please report any bugs or unexpected behavior to us on [Github](https://github.com/General-Translation/gt-libraries/issues).
+  Please report any bugs or unexpected behavior to us on [Github](https://github.com/generaltranslation/gt/issues).
 </Callout>
 
 
@@ -1431,7 +1431,7 @@ Source: https://generaltranslation.com/en/docs/cli/tutorials/json
   We currently support custom string syntax and formatting for the following i18n libraries: [`next-intl`](/docs/cli/tutorials/next-intl-quickstart), [`i18next`](/docs/cli/tutorials/i18next-quickstart), [`gt-next`](/docs/cli/tutorials/gt), [`gt-react`](/docs/cli/tutorials/gt).
   
   If you are using a different i18n library, the translation results may not be accurate for strings with custom syntax and formatting (for example, ICU messages).
-  Don't see your favorite library? [Please let us know](https://github.com/General-Translation/gt-libraries/issues), and we will add it as soon as we can!
+  Don't see your favorite library? [Please let us know](https://github.com/generaltranslation/gt/issues), and we will add it as soon as we can!
 </Callout>
 
 We will follow these 4 steps:
@@ -2005,7 +2005,7 @@ export default function Page() {
 - No more wasting time managing translation keys like `t('menu.header.title')`.
   - Just write everything in-line!
 
-See our [Github repo](https://github.com/General-Translation/gt-libraries) for the source code and some example projects.
+See our [Github repo](https://github.com/generaltranslation/gt) for the source code and some example projects.
 
 
 <Callout>
@@ -11817,7 +11817,7 @@ Add your API key and Project ID to your environment variables.
             In development environments, both `GT_API_KEY` and `GT_PROJECT_ID` need to be exported to the client.
 
             We have added support for a few libraries so far,
-            but please let us know if your framework is not listed by creating an issue on our [GitHub repository](https://github.com/General-Translation/gt-libraries/issues/new).
+            but please let us know if your framework is not listed by creating an issue on our [GitHub repository](https://github.com/generaltranslation/gt/issues/new).
             </Tab>
         </Tabs>
     </Step>
@@ -12242,7 +12242,7 @@ The CLI will only wrap direct children inside JSX elements. It will wrap other J
     After running the scan, you should manually review the output and make sure it is correct.
     In particular, note that any non-static JSX Expressions `{...}` will be wrapped in `<Var>` components.
     You may need to manually review and edit these cases.
-    Please report any issues you run into [here](https://github.com/General-Translation/gt-libraries/issues).
+    Please report any issues you run into [here](https://github.com/generaltranslation/gt/issues).
 </Callout>
 
 ### Flags
@@ -13549,7 +13549,7 @@ Add your API key and Project ID to your environment variables.
             In development environments, both `GT_API_KEY` and `GT_PROJECT_ID` need to be exported to the client.
 
             We have added support for a few libraries so far,
-            but please let us know if your framework is not listed by creating an issue on our [GitHub repository](https://github.com/General-Translation/gt-libraries/issues/new).
+            but please let us know if your framework is not listed by creating an issue on our [GitHub repository](https://github.com/generaltranslation/gt/issues/new).
             </Tab>
         </Tabs>
     </Step>
@@ -13680,17 +13680,17 @@ This is a list of example projects using General Translation.
 Source: https://generaltranslation.com/en/docs/reference/examples
 
 ### Create Next.js App
-- [Source](https://github.com/General-Translation/gt-libraries/tree/main/examples/next-create-app)
+- [Source](https://github.com/generaltranslation/gt/tree/main/examples/next-create-app)
 - [Demo](https://next-create-app-eight.vercel.app/)
 
 ### Next.js AI Chatbot
-- [Source](https://github.com/General-Translation/gt-libraries/tree/main/examples/next-chatbot)
+- [Source](https://github.com/generaltranslation/gt/tree/main/examples/next-chatbot)
 - [Demo](https://example-ai-chatbot-ten.vercel.app/)
 
 ## React
 
 ### Create Vite App
-- [Source](https://github.com/General-Translation/gt-libraries/tree/main/examples/vite-create-app)
+- [Source](https://github.com/generaltranslation/gt/tree/main/examples/vite-create-app)
 - [Demo](https://example-vite-create-app.vercel.app/)
 
 ---

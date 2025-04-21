@@ -9,9 +9,7 @@ import {
   warnVariableProp,
 } from '../../../console/warnings';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
-import {
-  handleChildrenWhitespace,
-} from '../trimJsxStringChildren';
+import { handleChildrenWhitespace } from '../trimJsxStringChildren';
 import { isStaticExpression } from '../evaluateJsx';
 
 // Valid variable components
@@ -228,10 +226,17 @@ export function parseJSXElement(
             if (!staticAnalysis.isStatic) {
               errors.push(warnVariableProp(file, attrName, code));
             }
+            // Use the static value if available
+            if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
+              componentObj.props[attrName] = staticAnalysis.value;
+            } else {
+              // Only store the code if we couldn't extract a static value
+              componentObj.props[attrName] = code;
+            }
+          } else {
+            // For other attributes that aren't id or context
+            componentObj.props[attrName] = code;
           }
-
-          // Store the value (for all props)
-          componentObj.props[attrName] = code;
         }
       }
     });
