@@ -102,29 +102,44 @@ export function withGTConfig(
   // Check for conflicts between config and params
   const conflicts = Object.entries(loadedConfig)
     .filter(([key, value]) => {
-      // Not included in props
-      if (!props[key]) return false;
+      // Skip if key doesn't exist in props
+      if (!(key in props)) return false;
 
-      // String value in props
-      if (typeof value === 'string' && value !== props[key]) {
-        return true;
+      const propValue = props[key];
+
+      // Handle null/undefined values
+      if (value == null || propValue == null) {
+        return value !== propValue;
       }
 
-      // Array value in props
-      if (
-        Array.isArray(value) &&
-        Array.isArray(props[key]) &&
-        (value.length !== props[key].length ||
-          value.some((v) => !props[key].includes(v)))
-      ) {
-        return true;
+      // Handle primitive types (string, number, boolean)
+      if (typeof value !== 'object') {
+        return value !== propValue;
+      }
+
+      // Handle arrays (no need for deep equality check)
+      if (Array.isArray(value)) {
+        if (!Array.isArray(propValue)) return true;
+        if (value.length !== propValue.length) return true;
+        return value.some((v, i) => v !== propValue[i]);
+      }
+
+      // Handle objects
+      if (typeof value === 'object' && typeof propValue === 'object') {
+        const valueKeys = Object.keys(value);
+        const propKeys = Object.keys(propValue);
+        const keys = new Set([...valueKeys, ...propKeys]);
+
+        // Objects must match exactly (no need to go deeper)
+        if (valueKeys.length !== propKeys.length) return true;
+        return !Array.from(keys).every((k) => value[k] === propValue[k]);
       }
 
       return false;
     })
     .map(
       ([key, value]) =>
-        `- Key: ${key} Next Config: ${props[key]} does not match GT Config: ${value}`
+        `- Key: ${key} Next Config: ${JSON.stringify(props[key])} does not match GT Config: ${JSON.stringify(value)}`
     );
 
   if (conflicts.length) {
