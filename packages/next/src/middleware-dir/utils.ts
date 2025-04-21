@@ -296,8 +296,14 @@ export function getLocaleFromRequest(
       isValidLocale(extractedLocale) &&
       determineLocale([extractedLocale], approvedLocales)
     ) {
-      pathnameLocale = extractedLocale;
-      candidates.push(pathnameLocale);
+      const determinedLocale = determineLocale(
+        [extractedLocale],
+        approvedLocales
+      );
+      if (determinedLocale) {
+        pathnameLocale = determinedLocale;
+        candidates.push(pathnameLocale);
+      }
     }
   }
 
@@ -324,13 +330,16 @@ export function getLocaleFromRequest(
   }
 
   // Check referrer locale
-  const referrerLocale = req.cookies.get(referrerLocaleCookieName);
+  const referrerLocaleCookie = req.cookies.get(referrerLocaleCookieName);
   if (
-    referrerLocale?.value &&
-    isValidLocale(referrerLocale?.value) &&
+    referrerLocaleCookie?.value &&
+    isValidLocale(referrerLocaleCookie.value) &&
     !clearResetCookie
   ) {
-    candidates.push(referrerLocale.value);
+    const referrerLocale = referrerLocaleCookie.value;
+    if (determineLocale([referrerLocale], approvedLocales)) {
+      candidates.push(referrerLocale);
+    }
   }
 
   // Get locales from accept-language header

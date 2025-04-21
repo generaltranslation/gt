@@ -5,6 +5,7 @@ import defaultWithGTConfigProps from './config-dir/props/defaultWithGTConfigProp
 import withGTConfigProps from './config-dir/props/withGTConfigProps';
 import {
   APIKeyMissingWarn,
+  conflictingConfigurationBuildError,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
   projectIdMissingWarn,
@@ -95,6 +96,40 @@ export function withGTConfig(
     ...(apiKey ? { apiKey } : {}),
     ...(devApiKey ? { devApiKey } : {}),
   };
+
+  // ---------- CHECK FOR CONFIG CONFLICTS ---------- //
+
+  // Check for conflicts between config and params
+  const conflicts = Object.entries(loadedConfig)
+    .filter(([key, value]) => {
+      // Not included in props
+      if (!props[key]) return false;
+
+      // String value in props
+      if (typeof value === 'string' && value !== props[key]) {
+        return true;
+      }
+
+      // Array value in props
+      if (
+        Array.isArray(value) &&
+        Array.isArray(props[key]) &&
+        (value.length !== props[key].length ||
+          value.some((v) => !props[key].includes(v)))
+      ) {
+        return true;
+      }
+
+      return false;
+    })
+    .map(
+      ([key, value]) =>
+        `- Key: ${key} Next Config: ${props[key]} does not match GT Config: ${value}`
+    );
+
+  if (conflicts.length) {
+    throw new Error(conflictingConfigurationBuildError(conflicts));
+  }
 
   // ---------- MERGE CONFIGS ---------- //
 
