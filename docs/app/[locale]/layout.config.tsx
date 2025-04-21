@@ -51,6 +51,6 @@ export async function baseOptions(locale: string): Promise<BaseLayoutProps> {
         icon: <SiDiscord />,
       },
     ],
-    githubUrl: 'https://github.com/General-Translation/gt-libraries',
+    githubUrl: 'https://github.com/generaltranslation/gt',
   };
 }

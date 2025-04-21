@@ -472,7 +472,7 @@ export class ReactCLI extends BaseCLI {
       console.log(
         chalk.red(
           `\nSorry, at the moment we currently do not support other React frameworks. 
-            Please let us know what you would like to see supported at https://github.com/General-Translation/gt-libraries/issues`
+            Please let us know what you would like to see supported at https://github.com/generaltranslation/gt/issues`
         )
       );
       process.exit(0);

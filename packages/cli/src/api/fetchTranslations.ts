@@ -1,8 +1,4 @@
 import chalk from 'chalk';
-import fs from 'fs';
-import path from 'path';
-import yaml from 'yaml';
-import { Updates } from '../types';
 import { RetrievedTranslations } from '../types/api';
 
 /**

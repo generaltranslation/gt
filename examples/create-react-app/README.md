@@ -23,7 +23,7 @@ Change your browser language to see the translations in action.
 
 One-click deploy to Vercel:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/General-Translation/gt-libraries/tree/main/examples/example-create-react-app)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/generaltranslation/gt/tree/main/examples/example-create-react-app)
 
 Everything works out of the box!
 
@@ -38,7 +38,7 @@ To clone this example and see it in action yourself, follow the following steps:
 1. Run
 
 ```bash
-git clone https://github.com/General-Translation/gt-libraries.git
+git clone https://github.com/generaltranslation/gt.git
 cd gt-libraries/examples/create-react-app
 npm install
 ```

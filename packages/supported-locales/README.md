@@ -14,4 +14,4 @@ See our [docs](https://generaltranslation.com/docs) for more information includi
 
 We welcome any contributions to our libraries. Please submit a pull request!
 
-To request a new locale, please submit an issue on our [GitHub repository](https://github.com/General-Translation/gt-libraries/issues).
+To request a new locale, please submit an issue on our [GitHub repository](https://github.com/generaltranslation/gt/issues).

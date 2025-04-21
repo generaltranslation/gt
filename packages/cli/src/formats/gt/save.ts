@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import yaml from 'yaml';
 import { RetrievedTranslations } from '../../types/api';
 import { ResolvedFiles } from '../../types';
 import { DataFormat } from '../../types/data';
