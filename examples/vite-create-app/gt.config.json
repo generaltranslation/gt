@@ -1,9 +1,9 @@
 {
-  "locales": [
-    "zh",
-    "fr",
-    "es",
-    "ja"
-  ],
+  "locales": ["zh", "fr", "es", "ja"],
+  "files": {
+    "gt": {
+      "output": "src/_gt/[locale].json"
+    }
+  },
   "_versionId": "ebf27919325fcdc4f56ab9265a5e3a2ef760fd08dd7869ea91032d2bc33826ae"
 }

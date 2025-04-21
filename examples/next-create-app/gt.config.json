@@ -1,8 +1,9 @@
 {
   "_versionId": "d74c621260548b0358acf938f7ec731f5c852269179164079f40cd981d299b63",
-  "locales": [
-    "fr",
-    "es",
-    "zh"
-  ]
+  "locales": ["fr", "es", "zh"],
+  "files": {
+    "gt": {
+      "output": "public/_gt/[locale].json"
+    }
+  }
 }
