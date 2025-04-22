@@ -131,4 +131,5 @@ export type Settings = {
   };
   versionId?: string;
   description?: string;
+  src?: string[]; // src directory for gt-next and gt-react
 };

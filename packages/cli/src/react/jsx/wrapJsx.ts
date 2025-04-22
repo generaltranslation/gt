@@ -121,7 +121,7 @@ function wrapJsxExpression(
       // Ignore template literals in consequent with expressions (${}), don't wrap them
       // Do nothing
     } else {
-      if (isStaticValue(consequent)) {
+      if (isStaticValue(consequent) && isMeaningful(consequent)) {
         const wrapped = wrapExpressionWithT(consequent, options, false);
         // Re-insert into parenthesized expression if necessary
         if (t.isParenthesizedExpression(expression.consequent)) {
@@ -172,7 +172,7 @@ function wrapJsxExpression(
       // Ignore template literals in alternate with expressions (${}), don't wrap them
       // Do nothing
     } else {
-      if (isStaticValue(alternate)) {
+      if (isStaticValue(alternate) && isMeaningful(alternate)) {
         const wrapped = wrapExpressionWithT(alternate, options, false);
         // Re-insert into parenthesized expression if necessary
         if (t.isParenthesizedExpression(expression.alternate)) {
@@ -224,7 +224,11 @@ function wrapJsxExpression(
       // Ignore template literals with expressions (${}) in left side of logical expression
       // Do nothing - don't wrap them
     } else {
-      if (isStaticValue(left) && expression.operator !== '&&') {
+      if (
+        isStaticValue(left) &&
+        isMeaningful(left) &&
+        expression.operator !== '&&'
+      ) {
         const wrapped = wrapExpressionWithT(left, options, false);
         // Re-insert into parenthesized expression if necessary
         if (t.isParenthesizedExpression(expression.left)) {
@@ -270,7 +274,11 @@ function wrapJsxExpression(
       // Ignore template literals with expressions (${}) in right side of logical expression
       // Do nothing - don't wrap them
     } else {
-      if (isStaticValue(right)) {
+      if (
+        isStaticValue(right) &&
+        isMeaningful(right) &&
+        expression.operator !== '||'
+      ) {
         const wrapped = wrapExpressionWithT(right, options, false);
         // Re-insert into parenthesized expression if necessary
         if (t.isParenthesizedExpression(expression.right)) {
