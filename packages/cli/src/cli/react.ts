@@ -102,8 +102,7 @@ export class ReactCLI extends BaseCLI {
       .option('--dictionary <path>', 'Path to dictionary file')
       .option(
         '--src <paths...>',
-        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
-        findFilepaths(['./src', './app', './pages', './components'])
+        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components"
       )
       .option(
         '--default-language, --default-locale <locale>',
@@ -158,8 +157,7 @@ export class ReactCLI extends BaseCLI {
       )
       .option(
         '--src <paths...>',
-        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
-        findFilepaths(['./src', './app', './pages', './components'])
+        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components"
       )
       .option(
         '--tsconfig, --jsconfig <path>',

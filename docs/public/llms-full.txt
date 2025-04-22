@@ -1326,7 +1326,7 @@ We will follow these 4 steps:
     Install [`gtx-cli`](/docs/cli)
   </Step>
   <Step>
-    Initialize your project with the [`gtx-cli init`](/docs/cli/init) command
+    Create a `gt.config.json` file
   </Step>
   <Step>
     Run [`gtx-cli translate`](/docs/cli/translate#translate-json)
@@ -1379,13 +1379,28 @@ Install the `gtx-cli` tool in your project.
   </Tab>
 </Tabs>
 
-## Step 3: Initialize your project with the `gtx-cli init` command
+## Step 3: Create a `gt.config.json` file
 
-Run the `gtx-cli init` command to configure your project.
+Create a `gt.config.json` file in the root of your project.
 
-```bash
-npx gtx-cli init
+```json title="gt.config.json" copy
+{
+  "defaultLocale": "en",
+  "locales": ["zh", "es", "ja"],
+  "files": {
+    "json": {
+      "include": ["messages/[locale]/*.json"]
+    },
+  },
+}
 ```
+Feel free to customize the `gt.config.json` file to your needs. See the [configuration](/docs/cli/reference/config) docs for more information.
+
+Update the `json` file format such that the `include` path matches your project structure.
+
+<Callout>
+  Translations will preserve the original string syntax.
+</Callout>
 
 ## Step 4: Add the `gtx-cli translate` command to your build process
 
@@ -1443,7 +1458,7 @@ We will follow these 4 steps:
     Install [`gtx-cli`](/docs/cli)
   </Step>
   <Step>
-    Initialize your project with the [`gtx-cli init`](/docs/cli/init) command
+    Create a `gt.config.json` file
   </Step>
   <Step>
     Run [`gtx-cli translate`](/docs/cli/translate#translate-json)
@@ -1496,13 +1511,28 @@ Install the `gtx-cli` tool in your project.
   </Tab>
 </Tabs>
 
-## Step 3: Initialize your project with the `gtx-cli init` command
+## Step 3: Create a `gt.config.json` file
 
-Run the `gtx-cli init` command to configure your project.
+Create a `gt.config.json` file in the root of your project.
 
-```bash
-npx gtx-cli init
+```json title="gt.config.json" copy
+{
+  "defaultLocale": "en",
+  "locales": ["zh", "es", "ja"],
+  "files": {
+    "json": {
+      "include": ["i18n/[locale]/*.json"]
+    },
+  },
+}
 ```
+Feel free to customize the `gt.config.json` file to your needs. See the [configuration](/docs/cli/reference/config) docs for more information.
+
+Update the `json` file format such that the `include` path matches your project structure.
+
+<Callout>
+  Translations will preserve the original string syntax.
+</Callout>
 
 ## Step 4: Add the `gtx-cli translate` command to your build process
 
@@ -1681,7 +1711,7 @@ We will follow these 4 steps:
     Install [`gtx-cli`](/docs/cli)
   </Step>
   <Step>
-    Initialize your project with the [`gtx-cli init`](/docs/cli/init) command
+    Create a `gt.config.json` file
   </Step>
   <Step>
     Run [`gtx-cli translate`](/docs/cli/translate#translate-json)
@@ -1734,13 +1764,28 @@ Install the `gtx-cli` tool in your project.
   </Tab>
 </Tabs>
 
-## Step 3: Initialize your project with the `gtx-cli init` command
+## Step 3: Create a `gt.config.json` file
 
-Run the `gtx-cli init` command to configure your project.
+Create a `gt.config.json` file in the root of your project.
 
-```bash
-npx gtx-cli init
+```json title="gt.config.json" copy
+{
+  "defaultLocale": "en",
+  "locales": ["zh", "es", "ja"],
+  "files": {
+    "json": {
+      "include": ["i18n/[locale]/*.json"]
+    },
+  },
+}
 ```
+Feel free to customize the `gt.config.json` file to your needs. See the [configuration](/docs/cli/reference/config) docs for more information.
+
+Update the `json` file format such that the `include` path matches your project structure.
+
+<Callout>
+  Translations will preserve the original string syntax.
+</Callout>
 
 ## Step 4: Add the `gtx-cli translate` command to your build process
 
@@ -1944,6 +1989,8 @@ We have quickstart guides for many popular React frameworks.
 ## What is General Translation?
 
 General Translation is an entire internationalization (i18n) stack that allows you to ship multilingual apps quickly and easily.
+
+![Live translations in action](/live_translations.gif)
 
 General Translation includes the following:
 
@@ -7157,6 +7204,7 @@ For a more detailed guide, see the [custom translations reference](/docs/next/re
 ## Notes
  * Local translations are an alternative to fetching translations from a CDN.
  * You can customize [`loadTranslations()`](/docs/next/api/config/load-translations) to also load translations from other sources, such as your database or your own CDN.
+ * The `gtx-cli init` command configures your `gt.config.json` file to use local translations. See [gt.config.json](/docs/cli/reference/config) for more information.
 
 ## Next steps
  * See [`loadTranslations()`](/docs/next/api/config/load-translations) for more information on writing a custom translation loader.
@@ -7285,6 +7333,119 @@ export default async function RootLayout({ children }) {
   )
 }
 ```
+
+---
+title: Static Site Generation
+description: How to support static site generation for your i18n app
+---
+
+## Overview
+Source: https://generaltranslation.com/en/docs/next/reference/ssg
+
+This guide will show you how to setup your i18n app to support static site generation.
+
+---
+
+### What is static site generation?
+
+[Static site generation](https://nextjs.org/docs/pages/building-your-application/rendering/static-site-generation) (SSG) is a feature of Next.js that allows you to generate static pages at build time.
+This is useful for performance and SEO. 
+
+## SSG for the `app` router
+
+### Requirements
+
+There are a few requirements to enable static site generation for your i18n app.
+Depending on whether you are using the `app` or `pages` directory, the requirements are slightly different.
+
+1. Your app must be using the Next.js app router.
+2. Your app must support i18n routing (see [i18n routing](/docs/next/reference/i18n-routing))
+3. Your app must be using local translations (see [local translations](/docs/next/reference/local-tx))
+
+### Steps
+
+<Steps>
+  <Step>
+    **Step 1:**
+    First, make sure your app has a `<GTProvider>` component at the root layout.
+
+    ```tsx title="app/[locale]/layout.tsx"
+    import { GTProvider } from 'gt-next';
+    ```
+    Since the app is using i18n routing, the provider should be placed in the `[locale]/layout.tsx` file.
+    
+    <Accordions>
+      <Accordion title="Why is this required?">
+        SSG requires all parameters to be known at build time. This includes the locale for every statically generated page.
+        Since the `<GTProvider>` component is responsible for providing the translation context to your app, it must know the locale.
+
+        For the same reason, your app must be using i18n routing (since each route must correspond to a specific locale, for a specific page).
+      </Accordion>
+    </Accordions>
+  </Step>
+  <Step>
+    **Step 2:**
+    Next, make sure your app is using the `loadTranslations` function to load translations.
+    Additionally, pass in the locale as a parameter to the `<GTProvider>`. You can obtain the locale from the `params` object.
+
+    ```tsx title="app/[locale]/layout.tsx"
+    import { loadTranslations } from '@/i18n/loadTranslations';
+    import { GTProvider } from 'gt-next';
+
+    export default async function RootLayout({
+      children,
+      params,
+    }: {
+      children: React.ReactNode;
+      params: Promise<{ locale: string }>;
+    }) {
+      const { locale } = await params;
+      return (
+        <GTProvider loadTranslations={loadTranslations} locale={locale}>
+          {children}
+        </GTProvider>
+      )
+    }
+    ```
+  </Step>
+  <Step>
+    **Step 3:**
+    Then, make sure all of your hooks and components are importing from `gt-next/client`.
+
+    ```tsx
+    import { useGT } from 'gt-next/client';
+    import { T } from 'gt-next/client';
+    ```
+    <Callout type="info">
+      This is important because hooks and components imported from `gt-next/client` never read headers, which don't exist at build time for statically generated pages.
+    </Callout>
+  </Step>
+</Steps>
+
+Make sure you have configured your Next.js app to use the [`getStaticParams` function](https://nextjs.org/docs/app/api-reference/functions/generate-static-params) correctly!
+
+That's it! Your app should now support static site generation for multiple languages!
+
+<Accordions>
+  <Accordion title="My pages aren't being statically generated!">
+    If you've followed the steps above and your pages are still not being statically generated, double check that all of your hooks and components are importing from `gt-next/client`.
+
+    As a rule of thumb, anything that reads headers or cookies will prevent SSG. This means you can't use any of the following:
+    - `await getGT()`
+    - `await getLocale()`
+    - `await getDict()`
+    - `import { T } from 'gt-next'`
+    
+  </Accordion>
+</Accordions>
+
+## SSG for the `pages` router
+
+🚧 This section is currently under construction. 🚧
+
+
+
+
 
 ---
 title: Migrating to gt-next

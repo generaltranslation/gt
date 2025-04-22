@@ -10,6 +10,7 @@ import {
 import fs from 'fs';
 import createOrUpdateConfig from '../fs/config/setupConfig';
 import { resolveFiles } from '../fs/config/parseFilesConfig';
+import { findFilepaths } from '../fs/findFilepath';
 /**
  * Generates settings from any
  * @param options - The options to generate settings from
@@ -71,6 +72,11 @@ export function generateSettings(options: any): Settings {
 
   // Display projectId if present
   if (mergedOptions.projectId) displayProjectId(mergedOptions.projectId);
+
+  // Populate src if not provided
+  mergedOptions.src =
+    mergedOptions.src ||
+    findFilepaths(['./src', './app', './pages', './components']);
 
   // Check locales
   if (

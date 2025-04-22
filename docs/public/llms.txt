@@ -88,6 +88,7 @@ The core components include:
 - [Setup](https://generaltranslation.com/en/docs/next/tutorials/dictionary/setup): Set up a tutorial project
 - [Setup](https://generaltranslation.com/en/docs/next/tutorials/examples/currency-converter/setup): Set up a tutorial project
 - [Speedrun Next.js](https://generaltranslation.com/en/docs/next/tutorials/examples/next-speedrun): Lets speedrun creating a new app and internationalizing it with GT.
+- [Static Site Generation](https://generaltranslation.com/en/docs/next/reference/ssg): How to support static site generation for your i18n app
 - [The CLI Tool](https://generaltranslation.com/en/docs/next/reference/cli): The General Translations CLI tool
 - [Translating Strings](https://generaltranslation.com/en/docs/next/tutorials/translating-strings): How to translate strings
 - [tx()](https://generaltranslation.com/en/docs/next/api/strings/tx): API Reference for the tx string translation function
