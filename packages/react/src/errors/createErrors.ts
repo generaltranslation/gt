@@ -8,6 +8,9 @@ export const projectIdMissingError =
 export const devApiKeyProductionError =
   'gt-react Error: Production environments cannot include a development api key.';
 
+export const apiKeyInProductionError =
+  'gt-react Error: Production environments cannot include an api key.';
+
 export const createNoAuthError =
   'gt-react Error: Configuration is missing a projectId and/or devApiKey. Please add these values to your environment or pass them to the <GTProvider> directly.';
 
