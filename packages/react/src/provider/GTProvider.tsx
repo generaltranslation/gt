@@ -18,6 +18,7 @@ import {
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
 import {
+  apiKeyInProductionError,
   APIKeyMissingWarn,
   createUnsupportedLocalesWarning,
   customLoadDictionaryWarning,
@@ -187,8 +188,11 @@ export default function GTProvider({
   useMemo(() => {
     // Check: no devApiKey in production
     if (process.env.NODE_ENV === 'production' && devApiKey) {
-      // prod + dev key
-      throw new Error(devApiKeyProductionError);
+      // When SSR is disabled, throw an error
+      if (!ssr) throw new Error(apiKeyInProductionError);
+      // When SSR is enabled, only error when detecting a dev api key
+      if (devApiKey.startsWith('gtx-dev-'))
+        throw new Error(devApiKeyProductionError);
     }
 
     // Check: projectId missing while using cache/runtime in dev
