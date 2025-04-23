@@ -20,7 +20,7 @@ export default function updateConfig({
   const newContent = {
     ...(projectId && { projectId }),
     ...(_versionId && { _versionId }),
-    ...(locales && { locales }),
+    // ...(locales && { locales }), // Don't override locales
   };
   try {
     // if file exists
@@ -34,14 +34,6 @@ export default function updateConfig({
       ...oldContent,
       ...newContent,
     };
-
-    // merge locales
-    mergedContent.locales = [
-      ...new Set([
-        ...(oldContent?.locales || []),
-        ...(newContent?.locales || []),
-      ]),
-    ];
 
     // write to file
     const mergedJsonContent = JSON.stringify(mergedContent, null, 2);
