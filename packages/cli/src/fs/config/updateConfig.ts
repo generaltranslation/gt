@@ -35,6 +35,14 @@ export default function updateConfig({
       ...newContent,
     };
 
+    // merge locales
+    mergedContent.locales = [
+      ...new Set([
+        ...(oldContent?.locales || []),
+        ...(newContent?.locales || []),
+      ]),
+    ];
+
     // write to file
     const mergedJsonContent = JSON.stringify(mergedContent, null, 2);
     fs.writeFileSync(configFilepath, mergedJsonContent, 'utf-8');
