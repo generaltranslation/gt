@@ -39,6 +39,7 @@ import { _getLocaleName } from './locales/getLocaleName';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { defaultBaseUrl, libraryDefaultLocale } from './internal';
 import _isSameDialect from './locales/isSameDialect';
+import _isSupersetLocale from 'src/locales/isSupersetLocale';
 
 // ----- CORE CLASS ----- //
 
@@ -305,6 +306,24 @@ export function isSameDialect(...locales: (string | string[])[]): boolean {
  */
 export function isSameLanguage(...locales: (string | string[])[]): boolean {
   return _isSameLanguage(...locales);
+}
+
+/**
+ * Checks if a locale is a superset of another locale.
+ * A subLocale is a subset of superLocale if it is an extension of superLocale or are otherwise identical.
+ *
+ * `isSupersetLocale("en", "en-US")` would return `true`.
+ * `isSupersetLocale("en-US", "en")` would return `false`.
+ *
+ * @param {string} superLocale - The locale to check if it is a superset of the other locale.
+ * @param {string} subLocale - The locale to check if it is a subset of the other locale.
+ * @returns {boolean} True if the first locale is a superset of the second locale, false otherwise.
+ */
+export function isSupersetLocale(
+  superLocale: string,
+  subLocale: string
+): boolean {
+  return _isSupersetLocale(superLocale, subLocale);
 }
 
 /**

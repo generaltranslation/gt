@@ -11,6 +11,7 @@ import fs from 'fs';
 import createOrUpdateConfig from '../fs/config/setupConfig';
 import { resolveFiles } from '../fs/config/parseFilesConfig';
 import { findFilepaths } from '../fs/findFilepath';
+import { validateSettings } from './validateSettings';
 /**
  * Generates settings from any
  * @param options - The options to generate settings from
@@ -78,25 +79,6 @@ export function generateSettings(options: any): Settings {
     mergedOptions.src ||
     findFilepaths(['./src', './app', './pages', './components']);
 
-  // Check locales
-  if (
-    mergedOptions.defaultLocale &&
-    !isValidLocale(mergedOptions.defaultLocale)
-  ) {
-    console.error(
-      `defaultLocale: ${mergedOptions.defaultLocale} is not a valid locale!`
-    );
-    process.exit(1);
-  }
-
-  for (const locale of mergedOptions.locales) {
-    if (!isValidLocale(locale)) {
-      console.error(
-        `Provided locales: "${mergedOptions?.locales?.join()}", ${locale} is not a valid locale!`
-      );
-      process.exit(1);
-    }
-  }
 
   // Resolve all glob patterns in the files object
   mergedOptions.files = resolveFiles(
@@ -114,5 +96,6 @@ export function generateSettings(options: any): Settings {
         mergedOptions.locales?.length > 0 ? mergedOptions.locales : undefined,
     });
   }
+  validateSettings(mergedOptions);
   return mergedOptions;
 }

@@ -20,7 +20,7 @@ export default function updateConfig({
   const newContent = {
     ...(projectId && { projectId }),
     ...(_versionId && { _versionId }),
-    ...(locales && { locales }),
+    // ...(locales && { locales }), // Don't override locales
   };
   try {
     // if file exists
