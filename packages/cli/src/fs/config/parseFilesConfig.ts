@@ -2,6 +2,7 @@ import path from 'path';
 import { FilesOptions, ResolvedFiles, TransformFiles } from '../../types';
 import fg from 'fast-glob';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles';
+import { logWarning } from '../../console/logging';
 
 /**
  * Resolves the files from the files object
@@ -99,6 +100,13 @@ function expandGlobPatterns(
   // Process include patterns
   for (const pattern of includePatterns) {
     // Track positions where [locale] appears in the original pattern
+    // It must be included in the pattern, otherwise the CLI tool will not be able to find the correct output path
+    // Warn if it's not included
+    if (!pattern.includes('[locale]')) {
+      logWarning(
+        `Pattern "${pattern}" does not include [locale], so the CLI tool may incorrectly save translated files.`
+      );
+    }
     const localePositions: number[] = [];
     let searchIndex = 0;
     const localeTag = '[locale]';
