@@ -15,6 +15,7 @@ import {
   endCommand,
   promptConfirm,
   promptMultiSelect,
+  logSuccess,
 } from '../console';
 import path from 'path';
 import fs from 'fs';
@@ -155,6 +156,7 @@ export class BaseCLI {
         // Ask for the locales
         const locales = await promptText({
           message: `What locales would you like to translate using General Translation? ${chalk.gray('(space-separated list)')}`,
+          defaultValue: 'es zh fr de',
           validate: (input) => {
             const localeList = input.split(' ');
             if (localeList.length === 0) {
@@ -219,8 +221,8 @@ export class BaseCLI {
           : null;
 
         const message = !isUsingGT
-          ? 'What is the format of your language resource files? Select as many as applicable. Additionally, you can translate any other files you have in your project.'
-          : '(Optional) Do you have any separate files you would like to translate? For example, extra Markdown files for documentation.';
+          ? 'What is the format of your language resource files? Select as many as applicable.\nAdditionally, you can translate any other files you have in your project.'
+          : '(Optional) Do you have any separate files you would like to translate?\nFor example, extra Markdown files for documentation.';
         const dataFormats = await promptMultiSelect({
           message,
           options: [
@@ -236,7 +238,7 @@ export class BaseCLI {
         const files: FilesOptions = {};
         for (const dataFormat of dataFormats) {
           const paths = await promptText({
-            message: `${FILE_EXT_TO_FORMAT[dataFormat]}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_FORMAT[dataFormat]} files you would like to translate. Make sure to include [locale] in the patterns. See https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
+            message: `${FILE_EXT_TO_FORMAT[dataFormat]}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_FORMAT[dataFormat]} files you would like to translate.\nMake sure to include [locale] in the patterns. See https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
             defaultValue: `./**/*.[locale].${dataFormat}`,
           });
 
@@ -258,11 +260,12 @@ export class BaseCLI {
           files,
         });
 
-        endCommand(
-          `Done! Feel free to edit ${chalk.blue(
+        logSuccess(
+          `Feel free to edit ${chalk.blue(
             configFilepath
           )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
         );
+        endCommand('Done!');
       });
   }
 }

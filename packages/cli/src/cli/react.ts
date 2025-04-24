@@ -287,7 +287,7 @@ export class ReactCLI extends BaseCLI {
           chalk.red(
             `CLI tool encountered errors while scanning for ${chalk.green(
               '<T>'
-            )} tags. These components will not be translated.\n\n` +
+            )} tags. These components will not be translated.\n` +
               errors
                 .map((error) => chalk.yellow('• Warning: ') + error)
                 .join('\n')
@@ -298,7 +298,7 @@ export class ReactCLI extends BaseCLI {
           chalk.red(
             `CLI tool encountered errors while scanning for ${chalk.green(
               '<T>'
-            )} tags. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n\n` +
+            )} tags. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
               errors.map((error) => chalk.red('• Error: ') + error).join('\n')
           )
         );
@@ -369,6 +369,11 @@ export class ReactCLI extends BaseCLI {
     generateSettings(options);
 
     // ----- //
+    const includeTId = await promptConfirm({
+      message: 'Do you want to include an unique id for each <T> tag?',
+      defaultValue: true,
+    });
+    options.disableIds = !includeTId;
 
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
     const { errors, filesUpdated, warnings } = await this.scanForContent(
@@ -384,13 +389,13 @@ export class ReactCLI extends BaseCLI {
     if (!options.disableFormatting) await formatFiles(filesUpdated);
 
     logSuccess(
-      `Success! Added <T> tags and updated ${chalk.bold(
+      `Success! Added <T> tags and updated ${chalk.bold.cyan(
         filesUpdated.length
-      )} files:` +
+      )} files:\n` +
         filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
     );
     if (filesUpdated.length > 0) {
-      logInfo(chalk.green('Please verify the changes before committing.'));
+      logStep(chalk.green('Please verify the changes before committing.'));
     }
 
     if (warnings.length > 0) {
@@ -496,14 +501,14 @@ export class ReactCLI extends BaseCLI {
 
     logSuccess(
       chalk.green(
-        `Success! Added <T> tags and updated ${chalk.bold(
+        `Success! Added <T> tags and updated ${chalk.bold.cyan(
           filesUpdated.length
         )} files:\n`
       ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
     );
 
     if (filesUpdated.length > 0) {
-      logInfo(chalk.green('Please verify the changes before committing.'));
+      logStep(chalk.green('Please verify the changes before committing.'));
     }
 
     if (warnings.length > 0) {
@@ -591,7 +596,7 @@ export class ReactCLI extends BaseCLI {
           chalk.red(
             `CLI tool encountered errors while scanning for ${chalk.green(
               '<T>'
-            )} tags. These components will not be translated.\n\n` +
+            )} tags. These components will not be translated.\n` +
               errors
                 .map((error) => chalk.yellow('• Warning: ') + error + '\n')
                 .join('')
@@ -602,7 +607,7 @@ export class ReactCLI extends BaseCLI {
           chalk.red(
             `CLI tool encountered errors while scanning for ${chalk.green(
               '<T>'
-            )} tags. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n\n` +
+            )} tags. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
               errors
                 .map((error) => chalk.red('• Error: ') + error + '\n')
                 .join('')
@@ -617,21 +622,32 @@ export class ReactCLI extends BaseCLI {
     }
 
     if (options.dryRun) {
+      logSuccess(
+        'Dry run complete. No translations were sent to General Translation.'
+      );
       process.exit(0);
     }
 
     // Send updates to General Translation API
     if (updates.length) {
       // Error if no API key at this point
-      if (!settings.apiKey)
-        throw new Error(
-          'No General Translation API key found. Use the --api-key flag to provide one.'
+      if (!settings.apiKey) {
+        logError(
+          chalk.red(
+            'No General Translation API key found. Provide one via the --api-key flag or as the GT_API_KEY environment variable.'
+          )
         );
+        process.exit(1);
+      }
       // Error if no projectId at this point
-      if (!settings.projectId)
-        throw new Error(
-          'No General Translation Project ID found. Use the --project-id flag to provide one.'
+      if (!settings.projectId) {
+        logError(
+          chalk.red(
+            'No General Translation Project ID found. Provide one via the --project-id flag, gt.config.json, or the GT_PROJECT_ID environment variable.'
+          )
         );
+        process.exit(1);
+      }
 
       const updateResponse = await sendUpdates(
         updates,

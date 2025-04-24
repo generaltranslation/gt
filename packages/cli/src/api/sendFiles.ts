@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { createSpinner, logInfo } from '../console';
+import { createSpinner, logInfo, logMessage, logSuccess } from '../console';
 import { Settings } from '../types';
 import { FileFormats, DataFormat } from '../types/data';
 
@@ -25,7 +25,7 @@ type ApiOptions = Settings & {
 export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
   const { apiKey } = options;
 
-  logInfo(
+  logMessage(
     chalk.cyan('Files to translate:') +
       '\n' +
       files.map((file) => `  - ${chalk.bold(file.fileName)}`).join('\n')
@@ -70,7 +70,7 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
     );
 
     if (!response.ok) {
-      spinner.stop(await response.text());
+      spinner.stop(chalk.red(await response.text()));
       process.exit(1);
     }
 
@@ -78,9 +78,8 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
 
     // Handle version ID response (for async processing)
     const { data, message, locales, translations } = responseData;
-    spinner.stop(
-      chalk.green(message || 'Translation job submitted successfully')
-    );
+    spinner.stop(chalk.green('Files for translation uploaded successfully'));
+    logSuccess(message);
 
     return { data, locales, translations };
   } catch (error) {

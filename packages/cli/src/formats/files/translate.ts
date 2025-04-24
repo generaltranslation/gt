@@ -258,7 +258,7 @@ async function processInitialTranslations(
       }
     }
 
-    spinner.stop('Downloaded cached translations');
+    spinner.stop(chalk.green('Downloaded cached translations'));
   }
 
   return downloadStatus;

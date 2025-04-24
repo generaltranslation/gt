@@ -28,6 +28,9 @@ export function logSuccess(message: string) {
 export function logStep(message: string) {
   log.step(message);
 }
+export function logMessage(message: string) {
+  log.message(message, { symbol: chalk.cyan('~') });
+}
 
 export function logErrorAndExit(message: string) {
   log.error(message);
@@ -36,17 +39,17 @@ export function logErrorAndExit(message: string) {
 
 // Clack prompts
 export function startCommand(message: string) {
-  intro(message);
+  intro(chalk.cyan(message));
 }
 export function endCommand(message: string) {
-  outro(message);
+  outro(chalk.cyan(message));
 }
 
 // GT specific logging
 export function displayHeader(introString: string) {
   displayAsciiTitle();
   displayInitializingText();
-  intro(introString);
+  startCommand(introString);
 }
 
 function displayAsciiTitle() {
@@ -71,7 +74,7 @@ function displayInitializingText() {
 }
 
 export function displayProjectId(projectId: string) {
-  logInfo(chalk.yellow(`Project ID: ${chalk.bold(projectId)}`));
+  logMessage(chalk.gray(`Project ID: ${chalk.bold(projectId)}`));
 }
 
 export function displayResolvedPaths(resolvedPaths: [string, string][]) {

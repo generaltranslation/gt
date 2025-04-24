@@ -9,6 +9,7 @@ import {
 import {
   logError,
   logInfo,
+  logStep,
   logSuccess,
   logWarning,
   promptConfirm,
@@ -142,7 +143,7 @@ export class NextCLI extends ReactCLI {
 
     logSuccess(
       chalk.green(
-        `Success! Added <T> tags and updated ${chalk.bold(
+        `Success! Added <T> tags and updated ${chalk.bold.cyan(
           filesUpdated.length
         )} files:\n` +
           filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
@@ -150,7 +151,7 @@ export class NextCLI extends ReactCLI {
     );
 
     if (filesUpdated.length > 0) {
-      logInfo(chalk.green('Please verify the changes before committing.'));
+      logStep(chalk.green('Please verify the changes before committing.'));
     }
 
     if (warnings.length > 0) {
