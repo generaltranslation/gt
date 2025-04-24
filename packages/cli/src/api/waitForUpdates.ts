@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { displayLoadingAnimation } from '../console/console';
+import { createSpinner } from '../console';
 import { getLocaleProperties } from 'generaltranslation';
 
 /**
@@ -20,7 +20,8 @@ export const waitForUpdates = async (
   startTime: number,
   timeoutDuration: number
 ) => {
-  const spinner = await displayLoadingAnimation('Waiting for translation...');
+  const spinner = createSpinner();
+  spinner.start('Waiting for translation...');
   const availableLocales: string[] = [];
   const checkDeployment = async () => {
     try {
@@ -48,8 +49,7 @@ export const waitForUpdates = async (
             }
           });
           const newSuffixText = [
-            `\n\n` +
-              chalk.green(`${availableLocales.length}/${locales.length}`) +
+            chalk.green(`${availableLocales.length}/${locales.length}`) +
               ` translations completed`,
             ...availableLocales.map((locale: string) => {
               const localeProperties = getLocaleProperties(locale);
@@ -58,7 +58,8 @@ export const waitForUpdates = async (
               )} (${chalk.green(localeProperties.code)})`;
             }),
           ];
-          spinner.suffixText = newSuffixText.join('\n');
+          // The new clack spinner doesn't have suffixText, just update the message
+          spinner.message(newSuffixText.join('\n'));
         }
         if (locales.every((locale) => availableLocales.includes(locale))) {
           return true;
@@ -79,7 +80,7 @@ export const waitForUpdates = async (
   // Do first check immediately
   const initialCheck = await checkDeployment();
   if (initialCheck) {
-    spinner.succeed(chalk.green('All translations are live!'));
+    spinner.stop(chalk.green('All translations are live!'));
     return true;
   }
 
@@ -92,14 +93,13 @@ export const waitForUpdates = async (
         const elapsed = Date.now() - startTime;
 
         if (isDeployed || elapsed >= timeoutDuration) {
-          process.stdout.write('\n');
           clearInterval(intervalCheck);
 
           if (isDeployed) {
-            spinner.succeed(chalk.green('All translations are live!'));
+            spinner.stop(chalk.green('All translations are live!'));
             resolve(true);
           } else {
-            spinner.fail(chalk.red('Timed out waiting for translations'));
+            spinner.stop(chalk.red('Timed out waiting for translations'));
             resolve(false);
           }
         }

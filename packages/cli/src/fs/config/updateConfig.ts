@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { displayUpdatedConfigFile } from '../../console/console';
+import { displayUpdatedConfigFile, logError } from '../../console/console';
 
 /**
  * Update the config file version id, locales, and projectId (if necessary)
@@ -42,6 +42,6 @@ export default function updateConfig({
     // show update in console
     displayUpdatedConfigFile(configFilepath);
   } catch (error) {
-    console.error(`An error occurred while updating ${configFilepath}:`, error);
+    logError(`An error occurred while updating ${configFilepath}: ${error}`);
   }
 }

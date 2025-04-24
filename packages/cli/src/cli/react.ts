@@ -9,13 +9,23 @@ import {
   GenerateSourceOptions,
   SupportedLibraries,
 } from '../types';
-import { displayAsciiTitle, displayInitializingText } from '../console/console';
+import {
+  displayHeader,
+  endCommand,
+  logError,
+  logErrorAndExit,
+  logInfo,
+  logStep,
+  logSuccess,
+  logWarning,
+  promptConfirm,
+  promptSelect,
+} from '../console/console';
 import loadJSON from '../fs/loadJSON';
 import findFilepath, { findFilepaths } from '../fs/findFilepath';
 import createESBuildConfig from '../react/config/createESBuildConfig';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import chalk from 'chalk';
-import { select } from '@inquirer/prompts';
 import { detectFormatter, formatFiles } from '../hooks/postProcess';
 import { fetchTranslations } from '../api/fetchTranslations';
 import path from 'path';
@@ -146,7 +156,11 @@ export class ReactCLI extends BaseCLI {
         'Timeout in seconds for waiting for updates to be deployed to the CDN',
         DEFAULT_TIMEOUT.toString()
       )
-      .action((options: Options) => this.handleTranslateCommand(options));
+      .action(async (options: Options) => {
+        displayHeader('Translating project...');
+        await this.handleTranslateCommand(options);
+        endCommand('Done!');
+      });
   }
 
   protected setupGenerateSourceCommand(): void {
@@ -167,8 +181,7 @@ export class ReactCLI extends BaseCLI {
       .option('--dictionary <path>', 'Path to dictionary file')
       .option(
         '--default-language, --default-locale <locale>',
-        'Source locale (e.g., en)',
-        libraryDefaultLocale
+        'Source locale (e.g., en)'
       )
       .option(
         '--inline',
@@ -184,9 +197,11 @@ export class ReactCLI extends BaseCLI {
         '-t, --translations-dir, --translation-dir <path>',
         'Path to directory where translations will be saved. If this flag is not provided, translations will not be saved locally.'
       )
-      .action((options: GenerateSourceOptions) =>
-        this.handleGenerateSourceCommand(options)
-      );
+      .action(async (options: GenerateSourceOptions) => {
+        displayHeader('Generating source templates...');
+        await this.handleGenerateSourceCommand(options);
+        endCommand('Done!');
+      });
   }
 
   protected setupSetupCommand(): void {
@@ -205,7 +220,11 @@ export class ReactCLI extends BaseCLI {
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
-      .action((options: SetupOptions) => this.handleSetupCommand(options));
+      .action(async (options: SetupOptions) => {
+        displayHeader('Setting up project...');
+        await this.handleSetupCommand(options);
+        endCommand('Done!');
+      });
   }
 
   protected setupScanCommand(): void {
@@ -230,15 +249,16 @@ export class ReactCLI extends BaseCLI {
         'Disable formatting of edited files',
         false
       )
-      .action((options: WrapOptions) => this.handleScanCommand(options));
+      .action(async (options: WrapOptions) => {
+        displayHeader('Scanning project...');
+        await this.handleScanCommand(options);
+        endCommand('Done!');
+      });
   }
 
   protected async handleGenerateSourceCommand(
     initOptions: GenerateSourceOptions
   ): Promise<void> {
-    displayAsciiTitle();
-    displayInitializingText();
-
     const settings = generateSettings(initOptions);
 
     const options = { ...initOptions, ...settings };
@@ -263,34 +283,25 @@ export class ReactCLI extends BaseCLI {
 
     if (errors.length > 0) {
       if (options.ignoreErrors) {
-        console.log(
+        logWarning(
           chalk.red(
             `CLI tool encountered errors while scanning for ${chalk.green(
               '<T>'
-            )} tags.\n`
-          )
-        );
-        console.log(
-          errors
-            .map((error) => chalk.yellow('• Warning: ') + error + '\n')
-            .join(''),
-          chalk.white(
-            `These ${chalk.green('<T>')} components will not be translated.\n`
+            )} tags. These components will not be translated.\n\n` +
+              errors
+                .map((error) => chalk.yellow('• Warning: ') + error)
+                .join('\n')
           )
         );
       } else {
-        console.log(
+        logError(
           chalk.red(
             `CLI tool encountered errors while scanning for ${chalk.green(
               '<T>'
-            )} tags.\n`
+            )} tags. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n\n` +
+              errors.map((error) => chalk.red('• Error: ') + error).join('\n')
           )
         );
-        console.log(
-          chalk.gray('To ignore these errors, re-run with --ignore-errors\n\n'),
-          errors.map((error) => chalk.red('• Error: ') + error + '\n').join('')
-        );
-        process.exit(1);
       }
     }
     // Convert updates to the proper data format
@@ -313,12 +324,11 @@ export class ReactCLI extends BaseCLI {
         settings.defaultLocale
       );
       if (!translationFiles.gt) {
-        console.error(noFilesError);
+        logError(noFilesError);
         process.exit(1);
       }
-      console.log();
       saveJSON(translationFiles.gt, newData);
-      console.log(chalk.green('Source file saved successfully!\n'));
+      logStep('Source file saved successfully!');
       // Also save translations (after merging with existing translations)
       for (const locale of settings.locales) {
         const translationsFile = resolveLocaleFiles(placeholderPaths, locale);
@@ -337,28 +347,21 @@ export class ReactCLI extends BaseCLI {
         );
         saveJSON(translationsFile.gt, filteredTranslations);
       }
-      console.log(chalk.green('Merged translations successfully!\n'));
+      logStep('Merged translations successfully!');
     }
   }
 
   protected async handleScanCommand(options: WrapOptions): Promise<void> {
-    displayAsciiTitle();
-    displayInitializingText();
-
     // Ask user for confirmation using inquirer
-    const answer = await select({
+    const answer = await promptConfirm({
       message: chalk.yellow(
-        '⚠️  Warning: This operation will modify your source files!\n   Make sure you have committed or stashed your current changes.\n\n   Do you want to continue?'
+        'Warning: This operation will modify your source files! Make sure you have committed or stashed your current changes. Do you want to continue?'
       ),
-      choices: [
-        { value: true, name: 'Yes' },
-        { value: false, name: 'No' },
-      ],
-      default: true,
+      defaultValue: true,
     });
 
     if (!answer) {
-      console.log(chalk.gray('\nOperation cancelled.'));
+      logError('Operation cancelled.');
       process.exit(0);
     }
 
@@ -374,102 +377,88 @@ export class ReactCLI extends BaseCLI {
     );
 
     if (errors.length > 0) {
-      console.log(chalk.red('\n✗ Failed to write files:\n'));
-      console.log(errors.join('\n'));
+      logError(chalk.red('Failed to write files:\n') + errors.join('\n'));
     }
 
     // Format updated files if formatters are available
     if (!options.disableFormatting) await formatFiles(filesUpdated);
 
-    console.log(
-      chalk.green(
-        `\n✓ Success! Added <T> tags and updated ${chalk.bold(
-          filesUpdated.length
-        )} files:\n`
-      )
+    logSuccess(
+      `Success! Added <T> tags and updated ${chalk.bold(
+        filesUpdated.length
+      )} files:` +
+        filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
     );
     if (filesUpdated.length > 0) {
-      console.log(
-        filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
-      );
-      console.log();
-      console.log(chalk.green('Please verify the changes before committing.'));
+      logInfo(chalk.green('Please verify the changes before committing.'));
     }
 
     if (warnings.length > 0) {
-      console.log(chalk.yellow('\n⚠️  Warnings encountered:'));
-      console.log(
-        warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')
+      logWarning(
+        chalk.yellow('Warnings encountered:') +
+          '\n' +
+          warnings
+            .map((warning) => `${chalk.yellow('-')} ${warning}`)
+            .join('\n')
       );
     }
   }
 
   protected async handleSetupCommand(options: SetupOptions): Promise<void> {
-    displayAsciiTitle();
-    displayInitializingText();
-
     // Ask user for confirmation using inquirer
-    const answer = await select({
+    const answer = await promptConfirm({
       message: chalk.yellow(
         `This operation will prepare your project for internationalization.
         Make sure you have committed or stashed any changes.
         Do you want to continue?`
       ),
-      choices: [
-        { value: true, name: 'Yes' },
-        { value: false, name: 'No' },
-      ],
-      default: true,
+      defaultValue: true,
     });
 
     if (!answer) {
-      console.log(chalk.gray('\nOperation cancelled.'));
+      logError('Operation cancelled.');
       process.exit(0);
     }
 
-    const frameworkType = await select({
+    const frameworkType = await promptSelect({
       message: 'What framework are you using?',
-      choices: [
-        { value: 'next', name: chalk.blue('Next.js') },
-        { value: 'vite', name: chalk.green('Vite + React') },
-        { value: 'gatsby', name: chalk.magenta('Gatsby') },
-        { value: 'react', name: chalk.yellow('React') },
-        { value: 'redwood', name: chalk.red('RedwoodJS') },
-        { value: 'other', name: chalk.gray('Other') },
+      options: [
+        { value: 'next', label: chalk.blue('Next.js') },
+        { value: 'vite', label: chalk.green('Vite + React') },
+        { value: 'gatsby', label: chalk.magenta('Gatsby') },
+        { value: 'react', label: chalk.yellow('React') },
+        { value: 'redwood', label: chalk.red('RedwoodJS') },
+        { value: 'other', label: chalk.gray('Other') },
       ],
-      default: 'next',
+      defaultValue: 'next',
     });
     let addGTProvider = false;
     if (frameworkType === 'next') {
-      const routerType = await select({
+      const routerType = await promptSelect({
         message: 'Are you using the App router or the Pages router?',
-        choices: [
-          { value: 'pages', name: 'Pages Router' },
-          { value: 'app', name: 'App Router' },
+        options: [
+          { value: 'pages', label: 'Pages Router' },
+          { value: 'app', label: 'App Router' },
         ],
-        default: 'pages',
+        defaultValue: 'pages',
       });
       if (routerType === 'app') {
-        console.log(
+        logError(
           chalk.red(
-            '\nPlease use gt-next and gt-next-cli instead. gt-react should not be used with the App router.'
+            'Please use gt-next and gt-next-cli instead. gt-react should not be used with the App router.'
           )
         );
         process.exit(0);
       }
-      addGTProvider = await select({
+      addGTProvider = await promptConfirm({
         message:
           'Do you want the setup tool to automatically add the GTProvider component?',
-        choices: [
-          { value: true, name: 'Yes' },
-          { value: false, name: 'No' },
-        ],
-        default: true,
+        defaultValue: true,
       });
     } else if (frameworkType === 'other') {
-      console.log(
+      logError(
         chalk.red(
-          `\nSorry, at the moment we currently do not support other React frameworks. 
+          `Sorry, at the moment we currently do not support other React frameworks. 
             Please let us know what you would like to see supported at https://github.com/generaltranslation/gt/issues`
         )
       );
@@ -478,13 +467,9 @@ export class ReactCLI extends BaseCLI {
     const selectedFramework: SupportedFrameworks =
       frameworkType === 'next' ? 'next-pages' : 'next-app';
 
-    const includeTId = await select({
+    const includeTId = await promptConfirm({
       message: 'Do you want to include an unique id for each <T> tag?',
-      choices: [
-        { value: true, name: 'Yes' },
-        { value: false, name: 'No' },
-      ],
-      default: true,
+      defaultValue: true,
     });
 
     // ----- Create a starter gt.config.json file -----
@@ -506,29 +491,28 @@ export class ReactCLI extends BaseCLI {
     );
 
     if (errors.length > 0) {
-      console.log(chalk.red('\n✗ Failed to write files:\n'));
-      console.log(errors.join('\n'));
+      logError(chalk.red('Failed to write files:\n') + errors.join('\n'));
     }
 
-    console.log(
+    logSuccess(
       chalk.green(
-        `\nSuccess! Added <T> tags and updated ${chalk.bold(
+        `Success! Added <T> tags and updated ${chalk.bold(
           filesUpdated.length
         )} files:\n`
-      )
+      ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
     );
+
     if (filesUpdated.length > 0) {
-      console.log(
-        filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
-      );
-      console.log();
-      console.log(chalk.green('Please verify the changes before committing.'));
+      logInfo(chalk.green('Please verify the changes before committing.'));
     }
 
     if (warnings.length > 0) {
-      console.log(chalk.yellow('\nWarnings encountered:'));
-      console.log(
-        warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')
+      logWarning(
+        chalk.yellow('Warnings encountered:') +
+          '\n' +
+          warnings
+            .map((warning) => `${chalk.yellow('-')} ${warning}`)
+            .join('\n')
       );
     }
     // Stage only the modified files
@@ -543,24 +527,17 @@ export class ReactCLI extends BaseCLI {
       return;
     }
 
-    const applyFormatting = await select({
+    const applyFormatting = await promptConfirm({
       message: `Would you like to auto-format the modified files? ${chalk.gray(
         `(${formatter})`
       )}`,
-      choices: [
-        { value: true, name: 'Yes' },
-        { value: false, name: 'No' },
-      ],
-      default: true,
+      defaultValue: true,
     });
     // Format updated files if formatters are available
     if (applyFormatting) await formatFiles(filesUpdated, formatter);
   }
 
   protected async handleTranslateCommand(initOptions: Options): Promise<void> {
-    displayAsciiTitle();
-    displayInitializingText();
-
     const settings = generateSettings(initOptions);
 
     // First run the base class's handleTranslate method
@@ -600,7 +577,7 @@ export class ReactCLI extends BaseCLI {
     // validate timeout
     const timeout = parseInt(options.timeout);
     if (isNaN(timeout) || timeout < 0) {
-      throw new Error(
+      logErrorAndExit(
         `Invalid timeout: ${options.timeout}. Must be a positive integer.`
       );
     }
@@ -610,34 +587,27 @@ export class ReactCLI extends BaseCLI {
 
     if (errors.length > 0) {
       if (options.ignoreErrors) {
-        console.log(
+        logWarning(
           chalk.red(
             `CLI tool encountered errors while scanning for ${chalk.green(
               '<T>'
-            )} tags.\n`
-          )
-        );
-        console.log(
-          errors
-            .map((error) => chalk.yellow('• Warning: ') + error + '\n')
-            .join(''),
-          chalk.white(
-            `These ${chalk.green('<T>')} components will not be translated.\n`
+            )} tags. These components will not be translated.\n\n` +
+              errors
+                .map((error) => chalk.yellow('• Warning: ') + error + '\n')
+                .join('')
           )
         );
       } else {
-        console.log(
+        logError(
           chalk.red(
             `CLI tool encountered errors while scanning for ${chalk.green(
               '<T>'
-            )} tags.\n`
+            )} tags. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n\n` +
+              errors
+                .map((error) => chalk.red('• Error: ') + error + '\n')
+                .join('')
           )
         );
-        console.log(
-          chalk.gray('To ignore these errors, re-run with --ignore-errors\n\n'),
-          errors.map((error) => chalk.red('• Error: ') + error + '\n').join('')
-        );
-        process.exit(1);
       }
     }
 
@@ -678,7 +648,6 @@ export class ReactCLI extends BaseCLI {
 
       // Save translations to local directory if files.gt.output is provided
       if (versionId && options.files.placeholderPaths.gt) {
-        console.log();
         const translations = await fetchTranslations(
           settings.baseUrl,
           settings.apiKey,
@@ -687,14 +656,13 @@ export class ReactCLI extends BaseCLI {
         saveTranslations(translations, options.files.placeholderPaths, 'JSX');
       }
     } else {
-      console.log(
+      logError(
         chalk.red(
           `No in-line content or dictionaries were found for ${chalk.green(
             this.library
           )}. Are you sure you're running this command in the right directory?`
         )
       );
-      process.exit(0);
     }
   }
 

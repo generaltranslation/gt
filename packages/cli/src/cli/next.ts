@@ -6,9 +6,15 @@ import {
   SupportedFrameworks,
   SupportedLibraries,
 } from '../types';
-import { displayAsciiTitle, displayInitializingText } from '../console/console';
+import {
+  logError,
+  logInfo,
+  logSuccess,
+  logWarning,
+  promptConfirm,
+  promptSelect,
+} from '../console/console';
 import chalk from 'chalk';
-import { select } from '@inquirer/prompts';
 import { detectFormatter, formatFiles } from '../hooks/postProcess';
 import findFilepath from '../fs/findFilepath';
 import scanForContent from '../next/parse/scanForContent';
@@ -49,51 +55,38 @@ export class NextCLI extends ReactCLI {
   }
 
   protected async handleSetupCommand(options: SetupOptions): Promise<void> {
-    displayAsciiTitle();
-    displayInitializingText();
-
     // Ask user for confirmation using inquirer
-    const answer = await select({
+    const answer = await promptConfirm({
       message: chalk.yellow(
         `This operation will prepare your project for internationalization.
         Make sure you have committed or stashed any changes.
         Do you want to continue?`
       ),
-      choices: [
-        { value: true, name: 'Yes' },
-        { value: false, name: 'No' },
-      ],
-      default: true,
+      defaultValue: true,
     });
 
     if (!answer) {
-      console.log(chalk.gray('\nOperation cancelled.'));
+      logInfo('Operation cancelled.');
       process.exit(0);
     }
-    const routerType = await select({
+    const routerType = await promptSelect({
       message: 'Are you using the Next.js App router or the Pages router?',
-      choices: [
-        { value: 'app', name: 'App Router' },
-        { value: 'pages', name: 'Pages Router' },
+      options: [
+        { value: 'app', label: 'App Router' },
+        { value: 'pages', label: 'Pages Router' },
       ],
-      default: 'app',
+      defaultValue: 'app',
     });
     if (routerType === 'pages') {
-      console.log(
-        chalk.red(
-          '\nPlease install gt-react instead. gt-next is currently not supported for the Pages router.'
-        )
+      logError(
+        'Please install gt-react instead. gt-next is currently not supported for the Pages router.'
       );
       process.exit(0);
     }
-    const addGTProvider = await select({
+    const addGTProvider = await promptConfirm({
       message:
         'Do you want the setup tool to automatically add the GTProvider component?',
-      choices: [
-        { value: true, name: 'Yes' },
-        { value: false, name: 'No' },
-      ],
-      default: true,
+      defaultValue: true,
     });
     // Check if they have a next.config.js file
     const nextConfigPath = findFilepath([
@@ -103,24 +96,16 @@ export class NextCLI extends ReactCLI {
       './next.config.mts',
     ]);
     if (!nextConfigPath) {
-      console.log(chalk.red('No next.config.js file found.'));
+      logError('No next.config.[js|ts|mjs|mts] file found.');
       process.exit(0);
     }
-    const addWithGTConfig = await select({
+    const addWithGTConfig = await promptConfirm({
       message: `Do you want to automatically add withGTConfig() to your ${nextConfigPath}?`,
-      choices: [
-        { value: true, name: 'Yes' },
-        { value: false, name: 'No' },
-      ],
-      default: true,
+      defaultValue: true,
     });
-    const includeTId = await select({
+    const includeTId = await promptConfirm({
       message: 'Do you want to include an unique id for each <T> tag?',
-      choices: [
-        { value: true, name: 'Yes' },
-        { value: false, name: 'No' },
-      ],
-      default: true,
+      defaultValue: true,
     });
 
     // ----- Create a starter gt.config.json file -----
@@ -152,29 +137,29 @@ export class NextCLI extends ReactCLI {
     }
 
     if (errors.length > 0) {
-      console.log(chalk.red('\n✗ Failed to write files:\n'));
-      console.log(errors.join('\n'));
+      logError(chalk.red('Failed to write files:\n') + errors.join('\n'));
     }
 
-    console.log(
+    logSuccess(
       chalk.green(
-        `\nSuccess! Added <T> tags and updated ${chalk.bold(
+        `Success! Added <T> tags and updated ${chalk.bold(
           filesUpdated.length
-        )} files:\n`
+        )} files:\n` +
+          filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
       )
     );
+
     if (filesUpdated.length > 0) {
-      console.log(
-        filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
-      );
-      console.log();
-      console.log(chalk.green('Please verify the changes before committing.'));
+      logInfo(chalk.green('Please verify the changes before committing.'));
     }
 
     if (warnings.length > 0) {
-      console.log(chalk.yellow('\nWarnings encountered:'));
-      console.log(
-        warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')
+      logWarning(
+        chalk.yellow('Warnings encountered:') +
+          '\n' +
+          warnings
+            .map((warning) => `${chalk.yellow('-')} ${warning}`)
+            .join('\n')
       );
     }
     // Stage only the modified files
@@ -189,15 +174,11 @@ export class NextCLI extends ReactCLI {
       return;
     }
 
-    const applyFormatting = await select({
+    const applyFormatting = await promptConfirm({
       message: `Would you like to auto-format the modified files? ${chalk.gray(
         `(${formatter})`
       )}`,
-      choices: [
-        { value: true, name: 'Yes' },
-        { value: false, name: 'No' },
-      ],
-      default: true,
+      defaultValue: true,
     });
     // Format updated files if formatters are available
     if (applyFormatting) await formatFiles(filesUpdated, formatter);

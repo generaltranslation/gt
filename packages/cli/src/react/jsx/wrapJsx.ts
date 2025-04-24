@@ -2,7 +2,7 @@ import * as t from '@babel/types';
 import { isStaticExpression, isStaticValue } from './evaluateJsx';
 import { ImportItem } from './utils/parseAst';
 import generate from '@babel/generator';
-import { warnTernary } from '../../console/warnings';
+import { warnTernarySync } from '../../console';
 /**
  * Recursively wraps a JSX element with a <T> component and unique id
  * @param node - The JSX element to wrap
@@ -89,7 +89,7 @@ function wrapJsxExpression(
 
       // Warn about ternary (should use branch instead)
       if (result.wrappedInT && !mark) {
-        options.warnings.push(warnTernary(options.file));
+        options.warnings.push(warnTernarySync(options.file));
       }
     } else if (
       t.isConditionalExpression(consequent) ||

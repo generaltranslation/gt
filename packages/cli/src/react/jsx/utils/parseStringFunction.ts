@@ -4,9 +4,9 @@ import { splitStringToContent } from 'generaltranslation';
 import * as t from '@babel/types';
 import { isStaticExpression } from '../evaluateJsx';
 import {
-  warnNonStaticExpression,
-  warnTemplateLiteral,
-} from '../../../console/warnings';
+  warnNonStaticExpressionSync,
+  warnTemplateLiteralSync,
+} from '../../../console';
 import generate from '@babel/generator';
 
 export const attributes = ['id', 'context'];
@@ -80,7 +80,7 @@ export function parseStrings(
                       const result = isStaticExpression(prop.value);
                       if (!result.isStatic) {
                         errors.push(
-                          warnNonStaticExpression(
+                          warnNonStaticExpressionSync(
                             file,
                             attribute,
                             generate(prop.value).code
@@ -102,7 +102,7 @@ export function parseStrings(
               });
             } else if (t.isTemplateLiteral(arg)) {
               // warn if template literal
-              errors.push(warnTemplateLiteral(file, generate(arg).code));
+              errors.push(warnTemplateLiteralSync(file, generate(arg).code));
             }
           }
         });

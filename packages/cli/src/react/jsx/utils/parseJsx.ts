@@ -4,10 +4,10 @@ import generate from '@babel/generator';
 import * as t from '@babel/types';
 import addGTIdentifierToSyntaxTree from '../../data-_gt/addGTIdentifierToSyntaxTree';
 import {
-  warnHasUnwrappedExpression,
-  warnNoId,
-  warnVariableProp,
-} from '../../../console/warnings';
+  warnHasUnwrappedExpressionSync,
+  warnNoIdSync,
+  warnVariablePropSync,
+} from '../../../console';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { handleChildrenWhitespace } from '../trimJsxStringChildren';
 import { isStaticExpression } from '../evaluateJsx';
@@ -224,7 +224,7 @@ export function parseJSXElement(
           if (attrName === 'id' || attrName === 'context') {
             const staticAnalysis = isStaticExpression(expr);
             if (!staticAnalysis.isStatic) {
-              errors.push(warnVariableProp(file, attrName, code));
+              errors.push(warnVariablePropSync(file, attrName, code));
             }
             // Use the static value if available
             if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
@@ -261,13 +261,14 @@ export function parseJSXElement(
 
     // If we found an unwrapped expression, skip
     if (unwrappedExpressions.length > 0) {
-      errors.push(warnHasUnwrappedExpression(file, id, unwrappedExpressions));
+      errors.push(
+        warnHasUnwrappedExpressionSync(file, id, unwrappedExpressions)
+      );
     }
 
     if (errors.length > 0) return;
 
     // <T> is valid here
-    // displayFoundTMessage(file, id);
     updates.push({
       dataFormat: 'JSX',
       source: componentObj.tree,

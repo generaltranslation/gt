@@ -3,6 +3,7 @@ import { parse } from '@babel/parser';
 import generate from '@babel/generator';
 import traverse from '@babel/traverse';
 import * as t from '@babel/types';
+import { logError } from '../../console';
 
 export default async function handleInitGT(
   filepath: string
@@ -164,7 +165,7 @@ export default async function handleInitGT(
     fs.writeFileSync(filepath, processedCode);
     filesUpdated.push(filepath);
   } catch (error) {
-    console.error(`Error parsing file ${filepath}:`, error);
+    logError(`Error parsing file ${filepath}: ${error}`);
     errors.push(`Failed to parse ${filepath}: ${error}`);
   }
 

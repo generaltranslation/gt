@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { logError } from '../console';
 
 /**
  * Resolve the file path from the given file path or default paths.
@@ -91,7 +92,7 @@ export function findFileInDir(dir: string, file: string): string {
       return fs.readFileSync(resolvedPath, 'utf8');
     }
   } catch (error) {
-    console.error(error);
+    logError('Error finding file in directory: ' + String(error));
   }
   return '';
 }

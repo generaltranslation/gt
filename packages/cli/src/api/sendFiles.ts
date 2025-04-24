@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { displayLoadingAnimation } from '../console/console';
+import { createSpinner, logInfo } from '../console';
 import { Settings } from '../types';
 import { FileFormats, DataFormat } from '../types/data';
 
@@ -25,13 +25,14 @@ type ApiOptions = Settings & {
 export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
   const { apiKey } = options;
 
-  console.log(chalk.cyan('\nFiles to translate:'));
-  console.log(
-    files.map((file) => `  - ${chalk.bold(file.fileName)}`).join('\n')
+  logInfo(
+    chalk.cyan('Files to translate:') +
+      '\n' +
+      files.map((file) => `  - ${chalk.bold(file.fileName)}`).join('\n')
   );
-  console.log();
 
-  const spinner = await displayLoadingAnimation(
+  const spinner = createSpinner();
+  spinner.start(
     `Sending ${files.length} file${files.length > 1 ? 's' : ''} to General Translation API...`
   );
 
@@ -68,10 +69,8 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
       }
     );
 
-    process.stdout.write('\n\n');
-
     if (!response.ok) {
-      spinner.fail(await response.text());
+      spinner.stop(await response.text());
       process.exit(1);
     }
 
@@ -79,13 +78,13 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
 
     // Handle version ID response (for async processing)
     const { data, message, locales, translations } = responseData;
-    spinner.succeed(
+    spinner.stop(
       chalk.green(message || 'Translation job submitted successfully')
     );
 
     return { data, locales, translations };
   } catch (error) {
-    spinner.fail(chalk.red('Failed to send files for translation'));
+    spinner.stop(chalk.red('Failed to send files for translation'));
     throw error;
   }
 }

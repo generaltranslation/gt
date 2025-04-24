@@ -8,6 +8,7 @@ import { splitStringToContent } from 'generaltranslation';
 import loadJSON from '../../fs/loadJSON';
 import { hashJsxChildren } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata';
+import { logError } from '../../console';
 
 export default async function createDictionaryUpdates(
   options: Options,
@@ -38,7 +39,7 @@ export default async function createDictionaryUpdates(
     try {
       dictionaryModule = require(tempFilePath);
     } catch (error) {
-      console.error(`Failed to load the bundled dictionary code:`, error);
+      logError(`Failed to load the bundled dictionary code: ${error}`);
       process.exit(1);
     } finally {
       // Clean up the temporary file

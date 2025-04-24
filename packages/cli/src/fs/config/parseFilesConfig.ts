@@ -2,7 +2,8 @@ import path from 'path';
 import { FilesOptions, ResolvedFiles, TransformFiles } from '../../types';
 import fg from 'fast-glob';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles';
-import { logWarning } from '../../console/logging';
+import { logWarning } from '../../console';
+import chalk from 'chalk';
 
 /**
  * Resolves the files from the files object
@@ -56,24 +57,23 @@ export function resolveFiles(
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (files[fileType]?.include) {
-      const filePaths = expandGlobPatterns(
-        files[fileType].include,
-        files[fileType]?.exclude || [],
-        locale
-      );
-      result[fileType] = filePaths.resolvedPaths;
-      placeholderResult[fileType] = filePaths.placeholderPaths;
-    }
-  }
-
-  // ==== TRANSFORMS ==== //
-  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    // ==== TRANSFORMS ==== //
     if (
       files[fileType]?.transform &&
       !Array.isArray(files[fileType].transform)
     ) {
       transformPaths[fileType] = files[fileType].transform;
+    }
+    // ==== PLACEHOLDERS ==== //
+    if (files[fileType]?.include) {
+      const filePaths = expandGlobPatterns(
+        files[fileType].include,
+        files[fileType]?.exclude || [],
+        locale,
+        transformPaths[fileType] || undefined
+      );
+      result[fileType] = filePaths.resolvedPaths;
+      placeholderResult[fileType] = filePaths.placeholderPaths;
     }
   }
 
@@ -88,7 +88,8 @@ export function resolveFiles(
 function expandGlobPatterns(
   includePatterns: string[],
   excludePatterns: string[],
-  locale: string
+  locale: string,
+  transformPatterns?: string
 ): {
   resolvedPaths: string[];
   placeholderPaths: string[];
@@ -102,9 +103,11 @@ function expandGlobPatterns(
     // Track positions where [locale] appears in the original pattern
     // It must be included in the pattern, otherwise the CLI tool will not be able to find the correct output path
     // Warn if it's not included
-    if (!pattern.includes('[locale]')) {
+    if (!pattern.includes('[locale]') && !transformPatterns) {
       logWarning(
-        `Pattern "${pattern}" does not include [locale], so the CLI tool may incorrectly save translated files.`
+        chalk.yellow(
+          `Pattern "${pattern}" does not include [locale], so the CLI tool may incorrectly save translated files.`
+        )
       );
     }
     const localePositions: number[] = [];

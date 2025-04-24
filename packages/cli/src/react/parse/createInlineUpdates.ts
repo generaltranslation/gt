@@ -9,6 +9,7 @@ import { hashJsxChildren } from 'generaltranslation/id';
 import { parseJSXElement } from '../jsx/utils/parseJsx';
 import { parseStrings } from '../jsx/utils/parseStringFunction';
 import { extractImportName } from '../jsx/utils/parseAst';
+import { logError } from '../../console';
 
 export default async function createInlineUpdates(
   options: Options,
@@ -65,7 +66,7 @@ export default async function createInlineUpdates(
         plugins: ['jsx', 'typescript'],
       });
     } catch (error) {
-      console.error(`Error parsing file ${file}:`, error);
+      logError(`Error parsing file ${file}: ${error}`);
       continue;
     }
 

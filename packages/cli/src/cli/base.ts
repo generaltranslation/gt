@@ -1,17 +1,21 @@
 import { program } from 'commander';
-import { displayAsciiTitle } from '../console/console';
-import { displayInitializingText } from '../console/console';
 import createOrUpdateConfig from '../fs/config/setupConfig';
-import { input, select } from '@inquirer/prompts';
 import { isValidLocale } from 'generaltranslation';
 import findFilepath, { readFile } from '../fs/findFilepath';
 import {
+  displayHeader,
+  promptText,
+  promptSelect,
+  logErrorAndExit,
   noDefaultLocaleError,
   noLocalesError,
   noApiKeyError,
   noProjectIdError,
   noFilesError,
-} from '../console/errors';
+  endCommand,
+  promptConfirm,
+  promptMultiSelect,
+} from '../console';
 import path from 'path';
 import fs from 'fs';
 import { FilesOptions, Settings, SupportedLibraries } from '../types';
@@ -21,6 +25,7 @@ import { generateSettings } from '../config/generateSettings';
 import chalk from 'chalk';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { translateFiles } from '../formats/files/translate';
+import { FILE_EXT_TO_FORMAT } from '../formats/files/supportedFiles';
 
 type TranslateOptions = {
   config?: string;
@@ -79,35 +84,29 @@ export class BaseCLI {
         'Space-separated list of locales (e.g., en fr es)'
       )
       .action(async (options: TranslateOptions) => {
-        displayAsciiTitle();
-        displayInitializingText();
-
+        displayHeader('Starting translation...');
         const settings = generateSettings(options);
         await this.handleGenericTranslate(settings);
+        endCommand('Done!');
       });
   }
 
   protected async handleGenericTranslate(settings: Settings): Promise<void> {
     // Validate required settings are present
     if (!settings.locales) {
-      console.error(noLocalesError);
-      process.exit(1);
+      logErrorAndExit(noLocalesError);
     }
     if (!settings.defaultLocale) {
-      console.error(noDefaultLocaleError);
-      process.exit(1);
+      logErrorAndExit(noDefaultLocaleError);
     }
     if (!settings.files) {
-      console.error(noFilesError);
-      process.exit(1);
+      logErrorAndExit(noFilesError);
     }
     if (!settings.apiKey) {
-      console.error(noApiKeyError);
-      process.exit(1);
+      logErrorAndExit(noApiKeyError);
     }
     if (!settings.projectId) {
-      console.error(noProjectIdError);
-      process.exit(1);
+      logErrorAndExit(noProjectIdError);
     }
 
     // dataFormat for JSONs
@@ -139,49 +138,35 @@ export class BaseCLI {
       settings
     );
   }
+
   protected setupInitCommand(): void {
     program
       .command('init')
       .description('Initialize project for General Translation')
       .action(async () => {
-        displayAsciiTitle();
-        displayInitializingText();
+        displayHeader('Initializing project...');
 
         // Ask for the default locale
-        const defaultLocale = await input({
+        const defaultLocale = await promptText({
           message: 'What is the default locale for your project?',
-          default: libraryDefaultLocale,
+          defaultValue: libraryDefaultLocale,
         });
 
         // Ask for the locales
-        const locales = await input({
-          message: `What locales would you like to translate using General Translation? ${chalk.gray(
-            '(space-separated list)'
-          )}`,
+        const locales = await promptText({
+          message: `What locales would you like to translate using General Translation? ${chalk.gray('(space-separated list)')}`,
           validate: (input) => {
-            const locales = input.split(' ');
-            if (locales.length === 0) {
+            const localeList = input.split(' ');
+            if (localeList.length === 0) {
               return 'Please enter at least one locale';
             }
-            for (const locale of locales) {
+            for (const locale of localeList) {
               if (!isValidLocale(locale)) {
                 return 'Please enter a valid locale (e.g., en, fr, es)';
               }
             }
             return true;
           },
-        });
-
-        // Ask where the translations are stored
-        const location = await select({
-          message: `Where are your language files stored? ${chalk.gray(
-            '(remote or local)'
-          )}`,
-          choices: [
-            { value: 'remote', name: 'Remote' },
-            { value: 'local', name: 'Local' },
-          ],
-          default: 'remote',
         });
 
         let configFilepath = 'gt.config.json';
@@ -191,76 +176,93 @@ export class BaseCLI {
           configFilepath = 'src/gt.config.json';
         }
 
-        if (location === 'remote') {
-          // Create gt.config.json
-          createOrUpdateConfig(configFilepath, {
-            defaultLocale,
-            locales: locales.split(' '),
-          });
-          return;
-        }
-
-        // Ask where the translations are stored
-        const translationsDir = await input({
-          message:
-            'What is the path to the directory containing your language files?',
-        });
-
         const thirdPartyLibrary =
           this.library !== 'gt-next' && this.library !== 'gt-react';
 
         // Ask if using another i18n library
-        const i18nLibrary = thirdPartyLibrary
-          ? await select({
-              message: `Are you using a 3rd-party i18n library? ${chalk.gray(
+        const isUsingGT = thirdPartyLibrary
+          ? await promptConfirm({
+              message: `Are you using gt-next or gt-react? ${chalk.gray(
                 `(Auto-detected: ${this.library === 'base' ? 'none' : this.library})`
               )}`,
-              choices: [
-                { value: true, name: 'Yes' },
-                { value: false, name: 'No' },
-              ],
-              default: true,
+              defaultValue: this.library !== 'base',
             })
           : false;
 
-        if (i18nLibrary) {
-          const dataFormat: string = await select({
-            message: 'What is the format of your language files?',
-            choices: ['json'],
-            default: 'json',
+        // Ask where the translations are stored
+        const location = isUsingGT
+          ? await promptSelect({
+              message: `Where would you like to store your translations? ${chalk.gray('(remote or local)')}`,
+              options: [
+                {
+                  value: 'remote',
+                  label: 'Remotely',
+                  hint: 'Remote translations are stored on the GT CDN.',
+                },
+                {
+                  value: 'local',
+                  label: 'Locally',
+                  hint: 'Local translations are stored in the codebase and are bundled with the app. This will increase your build time and bundle size.',
+                },
+              ],
+              defaultValue: 'remote',
+            })
+          : 'local';
+
+        // Ask where the translations are stored
+        const translationsDir = isUsingGT
+          ? await promptText({
+              message:
+                'What is the path to the directory where your translations are stored?',
+              defaultValue: './public/locales',
+            })
+          : null;
+
+        const message = !isUsingGT
+          ? 'What is the format of your language resource files? Select as many as applicable. Additionally, you can translate any other files you have in your project.'
+          : '(Optional) Do you have any separate files you would like to translate? For example, extra Markdown files for documentation.';
+        const dataFormats = await promptMultiSelect({
+          message,
+          options: [
+            { value: 'json', label: 'JSON' },
+            { value: 'md', label: 'Markdown' },
+            { value: 'mdx', label: 'MDX' },
+            { value: 'ts', label: 'TypeScript' },
+            { value: 'js', label: 'JavaScript' },
+          ],
+          required: !isUsingGT,
+        });
+
+        const files: FilesOptions = {};
+        for (const dataFormat of dataFormats) {
+          const paths = await promptText({
+            message: `${FILE_EXT_TO_FORMAT[dataFormat]}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_FORMAT[dataFormat]} files you would like to translate. Make sure to include [locale] in the patterns. See https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
+            defaultValue: `./**/*.[locale].${dataFormat}`,
           });
-          // combine translationsDir and dataFormat into something like
-          // translationsDir/[locale].json
-          const translationsDirWithFormat = path.join(
-            translationsDir,
-            `[locale].${dataFormat}`
-          );
-          // Create gt.config.json
-          createOrUpdateConfig(configFilepath, {
-            defaultLocale,
-            locales: locales.split(' '),
-            files: {
-              json: {
-                include: [translationsDirWithFormat],
-              },
-            },
-          });
-        } else {
-          const translationsDirWithFormat = path.join(
-            translationsDir,
-            `[locale].json`
-          );
-          // Create gt.config.json
-          createOrUpdateConfig('gt.config.json', {
-            defaultLocale,
-            locales: locales.split(' '),
-            files: {
-              gt: {
-                output: translationsDirWithFormat,
-              },
-            },
-          });
+
+          files[dataFormat] = {
+            include: paths.split(' '),
+          };
         }
+
+        // Add GT translations if using GT and storing locally
+        if (isUsingGT && location === 'local' && translationsDir) {
+          files.gt = {
+            output: path.join(translationsDir, `[locale].json`),
+          };
+        }
+        // Create gt.config.json
+        createOrUpdateConfig(configFilepath, {
+          defaultLocale,
+          locales: locales.split(' '),
+          files,
+        });
+
+        endCommand(
+          `Done! Feel free to edit ${chalk.blue(
+            configFilepath
+          )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
+        );
       });
   }
 }

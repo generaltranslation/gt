@@ -1,9 +1,5 @@
 import fs from 'fs';
-import {
-  displayCreatedConfigFile,
-  displayUpdatedConfigFile,
-} from '../../console/console';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { displayCreatedConfigFile, logError } from '../../console';
 import { FilesOptions } from '../../types';
 
 /**
@@ -55,7 +51,7 @@ export default function createOrUpdateConfig(
     // show update in console
     displayCreatedConfigFile(configFilepath);
   } catch (error) {
-    console.error(`An error occurred while updating ${configFilepath}:`, error);
+    logError(`An error occurred while updating ${configFilepath}: ${error}`);
   }
   return configFilepath;
 }

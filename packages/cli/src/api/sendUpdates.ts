@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { displayLoadingAnimation } from '../console/console';
+import { createSpinner, logInfo, logSuccess } from '../console';
 import { Settings, SupportedLibraries, Updates } from '../types';
 import updateConfig from '../fs/config/updateConfig';
 import { waitForUpdates } from './waitForUpdates';
@@ -44,10 +44,8 @@ export async function sendUpdates(
     ...(options.description && { description: options.description }),
   };
 
-  console.log();
-  const spinner = await displayLoadingAnimation(
-    `Sending ${library} updates to General Translation API...`
-  );
+  const spinner = createSpinner();
+  spinner.start(`Sending ${library} updates to General Translation API...`);
 
   try {
     const startTime = Date.now();
@@ -63,20 +61,20 @@ export async function sendUpdates(
       }
     );
 
-    process.stdout.write('\n\n');
-
     if (!response.ok) {
-      spinner.fail(await response.text());
+      spinner.stop(chalk.red(await response.text()));
       process.exit(1);
     }
 
     if (response.status === 204) {
-      spinner.succeed(await response.text());
+      spinner.stop(chalk.green('Sent updates'));
+      logSuccess(await response.text());
       return;
     }
 
     const { versionId, message, locales } = await response.json();
-    spinner.succeed(chalk.green(message));
+    spinner.stop(chalk.green('Sent updates'));
+    logSuccess(message);
     if (options.config)
       updateConfig({
         configFilepath: options.config,
@@ -99,7 +97,7 @@ export async function sendUpdates(
     }
     return { versionId };
   } catch (error) {
-    spinner.fail(chalk.red('Failed to send updates'));
+    spinner.stop(chalk.red('Failed to send updates'));
     throw error;
   }
 }

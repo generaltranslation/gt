@@ -14,6 +14,7 @@ import {
   createImports,
   ImportItem,
 } from '../jsx/utils/parseAst';
+import { logError } from '../../console';
 
 const IMPORT_MAP = {
   T: { name: 'T', source: 'gt-react' },
@@ -69,7 +70,7 @@ export default async function scanForContent(
         createParenthesizedExpressions: true,
       });
     } catch (error) {
-      console.error(`Error parsing file ${file}:`, error);
+      logError(`Error parsing file ${file}: ${error}`);
       errors.push(`Failed to parse ${file}: ${error}`);
       continue;
     }
@@ -213,7 +214,7 @@ export default async function scanForContent(
       fs.writeFileSync(file, processedCode);
       filesUpdated.push(file);
     } catch (error) {
-      console.error(`Error writing file ${file}:`, error);
+      logError(`Error writing file ${file}: ${error}`);
       errors.push(`Failed to write ${file}: ${error}`);
     }
   }

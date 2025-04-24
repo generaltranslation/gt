@@ -3,7 +3,7 @@ import path from 'path';
 import { RetrievedTranslations } from '../../types/api';
 import { ResolvedFiles } from '../../types';
 import { DataFormat } from '../../types/data';
-import { noFilesError } from '../../console/errors';
+import { logError, noFilesError } from '../../console/errors';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
 /**
  * Saves translations to a local directory
@@ -20,7 +20,7 @@ export function saveTranslations(
     const locale = translation.locale;
     const translationFiles = resolveLocaleFiles(placeholderPaths, locale);
     if (!translationFiles.gt) {
-      console.error(noFilesError);
+      logError(noFilesError);
       process.exit(1);
     }
     const filepath = translationFiles.gt;

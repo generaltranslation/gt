@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { displayLoadingAnimation } from '../console/console';
+import { createSpinner, logError } from '../console';
 import { getLocaleProperties } from 'generaltranslation';
 import { downloadFile } from './downloadFile';
 import { downloadFileBatch } from './downloadFileBatch';
@@ -28,7 +28,8 @@ export async function checkFileTranslations(
   downloadStatus: { downloaded: Set<string>; failed: Set<string> }
 ) {
   const startTime = Date.now();
-  const spinner = await displayLoadingAnimation('Waiting for translation...');
+  const spinner = createSpinner();
+  spinner.start('Waiting for translation...');
 
   // Initialize the query data
   const fileQueryData = prepareFileQueryData(data, locales);
@@ -44,7 +45,7 @@ export async function checkFileTranslations(
   );
 
   if (initialCheck) {
-    spinner.succeed(chalk.green('Files translated!'));
+    spinner.stop(chalk.green('Files translated!'));
     return true;
   }
 
@@ -70,14 +71,13 @@ export async function checkFileTranslations(
         const elapsed = Date.now() - startTime;
 
         if (isDeployed || elapsed >= timeoutDuration * 1000) {
-          process.stdout.write('\n');
           clearInterval(intervalCheck);
 
           if (isDeployed) {
-            spinner.succeed(chalk.green('All translations are live!'));
+            spinner.stop(chalk.green('All translations are live!'));
             resolve(true);
           } else {
-            spinner.fail(chalk.red('Timed out waiting for translations'));
+            spinner.stop(chalk.red('Timed out waiting for translations'));
             resolve(false);
           }
         }
@@ -140,10 +140,10 @@ function generateStatusSuffixText(
 
   // If terminal is very small, just show the basic progress
   if (terminalHeight < 6) {
-    return `\n${progressText}`;
+    return `${progressText}`;
   }
 
-  const newSuffixText = [`\n${progressText}`];
+  const newSuffixText = [`${progressText}`];
 
   // Organize data by filename
   const fileStatus = new Map<
@@ -245,7 +245,7 @@ async function checkTranslationDeployment(
   apiKey: string,
   fileQueryData: { versionId: string; fileName: string; locale: string }[],
   downloadStatus: { downloaded: Set<string>; failed: Set<string> },
-  spinner: any,
+  spinner: ReturnType<typeof createSpinner>,
   resolveOutputPath: (sourcePath: string, locale: string) => string
 ): Promise<boolean> {
   try {
@@ -342,7 +342,7 @@ async function checkTranslationDeployment(
       );
 
       // Clear and reapply the suffix to force a refresh
-      spinner.suffixText = statusText;
+      spinner.message(statusText);
     }
     if (
       downloadStatus.downloaded.size + downloadStatus.failed.size ===
@@ -352,7 +352,7 @@ async function checkTranslationDeployment(
     }
     return false;
   } catch (error) {
-    console.error('Error checking translation status:', error);
+    logError(chalk.red('Error checking translation status: ') + error);
     return false;
   }
 }

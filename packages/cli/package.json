@@ -1,6 +1,7 @@
 {
   "name": "gtx-cli",
   "version": "1.1.17",
+  "type": "commonjs",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "scripts": {
@@ -48,7 +49,6 @@
     "@babel/plugin-transform-react-jsx": "^7.25.9",
     "@babel/traverse": "^7.25.7",
     "@clack/prompts": "^0.10.1",
-    "@inquirer/prompts": "^7.2.4",
     "chalk": "^4.1.2",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
