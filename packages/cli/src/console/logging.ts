@@ -46,10 +46,12 @@ export function endCommand(message: string) {
 }
 
 // GT specific logging
-export function displayHeader(introString: string) {
+export function displayHeader(introString?: string) {
   displayAsciiTitle();
   displayInitializingText();
-  startCommand(introString);
+  if (introString) {
+    startCommand(introString);
+  }
 }
 
 function displayAsciiTitle() {
@@ -85,15 +87,15 @@ export function displayResolvedPaths(resolvedPaths: [string, string][]) {
 }
 
 export function displayCreatedConfigFile(configFilepath: string) {
-  log.success(`Created config file ${chalk.green(configFilepath)}`);
+  log.success(`Created config file ${chalk.cyan(configFilepath)}`);
 }
 
 export function displayUpdatedConfigFile(configFilepath: string) {
-  log.success(`Updated config file ${chalk.green(configFilepath)}`);
+  log.success(`Updated config file ${chalk.cyan(configFilepath)}`);
 }
 
 // Spinner functionality
-export function createSpinner(indicator: 'dots' | 'timer' = 'dots') {
+export function createSpinner(indicator: 'dots' | 'timer' = 'timer') {
   return spinner({ indicator });
 }
 

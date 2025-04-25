@@ -5,6 +5,23 @@ import path from 'path';
 import fs from 'fs';
 import { logErrorAndExit } from '../console';
 
+// search for package.json such that we can run init in non-js projects
+export function searchForPackageJson(): Record<string, any> | null {
+  // Get the current working directory (where the CLI is being run)
+  const cwd = process.cwd();
+  const packageJsonPath = path.join(cwd, 'package.json');
+
+  // Check if package.json exists
+  if (!fs.existsSync(packageJsonPath)) {
+    return null;
+  }
+  try {
+    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  } catch (error) {
+    return null;
+  }
+}
+
 export function getPackageJson(): Record<string, any> {
   // Get the current working directory (where the CLI is being run)
   const cwd = process.cwd();
@@ -46,6 +63,10 @@ export function isPackageInstalled(
   const dependencies = asDevDependency
     ? packageJson.devDependencies
     : packageJson.dependencies;
+
+  if (!dependencies) {
+    return false;
+  }
   return dependencies[packageName] !== undefined;
 }
 

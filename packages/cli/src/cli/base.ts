@@ -16,6 +16,7 @@ import {
   promptMultiSelect,
   logSuccess,
   logInfo,
+  startCommand,
 } from '../console';
 import path from 'path';
 import fs from 'fs';
@@ -32,7 +33,11 @@ import chalk from 'chalk';
 import { translateFiles } from '../formats/files/translate';
 import { FILE_EXT_TO_FORMAT } from '../formats/files/supportedFiles';
 import { handleSetupReactCommand } from '../setup/wizard';
-import { getPackageJson, isPackageInstalled } from '../utils/packageJson';
+import {
+  getPackageJson,
+  isPackageInstalled,
+  searchForPackageJson,
+} from '../utils/packageJson';
 import { getDesiredLocales } from '../setup/userInput';
 
 type TranslateOptions = {
@@ -120,22 +125,32 @@ export class BaseCLI {
       .action(async (options: SetupOptions) => {
         displayHeader('Running setup wizard...');
 
-        const wrap = await promptConfirm({
-          message: `Is this project using React or Next.js? ${chalk.gray(
-            '(Selecting yes will run the React setup wizard, setting your project up to use gt-react or gt-next)'
-          )}`,
-          defaultValue: true,
-        });
+        const packageJson = searchForPackageJson();
 
-        if (wrap) {
-          logInfo(
-            `${chalk.yellow('[EXPERIMENTAL]')} Running React setup wizard...`
-          );
-          await this.handleSetupReactCommand(options);
+        let ranReactSetup = false;
+        // so that people can run init in non-js projects
+        if (packageJson && isPackageInstalled('react', packageJson)) {
+          const wrap = await promptConfirm({
+            message: `We've detected that this project is using React. Would you like to run the React setup wizard? This will install gt-react|gt-next as a dependency and internationalize your app.`,
+            defaultValue: true,
+          });
+
+          if (wrap) {
+            logInfo(
+              `${chalk.yellow('[EXPERIMENTAL]')} Running React setup wizard...`
+            );
+            await this.handleSetupReactCommand(options);
+            endCommand(
+              `Done! We've automatically wrapped all of your JSX components for you.`
+            );
+            ranReactSetup = true;
+          }
         }
-
+        if (ranReactSetup) {
+          startCommand('Setting up project config...');
+        }
         // Configure gt.config.json
-        await this.handleInitCommand();
+        await this.handleInitCommand(ranReactSetup);
 
         endCommand(
           "Done! Take advantage of all of General Translation's features by signing up for a free account! https://generaltranslation.com/signup"
@@ -157,7 +172,7 @@ export class BaseCLI {
         );
 
         // Configure gt.config.json
-        await this.handleInitCommand();
+        await this.handleInitCommand(false);
 
         endCommand(
           'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
@@ -245,33 +260,28 @@ export class BaseCLI {
   }
 
   // Wizard for configuring gt.config.json
-  protected async handleInitCommand(): Promise<void> {
+  protected async handleInitCommand(ranReactSetup: boolean): Promise<void> {
     const { defaultLocale, locales } = await getDesiredLocales();
 
-    const packageJson = getPackageJson();
-
-    const isUsingNext = isPackageInstalled('next', packageJson);
-    const isUsingReact = isPackageInstalled('react', packageJson);
-    const thirdPartyLibrary = !isUsingNext && !isUsingReact;
+    const packageJson = searchForPackageJson();
+    const isUsingGTNext = packageJson
+      ? isPackageInstalled('gt-next', packageJson)
+      : false;
+    const isUsingGTReact = packageJson
+      ? isPackageInstalled('gt-react', packageJson)
+      : false;
 
     // Ask if using another i18n library
-    const isUsingGT = thirdPartyLibrary
-      ? await promptConfirm({
-          message: `Are you using gt-next or gt-react? ${chalk.gray(
-            `(Auto-detected: ${this.library === 'base' ? 'none' : this.library})`
-          )}`,
-          defaultValue: false,
-        })
-      : true;
+    const isUsingGT = isUsingGTNext || isUsingGTReact || ranReactSetup;
 
     // Ask where the translations are stored
     const usingCDN = isUsingGT
       ? await promptConfirm({
-          message: `Would you like to use the General Translation CDN to store your translations? See ${
-            isUsingNext
+          message: `We've auto-detected that you're using gt-next or gt-react. Would you like to use the General Translation CDN to store your translations?\nSee ${
+            isUsingGTNext
               ? 'https://generaltranslation.com/docs/next/reference/local-tx'
               : 'https://generaltranslation.com/docs/react/reference/local-tx'
-          } for more information.`,
+          } for more information.\nIf you answer no, we'll setup your project to store translations locally.`,
           defaultValue: true,
         })
       : false;
@@ -288,7 +298,9 @@ export class BaseCLI {
 
     const message = !isUsingGT
       ? 'What is the format of your language resource files? Select as many as applicable.\nAdditionally, you can translate any other files you have in your project.'
-      : '(Optional) Do you have any separate files you would like to translate?\nFor example, extra Markdown files for documentation.';
+      : `${chalk.gray(
+          '(Optional)'
+        )} Do you have any separate files you would like to translate? For example, extra Markdown files for docs.`;
     const dataFormats = await promptMultiSelect({
       message,
       options: [
@@ -304,8 +316,8 @@ export class BaseCLI {
     const files: FilesOptions = {};
     for (const dataFormat of dataFormats) {
       const paths = await promptText({
-        message: `${FILE_EXT_TO_FORMAT[dataFormat]}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_FORMAT[dataFormat]} files you would like to translate.\nMake sure to include [locale] in the patterns. See https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
-        defaultValue: `./**/*.[locale].${dataFormat}`,
+        message: `${chalk.cyan(FILE_EXT_TO_FORMAT[dataFormat])}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_FORMAT[dataFormat]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
+        defaultValue: `./**/[locale]/*.${dataFormat}`,
       });
 
       files[dataFormat] = {
@@ -333,7 +345,7 @@ export class BaseCLI {
     });
 
     logSuccess(
-      `Feel free to edit ${chalk.blue(
+      `Feel free to edit ${chalk.cyan(
         configFilepath
       )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
     );

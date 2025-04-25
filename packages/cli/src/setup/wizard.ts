@@ -21,7 +21,8 @@ export async function handleSetupReactCommand(
   const answer = await promptConfirm({
     message: chalk.yellow(
       `This wizard will configure your React project for internationalization with GT.
-If your project is already using a different i18n library, this wizard will not work.
+If your project is already using a different i18n library, this wizard may cause issues.
+
 Make sure you have committed or stashed any changes. Do you want to continue?`
     ),
     defaultValue: true,
@@ -51,7 +52,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
   if (frameworkType === 'other') {
     logError(
       `Sorry, at the moment we currently do not support other React frameworks. 
-            Please let us know what you would like to see supported at https://github.com/generaltranslation/gt/issues`
+Please let us know what you would like to see supported at https://github.com/generaltranslation/gt/issues`
     );
     process.exit(0);
   }
@@ -64,7 +65,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
   ) {
     const packageManager = getPackageManager();
     if (packageManager) {
-      const spinner = createSpinner();
+      const spinner = createSpinner('timer');
       spinner.start('Installing gt-next...');
       await installPackage('gt-next', packageManager);
       spinner.stop(chalk.green('Automatically installed gt-next.'));
@@ -82,7 +83,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
   ) {
     const packageManager = getPackageManager();
     if (packageManager) {
-      const spinner = createSpinner();
+      const spinner = createSpinner('timer');
       spinner.start('Installing gt-react...');
       await installPackage('gt-react', packageManager);
       spinner.stop(chalk.green('Automatically installed gt-react.'));
@@ -169,6 +170,9 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
         }`
       )
     );
+    logMessage(
+      `To translate strings, see the docs on useGT and getGT: https://generaltranslation.com/docs/next/api/strings/getGT`
+    );
   } else {
     let addGTProvider = false;
     if (frameworkType === 'next-pages') {
@@ -218,15 +222,10 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
         }`
       )
     );
+    logMessage(
+      `To translate strings, see the docs on useGT: https://generaltranslation.com/docs/react/api/strings/useGT`
+    );
   }
-
-  logMessage(
-    `To translate strings, see the docs on ${
-      frameworkType === 'next-app'
-        ? 'useGT and getGT: https://generaltranslation.com/docs/next/api/strings/getGT'
-        : 'useGT: https://generaltranslation.com/docs/react/api/strings/useGT'
-    }`
-  );
 
   if (warnings.length > 0) {
     logWarning(
@@ -235,18 +234,6 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
         warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')
     );
   }
-
-  // ----- //
-
-  if (filesUpdated.length > 0) {
-    logStep('Please verify the changes before committing.');
-  }
-
-  // Stage only the modified files
-  // const { execSync } = require('child_process');
-  // for (const file of filesUpdated) {
-  //   await execSync(`git add "${file}"`);
-  // }
 
   const formatter = await detectFormatter();
 
@@ -262,4 +249,8 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
   });
   // Format updated files if formatters are available
   if (applyFormatting) await formatFiles(filesUpdated, formatter);
+
+  if (filesUpdated.length > 0) {
+    logStep('Please review the changes before committing.');
+  }
 }
