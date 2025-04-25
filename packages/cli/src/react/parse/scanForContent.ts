@@ -14,7 +14,6 @@ import {
   createImports,
   ImportItem,
 } from '../jsx/utils/parseAst';
-import { logError } from '../../console';
 
 const IMPORT_MAP = {
   T: { name: 'T', source: 'gt-react' },
@@ -32,13 +31,13 @@ const IMPORT_MAP = {
  * @param options - The options object
  * @returns An object containing the updates and errors
  */
-export default async function scanForContent(
+export default async function scanForContentReact(
   options: WrapOptions,
-  pkg: 'gt-next' | 'gt-react',
-  framework: SupportedFrameworks
-): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
-  const errors: string[] = [];
-  const warnings: string[] = [];
+  pkg: 'gt-react',
+  framework: SupportedFrameworks,
+  errors: string[],
+  warnings: string[]
+): Promise<{ filesUpdated: string[] }> {
   const srcDirectory = options.src || ['./'];
 
   const files = srcDirectory.flatMap((dir) => getFiles(dir));
@@ -70,8 +69,7 @@ export default async function scanForContent(
         createParenthesizedExpressions: true,
       });
     } catch (error) {
-      logError(`Error parsing file ${file}: ${error}`);
-      errors.push(`Failed to parse ${file}: ${error}`);
+      errors.push(`Error:Failed to parse ${file}: ${error}`);
       continue;
     }
 
@@ -214,10 +212,9 @@ export default async function scanForContent(
       fs.writeFileSync(file, processedCode);
       filesUpdated.push(file);
     } catch (error) {
-      logError(`Error writing file ${file}: ${error}`);
-      errors.push(`Failed to write ${file}: ${error}`);
+      errors.push(`Error: Failed to write ${file}: ${error}`);
     }
   }
 
-  return { errors, filesUpdated, warnings };
+  return { filesUpdated };
 }

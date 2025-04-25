@@ -189,9 +189,11 @@ export async function promptMultiSelect<T extends string>({
 export async function promptConfirm({
   message,
   defaultValue = true,
+  cancelMessage = 'Operation cancelled',
 }: {
   message: string;
   defaultValue?: boolean;
+  cancelMessage?: string;
 }) {
   const result = await confirm({
     message,
@@ -199,7 +201,7 @@ export async function promptConfirm({
   });
 
   if (isCancel(result)) {
-    cancel('Operation cancelled');
+    cancel(cancelMessage);
     process.exit(0);
   }
 

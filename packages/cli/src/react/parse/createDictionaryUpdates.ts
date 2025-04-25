@@ -8,7 +8,7 @@ import { splitStringToContent } from 'generaltranslation';
 import loadJSON from '../../fs/loadJSON';
 import { hashJsxChildren } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata';
-import { logError } from '../../console';
+import { logError, logErrorAndExit } from '../../console';
 
 export default async function createDictionaryUpdates(
   options: Options,
@@ -52,10 +52,11 @@ export default async function createDictionaryUpdates(
     );
   }
 
-  if (!Object.keys(dictionary).length)
-    throw new Error(
+  if (!Object.keys(dictionary).length) {
+    logErrorAndExit(
       `Dictionary filepath provided: "${options.dictionary}", but no entries found.`
     );
+  }
 
   // ----- CREATE PARTIAL UPDATES ----- //
 

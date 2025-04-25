@@ -32,7 +32,8 @@ export function findFilepaths(
     }
   }
   if (errorMessage) {
-    throw new Error(errorMessage);
+    logError(errorMessage);
+    process.exit(1);
   }
   return resolvedPaths;
 }

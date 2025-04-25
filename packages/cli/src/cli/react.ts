@@ -30,7 +30,7 @@ import { detectFormatter, formatFiles } from '../hooks/postProcess';
 import { fetchTranslations } from '../api/fetchTranslations';
 import path from 'path';
 import { BaseCLI } from './base';
-import scanForContent from '../react/parse/scanForContent';
+import scanForContentReact from '../react/parse/scanForContent';
 import createDictionaryUpdates from '../react/parse/createDictionaryUpdates';
 import createInlineUpdates from '../react/parse/createInlineUpdates';
 import { resolveProjectId } from '../fs/utils';
@@ -54,7 +54,6 @@ export class ReactCLI extends BaseCLI {
   }
   public init() {
     this.setupTranslateCommand();
-    this.setupSetupCommand();
     this.setupScanCommand();
     this.setupGenerateSourceCommand();
   }
@@ -64,9 +63,11 @@ export class ReactCLI extends BaseCLI {
 
   protected scanForContent(
     options: WrapOptions,
-    framework: SupportedFrameworks
-  ): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
-    return scanForContent(options, pkg, framework);
+    framework: SupportedFrameworks,
+    errors: string[],
+    warnings: string[]
+  ): Promise<{ filesUpdated: string[] }> {
+    return scanForContentReact(options, pkg, framework, errors, warnings);
   }
 
   protected createDictionaryUpdates(
@@ -200,29 +201,6 @@ export class ReactCLI extends BaseCLI {
       .action(async (options: GenerateSourceOptions) => {
         displayHeader('Generating source templates...');
         await this.handleGenerateSourceCommand(options);
-        endCommand('Done!');
-      });
-  }
-
-  protected setupSetupCommand(): void {
-    program
-      .command('setup')
-      .description(
-        'Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids'
-      )
-      .option(
-        '--src <paths...>',
-        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
-        findFilepaths(['./src', './app', './pages', './components'])
-      )
-      .option(
-        '--config <path>',
-        'Filepath to config file, by default gt.config.json',
-        findFilepath(['gt.config.json'])
-      )
-      .action(async (options: SetupOptions) => {
-        displayHeader('Setting up project...');
-        await this.handleSetupCommand(options);
         endCommand('Done!');
       });
   }
@@ -375,10 +353,14 @@ export class ReactCLI extends BaseCLI {
     });
     options.disableIds = !includeTId;
 
+    let errors: string[] = [];
+    let warnings: string[] = [];
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { errors, filesUpdated, warnings } = await this.scanForContent(
+    const { filesUpdated } = await this.scanForContent(
       options,
-      'react'
+      'react',
+      errors,
+      warnings
     );
 
     if (errors.length > 0) {
@@ -407,139 +389,6 @@ export class ReactCLI extends BaseCLI {
             .join('\n')
       );
     }
-  }
-
-  protected async handleSetupCommand(options: SetupOptions): Promise<void> {
-    // Ask user for confirmation using inquirer
-    const answer = await promptConfirm({
-      message: chalk.yellow(
-        `This operation will prepare your project for internationalization.
-        Make sure you have committed or stashed any changes.
-        Do you want to continue?`
-      ),
-      defaultValue: true,
-    });
-
-    if (!answer) {
-      logError('Operation cancelled.');
-      process.exit(0);
-    }
-
-    const frameworkType = await promptSelect({
-      message: 'What framework are you using?',
-      options: [
-        { value: 'next', label: chalk.blue('Next.js') },
-        { value: 'vite', label: chalk.green('Vite + React') },
-        { value: 'gatsby', label: chalk.magenta('Gatsby') },
-        { value: 'react', label: chalk.yellow('React') },
-        { value: 'redwood', label: chalk.red('RedwoodJS') },
-        { value: 'other', label: chalk.gray('Other') },
-      ],
-      defaultValue: 'next',
-    });
-    let addGTProvider = false;
-    if (frameworkType === 'next') {
-      const routerType = await promptSelect({
-        message: 'Are you using the App router or the Pages router?',
-        options: [
-          { value: 'pages', label: 'Pages Router' },
-          { value: 'app', label: 'App Router' },
-        ],
-        defaultValue: 'pages',
-      });
-      if (routerType === 'app') {
-        logError(
-          chalk.red(
-            'Please use gt-next and gt-next-cli instead. gt-react should not be used with the App router.'
-          )
-        );
-        process.exit(0);
-      }
-      addGTProvider = await promptConfirm({
-        message:
-          'Do you want the setup tool to automatically add the GTProvider component?',
-        defaultValue: true,
-      });
-    } else if (frameworkType === 'other') {
-      logError(
-        chalk.red(
-          `Sorry, at the moment we currently do not support other React frameworks. 
-            Please let us know what you would like to see supported at https://github.com/generaltranslation/gt/issues`
-        )
-      );
-      process.exit(0);
-    }
-    const selectedFramework: SupportedFrameworks =
-      frameworkType === 'next' ? 'next-pages' : 'next-app';
-
-    const includeTId = await promptConfirm({
-      message: 'Do you want to include an unique id for each <T> tag?',
-      defaultValue: true,
-    });
-
-    // ----- Create a starter gt.config.json file -----
-    generateSettings(options);
-
-    // ----- //
-
-    const mergeOptions = {
-      ...options,
-      disableIds: !includeTId,
-      disableFormatting: true,
-      addGTProvider,
-    };
-
-    // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { errors, filesUpdated, warnings } = await this.scanForContent(
-      mergeOptions,
-      selectedFramework
-    );
-
-    if (errors.length > 0) {
-      logError(chalk.red('Failed to write files:\n') + errors.join('\n'));
-    }
-
-    logSuccess(
-      chalk.green(
-        `Success! Added <T> tags and updated ${chalk.bold.cyan(
-          filesUpdated.length
-        )} files:\n`
-      ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
-    );
-
-    if (filesUpdated.length > 0) {
-      logStep(chalk.green('Please verify the changes before committing.'));
-    }
-
-    if (warnings.length > 0) {
-      logWarning(
-        chalk.yellow('Warnings encountered:') +
-          '\n' +
-          warnings
-            .map((warning) => `${chalk.yellow('-')} ${warning}`)
-            .join('\n')
-      );
-    }
-    // Stage only the modified files
-    // const { execSync } = require('child_process');
-    // for (const file of filesUpdated) {
-    //   await execSync(`git add "${file}"`);
-    // }
-
-    const formatter = await detectFormatter();
-
-    if (!formatter || filesUpdated.length === 0) {
-      return;
-    }
-
-    const applyFormatting = await promptConfirm({
-      message: `Would you like to auto-format the modified files? ${chalk.gray(
-        `(${formatter})`
-      )}`,
-      defaultValue: true,
-    });
-    // Format updated files if formatters are available
-    if (applyFormatting) await formatFiles(filesUpdated, formatter);
   }
 
   protected async handleTranslateCommand(initOptions: Options): Promise<void> {
@@ -707,10 +556,12 @@ export class ReactCLI extends BaseCLI {
         let esbuildConfig;
         if (options.jsconfig) {
           const jsconfig = loadJSON(options.jsconfig);
-          if (!jsconfig)
-            throw new Error(
+          if (!jsconfig) {
+            logError(
               `Failed to resolve jsconfig.json or tsconfig.json at provided filepath: "${options.jsconfig}"`
             );
+            process.exit(1);
+          }
           esbuildConfig = createESBuildConfig(jsconfig);
         } else {
           esbuildConfig = createESBuildConfig({});

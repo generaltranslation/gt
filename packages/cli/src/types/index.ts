@@ -64,8 +64,9 @@ export type SupportedFrameworks =
   | 'next-app'
   | 'next-pages'
   | 'vite'
+  | 'gatsby'
   | 'react'
-  | 'gatsby';
+  | 'redwood';
 
 export type SupportedLibraries =
   | 'gt-next'

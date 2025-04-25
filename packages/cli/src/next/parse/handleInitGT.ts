@@ -6,11 +6,11 @@ import * as t from '@babel/types';
 import { logError } from '../../console';
 
 export default async function handleInitGT(
-  filepath: string
-): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  const filesUpdated: string[] = [];
+  filepath: string,
+  errors: string[],
+  warnings: string[],
+  filesUpdated: string[]
+) {
   const code = fs.readFileSync(filepath, 'utf8');
 
   let ast;
@@ -58,7 +58,7 @@ export default async function handleInitGT(
 
     // Return early if either withGTConfig or initGT is already present
     if (hasGTConfig || hasInitGT) {
-      return { errors, filesUpdated, warnings };
+      return;
     }
 
     ast.program.body.unshift(
@@ -168,6 +168,4 @@ export default async function handleInitGT(
     logError(`Error parsing file ${filepath}: ${error}`);
     errors.push(`Failed to parse ${filepath}: ${error}`);
   }
-
-  return { errors, filesUpdated, warnings };
 }
