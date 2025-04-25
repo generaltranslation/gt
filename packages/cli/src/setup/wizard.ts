@@ -12,6 +12,7 @@ import { getPackageJson, isPackageInstalled } from '../utils/packageJson';
 import scanForContentReact from '../react/parse/scanForContent';
 import scanForContentNext from '../next/parse/scanForContent';
 import { getPackageManager } from '../utils/packageManager';
+import { installPackage } from '../utils/installPackage';
 
 export async function handleSetupReactCommand(
   options: SetupOptions
@@ -65,14 +66,14 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
     if (packageManager) {
       const spinner = createSpinner();
       spinner.start('Installing gt-next...');
-
-      spinner.stop(chalk.green('gt-next installed.'));
+      await installPackage('gt-next', packageManager);
+      spinner.stop(chalk.green('Automatically installed gt-next.'));
     } else {
       logInfo(
         'Please first install gt-next as a dependency, then re-run this command.'
       );
+      process.exit(0);
     }
-    process.exit(0);
   } else if (
     ['next-pages', 'react', 'redwood', 'vite', 'gatsby'].includes(
       frameworkType
@@ -81,16 +82,16 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
   ) {
     const packageManager = getPackageManager();
     if (packageManager) {
-      logInfo(
-        `Please first install gt-react as a dependency, then re-run this command.
-        ${packageManager.installCommand} add gt-react`
-      );
+      const spinner = createSpinner();
+      spinner.start('Installing gt-react...');
+      await installPackage('gt-react', packageManager);
+      spinner.stop(chalk.green('Automatically installed gt-react.'));
     } else {
       logInfo(
         'Please first install gt-react as a dependency, then re-run this command.'
       );
+      process.exit(0);
     }
-    process.exit(0);
   }
 
   // ----- Create a starter gt.config.json file -----

@@ -13,9 +13,24 @@ export async function detectFormatter(): Promise<Formatter | null> {
 
   // Try Biome
   try {
-    const { execSync } = require('child_process');
-    execSync('npx @biomejs/biome --version', { stdio: 'ignore' });
-    return 'biome';
+    return await new Promise<Formatter | null>((resolve, reject) => {
+      const { spawn } = require('child_process');
+      const child = spawn('npx', ['@biomejs/biome', '--version'], {
+        stdio: 'ignore',
+      });
+
+      child.on('error', () => {
+        resolve(null);
+      });
+
+      child.on('close', (code: number) => {
+        if (code === 0) {
+          resolve('biome');
+        } else {
+          resolve(null);
+        }
+      });
+    });
   } catch {}
 
   // Try ESLint
@@ -59,13 +74,35 @@ export async function formatFiles(
     if (detectedFormatter === 'biome') {
       logMessage(chalk.gray('Cleaning up with biome...'));
       try {
-        const { execSync } = require('child_process');
-        execSync(
-          `npx @biomejs/biome format --write ${filesUpdated.map((file) => `"${file}"`).join(' ')}`,
-          {
+        await new Promise<void>((resolve, reject) => {
+          const { spawn } = require('child_process');
+          const args = [
+            '@biomejs/biome',
+            'format',
+            '--write',
+            ...filesUpdated.map((file) => file),
+          ];
+
+          const child = spawn('npx', args, {
             stdio: ['ignore', 'inherit', 'inherit'],
-          }
-        );
+          });
+
+          child.on('error', (error: Error) => {
+            logWarning(
+              chalk.yellow('Biome formatting failed: ' + error.message)
+            );
+            resolve();
+          });
+
+          child.on('close', (code: number) => {
+            if (code !== 0) {
+              logWarning(
+                chalk.yellow(`Biome formatting failed with exit code ${code}`)
+              );
+            }
+            resolve();
+          });
+        });
       } catch (error) {
         logWarning(chalk.yellow('Biome formatting failed: ' + String(error)));
       }
