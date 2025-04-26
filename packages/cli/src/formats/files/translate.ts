@@ -10,7 +10,7 @@ import { getRelative, readFile } from '../../fs/findFilepath';
 import { flattenJsonDictionary } from '../../react/utils/flattenDictionary';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types';
 import { FileFormats, DataFormat } from '../../types/data';
-import path from 'path';
+import path from 'node:path';
 import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile';
 import { downloadFileBatch } from '../../api/downloadFileBatch';

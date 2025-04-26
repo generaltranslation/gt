@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { Options, Updates } from '../../types';
 
 import { parse } from '@babel/parser';
@@ -57,7 +57,7 @@ export default async function createInlineUpdates(
   const files = srcDirectory.flatMap((dir) => getFiles(dir));
 
   for (const file of files) {
-    const code = fs.readFileSync(file, 'utf8');
+    const code = await fs.promises.readFile(file, 'utf8');
 
     let ast;
     try {

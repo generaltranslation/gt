@@ -128,7 +128,7 @@ export async function promptText({
   return result;
 }
 
-export async function promptSelect<T extends string>({
+export async function promptSelect<T>({
   message,
   options,
   defaultValue,

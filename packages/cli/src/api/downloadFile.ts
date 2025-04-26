@@ -36,7 +36,7 @@ export async function downloadFile(
         const fileData = await downloadResponse.arrayBuffer();
 
         // Write the file to disk
-        fs.writeFileSync(outputPath, Buffer.from(fileData));
+        await fs.promises.writeFile(outputPath, Buffer.from(fileData));
 
         return true;
       }

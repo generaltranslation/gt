@@ -5,11 +5,16 @@ import { PackageManager } from './packageManager';
 
 export async function installPackage(
   packageName: string,
-  packageManager: PackageManager
+  packageManager: PackageManager,
+  asDevDependency?: boolean
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const command = packageManager.name;
     const args = [packageManager.installCommand, packageName];
+
+    if (asDevDependency) {
+      args.push(packageManager.devDependencyFlag);
+    }
 
     const childProcess = spawn(command, args, {
       stdio: ['pipe', 'ignore', 'pipe'],

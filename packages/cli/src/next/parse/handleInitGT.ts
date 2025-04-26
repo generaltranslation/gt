@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import { parse } from '@babel/parser';
 import generate from '@babel/generator';
 import traverse from '@babel/traverse';
@@ -11,7 +11,7 @@ export default async function handleInitGT(
   warnings: string[],
   filesUpdated: string[]
 ) {
-  const code = fs.readFileSync(filepath, 'utf8');
+  const code = await fs.promises.readFile(filepath, 'utf8');
 
   let ast;
   try {
@@ -162,7 +162,7 @@ export default async function handleInitGT(
     );
 
     // Write the modified code back to the file
-    fs.writeFileSync(filepath, processedCode);
+    await fs.promises.writeFile(filepath, processedCode);
     filesUpdated.push(filepath);
   } catch (error) {
     logError(`Error parsing file ${filepath}: ${error}`);

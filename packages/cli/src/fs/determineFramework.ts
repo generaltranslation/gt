@@ -1,6 +1,6 @@
 import chalk from 'chalk';
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 import { SupportedLibraries } from '../types';
 import { logError } from '../console';
 

@@ -1,12 +1,15 @@
 import { logError } from '../console';
 
 import chalk from 'chalk';
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 import { logErrorAndExit } from '../console';
 
 // search for package.json such that we can run init in non-js projects
-export function searchForPackageJson(): Record<string, any> | null {
+export async function searchForPackageJson(): Promise<Record<
+  string,
+  any
+> | null> {
   // Get the current working directory (where the CLI is being run)
   const cwd = process.cwd();
   const packageJsonPath = path.join(cwd, 'package.json');
@@ -16,13 +19,13 @@ export function searchForPackageJson(): Record<string, any> | null {
     return null;
   }
   try {
-    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    return JSON.parse(await fs.promises.readFile(packageJsonPath, 'utf8'));
   } catch (error) {
     return null;
   }
 }
 
-export function getPackageJson(): Record<string, any> {
+export async function getPackageJson(): Promise<Record<string, any>> {
   // Get the current working directory (where the CLI is being run)
   const cwd = process.cwd();
   const packageJsonPath = path.join(cwd, 'package.json');
@@ -36,16 +39,16 @@ export function getPackageJson(): Record<string, any> {
     );
   }
   try {
-    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    return JSON.parse(await fs.promises.readFile(packageJsonPath, 'utf8'));
   } catch (error) {
     logError(chalk.red('Error parsing package.json: ' + String(error)));
     process.exit(1);
   }
 }
 
-export function updatePackageJson(packageJson: Record<string, any>) {
+export async function updatePackageJson(packageJson: Record<string, any>) {
   try {
-    fs.writeFileSync(
+    await fs.promises.writeFile(
       path.join(process.cwd(), 'package.json'),
       JSON.stringify(packageJson, null, 2)
     );
@@ -55,14 +58,21 @@ export function updatePackageJson(packageJson: Record<string, any>) {
   }
 }
 
+// check if a package is installed in the package.json file
 export function isPackageInstalled(
   packageName: string,
   packageJson: Record<string, any>,
-  asDevDependency: boolean = false
+  asDevDependency: boolean = false,
+  checkBoth: boolean = false
 ): boolean {
-  const dependencies = asDevDependency
-    ? packageJson.devDependencies
-    : packageJson.dependencies;
+  const dependencies = checkBoth
+    ? {
+        ...packageJson.devDependencies,
+        ...packageJson.dependencies,
+      }
+    : asDevDependency
+      ? packageJson.devDependencies
+      : packageJson.dependencies;
 
   if (!dependencies) {
     return false;

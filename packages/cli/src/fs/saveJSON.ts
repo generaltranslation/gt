@@ -1,9 +1,9 @@
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 
-export function saveJSON(filepath: string, data: Record<string, any>) {
+export async function saveJSON(filepath: string, data: Record<string, any>) {
   // Ensure directory exists
-  fs.mkdirSync(path.dirname(filepath), { recursive: true });
+  await fs.promises.mkdir(path.dirname(filepath), { recursive: true });
 
-  fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
+  await fs.promises.writeFile(filepath, JSON.stringify(data, null, 2));
 }

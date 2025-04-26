@@ -36,7 +36,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
     process.exit(0);
   }
 
-  const frameworkType = await promptSelect({
+  const frameworkType = await promptSelect<SupportedFrameworks | 'other'>({
     message: 'What framework are you using?',
     options: [
       { value: 'next-app', label: chalk.blue('Next.js App Router') },
@@ -57,46 +57,32 @@ Please let us know what you would like to see supported at https://github.com/ge
     process.exit(0);
   }
 
-  const packageJson = getPackageJson();
+  const packageJson = await getPackageJson();
   // Check if gt-next or gt-react is installed
   if (
     frameworkType === 'next-app' &&
     !isPackageInstalled('gt-next', packageJson)
   ) {
-    const packageManager = getPackageManager();
-    if (packageManager) {
-      const spinner = createSpinner('timer');
-      spinner.start('Installing gt-next...');
-      await installPackage('gt-next', packageManager);
-      spinner.stop(chalk.green('Automatically installed gt-next.'));
-    } else {
-      logInfo(
-        'Please first install gt-next as a dependency, then re-run this command.'
-      );
-      process.exit(0);
-    }
+    const packageManager = await getPackageManager();
+    const spinner = createSpinner('timer');
+    spinner.start(`Installing gt-next with ${packageManager.name}...`);
+    await installPackage('gt-next', packageManager);
+    spinner.stop(chalk.green('Automatically installed gt-next.'));
   } else if (
     ['next-pages', 'react', 'redwood', 'vite', 'gatsby'].includes(
       frameworkType
     ) &&
     !isPackageInstalled('gt-react', packageJson)
   ) {
-    const packageManager = getPackageManager();
-    if (packageManager) {
-      const spinner = createSpinner('timer');
-      spinner.start('Installing gt-react...');
-      await installPackage('gt-react', packageManager);
-      spinner.stop(chalk.green('Automatically installed gt-react.'));
-    } else {
-      logInfo(
-        'Please first install gt-react as a dependency, then re-run this command.'
-      );
-      process.exit(0);
-    }
+    const packageManager = await getPackageManager();
+    const spinner = createSpinner('timer');
+    spinner.start(`Installing gt-react with ${packageManager.name}...`);
+    await installPackage('gt-react', packageManager);
+    spinner.stop(chalk.green('Automatically installed gt-react.'));
   }
 
   // ----- Create a starter gt.config.json file -----
-  generateSettings(options);
+  await generateSettings(options);
 
   let errors: string[] = [];
   let warnings: string[] = [];
@@ -145,10 +131,13 @@ Please let us know what you would like to see supported at https://github.com/ge
       warnings
     );
     filesUpdated = [...filesUpdated, ...filesUpdatedNext];
+
     spinner.stop(
-      chalk.green('Added <T> tags and updated ') +
-        chalk.bold.cyan(filesUpdatedNext.length) +
-        chalk.green(' files.')
+      chalk.green(
+        `Success! Added <T> tags and updated ${chalk.bold.cyan(
+          filesUpdated.length
+        )} files:\n`
+      ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
     );
 
     if (addWithGTConfig) {
@@ -206,9 +195,11 @@ Please let us know what you would like to see supported at https://github.com/ge
     );
     filesUpdated = [...filesUpdated, ...filesUpdatedReact];
     spinner.stop(
-      chalk.green('Added <T> tags and updated ') +
-        chalk.bold.cyan(filesUpdatedReact.length) +
-        chalk.green(' files.')
+      chalk.green(
+        `Success! Added <T> tags and updated ${chalk.bold.cyan(
+          filesUpdated.length
+        )} files:\n`
+      ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
     );
 
     if (errors.length > 0) {
@@ -249,8 +240,4 @@ Please let us know what you would like to see supported at https://github.com/ge
   });
   // Format updated files if formatters are available
   if (applyFormatting) await formatFiles(filesUpdated, formatter);
-
-  if (filesUpdated.length > 0) {
-    logStep('Please review the changes before committing.');
-  }
 }

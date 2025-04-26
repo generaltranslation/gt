@@ -67,7 +67,7 @@ export async function downloadFileBatch(
             }
 
             // Write the file to disk
-            fs.writeFileSync(outputPath, file.data);
+            await fs.promises.writeFile(outputPath, file.data);
 
             result.successful.push(translationId);
           } catch (error) {

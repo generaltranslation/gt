@@ -7,7 +7,7 @@ import {
   defaultBaseUrl,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
-import fs from 'fs';
+import fs from 'node:fs';
 import createOrUpdateConfig from '../fs/config/setupConfig';
 import { resolveFiles } from '../fs/config/parseFilesConfig';
 import { findFilepaths } from '../fs/findFilepath';
@@ -17,7 +17,7 @@ import { validateSettings } from './validateSettings';
  * @param options - The options to generate settings from
  * @returns The generated settings
  */
-export function generateSettings(options: any): Settings {
+export async function generateSettings(options: any): Promise<Settings> {
   // Load config file
   let gtConfig: Record<string, any> = {};
 
@@ -79,7 +79,6 @@ export function generateSettings(options: any): Settings {
     mergedOptions.src ||
     findFilepaths(['./src', './app', './pages', './components']);
 
-
   // Resolve all glob patterns in the files object
   mergedOptions.files = resolveFiles(
     mergedOptions.files || {},
@@ -89,7 +88,7 @@ export function generateSettings(options: any): Settings {
   // if there's no existing config file, creates one
   // does not include the API key to avoid exposing it
   if (!fs.existsSync(mergedOptions.config)) {
-    createOrUpdateConfig(mergedOptions.config, {
+    await createOrUpdateConfig(mergedOptions.config, {
       projectId: mergedOptions.projectId as string,
       defaultLocale: mergedOptions.defaultLocale as string,
       locales:

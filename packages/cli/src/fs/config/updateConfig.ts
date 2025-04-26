@@ -1,11 +1,11 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import { displayUpdatedConfigFile, logError } from '../../console/console';
 
 /**
  * Update the config file version id, locales, and projectId (if necessary)
  * @param {Record<string, any>} configObject - The config object to write if the file does not exist.
  */
-export default function updateConfig({
+export default async function updateConfig({
   configFilepath,
   projectId,
   _versionId,
@@ -15,7 +15,7 @@ export default function updateConfig({
   projectId?: string;
   _versionId?: string;
   locales?: string[];
-}): void {
+}): Promise<void> {
   // Filter out empty string values from the config object
   const newContent = {
     ...(projectId && { projectId }),
@@ -26,7 +26,9 @@ export default function updateConfig({
     // if file exists
     let oldContent: any = {};
     if (fs.existsSync(configFilepath)) {
-      oldContent = JSON.parse(fs.readFileSync(configFilepath, 'utf-8'));
+      oldContent = JSON.parse(
+        await fs.promises.readFile(configFilepath, 'utf-8')
+      );
     }
 
     // merge old and new content
@@ -37,7 +39,7 @@ export default function updateConfig({
 
     // write to file
     const mergedJsonContent = JSON.stringify(mergedContent, null, 2);
-    fs.writeFileSync(configFilepath, mergedJsonContent, 'utf-8');
+    await fs.promises.writeFile(configFilepath, mergedJsonContent, 'utf-8');
 
     // show update in console
     displayUpdatedConfigFile(configFilepath);

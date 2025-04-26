@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import os from 'os';
 import { build, BuildOptions } from 'esbuild';
 import { Options, Updates } from '../../types';
@@ -32,7 +32,7 @@ export default async function createDictionaryUpdates(
 
     const bundledCode = result.outputFiles[0].text;
     const tempFilePath = path.join(os.tmpdir(), 'bundled-dictionary.js');
-    fs.writeFileSync(tempFilePath, bundledCode);
+    await fs.promises.writeFile(tempFilePath, bundledCode);
 
     // Load the module using require
     let dictionaryModule;
@@ -43,7 +43,7 @@ export default async function createDictionaryUpdates(
       process.exit(1);
     } finally {
       // Clean up the temporary file
-      fs.unlinkSync(tempFilePath);
+      await fs.promises.unlink(tempFilePath);
     }
     dictionary = flattenDictionary(
       dictionaryModule.default ||

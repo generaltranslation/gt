@@ -1,7 +1,8 @@
-// This file is MIT licensed and was adapted from https://github.com/getsentry/sentry-wizard/blob/master/src/utils/package-manager.ts
+// This file is MIT licensed and was adapted from https://github.com/getsentry/sentry-wizard/blob/master/src/utils/package-manager.ts and https://github.com/getsentry/sentry-wizard/blob/master/src/utils/clack/index.ts
 import * as fs from 'fs';
 import * as path from 'path';
 import { getPackageJson, updatePackageJson } from './packageJson';
+import { promptSelect } from '../console';
 
 export interface PackageManager {
   name: string;
@@ -12,6 +13,7 @@ export interface PackageManager {
   runScriptCommand: string;
   flags: string;
   forceInstallFlag: string;
+  devDependencyFlag: string;
   registry?: string;
   detect: () => boolean;
   addOverride: (pkgName: string, pkgVersion: string) => Promise<void>;
@@ -25,6 +27,7 @@ export const BUN: PackageManager = {
   runScriptCommand: 'bun run',
   flags: '',
   forceInstallFlag: '--force',
+  devDependencyFlag: '--dev',
   detect: () =>
     ['bun.lockb', 'bun.lock'].some((lockFile) => {
       try {
@@ -34,10 +37,10 @@ export const BUN: PackageManager = {
       }
     }),
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
-    const packageDotJson = getPackageJson();
+    const packageDotJson = await getPackageJson();
     const overrides = packageDotJson.overrides || {};
 
-    updatePackageJson({
+    await updatePackageJson({
       ...packageDotJson,
       overrides: {
         ...overrides,
@@ -54,6 +57,7 @@ export const DENO: PackageManager = {
   runScriptCommand: 'deno task',
   flags: '',
   forceInstallFlag: '--force',
+  devDependencyFlag: '--dev',
   registry: 'npm',
   detect: () => {
     try {
@@ -63,10 +67,10 @@ export const DENO: PackageManager = {
     }
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
-    const packageDotJson = getPackageJson();
+    const packageDotJson = await getPackageJson();
     const overrides = packageDotJson.overrides || {};
 
-    updatePackageJson({
+    await updatePackageJson({
       ...packageDotJson,
       overrides: {
         ...overrides,
@@ -83,6 +87,7 @@ export const YARN_V1: PackageManager = {
   runScriptCommand: 'yarn',
   flags: '--ignore-workspace-root-check',
   forceInstallFlag: '--force',
+  devDependencyFlag: '--dev',
   detect: () => {
     try {
       return fs
@@ -94,10 +99,10 @@ export const YARN_V1: PackageManager = {
     }
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
-    const packageDotJson = getPackageJson();
+    const packageDotJson = await getPackageJson();
     const resolutions = packageDotJson.resolutions || {};
 
-    updatePackageJson({
+    await updatePackageJson({
       ...packageDotJson,
       resolutions: {
         ...resolutions,
@@ -115,6 +120,7 @@ export const YARN_V2: PackageManager = {
   runScriptCommand: 'yarn',
   flags: '',
   forceInstallFlag: '--force',
+  devDependencyFlag: '--dev',
   detect: () => {
     try {
       return fs
@@ -126,10 +132,10 @@ export const YARN_V2: PackageManager = {
     }
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
-    const packageDotJson = getPackageJson();
+    const packageDotJson = await getPackageJson();
     const resolutions = packageDotJson.resolutions || {};
 
-    updatePackageJson({
+    await updatePackageJson({
       ...packageDotJson,
       resolutions: {
         ...resolutions,
@@ -146,6 +152,7 @@ export const PNPM: PackageManager = {
   runScriptCommand: 'pnpm',
   flags: '--ignore-workspace-root-check',
   forceInstallFlag: '--force',
+  devDependencyFlag: '--save-dev',
   detect: () => {
     try {
       return fs.existsSync(path.join(process.cwd(), 'pnpm-lock.yaml'));
@@ -154,11 +161,11 @@ export const PNPM: PackageManager = {
     }
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
-    const packageDotJson = getPackageJson();
+    const packageDotJson = await getPackageJson();
     const pnpm = packageDotJson.pnpm || {};
     const overrides = pnpm.overrides || {};
 
-    updatePackageJson({
+    await updatePackageJson({
       ...packageDotJson,
       pnpm: {
         ...pnpm,
@@ -178,6 +185,7 @@ export const NPM: PackageManager = {
   runScriptCommand: 'npm run',
   flags: '',
   forceInstallFlag: '--force',
+  devDependencyFlag: '--save-dev',
   detect: () => {
     try {
       return fs.existsSync(path.join(process.cwd(), 'package-lock.json'));
@@ -186,10 +194,10 @@ export const NPM: PackageManager = {
     }
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
-    const packageDotJson = getPackageJson();
+    const packageDotJson = await getPackageJson();
     const overrides = packageDotJson.overrides || {};
 
-    updatePackageJson({
+    await updatePackageJson({
       ...packageDotJson,
       overrides: {
         ...overrides,
@@ -201,7 +209,7 @@ export const NPM: PackageManager = {
 
 export const packageManagers = [NPM, YARN_V1, YARN_V2, PNPM, BUN, DENO];
 
-export function getPackageManager(
+export function _detectPackageManger(
   managers?: PackageManager[]
 ): PackageManager | null {
   const foundPackageMangers = (managers ?? packageManagers).filter(
@@ -215,4 +223,36 @@ export function getPackageManager(
   }
 
   return null;
+}
+
+// Get the package manager for the current project
+// Uses a global cache to avoid prompting the user multiple times
+export async function getPackageManager(): Promise<PackageManager> {
+  const globalWizard: typeof global & {
+    _gt_wizard_cached_package_manager?: PackageManager;
+  } = global;
+
+  if (globalWizard._gt_wizard_cached_package_manager) {
+    return globalWizard._gt_wizard_cached_package_manager;
+  }
+
+  const detectedPackageManager = _detectPackageManger();
+
+  if (detectedPackageManager) {
+    globalWizard._gt_wizard_cached_package_manager = detectedPackageManager;
+    return detectedPackageManager;
+  }
+
+  const selectedPackageManager: PackageManager =
+    await promptSelect<PackageManager>({
+      message: 'Please select your package manager.',
+      options: packageManagers.map((packageManager) => ({
+        value: packageManager,
+        label: packageManager.label,
+      })),
+    });
+
+  globalWizard._gt_wizard_cached_package_manager = selectedPackageManager;
+
+  return selectedPackageManager;
 }

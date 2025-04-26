@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 
 export default function loadConfig(filepath: string): Record<string, any> {
   try {

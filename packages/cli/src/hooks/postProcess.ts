@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import chalk from 'chalk';
 import { logInfo, logMessage, logStep, logWarning } from '../console';
 

@@ -76,7 +76,7 @@ export async function sendUpdates(
     spinner.stop(chalk.green('Sent updates'));
     logSuccess(message);
     if (options.config)
-      updateConfig({
+      await updateConfig({
         configFilepath: options.config,
         _versionId: versionId,
         locales,

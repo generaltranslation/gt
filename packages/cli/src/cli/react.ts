@@ -14,21 +14,17 @@ import {
   endCommand,
   logError,
   logErrorAndExit,
-  logInfo,
   logStep,
   logSuccess,
   logWarning,
   promptConfirm,
-  promptSelect,
 } from '../console/console';
 import loadJSON from '../fs/loadJSON';
 import findFilepath, { findFilepaths } from '../fs/findFilepath';
 import createESBuildConfig from '../react/config/createESBuildConfig';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
 import chalk from 'chalk';
-import { detectFormatter, formatFiles } from '../hooks/postProcess';
+import { formatFiles } from '../hooks/postProcess';
 import { fetchTranslations } from '../api/fetchTranslations';
-import path from 'path';
 import { BaseCLI } from './base';
 import scanForContentReact from '../react/parse/scanForContent';
 import createDictionaryUpdates from '../react/parse/createDictionaryUpdates';
@@ -39,7 +35,7 @@ import { saveTranslations } from '../formats/gt/save';
 import { generateSettings } from '../config/generateSettings';
 import { saveJSON } from '../fs/saveJSON';
 import { resolveLocaleFiles } from '../fs/config/parseFilesConfig';
-import fs from 'fs';
+import fs from 'node:fs';
 import { noFilesError } from '../console/errors';
 
 const DEFAULT_TIMEOUT = 600;
@@ -237,7 +233,7 @@ export class ReactCLI extends BaseCLI {
   protected async handleGenerateSourceCommand(
     initOptions: GenerateSourceOptions
   ): Promise<void> {
-    const settings = generateSettings(initOptions);
+    const settings = await generateSettings(initOptions);
 
     const options = { ...initOptions, ...settings };
 
@@ -305,7 +301,7 @@ export class ReactCLI extends BaseCLI {
         logError(noFilesError);
         process.exit(1);
       }
-      saveJSON(translationFiles.gt, newData);
+      await saveJSON(translationFiles.gt, newData);
       logStep('Source file saved successfully!');
       // Also save translations (after merging with existing translations)
       for (const locale of settings.locales) {
@@ -323,7 +319,7 @@ export class ReactCLI extends BaseCLI {
         const filteredTranslations = Object.fromEntries(
           Object.entries(mergedTranslations).filter(([key]) => newData[key])
         );
-        saveJSON(translationsFile.gt, filteredTranslations);
+        await saveJSON(translationsFile.gt, filteredTranslations);
       }
       logStep('Merged translations successfully!');
     }
@@ -344,7 +340,7 @@ export class ReactCLI extends BaseCLI {
     }
 
     // ----- Create a starter gt.config.json file -----
-    generateSettings(options);
+    await generateSettings(options);
 
     // ----- //
     const includeTId = await promptConfirm({
@@ -392,7 +388,7 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected async handleTranslateCommand(initOptions: Options): Promise<void> {
-    const settings = generateSettings(initOptions);
+    const settings = await generateSettings(initOptions);
 
     // First run the base class's handleTranslate method
     const options = { ...initOptions, ...settings };
@@ -518,7 +514,11 @@ export class ReactCLI extends BaseCLI {
           settings.apiKey,
           versionId
         );
-        saveTranslations(translations, options.files.placeholderPaths, 'JSX');
+        await saveTranslations(
+          translations,
+          options.files.placeholderPaths,
+          'JSX'
+        );
       }
     } else {
       logError(

@@ -4,7 +4,6 @@ import findFilepath, { findFilepaths, readFile } from '../fs/findFilepath';
 import {
   displayHeader,
   promptText,
-  promptSelect,
   logErrorAndExit,
   noDefaultLocaleError,
   noLocalesError,
@@ -17,9 +16,10 @@ import {
   logSuccess,
   logInfo,
   startCommand,
+  createSpinner,
 } from '../console';
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 import {
   FilesOptions,
   Settings,
@@ -33,12 +33,12 @@ import chalk from 'chalk';
 import { translateFiles } from '../formats/files/translate';
 import { FILE_EXT_TO_FORMAT } from '../formats/files/supportedFiles';
 import { handleSetupReactCommand } from '../setup/wizard';
-import {
-  getPackageJson,
-  isPackageInstalled,
-  searchForPackageJson,
-} from '../utils/packageJson';
+import { isPackageInstalled, searchForPackageJson } from '../utils/packageJson';
 import { getDesiredLocales } from '../setup/userInput';
+import { installPackage } from '../utils/installPackage';
+import { getPackageManager } from '../utils/packageManager';
+import { retrieveCredentials, setCredentials } from '../utils/credentials';
+import { areCredentialsSet } from '../utils/credentials';
 
 type TranslateOptions = {
   config?: string;
@@ -100,7 +100,7 @@ export class BaseCLI {
       )
       .action(async (options: TranslateOptions) => {
         displayHeader('Starting translation...');
-        const settings = generateSettings(options);
+        const settings = await generateSettings(options);
         await this.handleGenericTranslate(settings);
         endCommand('Done!');
       });
@@ -125,7 +125,7 @@ export class BaseCLI {
       .action(async (options: SetupOptions) => {
         displayHeader('Running setup wizard...');
 
-        const packageJson = searchForPackageJson();
+        const packageJson = await searchForPackageJson();
 
         let ranReactSetup = false;
         // so that people can run init in non-js projects
@@ -141,7 +141,9 @@ export class BaseCLI {
             );
             await this.handleSetupReactCommand(options);
             endCommand(
-              `Done! We've automatically wrapped all of your JSX components for you.`
+              `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
+Certain aspects of your app may still need manual setup.
+See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
             );
             ranReactSetup = true;
           }
@@ -153,7 +155,7 @@ export class BaseCLI {
         await this.handleInitCommand(ranReactSetup);
 
         endCommand(
-          "Done! Take advantage of all of General Translation's features by signing up for a free account! https://generaltranslation.com/signup"
+          'Done! Remember to get an API key and project ID from the dashboard! https://dash.generaltranslation.com'
         );
       });
   }
@@ -263,7 +265,7 @@ export class BaseCLI {
   protected async handleInitCommand(ranReactSetup: boolean): Promise<void> {
     const { defaultLocale, locales } = await getDesiredLocales();
 
-    const packageJson = searchForPackageJson();
+    const packageJson = await searchForPackageJson();
     const isUsingGTNext = packageJson
       ? isPackageInstalled('gt-next', packageJson)
       : false;
@@ -338,10 +340,10 @@ export class BaseCLI {
     }
 
     // Create gt.config.json
-    createOrUpdateConfig(configFilepath, {
+    await createOrUpdateConfig(configFilepath, {
       defaultLocale,
       locales,
-      files,
+      files: Object.keys(files).length > 0 ? files : undefined,
     });
 
     logSuccess(
@@ -349,5 +351,26 @@ export class BaseCLI {
         configFilepath
       )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
     );
+
+    // Install gtx-cli if not installed
+    const isCLIInstalled = packageJson
+      ? isPackageInstalled('gtx-cli', packageJson, true, true)
+      : true; // if no package.json, we can't install it
+
+    if (!isCLIInstalled) {
+      const packageManager = await getPackageManager();
+      const spinner = createSpinner();
+      spinner.start(
+        `Installing gtx-cli as a dev dependency with ${packageManager.name}...`
+      );
+      await installPackage('gtx-cli', packageManager, true);
+      spinner.stop(chalk.green('Installed gtx-cli.'));
+    }
+
+    // Set credentials
+    if (!areCredentialsSet()) {
+      const credentials = await retrieveCredentials();
+      await setCredentials(credentials);
+    }
   }
 }

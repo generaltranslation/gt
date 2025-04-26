@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 /**
  * Loads a JSON file from a given filepath, returning null if the file is not found or the JSON doesn't parse.

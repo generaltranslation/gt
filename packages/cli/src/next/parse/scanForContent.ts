@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import { SupportedFrameworks, WrapOptions } from '../../types';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
@@ -48,7 +48,7 @@ export default async function scanForContentNext(
   const filesUpdated = [];
 
   for (const file of files) {
-    const code = fs.readFileSync(file, 'utf8');
+    const code = await fs.promises.readFile(file, 'utf8');
 
     // Create relative path from src directory and remove extension
     const relativePath = getRelativePath(file, srcDirectory[0]);
@@ -190,7 +190,7 @@ export default async function scanForContentNext(
       }
 
       // Write the modified code back to the file
-      fs.writeFileSync(file, processedCode);
+      await fs.promises.writeFile(file, processedCode);
       filesUpdated.push(file);
     } catch (error) {
       errors.push(`Error: Failed to write ${file}: ${error}`);
