@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { logError, logWarning } from '../console/console';
 
 /**
  * Downloads multiple translation files in a single batch request
@@ -54,7 +55,7 @@ export async function downloadFileBatch(
             const outputPath = outputPathMap.get(translationId);
 
             if (!outputPath) {
-              console.warn(`No output path found for file: ${translationId}`);
+              logWarning(`No output path found for file: ${translationId}`);
               result.failed.push(translationId);
               continue;
             }
@@ -66,11 +67,11 @@ export async function downloadFileBatch(
             }
 
             // Write the file to disk
-            fs.writeFileSync(outputPath, file.data);
+            await fs.promises.writeFile(outputPath, file.data);
 
             result.successful.push(translationId);
           } catch (error) {
-            console.error(`Error saving file ${file.id}:`, error);
+            logError(`Error saving file ${file.id}: ` + error);
             result.failed.push(file.id);
           }
         }
@@ -90,7 +91,7 @@ export async function downloadFileBatch(
 
       // If we get here, the response was not OK
       if (retries >= maxRetries) {
-        console.error(
+        logError(
           `Failed to download files in batch. Status: ${response.status} after ${maxRetries + 1} attempts.`
         );
         // Mark all files as failed
@@ -103,9 +104,9 @@ export async function downloadFileBatch(
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     } catch (error) {
       if (retries >= maxRetries) {
-        console.error(
-          `Error downloading files in batch after ${maxRetries + 1} attempts:`,
-          error
+        logError(
+          `Error downloading files in batch after ${maxRetries + 1} attempts: ` +
+            error
         );
         // Mark all files as failed
         result.failed = [...fileIds];

@@ -64,8 +64,9 @@ export type SupportedFrameworks =
   | 'next-app'
   | 'next-pages'
   | 'vite'
+  | 'gatsby'
   | 'react'
-  | 'gatsby';
+  | 'redwood';
 
 export type SupportedLibraries =
   | 'gt-next'
@@ -120,6 +121,7 @@ export type FilesOptions = {
 export type Settings = {
   config: string;
   baseUrl: string;
+  dashboardUrl: string;
   apiKey: string;
   projectId: string;
   defaultLocale: string;

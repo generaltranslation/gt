@@ -1,6 +1,7 @@
 {
   "name": "gtx-cli",
-  "version": "1.1.17",
+  "version": "1.2.0",
+  "type": "commonjs",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "scripts": {
@@ -47,7 +48,7 @@
     "@babel/parser": "^7.25.7",
     "@babel/plugin-transform-react-jsx": "^7.25.9",
     "@babel/traverse": "^7.25.7",
-    "@inquirer/prompts": "^7.2.4",
+    "@clack/prompts": "^0.10.1",
     "chalk": "^4.1.2",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
@@ -55,6 +56,7 @@
     "fast-glob": "^3.3.3",
     "form-data": "^4.0.2",
     "generaltranslation": "^6.2.4",
+    "open": "^10.1.1",
     "ora": "^8.2.0"
   },
   "devDependencies": {

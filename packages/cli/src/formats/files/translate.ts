@@ -1,16 +1,19 @@
 import { checkFileTranslations } from '../../api/checkFileTranslations';
 import { sendFiles } from '../../api/sendFiles';
-import { noSupportedDataFormatError } from '../../console/errors';
+import {
+  noSupportedDataFormatError,
+  logErrorAndExit,
+  createSpinner,
+} from '../../console';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
 import { getRelative, readFile } from '../../fs/findFilepath';
 import { flattenJsonDictionary } from '../../react/utils/flattenDictionary';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types';
 import { FileFormats, DataFormat } from '../../types/data';
-import path from 'path';
+import path from 'node:path';
 import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile';
 import { downloadFileBatch } from '../../api/downloadFileBatch';
-import { displayLoadingAnimation } from '../../console/console';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles';
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
@@ -37,8 +40,7 @@ export async function translateFiles(
   // Process JSON files
   if (filePaths.json) {
     if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
-      console.error(noSupportedDataFormatError);
-      process.exit(1);
+      logErrorAndExit(noSupportedDataFormatError);
     }
 
     const jsonFiles = filePaths.json.map((filePath) => {
@@ -77,7 +79,7 @@ export async function translateFiles(
   }
 
   if (allFiles.length === 0) {
-    console.error('No files to translate');
+    logErrorAndExit('No files to translate');
     return;
   }
 
@@ -117,7 +119,7 @@ export async function translateFiles(
       downloadStatus // Pass the already downloaded files to avoid duplicate requests
     );
   } catch (error) {
-    console.error('Error translating files:', error);
+    logErrorAndExit(`Error translating files: ${error}`);
   }
 }
 
@@ -194,9 +196,8 @@ async function processInitialTranslations(
   );
 
   if (readyTranslations.length > 0) {
-    const spinner = await displayLoadingAnimation(
-      'Downloading translations...'
-    );
+    const spinner = createSpinner('dots');
+    spinner.start('Downloading translations...');
 
     // Prepare batch download data
     const batchFiles = readyTranslations
@@ -257,7 +258,7 @@ async function processInitialTranslations(
       }
     }
 
-    spinner.succeed('Downloaded cached translations');
+    spinner.stop(chalk.green('Downloaded cached translations'));
   }
 
   return downloadStatus;

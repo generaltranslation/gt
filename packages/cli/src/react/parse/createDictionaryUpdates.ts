@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import os from 'os';
 import { build, BuildOptions } from 'esbuild';
 import { Options, Updates } from '../../types';
@@ -8,6 +8,7 @@ import { splitStringToContent } from 'generaltranslation';
 import loadJSON from '../../fs/loadJSON';
 import { hashJsxChildren } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata';
+import { logError, logErrorAndExit } from '../../console';
 
 export default async function createDictionaryUpdates(
   options: Options,
@@ -31,18 +32,18 @@ export default async function createDictionaryUpdates(
 
     const bundledCode = result.outputFiles[0].text;
     const tempFilePath = path.join(os.tmpdir(), 'bundled-dictionary.js');
-    fs.writeFileSync(tempFilePath, bundledCode);
+    await fs.promises.writeFile(tempFilePath, bundledCode);
 
     // Load the module using require
     let dictionaryModule;
     try {
       dictionaryModule = require(tempFilePath);
     } catch (error) {
-      console.error(`Failed to load the bundled dictionary code:`, error);
+      logError(`Failed to load the bundled dictionary code: ${error}`);
       process.exit(1);
     } finally {
       // Clean up the temporary file
-      fs.unlinkSync(tempFilePath);
+      await fs.promises.unlink(tempFilePath);
     }
     dictionary = flattenDictionary(
       dictionaryModule.default ||
@@ -51,10 +52,11 @@ export default async function createDictionaryUpdates(
     );
   }
 
-  if (!Object.keys(dictionary).length)
-    throw new Error(
+  if (!Object.keys(dictionary).length) {
+    logErrorAndExit(
       `Dictionary filepath provided: "${options.dictionary}", but no entries found.`
     );
+  }
 
   // ----- CREATE PARTIAL UPDATES ----- //
 

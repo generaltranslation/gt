@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { logError } from '../console/console';
 
 // Helper function to download a file
 export async function downloadFile(
@@ -35,14 +36,14 @@ export async function downloadFile(
         const fileData = await downloadResponse.arrayBuffer();
 
         // Write the file to disk
-        fs.writeFileSync(outputPath, Buffer.from(fileData));
+        await fs.promises.writeFile(outputPath, Buffer.from(fileData));
 
         return true;
       }
 
       // If we get here, the response was not OK
       if (retries >= maxRetries) {
-        console.error(
+        logError(
           `Failed to download file ${outputPath}. Status: ${downloadResponse.status} after ${maxRetries + 1} attempts.`
         );
         return false;
@@ -53,9 +54,9 @@ export async function downloadFile(
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     } catch (error) {
       if (retries >= maxRetries) {
-        console.error(
-          `Error downloading file ${outputPath} after ${maxRetries + 1} attempts:`,
-          error
+        logError(
+          `Error downloading file ${outputPath} after ${maxRetries + 1} attempts: ` +
+            error
         );
         return false;
       }

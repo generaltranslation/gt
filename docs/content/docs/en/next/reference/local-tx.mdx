@@ -66,9 +66,9 @@ Make sure that you have followed the [Quick Start Guide](/docs/next/tutorials/qu
   </Step>
 
   <Step>
-    Run the following command, and when asked "Where are your language files stored?", select the "Local" option.
+    Run the following command, and when asked if you want to save translations on the GT CDN, select the "No" option.
     ```bash
-    npx gtx-cli init
+    npx gtx-cli configure
     ```
     Then, run the translate command.
     ```bash
@@ -147,7 +147,7 @@ For a more detailed guide, see the [custom translations reference](/docs/next/re
 ## Notes
  * Local translations are an alternative to fetching translations from a CDN.
  * You can customize [`loadTranslations()`](/docs/next/api/config/load-translations) to also load translations from other sources, such as your database or your own CDN.
- * The `gtx-cli init` command configures your `gt.config.json` file to use local translations. See [gt.config.json](/docs/cli/reference/config) for more information.
+ * The `gtx-cli configure` command configures your `gt.config.json` file to use local translations. See [gt.config.json](/docs/cli/reference/config) for more information.
 
 ## Next steps
  * See [`loadTranslations()`](/docs/next/api/config/load-translations) for more information on writing a custom translation loader.

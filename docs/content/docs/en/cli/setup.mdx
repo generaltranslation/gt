@@ -1,5 +1,5 @@
 ---
-title: Setup
+title: React Setup
 description: Integrates gt-next or gt-react with your project.
 ---
 ## Usage
@@ -14,7 +14,9 @@ The `gtx-cli setup` command automatically sets up your project for translation w
 It does this by parsing your project's file tree and using babel to wrap the `<T>` component around static content.
 Any dynamic content will be automatically wrapped with `<Var>` components.
 
-This command should be run **once**, when you are first internationalizing your project.
+This command is run as part of the `init` setup wizard. Additionally, this command can be ran independently via `npx gtx-cli setup`.
+
+This command should be ran **once**, when you are first internationalizing your project.
 On subsequent changes, you should use the `scan` command to update your project.
 
 See the [scan](/docs/cli/scan) command for more details.

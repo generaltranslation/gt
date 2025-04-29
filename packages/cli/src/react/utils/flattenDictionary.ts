@@ -4,6 +4,7 @@ import {
   FlattenedJSONDictionary,
   JSONDictionary,
 } from '../../types/data';
+import { logErrorAndExit } from '../../console';
 
 const createDuplicateKeyError = (key: string) =>
   `Duplicate key found in dictionary: "${key}"`;
@@ -32,13 +33,13 @@ export default function flattenDictionary(
         const nestedFlattened = flattenDictionary(dictionary[key], newKey);
         for (const flatKey in nestedFlattened) {
           if (flattened.hasOwnProperty(flatKey)) {
-            throw new Error(createDuplicateKeyError(flatKey));
+            logErrorAndExit(createDuplicateKeyError(flatKey));
           }
           flattened[flatKey] = nestedFlattened[flatKey];
         }
       } else {
         if (flattened.hasOwnProperty(newKey)) {
-          throw new Error(createDuplicateKeyError(newKey));
+          logErrorAndExit(createDuplicateKeyError(newKey));
         }
         flattened[newKey] = dictionary[key];
       }
@@ -67,7 +68,7 @@ export function flattenJsonDictionary(
       const value = dictionary[key];
 
       if (Array.isArray(value)) {
-        throw new Error(
+        logErrorAndExit(
           `Arrays are not supported in JSON dictionary at key: "${newKey}"`
         );
       } else if (typeof value === 'object' && value !== null) {
@@ -75,14 +76,14 @@ export function flattenJsonDictionary(
         const nestedFlattened = flattenJsonDictionary(value, newKey);
         for (const flatKey in nestedFlattened) {
           if (flattened.hasOwnProperty(flatKey)) {
-            throw new Error(createDuplicateKeyError(flatKey));
+            logErrorAndExit(createDuplicateKeyError(flatKey));
           }
           flattened[flatKey] = nestedFlattened[flatKey];
         }
       } else if (typeof value === 'string') {
         // Handle string values
         if (flattened.hasOwnProperty(newKey)) {
-          throw new Error(createDuplicateKeyError(newKey));
+          logErrorAndExit(createDuplicateKeyError(newKey));
         }
         flattened[newKey] = value;
       }

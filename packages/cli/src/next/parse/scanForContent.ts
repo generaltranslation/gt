@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import { SupportedFrameworks, WrapOptions } from '../../types';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
@@ -36,20 +36,19 @@ const IMPORT_MAP = {
  * @param options - The options object
  * @returns An object containing the updates and errors
  */
-export default async function scanForContent(
+export default async function scanForContentNext(
   options: WrapOptions,
-  pkg: 'gt-next' | 'gt-react',
-  framework: SupportedFrameworks
-): Promise<{ errors: string[]; filesUpdated: string[]; warnings: string[] }> {
-  const errors: string[] = [];
-  const warnings: string[] = [];
+  pkg: 'gt-next',
+  errors: string[],
+  warnings: string[]
+): Promise<{ filesUpdated: string[] }> {
   const srcDirectory = options.src || ['./'];
 
   const files = srcDirectory.flatMap((dir) => getFiles(dir));
   const filesUpdated = [];
 
   for (const file of files) {
-    const code = fs.readFileSync(file, 'utf8');
+    const code = await fs.promises.readFile(file, 'utf8');
 
     // Create relative path from src directory and remove extension
     const relativePath = getRelativePath(file, srcDirectory[0]);
@@ -63,8 +62,7 @@ export default async function scanForContent(
         createParenthesizedExpressions: true,
       });
     } catch (error) {
-      console.error(`Error parsing file ${file}:`, error);
-      errors.push(`Failed to parse ${file}: ${error}`);
+      errors.push(`Error: Failed to parse ${file}: ${error}`);
       continue;
     }
 
@@ -192,13 +190,12 @@ export default async function scanForContent(
       }
 
       // Write the modified code back to the file
-      fs.writeFileSync(file, processedCode);
+      await fs.promises.writeFile(file, processedCode);
       filesUpdated.push(file);
     } catch (error) {
-      console.error(`Error writing file ${file}:`, error);
-      errors.push(`Failed to write ${file}: ${error}`);
+      errors.push(`Error: Failed to write ${file}: ${error}`);
     }
   }
 
-  return { errors, filesUpdated, warnings };
+  return { filesUpdated };
 }

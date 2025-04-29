@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
-import path from 'path';
+import path from 'node:path';
 import { DataFormat } from '../../types/data';
+import { logSuccess } from '../../console';
 
 /**
  * Saves translated MDX/MD file content to the appropriate location
@@ -20,6 +21,6 @@ export async function saveTranslatedFile(
     // Save the translated file with the appropriate extension
     const outputPath = path.join(localeDir, fileName);
     await fs.writeFile(outputPath, translatedContent);
-    console.log(`Saved translated ${dataFormat} file to: ${outputPath}`);
+    logSuccess(`Saved translated ${dataFormat} file to: ${outputPath}`);
   }
 }

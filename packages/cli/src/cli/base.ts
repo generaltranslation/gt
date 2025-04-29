@@ -1,26 +1,44 @@
 import { program } from 'commander';
-import { displayAsciiTitle } from '../console/console';
-import { displayInitializingText } from '../console/console';
 import createOrUpdateConfig from '../fs/config/setupConfig';
-import { input, select } from '@inquirer/prompts';
-import { isValidLocale } from 'generaltranslation';
-import findFilepath, { readFile } from '../fs/findFilepath';
+import findFilepath, { findFilepaths, readFile } from '../fs/findFilepath';
 import {
+  displayHeader,
+  promptText,
+  logErrorAndExit,
   noDefaultLocaleError,
   noLocalesError,
   noApiKeyError,
   noProjectIdError,
   noFilesError,
-} from '../console/errors';
-import path from 'path';
-import fs from 'fs';
-import { FilesOptions, Settings, SupportedLibraries } from '../types';
+  endCommand,
+  promptConfirm,
+  promptMultiSelect,
+  logSuccess,
+  logInfo,
+  startCommand,
+  createSpinner,
+} from '../console';
+import path from 'node:path';
+import fs from 'node:fs';
+import {
+  FilesOptions,
+  Settings,
+  SupportedLibraries,
+  SetupOptions,
+} from '../types';
 import { resolveProjectId } from '../fs/utils';
 import { DataFormat } from '../types/data';
 import { generateSettings } from '../config/generateSettings';
 import chalk from 'chalk';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { translateFiles } from '../formats/files/translate';
+import { FILE_EXT_TO_FORMAT } from '../formats/files/supportedFiles';
+import { handleSetupReactCommand } from '../setup/wizard';
+import { isPackageInstalled, searchForPackageJson } from '../utils/packageJson';
+import { getDesiredLocales } from '../setup/userInput';
+import { installPackage } from '../utils/installPackage';
+import { getPackageManager } from '../utils/packageManager';
+import { retrieveCredentials, setCredentials } from '../utils/credentials';
+import { areCredentialsSet } from '../utils/credentials';
 
 type TranslateOptions = {
   config?: string;
@@ -42,6 +60,9 @@ export class BaseCLI {
     this.library = library;
     this.additionalModules = additionalModules || [];
     this.setupInitCommand();
+    this.setupConfigureCommand();
+    this.setupSetupCommand();
+    this.setupLoginCommand();
   }
   // Init is never called in a child class
   public init() {
@@ -79,35 +100,146 @@ export class BaseCLI {
         'Space-separated list of locales (e.g., en fr es)'
       )
       .action(async (options: TranslateOptions) => {
-        displayAsciiTitle();
-        displayInitializingText();
-
-        const settings = generateSettings(options);
+        displayHeader('Starting translation...');
+        const settings = await generateSettings(options);
         await this.handleGenericTranslate(settings);
+        endCommand('Done!');
+      });
+  }
+
+  protected setupLoginCommand(): void {
+    program
+      .command('auth')
+      .description('Generate a General Translation API key and project ID')
+      .option(
+        '-c, --config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
+      )
+      .action(async (options: TranslateOptions) => {
+        displayHeader('Authenticating with General Translation...');
+        await this.handleLoginCommand();
+        endCommand('Done!');
+      });
+  }
+
+  protected setupInitCommand(): void {
+    program
+      .command('init')
+      .description(
+        'Run the setup wizard to configure your project for General Translation'
+      )
+      .option(
+        '--src <paths...>',
+        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
+        findFilepaths(['./src', './app', './pages', './components'])
+      )
+      .option(
+        '--config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
+      )
+      .action(async (options: SetupOptions) => {
+        displayHeader('Running setup wizard...');
+
+        const packageJson = await searchForPackageJson();
+
+        let ranReactSetup = false;
+        // so that people can run init in non-js projects
+        if (packageJson && isPackageInstalled('react', packageJson)) {
+          const wrap = await promptConfirm({
+            message: `Detected that this project is using React. Would you like to run the React setup wizard?\nThis will install gt-react|gt-next as a dependency and internationalize your app.`,
+            defaultValue: true,
+          });
+
+          if (wrap) {
+            logInfo(
+              `${chalk.yellow('[EXPERIMENTAL]')} Running React setup wizard...`
+            );
+            await this.handleSetupReactCommand(options);
+            endCommand(
+              `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
+Certain aspects of your app may still need manual setup.
+See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
+            );
+            ranReactSetup = true;
+          }
+        }
+        if (ranReactSetup) {
+          startCommand('Setting up project config...');
+        }
+        // Configure gt.config.json
+        await this.handleInitCommand(ranReactSetup);
+
+        endCommand(
+          'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
+        );
+      });
+  }
+
+  protected setupConfigureCommand(): void {
+    program
+      .command('configure')
+      .description(
+        'Configure your project for General Translation. This will create a gt.config.json file in your codebase.'
+      )
+      .action(async () => {
+        displayHeader('Configuring project...');
+
+        logInfo(
+          'Welcome! This tool will help you configure your gt.config.json file. See the docs: https://generaltranslation.com/docs/cli/reference/config for more information.'
+        );
+
+        // Configure gt.config.json
+        await this.handleInitCommand(false);
+
+        endCommand(
+          'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
+        );
+      });
+  }
+
+  protected setupSetupCommand(): void {
+    program
+      .command('setup')
+      .description(
+        'Run the setup to configure your Next.js or React project for General Translation'
+      )
+      .option(
+        '--src <paths...>',
+        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
+        findFilepaths(['./src', './app', './pages', './components'])
+      )
+      .option(
+        '--config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
+      )
+      .action(async (options: SetupOptions) => {
+        displayHeader('Running React setup wizard...');
+        await this.handleSetupReactCommand(options);
+        endCommand(
+          "Done! Take advantage of all of General Translation's features by signing up for a free account! https://generaltranslation.com/signup"
+        );
       });
   }
 
   protected async handleGenericTranslate(settings: Settings): Promise<void> {
     // Validate required settings are present
     if (!settings.locales) {
-      console.error(noLocalesError);
-      process.exit(1);
+      logErrorAndExit(noLocalesError);
     }
     if (!settings.defaultLocale) {
-      console.error(noDefaultLocaleError);
-      process.exit(1);
+      logErrorAndExit(noDefaultLocaleError);
     }
     if (!settings.files) {
-      console.error(noFilesError);
-      process.exit(1);
+      logErrorAndExit(noFilesError);
     }
     if (!settings.apiKey) {
-      console.error(noApiKeyError);
-      process.exit(1);
+      logErrorAndExit(noApiKeyError);
     }
     if (!settings.projectId) {
-      console.error(noProjectIdError);
-      process.exit(1);
+      logErrorAndExit(noProjectIdError);
     }
 
     // dataFormat for JSONs
@@ -139,128 +271,134 @@ export class BaseCLI {
       settings
     );
   }
-  protected setupInitCommand(): void {
-    program
-      .command('init')
-      .description('Initialize project for General Translation')
-      .action(async () => {
-        displayAsciiTitle();
-        displayInitializingText();
 
-        // Ask for the default locale
-        const defaultLocale = await input({
-          message: 'What is the default locale for your project?',
-          default: libraryDefaultLocale,
-        });
+  protected async handleSetupReactCommand(
+    options: SetupOptions
+  ): Promise<void> {
+    await handleSetupReactCommand(options);
+  }
 
-        // Ask for the locales
-        const locales = await input({
-          message: `What locales would you like to translate using General Translation? ${chalk.gray(
-            '(space-separated list)'
-          )}`,
-          validate: (input) => {
-            const locales = input.split(' ');
-            if (locales.length === 0) {
-              return 'Please enter at least one locale';
-            }
-            for (const locale of locales) {
-              if (!isValidLocale(locale)) {
-                return 'Please enter a valid locale (e.g., en, fr, es)';
-              }
-            }
-            return true;
-          },
-        });
+  // Wizard for configuring gt.config.json
+  protected async handleInitCommand(ranReactSetup: boolean): Promise<void> {
+    const { defaultLocale, locales } = await getDesiredLocales();
 
-        // Ask where the translations are stored
-        const location = await select({
-          message: `Where are your language files stored? ${chalk.gray(
-            '(remote or local)'
-          )}`,
-          choices: [
-            { value: 'remote', name: 'Remote' },
-            { value: 'local', name: 'Local' },
-          ],
-          default: 'remote',
-        });
+    const packageJson = await searchForPackageJson();
+    const isUsingGTNext = packageJson
+      ? isPackageInstalled('gt-next', packageJson)
+      : false;
+    const isUsingGTReact = packageJson
+      ? isPackageInstalled('gt-react', packageJson)
+      : false;
 
-        let configFilepath = 'gt.config.json';
-        if (fs.existsSync('gt.config.json')) {
-          configFilepath = 'gt.config.json';
-        } else if (fs.existsSync('src/gt.config.json')) {
-          configFilepath = 'src/gt.config.json';
-        }
+    // Ask if using another i18n library
+    const isUsingGT = isUsingGTNext || isUsingGTReact || ranReactSetup;
 
-        if (location === 'remote') {
-          // Create gt.config.json
-          createOrUpdateConfig(configFilepath, {
-            defaultLocale,
-            locales: locales.split(' '),
-          });
-          return;
-        }
+    // Ask where the translations are stored
+    const usingCDN = isUsingGT
+      ? await promptConfirm({
+          message: `Auto-detected that you're using gt-next or gt-react. Would you like to use the General Translation CDN to store your translations?\nSee ${
+            isUsingGTNext
+              ? 'https://generaltranslation.com/docs/next/reference/local-tx'
+              : 'https://generaltranslation.com/docs/react/reference/local-tx'
+          } for more information.\nIf you answer no, we'll setup your project to store translations locally.`,
+          defaultValue: true,
+        })
+      : false;
 
-        // Ask where the translations are stored
-        const translationsDir = await input({
-          message:
-            'What is the path to the directory containing your language files?',
-        });
+    // Ask where the translations are stored
+    const translationsDir =
+      isUsingGT && !usingCDN
+        ? await promptText({
+            message:
+              'What is the path to the directory where you would like to locally store your translations?',
+            defaultValue: './public/locales',
+          })
+        : null;
 
-        const thirdPartyLibrary =
-          this.library !== 'gt-next' && this.library !== 'gt-react';
+    const message = !isUsingGT
+      ? 'What is the format of your language resource files? Select as many as applicable.\nAdditionally, you can translate any other files you have in your project.'
+      : `${chalk.gray(
+          '(Optional)'
+        )} Do you have any separate files you would like to translate? For example, extra Markdown files for docs.`;
+    const dataFormats = await promptMultiSelect({
+      message,
+      options: [
+        { value: 'json', label: 'JSON' },
+        { value: 'md', label: 'Markdown' },
+        { value: 'mdx', label: 'MDX' },
+        { value: 'ts', label: 'TypeScript' },
+        { value: 'js', label: 'JavaScript' },
+      ],
+      required: !isUsingGT,
+    });
 
-        // Ask if using another i18n library
-        const i18nLibrary = thirdPartyLibrary
-          ? await select({
-              message: `Are you using a 3rd-party i18n library? ${chalk.gray(
-                `(Auto-detected: ${this.library === 'base' ? 'none' : this.library})`
-              )}`,
-              choices: [
-                { value: true, name: 'Yes' },
-                { value: false, name: 'No' },
-              ],
-              default: true,
-            })
-          : false;
-
-        if (i18nLibrary) {
-          const dataFormat: string = await select({
-            message: 'What is the format of your language files?',
-            choices: ['json'],
-            default: 'json',
-          });
-          // combine translationsDir and dataFormat into something like
-          // translationsDir/[locale].json
-          const translationsDirWithFormat = path.join(
-            translationsDir,
-            `[locale].${dataFormat}`
-          );
-          // Create gt.config.json
-          createOrUpdateConfig(configFilepath, {
-            defaultLocale,
-            locales: locales.split(' '),
-            files: {
-              json: {
-                include: [translationsDirWithFormat],
-              },
-            },
-          });
-        } else {
-          const translationsDirWithFormat = path.join(
-            translationsDir,
-            `[locale].json`
-          );
-          // Create gt.config.json
-          createOrUpdateConfig('gt.config.json', {
-            defaultLocale,
-            locales: locales.split(' '),
-            files: {
-              gt: {
-                output: translationsDirWithFormat,
-              },
-            },
-          });
-        }
+    const files: FilesOptions = {};
+    for (const dataFormat of dataFormats) {
+      const paths = await promptText({
+        message: `${chalk.cyan(FILE_EXT_TO_FORMAT[dataFormat])}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_FORMAT[dataFormat]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
+        defaultValue: `./**/[locale]/*.${dataFormat}`,
       });
+
+      files[dataFormat] = {
+        include: paths.split(' '),
+      };
+    }
+
+    // Add GT translations if using GT and storing locally
+    if (isUsingGT && !usingCDN && translationsDir) {
+      files.gt = {
+        output: path.join(translationsDir, `[locale].json`),
+      };
+    }
+
+    let configFilepath = 'gt.config.json';
+    if (fs.existsSync('src/gt.config.json')) {
+      configFilepath = 'src/gt.config.json';
+    }
+
+    // Create gt.config.json
+    await createOrUpdateConfig(configFilepath, {
+      defaultLocale,
+      locales,
+      files: Object.keys(files).length > 0 ? files : undefined,
+    });
+
+    logSuccess(
+      `Feel free to edit ${chalk.cyan(
+        configFilepath
+      )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
+    );
+
+    // Install gtx-cli if not installed
+    const isCLIInstalled = packageJson
+      ? isPackageInstalled('gtx-cli', packageJson, true, true)
+      : true; // if no package.json, we can't install it
+
+    if (!isCLIInstalled) {
+      const packageManager = await getPackageManager();
+      const spinner = createSpinner();
+      spinner.start(
+        `Installing gtx-cli as a dev dependency with ${packageManager.name}...`
+      );
+      await installPackage('gtx-cli', packageManager, true);
+      spinner.stop(chalk.green('Installed gtx-cli.'));
+    }
+
+    // Set credentials
+    if (!areCredentialsSet()) {
+      const loginQuestion = await promptConfirm({
+        message:
+          'Would you like the wizard to automatically generate an API key and project ID for you?',
+        defaultValue: true,
+      });
+      if (loginQuestion) {
+        await this.handleLoginCommand();
+      }
+    }
+  }
+  protected async handleLoginCommand(): Promise<void> {
+    const settings = await generateSettings({});
+    const credentials = await retrieveCredentials(settings);
+    await setCredentials(credentials);
   }
 }

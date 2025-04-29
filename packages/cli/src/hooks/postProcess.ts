@@ -1,5 +1,6 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import chalk from 'chalk';
+import { logInfo, logMessage, logStep, logWarning } from '../console';
 
 type Formatter = 'prettier' | 'biome' | 'eslint';
 
@@ -12,9 +13,24 @@ export async function detectFormatter(): Promise<Formatter | null> {
 
   // Try Biome
   try {
-    const { execSync } = require('child_process');
-    execSync('npx @biomejs/biome --version', { stdio: 'ignore' });
-    return 'biome';
+    return await new Promise<Formatter | null>((resolve, reject) => {
+      const { spawn } = require('child_process');
+      const child = spawn('npx', ['@biomejs/biome', '--version'], {
+        stdio: 'ignore',
+      });
+
+      child.on('error', () => {
+        resolve(null);
+      });
+
+      child.on('close', (code: number) => {
+        if (code === 0) {
+          resolve('biome');
+        } else {
+          resolve(null);
+        }
+      });
+    });
   } catch {}
 
   // Try ESLint
@@ -36,12 +52,12 @@ export async function formatFiles(
     const detectedFormatter = formatter || (await detectFormatter());
 
     if (!detectedFormatter) {
-      console.log(chalk.yellow('\n⚠️  No supported formatter detected'));
+      logWarning(chalk.yellow('No supported formatter detected'));
       return;
     }
 
     if (detectedFormatter === 'prettier') {
-      console.log(chalk.gray('\nCleaning up with prettier...'));
+      logMessage(chalk.gray('Cleaning up with prettier...'));
       const prettier = require('prettier');
       for (const file of filesUpdated) {
         const config = await prettier.resolveConfig(file);
@@ -56,26 +72,45 @@ export async function formatFiles(
     }
 
     if (detectedFormatter === 'biome') {
-      console.log(chalk.gray('\nCleaning up with biome...'));
+      logMessage(chalk.gray('Cleaning up with biome...'));
       try {
-        const { execSync } = require('child_process');
-        execSync(
-          `npx @biomejs/biome format --write ${filesUpdated.map((file) => `"${file}"`).join(' ')}`,
-          {
+        await new Promise<void>((resolve, reject) => {
+          const { spawn } = require('child_process');
+          const args = [
+            '@biomejs/biome',
+            'format',
+            '--write',
+            ...filesUpdated.map((file) => file),
+          ];
+
+          const child = spawn('npx', args, {
             stdio: ['ignore', 'inherit', 'inherit'],
-          }
-        );
+          });
+
+          child.on('error', (error: Error) => {
+            logWarning(
+              chalk.yellow('Biome formatting failed: ' + error.message)
+            );
+            resolve();
+          });
+
+          child.on('close', (code: number) => {
+            if (code !== 0) {
+              logWarning(
+                chalk.yellow(`Biome formatting failed with exit code ${code}`)
+              );
+            }
+            resolve();
+          });
+        });
       } catch (error) {
-        console.log(chalk.yellow('\n⚠️  Biome formatting failed'));
-        if (error instanceof Error) {
-          console.log(chalk.gray(error.message));
-        }
+        logWarning(chalk.yellow('Biome formatting failed: ' + String(error)));
       }
       return;
     }
 
     if (detectedFormatter === 'eslint') {
-      console.log(chalk.gray('\nCleaning up with eslint...'));
+      logMessage(chalk.gray('Cleaning up with eslint...'));
       const { ESLint } = require('eslint');
       const eslint = new ESLint({
         fix: true,
@@ -88,9 +123,6 @@ export async function formatFiles(
       return;
     }
   } catch (e) {
-    console.log(chalk.yellow('\n⚠️  Unable to run code formatter'));
-    if (e instanceof Error) {
-      console.log(chalk.gray(e.message));
-    }
+    logWarning(chalk.yellow('Unable to run code formatter: ' + String(e)));
   }
 }

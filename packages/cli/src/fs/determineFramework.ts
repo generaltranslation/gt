@@ -1,7 +1,8 @@
 import chalk from 'chalk';
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 import { SupportedLibraries } from '../types';
+import { logError } from '../console';
 
 export function determineLibrary(): {
   library: SupportedLibraries;
@@ -16,7 +17,7 @@ export function determineLibrary(): {
 
     // Check if package.json exists
     if (!fs.existsSync(packageJsonPath)) {
-      console.log(
+      logError(
         chalk.red(
           'No package.json found in the current directory. Please run this command from the root of your project.'
         )
@@ -49,7 +50,7 @@ export function determineLibrary(): {
     // Fallback to base if neither is found
     return { library, additionalModules };
   } catch (error) {
-    console.error('Error determining framework:', error);
+    logError('Error determining framework: ' + String(error));
     return { library: 'base', additionalModules: [] };
   }
 }

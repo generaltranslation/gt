@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { RetrievedTranslations } from '../types/api';
+import { logError } from '../console/errors';
 
 /**
  * Fetches translations from the API and saves them to a local directory
@@ -31,7 +32,7 @@ export async function fetchTranslations(
 
     return translations;
   } else {
-    console.error(chalk.red('Failed to fetch translations'));
+    logError(chalk.red('Failed to fetch translations'));
   }
   return [];
 }

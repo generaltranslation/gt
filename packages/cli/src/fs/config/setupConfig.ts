@@ -1,9 +1,5 @@
-import fs from 'fs';
-import {
-  displayCreatedConfigFile,
-  displayUpdatedConfigFile,
-} from '../../console/console';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import fs from 'node:fs';
+import { displayCreatedConfigFile, logError } from '../../console';
 import { FilesOptions } from '../../types';
 
 /**
@@ -13,7 +9,7 @@ import { FilesOptions } from '../../types';
  * @param {string} configFilepath - The path to the config file.
  * @param {Record<string, any>} configObject - The config object to write if the file does not exist.
  */
-export default function createOrUpdateConfig(
+export default async function createOrUpdateConfig(
   configFilepath: string,
   options: {
     projectId?: string;
@@ -21,7 +17,7 @@ export default function createOrUpdateConfig(
     locales?: string[];
     files?: FilesOptions;
   }
-): string {
+): Promise<string> {
   // Filter out empty string values from the config object
   const newContent = {
     ...(options.projectId && { projectId: options.projectId }),
@@ -32,7 +28,9 @@ export default function createOrUpdateConfig(
     // if file exists
     let oldContent: any = {};
     if (fs.existsSync(configFilepath)) {
-      oldContent = JSON.parse(fs.readFileSync(configFilepath, 'utf-8'));
+      oldContent = JSON.parse(
+        await fs.promises.readFile(configFilepath, 'utf-8')
+      );
     }
 
     // merge old and new content
@@ -50,12 +48,12 @@ export default function createOrUpdateConfig(
 
     // write to file
     const mergedJsonContent = JSON.stringify(mergedContent, null, 2);
-    fs.writeFileSync(configFilepath, mergedJsonContent, 'utf-8');
+    await fs.promises.writeFile(configFilepath, mergedJsonContent, 'utf-8');
 
     // show update in console
     displayCreatedConfigFile(configFilepath);
   } catch (error) {
-    console.error(`An error occurred while updating ${configFilepath}:`, error);
+    logError(`An error occurred while updating ${configFilepath}: ${error}`);
   }
   return configFilepath;
 }

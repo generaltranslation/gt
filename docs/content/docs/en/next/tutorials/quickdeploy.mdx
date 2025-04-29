@@ -13,7 +13,7 @@ We will do this in 3 steps:
     Add your production API keys.
   </Step>
   <Step>
-    Run the init command to configure your project.
+    Run the `gtx-cli configure` command to configure your project.
   </Step>
   <Step>
     Add the translate command to your build script.
@@ -44,29 +44,28 @@ GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
     *Never commit your API keys to a public repository!*
 </Callout>
 
-## Step 2: Run the init command 🔧
+## Step 2: Run the `gtx-cli configure` command 🔧
 
-Run the init command to configure your project.
+Run the `gtx-cli configure` command to configure your project.
 
 ```bash copy
-npx gtx-cli init
+npx gtx-cli configure
 ```
 
 <Callout>
-  If you do not want your translations to be hosted on the GT CDN, select "Local" when asked where your
-  language files are stored. You will also need to configure the [`loadTranslations()`](/docs/next/api/config/load-translations) function.
+  If you do not want your translations to be hosted on the GT CDN, select "No" when asked.
+  You will also need to configure the [`loadTranslations()`](/docs/next/api/config/load-translations) function.
 </Callout>
 
 
 ## Step 3: Add the translate command to your build script 🏗️
 
-The next step is to add the [translate command](/docs/cli/translate) to your build script,
-and specify the [locales](/docs/reference/supported-locales) that you would like to ship to production.
+The next step is to add the [translate command](/docs/cli/translate) to your build script.
 
 ```json title="package.json" copy
 {
   "scripts": {
-    "build": "npx gtx-cli translate && <YOUR_BUILD_COMMAND>"
+    "build": "npx gtx-cli translate && <...YOUR_BUILD_COMMAND...>"
   }
 }
 ```

@@ -1,17 +1,17 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import { isValidLocale } from 'generaltranslation';
-import path from 'path';
+import path from 'node:path';
 
 /**
  * Extracts projectId, defaultLocale, and locales from a next.config.js file.
  * @param {string} filePath - The path to the next.config.js file.
  * @returns {object|null} - An object containing the extracted values or null if none found or incorrect types.
  */
-export function parseNextConfig(filePath: string): {
+export async function parseNextConfig(filePath: string): Promise<{
   projectId?: string;
   defaultLocale?: string;
   locales?: string[];
-} {
+}> {
   // Resolve the absolute path
   const absoluteFilePath = path.resolve(filePath);
 
@@ -21,7 +21,7 @@ export function parseNextConfig(filePath: string): {
   }
 
   // Read the file content
-  const fileContent = fs.readFileSync(absoluteFilePath, 'utf8');
+  const fileContent = await fs.promises.readFile(absoluteFilePath, 'utf8');
 
   // Regular expressions to extract the values
   const defaultLocaleRegex = /defaultLocale:\s*['"]([^'"]+)['"]/;

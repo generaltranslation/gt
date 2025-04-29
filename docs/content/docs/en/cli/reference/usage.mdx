@@ -64,11 +64,16 @@ This guide assumes you have already setup your codebase to use `gt-next` or `gt-
   </Accordion>
 </Accordions>
 
-1. First, you will need to initialize the CLI tool in your project.
+1. First, you will need to configure your project's GT settings.
 
 ```bash
-npx gtx-cli init
+npx gtx-cli configure
 ```
+<Callout type="info">
+  This command will automatically generate an API key and project ID for your project via the dashboard.
+
+  However, if you would like to manually set the API key and project ID, follow steps 2 and 3 below.
+</Callout>
 
 2. Next, you will need to create a project in the [General Translation dashboard](https://generaltranslation.com/dashboard).
 
@@ -103,12 +108,18 @@ The CLI tool allows you to translate language files for 3rd party i18n libraries
 Most i18n libraries rely on JSON files to store translation data.
 The CLI tool can be used to automatically translate these JSON files into your desired languages.
 
-1. First, you will need to initialize the CLI tool in your project.
+1. First, you will need to configure your project's GT settings.
 
 ```bash
-npx gtx-cli init
+npx gtx-cli configure
 ```
 This command will create a `gt.config.json` file in the root of your project, containing some basic configuration settings, such as your project's default locale and supported locales.
+
+<Callout type="info">
+  This command will automatically generate an API key and project ID for your project via the dashboard.
+
+  However, if you would like to manually set the API key and project ID, follow steps 2 and 3 below.
+</Callout>
 
 2. Next, you will need to create a project in the [General Translation dashboard](https://generaltranslation.com/dashboard).
 
@@ -128,11 +139,12 @@ npx gtx-cli translate
 ```
 
 <Callout type="info">
-  By default, the CLI tool will look in the `translationsDir` directory specified in your `gt.config.json` file for language files to translate.
+  By default, the CLI tool will look for files to translate according to the `files` property in your `gt.config.json` file.
   It will use the `defaultLocale` specified in your `gt.config.json` file as the source language.
 
-  It will also publish the translations to the General Translation CDN, so they are ready to be used in your project.
-  If you would like to disable this behavior, add the `--no-publish` flag to the command.
+  Translated files will be saved to the corresponding output location specified in your `gt.config.json` file.
+
+  See the [configuration](/docs/cli/reference/config) docs for more information on the `files` property.
 </Callout>
 
 
@@ -166,13 +178,13 @@ This means that in order to track changes to text, GT libraries store the hashes
 
 This internal data structure (containing hashes) is hard to work with, and therefore the CLI tool provides a handy command to generate language files for your project.
 
-1. First, you will need to initialize the CLI tool in your project.
+1. First, you will need to configure your project's GT settings.
 
 ```bash
-npx gtx-cli init
+npx gtx-cli configure
 ```
 
-When asked "Where are your language files stored?", select the "Local" option.
+When asked if you want to save translations on the GT CDN, select the "No" option.
 
 2. Run:
 
