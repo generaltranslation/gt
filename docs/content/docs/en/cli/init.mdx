@@ -1,17 +1,24 @@
 ---
-title: Init
-description: Configures your project's GT settings.
+title: Setup Wizard
+description: Run the GT setup wizard
 ---
 
 ## Usage
-
-Use this command to initialize your project's GT settings. This command is optional, and only serves to create a `gt.config.json` file in the root of your project.
 
 ```bash
 npx gtx-cli init
 ```
 
-## Overview
+Use this command to run the GT setup wizard.
+The wizard will:
+
+1. Create a `gt.config.json` file in the root of your project.
+2. Install the necessary dependencies for your project.
+3. Help you wrap your JSX content with `<T>` tags (in a React-based project).
+4. Generate an API key and project ID for your project.
+
+
+## `gt.config.json`
 
 The `init` command helps you configure your project's GT settings.
 
@@ -24,3 +31,38 @@ The file will contain the following settings:
 - `files`: This is an object that contains information about the content you want to translate.
 
 For more specific information about the `gt.config.json` file, please see the [config docs](/docs/cli/reference/config).
+
+This part of the wizard can also be ran independently via `npx gtx-cli configure`.
+
+## Dependencies
+
+The `init` command will install the following dependencies for your project:
+
+- `gt-react` or `gt-next` (if your project is React-based)
+- `gtx-cli` as a dev dependency (if not already installed)
+
+## React-based projects
+
+If your project is React-based, the wizard will help setup your project to use `gt-react` or `gt-next`.
+
+If you are already using a different i18n library, you may need to manually setup your project.
+
+See the [React docs](/docs/react/tutorials/quickstart) or the [Next.js docs](/docs/next/tutorials/quickstart) for more information.
+
+Since the wizard is currently experimental, it is possible that it may not work for all React-based projects.
+In these cases, you may need to manually setup your project.
+
+If you encounter any issues, please let us know on [GitHub](https://github.com/generaltranslation/gt/issues).
+
+This part of the wizard can also be ran independently via `npx gtx-cli setup`.
+
+## Credentials
+
+The wizard will help you generate an API key and project ID for your project (if they are not already set up).
+
+Please note that the API key and project ID are not required to use `gt-react` or `gt-next`.
+
+The wizard will add the API key and project ID to your `.env.local` file.
+If this file does not exist, the wizard will create it and add it to your `.gitignore` file.
+
+This part of the wizard can also be ran independently via `npx gtx-cli auth`.

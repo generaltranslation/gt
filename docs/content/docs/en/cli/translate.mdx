@@ -35,10 +35,10 @@ This command is the primary way of using the General Translation API and related
 
 ## Usage
 
-There are four ways to use the `translate` command. Methods 2, 3, and 4 require a production API key:
+There are four ways to use the `translate` command. Methods 1 and 2 require a production API key:
 
 <Callout type="info">
-    We recommend running [`npx gtx-cli init`](/docs/cli/init) to first configure your project before running the `translate` command.
+    We recommend running the setup wizard: [`npx gtx-cli configure`](/docs/cli/configure) to help configure your project before running the `translate` command.
     Depending on how your project is configured, the behavior of the translate command may change.
 </Callout>
 
@@ -47,43 +47,39 @@ There are four ways to use the `translate` command. Methods 2, 3, and 4 require 
 
 If you are using other i18n libraries such as `next-intl`, `react-i18next`, or `next-i18next`, you can use this method to translate your project's JSON files.
 
-Translations will be automatically saved to your codebase, as well as optionally published to the GT CDN.
+Translations will be automatically saved to your codebase.
 
-When running [`npx gtx-cli init`](/docs/cli/init), specify that you are using a 3rd party i18n library before running the `translate` command.
-
-See the [CLI config docs](/docs/cli/reference/config) for more details.
-
-```bash
-npx gtx-cli translate
-```
-<Callout type="info">
-    The CLI tool will automatically detect your i18n library by reading your `package.json` file, and will translate your content while respecting your i18n library's syntax.
-</Callout>
-
-### Method 2: Translate your project and save the translations on the GT CDN.
-
-If you are using `gt-next` or `gt-react`, you can use this method to translate your project.
-
-When running [`npx gtx-cli init`](/docs/cli/init), if you select the option to save translations remotely, the `translate` command will save the translations on the GT CDN.
-
-```bash
-npx gtx-cli translate
-```
-
-### Method 3: Translate your project and save the translations to your codebase.
-
-When running [`npx gtx-cli init`](/docs/cli/init), if you select the option to save translations locally, the `translate` command will save the translations to your codebase.
-
-`gt-next` and `gt-react` can then serve these local translations to your users, rather than using General Translation's public CDN.
+To use the CLI tool to translate your project's JSON files, modify your `gt.config.json` file to include `json` in the `files` property.
+See the [CLI config docs](/docs/cli/reference/config#json) for more details.
 
 ```bash
 npx gtx-cli translate
 ```
 <Callout type="info">
-    This method is useful if you are using a custom content management system, or do not want to use the GT CDN.
+    The CLI tool will automatically detect your i18n library by reading your `package.json` file, and will translate your JSONs while respecting your i18n library's syntax.
 </Callout>
 
-### Method 4: Validate your project's `<T>` components and dictionary file. [#validate]
+### Method 2: Translate your GT project.
+
+If your project is using `gt-next` or `gt-react`, you can use this method to generate translations for your project.
+
+```bash
+npx gtx-cli translate
+```
+
+By default, translations are saved to the GT CDN. 
+
+However, if you would like to save the translations to your codebase, add the `gt` property to the `files` object in the `gt.config.json` file.
+
+<Callout type="info">
+  `gt-next` and `gt-react` support serving translations locally, as well as using General Translation's public CDN.
+  We recommend using the CDN for reduced latency, better performance, and smaller bundle sizes.
+</Callout>
+
+See the [CLI config docs](/docs/cli/reference/config#gt) for more details.
+
+
+### Method 3: Validate your project's `<T>` components and dictionary file. [#validate]
 
 This method is useful for validating your project's `<T>` components and dictionary file.
 

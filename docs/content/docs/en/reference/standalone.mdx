@@ -42,20 +42,10 @@ To use `gt-next` or `gt-react` with your own translation provider, use local tra
 
 To generate the translation files for your project, run the CLI tool with the following command:
 
-<Tabs items={['Next.js', 'React']}>
-  <Tab value="Next.js">
-    ```bash
-    npx gtx-cli init
-    npx gtx-cli generate
-    ```
-  </Tab>
-  <Tab value="React">
-    ```bash
-    npx gtx-cli init
-    npx gtx-cli generate
-    ```
-  </Tab>
-</Tabs>
+```bash
+npx gtx-cli configure # Configure your project
+npx gtx-cli generate # Generate the translation files
+```
 
 This command will generate the JSON data files for your project's source code. 
 You can then use these files with your own translation provider.

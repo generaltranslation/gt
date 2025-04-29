@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { createSpinner } from '../console';
+import { createOraSpinner, createSpinner } from '../console';
 import { getLocaleProperties } from 'generaltranslation';
 
 /**
@@ -20,7 +20,8 @@ export const waitForUpdates = async (
   startTime: number,
   timeoutDuration: number
 ) => {
-  const spinner = createSpinner();
+  console.log();
+  const spinner = createOraSpinner();
   spinner.start('Waiting for translation...');
   const availableLocales: string[] = [];
   const checkDeployment = async () => {
@@ -49,7 +50,7 @@ export const waitForUpdates = async (
             }
           });
           const newSuffixText = [
-            chalk.green(`${availableLocales.length}/${locales.length}`) +
+            chalk.green(`[${availableLocales.length}/${locales.length}]`) +
               ` translations completed`,
             ...availableLocales.map((locale: string) => {
               const localeProperties = getLocaleProperties(locale);
@@ -59,7 +60,7 @@ export const waitForUpdates = async (
             }),
           ];
           // The new clack spinner doesn't have suffixText, just update the message
-          spinner.message(newSuffixText.join('\n'));
+          spinner.text = newSuffixText.join('\n');
         }
         if (locales.every((locale) => availableLocales.includes(locale))) {
           return true;
@@ -80,7 +81,7 @@ export const waitForUpdates = async (
   // Do first check immediately
   const initialCheck = await checkDeployment();
   if (initialCheck) {
-    spinner.stop(chalk.green('All translations are live!'));
+    spinner.succeed(chalk.green('All translations are live!'));
     return true;
   }
 
@@ -96,10 +97,10 @@ export const waitForUpdates = async (
           clearInterval(intervalCheck);
 
           if (isDeployed) {
-            spinner.stop(chalk.green('All translations are live!'));
+            spinner.succeed(chalk.green('All translations are live!'));
             resolve(true);
           } else {
-            spinner.stop(chalk.red('Timed out waiting for translations'));
+            spinner.fail(chalk.red('Timed out waiting for translations'));
             resolve(false);
           }
         }

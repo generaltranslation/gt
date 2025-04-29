@@ -44,7 +44,7 @@ export async function sendUpdates(
     ...(options.description && { description: options.description }),
   };
 
-  const spinner = createSpinner();
+  const spinner = createSpinner('dots');
   spinner.start(`Sending ${library} updates to General Translation API...`);
 
   try {

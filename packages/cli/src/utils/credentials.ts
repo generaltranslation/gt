@@ -1,8 +1,9 @@
 import open from 'open';
-import { GT_DASHBOARD_URL } from './constants';
-import { createSpinner, logErrorAndExit } from '../console';
+import { createSpinner, logErrorAndExit, logMessage } from '../console';
 import path from 'node:path';
 import fs from 'node:fs';
+import { Settings } from '../types';
+import chalk from 'chalk';
 // Type for credentials returned from the dashboard
 type Credentials = {
   apiKey: string;
@@ -10,12 +11,21 @@ type Credentials = {
 };
 
 // Fetches project ID and API key by opening the dashboard in the browser
-export async function retrieveCredentials(): Promise<Credentials> {
+export async function retrieveCredentials(
+  settings: Settings
+): Promise<Credentials> {
   // Generate a session ID
-  const { sessionId } = await generateCredentialsSession();
+  const { sessionId } = await generateCredentialsSession(settings.baseUrl);
 
-  open(`${GT_DASHBOARD_URL}/api/cli/wizard/${sessionId}`, { wait: false }).then(
-    (res) => {}
+  const urlToOpen = `${settings.dashboardUrl}/cli/wizard/${sessionId}`;
+  open(urlToOpen, {
+    wait: false,
+  }).then((res) => {});
+
+  logMessage(
+    `${chalk.gray(
+      `If the browser window didn't open automatically, please open the following link:`
+    )}\n\n${chalk.cyan(urlToOpen)}`
   );
 
   const spinner = createSpinner('dots');
@@ -27,18 +37,24 @@ export async function retrieveCredentials(): Promise<Credentials> {
         // Ping the dashboard to see if the credentials are set
         try {
           const res = await fetch(
-            `${GT_DASHBOARD_URL}/api/cli/wizard/${sessionId}`
+            `${settings.baseUrl}/cli/wizard/${sessionId}`,
+            {
+              method: 'GET',
+            }
           );
-          if (res.ok) {
+          if (res.status === 200) {
             const data = await res.json();
+            resolve(data as Credentials);
             clearInterval(interval);
             clearTimeout(timeout);
-            resolve(data as Credentials);
+            fetch(`${settings.baseUrl}/cli/wizard/${sessionId}`, {
+              method: 'DELETE',
+            });
           }
         } catch (err) {
           console.error(err);
         }
-      }, 1000);
+      }, 1500);
       // timeout after 1 hour
       const timeout = setTimeout(
         () => {
@@ -50,19 +66,22 @@ export async function retrieveCredentials(): Promise<Credentials> {
       );
     }
   );
-  spinner.stop();
+  spinner.stop('Received credentials');
   return credentials;
 }
 
-export async function generateCredentialsSession(): Promise<{
+export async function generateCredentialsSession(url: string): Promise<{
   sessionId: string;
 }> {
-  const res = await fetch(`${GT_DASHBOARD_URL}/api/cli/wizard/session`, {
+  const res = await fetch(`${url}/cli/wizard/session`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
   });
+  if (!res.ok) {
+    logErrorAndExit('Failed to generate credentials session');
+  }
   return await res.json();
 }
 

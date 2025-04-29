@@ -11,6 +11,7 @@ import {
   multiselect,
 } from '@clack/prompts';
 import chalk from 'chalk';
+import ora from 'ora';
 
 // Basic logging functions
 export function logInfo(message: string) {
@@ -97,6 +98,12 @@ export function displayUpdatedConfigFile(configFilepath: string) {
 // Spinner functionality
 export function createSpinner(indicator: 'dots' | 'timer' = 'timer') {
   return spinner({ indicator });
+}
+// Spinner functionality
+export function createOraSpinner(
+  indicator: 'dots' | 'circleHalves' = 'circleHalves'
+) {
+  return ora({ spinner: indicator });
 }
 
 // Input prompts

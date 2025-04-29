@@ -51,7 +51,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
   });
   if (frameworkType === 'other') {
     logError(
-      `Sorry, at the moment we currently do not support other React frameworks. 
+      `Sorry, other React frameworks are not currently supported. 
 Please let us know what you would like to see supported at https://github.com/generaltranslation/gt/issues`
     );
     process.exit(0);
@@ -233,7 +233,7 @@ Please let us know what you would like to see supported at https://github.com/ge
   }
 
   const applyFormatting = await promptConfirm({
-    message: `Would you like to auto-format the modified files? ${chalk.gray(
+    message: `Would you like the wizard to auto-format the modified files? ${chalk.gray(
       `(${formatter})`
     )}`,
     defaultValue: true,

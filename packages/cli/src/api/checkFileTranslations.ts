@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { createSpinner, logError } from '../console';
+import { createOraSpinner, createSpinner, logError } from '../console';
 import { getLocaleProperties } from 'generaltranslation';
 import { downloadFile } from './downloadFile';
 import { downloadFileBatch } from './downloadFileBatch';
@@ -28,7 +28,8 @@ export async function checkFileTranslations(
   downloadStatus: { downloaded: Set<string>; failed: Set<string> }
 ) {
   const startTime = Date.now();
-  const spinner = createSpinner();
+  console.log();
+  const spinner = createOraSpinner();
   spinner.start('Waiting for translation...');
 
   // Initialize the query data
@@ -45,7 +46,7 @@ export async function checkFileTranslations(
   );
 
   if (initialCheck) {
-    spinner.stop(chalk.green('Files translated!'));
+    spinner.succeed(chalk.green('Files translated!'));
     return true;
   }
 
@@ -74,10 +75,10 @@ export async function checkFileTranslations(
           clearInterval(intervalCheck);
 
           if (isDeployed) {
-            spinner.stop(chalk.green('All translations are live!'));
+            spinner.succeed(chalk.green('All files translated!'));
             resolve(true);
           } else {
-            spinner.stop(chalk.red('Timed out waiting for translations'));
+            spinner.fail(chalk.red('Timed out waiting for translations'));
             resolve(false);
           }
         }
@@ -245,7 +246,7 @@ async function checkTranslationDeployment(
   apiKey: string,
   fileQueryData: { versionId: string; fileName: string; locale: string }[],
   downloadStatus: { downloaded: Set<string>; failed: Set<string> },
-  spinner: ReturnType<typeof createSpinner>,
+  spinner: ReturnType<typeof createOraSpinner>,
   resolveOutputPath: (sourcePath: string, locale: string) => string
 ): Promise<boolean> {
   try {
@@ -342,7 +343,7 @@ async function checkTranslationDeployment(
       );
 
       // Clear and reapply the suffix to force a refresh
-      spinner.message(statusText);
+      spinner.text = statusText;
     }
     if (
       downloadStatus.downloaded.size + downloadStatus.failed.size ===

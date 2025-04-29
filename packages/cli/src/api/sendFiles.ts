@@ -31,7 +31,7 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
       files.map((file) => `  - ${chalk.bold(file.fileName)}`).join('\n')
   );
 
-  const spinner = createSpinner();
+  const spinner = createSpinner('dots');
   spinner.start(
     `Sending ${files.length} file${files.length > 1 ? 's' : ''} to General Translation API...`
   );

@@ -62,6 +62,7 @@ export class BaseCLI {
     this.setupInitCommand();
     this.setupConfigureCommand();
     this.setupSetupCommand();
+    this.setupLoginCommand();
   }
   // Init is never called in a child class
   public init() {
@@ -106,6 +107,22 @@ export class BaseCLI {
       });
   }
 
+  protected setupLoginCommand(): void {
+    program
+      .command('auth')
+      .description('Generate a General Translation API key and project ID')
+      .option(
+        '-c, --config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
+      )
+      .action(async (options: TranslateOptions) => {
+        displayHeader('Authenticating with General Translation...');
+        await this.handleLoginCommand();
+        endCommand('Done!');
+      });
+  }
+
   protected setupInitCommand(): void {
     program
       .command('init')
@@ -131,7 +148,7 @@ export class BaseCLI {
         // so that people can run init in non-js projects
         if (packageJson && isPackageInstalled('react', packageJson)) {
           const wrap = await promptConfirm({
-            message: `We've detected that this project is using React. Would you like to run the React setup wizard? This will install gt-react|gt-next as a dependency and internationalize your app.`,
+            message: `Detected that this project is using React. Would you like to run the React setup wizard?\nThis will install gt-react|gt-next as a dependency and internationalize your app.`,
             defaultValue: true,
           });
 
@@ -155,7 +172,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
         await this.handleInitCommand(ranReactSetup);
 
         endCommand(
-          'Done! Remember to get an API key and project ID from the dashboard! https://dash.generaltranslation.com'
+          'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
         );
       });
   }
@@ -279,7 +296,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
     // Ask where the translations are stored
     const usingCDN = isUsingGT
       ? await promptConfirm({
-          message: `We've auto-detected that you're using gt-next or gt-react. Would you like to use the General Translation CDN to store your translations?\nSee ${
+          message: `Auto-detected that you're using gt-next or gt-react. Would you like to use the General Translation CDN to store your translations?\nSee ${
             isUsingGTNext
               ? 'https://generaltranslation.com/docs/next/reference/local-tx'
               : 'https://generaltranslation.com/docs/react/reference/local-tx'
@@ -369,8 +386,19 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
 
     // Set credentials
     if (!areCredentialsSet()) {
-      const credentials = await retrieveCredentials();
-      await setCredentials(credentials);
+      const loginQuestion = await promptConfirm({
+        message:
+          'Would you like the wizard to automatically generate an API key and project ID for you?',
+        defaultValue: true,
+      });
+      if (loginQuestion) {
+        await this.handleLoginCommand();
+      }
     }
+  }
+  protected async handleLoginCommand(): Promise<void> {
+    const settings = await generateSettings({});
+    const credentials = await retrieveCredentials(settings);
+    await setCredentials(credentials);
   }
 }

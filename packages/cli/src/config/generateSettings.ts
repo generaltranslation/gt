@@ -12,6 +12,7 @@ import createOrUpdateConfig from '../fs/config/setupConfig';
 import { resolveFiles } from '../fs/config/parseFilesConfig';
 import { findFilepaths } from '../fs/findFilepath';
 import { validateSettings } from './validateSettings';
+import { GT_DASHBOARD_URL } from '../utils/constants';
 /**
  * Generates settings from any
  * @param options - The options to generate settings from
@@ -60,6 +61,9 @@ export async function generateSettings(options: any): Promise<Settings> {
 
   // Add baseUrl if not provided
   mergedOptions.baseUrl = mergedOptions.baseUrl || defaultBaseUrl;
+
+  // Add dashboardUrl if not provided
+  mergedOptions.dashboardUrl = mergedOptions.dashboardUrl || GT_DASHBOARD_URL;
 
   // Add defaultLocale if not provided
   mergedOptions.defaultLocale =

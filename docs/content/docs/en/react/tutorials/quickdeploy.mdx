@@ -13,7 +13,7 @@ We will do this in 3 steps:
     Add your production API keys.
   </Step>
   <Step>
-    Run the init command to configure your project.
+    Run the `gtx-cli configure` command to configure your project.
   </Step>
   <Step>
     Share your configuration with your app.
@@ -47,22 +47,22 @@ GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
     *Never commit your API keys to a public repository!*
 </Callout>
 
-## Step 2: Run the init command 🔧
+## Step 2: Run the `gtx-cli configure` command 🔧
 
-Run the init command to configure your project.
+Run the `gtx-cli configure` command to configure your project.
 
 ```bash copy
-npx gtx-cli init
+npx gtx-cli configure
 ```
 
 <Callout>
-  If you do not want your translations to be hosted on the GT CDN, select "Local" when asked where your
-  language files are stored. You will also need to configure the [`loadTranslations()`](/docs/react/api/config/load-translations) function.
+  If you do not want your translations to be hosted on the GT CDN, select "No" when asked.
+  You will also need to configure the [`loadTranslations()`](/docs/react/api/config/load-translations) function.
 </Callout>
 
 ## Step 3: Share your configuration with your app ⚙️
 
-The init command will generate a configuration file in the root.
+The `gtx-cli configure` command will generate a configuration file in the root of your project.
 
 Pass the config file to [`<GTProvider>`](/docs/react/api/components/gtprovider).
 If you have specified any locales in your provider, remove them.
@@ -91,7 +91,7 @@ Make sure that the translate command comes before the build command.
 ```json title="package.json" copy
 {
   "scripts": {
-    "build": "npx gtx-cli translate && <YOUR_BUILD_COMMAND>"
+    "build": "npx gtx-cli translate && <...YOUR_BUILD_COMMAND...>"
   }
 }
 ```
