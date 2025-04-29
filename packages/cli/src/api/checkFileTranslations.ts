@@ -29,7 +29,7 @@ export async function checkFileTranslations(
 ) {
   const startTime = Date.now();
   console.log();
-  const spinner = createOraSpinner();
+  const spinner = await createOraSpinner();
   spinner.start('Waiting for translation...');
 
   // Initialize the query data
@@ -246,7 +246,7 @@ async function checkTranslationDeployment(
   apiKey: string,
   fileQueryData: { versionId: string; fileName: string; locale: string }[],
   downloadStatus: { downloaded: Set<string>; failed: Set<string> },
-  spinner: ReturnType<typeof createOraSpinner>,
+  spinner: Awaited<ReturnType<typeof createOraSpinner>>,
   resolveOutputPath: (sourcePath: string, locale: string) => string
 ): Promise<boolean> {
   try {

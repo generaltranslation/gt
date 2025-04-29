@@ -11,7 +11,8 @@ import {
   multiselect,
 } from '@clack/prompts';
 import chalk from 'chalk';
-import ora from 'ora';
+// Use dynamic import for ora (ESM module)
+import type { Options as OraOptions } from 'ora';
 
 // Basic logging functions
 export function logInfo(message: string) {
@@ -100,9 +101,11 @@ export function createSpinner(indicator: 'dots' | 'timer' = 'timer') {
   return spinner({ indicator });
 }
 // Spinner functionality
-export function createOraSpinner(
+export async function createOraSpinner(
   indicator: 'dots' | 'circleHalves' = 'circleHalves'
 ) {
+  const oraModule = await import('ora');
+  const ora = oraModule.default;
   return ora({ spinner: indicator });
 }
 

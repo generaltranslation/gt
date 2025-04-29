@@ -21,7 +21,7 @@ export const waitForUpdates = async (
   timeoutDuration: number
 ) => {
   console.log();
-  const spinner = createOraSpinner();
+  const spinner = await createOraSpinner();
   spinner.start('Waiting for translation...');
   const availableLocales: string[] = [];
   const checkDeployment = async () => {
