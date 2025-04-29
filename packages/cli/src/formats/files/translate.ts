@@ -4,6 +4,7 @@ import {
   noSupportedDataFormatError,
   logErrorAndExit,
   createSpinner,
+  logError,
 } from '../../console';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
 import { getRelative, readFile } from '../../fs/findFilepath';
@@ -79,7 +80,7 @@ export async function translateFiles(
   }
 
   if (allFiles.length === 0) {
-    logErrorAndExit('No files to translate');
+    logError('No files to translate');
     return;
   }
 
