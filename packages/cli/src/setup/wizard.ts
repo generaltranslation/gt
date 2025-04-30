@@ -9,8 +9,8 @@ import { generateSettings } from '../config/generateSettings';
 import { formatFiles } from '../hooks/postProcess';
 import handleInitGT from '../next/parse/handleInitGT';
 import { getPackageJson, isPackageInstalled } from '../utils/packageJson';
-import scanForContentReact from '../react/parse/scanForContent';
-import scanForContentNext from '../next/parse/scanForContent';
+import wrapContentReact from '../react/parse/wrapContent';
+import wrapContentNext from '../next/parse/wrapContent';
 import { getPackageManager } from '../utils/packageManager';
 import { installPackage } from '../utils/installPackage';
 
@@ -124,7 +124,7 @@ Please let us know what you would like to see supported at https://github.com/ge
     const spinner = createSpinner();
     spinner.start('Wrapping JSX content with <T> tags...');
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { filesUpdated: filesUpdatedNext } = await scanForContentNext(
+    const { filesUpdated: filesUpdatedNext } = await wrapContentNext(
       mergeOptions,
       'gt-next',
       errors,
@@ -186,7 +186,7 @@ Please let us know what you would like to see supported at https://github.com/ge
     const spinner = createSpinner();
     spinner.start('Wrapping JSX content with <T> tags...');
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { filesUpdated: filesUpdatedReact } = await scanForContentReact(
+    const { filesUpdated: filesUpdatedReact } = await wrapContentReact(
       mergeOptions,
       'gt-react',
       frameworkType,

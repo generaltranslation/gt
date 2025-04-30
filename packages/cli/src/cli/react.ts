@@ -23,9 +23,7 @@ import findFilepath, { findFilepaths } from '../fs/findFilepath';
 import chalk from 'chalk';
 import { formatFiles } from '../hooks/postProcess';
 import { BaseCLI } from './base';
-import scanForContentReact from '../react/parse/scanForContent';
-import createDictionaryUpdates from '../react/parse/createDictionaryUpdates';
-import createInlineUpdates from '../react/parse/createInlineUpdates';
+import wrapContentReact from '../react/parse/wrapContent';
 import { resolveProjectId } from '../fs/utils';
 import { generateSettings } from '../config/generateSettings';
 import { saveJSON } from '../fs/saveJSON';
@@ -40,7 +38,7 @@ const pkg = 'gt-react';
 
 export class ReactCLI extends BaseCLI {
   constructor(
-    library: SupportedLibraries,
+    library: 'gt-react' | 'gt-next',
     additionalModules?: SupportedLibraries[]
   ) {
     super(library, additionalModules);
@@ -54,27 +52,13 @@ export class ReactCLI extends BaseCLI {
     super.execute();
   }
 
-  protected scanForContent(
+  protected wrapContent(
     options: WrapOptions,
     framework: SupportedFrameworks,
     errors: string[],
     warnings: string[]
   ): Promise<{ filesUpdated: string[] }> {
-    return scanForContentReact(options, pkg, framework, errors, warnings);
-  }
-
-  protected createDictionaryUpdates(
-    options: Options,
-    dictionaryPath: string,
-    esbuildConfig?: any
-  ): Promise<Updates> {
-    return createDictionaryUpdates(options, dictionaryPath, esbuildConfig);
-  }
-
-  protected createInlineUpdates(
-    options: Options
-  ): Promise<{ updates: Updates; errors: string[] }> {
-    return createInlineUpdates(options, pkg);
+    return wrapContentReact(options, pkg, framework, errors, warnings);
   }
 
   protected setupStageCommand(): void {
@@ -303,7 +287,7 @@ export class ReactCLI extends BaseCLI {
     const { updates, errors } = await createUpdates(
       options,
       options.dictionary,
-      pkg
+      this.library === 'gt-next' ? 'gt-next' : 'gt-react'
     );
 
     if (errors.length > 0) {
@@ -405,7 +389,7 @@ export class ReactCLI extends BaseCLI {
     let errors: string[] = [];
     let warnings: string[] = [];
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { filesUpdated } = await this.scanForContent(
+    const { filesUpdated } = await this.wrapContent(
       options,
       'react',
       errors,
@@ -445,8 +429,8 @@ export class ReactCLI extends BaseCLI {
 
     // First run the base class's handleTranslate method
     const options = { ...initOptions, ...settings };
-
-    await stageProject(options, this.library, pkg);
+    const pkg = this.library === 'gt-next' ? 'gt-next' : 'gt-react';
+    await stageProject(options, pkg);
   }
 
   protected async handleTranslate(initOptions: Options): Promise<void> {
@@ -464,7 +448,8 @@ export class ReactCLI extends BaseCLI {
 
     if (!settings.stageTranslations) {
       // If stageTranslations is false, stage the project
-      const results = await stageProject(options, this.library, pkg);
+      const pkg = this.library === 'gt-next' ? 'gt-next' : 'gt-react';
+      const results = await stageProject(options, pkg);
       if (results) {
         await translate(options, results.versionId);
       }

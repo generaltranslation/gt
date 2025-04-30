@@ -7,15 +7,12 @@ import {
 } from '../types';
 import createInlineUpdates from '../react/parse/createInlineUpdates';
 import { ReactCLI } from './react';
-import scanForContentNext from '../next/parse/scanForContent';
+import wrapContentNext from '../next/parse/wrapContent';
 
 const pkg = 'gt-next';
 
 export class NextCLI extends ReactCLI {
-  constructor(
-    library: SupportedLibraries,
-    additionalModules?: SupportedLibraries[]
-  ) {
+  constructor(library: 'gt-next', additionalModules?: SupportedLibraries[]) {
     super(library, additionalModules);
   }
   public init() {
@@ -26,18 +23,12 @@ export class NextCLI extends ReactCLI {
   public execute() {
     super.execute();
   }
-  protected scanForContent(
+  protected wrapContent(
     options: WrapOptions,
     framework: SupportedFrameworks,
     errors: string[],
     warnings: string[]
   ): Promise<{ filesUpdated: string[] }> {
-    return scanForContentNext(options, pkg, errors, warnings);
-  }
-
-  protected createInlineUpdates(
-    options: Options
-  ): Promise<{ updates: Updates; errors: string[] }> {
-    return createInlineUpdates(options, pkg);
+    return wrapContentNext(options, pkg, errors, warnings);
   }
 }

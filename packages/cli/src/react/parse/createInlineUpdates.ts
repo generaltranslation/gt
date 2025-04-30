@@ -55,10 +55,11 @@ export default async function createInlineUpdates(
   }
 
   const files = srcDirectory.flatMap((dir) => getFiles(dir));
+  console.log('files', files);
+  console.log('pkg', pkg);
 
   for (const file of files) {
     const code = await fs.promises.readFile(file, 'utf8');
-
     let ast;
     try {
       ast = parse(code, {

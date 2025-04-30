@@ -16,7 +16,6 @@ import { sendUpdates } from '../api/sendUpdates';
 
 export async function stageProject(
   settings: Options & Settings,
-  library: SupportedLibraries,
   pkg: 'gt-react' | 'gt-next'
 ): Promise<{ versionId: string; locales: string[] } | null> {
   if (!settings.dictionary) {
@@ -28,12 +27,6 @@ export async function stageProject(
       './dictionary.ts',
       './src/dictionary.ts',
     ]);
-  }
-
-  let sourceFile: string | undefined;
-  // If options.dictionary is provided, use options.dictionary as the source file
-  if (settings.dictionary) {
-    sourceFile = settings.dictionary;
   }
 
   // Separate defaultLocale from locales
@@ -49,8 +42,13 @@ export async function stageProject(
     );
   }
   settings.timeout = timeout.toString();
+
   // ---- CREATING UPDATES ---- //
-  const { updates, errors } = await createUpdates(settings, sourceFile, pkg);
+  const { updates, errors } = await createUpdates(
+    settings,
+    settings.dictionary,
+    pkg
+  );
 
   if (errors.length > 0) {
     if (settings.ignoreErrors) {
@@ -87,7 +85,7 @@ export async function stageProject(
     logError(
       chalk.red(
         `No in-line content or dictionaries were found for ${chalk.green(
-          library
+          pkg
         )}. Are you sure you're running this command in the right directory?`
       )
     );
@@ -115,7 +113,7 @@ export async function stageProject(
       timeout: settings.timeout,
       dataFormat: 'JSX',
     },
-    library
+    pkg
   );
   const { versionId, locales } = updateResponse;
   return { versionId, locales };
