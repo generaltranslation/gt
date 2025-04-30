@@ -132,27 +132,13 @@ export class ReactCLI extends BaseCLI {
         false
       )
       .option(
-        '--no-wait',
-        'Do not wait for the updates to be deployed to the CDN before exiting',
-        true // Default value of options.wait
-      )
-      .option(
-        '--publish',
-        'Publish updates to the CDN.',
-        false // Default value of options.publish
-      )
-      .option(
-        '-t, --translations-dir, --translation-dir <path>',
-        'Path to directory where translations will be saved. If this flag is not provided, translations will not be saved locally.'
-      )
-      .option(
         '--timeout <seconds>',
         'Timeout in seconds for waiting for updates to be deployed to the CDN',
         DEFAULT_TIMEOUT.toString()
       )
       .action(async (options: Options) => {
         displayHeader('Staging project for translation with approval...');
-        options.requireApproval = true;
+        options.stageTranslations = true;
         await this.handleStage(options);
         endCommand('Done!');
       });
@@ -211,20 +197,6 @@ export class ReactCLI extends BaseCLI {
         '--dry-run',
         'Dry run, does not send updates to General Translation API',
         false
-      )
-      .option(
-        '--no-wait',
-        'Do not wait for the updates to be deployed to the CDN before exiting',
-        true // Default value of options.wait
-      )
-      .option(
-        '--publish',
-        'Publish updates to the CDN.',
-        false // Default value of options.publish
-      )
-      .option(
-        '-t, --translations-dir, --translation-dir <path>',
-        'Path to directory where translations will be saved. If this flag is not provided, translations will not be saved locally.'
       )
       .option(
         '--timeout <seconds>',
@@ -490,17 +462,18 @@ export class ReactCLI extends BaseCLI {
       // Continue with ReactCLI-specific code even if base handleTranslate failed
     }
 
-    if (!settings.requireApproval) {
+    if (!settings.stageTranslations) {
+      // If stageTranslations is false, stage the project
       const results = await stageProject(options, this.library, pkg);
       if (results) {
-        await translate(options, results.versionId, results.locales);
+        await translate(options, results.versionId);
       }
     } else {
-      if (!settings.versionId) {
+      if (!settings._versionId) {
         logError(noVersionIdError);
         process.exit(1);
       }
-      await translate(options, settings.versionId, settings.locales);
+      await translate(options, settings._versionId);
     }
   }
 }

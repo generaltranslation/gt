@@ -1,13 +1,10 @@
 import chalk from 'chalk';
-import { createSpinner, logInfo, logSuccess } from '../console';
+import { createSpinner, logSuccess } from '../console';
 import { Settings, SupportedLibraries, Updates } from '../types';
 import updateConfig from '../fs/config/updateConfig';
-import { waitForUpdates } from './waitForUpdates';
 import { DataFormat } from '../types/data';
 
 type ApiOptions = Settings & {
-  publish: boolean;
-  wait: boolean;
   timeout: string;
   dataFormat: DataFormat;
   description?: string;
@@ -39,9 +36,8 @@ export async function sendUpdates(
     updates,
     ...(options.locales && { locales: options.locales }),
     metadata: globalMetadata,
-    publish: options.publish,
     ...(dataFormat && { dataFormat }),
-    ...(options.versionId && { versionId: options.versionId }),
+    ...(options._versionId && { versionId: options._versionId }),
     ...(options.description && { description: options.description }),
     ...(options.requireApproval && {
       requireApproval: options.requireApproval,

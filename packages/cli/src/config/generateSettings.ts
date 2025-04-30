@@ -78,8 +78,9 @@ export async function generateSettings(options: any): Promise<Settings> {
   // Display projectId if present
   if (mergedOptions.projectId) displayProjectId(mergedOptions.projectId);
 
-  // Add requireReview if not provided
-  mergedOptions.requireApproval = mergedOptions.requireApproval ?? false;
+  // Add stageTranslations if not provided
+  // For human review, always stage the project
+  mergedOptions.stageTranslations = mergedOptions.stageTranslations ?? false;
 
   // Populate src if not provided
   mergedOptions.src =

@@ -78,11 +78,6 @@ export async function stageProject(
     }
   }
 
-  // If files.gt.output is not provided in the config, publish the translations
-  if (!settings.files?.resolvedPaths?.gt) {
-    settings.publish = true;
-  }
-
   if (settings.dryRun) {
     logSuccess('Dry run: No translations were sent to General Translation.');
     return null;
@@ -117,8 +112,6 @@ export async function stageProject(
     updates,
     {
       ...settings,
-      publish: settings.publish,
-      wait: settings.wait,
       timeout: settings.timeout,
       dataFormat: 'JSX',
     },

@@ -30,10 +30,8 @@ export type Options = {
   inline?: boolean;
   ignoreErrors: boolean;
   dryRun: boolean;
-  wait: boolean;
   timeout: string;
-  publish: boolean;
-  requireApproval?: boolean;
+  stageTranslations?: boolean;
 };
 
 export type WrapOptions = {
@@ -134,8 +132,8 @@ export type Settings = {
         transformPaths: TransformFiles; // transform paths for all locales containing [locale]
       }
     | undefined;
-  requireApproval: boolean;
-  versionId?: string;
+  stageTranslations: boolean; // if true, always stage the project during translate command
+  _versionId?: string;
   description?: string;
   src?: string[]; // src directory for gt-next and gt-react
 };
