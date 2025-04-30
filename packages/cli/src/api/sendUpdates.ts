@@ -37,7 +37,7 @@ export async function sendUpdates(
     ...(options.locales && { locales: options.locales }),
     metadata: globalMetadata,
     ...(dataFormat && { dataFormat }),
-    ...(options._versionId && { versionId: options._versionId }),
+    ...(options.version && { versionId: options.version }),
     ...(options.description && { description: options.description }),
     ...(options.requireApproval && {
       requireApproval: options.requireApproval,
