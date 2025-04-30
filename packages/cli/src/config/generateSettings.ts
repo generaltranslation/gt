@@ -78,16 +78,18 @@ export async function generateSettings(options: any): Promise<Settings> {
   // Display projectId if present
   if (mergedOptions.projectId) displayProjectId(mergedOptions.projectId);
 
+  // Add requireReview if not provided
+  mergedOptions.requireApproval = mergedOptions.requireApproval ?? false;
+
   // Populate src if not provided
   mergedOptions.src =
     mergedOptions.src ||
     findFilepaths(['./src', './app', './pages', './components']);
 
   // Resolve all glob patterns in the files object
-  mergedOptions.files = resolveFiles(
-    mergedOptions.files || {},
-    mergedOptions.defaultLocale
-  );
+  mergedOptions.files = mergedOptions.files
+    ? resolveFiles(mergedOptions.files, mergedOptions.defaultLocale)
+    : undefined;
 
   // if there's no existing config file, creates one
   // does not include the API key to avoid exposing it

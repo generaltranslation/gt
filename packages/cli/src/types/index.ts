@@ -33,6 +33,7 @@ export type Options = {
   wait: boolean;
   timeout: string;
   publish: boolean;
+  requireApproval?: boolean;
 };
 
 export type WrapOptions = {
@@ -126,11 +127,14 @@ export type Settings = {
   projectId: string;
   defaultLocale: string;
   locales: string[];
-  files: {
-    resolvedPaths: ResolvedFiles; // resolved paths for the default locale
-    placeholderPaths: ResolvedFiles; // placeholder paths for all locales containing [locale]
-    transformPaths: TransformFiles; // transform paths for all locales containing [locale]
-  };
+  files:
+    | {
+        resolvedPaths: ResolvedFiles; // resolved paths for the default locale
+        placeholderPaths: ResolvedFiles; // placeholder paths for all locales containing [locale]
+        transformPaths: TransformFiles; // transform paths for all locales containing [locale]
+      }
+    | undefined;
+  requireApproval: boolean;
   versionId?: string;
   description?: string;
   src?: string[]; // src directory for gt-next and gt-react
