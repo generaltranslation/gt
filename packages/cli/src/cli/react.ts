@@ -32,6 +32,7 @@ import { noFilesError, noVersionIdError } from '../console/errors';
 import { stageProject } from '../translation/stage';
 import { createUpdates } from '../translation/parse';
 import { translate } from '../translation/translate';
+import updateConfig from '../fs/config/updateConfig';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
@@ -44,6 +45,7 @@ export class ReactCLI extends BaseCLI {
     super(library, additionalModules);
   }
   public init() {
+    this.setupStageCommand();
     this.setupTranslateCommand();
     this.setupScanCommand();
     this.setupGenerateSourceCommand();
@@ -122,7 +124,6 @@ export class ReactCLI extends BaseCLI {
       )
       .action(async (options: Options) => {
         displayHeader('Staging project for translation with approval...');
-        options.stageTranslations = true;
         await this.handleStage(options);
         endCommand('Done!');
       });
@@ -429,6 +430,14 @@ export class ReactCLI extends BaseCLI {
 
     // First run the base class's handleTranslate method
     const options = { ...initOptions, ...settings };
+    if (!settings.stageTranslations) {
+      // Update settings.stageTranslations to true
+      settings.stageTranslations = true;
+      await updateConfig({
+        configFilepath: options.config,
+        stageTranslations: true,
+      });
+    }
     const pkg = this.library === 'gt-next' ? 'gt-next' : 'gt-react';
     await stageProject(options, pkg);
   }

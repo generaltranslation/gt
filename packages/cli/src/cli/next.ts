@@ -16,6 +16,7 @@ export class NextCLI extends ReactCLI {
     super(library, additionalModules);
   }
   public init() {
+    this.setupStageCommand();
     this.setupTranslateCommand();
     this.setupScanCommand();
     this.setupGenerateSourceCommand();
