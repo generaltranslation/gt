@@ -58,7 +58,6 @@ export default async function createInlineUpdates(
 
   for (const file of files) {
     const code = await fs.promises.readFile(file, 'utf8');
-
     let ast;
     try {
       ast = parse(code, {

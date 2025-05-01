@@ -30,9 +30,8 @@ export type Options = {
   inline?: boolean;
   ignoreErrors: boolean;
   dryRun: boolean;
-  wait: boolean;
   timeout: string;
-  publish: boolean;
+  stageTranslations?: boolean;
 };
 
 export type WrapOptions = {
@@ -126,12 +125,16 @@ export type Settings = {
   projectId: string;
   defaultLocale: string;
   locales: string[];
-  files: {
-    resolvedPaths: ResolvedFiles; // resolved paths for the default locale
-    placeholderPaths: ResolvedFiles; // placeholder paths for all locales containing [locale]
-    transformPaths: TransformFiles; // transform paths for all locales containing [locale]
-  };
-  versionId?: string;
+  files:
+    | {
+        resolvedPaths: ResolvedFiles; // resolved paths for the default locale
+        placeholderPaths: ResolvedFiles; // placeholder paths for all locales containing [locale]
+        transformPaths: TransformFiles; // transform paths for all locales containing [locale]
+      }
+    | undefined;
+  stageTranslations: boolean; // if true, always stage the project during translate command
+  _versionId?: string; // internal use only
+  version?: string; // for specifying a custom version id to use. Should be unique
   description?: string;
   src?: string[]; // src directory for gt-next and gt-react
 };

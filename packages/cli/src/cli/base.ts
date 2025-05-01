@@ -40,13 +40,14 @@ import { getPackageManager } from '../utils/packageManager';
 import { retrieveCredentials, setCredentials } from '../utils/credentials';
 import { areCredentialsSet } from '../utils/credentials';
 
-type TranslateOptions = {
+export type TranslateOptions = {
   config?: string;
   defaultLocale?: string;
   locales?: string[];
   files?: FilesOptions;
   apiKey?: string;
   projectId?: string;
+  dryRun: boolean;
 };
 
 export class BaseCLI {
@@ -99,10 +100,18 @@ export class BaseCLI {
         '--new, --locales <locales...>',
         'Space-separated list of locales (e.g., en fr es)'
       )
-      .action(async (options: TranslateOptions) => {
+      .option(
+        '--dry-run',
+        'Dry run, does not send updates to General Translation API',
+        false
+      )
+      .action(async (initOptions: TranslateOptions) => {
         displayHeader('Starting translation...');
-        const settings = await generateSettings(options);
-        await this.handleGenericTranslate(settings);
+        const settings = await generateSettings(initOptions);
+
+        const options = { ...initOptions, ...settings };
+
+        await this.handleGenericTranslate(options);
         endCommand('Done!');
       });
   }
@@ -116,7 +125,7 @@ export class BaseCLI {
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
-      .action(async (options: TranslateOptions) => {
+      .action(async () => {
         displayHeader('Authenticating with General Translation...');
         await this.handleLoginCommand();
         endCommand('Done!');
@@ -224,24 +233,9 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       });
   }
 
-  protected async handleGenericTranslate(settings: Settings): Promise<void> {
-    // Validate required settings are present
-    if (!settings.locales) {
-      logErrorAndExit(noLocalesError);
-    }
-    if (!settings.defaultLocale) {
-      logErrorAndExit(noDefaultLocaleError);
-    }
-    if (!settings.files) {
-      logErrorAndExit(noFilesError);
-    }
-    if (!settings.apiKey) {
-      logErrorAndExit(noApiKeyError);
-    }
-    if (!settings.projectId) {
-      logErrorAndExit(noProjectIdError);
-    }
-
+  protected async handleGenericTranslate(
+    settings: Settings & TranslateOptions
+  ): Promise<void> {
     // dataFormat for JSONs
     let dataFormat: DataFormat;
     if (this.library === 'next-intl') {
@@ -256,6 +250,9 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       dataFormat = 'JSX';
     }
 
+    if (!settings.files) {
+      return;
+    }
     const {
       resolvedPaths: sourceFiles,
       placeholderPaths,

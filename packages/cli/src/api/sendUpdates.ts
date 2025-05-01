@@ -1,16 +1,14 @@
 import chalk from 'chalk';
-import { createSpinner, logInfo, logSuccess } from '../console';
+import { createSpinner, logSuccess } from '../console';
 import { Settings, SupportedLibraries, Updates } from '../types';
 import updateConfig from '../fs/config/updateConfig';
-import { waitForUpdates } from './waitForUpdates';
 import { DataFormat } from '../types/data';
 
 type ApiOptions = Settings & {
-  publish: boolean;
-  wait: boolean;
   timeout: string;
   dataFormat: DataFormat;
   description?: string;
+  requireApproval?: boolean;
 };
 
 /**
@@ -23,7 +21,7 @@ export async function sendUpdates(
   updates: Updates,
   options: ApiOptions,
   library: SupportedLibraries
-) {
+): Promise<{ versionId: string; locales: string[] }> {
   const { apiKey, projectId, defaultLocale, dataFormat } = options;
 
   const globalMetadata = {
@@ -38,17 +36,18 @@ export async function sendUpdates(
     updates,
     ...(options.locales && { locales: options.locales }),
     metadata: globalMetadata,
-    publish: options.publish,
     ...(dataFormat && { dataFormat }),
-    ...(options.versionId && { versionId: options.versionId }),
+    ...(options.version && { versionId: options.version }),
     ...(options.description && { description: options.description }),
+    ...(options.requireApproval && {
+      requireApproval: options.requireApproval,
+    }),
   };
 
   const spinner = createSpinner('dots');
   spinner.start(`Sending ${library} updates to General Translation API...`);
 
   try {
-    const startTime = Date.now();
     const response = await fetch(
       `${options.baseUrl}/v1/project/translations/update`,
       {
@@ -66,36 +65,19 @@ export async function sendUpdates(
       process.exit(1);
     }
 
-    if (response.status === 204) {
-      spinner.stop(chalk.green('Sent updates'));
-      logSuccess(await response.text());
-      return;
-    }
-
     const { versionId, message, locales } = await response.json();
     spinner.stop(chalk.green('Sent updates'));
     logSuccess(message);
-    if (options.config)
+
+    if (options.config) {
       await updateConfig({
         configFilepath: options.config,
         _versionId: versionId,
         locales,
       });
-
-    // Wait for translations if wait is true
-    if (options.wait && locales) {
-      // timeout was validated earlier
-      const timeout = parseInt(options.timeout) * 1000;
-      await waitForUpdates(
-        apiKey,
-        options.baseUrl,
-        versionId,
-        locales,
-        startTime,
-        timeout
-      );
     }
-    return { versionId };
+
+    return { versionId, locales };
   } catch (error) {
     spinner.stop(chalk.red('Failed to send updates'));
     throw error;

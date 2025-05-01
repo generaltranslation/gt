@@ -31,7 +31,7 @@ const IMPORT_MAP = {
  * @param options - The options object
  * @returns An object containing the updates and errors
  */
-export default async function scanForContentReact(
+export default async function wrapContentReact(
   options: WrapOptions,
   pkg: 'gt-react',
   framework: SupportedFrameworks,

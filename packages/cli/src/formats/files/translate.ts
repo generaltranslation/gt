@@ -5,6 +5,11 @@ import {
   logErrorAndExit,
   createSpinner,
   logError,
+  logSuccess,
+  noLocalesError,
+  noDefaultLocaleError,
+  noApiKeyError,
+  noProjectIdError,
 } from '../../console';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
 import { getRelative, readFile } from '../../fs/findFilepath';
@@ -16,6 +21,7 @@ import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile';
 import { downloadFileBatch } from '../../api/downloadFileBatch';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles';
+import { TranslateOptions } from '../../cli/base';
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 /**
@@ -33,7 +39,7 @@ export async function translateFiles(
   placeholderPaths: ResolvedFiles,
   transformPaths: TransformFiles,
   dataFormat: DataFormat = 'JSX',
-  options: Settings
+  options: Settings & TranslateOptions
 ): Promise<void> {
   // Collect all files to translate
   const allFiles = [];
@@ -80,8 +86,28 @@ export async function translateFiles(
   }
 
   if (allFiles.length === 0) {
-    logError('No files to translate');
+    logError(
+      'No files to translate were found. Please check your configuration and try again.'
+    );
     return;
+  }
+  if (options.dryRun) {
+    logSuccess('Dry run: No files were sent to General Translation.');
+    return;
+  }
+
+  // Validate required settings are present
+  if (!options.locales) {
+    logErrorAndExit(noLocalesError);
+  }
+  if (!options.defaultLocale) {
+    logErrorAndExit(noDefaultLocaleError);
+  }
+  if (!options.apiKey) {
+    logErrorAndExit(noApiKeyError);
+  }
+  if (!options.projectId) {
+    logErrorAndExit(noProjectIdError);
   }
 
   try {

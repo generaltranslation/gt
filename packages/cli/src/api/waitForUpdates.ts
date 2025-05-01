@@ -16,14 +16,13 @@ export const waitForUpdates = async (
   apiKey: string,
   baseUrl: string,
   versionId: string,
-  locales: string[],
   startTime: number,
   timeoutDuration: number
 ) => {
   console.log();
   const spinner = await createOraSpinner();
   spinner.start('Waiting for translation...');
-  const availableLocales: string[] = [];
+
   const checkDeployment = async () => {
     try {
       const response = await fetch(
@@ -40,12 +39,14 @@ export const waitForUpdates = async (
       );
       if (response.ok) {
         const data = await response.json();
-        if (data.availableLocales) {
-          data.availableLocales.forEach((locale: string) => {
-            if (
-              !availableLocales.includes(locale) &&
-              locales.includes(locale)
-            ) {
+        const { availableLocales, locales, localesWaitingForApproval } = data;
+        if (localesWaitingForApproval.length > 0) {
+          spinner.text = `Waiting for approval for ${localesWaitingForApproval.length} locales`;
+          return false;
+        }
+        if (availableLocales) {
+          availableLocales.forEach((locale: string) => {
+            if (!availableLocales.includes(locale)) {
               availableLocales.push(locale);
             }
           });
@@ -59,10 +60,12 @@ export const waitForUpdates = async (
               )} (${chalk.green(localeProperties.code)})`;
             }),
           ];
-          // The new clack spinner doesn't have suffixText, just update the message
+
           spinner.text = newSuffixText.join('\n');
         }
-        if (locales.every((locale) => availableLocales.includes(locale))) {
+        if (
+          locales.every((locale: string) => availableLocales.includes(locale))
+        ) {
           return true;
         }
       }
