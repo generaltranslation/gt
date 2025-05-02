@@ -250,7 +250,10 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       dataFormat = 'JSX';
     }
 
-    if (!settings.files) {
+    if (
+      !settings.files ||
+      (Object.keys(settings.files).length === 1 && settings.files.gt)
+    ) {
       return;
     }
     const {

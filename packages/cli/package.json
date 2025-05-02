@@ -1,7 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "1.2.4",
-  "type": "commonjs",
+  "version": "1.2.5-alpha.3",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "scripts": {
@@ -14,15 +13,33 @@
     "release:latest": "npm run build:clean && npm publish --tag latest"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./types": "./dist/types.js",
-    "./updates/*": "./dist/updates/*.js",
-    "./jsx/*": "./dist/jsx/*.js",
-    "./fs/*": "./dist/fs/*.js",
-    "./console/*": "./dist/console/*.js",
-    "./config/*": "./dist/config/*.js",
-    "./api/*": "./dist/api/*.js",
-    "./*": "./dist/*.js"
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./types": {
+      "import": "./dist/types.js"
+    },
+    "./updates/*": {
+      "import": "./dist/updates/*.js"
+    },
+    "./jsx/*": {
+      "import": "./dist/jsx/*.js"
+    },
+    "./fs/*": {
+      "import": "./dist/fs/*.js"
+    },
+    "./console/*": {
+      "import": "./dist/console/*.js"
+    },
+    "./config/*": {
+      "import": "./dist/config/*.js"
+    },
+    "./api/*": {
+      "import": "./dist/api/*.js"
+    },
+    "./*": {
+      "import": "./dist/*.js"
+    }
   },
   "repository": {
     "type": "git",

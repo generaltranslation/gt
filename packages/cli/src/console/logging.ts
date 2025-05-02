@@ -8,11 +8,9 @@ import {
   confirm,
   isCancel,
   cancel,
-  multiselect,
+  multiselect, // @ts-expect-error
 } from '@clack/prompts';
 import chalk from 'chalk';
-// Use dynamic import for ora (ESM module)
-import type { Options as OraOptions } from 'ora';
 
 // Basic logging functions
 export function logInfo(message: string) {
@@ -104,9 +102,8 @@ export function createSpinner(indicator: 'dots' | 'timer' = 'timer') {
 export async function createOraSpinner(
   indicator: 'dots' | 'circleHalves' = 'circleHalves'
 ) {
-  const oraModule = await import('ora');
-  const ora = oraModule.default;
-  return ora({ spinner: indicator });
+  const ora = await import('ora');
+  return ora.default({ spinner: indicator });
 }
 
 // Input prompts

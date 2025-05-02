@@ -1,3 +1,4 @@
+// @ts-expect-error
 import open from 'open';
 import { createSpinner, logErrorAndExit, logMessage } from '../console';
 import path from 'node:path';
