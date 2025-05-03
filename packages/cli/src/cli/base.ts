@@ -44,7 +44,6 @@ export type TranslateOptions = {
   config?: string;
   defaultLocale?: string;
   locales?: string[];
-  files?: FilesOptions;
   apiKey?: string;
   projectId?: string;
   dryRun: boolean;
@@ -250,7 +249,11 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       dataFormat = 'JSX';
     }
 
-    if (!settings.files) {
+    if (
+      !settings.files ||
+      (Object.keys(settings.files.placeholderPaths).length === 1 &&
+        settings.files.placeholderPaths.gt)
+    ) {
       return;
     }
     const {

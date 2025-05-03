@@ -1,4 +1,3 @@
-import open from 'open';
 import { createSpinner, logErrorAndExit, logMessage } from '../console';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -18,9 +17,11 @@ export async function retrieveCredentials(
   const { sessionId } = await generateCredentialsSession(settings.baseUrl);
 
   const urlToOpen = `${settings.dashboardUrl}/cli/wizard/${sessionId}`;
-  open(urlToOpen, {
-    wait: false,
-  }).then((res) => {});
+  await import('open').then((open) =>
+    open.default(urlToOpen, {
+      wait: false,
+    })
+  );
 
   logMessage(
     `${chalk.gray(
