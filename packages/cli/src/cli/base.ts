@@ -44,7 +44,6 @@ export type TranslateOptions = {
   config?: string;
   defaultLocale?: string;
   locales?: string[];
-  files?: FilesOptions;
   apiKey?: string;
   projectId?: string;
   dryRun: boolean;
@@ -252,7 +251,8 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
 
     if (
       !settings.files ||
-      (Object.keys(settings.files).length === 1 && settings.files.gt)
+      (Object.keys(settings.files.placeholderPaths).length === 1 &&
+        settings.files.placeholderPaths.gt)
     ) {
       return;
     }
