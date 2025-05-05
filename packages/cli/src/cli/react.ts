@@ -304,7 +304,7 @@ export class ReactCLI extends BaseCLI {
           )
         );
       } else {
-        logError(
+        logErrorAndExit(
           chalk.red(
             `CLI tool encountered errors while scanning for ${chalk.green(
               '<T>'
