@@ -1,5 +1,2 @@
-# GitHub workflow files
-/.github/workflows/ @General-Translation/maintainers
-
-# Package definitions
-/packages/*/package.json @General-Translation/maintainers
+# Require someone from the @maintainers team to approve all changes
+* @generaltranslation/maintainers
