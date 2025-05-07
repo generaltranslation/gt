@@ -23,7 +23,7 @@ export default async function createInlineUpdates(
   const srcDirectory = options.src || ['./'];
 
   // Define the file extensions to look for
-  const extensions = ['.js', '.jsx', '.tsx'];
+  const extensions = ['.js', '.jsx', '.tsx', '.ts'];
 
   /**
    * Recursively scan the directory and collect all files with the specified extensions,

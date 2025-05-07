@@ -55,7 +55,7 @@ export async function retrieveCredentials(
         } catch (err) {
           console.error(err);
         }
-      }, 1500);
+      }, 2000);
       // timeout after 1 hour
       const timeout = setTimeout(
         () => {

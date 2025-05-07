@@ -17,6 +17,7 @@ import {
   logInfo,
   startCommand,
   createSpinner,
+  logMessage,
 } from '../console';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -304,7 +305,13 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
           defaultValue: true,
         })
       : false;
-
+    if (isUsingGT && !usingCDN) {
+      logMessage(
+        `To block translations from being published, please disable the project setting on the dashboard: ${chalk.cyan(
+          'https://dash.generaltranslation.com/settings/project'
+        )}`
+      );
+    }
     // Ask where the translations are stored
     const translationsDir =
       isUsingGT && !usingCDN
