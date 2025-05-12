@@ -59,7 +59,7 @@ import config from "./gt.config.json";
 export default function App() {
   return (
     // [!code highlight]
-    <GTProvider config={...config}> 
+    <GTProvider {...config}> 
       <MyApp />
     </GTProvider> // [!code highlight]
   );
