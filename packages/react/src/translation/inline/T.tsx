@@ -47,8 +47,8 @@ function T({
   id?: string;
   context?: string;
   [key: string]: any;
-}): React.JSX.Element | undefined {
-  if (!children) return undefined;
+}): React.JSX.Element | null {
+  if (!children) return null;
 
   const {
     translations,

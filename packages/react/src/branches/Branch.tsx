@@ -31,7 +31,7 @@ function Branch({
   name?: string;
   branch?: string;
   [key: string]: any;
-}) {
+}): React.JSX.Element {
   branch = branch?.toString();
   const renderedBranch =
     branch && typeof branches[branch] !== 'undefined'

@@ -41,7 +41,7 @@ function Plural({
   n?: number;
   locale?: string;
   [key: string]: any;
-}) {
+}): React.JSX.Element {
   const context = useContext(GTContext);
   let defaultLocale;
   if (context) {
