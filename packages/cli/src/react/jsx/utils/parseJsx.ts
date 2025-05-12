@@ -5,7 +5,6 @@ import * as t from '@babel/types';
 import addGTIdentifierToSyntaxTree from '../../data-_gt/addGTIdentifierToSyntaxTree';
 import {
   warnHasUnwrappedExpressionSync,
-  warnNoIdSync,
   warnVariablePropSync,
 } from '../../../console';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
@@ -224,7 +223,14 @@ export function parseJSXElement(
           if (attrName === 'id' || attrName === 'context') {
             const staticAnalysis = isStaticExpression(expr);
             if (!staticAnalysis.isStatic) {
-              errors.push(warnVariablePropSync(file, attrName, code));
+              errors.push(
+                warnVariablePropSync(
+                  file,
+                  attrName,
+                  code,
+                  `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
+                )
+              );
             }
             // Use the static value if available
             if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
@@ -262,7 +268,12 @@ export function parseJSXElement(
     // If we found an unwrapped expression, skip
     if (unwrappedExpressions.length > 0) {
       errors.push(
-        warnHasUnwrappedExpressionSync(file, id, unwrappedExpressions)
+        warnHasUnwrappedExpressionSync(
+          file,
+          unwrappedExpressions,
+          id,
+          `${node.loc?.start?.line}:${node.loc?.start?.column}`
+        )
       );
     }
 

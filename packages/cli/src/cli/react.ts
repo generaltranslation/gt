@@ -294,22 +294,22 @@ export class ReactCLI extends BaseCLI {
     if (errors.length > 0) {
       if (options.ignoreErrors) {
         logWarning(
-          chalk.red(
-            `CLI tool encountered errors while scanning for ${chalk.green(
-              '<T>'
-            )} tags. These components will not be translated.\n` +
+          chalk.yellow(
+            `CLI tool encountered errors while scanning for translatable content. These components will not be translated.\n` +
               errors
-                .map((error) => chalk.yellow('• Warning: ') + error)
+                .map(
+                  (error) => chalk.yellow('• Warning: ') + chalk.white(error)
+                )
                 .join('\n')
           )
         );
       } else {
         logErrorAndExit(
           chalk.red(
-            `CLI tool encountered errors while scanning for ${chalk.green(
-              '<T>'
-            )} tags. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
-              errors.map((error) => chalk.red('• Error: ') + error).join('\n')
+            `CLI tool encountered errors while scanning for translatable content. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
+              errors
+                .map((error) => chalk.red('• Error: ') + chalk.white(error))
+                .join('\n')
           )
         );
       }
