@@ -1,4 +1,4 @@
-import { logErrorAndExit } from '../console/errors';
+import { devApiKeyError, logErrorAndExit } from '../console/errors';
 import chalk from 'chalk';
 
 import findFilepath from '../fs/findFilepath';
@@ -97,6 +97,9 @@ export async function stageProject(
   }
   if (!settings.apiKey) {
     logErrorAndExit(noApiKeyError);
+  }
+  if (settings.apiKey.startsWith('gtx-dev-')) {
+    logErrorAndExit(devApiKeyError);
   }
   if (!settings.projectId) {
     logErrorAndExit(noProjectIdError);

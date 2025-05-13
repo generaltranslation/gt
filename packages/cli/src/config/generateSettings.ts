@@ -2,7 +2,7 @@ import { isValidLocale } from 'generaltranslation';
 import { displayProjectId } from '../console/console';
 import { warnApiKeyInConfig } from '../console/warnings';
 import loadConfig from '../fs/config/loadConfig';
-import { Settings } from '../types';
+import { Settings, SupportedFrameworks } from '../types';
 import {
   defaultBaseUrl,
   libraryDefaultLocale,
@@ -100,6 +100,7 @@ export async function generateSettings(options: any): Promise<Settings> {
       defaultLocale: mergedOptions.defaultLocale as string,
       locales:
         mergedOptions.locales?.length > 0 ? mergedOptions.locales : undefined,
+      framework: mergedOptions.framework as SupportedFrameworks,
     });
   }
   validateSettings(mergedOptions);

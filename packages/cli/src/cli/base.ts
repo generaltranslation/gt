@@ -50,6 +50,10 @@ export type TranslateOptions = {
   dryRun: boolean;
 };
 
+export type LoginOptions = {
+  keyType?: 'development' | 'production';
+};
+
 export class BaseCLI {
   protected library: SupportedLibraries;
   protected additionalModules: SupportedLibraries[];
@@ -125,10 +129,39 @@ export class BaseCLI {
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
-      .action(async () => {
+      .option(
+        '-t, --key-type <type>',
+        'Type of key to generate, production | development'
+      )
+      .action(async (options: LoginOptions) => {
         displayHeader('Authenticating with General Translation...');
-        await this.handleLoginCommand();
-        endCommand('Done!');
+        if (!options.keyType) {
+          const packageJson = await searchForPackageJson();
+          const isUsingGTNext = packageJson
+            ? isPackageInstalled('gt-next', packageJson)
+            : false;
+          const isUsingGTReact = packageJson
+            ? isPackageInstalled('gt-react', packageJson)
+            : false;
+          if (isUsingGTNext || isUsingGTReact) {
+            options.keyType = 'development';
+          } else {
+            options.keyType = 'production';
+          }
+        } else {
+          if (
+            options.keyType !== 'development' &&
+            options.keyType !== 'production'
+          ) {
+            logErrorAndExit(
+              'Invalid key type, must be development or production'
+            );
+          }
+        }
+        await this.handleLoginCommand(options);
+        endCommand(
+          `Done! A ${options.keyType} key has been generated and saved to your .env.local file.`
+        );
       });
   }
 
@@ -144,7 +177,7 @@ export class BaseCLI {
         findFilepaths(['./src', './app', './pages', './components'])
       )
       .option(
-        '--config <path>',
+        '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
@@ -220,7 +253,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
         findFilepaths(['./src', './app', './pages', './components'])
       )
       .option(
-        '--config <path>',
+        '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
@@ -301,13 +334,13 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
             isUsingGTNext
               ? 'https://generaltranslation.com/docs/next/reference/local-tx'
               : 'https://generaltranslation.com/docs/react/reference/local-tx'
-          } for more information.\nIf you answer no, we'll setup your project to store translations locally.`,
+          } for more information.\nIf you answer no, we'll configure the CLI tool to download completed translations.`,
           defaultValue: true,
         })
       : false;
     if (isUsingGT && !usingCDN) {
       logMessage(
-        `To block translations from being published, please disable the project setting on the dashboard: ${chalk.cyan(
+        `To prevent translations from being published, please disable the project setting on the dashboard: ${chalk.cyan(
           'https://dash.generaltranslation.com/settings/project'
         )}`
       );
@@ -394,18 +427,23 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
     // Set credentials
     if (!areCredentialsSet()) {
       const loginQuestion = await promptConfirm({
-        message:
-          'Would you like the wizard to automatically generate an API key and project ID for you?',
+        message: `Would you like the wizard to automatically generate a ${
+          isUsingGT ? 'development' : 'production'
+        } API key and project ID for you?`,
         defaultValue: true,
       });
       if (loginQuestion) {
-        await this.handleLoginCommand();
+        const settings = await generateSettings({});
+        const keyType = isUsingGT ? 'development' : 'production';
+        const credentials = await retrieveCredentials(settings, keyType);
+        await setCredentials(credentials, keyType, settings.framework);
       }
     }
   }
-  protected async handleLoginCommand(): Promise<void> {
+  protected async handleLoginCommand(options: LoginOptions): Promise<void> {
     const settings = await generateSettings({});
-    const credentials = await retrieveCredentials(settings);
-    await setCredentials(credentials);
+    const keyType = options.keyType || 'production';
+    const credentials = await retrieveCredentials(settings, keyType);
+    await setCredentials(credentials, keyType, settings.framework);
   }
 }

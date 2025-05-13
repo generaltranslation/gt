@@ -13,6 +13,7 @@ import wrapContentReact from '../react/parse/wrapContent';
 import wrapContentNext from '../next/parse/wrapContent';
 import { getPackageManager } from '../utils/packageManager';
 import { installPackage } from '../utils/installPackage';
+import createOrUpdateConfig from '../fs/config/setupConfig';
 
 export async function handleSetupReactCommand(
   options: SetupOptions
@@ -57,6 +58,11 @@ Please let us know what you would like to see supported at https://github.com/ge
     process.exit(0);
   }
 
+  // ----- Create a starter gt.config.json file -----
+  await createOrUpdateConfig(options.config || 'gt.config.json', {
+    framework: frameworkType as SupportedFrameworks,
+  });
+
   const packageJson = await getPackageJson();
   // Check if gt-next or gt-react is installed
   if (
@@ -80,9 +86,6 @@ Please let us know what you would like to see supported at https://github.com/ge
     await installPackage('gt-react', packageManager);
     spinner.stop(chalk.green('Automatically installed gt-react.'));
   }
-
-  // ----- Create a starter gt.config.json file -----
-  await generateSettings(options);
 
   let errors: string[] = [];
   let warnings: string[] = [];

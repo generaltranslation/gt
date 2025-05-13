@@ -70,7 +70,7 @@ export class ReactCLI extends BaseCLI {
         'Submits the project to the General Translation API for translation. Translations created using this command will require human approval.'
       )
       .option(
-        '--config <path>',
+        '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
@@ -136,7 +136,7 @@ export class ReactCLI extends BaseCLI {
         'Scans the project for a dictionary and/or <T> tags, and sends the updates to the General Translation API for translation.'
       )
       .option(
-        '--config <path>',
+        '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
@@ -248,7 +248,7 @@ export class ReactCLI extends BaseCLI {
         findFilepaths(['./src', './app', './pages', './components'])
       )
       .option(
-        '--config <path>',
+        '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
