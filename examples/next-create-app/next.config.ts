@@ -6,7 +6,4 @@ const nextConfig: NextConfig = {
   /* config options here */
 };
 
-export default withGTConfig(nextConfig, {
-  defaultLocale: 'en-US',
-  locales: ['en-US', 'fr', 'es', 'zh'],
-});
+export default withGTConfig(nextConfig, {});
