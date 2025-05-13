@@ -39,6 +39,7 @@ import { isSSREnabled } from './helpers/isSSREnabled';
 import { defaultLocaleCookieName } from '../utils/cookies';
 import loadDictionaryHelper from './helpers/loadDictionaryHelper';
 import mergeDictionaries from './helpers/mergeDictionaries';
+import { GTConfig } from '../types/config';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -64,20 +65,21 @@ import mergeDictionaries from './helpers/mergeDictionaries';
  */
 export default function GTProvider({
   children,
-  projectId: _projectId = '',
-  devApiKey: _devApiKey,
-  dictionary: _dictionary,
-  locales = [],
-  defaultLocale = libraryDefaultLocale,
-  locale: _locale,
-  cacheUrl = defaultCacheUrl,
-  runtimeUrl = defaultRuntimeApiUrl,
-  renderSettings = defaultRenderSettings,
+  config,
+  projectId: _projectId = config?.projectId || '',
+  devApiKey: _devApiKey = config?.devApiKey || '',
+  dictionary: _dictionary = config?.dictionary || {},
+  locales = config?.locales || [],
+  defaultLocale = config?.defaultLocale || libraryDefaultLocale,
+  cacheUrl = config?.cacheUrl || defaultCacheUrl,
+  runtimeUrl = config?.runtimeUrl || defaultRuntimeApiUrl,
+  renderSettings = config?.renderSettings || defaultRenderSettings,
+  ssr = config?.ssr || isSSREnabled(),
+  localeCookieName = config?.localeCookieName || defaultLocaleCookieName,
+  locale: _locale = '',
   loadDictionary,
   loadTranslations,
   fallback = undefined,
-  ssr = isSSREnabled(),
-  localeCookieName = defaultLocaleCookieName,
   translations: _translations = null,
   _versionId,
   ...metadata
@@ -95,12 +97,14 @@ export default function GTProvider({
     method: RenderMethod;
     timeout?: number;
   };
-  translations?: TranslationsObject | null;
-  loadDictionary?: CustomLoader;
-  loadTranslations?: CustomLoader;
   _versionId?: string;
   ssr?: boolean;
   localeCookieName?: string;
+  translations?: TranslationsObject | null;
+  loadDictionary?: CustomLoader;
+  loadTranslations?: CustomLoader;
+  config?: GTConfig;
+  fallback?: React.ReactNode;
   [key: string]: any;
 }): React.JSX.Element {
   // ---------- SANITIZATION ---------- //
