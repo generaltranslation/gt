@@ -10,6 +10,7 @@
     "reference/dictionary-reference",
     "reference/cli",
     "reference/change-language",
+    "reference/gtconfigjson",
     "---Advanced---",
     "reference/using-branching-components",
     "reference/local-tx",
