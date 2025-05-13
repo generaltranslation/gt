@@ -27,7 +27,6 @@ import {
   SupportedLibraries,
   SetupOptions,
 } from '../types';
-import { resolveProjectId } from '../fs/utils';
 import { DataFormat } from '../types/data';
 import { generateSettings } from '../config/generateSettings';
 import chalk from 'chalk';
@@ -91,11 +90,7 @@ export class BaseCLI {
         '--api-key <key>',
         'API key for General Translation cloud service'
       )
-      .option(
-        '--project-id <id>',
-        'Project ID for the translation service',
-        resolveProjectId()
-      )
+      .option('--project-id <id>', 'Project ID for the translation service')
       .option(
         '--default-language, --default-locale <locale>',
         'Default locale (e.g., en)'

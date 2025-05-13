@@ -13,6 +13,7 @@ import { resolveFiles } from '../fs/config/parseFilesConfig';
 import { findFilepaths } from '../fs/findFilepath';
 import { validateSettings } from './validateSettings';
 import { GT_DASHBOARD_URL } from '../utils/constants';
+import { resolveProjectId } from '../fs/utils';
 /**
  * Generates settings from any
  * @param options - The options to generate settings from
@@ -56,8 +57,7 @@ export async function generateSettings(options: any): Promise<Settings> {
   mergedOptions.apiKey = mergedOptions.apiKey || process.env.GT_API_KEY;
 
   // Add projectId if not provided
-  mergedOptions.projectId =
-    mergedOptions.projectId || process.env.GT_PROJECT_ID;
+  mergedOptions.projectId = mergedOptions.projectId || resolveProjectId();
 
   // Add baseUrl if not provided
   mergedOptions.baseUrl = mergedOptions.baseUrl || defaultBaseUrl;

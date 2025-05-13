@@ -3,7 +3,6 @@ import { program } from 'commander';
 import {
   Options,
   SupportedFrameworks,
-  Updates,
   WrapOptions,
   GenerateSourceOptions,
   SupportedLibraries,
@@ -24,7 +23,6 @@ import chalk from 'chalk';
 import { formatFiles } from '../hooks/postProcess';
 import { BaseCLI } from './base';
 import wrapContentReact from '../react/parse/wrapContent';
-import { resolveProjectId } from '../fs/utils';
 import { generateSettings } from '../config/generateSettings';
 import { saveJSON } from '../fs/saveJSON';
 import { resolveLocaleFiles } from '../fs/config/parseFilesConfig';
@@ -78,11 +76,7 @@ export class ReactCLI extends BaseCLI {
         '--api-key <key>',
         'API key for General Translation cloud service'
       )
-      .option(
-        '--project-id <id>',
-        'Project ID for the translation service',
-        resolveProjectId()
-      )
+      .option('--project-id <id>', 'Project ID for the translation service')
       .option('--version-id <id>', 'Version ID for the translation service')
       .option(
         '--tsconfig, --jsconfig <path>',
@@ -144,11 +138,7 @@ export class ReactCLI extends BaseCLI {
         '--api-key <key>',
         'API key for General Translation cloud service'
       )
-      .option(
-        '--project-id <id>',
-        'Project ID for the translation service',
-        resolveProjectId()
-      )
+      .option('--project-id <id>', 'Project ID for the translation service')
       .option('--version-id <id>', 'Version ID for the translation service')
       .option(
         '--tsconfig, --jsconfig <path>',
