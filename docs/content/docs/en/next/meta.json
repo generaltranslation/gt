@@ -10,6 +10,7 @@
     "reference/locale-management",
     "reference/cli",
     "reference/change-language",
+    "reference/gtconfigjson",
     "---Advanced---",
     "reference/stand-alone",
     "reference/using-branching-components",
