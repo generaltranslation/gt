@@ -17,18 +17,20 @@ The core components include:
 
 ## Cli
 - [<T> Wrapping Behavior](https://generaltranslation.com/en/docs/cli/reference/wrapping): Specific behavior of how the CLI tool wraps the `<T>` component
+- [Auth](https://generaltranslation.com/en/docs/cli/auth): Authenticate your project with General Translation
 - [Automatic Translation](https://generaltranslation.com/en/docs/cli): How to automatically translate your project using the General Translation CLI tool
 - [Automatic Translation](https://generaltranslation.com/en/docs/cli/tutorials/quickstart): How to automatically translate your project using the General Translation CLI tool
 - [Configuration](https://generaltranslation.com/en/docs/cli/reference/config): Config docs for the gt.config.json file
+- [Configure](https://generaltranslation.com/en/docs/cli/configure): Configure your projects GT settings
 - [Generate Source Template](https://generaltranslation.com/en/docs/cli/generate): How to generate a source template for your project
 - [GT Libraries](https://generaltranslation.com/en/docs/cli/tutorials/gt): Automatically translate your project with GT Libraries
 - [i18next](https://generaltranslation.com/en/docs/cli/tutorials/i18next-quickstart): Automatically translate your i18next project (<5 min)
-- [Init](https://generaltranslation.com/en/docs/cli/init): Configures your projects GT settings.
 - [JSON Files](https://generaltranslation.com/en/docs/cli/tutorials/json): How to use General Translation to set up automatic translation for your projects JSON files
 - [Markdown](https://generaltranslation.com/en/docs/cli/tutorials/mdx): How to use General Translation to set up automatic translation for your projects Markdown files
 - [next-intl](https://generaltranslation.com/en/docs/cli/tutorials/next-intl-quickstart): Automatically translate your next-intl project (<5 min)
+- [React Setup](https://generaltranslation.com/en/docs/cli/setup): Integrates gt-next or gt-react with your project.
 - [Scan](https://generaltranslation.com/en/docs/cli/scan): Scans your project for translatable content
-- [Setup](https://generaltranslation.com/en/docs/cli/setup): Integrates gt-next or gt-react with your project.
+- [Setup Wizard](https://generaltranslation.com/en/docs/cli/init): Run the GT setup wizard
 - [Translate](https://generaltranslation.com/en/docs/cli/translate): How to translate your project
 - [Usage Guide](https://generaltranslation.com/en/docs/cli/reference/usage): Usage guide for the GT command line tool
 
@@ -73,6 +75,7 @@ The core components include:
 - [getDict()](https://generaltranslation.com/en/docs/next/api/dictionary/getDict): API Reference for the getDict server-side translation function
 - [getGT()](https://generaltranslation.com/en/docs/next/api/strings/getGT): API Reference for the getGT() string translation function
 - [getLocale()](https://generaltranslation.com/en/docs/next/api/helpers/getLocale): API Reference for the getLocale server-side method
+- [gt.config.json](https://generaltranslation.com/en/docs/next/reference/gtconfigjson): The `gt.config.json` file
 - [i18n Configuration](https://generaltranslation.com/en/docs/next/reference/i18n-configuration): Configuring i18n behavior in your Next.js application
 - [i18n Routing](https://generaltranslation.com/en/docs/next/reference/i18n-routing): A step by step guide on adding internationalization (i18n) routing to your application
 - [InlineTranslationOptions](https://generaltranslation.com/en/docs/next/api/types/InlineTranslationOptions): API Reference for the InlineTranslationOptions type
@@ -81,8 +84,8 @@ The core components include:
 - [Local Translations](https://generaltranslation.com/en/docs/next/reference/local-tx): Setup local translations for your Next.js app
 - [Manage Locales](https://generaltranslation.com/en/docs/next/reference/locale-management): How to manage your apps locales
 - [Migrating to gt-next](https://generaltranslation.com/en/docs/next/reference/stand-alone): Migrating from another i18n library to gt-next
-- [Next.js Quickstart](https://generaltranslation.com/en/docs/next): Internationalize your Next.js App in 5 minutes with gt-next
-- [Next.js Quickstart](https://generaltranslation.com/en/docs/next/tutorials/quickstart): Internationalize your Next.js App in 5 minutes with gt-next
+- [Next.js Quickstart](https://generaltranslation.com/en/docs/next): Easily internationalize your Next.js App with gt-next
+- [Next.js Quickstart](https://generaltranslation.com/en/docs/next/tutorials/quickstart): Easily internationalize your Next.js App with gt-next
 - [Right-to-Left Support](https://generaltranslation.com/en/docs/next/reference/rtl): A step by step guide on adding Right-to-Left (RTL) support to your application
 - [RuntimeTranslationOptions](https://generaltranslation.com/en/docs/next/api/types/RuntimeTranslationOptions): API Reference for the RuntimeTranslationOptions type
 - [Setup](https://generaltranslation.com/en/docs/next/tutorials/dictionary/setup): Set up a tutorial project
@@ -124,13 +127,14 @@ The core components include:
 - [Deploying to Production (5m)](https://generaltranslation.com/en/docs/react/tutorials/quickdeploy): Lets deploy your react app with GT.
 - [Dictionaries Reference](https://generaltranslation.com/en/docs/react/reference/dictionary-reference): An overview of the Dictionary Pattern
 - [DictionaryTranslationOptions](https://generaltranslation.com/en/docs/react/api/types/DictionaryTranslationOptions): API Reference for the DictionaryTranslationOptions type
+- [gt.config.json](https://generaltranslation.com/en/docs/react/reference/gtconfigjson): The `gt.config.json` file
 - [InlineTranslationOptions](https://generaltranslation.com/en/docs/react/api/types/InlineTranslationOptions): API Reference for the InlineTranslationOptions type
 - [loadDictionary()](https://generaltranslation.com/en/docs/react/api/config/load-dictionary): API Reference for the loadDictionary() function.
 - [loadTranslations()](https://generaltranslation.com/en/docs/react/api/config/load-translations): API Reference for the loadTranslations() function.
 - [Local Translations](https://generaltranslation.com/en/docs/react/reference/local-tx): Setup local translations for your React app
 - [Manage Locales](https://generaltranslation.com/en/docs/react/reference/locale-management): How to manage your apps locales
-- [React Quickstart](https://generaltranslation.com/en/docs/react): Internationalize your React App in 5 minutes with gt-react
-- [React Quickstart](https://generaltranslation.com/en/docs/react/tutorials/quickstart): Internationalize your React App in 5 minutes with gt-react
+- [React Quickstart](https://generaltranslation.com/en/docs/react): Easily internationalize your React App with gt-react
+- [React Quickstart](https://generaltranslation.com/en/docs/react/tutorials/quickstart): Easily internationalize your React App with gt-react
 - [The CLI Tool](https://generaltranslation.com/en/docs/react/reference/cli): The General Translations CLI tool
 - [Translating Strings](https://generaltranslation.com/en/docs/react/reference/translating-strings): How to translate strings
 - [useDefaultLocale()](https://generaltranslation.com/en/docs/react/api/helpers/useDefaultLocale): API Reference for the useDefaultLocale hook

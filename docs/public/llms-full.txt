@@ -1,4 +1,55 @@
 ---
+title: Auth
+description: Authenticate your project with General Translation
+---
+
+## Usage
+Source: https://generaltranslation.com/en/docs/cli/auth
+
+```bash
+npx gtx-cli auth
+```
+
+## Overview
+
+Use this CLI command to generate an API key and project ID for your project.
+This command will:
+
+1. Prompt the user to signin to the General Translation dashboard.
+2. Generate an API key and project ID for your project.
+3. Create a `.env.local` file in the root of your project and add it to your `.gitignore` file (if it doesn't already exist).
+4. Add the API key and project ID to the `.env.local` file.
+
+
+---
+title: Configure
+description: Configure your project's GT settings
+---
+
+
+## Usage
+Source: https://generaltranslation.com/en/docs/cli/configure
+
+```bash
+npx gtx-cli configure
+```
+
+## Overview
+
+The `configure` command helps you configure your project's GT settings.
+
+It will create a `gt.config.json` file in the root of your project.
+
+The file will contain the following settings:
+
+- `defaultLocale`: The default locale for your project.
+- `locales`: An array of [supported locales](/docs/reference/supported-locales) for your project.
+- `files`: This is an object that contains information about the content you want to translate.
+
+For more specific information about the `gt.config.json` file, please see the [config docs](/docs/cli/reference/config).
+
+
+---
 title: Generate Source Template
 description: How to generate a source template for your project
 ---
@@ -36,13 +87,11 @@ After generating the source files, you can use [local translations](/docs/next/r
 
 ## Setup
 
-First, run the `gtx-cli init` command to configure your project.
+First, run the `gtx-cli configure` command to configure your project's settings.
 
 ```bash
-npx gtx-cli init
+npx gtx-cli configure
 ```
-
-This will create a `gt.config.json` file in the root of your project.
 
 Then, run the `gtx-cli generate` command to generate template files for your project.
 
@@ -61,6 +110,10 @@ title: Automatic Translation
 description: How to automatically translate your project using the General Translation CLI tool
 ---
 
+```bash
+npx gtx-cli@latest init
+```
+
 ## Overview
 Source: https://generaltranslation.com/en/docs/cli
 
@@ -70,7 +123,7 @@ It provides first-class support for [`gt-next`](/docs/react) and [`gt-react`](/d
 
 The CLI tool can also be used to generate translations for third-party i18n libraries like [next-intl](https://next-intl.dev/) or [i18next](https://react.i18next.com/).
 
-Lastly, the CLI tool can be used to translate JSON, Markdown, and MDX files.
+Lastly, the CLI tool can be used to translate JSON, Markdown, MDX, JS, and TS files.
 
 <Callout type="warn">
   A Production API key is required for the `translate` command. Get one for free at [generaltranslation.com](https://generaltranslation.com)!
@@ -93,28 +146,37 @@ Depending on what i18n library your project is using, please follow one of the f
 
 | Command | Description |
 | --- | --- |
-| [`npx gtx-cli init`](/docs/cli/init) | (Optional) Configures your project's GT settings. |
-| [`npx gtx-cli setup`](/docs/cli/setup) | Step by step setup guide that prepares your project for translation. |
+| [`npx gtx-cli init`](/docs/cli/init) | Run the GT setup wizard. |
+| [`npx gtx-cli setup`](/docs/cli/setup) | Step by step setup guide that helps internationalize your React app. |
 | [`npx gtx-cli scan`](/docs/cli/scan) | Scans your project for translatable content. Can be used repeatedly to update your project. |
 | [`npx gtx-cli translate`](/docs/cli/translate) | Translates your project via the GT API. |
 | [`npx gtx-cli generate`](/docs/cli/generate) | Generates a new translation data JSON file. Should be used when using the library standalone. |
+| [`npx gtx-cli auth`](/docs/cli/auth) | Generate an API key and project ID for your project. |
+| [`npx gtx-cli configure`](/docs/cli/configure) | Configure your project's GT settings. |
 
 
 ---
-title: Init
-description: Configures your project's GT settings.
+title: Setup Wizard
+description: Run the GT setup wizard
 ---
 
 ## Usage
 Source: https://generaltranslation.com/en/docs/cli/init
 
-Use this command to initialize your project's GT settings. This command is optional, and only serves to create a `gt.config.json` file in the root of your project.
-
 ```bash
 npx gtx-cli init
 ```
 
-## Overview
+Use this command to run the GT setup wizard.
+The wizard will:
+
+1. Create a `gt.config.json` file in the root of your project.
+2. Install the necessary dependencies for your project.
+3. Help you wrap your JSX content with `<T>` tags (in a React-based project).
+4. Generate an API key and project ID for your project.
+
+
+## `gt.config.json`
 
 The `init` command helps you configure your project's GT settings.
 
@@ -128,6 +190,41 @@ The file will contain the following settings:
 
 For more specific information about the `gt.config.json` file, please see the [config docs](/docs/cli/reference/config).
 
+This part of the wizard can also be ran independently via `npx gtx-cli configure`.
+
+## Dependencies
+
+The `init` command will install the following dependencies for your project:
+
+- `gt-react` or `gt-next` (if your project is React-based)
+- `gtx-cli` as a dev dependency (if not already installed)
+
+## React-based projects
+
+If your project is React-based, the wizard will help setup your project to use `gt-react` or `gt-next`.
+
+If you are already using a different i18n library, you may need to manually setup your project.
+
+See the [React docs](/docs/react/tutorials/quickstart) or the [Next.js docs](/docs/next/tutorials/quickstart) for more information.
+
+Since the wizard is currently experimental, it is possible that it may not work for all React-based projects.
+In these cases, you may need to manually setup your project.
+
+If you encounter any issues, please let us know on [GitHub](https://github.com/generaltranslation/gt/issues).
+
+This part of the wizard can also be ran independently via `npx gtx-cli setup`.
+
+## Credentials
+
+The wizard will help you generate an API key and project ID for your project (if they are not already set up).
+
+Please note that the API key and project ID are not required to use `gt-react` or `gt-next`.
+
+The wizard will add the API key and project ID to your `.env.local` file.
+If this file does not exist, the wizard will create it and add it to your `.gitignore` file.
+
+This part of the wizard can also be ran independently via `npx gtx-cli auth`.
+
 
 ---
 title: Configuration
@@ -139,7 +236,7 @@ Source: https://generaltranslation.com/en/docs/cli/reference/config
 
 The `gt.config.json` file is used to configure your project's GT settings. It should be placed in the root of your project.
 
-The CLI command `npx gtx-cli init` will create a `gt.config.json` file for you in your project.
+The CLI setup wizard [`npx gtx-cli init`](/docs/cli/init) will create a `gt.config.json` file for you in your project.
 
 ## Configuration
 
@@ -178,46 +275,6 @@ Here is an skeleton of the `gt.config.json` file:
 
 ---
 
-## Example Configuration
-
-Let's break down an example `gt.config.json` file:
-
-```json title="gt.config.json"
-{
-  "defaultLocale": "en",
-  "locales": ["fr", "es"],
-  "files": {
-    "gt": {
-      "output": "public/i18n/[locale].json"
-    },
-    "mdx": {
-      "include": ["content/docs/[locale]/**/*.mdx"],
-      "transform": "*.[locale].mdx"
-    },
-    "json": {
-      "include": ["resources/[locale]/**/*.json"],
-      "exclude": ["resources/[locale]/exclude/**/*.json"]
-    }
-  }
-}
-```
-
-In this example, we are translating the following files with a single call to [`gtx-cli translate`](/docs/cli/translate):
-
-- All MDX files in the `content/docs/en` directory.
-- All JSON files in the `resources/en` directory (excluding any files in the `resources/en/exclude` directory).
-- All in-line `<T>` components in your React or Next.js project.
-- Your `dictionary.[json|js|ts]` file.
-
-GT: Translations will be saved to `public/i18n/es.json` and `public/i18n/fr.json`. These files can be loaded using [`loadTranslations()`](/docs/react/api/config/load-translations).
-
-MDX: Translations will be saved to the `content/docs/fr` and `content/docs/es` directories.
-The file extensions will be changed to `.fr.mdx` and `.es.mdx` respectively (from `.mdx`).
-
-JSON: Translations will be saved to the `resources/fr` and `resources/es` directories.
-
----
-
 ## Supported File Types
 
 `files` should contain a key for each file type that you want to translate.
@@ -242,10 +299,10 @@ Each file type should correspond to an object that contains one or more of the f
 
 If used, the value of the `include` key should be an array of glob patterns that match the files you want to translate.
 
-You should use the `[locale]` placeholder in your glob patterns to ensure that the correct locale is used.
+You must use the `[locale]` placeholder in your glob patterns to ensure that source files are found correctly, and translated files are saved to the correct location.
 The CLI tool will replace the `[locale]` placeholder with the `defaultLocale` value when searching for translatable files.
 
-The CLI tool will save translated files to the corresponding path, with the `[locale]` placeholder replaced with the locale code.
+The CLI tool will save translated files to the corresponding path, with the `[locale]` placeholder replaced with the target locale code.
 
 ```json
 {
@@ -308,7 +365,7 @@ Currently, only one file for each locale can be generated.
 
 ---
 
-## File Type: `gt`
+## File Type: `gt` [#gt]
 
 **Supported Keys**
 
@@ -334,7 +391,7 @@ By default, the CLI tool will not publish your translations to the GT CDN with t
 
 ---
 
-## File Type: `json`
+## File Type: `json` [#json]
 
 **Supported Keys**
 
@@ -365,7 +422,7 @@ It will ignore any files in the subdirectory `json_files/en/exclude/`.
 
 ---
 
-## File Type: `mdx`
+## File Type: `mdx` [#mdx]
 
 **Supported Keys**
 
@@ -394,7 +451,7 @@ The `transform` key causes the extension of the translated files to be changed t
 
 ---
 
-## File Type: `md`
+## File Type: `md` [#md]
 
 **Supported Keys**
 
@@ -426,7 +483,7 @@ All files in the `content/docs/en/exclude` directory will be ignored.
 
 ---
 
-## File Type: `js`
+## File Type: `js` [#js]
 
 **Supported Keys**
 
@@ -454,7 +511,7 @@ The `transform` key causes the extension of the translated files to be changed t
 
 ---
 
-## File Type: `ts`
+## File Type: `ts` [#ts]
 
 **Supported Keys**
 
@@ -479,6 +536,46 @@ The `transform` key causes the extension of the translated files to be changed t
 This configuration will tell the CLI tool to search for all TypeScript files under the `scripts/en` directory and save the translated files to the `scripts/fr` and `scripts/es` directories.
 
 The `transform` key causes the extension of the translated files to be changed to `.fr.ts` and `.es.ts` respectively (from `.ts`).
+
+---
+
+## Example Configuration
+
+Let's break down an example `gt.config.json` file:
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "es"],
+  "files": {
+    "gt": {
+      "output": "public/i18n/[locale].json"
+    },
+    "mdx": {
+      "include": ["content/docs/[locale]/**/*.mdx"],
+      "transform": "*.[locale].mdx"
+    },
+    "json": {
+      "include": ["resources/[locale]/**/*.json"],
+      "exclude": ["resources/[locale]/exclude/**/*.json"]
+    }
+  }
+}
+```
+
+In this example, we are translating the following files with a single call to [`gtx-cli translate`](/docs/cli/translate):
+
+- All MDX files in the `content/docs/en` directory.
+- All JSON files in the `resources/en` directory (excluding any files in the `resources/en/exclude` directory).
+- All in-line `<T>` components in your React or Next.js project.
+- Your `dictionary.[json|js|ts]` file.
+
+GT: Translations will be saved to `public/i18n/es.json` and `public/i18n/fr.json`. These files can be loaded using [`loadTranslations()`](/docs/react/api/config/load-translations).
+
+MDX: Translations will be saved to the `content/docs/fr` and `content/docs/es` directories.
+The file extensions will be changed to `.fr.mdx` and `.es.mdx` respectively (from `.mdx`).
+
+JSON: Translations will be saved to the `resources/fr` and `resources/es` directories.
 
 ---
 
@@ -556,11 +653,16 @@ This guide assumes you have already setup your codebase to use `gt-next` or `gt-
   </Accordion>
 </Accordions>
 
-1. First, you will need to initialize the CLI tool in your project.
+1. First, you will need to configure your project's GT settings.
 
 ```bash
-npx gtx-cli init
+npx gtx-cli configure
 ```
+<Callout type="info">
+  This command will automatically generate an API key and project ID for your project via the dashboard.
+
+  However, if you would like to manually set the API key and project ID, follow steps 2 and 3 below.
+</Callout>
 
 2. Next, you will need to create a project in the [General Translation dashboard](https://generaltranslation.com/dashboard).
 
@@ -595,12 +697,18 @@ The CLI tool allows you to translate language files for 3rd party i18n libraries
 Most i18n libraries rely on JSON files to store translation data.
 The CLI tool can be used to automatically translate these JSON files into your desired languages.
 
-1. First, you will need to initialize the CLI tool in your project.
+1. First, you will need to configure your project's GT settings.
 
 ```bash
-npx gtx-cli init
+npx gtx-cli configure
 ```
 This command will create a `gt.config.json` file in the root of your project, containing some basic configuration settings, such as your project's default locale and supported locales.
+
+<Callout type="info">
+  This command will automatically generate an API key and project ID for your project via the dashboard.
+
+  However, if you would like to manually set the API key and project ID, follow steps 2 and 3 below.
+</Callout>
 
 2. Next, you will need to create a project in the [General Translation dashboard](https://generaltranslation.com/dashboard).
 
@@ -620,11 +728,12 @@ npx gtx-cli translate
 ```
 
 <Callout type="info">
-  By default, the CLI tool will look in the `translationsDir` directory specified in your `gt.config.json` file for language files to translate.
+  By default, the CLI tool will look for files to translate according to the `files` property in your `gt.config.json` file.
   It will use the `defaultLocale` specified in your `gt.config.json` file as the source language.
 
-  It will also publish the translations to the General Translation CDN, so they are ready to be used in your project.
-  If you would like to disable this behavior, add the `--no-publish` flag to the command.
+  Translated files will be saved to the corresponding output location specified in your `gt.config.json` file.
+
+  See the [configuration](/docs/cli/reference/config) docs for more information on the `files` property.
 </Callout>
 
 
@@ -658,13 +767,13 @@ This means that in order to track changes to text, GT libraries store the hashes
 
 This internal data structure (containing hashes) is hard to work with, and therefore the CLI tool provides a handy command to generate language files for your project.
 
-1. First, you will need to initialize the CLI tool in your project.
+1. First, you will need to configure your project's GT settings.
 
 ```bash
-npx gtx-cli init
+npx gtx-cli configure
 ```
 
-When asked "Where are your language files stored?", select the "Local" option.
+When asked if you want to save translations on the GT CDN, select the "No" option.
 
 2. Run:
 
@@ -953,7 +1062,7 @@ The scan command will automatically format the changes it makes to your codebase
 To disable this behavior, you can use the `--disable-formatting` flag.
 
 ---
-title: Setup
+title: React Setup
 description: Integrates gt-next or gt-react with your project.
 ---
 ## Usage
@@ -969,7 +1078,9 @@ The `gtx-cli setup` command automatically sets up your project for translation w
 It does this by parsing your project's file tree and using babel to wrap the `<T>` component around static content.
 Any dynamic content will be automatically wrapped with `<Var>` components.
 
-This command should be run **once**, when you are first internationalizing your project.
+This command is run as part of the `init` setup wizard. Additionally, this command can be ran independently via `npx gtx-cli setup`.
+
+This command should be ran **once**, when you are first internationalizing your project.
 On subsequent changes, you should use the `scan` command to update your project.
 
 See the [scan](/docs/cli/scan) command for more details.
@@ -1082,10 +1193,10 @@ This command is the primary way of using the General Translation API and related
 
 ## Usage
 
-There are four ways to use the `translate` command. Methods 2, 3, and 4 require a production API key:
+There are four ways to use the `translate` command. Methods 1 and 2 require a production API key:
 
 <Callout type="info">
-    We recommend running [`npx gtx-cli init`](/docs/cli/init) to first configure your project before running the `translate` command.
+    We recommend running the setup wizard: [`npx gtx-cli configure`](/docs/cli/configure) to help configure your project before running the `translate` command.
     Depending on how your project is configured, the behavior of the translate command may change.
 </Callout>
 
@@ -1094,43 +1205,39 @@ There are four ways to use the `translate` command. Methods 2, 3, and 4 require 
 
 If you are using other i18n libraries such as `next-intl`, `react-i18next`, or `next-i18next`, you can use this method to translate your project's JSON files.
 
-Translations will be automatically saved to your codebase, as well as optionally published to the GT CDN.
+Translations will be automatically saved to your codebase.
 
-When running [`npx gtx-cli init`](/docs/cli/init), specify that you are using a 3rd party i18n library before running the `translate` command.
-
-See the [CLI config docs](/docs/cli/reference/config) for more details.
-
-```bash
-npx gtx-cli translate
-```
-<Callout type="info">
-    The CLI tool will automatically detect your i18n library by reading your `package.json` file, and will translate your content while respecting your i18n library's syntax.
-</Callout>
-
-### Method 2: Translate your project and save the translations on the GT CDN.
-
-If you are using `gt-next` or `gt-react`, you can use this method to translate your project.
-
-When running [`npx gtx-cli init`](/docs/cli/init), if you select the option to save translations remotely, the `translate` command will save the translations on the GT CDN.
-
-```bash
-npx gtx-cli translate
-```
-
-### Method 3: Translate your project and save the translations to your codebase.
-
-When running [`npx gtx-cli init`](/docs/cli/init), if you select the option to save translations locally, the `translate` command will save the translations to your codebase.
-
-`gt-next` and `gt-react` can then serve these local translations to your users, rather than using General Translation's public CDN.
+To use the CLI tool to translate your project's JSON files, modify your `gt.config.json` file to include `json` in the `files` property.
+See the [CLI config docs](/docs/cli/reference/config#json) for more details.
 
 ```bash
 npx gtx-cli translate
 ```
 <Callout type="info">
-    This method is useful if you are using a custom content management system, or do not want to use the GT CDN.
+    The CLI tool will automatically detect your i18n library by reading your `package.json` file, and will translate your JSONs while respecting your i18n library's syntax.
 </Callout>
 
-### Method 4: Validate your project's `<T>` components and dictionary file. [#validate]
+### Method 2: Translate your GT project.
+
+If your project is using `gt-next` or `gt-react`, you can use this method to generate translations for your project.
+
+```bash
+npx gtx-cli translate
+```
+
+By default, translations are saved to the GT CDN. 
+
+However, if you would like to save the translations to your codebase, add the `gt` property to the `files` object in the `gt.config.json` file.
+
+<Callout type="info">
+  `gt-next` and `gt-react` support serving translations locally, as well as using General Translation's public CDN.
+  We recommend using the CDN for reduced latency, better performance, and smaller bundle sizes.
+</Callout>
+
+See the [CLI config docs](/docs/cli/reference/config#gt) for more details.
+
+
+### Method 3: Validate your project's `<T>` components and dictionary file. [#validate]
 
 This method is useful for validating your project's `<T>` components and dictionary file.
 
@@ -1213,10 +1320,7 @@ We will follow these 4 steps:
     Add your environment variables
   </Step>
   <Step>
-    Install [`gtx-cli`](/docs/cli)
-  </Step>
-  <Step>
-    Initialize your project with the [`gtx-cli init`](/docs/cli/init) command
+    Configure your project with the [`npx gtx-cli configure`](/docs/cli/configure) command
   </Step>
   <Step>
     Run [`gtx-cli translate`](/docs/cli/translate#translate-json)
@@ -1241,43 +1345,15 @@ GT_API_KEY=<your-api-key>
 GT_PROJECT_ID=<your-project-id>
 ```
 
-## Step 2: Install `gtx-cli`
+## Step 2: Configure your project with the `npx gtx-cli configure` command
 
-Install the `gtx-cli` tool in your project.
-
-<Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
-  <Tab value="npm">
-  ```bash 
-  npm i --save-dev gtx-cli
-  ``` 
-  </Tab>
-  <Tab value="yarn">
-  ```bash 
-  yarn add --dev gtx-cli
-  ```
-  </Tab>
-
-  <Tab value="bun">
-  ```bash 
-  bun add --dev gtx-cli
-  ```
-  </Tab>
-  <Tab value="pnpm">
-  ```bash 
-  pnpm add --save-dev gtx-cli
-  ```
-  </Tab>
-</Tabs>
-
-## Step 3: Initialize your project with the `gtx-cli init` command
-
-Run the `gtx-cli init` command to configure your project.
+Run the `gtx-cli configure` command to configure your project.
 
 ```bash
-npx gtx-cli init
+npx gtx-cli configure
 ```
 
-## Step 4: Add the `gtx-cli translate` command to your build process
+## Step 3: Add the `gtx-cli translate` command to your build process
 
 Add the `gtx-cli translate` command to your build or CI process before the build command to automatically add translations to your project.
 
@@ -1821,6 +1897,10 @@ title: Automatic Translation
 description: How to automatically translate your project using the General Translation CLI tool
 ---
 
+```bash
+npx gtx-cli@latest init
+```
+
 ## Overview
 Source: https://generaltranslation.com/en/docs/cli/tutorials/quickstart
 
@@ -1830,7 +1910,7 @@ It provides first-class support for [`gt-next`](/docs/react) and [`gt-react`](/d
 
 The CLI tool can also be used to generate translations for third-party i18n libraries like [next-intl](https://next-intl.dev/) or [i18next](https://react.i18next.com/).
 
-Lastly, the CLI tool can be used to translate JSON, Markdown, and MDX files.
+Lastly, the CLI tool can be used to translate JSON, Markdown, MDX, JS, and TS files.
 
 <Callout type="warn">
   A Production API key is required for the `translate` command. Get one for free at [generaltranslation.com](https://generaltranslation.com)!
@@ -1853,11 +1933,13 @@ Depending on what i18n library your project is using, please follow one of the f
 
 | Command | Description |
 | --- | --- |
-| [`npx gtx-cli init`](/docs/cli/init) | (Optional) Configures your project's GT settings. |
-| [`npx gtx-cli setup`](/docs/cli/setup) | Step by step setup guide that prepares your project for translation. |
+| [`npx gtx-cli init`](/docs/cli/init) | Run the GT setup wizard. |
+| [`npx gtx-cli setup`](/docs/cli/setup) | Step by step setup guide that helps internationalize your React app. |
 | [`npx gtx-cli scan`](/docs/cli/scan) | Scans your project for translatable content. Can be used repeatedly to update your project. |
 | [`npx gtx-cli translate`](/docs/cli/translate) | Translates your project via the GT API. |
 | [`npx gtx-cli generate`](/docs/cli/generate) | Generates a new translation data JSON file. Should be used when using the library standalone. |
+| [`npx gtx-cli auth`](/docs/cli/auth) | Generate an API key and project ID for your project. |
+| [`npx gtx-cli configure`](/docs/cli/configure) | Configure your project's GT settings. |
 
 
 ---
@@ -2004,6 +2086,11 @@ If you would like to use your own i18n library, but still want to use General Tr
 
 If you would like to use General Translation to translate your JSON, Markdown, or MDX files, please see our [CLI tool](/docs/cli/tutorials/quickstart) docs.
 
+```bash
+npx gtx-cli@latest init
+```
+Run our setup wizard to get started!
+
 ## Features
 
 ### ⚛️ Translate entire React components in-line
@@ -2056,7 +2143,7 @@ See our [Github repo](https://github.com/generaltranslation/gt) for the source c
 
 
 <Callout>
-  These docs are under construction. Please create an issue on our [GitHub repository](https://github.com/General-Translation/gt-docs/issues)
+  These docs are under construction. Please create an issue on our [GitHub repository](https://github.com/generaltranslation/gt-docs/issues)
   if what you're looking for isn't here.
 </Callout>
 ---
@@ -5926,7 +6013,7 @@ Source: https://generaltranslation.com/en/docs/next/api/utilities/useSetLocale
 
 ---
 title: Next.js Quickstart
-description: Internationalize your Next.js App in 5 minutes with gt-next
+description: Easily internationalize your Next.js App with gt-next
 ---
 
 ## Overview
@@ -5936,24 +6023,19 @@ This guide describes how to internationalize an existing [Next.js](https://nextj
 
 For a project using the Pages Router, follow the [React docs](/docs/react/tutorials/quickstart).
 
-We will cover 4 simple steps:
+We will cover 3 simple steps:
 
 <Steps>
   <Step>
-    Installing `gt-next` and `gtx-cli`
+    Running the setup wizard
   </Step>
   <Step>
-    Select languages
+    Adding environment variables
   </Step>
   <Step>
-    Add the `<T>` component
-  </Step>
-  <Step>
-    Add your environment variables
+    Cleaning up strings
   </Step>
 </Steps>
-
-This entire process should take under **5 minutes**.
 
 <Callout>
   Are you using the Next.js pages router? Follow the [React Quickstart](/docs/react/tutorials/quickstart) guide instead.
@@ -5962,6 +6044,205 @@ This entire process should take under **5 minutes**.
 ---
 
 ## Setup
+
+### 1. Running the setup wizard
+
+The setup wizard will walk you through the process of internationalizing your project.
+
+```bash
+npx gtx-cli@latest init
+```
+
+To manually setup your project, follow the [manual setup guide](#manual-setup).
+
+The setup wizard will:
+
+1. Install the required libraries.
+2. Configure your project's supported locales.
+3. Wrap your project's JSX components with the `<T>` component.
+4. Add `withGTConfig()` to your `next.config.js` file.
+5. Generate a production API key and project ID for your project.
+
+See the [setup wizard docs](/docs/cli/init) for more information.
+
+### 2. Adding environment variables
+
+The setup wizard will create a `.env.local` file for you in the root of your project containing your production API key and project ID.
+
+However, in order to use `gt-next` in development mode, you will need to add a development API key instead of a production one.
+
+
+<Steps>
+  <Step>
+    Navigate to the [Dashboard](https://generaltranslation.com/dashboard).
+    Go to the **Developer Keys** page in the sidebar.
+  </Step>
+
+  <Step>
+    Click **Create Dev API Key**.
+  </Step>
+
+  <Step>
+    Add the Project ID and Development API key to your environment.
+    ```bash title=".env.local" copy
+    GT_API_KEY="YOUR_GT_API_KEY"
+    GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+    ```
+  </Step>
+</Steps>
+<Callout type="warn">
+  **Protect Your API Keys!**
+
+  Development keys should **only** ever be used in development.
+  Likewise, production keys should **only** ever be used in production.
+  *Never commit your API keys to a public repository!*
+</Callout>
+
+### 3. Cleaning up strings
+
+The setup wizard will wrap all of your project's JSX components with the `<T>` component.
+However, you may notice that strings are unaffected.
+
+For example, if you have a string constant like this:
+
+```jsx title="Example.js" copy
+export default function Example() {
+  const greeting = "Hello, world!";
+  return <p>{greeting}</p>;
+}
+```
+
+The setup wizard will not touch this string.
+
+To fix this, you can use the [`useGT()`](/docs/next/api/strings/useGT) hook and [`getGT()`](/docs/next/api/strings/getGT) function to translate the string.
+
+```jsx title="Example.js" copy
+import { useGT } from "gt-next/client";
+export default function Example() {
+  const t = useGT();
+  return <p>{t("Hello, world!")}</p>;
+}
+```
+
+
+
+---
+
+## Let's Try It Out!
+
+Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
+
+### See Your App in a Different Language [#see-your-app-in-a-different-language]
+
+<Steps>
+  <Step>
+    Add the [`<LocaleSelector>`](/docs/next/api/components/localeSelector) component to your app.
+    This will allow you to select a different language for your app.
+    <Callout>
+      **Tip:**
+      You can also change your language in your browser settings.
+    </Callout>
+  </Step>
+  <Step>
+    Start your Next.js app in development mode.
+    <Tabs items={["npm", "yarn", "bun", "pnpm"]}>
+      <Tab value="npm">
+      ```bash
+      npm run dev 
+      ```
+      </Tab>
+      <Tab value="yarn">
+      ```bash 
+      yarn run dev 
+      ```
+      </Tab>
+      <Tab value="bun">
+      ```bash
+      bun run dev 
+      ```
+      </Tab>
+      <Tab value="pnpm">
+      ```bash
+      pnpm run dev 
+      ```
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step>
+    Open up your app in your preferred browser (usually at
+    [http://localhost:3000](http://localhost:3000)).
+  </Step>
+</Steps>
+
+### Troubleshooting
+
+<Accordions>
+  <Accordion title="My app's language is not changing, even though I've changed my browser's language.">
+    **Browser Cookies**
+
+    If you are deciding to test different languages by changing your browser's language, this issue may occur.
+
+    Check your browser's cookies for your app.
+    General translation uses cookies to store the user's language preference.
+    The cookie is called `generaltranslation.locale`, and all you need to do is delete it.
+    Then, just double check you are using the desired perferred language and then
+    refresh the page.
+
+    How to check cookies:
+    * [Chrome](https://support.google.com/chrome/answer/95647)
+    * [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
+    * [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
+    * [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
+  </Accordion>
+  <Accordion title="Why do languages take a long time to load in dev?">
+    **On-Demand Translation**
+
+    You may notice when loading languages in development, translations will take a few seconds to be displayed.
+    This happens because your app is being translated in real time.
+    We refer to this process as an "on-demand translation".
+    
+    This **only happens in dev** so you can easily prototype your website in different languages.
+    All translations are preloaded in production, so there will be no delay.
+    Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
+  </Accordion>
+  <Accordion title="Why are some things translating and others not?">
+    **JSX Translation**
+
+    Right now, the wizard automatically adds `<T>` components around text content.
+    We are currently working on a solution that automatically setup string translations.
+    Until then, if you are rendering a string, please follow [this guide](/docs/next/reference/translating-strings) for translating strings.
+  </Accordion>
+  <Accordion title="Why are some translations inaccurate?">
+    The most likely cause of an inaccurate translation is ambiguous wording.
+    For example, "apple" can be a fruit or a technology company.
+
+    To fix this, you can provide more context to the translation with the `context` prop.
+    The [`<T>`](/docs/next/api/components/t), [`useGT()`](/docs/next/api/strings/useGT), and [`getGT()`](/docs/next/api/strings/getGT) functions all support a `context` prop.
+    For example:
+    ```jsx
+    <T context="the technology company">Apple</T>
+    ```    
+  </Accordion>
+</Accordions>
+
+---
+
+## Shipping to Production
+
+Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
+
+## Next steps
+{/* - Learn about how to use dictionaries with [`useGT()`](/docs/next/reference/dictionary) */}
+- See our [Next.js API reference](/docs/next/api/components/t) for detailed information about the `<T>` component and other available components.
+- Improve your content with [`<Num>`](/docs/next/api/components/num), [`<Currency>`](/docs/next/api/components/currency),
+ [`<Branch>`](/docs/next/api/components/branch), and [`<Plural>`](/docs/next/api/components/plural) components.
+- Learn how to improve SEO with [i18n routing](/docs/next/reference/i18n-routing) (adding routes for each locale, e.g. `example.com/en`, `example.com/fr`) and [static site generation](/docs/next/reference/ssg).
+- Mirror your app to support [right-to-left languages](/docs/next/reference/rtl) such as Arabic and Hebrew.
+
+
+## Manual Setup [#manual-setup]
+
+If you prefer to do the setup manually, follow the steps below.
 
 ### 1. Install libraries
 
@@ -6048,18 +6329,7 @@ export default function Example() {
 }
 ```
 
-<Callout type="info">
-  **Tip:**
-  To save time, run [the setup command](/docs/cli/setup).
-  This will scan your codebase for translatable JSX and insert the [`<T>`](/docs/next/api/components/t) tags for you.
-
-  ```bash title="shell" copy
-  npx gtx-cli setup
-  ```
-</Callout>
-
 For strings, you can use [`useGT()`](/docs/next/api/strings/useGT) or [`getGT()`](/docs/next/api/strings/getGT) for translation.
-For more information, check out [this guide](/docs/next/reference/translating-strings).
 
 ```jsx title="Example.js" copy
 import { useGT } from "gt-next/client";
@@ -6099,6 +6369,7 @@ Add your API key and Project ID to your local environment.
     ```
   </Step>
 </Steps>
+
 <Callout type="warn">
   **Protect Your API Keys!**
 
@@ -6106,109 +6377,6 @@ Add your API key and Project ID to your local environment.
   Likewise, production keys should **only** ever be used in production.
   *Never commit your API keys to a public repository!*
 </Callout>
-
----
-
-## Let's Try It Out!
-
-Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
-
-### See Your App in a Different Language [#see-your-app-in-a-different-language]
-
-<Steps>
-  <Step>
-    Add the [`<LocaleSelector>`](/docs/next/api/components/localeSelector) component to your app.
-    This will allow you to select a different language for your app.
-    <Callout>
-      **Tip:**
-      You can also change your language in your browser settings.
-    </Callout>
-  </Step>
-  <Step>
-    Start your Next.js app in development mode.
-    <Tabs items={["npm", "yarn", "bun", "pnpm"]}>
-      <Tab value="npm">
-      ```bash
-      npm run dev 
-      ```
-      </Tab>
-      <Tab value="yarn">
-      ```bash 
-      yarn run dev 
-      ```
-      </Tab>
-      <Tab value="bun">
-      ```bash
-      bun run dev 
-      ```
-      </Tab>
-      <Tab value="pnpm">
-      ```bash
-      pnpm run dev 
-      ```
-      </Tab>
-    </Tabs>
-  </Step>
-  <Step>
-    Open up your app in your preferred browser (usually at
-    [http://localhost:3000](http://localhost:3000)).
-  </Step>
-</Steps>
-
-### Troubleshooting
-
-<Accordions>
-  <Accordion title="My app's language is not changing, even though I've changed my browser's language.">
-    **Browser Cookies**
-
-    If you are deciding to test different languages by changing your browser's language, this issue may occur.
-
-    Check your browser's cookies for your app.
-    General translation uses cookies to store the user's language preference.
-    The cookie is called `generaltranslation.locale`, and all you need to do is delete it.
-    Then, just double check you are using the desired perferred language and then
-    refresh the page.
-
-    How to check cookies:
-    * [Chrome](https://support.google.com/chrome/answer/95647)
-    * [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
-    * [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
-    * [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
-  </Accordion>
-  <Accordion title="Why do languages take a long time to load in dev?">
-    **On-Demand Translation**
-
-    You may notice when loading languages in development, translations will take a few seconds to be displayed.
-    This happens because your app is being translated in real time.
-    We refer to this process as an "on-demand translation".
-    
-    This **only happens in dev** so you can easily prototype your website in different languages.
-    All translations are preloaded in production, so there will be no delay.
-    Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
-  </Accordion>
-  <Accordion title="Why are some things translating and others not?">
-    **JSX Translation**
-
-    Right now, the setup tool automatically adds `<T>` components around text content.
-    We are currently working on a solution that automatically setup string translations.
-    Until then, if you are rendering a string, please follow [this guide](/docs/next/reference/translating-strings) for translating strings.
-  </Accordion>
-</Accordions>
-
----
-
-## Shipping to Production
-
-Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
-
-## Next steps
-{/* - Learn about how to use dictionaries with [`useGT()`](/docs/next/reference/dictionary) */}
-- See our [Next.js API reference](/docs/next/api/components/t) for detailed information about the `<T>` component and other available components.
-- Improve your content with [`<Num>`](/docs/next/api/components/num), [`<Currency>`](/docs/next/api/components/currency),
- [`<Branch>`](/docs/next/api/components/branch), and [`<Plural>`](/docs/next/api/components/plural) components.
-- Learn how to improve SEO with [i18n routing](/docs/next/reference/i18n-routing) (adding routes for each locale, e.g. `example.com/en`, `example.com/fr`)
-- Mirror your app to support [right-to-left languages](/docs/next/reference/rtl) such as Arabic and Hebrew.
-- Create a list of approved languages for your app with the [Next.js plugin](/docs/next/reference/locale-management#include-locales).
 
 
 ---
@@ -6688,6 +6856,102 @@ Source: https://generaltranslation.com/en/docs/next/reference/gt-config
 
 
 ---
+title: gt.config.json
+description: The `gt.config.json` file
+---
+
+## Overview
+Source: https://generaltranslation.com/en/docs/next/reference/gtconfigjson
+
+The `gt.config.json` file is in charge of storing your project's configuration.
+It holds important information like your project's `projectId`, your supported locales, and more.
+It also holds important internal information such as your project's `versionId`.
+
+
+This file is read by (1) your [`withGTConfig()`](/docs/next/api/config/withgtconfig) component and (2) the [`gtx-cli translate`](/docs/cli/translate) command.
+Because of this, we recommend storing your configuration in your `gt.config.json` file instead of passing it as a prop to your [`withGTConfig()`](/docs/next/api/config/withgtconfig) component.
+
+Generally, anything that begins with an underscore (e.g. `_versionId`) is an internal property and should not be modified.
+Everything else is fair game.
+
+---
+
+## Fields
+
+| Field | Type | Description |
+|-------|-------------|
+| `projectId` | `string` | Unique identifier for your project in the GT system |
+| `locales` | `string[]` | Array of supported locale codes for your project |
+| `defaultLocale` | `string` | The primary locale code used as fallback when translations are missing |
+| `cacheUrl` | `string` | URL endpoint for caching translation data |
+| `runtimeUrl` | `string` | URL endpoint for runtime translation services |
+| `stageTranslations` | `boolean` | Configuration for staging/preview translation features |
+| `files` | `object` | Path to local translation files for development and testing |
+| `_versionId` | `string` | Internal property used to track project version (do not modify) |
+
+
+### `cacheUrl` and `runtimeUrl`
+
+If you are storing your translations in the cloud, the `cacheUrl` is the base URL for the cache.
+The `runtimeUrl` is the base URL for the runtime and only applies to development translations.
+
+### `stageTranslations`
+
+The `stageTranslations` is a flag used by the `gtx-cli` tool to mark your translations as requiring review.
+This means that they must be manually approved before they can be deployed to production via the [`gtx-cli translate`](/docs/cli/translate) command.
+
+### `files`
+
+The `files` field specifies a path to locally stored translations (in contrast to storing them in the cloud).
+Specifically, the `output` field specifies where the translations will be written to.
+
+```json
+{
+  "files": {
+    "gt": {
+      "output": "public/_gt/[locale].json"
+    }
+  },
+}
+```
+
+
+
+{/* 
+### `_versionId`
+
+Points to hit:
+- internal
+- you can specify your own version names */}
+
+
+---
+
+## Examples
+
+### Specifying your locales
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en", // Primary locale is English
+  "locales": ["fr", "es"] // Secondary locales are French and Spanish
+}
+```
+
+
+{/* ### Specifying your own versionId */}
+
+---
+
+## Notes
+ * The `gt.config.json` file is used to specify your project's configuration.
+ * It is read by both the [`withGTConfig()`](/docs/next/api/config/withgtconfig) component and the [`gtx-cli translate`](/docs/cli/translate) command.
+ 
+
+## Next steps
+ * Learn how to have your [translations added to your project's bundle](/docs/next/reference/local-tx).
+
+---
 title: i18n Configuration
 description: Configuring i18n behavior in your Next.js application
 ---
@@ -7123,9 +7387,9 @@ Make sure that you have followed the [Quick Start Guide](/docs/next/tutorials/qu
   </Step>
 
   <Step>
-    Run the following command, and when asked "Where are your language files stored?", select the "Local" option.
+    Run the following command, and when asked if you want to save translations on the GT CDN, select the "No" option.
     ```bash
-    npx gtx-cli init
+    npx gtx-cli configure
     ```
     Then, run the translate command.
     ```bash
@@ -7204,7 +7468,7 @@ For a more detailed guide, see the [custom translations reference](/docs/next/re
 ## Notes
  * Local translations are an alternative to fetching translations from a CDN.
  * You can customize [`loadTranslations()`](/docs/next/api/config/load-translations) to also load translations from other sources, such as your database or your own CDN.
- * The `gtx-cli init` command configures your `gt.config.json` file to use local translations. See [gt.config.json](/docs/cli/reference/config) for more information.
+ * The `gtx-cli configure` command configures your `gt.config.json` file to use local translations. See [gt.config.json](/docs/cli/reference/config) for more information.
 
 ## Next steps
  * See [`loadTranslations()`](/docs/next/api/config/load-translations) for more information on writing a custom translation loader.
@@ -9046,7 +9310,7 @@ We will do this in 3 steps:
     Add your production API keys.
   </Step>
   <Step>
-    Run the init command to configure your project.
+    Run the `gtx-cli configure` command to configure your project.
   </Step>
   <Step>
     Add the translate command to your build script.
@@ -9077,29 +9341,28 @@ GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
     *Never commit your API keys to a public repository!*
 </Callout>
 
-## Step 2: Run the init command 🔧
+## Step 2: Run the `gtx-cli configure` command 🔧
 
-Run the init command to configure your project.
+Run the `gtx-cli configure` command to configure your project.
 
 ```bash copy
-npx gtx-cli init
+npx gtx-cli configure
 ```
 
 <Callout>
-  If you do not want your translations to be hosted on the GT CDN, select "Local" when asked where your
-  language files are stored. You will also need to configure the [`loadTranslations()`](/docs/next/api/config/load-translations) function.
+  If you do not want your translations to be hosted on the GT CDN, select "No" when asked.
+  You will also need to configure the [`loadTranslations()`](/docs/next/api/config/load-translations) function.
 </Callout>
 
 
 ## Step 3: Add the translate command to your build script 🏗️
 
-The next step is to add the [translate command](/docs/cli/translate) to your build script,
-and specify the [locales](/docs/reference/supported-locales) that you would like to ship to production.
+The next step is to add the [translate command](/docs/cli/translate) to your build script.
 
 ```json title="package.json" copy
 {
   "scripts": {
-    "build": "npx gtx-cli translate && <YOUR_BUILD_COMMAND>"
+    "build": "npx gtx-cli translate && <...YOUR_BUILD_COMMAND...>"
   }
 }
 ```
@@ -9117,7 +9380,7 @@ That's it! You are now ready to deploy your Next.js with GT!
 
 ---
 title: Next.js Quickstart
-description: Internationalize your Next.js App in 5 minutes with gt-next
+description: Easily internationalize your Next.js App with gt-next
 ---
 
 ## Overview
@@ -9127,24 +9390,19 @@ This guide describes how to internationalize an existing [Next.js](https://nextj
 
 For a project using the Pages Router, follow the [React docs](/docs/react/tutorials/quickstart).
 
-We will cover 4 simple steps:
+We will cover 3 simple steps:
 
 <Steps>
   <Step>
-    Installing `gt-next` and `gtx-cli`
+    Running the setup wizard
   </Step>
   <Step>
-    Select languages
+    Adding environment variables
   </Step>
   <Step>
-    Add the `<T>` component
-  </Step>
-  <Step>
-    Add your environment variables
+    Cleaning up strings
   </Step>
 </Steps>
-
-This entire process should take under **5 minutes**.
 
 <Callout>
   Are you using the Next.js pages router? Follow the [React Quickstart](/docs/react/tutorials/quickstart) guide instead.
@@ -9153,6 +9411,205 @@ This entire process should take under **5 minutes**.
 ---
 
 ## Setup
+
+### 1. Running the setup wizard
+
+The setup wizard will walk you through the process of internationalizing your project.
+
+```bash
+npx gtx-cli@latest init
+```
+
+To manually setup your project, follow the [manual setup guide](#manual-setup).
+
+The setup wizard will:
+
+1. Install the required libraries.
+2. Configure your project's supported locales.
+3. Wrap your project's JSX components with the `<T>` component.
+4. Add `withGTConfig()` to your `next.config.js` file.
+5. Generate a production API key and project ID for your project.
+
+See the [setup wizard docs](/docs/cli/init) for more information.
+
+### 2. Adding environment variables
+
+The setup wizard will create a `.env.local` file for you in the root of your project containing your production API key and project ID.
+
+However, in order to use `gt-next` in development mode, you will need to add a development API key instead of a production one.
+
+
+<Steps>
+  <Step>
+    Navigate to the [Dashboard](https://generaltranslation.com/dashboard).
+    Go to the **Developer Keys** page in the sidebar.
+  </Step>
+
+  <Step>
+    Click **Create Dev API Key**.
+  </Step>
+
+  <Step>
+    Add the Project ID and Development API key to your environment.
+    ```bash title=".env.local" copy
+    GT_API_KEY="YOUR_GT_API_KEY"
+    GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+    ```
+  </Step>
+</Steps>
+<Callout type="warn">
+  **Protect Your API Keys!**
+
+  Development keys should **only** ever be used in development.
+  Likewise, production keys should **only** ever be used in production.
+  *Never commit your API keys to a public repository!*
+</Callout>
+
+### 3. Cleaning up strings
+
+The setup wizard will wrap all of your project's JSX components with the `<T>` component.
+However, you may notice that strings are unaffected.
+
+For example, if you have a string constant like this:
+
+```jsx title="Example.js" copy
+export default function Example() {
+  const greeting = "Hello, world!";
+  return <p>{greeting}</p>;
+}
+```
+
+The setup wizard will not touch this string.
+
+To fix this, you can use the [`useGT()`](/docs/next/api/strings/useGT) hook and [`getGT()`](/docs/next/api/strings/getGT) function to translate the string.
+
+```jsx title="Example.js" copy
+import { useGT } from "gt-next/client";
+export default function Example() {
+  const t = useGT();
+  return <p>{t("Hello, world!")}</p>;
+}
+```
+
+
+
+---
+
+## Let's Try It Out!
+
+Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
+
+### See Your App in a Different Language [#see-your-app-in-a-different-language]
+
+<Steps>
+  <Step>
+    Add the [`<LocaleSelector>`](/docs/next/api/components/localeSelector) component to your app.
+    This will allow you to select a different language for your app.
+    <Callout>
+      **Tip:**
+      You can also change your language in your browser settings.
+    </Callout>
+  </Step>
+  <Step>
+    Start your Next.js app in development mode.
+    <Tabs items={["npm", "yarn", "bun", "pnpm"]}>
+      <Tab value="npm">
+      ```bash
+      npm run dev 
+      ```
+      </Tab>
+      <Tab value="yarn">
+      ```bash 
+      yarn run dev 
+      ```
+      </Tab>
+      <Tab value="bun">
+      ```bash
+      bun run dev 
+      ```
+      </Tab>
+      <Tab value="pnpm">
+      ```bash
+      pnpm run dev 
+      ```
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step>
+    Open up your app in your preferred browser (usually at
+    [http://localhost:3000](http://localhost:3000)).
+  </Step>
+</Steps>
+
+### Troubleshooting
+
+<Accordions>
+  <Accordion title="My app's language is not changing, even though I've changed my browser's language.">
+    **Browser Cookies**
+
+    If you are deciding to test different languages by changing your browser's language, this issue may occur.
+
+    Check your browser's cookies for your app.
+    General translation uses cookies to store the user's language preference.
+    The cookie is called `generaltranslation.locale`, and all you need to do is delete it.
+    Then, just double check you are using the desired perferred language and then
+    refresh the page.
+
+    How to check cookies:
+    * [Chrome](https://support.google.com/chrome/answer/95647)
+    * [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
+    * [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
+    * [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
+  </Accordion>
+  <Accordion title="Why do languages take a long time to load in dev?">
+    **On-Demand Translation**
+
+    You may notice when loading languages in development, translations will take a few seconds to be displayed.
+    This happens because your app is being translated in real time.
+    We refer to this process as an "on-demand translation".
+    
+    This **only happens in dev** so you can easily prototype your website in different languages.
+    All translations are preloaded in production, so there will be no delay.
+    Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
+  </Accordion>
+  <Accordion title="Why are some things translating and others not?">
+    **JSX Translation**
+
+    Right now, the wizard automatically adds `<T>` components around text content.
+    We are currently working on a solution that automatically setup string translations.
+    Until then, if you are rendering a string, please follow [this guide](/docs/next/reference/translating-strings) for translating strings.
+  </Accordion>
+  <Accordion title="Why are some translations inaccurate?">
+    The most likely cause of an inaccurate translation is ambiguous wording.
+    For example, "apple" can be a fruit or a technology company.
+
+    To fix this, you can provide more context to the translation with the `context` prop.
+    The [`<T>`](/docs/next/api/components/t), [`useGT()`](/docs/next/api/strings/useGT), and [`getGT()`](/docs/next/api/strings/getGT) functions all support a `context` prop.
+    For example:
+    ```jsx
+    <T context="the technology company">Apple</T>
+    ```    
+  </Accordion>
+</Accordions>
+
+---
+
+## Shipping to Production
+
+Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
+
+## Next steps
+{/* - Learn about how to use dictionaries with [`useGT()`](/docs/next/reference/dictionary) */}
+- See our [Next.js API reference](/docs/next/api/components/t) for detailed information about the `<T>` component and other available components.
+- Improve your content with [`<Num>`](/docs/next/api/components/num), [`<Currency>`](/docs/next/api/components/currency),
+ [`<Branch>`](/docs/next/api/components/branch), and [`<Plural>`](/docs/next/api/components/plural) components.
+- Learn how to improve SEO with [i18n routing](/docs/next/reference/i18n-routing) (adding routes for each locale, e.g. `example.com/en`, `example.com/fr`) and [static site generation](/docs/next/reference/ssg).
+- Mirror your app to support [right-to-left languages](/docs/next/reference/rtl) such as Arabic and Hebrew.
+
+
+## Manual Setup [#manual-setup]
+
+If you prefer to do the setup manually, follow the steps below.
 
 ### 1. Install libraries
 
@@ -9239,18 +9696,7 @@ export default function Example() {
 }
 ```
 
-<Callout type="info">
-  **Tip:**
-  To save time, run [the setup command](/docs/cli/setup).
-  This will scan your codebase for translatable JSX and insert the [`<T>`](/docs/next/api/components/t) tags for you.
-
-  ```bash title="shell" copy
-  npx gtx-cli setup
-  ```
-</Callout>
-
 For strings, you can use [`useGT()`](/docs/next/api/strings/useGT) or [`getGT()`](/docs/next/api/strings/getGT) for translation.
-For more information, check out [this guide](/docs/next/reference/translating-strings).
 
 ```jsx title="Example.js" copy
 import { useGT } from "gt-next/client";
@@ -9290,6 +9736,7 @@ Add your API key and Project ID to your local environment.
     ```
   </Step>
 </Steps>
+
 <Callout type="warn">
   **Protect Your API Keys!**
 
@@ -9297,109 +9744,6 @@ Add your API key and Project ID to your local environment.
   Likewise, production keys should **only** ever be used in production.
   *Never commit your API keys to a public repository!*
 </Callout>
-
----
-
-## Let's Try It Out!
-
-Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
-
-### See Your App in a Different Language [#see-your-app-in-a-different-language]
-
-<Steps>
-  <Step>
-    Add the [`<LocaleSelector>`](/docs/next/api/components/localeSelector) component to your app.
-    This will allow you to select a different language for your app.
-    <Callout>
-      **Tip:**
-      You can also change your language in your browser settings.
-    </Callout>
-  </Step>
-  <Step>
-    Start your Next.js app in development mode.
-    <Tabs items={["npm", "yarn", "bun", "pnpm"]}>
-      <Tab value="npm">
-      ```bash
-      npm run dev 
-      ```
-      </Tab>
-      <Tab value="yarn">
-      ```bash 
-      yarn run dev 
-      ```
-      </Tab>
-      <Tab value="bun">
-      ```bash
-      bun run dev 
-      ```
-      </Tab>
-      <Tab value="pnpm">
-      ```bash
-      pnpm run dev 
-      ```
-      </Tab>
-    </Tabs>
-  </Step>
-  <Step>
-    Open up your app in your preferred browser (usually at
-    [http://localhost:3000](http://localhost:3000)).
-  </Step>
-</Steps>
-
-### Troubleshooting
-
-<Accordions>
-  <Accordion title="My app's language is not changing, even though I've changed my browser's language.">
-    **Browser Cookies**
-
-    If you are deciding to test different languages by changing your browser's language, this issue may occur.
-
-    Check your browser's cookies for your app.
-    General translation uses cookies to store the user's language preference.
-    The cookie is called `generaltranslation.locale`, and all you need to do is delete it.
-    Then, just double check you are using the desired perferred language and then
-    refresh the page.
-
-    How to check cookies:
-    * [Chrome](https://support.google.com/chrome/answer/95647)
-    * [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
-    * [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
-    * [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
-  </Accordion>
-  <Accordion title="Why do languages take a long time to load in dev?">
-    **On-Demand Translation**
-
-    You may notice when loading languages in development, translations will take a few seconds to be displayed.
-    This happens because your app is being translated in real time.
-    We refer to this process as an "on-demand translation".
-    
-    This **only happens in dev** so you can easily prototype your website in different languages.
-    All translations are preloaded in production, so there will be no delay.
-    Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
-  </Accordion>
-  <Accordion title="Why are some things translating and others not?">
-    **JSX Translation**
-
-    Right now, the setup tool automatically adds `<T>` components around text content.
-    We are currently working on a solution that automatically setup string translations.
-    Until then, if you are rendering a string, please follow [this guide](/docs/next/reference/translating-strings) for translating strings.
-  </Accordion>
-</Accordions>
-
----
-
-## Shipping to Production
-
-Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
-
-## Next steps
-{/* - Learn about how to use dictionaries with [`useGT()`](/docs/next/reference/dictionary) */}
-- See our [Next.js API reference](/docs/next/api/components/t) for detailed information about the `<T>` component and other available components.
-- Improve your content with [`<Num>`](/docs/next/api/components/num), [`<Currency>`](/docs/next/api/components/currency),
- [`<Branch>`](/docs/next/api/components/branch), and [`<Plural>`](/docs/next/api/components/plural) components.
-- Learn how to improve SEO with [i18n routing](/docs/next/reference/i18n-routing) (adding routes for each locale, e.g. `example.com/en`, `example.com/fr`)
-- Mirror your app to support [right-to-left languages](/docs/next/reference/rtl) such as Arabic and Hebrew.
-- Create a list of approved languages for your app with the [Next.js plugin](/docs/next/reference/locale-management#include-locales).
 
 
 ---
@@ -10159,6 +10503,30 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>
 );
 ```
+
+### Render settings
+
+Render settings controls the loading behavior for translations.
+There are two fields: `timeout` and `method`.
+
+- `timeout` is the number of milliseconds to wait for a translation to load before showing a fallback (default: `8000ms`).
+- `method` is the method to use to load translations (`"skeleton"`, `"replace"`, or `"default"`).
+
+```jsx title="index.js" copy
+<GTProvider renderSettings={{ method: "skeleton", timeout: 1000 }}>
+  <App />
+</GTProvider>
+```
+
+Each render setting dictates different loading behavior:
+`"skeleton"` will return `null` until the translations are loaded.
+`"replace"` will return the fallback content until the translations are loaded.
+`"default"` will return `null` until the translations are loaded, unless the fallback locale has the same language as the current locale (i.e., `en-US` and `en-GB`).
+In this case, it will return the fallback content immediately until the translations are loaded.
+
+
+
+
 
 ---
 
@@ -11780,7 +12148,7 @@ const Component = () => {
 
 ---
 title: React Quickstart
-description: Internationalize your React App in 5 minutes with gt-react
+description: Easily internationalize your React App with gt-react
 ---
 
 ## Overview
@@ -11792,24 +12160,281 @@ We will cover 4 simple steps:
 
 <Steps>
   <Step>
-    Installing the required libraries
+    Running the setup wizard
   </Step>
   <Step>
-    Select languages
+    Adding the GTProvider
   </Step>
   <Step>
-    Add the `<T>` component
+    Adding environment variables
   </Step>
   <Step>
-    Add your environment variables
+    Cleaning up strings
   </Step>
 </Steps>
 
-This entire process should take under **5 minutes**.
 
 ---
 
-## Setup
+### 1. Running the setup wizard
+
+The setup wizard will walk you through the process of internationalizing your project.
+
+```bash
+npx gtx-cli@latest init
+```
+
+To manually setup your project, follow the [manual setup guide](#manual-setup).
+
+The setup wizard will:
+
+1. Install the required libraries.
+2. Configure your project's supported locales.
+3. Wrap your project's JSX components with the `<T>` component.
+4. Generate a production API key and project ID for your project.
+
+See the [setup wizard docs](/docs/cli/init) for more information.
+
+### 2. Adding the GTProvider
+
+Add the [`<GTProvider>`](/docs/react/api/components/gtprovider) component to your app.
+Spread the config JSON object into the `config` prop.
+
+```jsx title="App.js" copy
+import { GTProvider } from "gt-react";
+import MyApp from "./MyApp";
+import config from "./gt.config.json";
+
+export default function App() {
+  return (
+    // [!code highlight]
+    <GTProvider {...config}> 
+      <MyApp />
+    </GTProvider> // [!code highlight]
+  );
+}
+```
+
+<Callout>
+  For some React frameworks, the setup wizard will automatically add the GTProvider to your app.
+  If this is the case, you can skip this step.
+</Callout>
+
+### 3. Adding environment variables 
+
+The setup wizard will create a `.env.local` file for you in the root of your project containing your production API key and project ID.
+
+However, in order to use `gt-react` in development mode, you will need to add a development API key instead of a production one.
+
+
+<Steps>
+    <Step>
+        Navigate to the [Dashboard](https://generaltranslation.com/dashboard).
+            * Navigate to the **Developer Keys** page in the sidebar.
+    </Step>
+
+    <Step>
+        Click **Create Dev API Key** then copy the API key and Project ID to your clipboard.
+    </Step>
+    <Step>
+        Add the Project ID and API Key to your environment variables.
+        Depending on your React framework, the environment variables may look slightly different.
+        These instructions are for **DEVELOPMENT ENVIRONMENTS ONLY**.
+        <Tabs items={["Vite", "Next.js Pages Router", "Gatsby", "RedwoodJS",  "create-react-app", "Other"]}>
+            <Tab value="Vite">
+            ```bash copy
+            VITE_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            VITE_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="Gatsby">
+            ```bash copy
+            GATSBY_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            GATSBY_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="RedwoodJS">
+            ```bash copy
+            REDWOOD_ENV_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            REDWOOD_ENV_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="Next.js Pages Router">
+            ```bash copy
+            NEXT_PUBLIC_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            NEXT_PUBLIC_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="create-react-app">
+            ```bash copy
+            REACT_APP_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            REACT_APP_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="Other">
+            Many react frameworks each have a unique way of exporting environment variables to the client.
+            In development environments, both `GT_API_KEY` and `GT_PROJECT_ID` need to be exported to the client.
+
+            We have added support for a few libraries so far,
+            but please let us know if your framework is not listed by creating an issue on our [GitHub repository](https://github.com/generaltranslation/gt/issues/new).
+            </Tab>
+        </Tabs>
+    </Step>
+</Steps>
+<Callout type="warn">
+    **Protect Your API Keys!**
+
+    React environment variables are often bundled into your application at build time and are publicly visible in the client-side code.
+    For security reasons, you should:
+    
+    - Only use development API keys during local development
+    - Only use production API keys with the CLI tool for deployment
+    - **Never include any API keys as environment variables in production**
+</Callout>
+
+
+### 4. Cleaning up strings
+
+The setup wizard will wrap all of your project's JSX components with the `<T>` component.
+However, you may notice that strings are unaffected.
+
+For example, if you have a string constant like this:
+
+```jsx title="Example.js" copy
+export default function Example() {
+  const greeting = "Hello, world!";
+  return <p>{greeting}</p>;
+}
+```
+
+The setup wizard will not touch this string.
+
+To fix this, you can use the [`useGT()`](/docs/react/api/strings/useGT) hook to translate the string.
+
+```jsx title="Example.js" copy
+import { useGT } from "gt-react";
+export default function Example() {
+  const t = useGT();
+  return <p>{t("Hello, world!")}</p>;
+}
+```
+
+---
+
+## Let's try it out!
+
+Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
+
+### See Your App in a Different Language
+
+<Steps>
+  <Step>
+    Add the [`<LocaleSelector>`](/docs/react/api/components/localeSelector) component to your app.
+    This will allow you to select a different language for your app.
+    <Callout>
+      **Tip:**
+      You can also change your language in your browser settings.
+    </Callout>
+  </Step>
+  <Step>
+    Start your React app in development mode.
+    <Tabs items={["npm", "yarn", "bun", "pnpm"]}>
+      <Tab value="npm">
+      ```bash
+      npm run dev 
+      ```
+      </Tab>
+      <Tab value="yarn">
+      ```bash 
+      yarn run dev 
+      ```
+      </Tab>
+      <Tab value="bun">
+      ```bash
+      bun run dev 
+      ```
+      </Tab>
+      <Tab value="pnpm">
+      ```bash
+      pnpm run dev 
+      ```
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step>
+    Open up your app in your preferred browser (usually at
+    [http://localhost:3000](http://localhost:3000)).
+  </Step>
+</Steps>
+
+### Troubleshooting
+
+<Accordions>
+  <Accordion title="My app's language is not changing, even though I've changed my browser's language.">
+    **Browser Cookies**
+
+    If you are deciding to test different languages by changing your browser's language, this issue may occur.
+
+    Check your browser's cookies for your app.
+    General translation uses cookies to store the user's language preference.
+    The cookie is called `generaltranslation.locale`, and all you need to do is delete it.
+    Then, just double check you are using the desired perferred language and then
+    refresh the page.
+
+    How to check cookies:
+    * [Chrome](https://support.google.com/chrome/answer/95647)
+    * [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
+    * [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
+    * [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
+
+    If this does not work, make sure that the list of locales in your [`<GTProvider>`](/docs/react/api/components/gtprovider) is up to date.
+  </Accordion>
+  <Accordion title="Why do new languages take a long time to load?">
+    **On-Demand Translation**
+
+    You may notice when loading languages in development, translations will take a few seconds to be displayed.
+    This happens because your app is being translated in real time.
+    We refer to this process as an "on-demand translation".
+    
+    This **only happens in dev** so you can easily prototype your website in different languages.
+    All translations are preloaded in production, so there will be no delay.
+    Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
+  </Accordion>
+  <Accordion title="Why are some things translating and others not?">
+    **JSX Translation**
+
+    Right now, the setup tool automatically adds `<T>` components around text content.
+    We are currently working on a solution that will automatically setup string translations.
+    Until then, if you are rendering a string, please follow [this guide](/docs/react/reference/translating-strings) for translating strings.
+  </Accordion>
+  <Accordion title="Why are some translations inaccurate?">
+    The most likely cause of an inaccurate translation is ambiguous wording.
+    For example, "apple" can be a fruit or a technology company.
+
+    To fix this, you can provide more context to the translation with the `context` prop.
+    The [`<T>`](/docs/react/api/components/t) and [`useGT()`](/docs/react/api/strings/useGT) functions support a `context` prop.
+    For example:
+    ```jsx
+    <T context="the technology company">Apple</T>
+    ```    
+  </Accordion>
+</Accordions>
+
+---
+
+## Shipping to Production
+
+Follow our guide on [shipping to production](/docs/react/tutorials/quickdeploy).
+
+---
+
+## Next steps
+ * See our [React API reference](/docs/react/api/components/t) for detailed information about the `<T>` component and other available components.
+
+
+## Manual Setup [#manual-setup]
+
+If you prefer to do the setup manually, follow the steps below.
 
 ### 1. Install libraries
 
@@ -11904,18 +12529,7 @@ export default function Example() {
 }
 ```
 
-<Callout type="info">
-  **Tip:**
-  To save time, run [the setup command](/docs/cli/setup).
-  This will scan your codebase for translatable JSX and insert the [`<T>`](/docs/react/api/components/t) tags for you.
-
-  ```bash title="shell" copy
-  npx gtx-cli setup
-  ```
-</Callout>
-
 For strings, you can use [`useGT()`](/docs/react/api/strings/useGT) for translation.
-For more information, check out [this guide](/docs/react/reference/translating-strings).
 
 ```jsx title="Example.js" copy
 import { useGT } from "gt-react";
@@ -11948,7 +12562,7 @@ Add your API key and Project ID to your environment variables.
         Add the Project ID and API Key to your environment variables.
         Depending on your React framework, the environment variables may look slightly different.
         These instructions are for **DEVELOPMENT ENVIRONMENTS ONLY**.
-        <Tabs items={["Vite", "Gatsby", "RedwoodJS", "create-react-app", "Other"]}>
+        <Tabs items={["Vite", "Next.js Pages Router", "Gatsby", "RedwoodJS",  "create-react-app", "Other"]}>
             <Tab value="Vite">
             ```bash copy
             VITE_GT_API_KEY="YOUR_GT_DEV_API_KEY"
@@ -11965,6 +12579,12 @@ Add your API key and Project ID to your environment variables.
             ```bash copy
             REDWOOD_ENV_GT_API_KEY="YOUR_GT_DEV_API_KEY"
             REDWOOD_ENV_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="Next.js Pages Router">
+            ```bash copy
+            NEXT_PUBLIC_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            NEXT_PUBLIC_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
             ```
             </Tab>
             <Tab value="create-react-app">
@@ -11994,108 +12614,6 @@ Add your API key and Project ID to your environment variables.
     - **Never include any API keys as environment variables in production**
 </Callout>
 
-
----
-
-## Let's try it out!
-
-Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
-
-### See Your App in a Different Language
-
-<Steps>
-  <Step>
-    Add the [`<LocaleSelector>`](/docs/react/api/components/localeSelector) component to your app.
-    This will allow you to select a different language for your app.
-    <Callout>
-      **Tip:**
-      You can also change your language in your browser settings.
-    </Callout>
-  </Step>
-  <Step>
-    Start your React app in development mode.
-    <Tabs items={["npm", "yarn", "bun", "pnpm"]}>
-      <Tab value="npm">
-      ```bash
-      npm run dev 
-      ```
-      </Tab>
-      <Tab value="yarn">
-      ```bash 
-      yarn run dev 
-      ```
-      </Tab>
-      <Tab value="bun">
-      ```bash
-      bun run dev 
-      ```
-      </Tab>
-      <Tab value="pnpm">
-      ```bash
-      pnpm run dev 
-      ```
-      </Tab>
-    </Tabs>
-  </Step>
-  <Step>
-    Open up your app in your preferred browser (usually at
-    [http://localhost:3000](http://localhost:3000)).
-  </Step>
-</Steps>
-
-### Troubleshooting
-
-<Accordions>
-  <Accordion title="My app's language is not changing, even though I've changed my browser's language.">
-    **Browser Cookies**
-
-    If you are deciding to test different languages by changing your browser's language, this issue may occur.
-
-    Check your browser's cookies for your app.
-    General translation uses cookies to store the user's language preference.
-    The cookie is called `generaltranslation.locale`, and all you need to do is delete it.
-    Then, just double check you are using the desired perferred language and then
-    refresh the page.
-
-    How to check cookies:
-    * [Chrome](https://support.google.com/chrome/answer/95647)
-    * [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
-    * [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
-    * [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
-
-    If this does not work, make sure that the list of locales in your [`<GTProvider>`](/docs/react/api/components/gtprovider) is up to date.
-  </Accordion>
-  <Accordion title="Why do new languages take a long time to load?">
-    **On-Demand Translation**
-
-    You may notice when loading languages in development, translations will take a few seconds to be displayed.
-    This happens because your app is being translated in real time.
-    We refer to this process as an "on-demand translation".
-    
-    This **only happens in dev** so you can easily prototype your website in different languages.
-    All translations are preloaded in production, so there will be no delay.
-    Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
-  </Accordion>
-  <Accordion title="Why are some things translating and others not?">
-    **JSX Translation**
-
-    Right now, the setup tool automatically adds `<T>` components around text content.
-    We are currently working on a solution that will automatically setup string translations.
-    Until then, if you are rendering a string, please follow [this guide](/docs/react/reference/translating-strings) for translating strings.
-  </Accordion>
-</Accordions>
-
----
-
-## Shipping to Production
-
-Follow our guide on [shipping to production](/docs/react/tutorials/quickdeploy).
-
----
-
-## Next steps
- * See our [React API reference](/docs/react/api/components/t) for detailed information about the `<T>` component and other available components.
- * Create a list of approved languages for your app with the [React plugin](/docs/react/reference/local-management#include-locales).
 
 
 ---
@@ -12681,6 +13199,102 @@ This means that you have to run the translation command before deploying your ap
  * Learn how to ship to production with our [deployment guide](/docs/react/tutorials/quickdeploy).
 
 ---
+title: gt.config.json
+description: The `gt.config.json` file
+---
+
+## Overview
+Source: https://generaltranslation.com/en/docs/react/reference/gtconfigjson
+
+The `gt.config.json` file is in charge of storing your project's configuration.
+It holds important information like your project's `projectId`, your supported locales, and more.
+It also holds important internal information such as your project's `versionId`.
+
+
+This file is read by (1) your [`<GTProvider>`](/docs/react/api/components/gtprovider) component and (2) the [`gtx-cli translate`](/docs/cli/translate) command.
+Because of this, we recommend storing your configuration in your `gt.config.json` file instead of passing it as a prop to your [`<GTProvider>`](/docs/react/api/components/gtprovider) component.
+
+Generally, anything that begins with an underscore (e.g. `_versionId`) is an internal property and should not be modified.
+Everything else is fair game.
+
+---
+
+## Fields
+
+| Field | Type | Description |
+|-------|-------------|
+| `projectId` | `string` | Unique identifier for your project in the GT system |
+| `locales` | `string[]` | Array of supported locale codes for your project |
+| `defaultLocale` | `string` | The primary locale code used as fallback when translations are missing |
+| `cacheUrl` | `string` | URL endpoint for caching translation data |
+| `runtimeUrl` | `string` | URL endpoint for runtime translation services |
+| `stageTranslations` | `boolean` | Configuration for staging/preview translation features |
+| `files` | `object` | Path to local translation files for development and testing |
+| `_versionId` | `string` | Internal property used to track project version (do not modify) |
+
+
+### `cacheUrl` and `runtimeUrl`
+
+If you are storing your translations in the cloud, the `cacheUrl` is the base URL for the cache.
+The `runtimeUrl` is the base URL for the runtime and only applies to development translations.
+
+### `stageTranslations`
+
+The `stageTranslations` is a flag used by the `gtx-cli` tool to mark your translations as requiring review.
+This means that they must be manually approved before they can be deployed to production via the [`gtx-cli translate`](/docs/cli/translate) command.
+
+### `files`
+
+The `files` field specifies a path to locally stored translations (in contrast to storing them in the cloud).
+Specifically, the `output` field specifies where the translations will be written to.
+
+```json
+{
+  "files": {
+    "gt": {
+      "output": "public/_gt/[locale].json"
+    }
+  },
+}
+```
+
+
+
+{/* 
+### `_versionId`
+
+Points to hit:
+- internal
+- you can specify your own version names */}
+
+
+---
+
+## Examples
+
+### Specifying your locales
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en", // Primary locale is English
+  "locales": ["fr", "es"] // Secondary locales are French and Spanish
+}
+```
+
+
+{/* ### Specifying your own versionId */}
+
+---
+
+## Notes
+ * The `gt.config.json` file is used to specify your project's configuration.
+ * It is read by both the [`<GTProvider>`](/docs/react/api/components/gtprovider) component and the [`gtx-cli translate`](/docs/cli/translate) command.
+ 
+
+## Next steps
+ * Learn how to have your [translations added to your project's bundle](/docs/react/reference/local-tx).
+
+---
 title: Local Translations
 description: Setup local translations for your React app
 ---
@@ -12772,9 +13386,9 @@ Make sure that you have followed the [Quick Start Guide](/docs/react/tutorials/q
   </Step>
 
   <Step>
-    Run the following command, and when asked "Where are your language files stored?", select the "Local" option.
+    Run the following command, and when asked if you want to save translations on the GT CDN, select the "No" option.
     ```bash
-    npx gtx-cli init
+    npx gtx-cli configure
     ```
     Then, run the translate command.
     ```bash
@@ -13416,7 +14030,7 @@ We will do this in 3 steps:
     Add your production API keys.
   </Step>
   <Step>
-    Run the init command to configure your project.
+    Run the `gtx-cli configure` command to configure your project.
   </Step>
   <Step>
     Share your configuration with your app.
@@ -13450,22 +14064,22 @@ GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
     *Never commit your API keys to a public repository!*
 </Callout>
 
-## Step 2: Run the init command 🔧
+## Step 2: Run the `gtx-cli configure` command 🔧
 
-Run the init command to configure your project.
+Run the `gtx-cli configure` command to configure your project.
 
 ```bash copy
-npx gtx-cli init
+npx gtx-cli configure
 ```
 
 <Callout>
-  If you do not want your translations to be hosted on the GT CDN, select "Local" when asked where your
-  language files are stored. You will also need to configure the [`loadTranslations()`](/docs/react/api/config/load-translations) function.
+  If you do not want your translations to be hosted on the GT CDN, select "No" when asked.
+  You will also need to configure the [`loadTranslations()`](/docs/react/api/config/load-translations) function.
 </Callout>
 
 ## Step 3: Share your configuration with your app ⚙️
 
-The init command will generate a configuration file in the root.
+The `gtx-cli configure` command will generate a configuration file in the root of your project.
 
 Pass the config file to [`<GTProvider>`](/docs/react/api/components/gtprovider).
 If you have specified any locales in your provider, remove them.
@@ -13494,7 +14108,7 @@ Make sure that the translate command comes before the build command.
 ```json title="package.json" copy
 {
   "scripts": {
-    "build": "npx gtx-cli translate && <YOUR_BUILD_COMMAND>"
+    "build": "npx gtx-cli translate && <...YOUR_BUILD_COMMAND...>"
   }
 }
 ```
@@ -13512,7 +14126,7 @@ That's it! You are now ready to deploy your react app with GT!
 
 ---
 title: React Quickstart
-description: Internationalize your React App in 5 minutes with gt-react
+description: Easily internationalize your React App with gt-react
 ---
 
 ## Overview
@@ -13524,24 +14138,281 @@ We will cover 4 simple steps:
 
 <Steps>
   <Step>
-    Installing the required libraries
+    Running the setup wizard
   </Step>
   <Step>
-    Select languages
+    Adding the GTProvider
   </Step>
   <Step>
-    Add the `<T>` component
+    Adding environment variables
   </Step>
   <Step>
-    Add your environment variables
+    Cleaning up strings
   </Step>
 </Steps>
 
-This entire process should take under **5 minutes**.
 
 ---
 
-## Setup
+### 1. Running the setup wizard
+
+The setup wizard will walk you through the process of internationalizing your project.
+
+```bash
+npx gtx-cli@latest init
+```
+
+To manually setup your project, follow the [manual setup guide](#manual-setup).
+
+The setup wizard will:
+
+1. Install the required libraries.
+2. Configure your project's supported locales.
+3. Wrap your project's JSX components with the `<T>` component.
+4. Generate a production API key and project ID for your project.
+
+See the [setup wizard docs](/docs/cli/init) for more information.
+
+### 2. Adding the GTProvider
+
+Add the [`<GTProvider>`](/docs/react/api/components/gtprovider) component to your app.
+Spread the config JSON object into the `config` prop.
+
+```jsx title="App.js" copy
+import { GTProvider } from "gt-react";
+import MyApp from "./MyApp";
+import config from "./gt.config.json";
+
+export default function App() {
+  return (
+    // [!code highlight]
+    <GTProvider {...config}> 
+      <MyApp />
+    </GTProvider> // [!code highlight]
+  );
+}
+```
+
+<Callout>
+  For some React frameworks, the setup wizard will automatically add the GTProvider to your app.
+  If this is the case, you can skip this step.
+</Callout>
+
+### 3. Adding environment variables 
+
+The setup wizard will create a `.env.local` file for you in the root of your project containing your production API key and project ID.
+
+However, in order to use `gt-react` in development mode, you will need to add a development API key instead of a production one.
+
+
+<Steps>
+    <Step>
+        Navigate to the [Dashboard](https://generaltranslation.com/dashboard).
+            * Navigate to the **Developer Keys** page in the sidebar.
+    </Step>
+
+    <Step>
+        Click **Create Dev API Key** then copy the API key and Project ID to your clipboard.
+    </Step>
+    <Step>
+        Add the Project ID and API Key to your environment variables.
+        Depending on your React framework, the environment variables may look slightly different.
+        These instructions are for **DEVELOPMENT ENVIRONMENTS ONLY**.
+        <Tabs items={["Vite", "Next.js Pages Router", "Gatsby", "RedwoodJS",  "create-react-app", "Other"]}>
+            <Tab value="Vite">
+            ```bash copy
+            VITE_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            VITE_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="Gatsby">
+            ```bash copy
+            GATSBY_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            GATSBY_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="RedwoodJS">
+            ```bash copy
+            REDWOOD_ENV_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            REDWOOD_ENV_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="Next.js Pages Router">
+            ```bash copy
+            NEXT_PUBLIC_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            NEXT_PUBLIC_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="create-react-app">
+            ```bash copy
+            REACT_APP_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            REACT_APP_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="Other">
+            Many react frameworks each have a unique way of exporting environment variables to the client.
+            In development environments, both `GT_API_KEY` and `GT_PROJECT_ID` need to be exported to the client.
+
+            We have added support for a few libraries so far,
+            but please let us know if your framework is not listed by creating an issue on our [GitHub repository](https://github.com/generaltranslation/gt/issues/new).
+            </Tab>
+        </Tabs>
+    </Step>
+</Steps>
+<Callout type="warn">
+    **Protect Your API Keys!**
+
+    React environment variables are often bundled into your application at build time and are publicly visible in the client-side code.
+    For security reasons, you should:
+    
+    - Only use development API keys during local development
+    - Only use production API keys with the CLI tool for deployment
+    - **Never include any API keys as environment variables in production**
+</Callout>
+
+
+### 4. Cleaning up strings
+
+The setup wizard will wrap all of your project's JSX components with the `<T>` component.
+However, you may notice that strings are unaffected.
+
+For example, if you have a string constant like this:
+
+```jsx title="Example.js" copy
+export default function Example() {
+  const greeting = "Hello, world!";
+  return <p>{greeting}</p>;
+}
+```
+
+The setup wizard will not touch this string.
+
+To fix this, you can use the [`useGT()`](/docs/react/api/strings/useGT) hook to translate the string.
+
+```jsx title="Example.js" copy
+import { useGT } from "gt-react";
+export default function Example() {
+  const t = useGT();
+  return <p>{t("Hello, world!")}</p>;
+}
+```
+
+---
+
+## Let's try it out!
+
+Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
+
+### See Your App in a Different Language
+
+<Steps>
+  <Step>
+    Add the [`<LocaleSelector>`](/docs/react/api/components/localeSelector) component to your app.
+    This will allow you to select a different language for your app.
+    <Callout>
+      **Tip:**
+      You can also change your language in your browser settings.
+    </Callout>
+  </Step>
+  <Step>
+    Start your React app in development mode.
+    <Tabs items={["npm", "yarn", "bun", "pnpm"]}>
+      <Tab value="npm">
+      ```bash
+      npm run dev 
+      ```
+      </Tab>
+      <Tab value="yarn">
+      ```bash 
+      yarn run dev 
+      ```
+      </Tab>
+      <Tab value="bun">
+      ```bash
+      bun run dev 
+      ```
+      </Tab>
+      <Tab value="pnpm">
+      ```bash
+      pnpm run dev 
+      ```
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step>
+    Open up your app in your preferred browser (usually at
+    [http://localhost:3000](http://localhost:3000)).
+  </Step>
+</Steps>
+
+### Troubleshooting
+
+<Accordions>
+  <Accordion title="My app's language is not changing, even though I've changed my browser's language.">
+    **Browser Cookies**
+
+    If you are deciding to test different languages by changing your browser's language, this issue may occur.
+
+    Check your browser's cookies for your app.
+    General translation uses cookies to store the user's language preference.
+    The cookie is called `generaltranslation.locale`, and all you need to do is delete it.
+    Then, just double check you are using the desired perferred language and then
+    refresh the page.
+
+    How to check cookies:
+    * [Chrome](https://support.google.com/chrome/answer/95647)
+    * [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
+    * [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
+    * [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
+
+    If this does not work, make sure that the list of locales in your [`<GTProvider>`](/docs/react/api/components/gtprovider) is up to date.
+  </Accordion>
+  <Accordion title="Why do new languages take a long time to load?">
+    **On-Demand Translation**
+
+    You may notice when loading languages in development, translations will take a few seconds to be displayed.
+    This happens because your app is being translated in real time.
+    We refer to this process as an "on-demand translation".
+    
+    This **only happens in dev** so you can easily prototype your website in different languages.
+    All translations are preloaded in production, so there will be no delay.
+    Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
+  </Accordion>
+  <Accordion title="Why are some things translating and others not?">
+    **JSX Translation**
+
+    Right now, the setup tool automatically adds `<T>` components around text content.
+    We are currently working on a solution that will automatically setup string translations.
+    Until then, if you are rendering a string, please follow [this guide](/docs/react/reference/translating-strings) for translating strings.
+  </Accordion>
+  <Accordion title="Why are some translations inaccurate?">
+    The most likely cause of an inaccurate translation is ambiguous wording.
+    For example, "apple" can be a fruit or a technology company.
+
+    To fix this, you can provide more context to the translation with the `context` prop.
+    The [`<T>`](/docs/react/api/components/t) and [`useGT()`](/docs/react/api/strings/useGT) functions support a `context` prop.
+    For example:
+    ```jsx
+    <T context="the technology company">Apple</T>
+    ```    
+  </Accordion>
+</Accordions>
+
+---
+
+## Shipping to Production
+
+Follow our guide on [shipping to production](/docs/react/tutorials/quickdeploy).
+
+---
+
+## Next steps
+ * See our [React API reference](/docs/react/api/components/t) for detailed information about the `<T>` component and other available components.
+
+
+## Manual Setup [#manual-setup]
+
+If you prefer to do the setup manually, follow the steps below.
 
 ### 1. Install libraries
 
@@ -13636,18 +14507,7 @@ export default function Example() {
 }
 ```
 
-<Callout type="info">
-  **Tip:**
-  To save time, run [the setup command](/docs/cli/setup).
-  This will scan your codebase for translatable JSX and insert the [`<T>`](/docs/react/api/components/t) tags for you.
-
-  ```bash title="shell" copy
-  npx gtx-cli setup
-  ```
-</Callout>
-
 For strings, you can use [`useGT()`](/docs/react/api/strings/useGT) for translation.
-For more information, check out [this guide](/docs/react/reference/translating-strings).
 
 ```jsx title="Example.js" copy
 import { useGT } from "gt-react";
@@ -13680,7 +14540,7 @@ Add your API key and Project ID to your environment variables.
         Add the Project ID and API Key to your environment variables.
         Depending on your React framework, the environment variables may look slightly different.
         These instructions are for **DEVELOPMENT ENVIRONMENTS ONLY**.
-        <Tabs items={["Vite", "Gatsby", "RedwoodJS", "create-react-app", "Other"]}>
+        <Tabs items={["Vite", "Next.js Pages Router", "Gatsby", "RedwoodJS",  "create-react-app", "Other"]}>
             <Tab value="Vite">
             ```bash copy
             VITE_GT_API_KEY="YOUR_GT_DEV_API_KEY"
@@ -13697,6 +14557,12 @@ Add your API key and Project ID to your environment variables.
             ```bash copy
             REDWOOD_ENV_GT_API_KEY="YOUR_GT_DEV_API_KEY"
             REDWOOD_ENV_PROJECT_ID="YOUR_GT_PROJECT_ID"
+            ```
+            </Tab>
+            <Tab value="Next.js Pages Router">
+            ```bash copy
+            NEXT_PUBLIC_GT_API_KEY="YOUR_GT_DEV_API_KEY"
+            NEXT_PUBLIC_GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
             ```
             </Tab>
             <Tab value="create-react-app">
@@ -13726,108 +14592,6 @@ Add your API key and Project ID to your environment variables.
     - **Never include any API keys as environment variables in production**
 </Callout>
 
-
----
-
-## Let's try it out!
-
-Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
-
-### See Your App in a Different Language
-
-<Steps>
-  <Step>
-    Add the [`<LocaleSelector>`](/docs/react/api/components/localeSelector) component to your app.
-    This will allow you to select a different language for your app.
-    <Callout>
-      **Tip:**
-      You can also change your language in your browser settings.
-    </Callout>
-  </Step>
-  <Step>
-    Start your React app in development mode.
-    <Tabs items={["npm", "yarn", "bun", "pnpm"]}>
-      <Tab value="npm">
-      ```bash
-      npm run dev 
-      ```
-      </Tab>
-      <Tab value="yarn">
-      ```bash 
-      yarn run dev 
-      ```
-      </Tab>
-      <Tab value="bun">
-      ```bash
-      bun run dev 
-      ```
-      </Tab>
-      <Tab value="pnpm">
-      ```bash
-      pnpm run dev 
-      ```
-      </Tab>
-    </Tabs>
-  </Step>
-  <Step>
-    Open up your app in your preferred browser (usually at
-    [http://localhost:3000](http://localhost:3000)).
-  </Step>
-</Steps>
-
-### Troubleshooting
-
-<Accordions>
-  <Accordion title="My app's language is not changing, even though I've changed my browser's language.">
-    **Browser Cookies**
-
-    If you are deciding to test different languages by changing your browser's language, this issue may occur.
-
-    Check your browser's cookies for your app.
-    General translation uses cookies to store the user's language preference.
-    The cookie is called `generaltranslation.locale`, and all you need to do is delete it.
-    Then, just double check you are using the desired perferred language and then
-    refresh the page.
-
-    How to check cookies:
-    * [Chrome](https://support.google.com/chrome/answer/95647)
-    * [Firefox](https://support.mozilla.org/en-US/kb/delete-cookies-remove-info-websites-stored)
-    * [Safari](https://support.apple.com/en-mn/guide/safari/sfri11471/16.0/mac/11.0)
-    * [Edge](https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09)
-
-    If this does not work, make sure that the list of locales in your [`<GTProvider>`](/docs/react/api/components/gtprovider) is up to date.
-  </Accordion>
-  <Accordion title="Why do new languages take a long time to load?">
-    **On-Demand Translation**
-
-    You may notice when loading languages in development, translations will take a few seconds to be displayed.
-    This happens because your app is being translated in real time.
-    We refer to this process as an "on-demand translation".
-    
-    This **only happens in dev** so you can easily prototype your website in different languages.
-    All translations are preloaded in production, so there will be no delay.
-    Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
-  </Accordion>
-  <Accordion title="Why are some things translating and others not?">
-    **JSX Translation**
-
-    Right now, the setup tool automatically adds `<T>` components around text content.
-    We are currently working on a solution that will automatically setup string translations.
-    Until then, if you are rendering a string, please follow [this guide](/docs/react/reference/translating-strings) for translating strings.
-  </Accordion>
-</Accordions>
-
----
-
-## Shipping to Production
-
-Follow our guide on [shipping to production](/docs/react/tutorials/quickdeploy).
-
----
-
-## Next steps
- * See our [React API reference](/docs/react/api/components/t) for detailed information about the `<T>` component and other available components.
- * Create a list of approved languages for your app with the [React plugin](/docs/react/reference/local-management#include-locales).
 
 
 ---
@@ -13958,20 +14722,10 @@ To use `gt-next` or `gt-react` with your own translation provider, use local tra
 
 To generate the translation files for your project, run the CLI tool with the following command:
 
-<Tabs items={['Next.js', 'React']}>
-  <Tab value="Next.js">
-    ```bash
-    npx gtx-cli init
-    npx gtx-cli generate
-    ```
-  </Tab>
-  <Tab value="React">
-    ```bash
-    npx gtx-cli init
-    npx gtx-cli generate
-    ```
-  </Tab>
-</Tabs>
+```bash
+npx gtx-cli configure # Configure your project
+npx gtx-cli generate # Generate the translation files
+```
 
 This command will generate the JSON data files for your project's source code. 
 You can then use these files with your own translation provider.
