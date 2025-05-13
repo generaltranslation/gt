@@ -3,7 +3,6 @@ import { program } from 'commander';
 import {
   Options,
   SupportedFrameworks,
-  Updates,
   WrapOptions,
   GenerateSourceOptions,
   SupportedLibraries,
@@ -24,7 +23,6 @@ import chalk from 'chalk';
 import { formatFiles } from '../hooks/postProcess';
 import { BaseCLI } from './base';
 import wrapContentReact from '../react/parse/wrapContent';
-import { resolveProjectId } from '../fs/utils';
 import { generateSettings } from '../config/generateSettings';
 import { saveJSON } from '../fs/saveJSON';
 import { resolveLocaleFiles } from '../fs/config/parseFilesConfig';
@@ -70,7 +68,7 @@ export class ReactCLI extends BaseCLI {
         'Submits the project to the General Translation API for translation. Translations created using this command will require human approval.'
       )
       .option(
-        '--config <path>',
+        '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
@@ -78,11 +76,7 @@ export class ReactCLI extends BaseCLI {
         '--api-key <key>',
         'API key for General Translation cloud service'
       )
-      .option(
-        '--project-id <id>',
-        'Project ID for the translation service',
-        resolveProjectId()
-      )
+      .option('--project-id <id>', 'Project ID for the translation service')
       .option('--version-id <id>', 'Version ID for the translation service')
       .option(
         '--tsconfig, --jsconfig <path>',
@@ -136,7 +130,7 @@ export class ReactCLI extends BaseCLI {
         'Scans the project for a dictionary and/or <T> tags, and sends the updates to the General Translation API for translation.'
       )
       .option(
-        '--config <path>',
+        '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
@@ -144,11 +138,7 @@ export class ReactCLI extends BaseCLI {
         '--api-key <key>',
         'API key for General Translation cloud service'
       )
-      .option(
-        '--project-id <id>',
-        'Project ID for the translation service',
-        resolveProjectId()
-      )
+      .option('--project-id <id>', 'Project ID for the translation service')
       .option('--version-id <id>', 'Version ID for the translation service')
       .option(
         '--tsconfig, --jsconfig <path>',
@@ -248,7 +238,7 @@ export class ReactCLI extends BaseCLI {
         findFilepaths(['./src', './app', './pages', './components'])
       )
       .option(
-        '--config <path>',
+        '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
@@ -294,22 +284,22 @@ export class ReactCLI extends BaseCLI {
     if (errors.length > 0) {
       if (options.ignoreErrors) {
         logWarning(
-          chalk.red(
-            `CLI tool encountered errors while scanning for ${chalk.green(
-              '<T>'
-            )} tags. These components will not be translated.\n` +
+          chalk.yellow(
+            `CLI tool encountered errors while scanning for translatable content. These components will not be translated.\n` +
               errors
-                .map((error) => chalk.yellow('• Warning: ') + error)
+                .map(
+                  (error) => chalk.yellow('• Warning: ') + chalk.white(error)
+                )
                 .join('\n')
           )
         );
       } else {
         logErrorAndExit(
           chalk.red(
-            `CLI tool encountered errors while scanning for ${chalk.green(
-              '<T>'
-            )} tags. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
-              errors.map((error) => chalk.red('• Error: ') + error).join('\n')
+            `CLI tool encountered errors while scanning for translatable content. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
+              errors
+                .map((error) => chalk.red('• Error: ') + chalk.white(error))
+                .join('\n')
           )
         );
       }

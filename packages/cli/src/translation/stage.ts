@@ -1,4 +1,4 @@
-import { logErrorAndExit } from '../console/errors';
+import { devApiKeyError, logErrorAndExit } from '../console/errors';
 import chalk from 'chalk';
 
 import findFilepath from '../fs/findFilepath';
@@ -53,23 +53,19 @@ export async function stageProject(
   if (errors.length > 0) {
     if (settings.ignoreErrors) {
       logWarning(
-        chalk.red(
-          `CLI tool encountered errors while scanning for ${chalk.green(
-            '<T>'
-          )} tags. These components will not be translated.\n` +
+        chalk.yellow(
+          `Warning: CLI tool encountered syntax errors while scanning for translatable content. These components will not be translated.\n` +
             errors
-              .map((error) => chalk.yellow('• Warning: ') + error + '\n')
+              .map((error) => chalk.yellow('• ') + chalk.white(error) + '\n')
               .join('')
         )
       );
     } else {
       logErrorAndExit(
         chalk.red(
-          `CLI tool encountered errors while scanning for ${chalk.green(
-            '<T>'
-          )} tags. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
+          `Error: CLI tool encountered syntax errors while scanning for translatable content. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
             errors
-              .map((error) => chalk.red('• Error: ') + error + '\n')
+              .map((error) => chalk.red('• ') + chalk.white(error) + '\n')
               .join('')
         )
       );
@@ -101,6 +97,9 @@ export async function stageProject(
   }
   if (!settings.apiKey) {
     logErrorAndExit(noApiKeyError);
+  }
+  if (settings.apiKey.startsWith('gtx-dev-')) {
+    logErrorAndExit(devApiKeyError);
   }
   if (!settings.projectId) {
     logErrorAndExit(noProjectIdError);

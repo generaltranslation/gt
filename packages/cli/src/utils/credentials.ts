@@ -1,7 +1,7 @@
 import { createSpinner, logErrorAndExit, logMessage } from '../console';
 import path from 'node:path';
 import fs from 'node:fs';
-import { Settings } from '../types';
+import { Settings, SupportedFrameworks } from '../types';
 import chalk from 'chalk';
 // Type for credentials returned from the dashboard
 type Credentials = {
@@ -11,10 +11,14 @@ type Credentials = {
 
 // Fetches project ID and API key by opening the dashboard in the browser
 export async function retrieveCredentials(
-  settings: Settings
+  settings: Settings,
+  keyType: 'development' | 'production'
 ): Promise<Credentials> {
   // Generate a session ID
-  const { sessionId } = await generateCredentialsSession(settings.baseUrl);
+  const { sessionId } = await generateCredentialsSession(
+    settings.baseUrl,
+    keyType
+  );
 
   const urlToOpen = `${settings.dashboardUrl}/cli/wizard/${sessionId}`;
   await import('open').then((open) =>
@@ -71,7 +75,10 @@ export async function retrieveCredentials(
   return credentials;
 }
 
-export async function generateCredentialsSession(url: string): Promise<{
+export async function generateCredentialsSession(
+  url: string,
+  keyType: 'development' | 'production'
+): Promise<{
   sessionId: string;
 }> {
   const res = await fetch(`${url}/cli/wizard/session`, {
@@ -79,6 +86,9 @@ export async function generateCredentialsSession(url: string): Promise<{
     headers: {
       'Content-Type': 'application/json',
     },
+    body: JSON.stringify({
+      keyType,
+    }),
   });
   if (!res.ok) {
     logErrorAndExit('Failed to generate credentials session');
@@ -92,7 +102,11 @@ export function areCredentialsSet() {
 }
 
 // Sets the credentials in .env.local file
-export async function setCredentials(credentials: Credentials) {
+export async function setCredentials(
+  credentials: Credentials,
+  type: 'development' | 'production',
+  framework?: SupportedFrameworks
+) {
   const envFile = path.join(process.cwd(), '.env.local');
   let envContent = '';
 
@@ -121,8 +135,25 @@ export async function setCredentials(credentials: Credentials) {
   }
 
   // Always append the credentials to the file
-  envContent += `\nGT_PROJECT_ID=${credentials.projectId}\n`;
-  envContent += `GT_API_KEY=${credentials.apiKey}\n`;
+  let prefix = '';
+  if (framework === 'next-pages') {
+    prefix = 'NEXT_PUBLIC_';
+  } else if (framework === 'vite') {
+    prefix = 'VITE_';
+  } else if (framework === 'gatsby') {
+    prefix = 'GATSBY_';
+  } else if (framework === 'react') {
+    prefix = 'REACT_APP_';
+  } else if (framework === 'redwood') {
+    prefix = 'REDWOOD_ENV_';
+  }
+
+  envContent += `\n${prefix}GT_PROJECT_ID=${credentials.projectId}\n`;
+  if (type === 'development') {
+    envContent += `${prefix || ''}GT_DEV_API_KEY=${credentials.apiKey}\n`;
+  } else {
+    envContent += `GT_API_KEY=${credentials.apiKey}\n`;
+  }
 
   // Ensure we don't have excessive newlines
   envContent = envContent.replace(/\n{3,}/g, '\n\n').trim() + '\n';

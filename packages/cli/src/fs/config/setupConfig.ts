@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { displayCreatedConfigFile, logError } from '../../console';
-import { FilesOptions } from '../../types';
+import { FilesOptions, SupportedFrameworks } from '../../types';
 
 /**
  * Checks if the config file exists.
@@ -16,6 +16,7 @@ export default async function createOrUpdateConfig(
     defaultLocale?: string;
     locales?: string[];
     files?: FilesOptions;
+    framework?: SupportedFrameworks;
   }
 ): Promise<string> {
   // Filter out empty string values from the config object
@@ -23,6 +24,7 @@ export default async function createOrUpdateConfig(
     ...(options.projectId && { projectId: options.projectId }),
     ...(options.defaultLocale && { defaultLocale: options.defaultLocale }),
     ...(options.files && { files: options.files }),
+    ...(options.framework && { framework: options.framework }),
   };
   try {
     // if file exists

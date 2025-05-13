@@ -83,7 +83,8 @@ export function parseStrings(
                           warnNonStaticExpressionSync(
                             file,
                             attribute,
-                            generate(prop.value).code
+                            generate(prop.value).code,
+                            `${prop.loc?.start?.line}:${prop.loc?.start?.column}`
                           )
                         );
                       }
@@ -102,7 +103,13 @@ export function parseStrings(
               });
             } else if (t.isTemplateLiteral(arg)) {
               // warn if template literal
-              errors.push(warnTemplateLiteralSync(file, generate(arg).code));
+              errors.push(
+                warnTemplateLiteralSync(
+                  file,
+                  generate(arg).code,
+                  `${arg.loc?.start?.line}:${arg.loc?.start?.column}`
+                )
+              );
             }
           }
         });
