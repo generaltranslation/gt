@@ -43,7 +43,7 @@ It will create a `gt.config.json` file in the root of your project.
 The file will contain the following settings:
 
 - `defaultLocale`: The default locale for your project.
-- `locales`: An array of [supported locales](/docs/reference/supported-locales) for your project.
+- `locales`: An array of [supported locales](/docs/reference/locale-strings#supported-locales) for your project.
 - `files`: This is an object that contains information about the content you want to translate.
 
 For more specific information about the `gt.config.json` file, please see the [config docs](/docs/cli/reference/config).
@@ -117,7 +117,7 @@ npx gtx-cli@latest init
 ## Overview
 Source: https://generaltranslation.com/en/docs/cli
 
-The General Translation CLI tool (`gtx-cli`) allows you to automatically translate your project into any of the [supported languages](/docs/reference/supported-locales).
+The General Translation CLI tool (`gtx-cli`) allows you to automatically translate your project into any of the [supported languages](/docs/reference/locale-strings#supported-locales).
 
 It provides first-class support for [`gt-next`](/docs/react) and [`gt-react`](/docs/react) with your project, allowing you to scan your project for translatable content, translate your project, and generate translation data JSON files.
 
@@ -185,7 +185,7 @@ It will create a `gt.config.json` file in the root of your project.
 The file will contain the following settings:
 
 - `defaultLocale`: The default locale for your project.
-- `locales`: An array of [supported locales](/docs/reference/supported-locales) for your project.
+- `locales`: An array of [supported locales](/docs/reference/locale-strings#supported-locales) for your project.
 - `files`: This is an object that contains information about the content you want to translate.
 
 For more specific information about the `gt.config.json` file, please see the [config docs](/docs/cli/reference/config).
@@ -244,7 +244,7 @@ The `gt.config.json` file contains the following settings:
 
 - `defaultLocale`: The default locale for your project. This is the locale that your source content is written in. This is also the fallback locale for your project (if using `gt-next` or `gt-react`).
 
-- `locales`: An array of locales for your project. These are the locales that you want to translate your project into. See the [supported locales](/docs/reference/supported-locales) for more information. 
+- `locales`: An array of locales for your project. These are the locales that you want to translate your project into. See the [supported locales](/docs/reference/locale-strings#supported-locales) for more information. 
 If you are using `gt-next` or `gt-react`, these are also the locales that your app supports.
 
 - `files`: This is an object that contains information about the content you want to translate.
@@ -1904,7 +1904,7 @@ npx gtx-cli@latest init
 ## Overview
 Source: https://generaltranslation.com/en/docs/cli/tutorials/quickstart
 
-The General Translation CLI tool (`gtx-cli`) allows you to automatically translate your project into any of the [supported languages](/docs/reference/supported-locales).
+The General Translation CLI tool (`gtx-cli`) allows you to automatically translate your project into any of the [supported languages](/docs/reference/locale-strings#supported-locales).
 
 It provides first-class support for [`gt-next`](/docs/react) and [`gt-react`](/docs/react) with your project, allowing you to scan your project for translatable content, translate your project, and generate translation data JSON files.
 
@@ -6279,7 +6279,7 @@ Install the [gt-next](https://www.npmjs.com/package/gt-next) and [gtx-cli](https
 ### 2. Add the `withGTConfig()` plugin
 
 Add [`withGTConfig()`](/docs/next/api/config/withGTConfig) to your `next.config.js` file.
-You can specify the languages you want to support by passing an array of [locale codes](/docs/reference/supported-locales).
+You can specify the languages you want to support by passing an array of [locale codes](/docs/reference/locale-strings#supported-locales).
 
 ```js title="next.config.js" copy
 import { withGTConfig } from 'gt-next/config';
@@ -7052,7 +7052,7 @@ export default withGTConfig(nextConfig, {
 
 ```
 
-To see a list of supported locales, refer to the [Supported Locales](/docs/reference/supported-locales).
+To see a list of supported locales, refer to the [Supported Locales](/docs/reference/locale-strings#supported-locales).
 For a more detailed guide on selecting locales, refer to the [Locale Management Guide](/docs/next/reference/locale-management).
 
 ### Configuring `getLocale()`
@@ -7489,7 +7489,7 @@ This document provides guidance on how to manage locales in your Next.js applica
 We will walk through configuring the list of locales you want to support, then triggering the generation of translations.
 
 This library uses the [BCP-47 standard](/docs/reference/locale-strings) to define locales.
-See a list of currently supported locales [here](/docs/reference/supported-locales).
+See a list of currently supported locales [here](/docs/reference/locale-strings#supported-locales).
 
 ---
 
@@ -9646,7 +9646,7 @@ Install the [gt-next](https://www.npmjs.com/package/gt-next) and [gtx-cli](https
 ### 2. Add the `withGTConfig()` plugin
 
 Add [`withGTConfig()`](/docs/next/api/config/withGTConfig) to your `next.config.js` file.
-You can specify the languages you want to support by passing an array of [locale codes](/docs/reference/supported-locales).
+You can specify the languages you want to support by passing an array of [locale codes](/docs/reference/locale-strings#supported-locales).
 
 ```js title="next.config.js" copy
 import { withGTConfig } from 'gt-next/config';
@@ -10422,7 +10422,7 @@ It is required for any client-side translations on your application.
 ### Basic usage
 
 Wrap your application in `<GTProvider>` to add translation to your app.
-Don't forget to add a [list of supported locales](/docs/reference/supported-locales) to enable translation.
+Don't forget to add a [list of supported locales](/docs/reference/locale-strings#supported-locales) to enable translation.
 
 
 ```jsx title="index.js" copy
@@ -12473,7 +12473,7 @@ Install the [gt-react](https://www.npmjs.com/package/gt-react) and [gtx-cli](htt
 [`<GTProvider>`](/docs/react/api/components/gtprovider) is used to configure the behavior of `gt-react`. 
 It should be placed as high up in your app as possible, ideally at the root.
 
-Just pass a list of [locale codes](/docs/reference/supported-locales) to add them to your app.
+Just pass a list of [locale codes](/docs/reference/locale-strings#supported-locales) to add them to your app.
 
 ```jsx title="App.js" copy
 import { GTProvider } from "gt-react";
@@ -13427,7 +13427,7 @@ We will walk through configuring the list of locales you want to support, then t
 We will also cover how to pass the config file to your app.
 
 This library uses the [BCP-47 standard](/docs/reference/locale-strings) to define locales.
-See a list of currently supported locales [here](/docs/reference/supported-locales).
+See a list of currently supported locales [here](/docs/reference/locale-strings#supported-locales).
 
 ---
 
@@ -14451,7 +14451,7 @@ Install the [gt-react](https://www.npmjs.com/package/gt-react) and [gtx-cli](htt
 [`<GTProvider>`](/docs/react/api/components/gtprovider) is used to configure the behavior of `gt-react`. 
 It should be placed as high up in your app as possible, ideally at the root.
 
-Just pass a list of [locale codes](/docs/reference/supported-locales) to add them to your app.
+Just pass a list of [locale codes](/docs/reference/locale-strings#supported-locales) to add them to your app.
 
 ```jsx title="App.js" copy
 import { GTProvider } from "gt-react";
@@ -14672,7 +14672,7 @@ This tag represents Eastern Armenian written in Latin script, as used in Italy.
  * General Translations uses **Locale Tags (Locales)** to identify languages and regions internally.
 
 ## Next Steps
- * See our [List of Supported Locales](/docs/reference/supported-locales) to find the language tags available in General Translation.
+ * See our [List of Supported Locales](/docs/reference/locale-strings#supported-locales) to find the language tags available in General Translation.
  * Refer to the official [IETF Language Tag Registry](https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry)
    and the [BCP 47 Language Tag standard](https://www.techonthenet.com/js/language_tags.php) for more information.
 
@@ -14742,7 +14742,7 @@ description: List of currently supported languages for translation
 
 
 ## Overview
-Source: https://generaltranslation.com/en/docs/reference/supported-locales
+Source: https://generaltranslation.com/en/docs/reference/locale-strings#supported-locales
 
 This page lists all languages and corresponding [locale strings](/docs/reference/locale-strings) that are currently supported by General Translation (GT).
 

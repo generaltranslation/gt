@@ -18,6 +18,7 @@ Install `gt-next` via npm:
 npm install gt-next
 npm install gt-next-cli --save-dev
 ```
+
 ## Getting Started
 
 ### Step 1: Configure Your Environment Variables
@@ -34,7 +35,7 @@ GT_PROJECT_ID="your-project-id"
 ### 2. Add the `withGTConfig()` plugin
 
 Add `withGTConfig()` to your `next.config.js` file.
-You can specify the languages you want to support by passing an array of [locale codes](https://generaltranslation.com/docs/reference/supported-locales).
+You can specify the languages you want to support by passing an array of [locale codes](https://generaltranslation.com/docs/reference/locale-strings#supported-locales).
 
 ```js
 import { withGTConfig } from 'gt-next/config';
@@ -52,14 +53,12 @@ Wrap any nested JSX content in the `<T>` component to make it translatable.
 For more information, check out this [guide on using `<T>` components](https://generaltranslation.com/docs/next/reference/t-reference).
 
 ```jsx
-import { T } from "gt-next";
+import { T } from 'gt-next';
 
 export default function Example() {
   return (
     <T>
-      <p>
-        This gets translated.
-      </p>
+      <p>This gets translated.</p>
     </T>
   );
 }
@@ -68,7 +67,7 @@ export default function Example() {
 Use the `<Var>` component to designate JSX content that should not be translated.
 
 ```jsx
-import { T, Var } from "gt-next";
+import { T, Var } from 'gt-next';
 
 export default function Example() {
   return (
