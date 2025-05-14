@@ -19,7 +19,6 @@
     "reference/standalone",
     "reference/examples",
     "reference/cli",
-    "reference/supported-locales",
     "reference/locale-strings",
     "faqs"
   ]

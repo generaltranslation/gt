@@ -1,10 +1,16 @@
 ---
-title: Locale Strings
-description: How to interpret locale strings in GT
+title: Locales
+description: Locales and Locale Strings
 ---
 
 
 ## Overview
+
+This page will discuss the standard used by General Translation to represent locales and languages and the list of currently supported locales.
+
+---
+
+## Locale strings
 
 General Translation uses a variant of the [BCP 47 Language Tag standard](https://www.techonthenet.com/js/language_tags.php) to represent locales and languages.
 BCP 47 Language Tags are the Internet Best Current Practices (BCP) standard for identifying languages in both spoken and written forms.
@@ -47,10 +53,31 @@ This tag represents Eastern Armenian written in Latin script, as used in Italy.
 
 🚧 This section is currently under construction. 🚧
 
+
+---
+## Supported locales [#supported-locales]
+
+This section lists all locales that are currently supported by General Translation.
+
+### A note on low-resource languages
+
+Our system leverages some of the most advanced LLM models on the market to provide accurate translations;
+however, these models are not without their limitations.
+Certain resource languages may not be supported by the model provider you have selected or any of the available providers.
+These languages are known as "low-resource languages".
+
+Low-resource languages can vary between models, so if you specify a preferred model provider in your configuration, you may want to check the list of supported languages for that provider.
+
+### Official list
+
+<SupportedLocales />
+
+---
+
 ## Notes
  * General Translations uses **Locale Tags (Locales)** to identify languages and regions internally.
 
 ## Next Steps
- * See our [List of Supported Locales](/docs/reference/supported-locales) to find the language tags available in General Translation.
+ * See our [List of Supported Locales](/docs/reference/locale-strings#supported-locales) to find the language tags available in General Translation.
  * Refer to the official [IETF Language Tag Registry](https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry)
    and the [BCP 47 Language Tag standard](https://www.techonthenet.com/js/language_tags.php) for more information.

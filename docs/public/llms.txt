@@ -149,7 +149,7 @@ The core components include:
 - [Examples](https://generaltranslation.com/en/docs/reference/examples): Example projects using General Translation
 - [Locale Strings](https://generaltranslation.com/en/docs/reference/locale-strings): How to interpret locale strings in GT
 - [Open Source](https://generaltranslation.com/en/docs/reference/standalone): General Translation libraries are open source!
-- [Supported Languages](https://generaltranslation.com/en/docs/reference/supported-locales): List of currently supported languages for translation
+- [Supported Languages](https://generaltranslation.com/en/docs/reference/locale-strings#supported-locales): List of currently supported languages for translation
 - [Terminology](https://generaltranslation.com/en/docs/reference/terminology): A guide to the key terminology used in the General Translation libraries
 
 ## Usage
