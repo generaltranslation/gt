@@ -26,7 +26,7 @@ export const createDictionaryTranslationError = (id: string) =>
 export const createRequiredPrefixError = (id: string, requiredPrefix: string) =>
   `gt-next Error: You are using <GTProvider> with a provided prefix id: "${requiredPrefix}", but one of the children of <GTProvider> has the id "${id}". Change the <GTProvider> id prop or your dictionary structure to proceed.`;
 
-export const devApiKeyIncludedInProductionError = `gt-next Error: You are attempting a production using a development API key. Replace this API key with a production API key when you build your app for production.`;
+export const devApiKeyIncludedInProductionError = `gt-next Error: You are attempting a production buildusing a development API key. Replace this API key with a production API key when you build your app for production.`;
 
 export const createDictionarySubsetError = (id: string, functionName: string) =>
   `gt-next Error: ${functionName} with id: "${id}". Invalid dictionary entry detected. Make sure you are navigating to the correct subroute of the dictionary with the ID you provide.`;

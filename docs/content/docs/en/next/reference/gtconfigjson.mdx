@@ -1,0 +1,94 @@
+---
+title: gt.config.json
+description: The gt.config.json file
+---
+
+## Overview
+
+The `gt.config.json` file is in charge of storing your project's configuration.
+It holds important information like your project's `projectId`, your supported locales, and more.
+It also holds important internal information such as your project's `versionId`.
+
+
+This file is read by (1) your [`withGTConfig()`](/docs/next/api/config/withgtconfig) component and (2) the [`gtx-cli translate`](/docs/cli/translate) command.
+Because of this, we recommend storing your configuration in your `gt.config.json` file instead of passing it as a prop to your [`withGTConfig()`](/docs/next/api/config/withgtconfig) component.
+
+Generally, anything that begins with an underscore (e.g. `_versionId`) is an internal property and should not be modified.
+Everything else is fair game.
+
+---
+
+## Fields
+
+| Field | Type | Description |
+|-------|-------------|
+| `projectId` | `string` | Unique identifier for your project in the GT system |
+| `locales` | `string[]` | Array of supported locale codes for your project |
+| `defaultLocale` | `string` | The primary locale code used as fallback when translations are missing |
+| `cacheUrl` | `string` | URL endpoint for caching translation data |
+| `runtimeUrl` | `string` | URL endpoint for runtime translation services |
+| `stageTranslations` | `boolean` | Configuration for staging/preview translation features |
+| `files` | `object` | Path to local translation files for development and testing |
+| `_versionId` | `string` | Internal property used to track project version (do not modify) |
+
+
+### `cacheUrl` and `runtimeUrl`
+
+If you are storing your translations in the cloud, the `cacheUrl` is the base URL for the cache.
+The `runtimeUrl` is the base URL for the runtime and only applies to development translations.
+
+### `stageTranslations`
+
+The `stageTranslations` is a flag used by the `gtx-cli` tool to mark your translations as requiring review.
+This means that they must be manually approved before they can be deployed to production via the [`gtx-cli translate`](/docs/cli/translate) command.
+
+### `files`
+
+The `files` field specifies a path to locally stored translations (in contrast to storing them in the cloud).
+Specifically, the `output` field specifies where the translations will be written to.
+
+```json
+{
+  "files": {
+    "gt": {
+      "output": "public/_gt/[locale].json"
+    }
+  },
+}
+```
+
+
+
+{/* 
+### `_versionId`
+
+Points to hit:
+- internal
+- you can specify your own version names */}
+
+
+---
+
+## Examples
+
+### Specifying your locales
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en", // Primary locale is English
+  "locales": ["fr", "es"] // Secondary locales are French and Spanish
+}
+```
+
+
+{/* ### Specifying your own versionId */}
+
+---
+
+## Notes
+ * The `gt.config.json` file is used to specify your project's configuration.
+ * It is read by both the [`withGTConfig()`](/docs/next/api/config/withgtconfig) component and the [`gtx-cli translate`](/docs/cli/translate) command.
+ 
+
+## Next steps
+ * Learn how to have your [translations added to your project's bundle](/docs/next/reference/local-tx).

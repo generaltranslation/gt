@@ -89,7 +89,12 @@ function wrapJsxExpression(
 
       // Warn about ternary (should use branch instead)
       if (result.wrappedInT && !mark) {
-        options.warnings.push(warnTernarySync(options.file));
+        options.warnings.push(
+          warnTernarySync(
+            options.file,
+            `${consequent.loc?.start?.line}:${consequent.loc?.start?.column}`
+          )
+        );
       }
     } else if (
       t.isConditionalExpression(consequent) ||

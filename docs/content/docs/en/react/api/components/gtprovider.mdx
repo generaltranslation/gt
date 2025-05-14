@@ -190,6 +190,30 @@ createRoot(document.getElementById("root")!).render(
 );
 ```
 
+### Render settings
+
+Render settings controls the loading behavior for translations.
+There are two fields: `timeout` and `method`.
+
+- `timeout` is the number of milliseconds to wait for a translation to load before showing a fallback (default: `8000ms`).
+- `method` is the method to use to load translations (`"skeleton"`, `"replace"`, or `"default"`).
+
+```jsx title="index.js" copy
+<GTProvider renderSettings={{ method: "skeleton", timeout: 1000 }}>
+  <App />
+</GTProvider>
+```
+
+Each render setting dictates different loading behavior:
+`"skeleton"` will return `null` until the translations are loaded.
+`"replace"` will return the fallback content until the translations are loaded.
+`"default"` will return `null` until the translations are loaded, unless the fallback locale has the same language as the current locale (i.e., `en-US` and `en-GB`).
+In this case, it will return the fallback content immediately until the translations are loaded.
+
+
+
+
+
 ---
 
 ## Notes

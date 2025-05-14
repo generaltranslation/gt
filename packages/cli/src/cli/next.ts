@@ -1,11 +1,4 @@
-import {
-  WrapOptions,
-  Options,
-  Updates,
-  SupportedFrameworks,
-  SupportedLibraries,
-} from '../types';
-import createInlineUpdates from '../react/parse/createInlineUpdates';
+import { WrapOptions, SupportedFrameworks, SupportedLibraries } from '../types';
 import { ReactCLI } from './react';
 import wrapContentNext from '../next/parse/wrapContent';
 

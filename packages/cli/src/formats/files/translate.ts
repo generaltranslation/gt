@@ -10,6 +10,7 @@ import {
   noDefaultLocaleError,
   noApiKeyError,
   noProjectIdError,
+  devApiKeyError,
 } from '../../console';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
 import { getRelative, readFile } from '../../fs/findFilepath';
@@ -105,6 +106,9 @@ export async function translateFiles(
   }
   if (!options.apiKey) {
     logErrorAndExit(noApiKeyError);
+  }
+  if (options.apiKey.startsWith('gtx-dev-')) {
+    logErrorAndExit(devApiKeyError);
   }
   if (!options.projectId) {
     logErrorAndExit(noProjectIdError);
