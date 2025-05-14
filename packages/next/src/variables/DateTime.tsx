@@ -42,6 +42,13 @@ async function DateTime({
   } else if (defaultValue instanceof Date) {
     dateValue = defaultValue;
   }
+
+  if (typeof dateValue !== 'undefined' && isNaN(dateValue.getTime())) {
+    throw new Error(
+      `DateTime Error -- Invalid date format: "${defaultValue}". Please use a Date object, valid date string, or number.`
+    );
+  }
+
   if (typeof dateValue !== 'undefined') {
     final = formatDateTime(dateValue, { locales, ...options }).replace(
       /[\u200F\u202B\u202E]/g,
