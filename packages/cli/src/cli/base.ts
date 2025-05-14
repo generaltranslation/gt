@@ -74,6 +74,10 @@ export class BaseCLI {
   }
   // Execute is called by the main program
   public execute() {
+    // If no command is specified, run 'init'
+    if (process.argv.length <= 2) {
+      process.argv.push('init');
+    }
     program.parse();
   }
 
