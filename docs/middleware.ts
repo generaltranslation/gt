@@ -13,6 +13,6 @@ export const config = {
      * - _next (internal files)
      * - static files
      */
-    '/((?!api|static|.*\\..*|_next).*)',
+    '/((?!api|static|ingest|.*\\..*|_next).*)',
   ],
 };
