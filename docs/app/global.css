@@ -74,12 +74,24 @@
   --hover-shine-inverse-color: rgba(0, 0, 0, 0.15);
   --hover-shine-color-dark: rgba(0, 0, 0, 0.1);
   --hover-shine-inverse-color-dark: rgba(255, 255, 255, 0.3);
+
+  --color-fd-primary-hover: rgba(
+    0,
+    0,
+    0,
+    0.85
+  ); /* fallback for light mode, adjust as needed */
 }
 
 .dark {
   --color-link: var(--color-link-dark);
   --hover-shine-color: var(--hover-shine-color-dark);
   --hover-shine-inverse-color: var(--hover-shine-inverse-color-dark);
+  --color-fd-primary-hover: hsl(
+    0,
+    0%,
+    90%
+  ); /* light gray for dark mode, adjust as needed */
 }
 
 /* ---------- LINKS ---------- */
@@ -143,7 +155,9 @@
   background-color: var(--card); /* bg-card */
   color: var(--card-foreground); /* text-card-foreground */
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
-  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  transition:
+    transform 0.3s ease-in-out,
+    box-shadow 0.3s ease-in-out;
   position: relative;
   overflow: hidden;
   /* Ensures shine effect stays within the card */
@@ -151,7 +165,8 @@
 
 /* Light mode hover effect */
 .logo-card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
   transform: scale(1.05);
   animation: logo-card-shadow 0.3s ease-in-out;

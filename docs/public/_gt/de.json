@@ -1,0 +1,57 @@
+{
+  "c50e272e0faf02919dafac7e71ae926a76194696c184d4a7860fae793f2148f7": {
+    "type": "div",
+    "props": {
+      "data-_gt": {
+        "id": 1
+      },
+      "children": [
+        {
+          "type": "div",
+          "props": {
+            "data-_gt": {
+              "id": 2
+            },
+            "children": {
+              "type": "p",
+              "props": {
+                "data-_gt": {
+                  "id": 3
+                },
+                "children": "Wir verwenden Tracking-Cookies, um zu verstehen, wie Sie unsere Website nutzen und wie wir sie verbessern können. Bitte akzeptieren Sie Cookies, um uns bei der Verbesserung zu helfen."
+              }
+            }
+          }
+        },
+        {
+          "type": "div",
+          "props": {
+            "data-_gt": {
+              "id": 4
+            },
+            "children": [
+              {
+                "type": "Button",
+                "props": {
+                  "data-_gt": {
+                    "id": 5
+                  },
+                  "children": "Cookies akzeptieren"
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "data-_gt": {
+                    "id": 6
+                  },
+                  "children": "Cookies ablehnen"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
