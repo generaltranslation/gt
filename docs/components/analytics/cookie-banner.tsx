@@ -22,6 +22,8 @@ export default function CookieBanner() {
   const isEU = useFeatureFlagEnabled('eu-cookie-banner') ?? false;
   const posthog = usePostHog();
 
+  console.log('is in EU', isEU);
+
   useEffect(() => {
     // We want this to only run once the client loads
     // or else it causes a hydration error
