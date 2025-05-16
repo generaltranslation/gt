@@ -85,11 +85,11 @@ export default function CookieBanner() {
         <div className="flex flex-col max-w-sm">
           <div className="pb-4">
             <p>
-              We use tracking cookies to understand how you use our website and
+              We use tracking cookies to understand how you use our docs and
               help us improve it. Please accept cookies to help us improve.
             </p>
           </div>
-          <div className="flex justify-between gap-x-4 gap-6 mt-6">
+          <div className="flex justify-between gap-x-4 gap-6 mt-4">
             <button
               onClick={handleAcceptCookies}
               className="flex-1 px-4 py-2 rounded-md font-medium shadow transition-colors"
