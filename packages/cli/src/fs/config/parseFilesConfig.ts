@@ -123,90 +123,52 @@ function expandGlobPatterns(
 
     const expandedPattern = pattern.replace(/\[locale\]/g, locale);
 
-    // Check if the pattern contains glob characters
-    if (
-      expandedPattern.includes('*') ||
-      expandedPattern.includes('?') ||
-      expandedPattern.includes('{')
-    ) {
-      // Resolve the absolute pattern path
-      const absolutePattern = path.resolve(process.cwd(), expandedPattern);
+    // Resolve the absolute pattern path
+    const absolutePattern = path.resolve(process.cwd(), expandedPattern);
 
-      // Prepare exclude patterns with locale replaced
-      const expandedExcludePatterns = excludePatterns.map((p) =>
-        path.resolve(process.cwd(), p.replace(/\[locale\]/g, locale))
-      );
+    // Prepare exclude patterns with locale replaced
+    const expandedExcludePatterns = excludePatterns.map((p) =>
+      path.resolve(process.cwd(), p.replace(/\[locale\]/g, locale))
+    );
 
-      // Use fast-glob to find all matching files, excluding the patterns
-      const matches = fg.sync(absolutePattern, {
-        absolute: true,
-        ignore: expandedExcludePatterns,
-      });
+    // Use fast-glob to find all matching files, excluding the patterns
+    const matches = fg.sync(absolutePattern, {
+      absolute: true,
+      ignore: expandedExcludePatterns,
+    });
 
-      resolvedPaths.push(...matches);
+    resolvedPaths.push(...matches);
 
-      // For each match, create a version with [locale] in the correct positions
-      matches.forEach((match) => {
-        // Convert to relative path to make replacement easier
-        const relativePath = path.relative(process.cwd(), match);
-        let originalRelativePath = relativePath;
+    // For each match, create a version with [locale] in the correct positions
+    matches.forEach((match) => {
+      // Convert to relative path to make replacement easier
+      const relativePath = path.relative(process.cwd(), match);
+      let originalRelativePath = relativePath;
 
-        // Replace locale with [locale] at each tracked position
-        if (localePositions.length > 0) {
-          // We need to account for path resolution differences
-          // This is a simplified approach - we'll replace all instances of the locale
-          // but only in path segments where we expect it based on the original pattern
-          const pathParts = relativePath.split(path.sep);
-          const patternParts = pattern.split(/[\/\\]/); // Handle both slash types
+      // Replace locale with [locale] at each tracked position
+      if (localePositions.length > 0) {
+        // We need to account for path resolution differences
+        // This is a simplified approach - we'll replace all instances of the locale
+        // but only in path segments where we expect it based on the original pattern
+        const pathParts = relativePath.split(path.sep);
+        const patternParts = pattern.split(/[\/\\]/); // Handle both slash types
 
-          for (let i = 0; i < pathParts.length; i++) {
-            if (i < patternParts.length) {
-              if (patternParts[i].includes(localeTag)) {
-                // This segment should have the locale replaced
-                pathParts[i] = pathParts[i].replace(locale, localeTag);
-              }
+        for (let i = 0; i < pathParts.length; i++) {
+          if (i < patternParts.length) {
+            if (patternParts[i].includes(localeTag)) {
+              // This segment should have the locale replaced
+              pathParts[i] = pathParts[i].replace(locale, localeTag);
             }
           }
-
-          originalRelativePath = pathParts.join(path.sep);
         }
 
-        // Convert back to absolute path
-        const originalPath = path.resolve(process.cwd(), originalRelativePath);
-        placeholderPaths.push(originalPath);
-      });
-    } else {
-      // If it's not a glob pattern, just add the resolved path if it's not excluded
-      const absolutePath = path.resolve(process.cwd(), expandedPattern);
-
-      // Check if this path should be excluded
-      const expandedExcludePatterns = excludePatterns.map((p) =>
-        path.resolve(process.cwd(), p.replace(/\[locale\]/g, locale))
-      );
-
-      // Only include if not matched by any exclude pattern
-      const shouldExclude = expandedExcludePatterns.some((excludePattern) => {
-        if (
-          excludePattern.includes('*') ||
-          excludePattern.includes('?') ||
-          excludePattern.includes('{')
-        ) {
-          return fg
-            .sync(excludePattern, { absolute: true })
-            .includes(absolutePath);
-        }
-        return absolutePath === excludePattern;
-      });
-
-      if (!shouldExclude) {
-        resolvedPaths.push(absolutePath);
-
-        // For non-glob patterns, we can directly replace locale with [locale]
-        // at the tracked positions in the resolved path
-        let originalPath = path.resolve(process.cwd(), pattern);
-        placeholderPaths.push(originalPath);
+        originalRelativePath = pathParts.join(path.sep);
       }
-    }
+
+      // Convert back to absolute path
+      const originalPath = path.resolve(process.cwd(), originalRelativePath);
+      placeholderPaths.push(originalPath);
+    });
   }
 
   return { resolvedPaths, placeholderPaths };
