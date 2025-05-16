@@ -12,7 +12,6 @@ import { getLocaleProperties } from 'generaltranslation';
 import { SiGithub } from '@icons-pack/react-simple-icons';
 import { PostHogProvider } from '@/components/analytics/PostHogProvider';
 import CookieBanner from '@/components/analytics/cookie-banner';
-import loadTranslations from '@/app/loadTranslations';
 
 const inter = Inter({
   subsets: ['latin'],
