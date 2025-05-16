@@ -1,6 +1,9 @@
 {
   "defaultLocale": "en",
   "files": {
+    "gt": {
+      "output": "public/_gt/[locale].json"
+    },
     "json": {
       "include": ["content/ui.[locale].json"]
     },
