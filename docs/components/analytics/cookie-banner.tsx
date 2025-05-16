@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useFeatureFlagEnabled, usePostHog } from 'posthog-js/react';
-import { Button } from '@/components/ui/button';
 import { T } from 'gt-next/client';
 
 export function cookieConsentGiven(): 'yes' | 'no' | undefined {
@@ -21,8 +20,6 @@ export default function CookieBanner() {
   );
   const isEU = useFeatureFlagEnabled('eu-cookie-banner');
   const posthog = usePostHog();
-
-  console.log('is in EU', isEU);
 
   useEffect(() => {
     // We want this to only run once the client loads
@@ -88,20 +85,18 @@ export default function CookieBanner() {
             </p>
           </div>
           <div className="flex justify-between gap-x-4 gap-6 mt-6">
-            <Button
+            <button
               onClick={handleAcceptCookies}
-              variant="default"
-              className="flex-1"
+              className="flex-1 rounded-md bg-primary text-primary-foreground px-4 py-2 font-medium shadow-sm transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
             >
               Accept cookies
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleDeclineCookies}
-              variant="outline"
-              className="flex-1"
+              className="flex-1 rounded-md border border-input bg-background px-4 py-2 font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             >
               Decline cookies
-            </Button>
+            </button>
           </div>
         </div>
       </T>
