@@ -86,7 +86,7 @@ export default function CookieBanner() {
           <div className="pb-4">
             <p>
               We use tracking cookies to understand how you use our docs and
-              help us improve it. Please accept cookies to help us improve.
+              help us improve them. Please accept cookies to help us improve.
             </p>
           </div>
           <div className="flex justify-between gap-x-4 gap-6 mt-4">
