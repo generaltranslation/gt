@@ -74,12 +74,24 @@
   --hover-shine-inverse-color: rgba(0, 0, 0, 0.15);
   --hover-shine-color-dark: rgba(0, 0, 0, 0.1);
   --hover-shine-inverse-color-dark: rgba(255, 255, 255, 0.3);
+
+  --color-fd-primary-hover: rgba(
+    0,
+    0,
+    0,
+    0.85
+  ); /* fallback for light mode, adjust as needed */
 }
 
 .dark {
   --color-link: var(--color-link-dark);
   --hover-shine-color: var(--hover-shine-color-dark);
   --hover-shine-inverse-color: var(--hover-shine-inverse-color-dark);
+  --color-fd-primary-hover: hsl(
+    0,
+    0%,
+    90%
+  ); /* light gray for dark mode, adjust as needed */
 }
 
 /* ---------- LINKS ---------- */

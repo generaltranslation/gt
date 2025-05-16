@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useFeatureFlagEnabled, usePostHog } from 'posthog-js/react';
+import { Button } from '@/components/ui/button';
 import { T } from 'gt-next/client';
 
 export function cookieConsentGiven(): 'yes' | 'no' | undefined {
@@ -87,13 +88,46 @@ export default function CookieBanner() {
           <div className="flex justify-between gap-x-4 gap-6 mt-6">
             <button
               onClick={handleAcceptCookies}
-              className="flex-1 rounded-md bg-primary text-primary-foreground px-4 py-2 font-medium shadow-sm transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              className="flex-1 px-4 py-2 rounded-md font-medium shadow transition-colors"
+              style={{
+                background: 'var(--color-fd-primary)',
+                color: 'var(--color-fd-primary-foreground)',
+                border: 'none',
+                outline: 'none',
+              }}
+              type="button"
+              onMouseOver={(e) => {
+                e.currentTarget.style.background =
+                  'var(--color-fd-primary-hover)';
+                e.currentTarget.style.color =
+                  'var(--color-fd-primary-foreground)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'var(--color-fd-primary)';
+                e.currentTarget.style.color = 'var(--color-fd-primary-foreground)';
+              }}
             >
               Accept cookies
             </button>
             <button
               onClick={handleDeclineCookies}
-              className="flex-1 rounded-md border border-input bg-background px-4 py-2 font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="flex-1 px-4 py-2 rounded-md font-medium shadow transition-colors"
+              style={{
+                background: 'var(--color-fd-background)',
+                color: 'var(--color-fd-foreground)',
+                border: '1px solid var(--color-fd-border)',
+                outline: 'none',
+              }}
+              type="button"
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'var(--color-fd-accent)';
+                e.currentTarget.style.color =
+                  'var(--color-fd-accent-foreground)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'var(--color-fd-background)';
+                e.currentTarget.style.color = 'var(--color-fd-foreground)';
+              }}
             >
               Decline cookies
             </button>
