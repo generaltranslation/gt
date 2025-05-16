@@ -19,7 +19,7 @@ export default function CookieBanner() {
   const [consentGiven, setConsentGiven] = useState<'yes' | 'no' | 'undecided'>(
     'undecided'
   );
-  const isEU = useFeatureFlagEnabled('eu-cookie-banner') ?? false;
+  const isEU = useFeatureFlagEnabled('eu-cookie-banner');
   const posthog = usePostHog();
 
   console.log('is in EU', isEU);
