@@ -11,7 +11,7 @@ import { GTProvider } from 'gt-next';
 import { getLocaleProperties } from 'generaltranslation';
 import { SiGithub } from '@icons-pack/react-simple-icons';
 import { PostHogProvider } from '@/components/analytics/PostHogProvider';
-import CookieBanner from '@/components/analytics/cookie-banner';
+import AnalyticsBanner from '@/components/analytics/AnalyticsBanner';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -155,7 +155,7 @@ export default async function Layout({
                 >
                   {children}
                 </DocsLayout>
-                <CookieBanner />
+                <AnalyticsBanner />
               </RootProvider>
             </GTProvider>
           </I18nProvider>

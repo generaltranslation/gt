@@ -15,6 +15,8 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       capture_pageleave: true, // Enable pageleave capture
       debug: process.env.NODE_ENV === 'development',
       persistence: cookieConsentGiven() === 'yes' ? 'cookie' : 'memory',
+      person_profiles: 'always',
+      autocapture: false,
     });
   }, []);
 

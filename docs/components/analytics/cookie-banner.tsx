@@ -11,7 +11,12 @@ export function cookieConsentGiven(): 'yes' | 'no' | undefined {
 }
 
 export function setCookieConsent(consent: 'yes' | 'no') {
-  document.cookie = `cookie_consent=${consent}; path=/; max-age=31536000`; // 1 year expiry
+  // Use domain only in production
+  const domain =
+    process.env.NODE_ENV === 'production'
+      ? '; domain=.generaltranslation.com'
+      : '';
+  document.cookie = `cookie_consent=${consent}; path=/${domain}; max-age=31536000`; // 1 year expiry
 }
 
 export default function CookieBanner() {
