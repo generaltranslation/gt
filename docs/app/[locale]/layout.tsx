@@ -10,7 +10,8 @@ import { I18nProvider } from 'fumadocs-ui/i18n';
 import { GTProvider } from 'gt-next';
 import { getLocaleProperties } from 'generaltranslation';
 import { SiGithub } from '@icons-pack/react-simple-icons';
-import { PostHogProvider } from '@/components/PostHogProvider';
+import { PostHogProvider } from '@/components/analytics/PostHogProvider';
+import CookieBanner from '@/components/analytics/cookie-banner';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -93,14 +94,16 @@ export default async function Layout({
           <I18nProvider
             locale={locale}
             locales={locales}
-            translations={{
-              en: (await import('@/content/ui.en.json')).default,
-              zh: (await import('@/content/ui.zh.json')).default,
-              de: (await import('@/content/ui.de.json')).default,
-              fr: (await import('@/content/ui.fr.json')).default,
-              es: (await import('@/content/ui.es.json')).default,
-              ja: (await import('@/content/ui.ja.json')).default,
-            }[locale]}
+            translations={
+              {
+                en: (await import('@/content/ui.en.json')).default,
+                zh: (await import('@/content/ui.zh.json')).default,
+                de: (await import('@/content/ui.de.json')).default,
+                fr: (await import('@/content/ui.fr.json')).default,
+                es: (await import('@/content/ui.es.json')).default,
+                ja: (await import('@/content/ui.ja.json')).default,
+              }[locale]
+            }
           >
             <GTProvider locale={locale}>
               <RootProvider>
@@ -151,6 +154,7 @@ export default async function Layout({
                   {...options}
                 >
                   {children}
+                  <CookieBanner />
                 </DocsLayout>
               </RootProvider>
             </GTProvider>

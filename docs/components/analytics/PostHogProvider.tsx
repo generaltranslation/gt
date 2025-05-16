@@ -4,6 +4,7 @@ import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider, usePostHog } from 'posthog-js/react';
 import { Suspense, useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { cookieConsentGiven } from '@/components/analytics/cookie-banner';
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -13,7 +14,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       capture_pageview: true, // We capture pageviews manually
       capture_pageleave: true, // Enable pageleave capture
       debug: process.env.NODE_ENV === 'development',
-      persistence: 'cookie',
+      persistence: cookieConsentGiven() === 'yes' ? 'cookie' : 'memory',
     });
   }, []);
 
