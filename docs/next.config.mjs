@@ -31,4 +31,5 @@ const config = {
 export default withGTConfig(withMDX(config), {
   defaultLocale: 'en',
   dictionary: 'content/ui.en.json',
+  loadTranslationsPath: 'loadTranslations.ts',
 });
