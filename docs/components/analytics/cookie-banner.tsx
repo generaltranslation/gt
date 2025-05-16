@@ -20,7 +20,6 @@ export default function CookieBanner() {
     'undecided'
   );
   const isEU = useFeatureFlagEnabled('eu-cookie-banner') ?? false;
-  console.log('isEU', isEU);
   const posthog = usePostHog();
 
   useEffect(() => {
@@ -66,21 +65,42 @@ export default function CookieBanner() {
 
   if (!isEU) return null;
 
+  if (consentGiven !== 'undecided') return null;
+
   return (
-    <div>
+    <div
+      className="fixed bottom-4 right-4 max-w-sm p-4 bg-white dark:bg-slate-800 rounded-lg shadow-lg z-[9999] border border-gray-200 dark:border-gray-700"
+      style={{
+        position: 'fixed',
+        bottom: '1rem',
+        right: '1rem',
+        zIndex: 9999,
+      }}
+    >
       <T>
-        <div>
-          <p>
-            We use tracking cookies to understand how you use the product and
-            help us improve it. Please accept cookies to help us improve.
-          </p>
-          <Button onClick={handleAcceptCookies} variant="outline">
-            Accept cookies
-          </Button>
-          <span> </span>
-          <Button onClick={handleDeclineCookies} variant="outline">
-            Decline cookies
-          </Button>
+        <div className="flex flex-col max-w-sm">
+          <div className="pb-4">
+            <p>
+              We use tracking cookies to understand how you use our website and
+              help us improve it. Please accept cookies to help us improve.
+            </p>
+          </div>
+          <div className="flex justify-between gap-x-4 gap-6 mt-6">
+            <Button
+              onClick={handleAcceptCookies}
+              variant="default"
+              className="flex-1"
+            >
+              Accept cookies
+            </Button>
+            <Button
+              onClick={handleDeclineCookies}
+              variant="outline"
+              className="flex-1"
+            >
+              Decline cookies
+            </Button>
+          </div>
         </div>
       </T>
     </div>

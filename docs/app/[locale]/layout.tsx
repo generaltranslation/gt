@@ -154,8 +154,8 @@ export default async function Layout({
                   {...options}
                 >
                   {children}
-                  <CookieBanner />
                 </DocsLayout>
+                <CookieBanner />
               </RootProvider>
             </GTProvider>
           </I18nProvider>
