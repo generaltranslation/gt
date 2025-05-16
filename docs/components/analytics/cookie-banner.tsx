@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useFeatureFlagEnabled, usePostHog } from 'posthog-js/react';
-import { Button } from '@/components/ui/button';
 import { T } from 'gt-next/client';
 
 export function cookieConsentGiven(): 'yes' | 'no' | undefined {
@@ -104,7 +103,8 @@ export default function CookieBanner() {
               }}
               onMouseOut={(e) => {
                 e.currentTarget.style.background = 'var(--color-fd-primary)';
-                e.currentTarget.style.color = 'var(--color-fd-primary-foreground)';
+                e.currentTarget.style.color =
+                  'var(--color-fd-primary-foreground)';
               }}
             >
               Accept cookies
