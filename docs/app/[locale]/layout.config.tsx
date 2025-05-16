@@ -1,7 +1,7 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import Logo from '@/components/Logo';
 
-import { Earth, MessageSquareText } from 'lucide-react';
+import { Book, Earth, Home, MessageSquareText } from 'lucide-react';
 import { SiDiscord } from '@icons-pack/react-simple-icons';
 
 /**
@@ -29,9 +29,15 @@ export async function baseOptions(locale: string): Promise<BaseLayoutProps> {
           &nbsp;&nbsp;General Translation&nbsp;&nbsp;
         </div>
       ),
-      url: '/docs',
+      url: '/',
     },
     links: [
+      {
+        text: translations?.docs || 'Docs',
+        url: '/docs',
+        active: 'nested-url',
+        icon: <Book />,
+      },
       {
         text: translations?.dashboard || 'Dashboard',
         url: '/dashboard',
