@@ -8,6 +8,20 @@ const config = {
   reactStrictMode: true,
   devIndicators: false,
   assetPrefix: '/docs-static',
+  async redirects() {
+    return [
+      {
+        source: '/:locale/docs',
+        destination: '/:locale/docs/platform',
+        permanent: true,
+      },
+      {
+        source: '/docs',
+        destination: '/docs/platform',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

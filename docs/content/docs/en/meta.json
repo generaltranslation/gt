@@ -1,6 +1,9 @@
 {
   "pages": [
-    "index",
+    "platform",
+    "react",
+    "next",
+    "cli",
     "---Quickstart---",
     "react/tutorials/quickstart",
     "next/tutorials/quickstart",
@@ -10,16 +13,6 @@
     "usage/dictionary",
     "usage/cli-tool",
     "usage/apikeys",
-    "---Libraries---",
-    "react",
-    "next",
-    "cli",
-    "---Reference---",
-    "reference/terminology",
-    "reference/standalone",
-    "reference/examples",
-    "reference/cli",
-    "reference/locale-strings",
     "faqs"
   ]
 }

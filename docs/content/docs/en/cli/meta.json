@@ -2,8 +2,7 @@
   "title": "CLI Tool",
   "icon": "Terminal",
   "pages": [
-    "[House][Home](/docs)",
-    "tutorials/quickstart",
+    "index",
     "---Commands---",
     "init",
     "translate",

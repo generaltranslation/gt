@@ -136,7 +136,7 @@ export default async function Layout({
                     banner: (
                       <>
                         <a
-                          href="https://github.com/General-Translation/gt-next"
+                          href="https://github.com/generaltranslation/gt"
                           target="_blank"
                           rel="noopener noreferrer"
                         >

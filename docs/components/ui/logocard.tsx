@@ -10,8 +10,8 @@ import { useLayoutEffect, useState } from 'react';
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL
   ? process.env.NEXT_PUBLIC_APP_URL + '/'
   : 'https://gt-docs-ten.vercel.app/';
-const REACT_QUICK_START = '/docs/react/tutorials/quickstart';
-const NEXT_QUICK_START = '/docs/next/tutorials/quickstart';
+const REACT_QUICK_START = '/docs/react';
+const NEXT_QUICK_START = '/docs/next';
 
 const LOGOS: Record<
   string,

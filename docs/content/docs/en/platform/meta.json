@@ -1,0 +1,25 @@
+{
+  "title": "General Translation",
+  "description": "Docs",
+  "icon": "House",
+  "root": true,
+  "pages": [
+    "index",
+    "terminology",
+    "---Usage---",
+    "usage/t",
+    "usage/dictionary",
+    "usage/cli-tool",
+    "usage/apikeys",
+    "---Platform---",
+    "context",
+    "cdn",
+    "review",
+    "ai-translations",
+    "---Reference---",
+    "supported-locales",
+    "locale-strings",
+    "faqs",
+    "examples"
+  ]
+}
