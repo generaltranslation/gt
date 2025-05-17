@@ -20,8 +20,10 @@ export function validateSettings(settings: Settings) {
   // defaultLocale cannot be a superset of any other locale
   if (
     settings.defaultLocale &&
-    settings.locales.some((locale) =>
-      isSupersetLocale(settings.defaultLocale, locale)
+    settings.locales.some(
+      (locale) =>
+        isSupersetLocale(settings.defaultLocale, locale) &&
+        !isSupersetLocale(locale, settings.defaultLocale)
     )
   ) {
     const locale = settings.locales.find((locale) =>
