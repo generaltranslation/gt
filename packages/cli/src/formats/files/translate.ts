@@ -93,7 +93,10 @@ export async function translateFiles(
     return;
   }
   if (options.dryRun) {
-    logSuccess('Dry run: No files were sent to General Translation.');
+    const fileNames = allFiles.map((file) => `- ${file.fileName}`).join('\n');
+    logSuccess(
+      `Dry run: No files were sent to General Translation. Found files:\n${fileNames}`
+    );
     return;
   }
 
