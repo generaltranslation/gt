@@ -1943,432 +1943,6 @@ Depending on what i18n library your project is using, please follow one of the f
 
 
 ---
-title: FAQs
----
-## Technical FAQs
-Source: https://generaltranslation.com/en/docs/faqs
-
-### Where does the `<T>` get its translations? What translations does it use?
-
-`<T>` can technically load translations from anywhere depending on how you've configured the library. 
-If you have a project ID, the library can hit a free CDN. 
-It can also store translations locally, or do a mix of the two. 
-See the [load-translations docs](/docs/next/api/config/load-translations#fetching-translations-from-your-bundle) for more details.
-
-During development, so you can see the translations hot-reload when you change content, the `<T>` component hits an API which uses a small AI model to create temporary translations. These translations aren't stored anywhere, they're just served back to the app.
-
-In production, `<T>` won't do this in order to not leak your API keys.
-
-### Why do I have to install the CLI tool?
-
-The CLI tool parses the content inside all `<T>` components and generates translations for that content in advance, 
-so that all the translations are ready when your app is deployed to production. 
-In development, you don't need it because you can use development API keys to translate on demand. 
-
-
-### Is there an automatic fallback for missing translations in production?
-
-Yes, if in production, a translation for some content is missing, the library will automatically fallback to the original source text.
-
-### Does the AI translation also work with dynamic content and variables?
-
-The `<T>` component doesn't support translating dynamic content and variables, 
-because this means the translations could potentially change with every re-render. 
-However, you can still include dynamic content and variables inside a `<T>` by wrapping them with 
-`<Var>`, `<Datetime>`, `<Currency>` components. 
-This is similar to how other libraries do string interpolation.
-
-For gt-next, there is also a `<Tx>` server-side component which does actually do translations on the spot in production, 
-and supports any form of dynamic content, but it requires an API key.
-
-### How does the offline system work? Can I deploy an application with GT without dependency on your servers?
-
-Yes you can, but you'd have to do the translations yourself, 
-then load them either from your own bundle or your own CDN. 
-See our docs on that: [here](/docs/next/api/config/load-translations#fetching-translations-from-your-bundle).
-
-## Business FAQs
-
-### Do I own my translations?
-
-**Yes.** 
-
-> You, the customer, retain full ownership and rights to any translated output produced through the Services. We make no claim to your output.
-
-For more, see our [Terms of Use](https://generaltranslation.com/terms).
-
-## General FAQs
-
-### What are tokens?
-
-When text is sent to [GT](https://www.generaltranslation.com) APIs, it is broken down into chunks called *tokens*.
-Think of tokens as small pieces of your input text, like words or parts of words, that an AI model uses to understand and translate your content.
-
-> A helpful rule of thumb is that one token generally corresponds to ~4 characters of text for common English text. This translates to roughly ¾ of a word (so 100 tokens ~= 75 words).
-
-For example, the string `Hello, world!` has 13 characters, and 4 tokens: `Hello`, `,`, ` world`, and `!`.
-
-If you go over the token limit for your plan, we begin to charge based on token usage. 
-We only ever charge based on the length of your input — never the length of the translation.
-Read more about our available plans [here](https://generaltranslation.com/pricing).
-
-For example, imagine you have the string `"Hello, world!"`, and your project's languages are `"fr"` (French), `"es"` (Spanish), and "`de"` (German).
-Token usage will be calculated as `4 * 3 = 12`. That is, the 4 tokens of `"Hello, world!"`, translated 3 times.
-
-We currently tokenize with OpenAI's `tiktoken`, which is the same tokenizer used by [GPT-4](https://openai.com/index/gpt-4/). You can explore this tokenizer [here](https://platform.openai.com/tokenizer).
-
-### Locales? Languages? Regions? What's the difference?
-
-Throughout this documentation, you will see us use the term *locale* and *language* somewhat interchangeably.
-For the most part, they do mean the same thing, but there are some subtle differences, and these will be made clear when necessary.
-
-*Language* refers to a spoken or written form of communication used by humans.
-
-*Region* refers to the area where a language is spoken or written. Of course, the language may remain the same, but vary between regions. For example, Canadian French versus French as spoken in France.
-
-*Locale* is a combination of a language and a region, and is used to specify a particular language in a particular region. For example, `en-US` is English as spoken in the United States.
-
-These differences are detailed further in our documentation on [Locale Strings](/docs/reference/locale-strings).
-
----
-title: Language codes
-description: TBD
----
-Source: https://generaltranslation.com/en/docs/generaltranslation/codes
-
-
----
-title: Formatting variables
-description: TBD
----
-Source: https://generaltranslation.com/en/docs/generaltranslation/formatting
-
-
----
-title: Project APIs
-description: TBD
----
-Source: https://generaltranslation.com/en/docs/generaltranslation/project
-
-
----
-title: Translation APIs
-description: TBD
----
-Source: https://generaltranslation.com/en/docs/generaltranslation/translation
-
-
----
-title: Introduction
-description: Docs for General Translation's localization libraries
----
-
-## Getting started
-Source: https://generaltranslation.com/en/docs/index
-We have quickstart guides for many popular React frameworks.
-<AllLogoCards />
-
-## What is General Translation?
-
-General Translation is an entire internationalization (i18n) stack that allows you to ship multilingual apps quickly and easily.
-
-![Live translations in action](/live_translations.gif)
-
-General Translation includes the following:
-
-- Open-source developer libraries for React and Next.js
-- An AI translation service
-- A complete infrastructure package for serving translation content
-
-If you would like to use GT libraries with your own translation provider, please see our [standalone](/docs/reference/standalone) docs.
-
-If you would like to use your own i18n library, but still want to use General Translation's AI translation service, please see our [CLI tool](/docs/cli/tutorials/quickstart) docs.
-
-If you would like to use General Translation to translate your JSON, Markdown, or MDX files, please see our [CLI tool](/docs/cli/tutorials/quickstart) docs.
-
-```bash
-npx gtx-cli@latest init
-```
-Run our setup wizard to get started!
-
-## Features
-
-### ⚛️ Translate entire React components in-line
-- A single opening and closing `<T>` component is all you need to translate an entire React component.
-  - No need for complex refactoring or messy function calls.
-- Content is in-line and in the same location as your code.
-  - No keys, strings, or additional files are needed!
-- The library manages all i18n logic behind the scenes, so you don't have to.
-- Translations are always kept in sync with your source code.
-- Translations contain contextual information about the content, so they are more accurate.
-
-```jsx title="Page.jsx" copy
-export default function Page() {
-  return (
-    // [!code highlight]
-    <T>
-      <p>You can write any JSX as children of the {"<T>"} component.</p>
-      <p>
-        For example, you could write a <a href="/">link</a> and have the text be
-        translated in context.
-      </p>
-      <div>
-        <div>
-          <p>Even deeply nested components are translated in context.</p>
-          <button>Click me!</button>
-        </div>
-      </div>
-    </T> // [!code highlight]
-  );
-}
-```
-
-### 🔎 Feature parity with existing libraries
-- GT libraries also support the same features as existing libraries like `i18next`, `react-intl`, and `next-intl`.
-- Features such as dictionaries, plurals, currencies, and automatic routing are all supported.
-
-### 🧠 Free AI-powered translation service
-- Our free AI-powered translation service allows you to create translations for your app in seconds.
-- **Translation hot reload** will automatically update your translations as you write them.
-- HTML content is re-arranged and customized according to the language.
-
-### 🔧 Developer-friendly
-- Setup is simple and can be done in minutes.
-- All GT libraries are open-source and work standalone.
-  - You can use your own translation provider or use our free AI-powered translation service.
-- No more wasting time managing translation keys like `t('menu.header.title')`.
-  - Just write everything in-line!
-
-See our [Github repo](https://github.com/generaltranslation/gt) for the source code and some example projects.
-
-
-<Callout>
-  These docs are under construction. Please create an issue on our [GitHub repository](https://github.com/generaltranslation/gt-docs/issues)
-  if what you're looking for isn't here.
-</Callout>
----
-
-## Why choose General Translation?
-
-**General Translation is an entire i18n stack**, including developer libraries, AI translations, and a complete infrastructure package for multilingual apps.
-
-You can mix and match our libraries with your own translation provider, or use our free AI-powered translation service with your own i18n library.
-
-For a seamless, end-to-end i18n experience, we recommend using our libraries with our translation service.
-
-With GT libraries like `gt-react` and `gt-next`, you can:
-
-### 1. Translate entire React components, not just strings
-
-UI passed as the children of the `<T>` component will be translated regardless of how complicated the JSX tree is. For example:
-
-```javascript title="page.jsx"
-import { T } from "gt-next";
-
-export default function Page() {
-  return (
-    // [!code highlight]
-    <T>
-      <p>Any children of <b>the {`<T>`} component</b> will be translated.</p>
-      <p>
-        Things like <a href="/">links</a>{', '}
-        <button>buttons</button>{', '}
-        and even <div> <div> <div> deeply nested components </div> </div> </div>  are translated.
-      </p>
-    </T> // [!code highlight]
-  );
-}
-```
-
-### 2. Translate both client and server components
-
-With first class support for the Next.js [App Router](https://nextjs.org/docs/app) and
-[React Server Components](https://react.dev/reference/rsc/server-components),
-you can translate both client and server components.
-
-```jsx title="src/components/MyServerComponent.jsx" copy
-import getName from "@/getName";
-import { T, Var } from "gt-next";
-
-export default async function MyServerComponent() {
-  const name = await getName();
-
-  return (
-    <T>
-      {/* [!code highlight] */}
-      Hello, <Var>{name}</Var>
-    </T>
-  );
-}
-```
-
-```jsx title="src/components/MyClientComponent.jsx" copy
-"use client";
-
-import { useState } from "react";
-import { T, Var } from "gt-next";
-
-export default function MyClientComponent() {
-  const [name, setName] = useState("Alice");
-
-  return (
-    <T>
-      {/* [!code highlight] */}
-      Hello, <Var>{name}</Var>
-    </T>
-  );
-}
-```
-
-### 3. Write content inline or in dictionaries
-
-JSX content placed inside a `<T>` component is marked for translation:
-
-```jsx title="Page.jsx" copy
-import { T } from "gt-next";
-
-export default function Page() {
-  return (
-    <T>
-      {/* [!code highlight] */}
-      <p>Hello, World!</p>  {/* translates <p>Hello, World!</p> */}
-    </T>
-  )
-}
-```
-
-Alternatively, if you prefer using the historic dictionary approach, you can write your content in a dictionary file:
-<Tabs items={['.json', '.js', '.ts']}>
-  <Tab value=".json">
-  ```json title="dictionary.json" copy
-  {
-    "greeting": "Hello, World!"
-  }
-  ```
-  </Tab>
-  <Tab value=".js">
-  ```js title="dictionary.js" copy
-  const dictionary = {
-    greeting: "Hello, World!"
-  }
-  export default dictionary;
-  ```
-  </Tab>
-  <Tab value=".ts">
-  ```ts title="dictionary.ts" copy
-  const dictionary = {
-    greeting: "Hello, World!" 
-  }
-  export default dictionary;
-  ```
-  </Tab>
-</Tabs>
-```jsx title="page.jsx" copy
-import { useDict } from "gt-next";
-
-export default function Page() {
-  const d = useDict();
-  return d('greeting'); // translates "Hello, World!" // [!code highlight]
-}
-```
-
-### 4. View translated content in development
-
-No need to worry about how UI looks in different languages,
-**General Translation will automatically translate your content as you write it in real-time.**
-
-Instead of having to continuously revise your UI multiple times in production,
-simply write your content in English **once** and let General Translation handle the rest.
-
-Need to see how your UI elements look in German before deploying? No problem, General Translation will automatically translate them for you!
-
-### 5. Translate content on-demand
-
-Apps often need to translate content only known at runtime.
-For Next.js, GT libraries support the ability to translate content on demand.
-
-Some common examples include:
- - User-specific information
- - Remotely stored content
- - Content that is generated dynamically
-
-Once the translation is loaded, it will rewrite your component in real time with the new translation content.
-
-
-## Get started
-
-
-<Tabs items={['Next.js', 'React']}>
-  <Tab value="Next.js">
-  Follow the [Quickstart](/docs/next/tutorials/quickstart) guide to ship your first translations.
-    <Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
-      <Tab value="npm">
-      ```bash 
-      npm i gt-next
-      ``` 
-      </Tab>
-      <Tab value="yarn">
-      ```bash 
-      yarn add gt-next
-      ```
-      </Tab>
-
-      <Tab value="bun">
-      ```bash 
-      bun add gt-next
-      ```
-      </Tab>
-
-      <Tab value="pnpm">
-      ```bash 
-      pnpm add gt-next
-      ```
-      </Tab>
-    </Tabs>
-  </Tab>
-  <Tab value="React">
-  Follow the [Quickstart](/docs/react/tutorials/quickstart) guide to ship your first translations.
-    <Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
-      <Tab value="npm">
-      ```bash 
-      npm i gt-react
-      ``` 
-      </Tab>
-      <Tab value="yarn">
-      ```bash 
-      yarn add gt-react
-      ```
-      </Tab>
-
-      <Tab value="bun">
-      ```bash 
-      bun add gt-react
-      ```
-      </Tab>
-      <Tab value="pnpm">
-      ```bash 
-      pnpm add gt-react
-      ```
-      </Tab>
-    </Tabs>
-  </Tab>
-</Tabs>
-
-Ready to go global? Start translating your app in minutes and reach users worldwide! 
-
-<Cards>
-  <Card
-    title="Next.js Quickstart"
-    href="/docs/next/tutorials/quickstart"
-  />
-  <Card
-    title="React Quickstart"
-    href="/docs/react/tutorials/quickstart"
-  />
-</Cards>
-
-
----
 title: Dynamic Content
 description: A brief overview of working with Dynamic Content in GT.
 ---
@@ -6857,7 +6431,7 @@ Source: https://generaltranslation.com/en/docs/next/reference/gt-config
 
 ---
 title: gt.config.json
-description: The `gt.config.json` file
+description: The gt.config.json file
 ---
 
 ## Overview
@@ -8761,7 +8335,7 @@ npm i gt-next
 ### Set up your environment
 Create a `.env` file in the root of your project and add your api key and project id.
 
-```env copy
+```dotenv copy
 GT_API_KEY="YOUR_GT_API_KEY"
 GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
 ```
@@ -9854,6 +9428,994 @@ export default async function MyComponent({ username }) {
 ## Next Steps
  * Return to the [Quick Start Guide](/docs/next/tutorials/quickstart) to finish setting up your project for translation.
  * See the API reference for [`useGT()`](/docs/next/api/strings/useGT), [`getGT()`](/docs/next/api/strings/getGT), and [`tx()`](/docs/next/api/strings/tx).
+
+
+---
+title: AI Translations
+description: How to use the AI to translate your project
+---
+
+## Overview
+Source: https://generaltranslation.com/en/docs/platform/ai-translations
+
+The project context is a way to translate your project.
+
+## Usage
+
+```tsx
+
+---
+title: CDN
+description: How to use the CDN to serve your translations
+---
+
+## Overview
+Source: https://generaltranslation.com/en/docs/platform/cdn
+
+The project context is a way to translate your project.
+
+## Usage
+
+```tsx
+
+---
+title: Project Context
+description: How to use the project context to translate your project
+---
+
+## Overview
+Source: https://generaltranslation.com/en/docs/platform/context
+
+The project context is a way to translate your project.
+
+## Usage
+
+```tsx
+
+---
+title: Examples
+description: Example projects using General Translation
+---
+
+This is a list of example projects using General Translation.
+
+## Next.js
+Source: https://generaltranslation.com/en/docs/platform/examples
+
+### Create Next.js App
+- [Source](https://github.com/generaltranslation/gt/tree/main/examples/next-create-app)
+- [Demo](https://next-create-app-eight.vercel.app/)
+
+### Next.js AI Chatbot
+- [Source](https://github.com/generaltranslation/gt/tree/main/examples/next-chatbot)
+- [Demo](https://example-ai-chatbot-ten.vercel.app/)
+
+## React
+
+### Create Vite App
+- [Source](https://github.com/generaltranslation/gt/tree/main/examples/vite-create-app)
+- [Demo](https://example-vite-create-app.vercel.app/)
+
+---
+title: FAQs
+---
+## Technical FAQs
+Source: https://generaltranslation.com/en/docs/platform/faqs
+
+### Where does the `<T>` get its translations? What translations does it use?
+
+`<T>` can technically load translations from anywhere depending on how you've configured the library. 
+If you have a project ID, the library can hit a free CDN. 
+It can also store translations locally, or do a mix of the two. 
+See the [load-translations docs](/docs/next/api/config/load-translations#fetching-translations-from-your-bundle) for more details.
+
+During development, so you can see the translations hot-reload when you change content, the `<T>` component hits an API which uses a small AI model to create temporary translations. These translations aren't stored anywhere, they're just served back to the app.
+
+In production, `<T>` won't do this in order to not leak your API keys.
+
+### Why do I have to install the CLI tool?
+
+The CLI tool parses the content inside all `<T>` components and generates translations for that content in advance, 
+so that all the translations are ready when your app is deployed to production. 
+In development, you don't need it because you can use development API keys to translate on demand. 
+
+
+### Is there an automatic fallback for missing translations in production?
+
+Yes, if in production, a translation for some content is missing, the library will automatically fallback to the original source text.
+
+### Does the AI translation also work with dynamic content and variables?
+
+The `<T>` component doesn't support translating dynamic content and variables, 
+because this means the translations could potentially change with every re-render. 
+However, you can still include dynamic content and variables inside a `<T>` by wrapping them with 
+`<Var>`, `<Datetime>`, `<Currency>` components. 
+This is similar to how other libraries do string interpolation.
+
+For gt-next, there is also a `<Tx>` server-side component which does actually do translations on the spot in production, 
+and supports any form of dynamic content, but it requires an API key.
+
+### How does the offline system work? Can I deploy an application with GT without dependency on your servers?
+
+Yes you can, but you'd have to do the translations yourself, 
+then load them either from your own bundle or your own CDN. 
+See our docs on that: [here](/docs/next/api/config/load-translations#fetching-translations-from-your-bundle).
+
+## Business FAQs
+
+### Do I own my translations?
+
+**Yes.** 
+
+> You, the customer, retain full ownership and rights to any translated output produced through the Services. We make no claim to your output.
+
+For more, see our [Terms of Use](https://generaltranslation.com/terms).
+
+## General FAQs
+
+### What are tokens?
+
+When text is sent to [GT](https://www.generaltranslation.com) APIs, it is broken down into chunks called *tokens*.
+Think of tokens as small pieces of your input text, like words or parts of words, that an AI model uses to understand and translate your content.
+
+> A helpful rule of thumb is that one token generally corresponds to ~4 characters of text for common English text. This translates to roughly ¾ of a word (so 100 tokens ~= 75 words).
+
+For example, the string `Hello, world!` has 13 characters, and 4 tokens: `Hello`, `,`, ` world`, and `!`.
+
+If you go over the token limit for your plan, we begin to charge based on token usage. 
+We only ever charge based on the length of your input — never the length of the translation.
+Read more about our available plans [here](https://generaltranslation.com/pricing).
+
+For example, imagine you have the string `"Hello, world!"`, and your project's languages are `"fr"` (French), `"es"` (Spanish), and "`de"` (German).
+Token usage will be calculated as `4 * 3 = 12`. That is, the 4 tokens of `"Hello, world!"`, translated 3 times.
+
+We currently tokenize with OpenAI's `tiktoken`, which is the same tokenizer used by [GPT-4](https://openai.com/index/gpt-4/). You can explore this tokenizer [here](https://platform.openai.com/tokenizer).
+
+### Locales? Languages? Regions? What's the difference?
+
+Throughout this documentation, you will see us use the term *locale* and *language* somewhat interchangeably.
+For the most part, they do mean the same thing, but there are some subtle differences, and these will be made clear when necessary.
+
+*Language* refers to a spoken or written form of communication used by humans.
+
+*Region* refers to the area where a language is spoken or written. Of course, the language may remain the same, but vary between regions. For example, Canadian French versus French as spoken in France.
+
+*Locale* is a combination of a language and a region, and is used to specify a particular language in a particular region. For example, `en-US` is English as spoken in the United States.
+
+These differences are detailed further in our documentation on [Locale Strings](/docs/reference/locale-strings).
+
+---
+title: Introduction
+description: Docs for General Translation's localization libraries
+---
+
+## Getting started
+Source: https://generaltranslation.com/en/docs/platform
+We have quickstart guides for many popular React frameworks.
+<AllLogoCards />
+
+## What is General Translation?
+
+General Translation is an entire internationalization (i18n) stack that allows you to ship multilingual apps quickly and easily.
+
+![Live translations in action](/live_translations.gif)
+
+General Translation includes the following:
+
+- Open-source developer libraries for React and Next.js
+- An AI translation service
+- A complete infrastructure package for serving translation content
+
+If you would like to use GT libraries with your own translation provider, please see our [standalone](/docs/reference/standalone) docs.
+
+If you would like to use your own i18n library, but still want to use General Translation's AI translation service, please see our [CLI tool](/docs/cli/tutorials/quickstart) docs.
+
+If you would like to use General Translation to translate your JSON, Markdown, or MDX files, please see our [CLI tool](/docs/cli/tutorials/quickstart) docs.
+
+```bash
+npx gtx-cli@latest init
+```
+Run our setup wizard to get started!
+
+## Features
+
+### ⚛️ Translate entire React components in-line
+- A single opening and closing `<T>` component is all you need to translate an entire React component.
+  - No need for complex refactoring or messy function calls.
+- Content is in-line and in the same location as your code.
+  - No keys, strings, or additional files are needed!
+- The library manages all i18n logic behind the scenes, so you don't have to.
+- Translations are always kept in sync with your source code.
+- Translations contain contextual information about the content, so they are more accurate.
+
+```jsx title="Page.jsx" copy
+export default function Page() {
+  return (
+    // [!code highlight]
+    <T>
+      <p>You can write any JSX as children of the {"<T>"} component.</p>
+      <p>
+        For example, you could write a <a href="/">link</a> and have the text be
+        translated in context.
+      </p>
+      <div>
+        <div>
+          <p>Even deeply nested components are translated in context.</p>
+          <button>Click me!</button>
+        </div>
+      </div>
+    </T> // [!code highlight]
+  );
+}
+```
+
+### 🔎 Feature parity with existing libraries
+- GT libraries also support the same features as existing libraries like `i18next`, `react-intl`, and `next-intl`.
+- Features such as dictionaries, plurals, currencies, and automatic routing are all supported.
+
+### 🧠 Free AI-powered translation service
+- Our free AI-powered translation service allows you to create translations for your app in seconds.
+- **Translation hot reload** will automatically update your translations as you write them.
+- HTML content is re-arranged and customized according to the language.
+
+### 🔧 Developer-friendly
+- Setup is simple and can be done in minutes.
+- All GT libraries are open-source and work standalone.
+  - You can use your own translation provider or use our free AI-powered translation service.
+- No more wasting time managing translation keys like `t('menu.header.title')`.
+  - Just write everything in-line!
+
+See our [Github repo](https://github.com/generaltranslation/gt) for the source code and some example projects.
+
+
+<Callout>
+  These docs are under construction. Please create an issue on our [GitHub repository](https://github.com/generaltranslation/gt-docs/issues)
+  if what you're looking for isn't here.
+</Callout>
+---
+
+## Why choose General Translation?
+
+**General Translation is an entire i18n stack**, including developer libraries, AI translations, and a complete infrastructure package for multilingual apps.
+
+You can mix and match our libraries with your own translation provider, or use our free AI-powered translation service with your own i18n library.
+
+For a seamless, end-to-end i18n experience, we recommend using our libraries with our translation service.
+
+With GT libraries like `gt-react` and `gt-next`, you can:
+
+### 1. Translate entire React components, not just strings
+
+UI passed as the children of the `<T>` component will be translated regardless of how complicated the JSX tree is. For example:
+
+```javascript title="page.jsx"
+import { T } from "gt-next";
+
+export default function Page() {
+  return (
+    // [!code highlight]
+    <T>
+      <p>Any children of <b>the {`<T>`} component</b> will be translated.</p>
+      <p>
+        Things like <a href="/">links</a>{', '}
+        <button>buttons</button>{', '}
+        and even <div> <div> <div> deeply nested components </div> </div> </div>  are translated.
+      </p>
+    </T> // [!code highlight]
+  );
+}
+```
+
+### 2. Translate both client and server components
+
+With first class support for the Next.js [App Router](https://nextjs.org/docs/app) and
+[React Server Components](https://react.dev/reference/rsc/server-components),
+you can translate both client and server components.
+
+```jsx title="src/components/MyServerComponent.jsx" copy
+import getName from "@/getName";
+import { T, Var } from "gt-next";
+
+export default async function MyServerComponent() {
+  const name = await getName();
+
+  return (
+    <T>
+      {/* [!code highlight] */}
+      Hello, <Var>{name}</Var>
+    </T>
+  );
+}
+```
+
+```jsx title="src/components/MyClientComponent.jsx" copy
+"use client";
+
+import { useState } from "react";
+import { T, Var } from "gt-next";
+
+export default function MyClientComponent() {
+  const [name, setName] = useState("Alice");
+
+  return (
+    <T>
+      {/* [!code highlight] */}
+      Hello, <Var>{name}</Var>
+    </T>
+  );
+}
+```
+
+### 3. Write content inline or in dictionaries
+
+JSX content placed inside a `<T>` component is marked for translation:
+
+```jsx title="Page.jsx" copy
+import { T } from "gt-next";
+
+export default function Page() {
+  return (
+    <T>
+      {/* [!code highlight] */}
+      <p>Hello, World!</p>  {/* translates <p>Hello, World!</p> */}
+    </T>
+  )
+}
+```
+
+Alternatively, if you prefer using the historic dictionary approach, you can write your content in a dictionary file:
+<Tabs items={['.json', '.js', '.ts']}>
+  <Tab value=".json">
+  ```json title="dictionary.json" copy
+  {
+    "greeting": "Hello, World!"
+  }
+  ```
+  </Tab>
+  <Tab value=".js">
+  ```js title="dictionary.js" copy
+  const dictionary = {
+    greeting: "Hello, World!"
+  }
+  export default dictionary;
+  ```
+  </Tab>
+  <Tab value=".ts">
+  ```ts title="dictionary.ts" copy
+  const dictionary = {
+    greeting: "Hello, World!" 
+  }
+  export default dictionary;
+  ```
+  </Tab>
+</Tabs>
+```jsx title="page.jsx" copy
+import { useDict } from "gt-next";
+
+export default function Page() {
+  const d = useDict();
+  return d('greeting'); // translates "Hello, World!" // [!code highlight]
+}
+```
+
+### 4. View translated content in development
+
+No need to worry about how UI looks in different languages,
+**General Translation will automatically translate your content as you write it in real-time.**
+
+Instead of having to continuously revise your UI multiple times in production,
+simply write your content in English **once** and let General Translation handle the rest.
+
+Need to see how your UI elements look in German before deploying? No problem, General Translation will automatically translate them for you!
+
+### 5. Translate content on-demand
+
+Apps often need to translate content only known at runtime.
+For Next.js, GT libraries support the ability to translate content on demand.
+
+Some common examples include:
+ - User-specific information
+ - Remotely stored content
+ - Content that is generated dynamically
+
+Once the translation is loaded, it will rewrite your component in real time with the new translation content.
+
+
+## Get started
+
+
+<Tabs items={['Next.js', 'React']}>
+  <Tab value="Next.js">
+  Follow the [Quickstart](/docs/next/tutorials/quickstart) guide to ship your first translations.
+    <Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
+      <Tab value="npm">
+      ```bash 
+      npm i gt-next
+      ``` 
+      </Tab>
+      <Tab value="yarn">
+      ```bash 
+      yarn add gt-next
+      ```
+      </Tab>
+
+      <Tab value="bun">
+      ```bash 
+      bun add gt-next
+      ```
+      </Tab>
+
+      <Tab value="pnpm">
+      ```bash 
+      pnpm add gt-next
+      ```
+      </Tab>
+    </Tabs>
+  </Tab>
+  <Tab value="React">
+  Follow the [Quickstart](/docs/react/tutorials/quickstart) guide to ship your first translations.
+    <Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
+      <Tab value="npm">
+      ```bash 
+      npm i gt-react
+      ``` 
+      </Tab>
+      <Tab value="yarn">
+      ```bash 
+      yarn add gt-react
+      ```
+      </Tab>
+
+      <Tab value="bun">
+      ```bash 
+      bun add gt-react
+      ```
+      </Tab>
+      <Tab value="pnpm">
+      ```bash 
+      pnpm add gt-react
+      ```
+      </Tab>
+    </Tabs>
+  </Tab>
+</Tabs>
+
+Ready to go global? Start translating your app in minutes and reach users worldwide! 
+
+<Cards>
+  <Card
+    title="Next.js Quickstart"
+    href="/docs/next/tutorials/quickstart"
+  />
+  <Card
+    title="React Quickstart"
+    href="/docs/react/tutorials/quickstart"
+  />
+</Cards>
+
+
+---
+title: Locales
+description: Locales and Locale Strings
+---
+
+
+## Overview
+Source: https://generaltranslation.com/en/docs/platform/locale-strings
+
+This page will discuss the standard used by General Translation to represent locales and languages and the list of currently supported locales.
+
+---
+
+## Locale strings
+
+General Translation uses a variant of the [BCP 47 Language Tag standard](https://www.techonthenet.com/js/language_tags.php) to represent locales and languages.
+BCP 47 Language Tags are the Internet Best Current Practices (BCP) standard for identifying languages in both spoken and written forms.
+These tags provide a uniform way to specify languages, allowing applications to adapt content, format, and behavior based on the user's locale.
+
+Language tags are composed of one or more subtags separated by the `"-"` character. The subtags include the following components:
+
+- **Language Subtag**: Represents the primary language, e.g., `en` for English, `es` for Spanish.
+- **Region Subtag**: Specifies a country or region, e.g., `US` for the United States, `FR` for France.
+- **Script Subtag** (optional): Indicates the writing script, e.g., `Latn` for Latin script.
+- **Variant Subtag** (optional): Identifies a specific variation of a language, e.g., `arevela` for Eastern Armenian.
+
+When you combine these tags together, we refer to this as a **Locale** or **Locale tag**.
+
+### Commonly Used Tags
+
+In practice, most language tags consist of two subtags: a language and a region. Here are some common examples:
+
+| Language Tag | Description                |
+|--------------|----------------------------|
+| `en-US`      | English as used in the US  |
+| `es-ES`      | Spanish as used in Spain   |
+| `fr-CA`      | French as used in Canada   |
+| `zh-CN`      | Simplified Chinese (China) |
+| `de-DE`      | German as used in Germany  |
+
+### Extended Tags
+
+Language tags can include additional subtags for more specificity:
+
+- **Example**: `hy-Latn-IT-arevela`
+  - `hy`: Armenian (language)
+  - `Latn`: Latin (script)
+  - `IT`: Italy (region)
+  - `arevela`: Eastern Armenian (variant)
+
+This tag represents Eastern Armenian written in Latin script, as used in Italy.
+
+## Exceptions to BCP 47 in GT
+
+🚧 This section is currently under construction. 🚧
+
+
+---
+## Supported locales [#supported-locales]
+
+This section lists all locales that are currently supported by General Translation.
+
+### A note on low-resource languages
+
+Our system leverages some of the most advanced LLM models on the market to provide accurate translations;
+however, these models are not without their limitations.
+Certain resource languages may not be supported by the model provider you have selected or any of the available providers.
+These languages are known as "low-resource languages".
+
+Low-resource languages can vary between models, so if you specify a preferred model provider in your configuration, you may want to check the list of supported languages for that provider.
+
+### Official list
+
+<SupportedLocales />
+
+---
+
+## Notes
+ * General Translations uses **Locale Tags (Locales)** to identify languages and regions internally.
+
+## Next Steps
+ * See our [List of Supported Locales](/docs/reference/locale-strings#supported-locales) to find the language tags available in General Translation.
+ * Refer to the official [IETF Language Tag Registry](https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry)
+   and the [BCP 47 Language Tag standard](https://www.techonthenet.com/js/language_tags.php) for more information.
+
+
+---
+title: CDN
+description: How to use the CDN to serve your translations
+---
+
+## Overview
+Source: https://generaltranslation.com/en/docs/platform/review
+
+The project context is a way to translate your project.
+
+## Usage
+
+```tsx
+
+---
+title: Open Source
+description: General Translation libraries are open source!
+---
+
+
+## Overview
+Source: https://generaltranslation.com/en/docs/platform/standalone
+
+All of our libraries are open source and free to use. They work fully standalone, out of the box.
+
+You can use them in any project, without needing to ever create an account or sign up for General Translation services.
+
+Standalone, our libraries support the following features:
+
+- Wrapping entire React components for translation
+- Dictionaries
+- Easy project setup
+- Middleware
+
+Using General Translation as a translation provider will unlock the following features:
+
+- On-demand translation
+- Automatic AI translations
+- A no-hassle translation CDN
+
+## How to use
+
+To use `gt-next` or `gt-react` with your own translation provider, use local translations:
+
+<Cards>
+  <Card
+    title="Next.js"
+    href="/docs/next/reference/local-tx"
+  />
+  <Card
+    title="React"
+    href="/docs/react/reference/local-tx"
+  />
+</Cards>
+
+## Managing translations
+
+To generate the translation files for your project, run the CLI tool with the following command:
+
+```bash
+npx gtx-cli configure # Configure your project
+npx gtx-cli generate # Generate the translation files
+```
+
+This command will generate the JSON data files for your project's source code. 
+You can then use these files with your own translation provider.
+To load the translations into `gt-next` or `gt-react`, use the `loadTranslations` function, as specified in
+the local translations guide.
+
+See the [CLI API reference](/docs/cli/generate) for more information.
+
+
+---
+title: Terminology
+description: A guide to the key terminology used in the General Translation libraries
+---
+
+## Overview
+Source: https://generaltranslation.com/en/docs/platform/terminology
+
+Throughtout these docs, we use a variety of terminology to describe the different concepts used in the General Translation libraries.
+
+This page highlights some of the key terminology we use.
+
+
+## Key Terminology
+
+<TOC/>
+
+### Locale
+
+A locale is a code used to identify a specific language.
+
+See the [locale strings](/docs/reference/locale-strings) page for a more detailed explanation.
+
+For example, `en-US` is the locale for English (United States).
+
+Throughout these docs, we often use the term "locale" and "language code" interchangeably.
+
+### Language
+
+When we refer to a language in the context of using it with code, we actually mean the locale. (Or the language code)
+
+For example, when we say "provide the language in the call to `setLocale`", we actually mean "provide the locale in the call to `setLocale`".
+
+If we say "French is a supported language", we actually mean "`fr` is a supported locale".
+
+
+### Dictionary
+
+A dictionary is a JSON file that contains a set of (potentially nested) key-value pairs.
+
+The keys are used as references, and the values are strings, either in the original language or in a translated language.
+
+```json
+{
+  "greeting": "Hello, World!",
+  "farewell": "Goodbye, World!",
+  "dashboard": {
+    "title": "Dashboard",
+    "description": "Welcome to the dashboard"
+  }
+}
+```
+
+The keys are human-readable references which are used to look up the translated content within your app.
+
+These dictionaries are conventional in structure and usage, similar to translation files in other i18n libraries.
+
+
+<Callout type="info">
+  A source dictionary can also be a `.js` or `.ts` file, meaning it can import from other files.
+  A dictionary containing translated content can only be a `.json` file.
+</Callout>
+
+#### Source Dictionary
+
+A source dictionary is a dictionary that contains content in the default locale for your app.
+
+#### Translated Dictionary
+
+A translated dictionary is a dictionary that contains content in a specific locale that is different from the default locale.
+
+The keys are the same as the source dictionary, and the values are the translated strings.
+
+If you have your own translated dictionaries, you can load them using the `loadDictionary()` function.
+
+### In-line content
+
+In-line content is content that is written directly in your app's code, and not stored separately in something like a JSON or dictionary file.
+
+This includes:
+
+- `<T>` components
+- `useGT` hooks
+- `getGT` function
+
+
+### Source Content
+
+Source content is the content in the default locale for your app. It includes anything written in your app's default language.
+
+Specifically for `gt-next`, and `gt-react`, source content includes all of the translatable content for your app, including your app's source dictionary and
+any in-line content.
+
+### Source Template
+
+Source template refers to the specific data format for storing source content.
+
+```json
+{
+  ["Unique identifier for the source content"]: "...Content..."
+}
+```
+
+The unique identifier for the source content is either a hash of the source content, or a user-defined unique identifier.
+
+Depending on the type of the source content, the corresponding value can be a string, array, or an object. (Strings and arrays for dictionaries, and objects for `<T>` components)
+
+
+### Translations
+
+Throughout these docs, we use the noun "translations" to refer to the translated content obtained from translating source content.
+
+Translations are generated directly from your source template.
+
+The `loadTranslations()` function allows you to customize the location where these translations are stored. This function expects the JSONs to be of the same format as the source template.
+
+Use the [CLI `generate` command](/docs/cli/generate) to generate these data files from your source content.
+
+<Callout type="warn">
+  **Note:**
+
+  It's important to note that a translation is _different_ from a translated dictionary. Dictionaries are potentially nested, and contain human-readable references as keys.
+
+  Translations, on the other hand, are flat, and likely contain non-human-readable hashes as keys.
+</Callout>
+
+**Translations** are what is stored on the GT CDN.
+
+If we use translations in reference to JSON, MDX, or MD files, we are referring to the direct translations of the original source files.
+
+
+
+
+---
+title: API Keys
+description: How to use API keys with General Translation
+---
+
+## Overview
+Source: https://generaltranslation.com/en/docs/platform/usage/apikeys
+
+There are two types of API keys used with General Translation:
+
+- **Production API Key**: This is used to translate your content in production.
+- **Development API Key**: This is used to translate your content in development.
+
+The behavior between the two types of keys are different, so you should be careful to use the correct key for the environment you are in.
+
+```bash
+GT_PROJECT_ID=your-project-id
+GT_API_KEY=your-api-key
+```
+
+If you are using `gt-next` or `gt-react` as a standalone i18n library, you do not need to use API keys.
+
+---
+
+## How to obtain
+
+<Steps>
+    <Step>
+        Navigate to your project dashboard on the [General Translation website](https://generaltranslation.com).
+    </Step>
+    <Step>
+        Click on the "API Keys" or "Developer Keys" tab.
+    </Step>
+    <Step>
+        Click on the "Create API Key" button.
+    </Step>
+    <Step>
+        Copy the API key and paste it into your project's `.env` file.
+    </Step>
+</Steps>
+
+---
+
+## Behavior
+
+Most simply put, Prod API keys persist translations, while Dev API keys do not.
+You use Dev API keys for prototyping translations and Prod API keys when you are ready to deploy.
+
+### Development API Key
+
+This type of key is useful for testing and development purposes.
+When using a development API key, translations are done on-demand and memoized in memory. 
+Translations **will not be saved**.
+
+The development API key is used by components rendered in the browser (client-side) and by server-side rendered components to facilitate on-demand translation.
+This means that it must be exported to the client.
+This key should NEVER be used in production environments and NEVER should be passed to the client in a production environment.
+
+```bash
+# example Vite .env file for dev
+VITE_GT_PROJECT_ID=your-project-id
+VITE_GT_API_KEY=your-dev-api-key # Only used in development
+```
+
+<Callout type="warn">
+  **Warning:**
+  Development API keys are passed to the client to facilitate client-side translation in development. 
+  This is fine in development environments, but is a security risk in production environments.
+  If your application is open to the internet, you should never use a development API key.
+</Callout>
+
+### Production API Key
+
+When using a production API key, translations **are persisted**.
+This means that translations will be saved (either in a CDN or in your app's bundle) to be used at runtime.
+
+This key is used in two places:
+ * The [`gtx-cli`](/docs/cli) tool. Check out [this guide](/docs/cli/tutorials/quickstart) for more information.
+ * The `gt-next` library when translations occur at runtime in a production build (server-side only, not used by `gt-react`).
+    * [`<Tx>`](/docs/next/api/components/tx) and [`tx()`](/docs/next/api/strings/tx) functions are used to translate content at runtime.
+
+The API key is only used by the server, and it should NEVER be exported to the client.
+```bash
+GT_PROJECT_ID=your-project-id
+GT_API_KEY=your-prod-api-key # This key should never be exported to the client
+```
+
+---
+
+## Notes
+ * Development API keys are used for testing and development purposes. It should only be used in development.
+ * Production API keys are used for production purposes.
+
+## Next steps
+ * Check out how to use [the `<T>` component](/docs/usage/t) to see live translations in development.
+ * See the [usage guide](/docs/cli/reference/usage) for the cli tool.
+
+---
+title: Dictionaries
+description: How to use dictionaries
+---
+
+## Overview
+Source: https://generaltranslation.com/en/docs/platform/usage/dictionary
+
+Dictionaries are a way to translate string content in General Translation.
+All content is stored in a central file and can be accessed using the [`useDict()` hook](/docs/react/api/dictionary/useDict).
+
+If you've used other i18n libraries, you may be familiar with using translation files (`en.json`, `zh.json`, etc.).
+Using dictionaries basically syntactically identical except that you only need to maintain one file in your base language.
+All translations will be generated by LLMs.
+
+<Callout>
+  **Tip**:
+  If you are looking for a simpler way to translate string content, we recommend using the [`useGT()` hook](/docs/react/api/strings/useGT).
+</Callout>
+
+---
+
+## Advantages and disadvantages
+
+There are a few advantages to using dictionaries:
+
+1. **Centralized Storage**: Dictionaries store all translatable content in a single file, making it easier to manage and update.
+2. **Historical Precedent**: The dictionary pattern is a common design pattern in the industry and is used by many other libraries.
+
+At the same time, it has some disadvantages as well:
+
+1. **Complexity**: Dictionaries are more complex to set up and use than translating string content inline.
+2. **Readability**: Dictionaries are less readable than the inline translation because content is separated from the context where it is being used.
+3. **Maintainability**: Dictionaries are more difficult to maintain than inline translation because you need to manually update the dictionary file when content changes.
+
+Dictionaries are an alternative design pattern to inline translation, but patterns are supported by our library and are not mutually exclusive.
+You can use a dictionary alongside inline translation with [the `<T>` component](/docs/react/api/components/t) and [the `useGT()` hook](/docs/react/api/strings/useGT).
+
+---
+
+## Example
+
+Specify your string content in a dictionary file (either `.js` or `.json`).
+```jsx title="src/dictionary.json" copy
+{
+  "greetings": {
+    "hello": 'Hello, World!',
+  },
+} 
+```
+
+Then you reference it in your component by passing the key to the `d()` function.
+
+```jsx title="src/MyComponent" copy
+import { GTProvider, useDict } from 'gt-react';
+import dictionary from './dictionary.json';
+
+export default function MyComponent() {
+
+  const d = useDict(); // [!code highlight]
+
+  return (
+    <GTProvider dictionary={dictionary}>
+      <div>
+        {d('greetings.hello')} // [!code highlight]
+      </div>
+    </GTProvider>
+  );
+}
+```
+
+---
+
+## Notes
+ * Dictionaries are a way to translate content in General Translation.
+ * The [`useDict()` hook](/docs/react/api/dictionary/useDict) is used for translating strings with dictionary pattern.
+
+## Next steps
+ * For more information check out the guides on dictionaries for [React](/docs/react/reference/dictionary-reference) or [Next.js](/docs/next/reference/dictionary-reference)
+
+
+---
+title: <T>
+description: How to use the <T> component
+---
+
+## Overview
+Source: https://generaltranslation.com/en/docs/platform/usage/t
+
+The `<T>` component is the primary way to translate content in General Translation.
+It can be used alongside dictionaries, or standalone.
+
+The `<T>` component can be used to translate text, HTML, and JSX.
+
+All you need to do is wrap your text in the `<T>` component, and it will be translated.
+
+No additional configuration is required!
+
+```jsx
+import { T } from 'gt-react'; // [!code highlight]
+
+export default function MyComponent() {
+  return (
+    // [!code highlight]
+    <T>
+      <h1>List of Shakespeare Plays: </h1>
+      <ul>
+        <li>Hamlet</li>
+        <li>A Midsummer Night's Dream</li>
+        <li>Macbeth</li>
+      </ul>
+    </T> // [!code highlight]
+  );
+}
+```
+
+
+### Our Advice
+
+We recommend using the `<T>` component because of its simplicity especially if you are new to internationalization (i18n).
+We offer [dictionaries](/docs/next/reference/dictionary-reference) for those who prefer this design pattern from past experiences or ease of integration with existing code bases.
+
+To learn more, see the specific reference for the corresponding framework:
+  
+<Cards>
+  <Card
+    href="/docs/next/reference/t-reference"
+    title="Next.js"
+  />
+  <Card
+    href="/docs/react/reference/t-reference"
+    title="React"
+  />
+</Cards>
 
 
 ---
@@ -13200,7 +13762,7 @@ This means that you have to run the translation command before deploying your ap
 
 ---
 title: gt.config.json
-description: The `gt.config.json` file
+description: The gt.config.json file
 ---
 
 ## Overview
@@ -14592,536 +15154,3 @@ Add your API key and Project ID to your environment variables.
     - **Never include any API keys as environment variables in production**
 </Callout>
 
-
-
----
-title: Examples
-description: Example projects using General Translation
----
-
-This is a list of example projects using General Translation.
-
-## Next.js
-Source: https://generaltranslation.com/en/docs/reference/examples
-
-### Create Next.js App
-- [Source](https://github.com/generaltranslation/gt/tree/main/examples/next-create-app)
-- [Demo](https://next-create-app-eight.vercel.app/)
-
-### Next.js AI Chatbot
-- [Source](https://github.com/generaltranslation/gt/tree/main/examples/next-chatbot)
-- [Demo](https://example-ai-chatbot-ten.vercel.app/)
-
-## React
-
-### Create Vite App
-- [Source](https://github.com/generaltranslation/gt/tree/main/examples/vite-create-app)
-- [Demo](https://example-vite-create-app.vercel.app/)
-
----
-title: Locale Strings
-description: How to interpret locale strings in GT
----
-
-
-## Overview
-Source: https://generaltranslation.com/en/docs/reference/locale-strings
-
-General Translation uses a variant of the [BCP 47 Language Tag standard](https://www.techonthenet.com/js/language_tags.php) to represent locales and languages.
-BCP 47 Language Tags are the Internet Best Current Practices (BCP) standard for identifying languages in both spoken and written forms.
-These tags provide a uniform way to specify languages, allowing applications to adapt content, format, and behavior based on the user's locale.
-
-Language tags are composed of one or more subtags separated by the `"-"` character. The subtags include the following components:
-
-- **Language Subtag**: Represents the primary language, e.g., `en` for English, `es` for Spanish.
-- **Region Subtag**: Specifies a country or region, e.g., `US` for the United States, `FR` for France.
-- **Script Subtag** (optional): Indicates the writing script, e.g., `Latn` for Latin script.
-- **Variant Subtag** (optional): Identifies a specific variation of a language, e.g., `arevela` for Eastern Armenian.
-
-When you combine these tags together, we refer to this as a **Locale** or **Locale tag**.
-
-### Commonly Used Tags
-
-In practice, most language tags consist of two subtags: a language and a region. Here are some common examples:
-
-| Language Tag | Description                |
-|--------------|----------------------------|
-| `en-US`      | English as used in the US  |
-| `es-ES`      | Spanish as used in Spain   |
-| `fr-CA`      | French as used in Canada   |
-| `zh-CN`      | Simplified Chinese (China) |
-| `de-DE`      | German as used in Germany  |
-
-### Extended Tags
-
-Language tags can include additional subtags for more specificity:
-
-- **Example**: `hy-Latn-IT-arevela`
-  - `hy`: Armenian (language)
-  - `Latn`: Latin (script)
-  - `IT`: Italy (region)
-  - `arevela`: Eastern Armenian (variant)
-
-This tag represents Eastern Armenian written in Latin script, as used in Italy.
-
-## Exceptions to BCP 47 in GT
-
-🚧 This section is currently under construction. 🚧
-
-## Notes
- * General Translations uses **Locale Tags (Locales)** to identify languages and regions internally.
-
-## Next Steps
- * See our [List of Supported Locales](/docs/reference/locale-strings#supported-locales) to find the language tags available in General Translation.
- * Refer to the official [IETF Language Tag Registry](https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry)
-   and the [BCP 47 Language Tag standard](https://www.techonthenet.com/js/language_tags.php) for more information.
-
-
----
-title: Open Source
-description: General Translation libraries are open source!
----
-
-
-## Overview
-Source: https://generaltranslation.com/en/docs/reference/standalone
-
-All of our libraries are open source and free to use. They work fully standalone, out of the box.
-
-You can use them in any project, without needing to ever create an account or sign up for General Translation services.
-
-Standalone, our libraries support the following features:
-
-- Wrapping entire React components for translation
-- Dictionaries
-- Easy project setup
-- Middleware
-
-Using General Translation as a translation provider will unlock the following features:
-
-- On-demand translation
-- Automatic AI translations
-- A no-hassle translation CDN
-
-## How to use
-
-To use `gt-next` or `gt-react` with your own translation provider, use local translations:
-
-<Cards>
-  <Card
-    title="Next.js"
-    href="/docs/next/reference/local-tx"
-  />
-  <Card
-    title="React"
-    href="/docs/react/reference/local-tx"
-  />
-</Cards>
-
-## Managing translations
-
-To generate the translation files for your project, run the CLI tool with the following command:
-
-```bash
-npx gtx-cli configure # Configure your project
-npx gtx-cli generate # Generate the translation files
-```
-
-This command will generate the JSON data files for your project's source code. 
-You can then use these files with your own translation provider.
-To load the translations into `gt-next` or `gt-react`, use the `loadTranslations` function, as specified in
-the local translations guide.
-
-See the [CLI API reference](/docs/cli/generate) for more information.
-
-
----
-title: Supported Languages
-description: List of currently supported languages for translation
----
-
-
-## Overview
-Source: https://generaltranslation.com/en/docs/reference/locale-strings#supported-locales
-
-This page lists all languages and corresponding [locale strings](/docs/reference/locale-strings) that are currently supported by General Translation (GT).
-
-Our system leverages some of the most advanced LLM models on the market to provide accurate translations;
-however, these models are not without their limitations.
-Certain resource languages may not be supported by the model provider you have selected or any of the available providers.
-These languages are known as "low-resource languages".
-
-Low-resource languages can vary between models, so if you specify a preferred model provider in your configuration, you may want to check the list of supported languages for that provider.
-
-
-## Supported Languages
-
-<SupportedLocales />
-
-## Next Steps
- * Learn more about how we represent locales using [Locale Strings](/docs/reference/locale-strings).
-
----
-title: Terminology
-description: A guide to the key terminology used in the General Translation libraries
----
-
-## Overview
-Source: https://generaltranslation.com/en/docs/reference/terminology
-
-Throughtout these docs, we use a variety of terminology to describe the different concepts used in the General Translation libraries.
-
-This page highlights some of the key terminology we use.
-
-
-## Key Terminology
-
-<TOC/>
-
-### Locale
-
-A locale is a code used to identify a specific language.
-
-See the [locale strings](/docs/reference/locale-strings) page for a more detailed explanation.
-
-For example, `en-US` is the locale for English (United States).
-
-Throughout these docs, we often use the term "locale" and "language code" interchangeably.
-
-### Language
-
-When we refer to a language in the context of using it with code, we actually mean the locale. (Or the language code)
-
-For example, when we say "provide the language in the call to `setLocale`", we actually mean "provide the locale in the call to `setLocale`".
-
-If we say "French is a supported language", we actually mean "`fr` is a supported locale".
-
-
-### Dictionary
-
-A dictionary is a JSON file that contains a set of (potentially nested) key-value pairs.
-
-The keys are used as references, and the values are strings, either in the original language or in a translated language.
-
-```json
-{
-  "greeting": "Hello, World!",
-  "farewell": "Goodbye, World!",
-  "dashboard": {
-    "title": "Dashboard",
-    "description": "Welcome to the dashboard"
-  }
-}
-```
-
-The keys are human-readable references which are used to look up the translated content within your app.
-
-These dictionaries are conventional in structure and usage, similar to translation files in other i18n libraries.
-
-
-<Callout type="info">
-  A source dictionary can also be a `.js` or `.ts` file, meaning it can import from other files.
-  A dictionary containing translated content can only be a `.json` file.
-</Callout>
-
-#### Source Dictionary
-
-A source dictionary is a dictionary that contains content in the default locale for your app.
-
-#### Translated Dictionary
-
-A translated dictionary is a dictionary that contains content in a specific locale that is different from the default locale.
-
-The keys are the same as the source dictionary, and the values are the translated strings.
-
-If you have your own translated dictionaries, you can load them using the `loadDictionary()` function.
-
-### In-line content
-
-In-line content is content that is written directly in your app's code, and not stored separately in something like a JSON or dictionary file.
-
-This includes:
-
-- `<T>` components
-- `useGT` hooks
-- `getGT` function
-
-
-### Source Content
-
-Source content is the content in the default locale for your app. It includes anything written in your app's default language.
-
-Specifically for `gt-next`, and `gt-react`, source content includes all of the translatable content for your app, including your app's source dictionary and
-any in-line content.
-
-### Source Template
-
-Source template refers to the specific data format for storing source content.
-
-```json
-{
-  ["Unique identifier for the source content"]: "...Content..."
-}
-```
-
-The unique identifier for the source content is either a hash of the source content, or a user-defined unique identifier.
-
-Depending on the type of the source content, the corresponding value can be a string, array, or an object. (Strings and arrays for dictionaries, and objects for `<T>` components)
-
-
-### Translations
-
-Throughout these docs, we use the noun "translations" to refer to the translated content obtained from translating source content.
-
-Translations are generated directly from your source template.
-
-The `loadTranslations()` function allows you to customize the location where these translations are stored. This function expects the JSONs to be of the same format as the source template.
-
-Use the [CLI `generate` command](/docs/cli/generate) to generate these data files from your source content.
-
-<Callout type="warn">
-  **Note:**
-
-  It's important to note that a translation is _different_ from a translated dictionary. Dictionaries are potentially nested, and contain human-readable references as keys.
-
-  Translations, on the other hand, are flat, and likely contain non-human-readable hashes as keys.
-</Callout>
-
-**Translations** are what is stored on the GT CDN.
-
-If we use translations in reference to JSON, MDX, or MD files, we are referring to the direct translations of the original source files.
-
-
-
-
----
-title: API Keys
-description: How to use API keys with General Translation
----
-
-## Overview
-Source: https://generaltranslation.com/en/docs/usage/apikeys
-
-There are two types of API keys used with General Translation:
-
-- **Production API Key**: This is used to translate your content in production.
-- **Development API Key**: This is used to translate your content in development.
-
-The behavior between the two types of keys are different, so you should be careful to use the correct key for the environment you are in.
-
-```bash
-GT_PROJECT_ID=your-project-id
-GT_API_KEY=your-api-key
-```
-
-If you are using `gt-next` or `gt-react` as a standalone i18n library, you do not need to use API keys.
-
----
-
-## How to obtain
-
-<Steps>
-    <Step>
-        Navigate to your project dashboard on the [General Translation website](https://generaltranslation.com).
-    </Step>
-    <Step>
-        Click on the "API Keys" or "Developer Keys" tab.
-    </Step>
-    <Step>
-        Click on the "Create API Key" button.
-    </Step>
-    <Step>
-        Copy the API key and paste it into your project's `.env` file.
-    </Step>
-</Steps>
-
----
-
-## Behavior
-
-Most simply put, Prod API keys persist translations, while Dev API keys do not.
-You use Dev API keys for prototyping translations and Prod API keys when you are ready to deploy.
-
-### Development API Key
-
-This type of key is useful for testing and development purposes.
-When using a development API key, translations are done on-demand and memoized in memory. 
-Translations **will not be saved**.
-
-The development API key is used by components rendered in the browser (client-side) and by server-side rendered components to facilitate on-demand translation.
-This means that it must be exported to the client.
-This key should NEVER be used in production environments and NEVER should be passed to the client in a production environment.
-
-```bash
-# example Vite .env file for dev
-VITE_GT_PROJECT_ID=your-project-id
-VITE_GT_API_KEY=your-dev-api-key # Only used in development
-```
-
-<Callout type="warn">
-  **Warning:**
-  Development API keys are passed to the client to facilitate client-side translation in development. 
-  This is fine in development environments, but is a security risk in production environments.
-  If your application is open to the internet, you should never use a development API key.
-</Callout>
-
-### Production API Key
-
-When using a production API key, translations **are persisted**.
-This means that translations will be saved (either in a CDN or in your app's bundle) to be used at runtime.
-
-This key is used in two places:
- * The [`gtx-cli`](/docs/cli) tool. Check out [this guide](/docs/cli/tutorials/quickstart) for more information.
- * The `gt-next` library when translations occur at runtime in a production build (server-side only, not used by `gt-react`).
-    * [`<Tx>`](/docs/next/api/components/tx) and [`tx()`](/docs/next/api/strings/tx) functions are used to translate content at runtime.
-
-The API key is only used by the server, and it should NEVER be exported to the client.
-```bash
-GT_PROJECT_ID=your-project-id
-GT_API_KEY=your-prod-api-key # This key should never be exported to the client
-```
-
----
-
-## Notes
- * Development API keys are used for testing and development purposes. It should only be used in development.
- * Production API keys are used for production purposes.
-
-## Next steps
- * Check out how to use [the `<T>` component](/docs/usage/t) to see live translations in development.
- * See the [usage guide](/docs/cli/reference/usage) for the cli tool.
-
----
-title: Dictionaries
-description: How to use dictionaries
----
-
-## Overview
-Source: https://generaltranslation.com/en/docs/usage/dictionary
-
-Dictionaries are a way to translate string content in General Translation.
-All content is stored in a central file and can be accessed using the [`useDict()` hook](/docs/react/api/dictionary/useDict).
-
-If you've used other i18n libraries, you may be familiar with using translation files (`en.json`, `zh.json`, etc.).
-Using dictionaries basically syntactically identical except that you only need to maintain one file in your base language.
-All translations will be generated by LLMs.
-
-<Callout>
-  **Tip**:
-  If you are looking for a simpler way to translate string content, we recommend using the [`useGT()` hook](/docs/react/api/strings/useGT).
-</Callout>
-
----
-
-## Advantages and disadvantages
-
-There are a few advantages to using dictionaries:
-
-1. **Centralized Storage**: Dictionaries store all translatable content in a single file, making it easier to manage and update.
-2. **Historical Precedent**: The dictionary pattern is a common design pattern in the industry and is used by many other libraries.
-
-At the same time, it has some disadvantages as well:
-
-1. **Complexity**: Dictionaries are more complex to set up and use than translating string content inline.
-2. **Readability**: Dictionaries are less readable than the inline translation because content is separated from the context where it is being used.
-3. **Maintainability**: Dictionaries are more difficult to maintain than inline translation because you need to manually update the dictionary file when content changes.
-
-Dictionaries are an alternative design pattern to inline translation, but patterns are supported by our library and are not mutually exclusive.
-You can use a dictionary alongside inline translation with [the `<T>` component](/docs/react/api/components/t) and [the `useGT()` hook](/docs/react/api/strings/useGT).
-
----
-
-## Example
-
-Specify your string content in a dictionary file (either `.js` or `.json`).
-```jsx title="src/dictionary.json" copy
-{
-  "greetings": {
-    "hello": 'Hello, World!',
-  },
-} 
-```
-
-Then you reference it in your component by passing the key to the `d()` function.
-
-```jsx title="src/MyComponent" copy
-import { GTProvider, useDict } from 'gt-react';
-import dictionary from './dictionary.json';
-
-export default function MyComponent() {
-
-  const d = useDict(); // [!code highlight]
-
-  return (
-    <GTProvider dictionary={dictionary}>
-      <div>
-        {d('greetings.hello')} // [!code highlight]
-      </div>
-    </GTProvider>
-  );
-}
-```
-
----
-
-## Notes
- * Dictionaries are a way to translate content in General Translation.
- * The [`useDict()` hook](/docs/react/api/dictionary/useDict) is used for translating strings with dictionary pattern.
-
-## Next steps
- * For more information check out the guides on dictionaries for [React](/docs/react/reference/dictionary-reference) or [Next.js](/docs/next/reference/dictionary-reference)
-
-
----
-title: <T>
-description: How to use the <T> component
----
-
-## Overview
-Source: https://generaltranslation.com/en/docs/usage/t
-
-The `<T>` component is the primary way to translate content in General Translation.
-It can be used alongside dictionaries, or standalone.
-
-The `<T>` component can be used to translate text, HTML, and JSX.
-
-All you need to do is wrap your text in the `<T>` component, and it will be translated.
-
-No additional configuration is required!
-
-```jsx
-import { T } from 'gt-react'; // [!code highlight]
-
-export default function MyComponent() {
-  return (
-    // [!code highlight]
-    <T>
-      <h1>List of Shakespeare Plays: </h1>
-      <ul>
-        <li>Hamlet</li>
-        <li>A Midsummer Night's Dream</li>
-        <li>Macbeth</li>
-      </ul>
-    </T> // [!code highlight]
-  );
-}
-```
-
-
-### Our Advice
-
-We recommend using the `<T>` component because of its simplicity especially if you are new to internationalization (i18n).
-We offer [dictionaries](/docs/next/reference/dictionary-reference) for those who prefer this design pattern from past experiences or ease of integration with existing code bases.
-
-To learn more, see the specific reference for the corresponding framework:
-  
-<Cards>
-  <Card
-    href="/docs/next/reference/t-reference"
-    title="Next.js"
-  />
-  <Card
-    href="/docs/react/reference/t-reference"
-    title="React"
-  />
-</Cards>

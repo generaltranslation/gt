@@ -24,6 +24,7 @@ const config = {
   },
   async rewrites() {
     return [
+      // posthog
       {
         source: '/ingest/static/:path*',
         destination: 'https://us-assets.i.posthog.com/static/:path*',
@@ -35,6 +36,15 @@ const config = {
       {
         source: '/ingest/decide',
         destination: 'https://us.i.posthog.com/decide',
+      },
+      // .mdx to path name
+      {
+        source: '/docs/:path*.mdx',
+        destination: '/llms.mdx/:path*',
+      },
+      {
+        source: '/:locale/docs/:path*.mdx',
+        destination: '/:locale/llms.mdx/:path*',
       },
     ];
   },
