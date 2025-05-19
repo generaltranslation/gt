@@ -13,12 +13,12 @@ const config = {
       {
         source: '/:locale/docs',
         destination: '/:locale/docs/platform',
-        permanent: true,
+        permanent: false,
       },
       {
         source: '/docs',
         destination: '/docs/platform',
-        permanent: true,
+        permanent: false,
       },
     ];
   },
