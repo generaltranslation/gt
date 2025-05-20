@@ -7574,19 +7574,19 @@ and [Arabic](https://generaltranslation.com/ar/welcome) to illustrate the differ
 To add RTL support to your application, all we need to do to is determine the direction of the language and set the direction of
 the text on the screen accordingly.
 
-You can use the `getLanguageDirection()` function from the `generaltranslation`
+You can use the `getLocaleDirection()` function from `generaltranslation`
 library to determine if a language goes `"rtl"` or `"ltr"`.
 
 Use the `getLocale()` function to get the locale in the root layout, then add the `lang` and `dir` props to the `<html>` tag:
 
 ```javascript title="my-app/app/layout.tsx" copy
 import { getLocale } from 'gt-next'
-import { getLanguageDirection } from 'generaltranslation';
+import { getLocaleDirection } from 'generaltranslation';
 
 export default async function RootLayout({ children }) {
         
   const locale = await getLocale(); // e.g. "ar" for Arabic
-  const dir = getLanguageDirection(locale); // e.g. "rtl" for "right-to-left"
+  const dir = getLocaleDirection(locale); // e.g. "rtl" for "right-to-left"
 
   return (
     <html lang={locale} dir={dir}>
