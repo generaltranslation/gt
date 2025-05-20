@@ -4,6 +4,7 @@
     "react",
     "next",
     "cli",
+    "core",
     "---Quickstart---",
     "react/tutorials/quickstart",
     "next/tutorials/quickstart",

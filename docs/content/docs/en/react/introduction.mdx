@@ -1,0 +1,149 @@
+---
+title: Overview
+description: Overview of General Translation's React SDK
+---
+
+## Introduction
+
+The React SDK allows you to internationalize your React application in a easy and maintainable way.
+
+There are 4 main concepts to understand about the SDK.
+
+<Steps>
+  <Step>
+    The `<GTProvider>` component
+  </Step>
+  <Step>
+    The `<T>` component
+  </Step>
+  <Step>
+    The `useGT` hook
+  </Step>
+  <Step>
+    (Optional) The `useDict` hook
+  </Step>
+</Steps>
+
+## The `<GTProvider>` component
+
+```tsx
+import { GTProvider } from 'gt-react';
+```
+
+The `<GTProvider>` component is the main component that you need to add to your application.
+
+It is used to provide the rest of your application with context. 
+
+This context includes the current language and the relevant translations for that language.
+
+### Important Considerations
+
+- The provider should wrap your entire application.
+- Ideally, it should be placed as high in the tree as possible, such as in your root component.
+
+See the [GTProvider](/docs/react/api/components/gtprovider) page for more information.
+
+## The `<T>` component
+
+The `<T>` component is the recommended way to translate content in your application.
+
+It is a React component that can be used to wrap any JSX element, and will automatically translate the content of the element.
+
+<Callout type="info">
+We recommend using the `<T>` component wherever possible, since it allows for the most flexibility in translations.
+
+Unlike strings, the `<T>` component can be used to translate HTML content, making it much more powerful than string translations.
+</Callout>
+
+### Examples
+
+```tsx
+<T>
+  <div>Hello, world!</div>
+</T>
+```
+
+```tsx
+<T>
+  <div>
+    <h1> Here is an image </h1>
+    <img src="https://example.com/image.png" alt="Example" />
+  </div>
+</T>
+```
+
+```tsx
+<T>
+  Formatting can be done easily with the `<T>` component.
+  <Num>{1000}</Num>
+  <DateTime>{new Date()}</DateTime>
+  <Currency>{1000}</Currency>
+</T>
+```
+
+See the [components](/docs/react/guides/jsx) guide to learn about the different ways to use the `<T>` component.
+
+See the [T API Reference](/docs/react/api/components/t) for the API of the `<T>` component.
+
+## The `useGT` hook
+
+The `useGT` hook is a React hook that can be used similarly to the `<T>` component, with some trade-offs.
+
+The hook returns a function that can be used to translate strings.
+
+```tsx
+const translate = useGT();
+
+translate('Hello, world!');
+```
+
+Compared to the `<T>` component, the `useGT` hook allows for more flexibility in your codebase.
+
+For example, if you have a complex data structure with nested strings, a `<T>` component would be more difficult to use.
+
+```tsx
+const t = useGT();
+const data = {
+  title: t('Hello, world!'),
+  description: t('This is a description'),
+};
+```
+
+See the [strings](/docs/react/guides/strings) guide to learn more about the `useGT` hook.
+
+See the [useGT API Reference](/docs/react/api/strings/useGT) for more information.
+
+## The `useDict` hook
+
+The `useDict` hook is a React hook that returns a function that can be used to retrieve translations for a given key.
+
+```tsx title="dictionary.ts"
+const dictionary = {
+  hello: {
+    world: 'Hello, world!',
+  },
+};
+```
+
+```tsx title="App.tsx"
+const translate = useDict();
+translate('hello.world');
+```
+
+This behavior is similar to other translation libraries, such as `react-i18next` and `next-intl`.
+
+<Callout type="warn">
+We do not recommend using the `useDict` hook in your application. Frequent use of the `useDict` hook will make your codebase more difficult to maintain, 
+and will lead to large tech debt.
+
+Instead, we recommend using the `<T>` component or the `useGT` hook.
+
+If you are migrating from another i18n library, the `useDict` hook is a drop-in replacement and can useful for incrementally migrating your codebase.
+</Callout>
+
+See the [dictionaries](/docs/react/guides/dictionaries) guide to learn more about the `useDict` hook.
+
+See the [useDict API Reference](/docs/react/api/dictionary/useDict) for more information.
+
+
+

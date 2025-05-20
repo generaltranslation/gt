@@ -1,9 +1,22 @@
 {
-  "title": "React",
+  "title": "React SDK",
   "icon": "Atom",
   "pages": [
     "index",
+    "introduction",
+    "---Guides---",
+    "guides/jsx",
+    "guides/strings",
+    "guides/variables",
+    "guides/branches",
+    "guides/languages",
+    "guides/local-tx",
+    "guides/dictionary",
     "---Key Concepts---",
+    "concepts/cloud",
+    "concepts/t-component",
+    "concepts/environments",
+    "---Reference---",
     "reference/t-reference",
     "reference/local-management",
     "reference/dictionary-reference",
@@ -27,5 +40,5 @@
     "api/types"
   ],
   "root": true,
-  "description": "React SDK"
+  "description": "gt-react"
 }

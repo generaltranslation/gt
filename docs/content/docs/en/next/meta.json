@@ -1,5 +1,5 @@
 {
-  "title": "Next.js",
+  "title": "Next.js SDK",
   "icon": "Triangle",
   "pages": [
     "index",
@@ -35,5 +35,5 @@
     "api/types"
   ],
   "root": true,
-  "description": "Next.js SDK"
+  "description": "gt-next"
 }

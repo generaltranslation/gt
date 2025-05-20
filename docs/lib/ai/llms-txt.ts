@@ -17,7 +17,6 @@ export async function getLLMText(page: InferPageType<typeof source>) {
     // TODO: This is a bug in Fumadocs
     value: page.data.content,
   });
-  console.log(page.data);
 
   return `# ${page.data.title}
 URL: ${page.url}
