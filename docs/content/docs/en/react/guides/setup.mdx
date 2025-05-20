@@ -137,18 +137,55 @@ It is responsible for:
 
 Set the following environment variables:
 
-- `GT_API_KEY` - Your General Translation Developer API key
-- `GT_PROJECT_ID` - Your General Translation project ID
+<Tabs items={["Vite", "Next.js Pages Router", "Gatsby", "RedwoodJS",  "create-react-app", "Other"]}>
+    <Tab value="Vite">
+    ```bash copy
+    VITE_GT_API_KEY="" # Your General Translation Developer API key
+    VITE_GT_PROJECT_ID="" # Your General Translation project ID
+    ```
+    </Tab>
+    <Tab value="Gatsby">
+    ```bash copy
+    GATSBY_GT_API_KEY="" # Your General Translation Developer API key
+    GATSBY_GT_PROJECT_ID="" # Your General Translation project ID
+    ```
+    </Tab>
+    <Tab value="RedwoodJS">
+    ```bash copy
+    REDWOOD_ENV_GT_API_KEY="" # Your General Translation Developer API key
+    REDWOOD_ENV_PROJECT_ID="" # Your General Translation project ID
+    ```
+    </Tab>
+    <Tab value="Next.js Pages Router">
+    ```bash copy
+    NEXT_PUBLIC_GT_API_KEY="" # Your General Translation Developer API key
+    NEXT_PUBLIC_GT_PROJECT_ID="" # Your General Translation project ID
+    ```
+    </Tab>
+    <Tab value="create-react-app">
+    ```bash copy
+    REACT_APP_GT_API_KEY="" # Your General Translation Developer API key
+    REACT_APP_GT_PROJECT_ID="" # Your General Translation project ID
+    ```
+    </Tab>
+    <Tab value="Other">
+    Many react frameworks each have a unique way of exporting environment variables to the client.
+    In development environments, both `GT_API_KEY` and `GT_PROJECT_ID` need to be exported to the client.
 
-<Callout type="info">
-  Depending on your framework, you may need to prefix the environment variables, for example `NEXT_PUBLIC_GT_API_KEY` or `VITE_GT_API_KEY`.
+    We have added support for a few libraries so far,
+    but please let us know if your framework is not listed by creating an issue on our [GitHub repository](https://github.com/generaltranslation/gt/issues/new).
+    </Tab>
+</Tabs>
 
+<Callout type="warn">
   **Make sure your API key variable is only set in your development environment! It should not be set in production.**
 </Callout>
 
 You can get a free API key and project ID by creating a [General Translation account](https://dash.generaltranslation.com/signup).
 
-You can also use the CLI tool command `npx gtx-cli auth` to generate an API key and project ID for your project, saved to your `.env.local` file.
+After creating an account, navigate to the [Development API Keys](https://dash.generaltranslation.com/settings/dev-api-keys) page to get your Dev API key and project ID.
+
+Alternatively, you can also use the CLI tool command `npx gtx-cli auth` to generate an API key and project ID for your project, saved to your `.env.local` file.
 
 <Accordions>
   <Accordion title="What if I don't want to use the General Translation platform?">
