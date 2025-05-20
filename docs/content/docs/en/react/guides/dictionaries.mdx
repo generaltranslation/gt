@@ -3,4 +3,273 @@ title: Dictionaries
 description: How to use dictionaries
 ---
 
-## Dictionaries
+## Overview
+
+In this guide, we will introduce you to dictionaries.
+Please feel free to skip around this page as needed.
+We will cover the following:
+
+<Steps>
+  <Step>
+    What is a dictionary?
+  </Step>
+  <Step>
+    How to use dictionaries
+  </Step>
+  <Step>
+    Loading dictionaries for other languages
+  </Step>
+  <Step>
+    Using dictionaries
+  </Step>
+  <Step>
+    Production considerations
+  </Step>
+</Steps>
+
+<Callout>
+  **Note:** We do not recommend using dictionaries if you are using `gt-react`. Instead, please check out the [`<T>`](/docs/react/api/components/t) component.
+
+  This guide is intended for those who are already familiar with dictionaries and want to learn how to use them with `gt-react`, or those who are 
+  trying to migrate from another i18n library to `gt-react`.
+</Callout>
+
+---
+
+## What is a dictionary?
+
+A dictionary is a nested object with string values that can be used to store translatable content.
+They can be stored in a `.ts`, `.js`, or `.json` file.
+
+`gt-react` allows you to use dictionaries standalone, or in conjunction with [`<T>`](/docs/react/api/components/t) components.
+
+### Dictionary vs `<T>` Components
+
+The dictionary pattern has a few advantages over the [`<T>`](/docs/react/api/components/t) component:
+
+1. **Centralized Storage**: Dictionaries store all translatable content in a single file.
+2. **Historical Precedent**: The dictionary pattern is a common design pattern in the industry and is used by many other i18n libraries.
+
+At the same time, it has several major disadvantages:
+
+1. **Complexity**: Dictionaries are more complex to set up and use than the `<T>` component.
+2. **Readability**: Dictionaries are less readable than the `<T>` component because the content is not inline.
+3. **Maintainability**: Dictionaries are more difficult to maintain than the `<T>` component because the content is not inline, and is instead stored separately. 
+This makes maintaining and updating translations much more difficult.
+4. **Debuggability**: For the same reason, dictionaries are more difficult to debug than the `<T>` component.
+When trying to debug a React component, you will have to track down where the content in the dictionary is being used, rather than just directly searching your codebase.
+
+Both design patterns are supported by our library and are not mutually exclusive.
+You can use a dictionary alongside `<T>` components.
+
+### Our advice
+
+We recommend using the [`<T>`](/docs/react/api/components/t) component because of its simplicity especially if you are new to internationalization (i18n).
+We offer dictionary support for those who prefer this design pattern from past experiences or for ease of integration with existing code bases.
+
+---
+
+## How to use dictionaries
+
+In this section, we will show you how to set up a bare-bones dictionary implementation in your React application.
+We will walk through the following steps:
+
+<Steps>
+    <Step>
+        Create a dictionary
+    </Step>
+    <Step>
+        Reference the dictionary
+    </Step>
+</Steps>
+
+### Step 1: Create a dictionary
+
+The first step is to create a dictionary.
+This is a `dictionary.[js|ts|json]` file that contains all the content you want to translate.
+
+Add the following content to your `dictionary` file:
+
+```ts title="src/dictionary.ts" copy
+const dictionary = {
+  greetings: {
+    hello: 'Hello, World!'
+  },
+}
+
+export default dictionary;
+```
+
+<Callout>
+  You can also use a `dictionary.json` file to store your dictionary. This is useful if you are migrating from a different library or if you prefer to use JSON files.
+  Here is an example of a `dictionary.json` file:
+
+```json title="src/dictionary.json" copy
+{
+  "greetings": {
+    "hello": "Hello, World!"
+  }
+}
+``` 
+
+</Callout>
+
+Then you pass it to your `<GTProvider>` component:
+
+```jsx title="index.js" copy
+import dictionary from "./dictionary.js";
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    {/* [!code highlight] */}
+    <GTProvider locales={['es', 'fr']} dictionary={dictionary}>
+      <App />
+    </GTProvider>
+  </StrictMode>
+);
+```
+
+### Step 2: Reference the dictionary
+
+You can access dictionary entries with the [`useDict()`](/docs/react/api/dictionary/useDict) hook.
+Just use the function returned by the hook to access the dictionary entries by key.
+
+```tsx title="src/components/MyComponent.tsx" copy
+import { useDict } from 'gt-react';
+
+export default function MyComponent() {
+  const d = useDict();
+  return (
+    <div>
+      {d('greetings.hello')}
+    </div>
+  );
+}
+```
+
+---
+
+## Loading dictionaries for other languages [#other-languages]
+
+By default, developers only provide a dictionary for the default language.
+
+General Translation automatically generates dictionaries for other languages and loads them with the [`loadTranslations`](/docs/react/api/config/load-translations) function.
+
+However, if you are migrating from another i18n library or already have dictionaries for other languages, you can pass them to the [`loadDictionary`](/docs/react/api/config/load-dictionary) function.
+
+`gt-react` will automatically load the corresponding dictionary for the requested locale when using the `useDict()` hook or `getDict()` function.
+
+See the [API Reference](/docs/react/api/config/load-dictionary) for more information.
+
+---
+
+## Using dictionaries [#usage]
+
+### Variables
+
+You can add variables to your dictionary by using the `{variable}` syntax:
+
+```ts title="src/dictionary.ts" copy
+const dictionary = {
+  greetings: {
+    hello: 'Hello, {name}!',    // -> Hello, Alice!
+    goodbye: 'Goodbye, {name}!' // -> Goodbye, Bob!
+  },
+}
+export default dictionary;
+```
+```tsx title="src/components/MyComponent.tsx" copy
+import { useDict } from 'gt-react';
+
+export default async function MyComponent() {
+  const d = useDict();
+  return (
+    <div>
+      {d('greetings.hello', { variables: { name: 'Alice' }})}
+      {d('greetings.goodbye', { variables: { name: 'Bob' }})}
+    </div>
+  );
+}
+```
+
+Read more about adding variables to your dictionary in the [`DictionaryTranslationOptions` type](/docs/react/api/types/DictionaryTranslationOptions).
+
+
+### Prefixes
+
+Additionally, with [`useDict()`](/docs/react/api/dictionary/useDict), you can pass in a prefix to the function to specify a shared path in the dictionary.
+This is useful if you have a shared path in your dictionary that you want to use in multiple components.
+
+```jsx title="src/dictionary.js" copy
+const dictionary = {
+  greetings: {
+    common: {
+      hello: 'Hello, World!',
+      goodbye: 'Goodbye, World!'
+    },
+  },
+}
+export default dictionary;
+```
+
+```jsx title="src/components/MyComponent.js" copy
+import { useDict } from 'gt-react';
+
+export default async function MyComponent() {
+  // All translation paths such as 'hello' will be prefixed with 'greetings.common.'
+  const d = useDict('greetings.common'); // [!code highlight]
+
+  return (
+    <div>
+      {d('hello')} {/* hello -> greetings.common.hello */}
+      {d('goodbye')} {/* goodbye -> greetings.common.goodbye */}
+    </div>
+  );
+}
+```
+
+---
+
+## Production considerations
+
+### Deploying to production
+
+Make sure to run the translate command before deploying to production, so that all translations are available at runtime.
+We recommend adding it to your in your CD pipeline or as a part of your build script.
+```json title="package.json" copy
+{
+  "scripts": {
+    "build": "npx gtx-cli translate && <YOUR_BUILD_COMMAND>",
+  }
+}
+```
+
+For a more detailed guide on deploying your application, please refer to the [Deployment](/docs/react/tutorials/quickdeploy) guide.
+For more information on the command, please refer to the [CLI Tool](/docs/cli/translate) reference guide.
+
+### Behavior: Development vs Production
+
+In development, the function returned by the `useDict()` hook will translate dictionary entries on-demand.
+This means that when the component is rendered, it will perform a translation immediately.
+We do this for convenience to make development with other languages easier.
+
+To enable this behavior, just add a [Dev API key](/docs/react/concepts/environments) to your environment.
+
+In production, the `d()` function will translate content at build time.
+This means that you have to run the translation command before deploying your application.
+
+<Callout>
+  **Tip:**
+  If you want to simulate production behavior in development, just use a production API key in your development build.
+</Callout>
+
+---
+
+## Notes
+ * Dictionaries are an alternative to the `<T>` component. They can be used in conjunction with `<T>` components or standalone.
+ * Dictionary translations occur at build time, so you have to add the [`translate`](/docs/cli/translate) command to your build process.
+ * Dictionaries can be used with prefixes to specify a subset of the dictionary.
+
+## Next steps
+ * Learn about the [`<T>` component](/docs/react/api/components/t) and how to use it in your React application.
+ * Learn how to ship to production with our [deployment guide](/docs/react/tutorials/quickdeploy).
