@@ -1,11 +1,11 @@
 ---
 title: Translating JSX
-description: How to translate JSX components
+description: How to internationalize JSX components
 ---
 
 ## Overview
 
-This guide will walk you through how to use the [`<T>` component](/docs/react/api/components/t) to translate JSX content.
+This guide will walk you through how to use the [`<T>` component](/docs/react/api/components/t) to internationalize JSX content.
 
 By the end of this guide, you will know the correct syntax for using the `<T>` component and what to avoid.
 
@@ -21,7 +21,7 @@ We will cover the following:
     When to use the `<T>` component
   </Step>
   <Step>
-    Some examples
+    Examples
   </Step>
   <Step>
     Production considerations
@@ -136,7 +136,7 @@ The following examples show invalid usage of the `<T>` component:
 ```
 
 <Callout>
-  In the above examples, the content can be safely translated using [variable components](/docs/react/guides/variables) and [branching components](/docs/react/guides/branches).
+  In the above examples, the content can be safely internationalized using [variable components](/docs/react/guides/variables) and [branching components](/docs/react/guides/branches).
 </Callout>
 
 ```jsx
@@ -159,20 +159,40 @@ const chatMessage = getChatMessageFromServer();
 Here are some examples of how to use the `<T>` component. These are all correct.
 
 1. HTML content
+<Tabs items={['Result', 'Original']}>
+  <Tab value="Result">
 ```jsx
 <T>
   <p>Hello, world!</p>
 </T>
 ```
+  </Tab>
+  <Tab value="Original">
+    ```jsx
+    <p>Hello, world!</p>
+    ```
+  </Tab>
+</Tabs>
 
 2. Simple JSX content
+<Tabs items={['Result', 'Original']}>
+  <Tab value="Result">
 ```jsx
 <T>
   <Button>Click me!</Button>
 </T>
 ```
+  </Tab>
+  <Tab value="Original">
+    ```jsx
+    <Button>Click me!</Button>
+    ```
+  </Tab>
+</Tabs>
 
 3. Complex JSX content
+<Tabs items={['Result', 'Original']}>
+  <Tab value="Result">
 ```jsx
 <T>
   <Tooltip>
@@ -192,6 +212,32 @@ Here are some examples of how to use the `<T>` component. These are all correct.
   </Tooltip>
 </T>
 ```
+  </Tab>
+  <Tab value="Original">
+    ```jsx
+    <Tooltip>
+      <TooltipTrigger>
+        <div className="flex items-center gap-2 rounded-full bg-destructive px-3 py-1.5 text-sm text-destructive-foreground">
+          <AlertCircle className="h-4 w-4" />
+          <span>Free Usage</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>
+          You are nearing your free monthly limit. Please
+          upgrade your plan to avoid any disruptions to your
+          service.
+        </p>
+      </TooltipContent>
+    </Tooltip>
+    ```
+  </Tab>
+  </Tabs>
+
+
+
+
+
 
 <Callout>
   The `<T>` component can handle any nested content in the same component.
@@ -341,12 +387,13 @@ The solution here is to remove the outtermost `<T>` component.
 
 
 ## Summary
- * `<T>` components are used to translate arbitrary JSX Content.
+ * `<T>` components are used to internationalize arbitrary JSX Content.
  * `<T>` components should not be used for dynamic content, without using variable components or branching components.
  * In development, the `<T>` component will translate content on-demand.
  * In production, all translations that the `<T>` component uses are completed at build time.
 
 ## Next Steps
+ * Read about the [API](/docs/react/api/components/t) for the `<T>` component.
  * Explore [Variable Components](/docs/react/guides/variables) and [Branching Components](/docs/react/guides/branches).
  * Learn about [translating strings](/docs/react/guides/strings).
 
