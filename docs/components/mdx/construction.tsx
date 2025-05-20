@@ -7,7 +7,7 @@ export default function Construction() {
       <div>
         <div>🚧 This section is currently under construction. 🚧</div>
         <div>
-          We'd love to hear your feedback on our{' '}
+          We&apos;d love to hear your feedback on our{' '}
           <Link href="https://discord.gg/r9AKevT3Y4">Discord server</Link> or{' '}
           <Link href="https://github.com/generaltranslation/gt/issues">
             GitHub issues
