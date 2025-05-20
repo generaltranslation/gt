@@ -59,6 +59,8 @@ function Greeting() {
 Depending on the current language your user has selected, this will render the appropriate translation. 
 See [switching languages](/docs/react/guides/languages) for more information on how to allow your users to switch languages.
 
+---
+
 ## Additional Options
 
 ### Context
@@ -75,6 +77,8 @@ This can be done by passing a `context` prop to the `<T>` component.
 This is useful in cases where words may have multiple meanings depending on the context.
 For example, "toast" can refer to the food or a pop-up notification.
 
+The context prop is helpful for the AI to understand the intent of the translation.
+
 ### `id`
 
 You can also pass an `id` prop to the `<T>` component.
@@ -86,6 +90,7 @@ This is useful for debugging purposes and makes editing the translation easier.
 </T>
 ```
 
+---
 
 ## When to use the `<T>` component
 
@@ -152,7 +157,7 @@ const chatMessage = getChatMessageFromServer();
   See the [core](/docs/core) library for more information on how to dynamically translate content via our API.
 </Callout>
 
-
+---
 
 ## Examples
 
@@ -243,6 +248,7 @@ Here are some examples of how to use the `<T>` component. These are all correct.
   The `<T>` component can handle any nested content in the same component.
 </Callout>
 
+---
 
 ## Production Considerations [#production]
 
@@ -286,6 +292,8 @@ This might not be desirable for rendering sensitive data, such as usernames, acc
 To circumvent this issue, use [Variable Components](/docs/react/guides/variables#privacy) to handle private information.
 This ensures that no sensitive data is sent to the General Translation API for translation.
 Localization of any content wrapped in a variable component is handled locally.
+
+---
 
 ## Common Pitfalls
 
@@ -385,6 +393,7 @@ export default function NestedTranslation() {
 
 The solution here is to remove the outtermost `<T>` component.
 
+---
 
 ## Summary
  * `<T>` components are used to internationalize arbitrary JSX Content.

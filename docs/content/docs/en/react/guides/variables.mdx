@@ -1,11 +1,11 @@
 ---
 title: Using Variables
-description: How to use variables
+description: How to use variable components
 ---
 
 ## Overview
 
-Variable Components in `gt-react` allow you to insert dynamic content into translations.
+Variable components in `gt-react` allow you to insert dynamic content into translations.
 These components include:
 
 - [`<Var>`](/docs/react/api/components/var): For rendering variables.
@@ -262,9 +262,12 @@ This ensures that the correct currency symbol and formatting are used when displ
 
 Other components, such as `<Num>` and `<DateTime>`, also have optional props that allow you to customize the formatting as well.
 
+---
+
 ## Notes
  * Variable components isolate data, so they can be used to render dynamic content that is not part of a translation.
  * Variable components do not send data to the General Translation APIs, so they are perfect for keeping sensitive data private and secure.
+ * Variable components can be used either as a child of a [`<T>`](/docs/react/guides/jsx) component or as a standalone component.
 
 ## Next Steps
  * Explore conditional logic in [Branching Components](/docs/react/guides/branches).
