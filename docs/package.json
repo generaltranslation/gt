@@ -3,12 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "npm run i18n && npm run generate-llms && next build",
+    "build": "npm run i18n && next build",
     "build:base": "next build",
     "dev": "next dev --turbo",
     "start": "next start",
     "postinstall": "fumadocs-mdx",
-    "generate-llms": "tsx scripts/generate-llmstxt.ts",
     "postbuild": "next-sitemap --config next-sitemap.config.mjs",
     "i18n": "gtx-cli translate",
     "lint": "eslint .",
