@@ -40,7 +40,7 @@ function pathToUrl(filePath: string): string {
   // Ensure no duplicate slashes by normalizing the path
   const normalizedPath = cleanPath.replace(/^\/+/, '');
 
-  return `https://generaltranslation.com/${locale || 'en'}/docs/${normalizedPath}`;
+  return `https://generaltranslation.com/${locale || 'en'}/docs/${normalizedPath}.mdx`;
 }
 
 async function concatenateMDXDocs(sourceDir: string) {

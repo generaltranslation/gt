@@ -3,6 +3,10 @@
 @import 'fumadocs-ui/css/preset.css';
 
 @source '../node_modules/fumadocs-ui/dist/**/*.js';
+@source ".";
+@source "../components";
+@source "../content";
+@plugin 'tailwindcss-animate';
 
 /* --------------- FUMADOCS --------------- */
 @theme {

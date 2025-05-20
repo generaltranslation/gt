@@ -14,7 +14,6 @@ const processor = remark()
 export async function getLLMText(page: InferPageType<typeof source>) {
   const processed = await processor.process({
     path: page.data._file.absolutePath,
-    // TODO: This is a bug in Fumadocs
     value: page.data.content,
   });
 
