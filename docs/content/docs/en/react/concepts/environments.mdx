@@ -5,3 +5,89 @@ description: Differences between production and development environments
 
 ## Overview
 
+`gt-react` behaves differently depending on the environment your React application is running in.
+
+It detects the environment by checking the `NODE_ENV` environment variable.
+
+
+## Production Behavior
+
+### Environment Variables
+
+In production, the only accepted environment variable is `GT_PROJECT_ID` (or a prefixed version thereof, such as `NEXT_PUBLIC_GT_PROJECT_ID`).
+
+If an API key is provided as an environment variable, `gt-react` will throw an error. This is to prevent API keys from being exposed to the client.
+
+### Translation Loading Behavior
+
+In production, the `gt-react` provider will attempt to load translations from the General Translation CDN, by default.
+
+If you have configured custom translation loading behavior, such as local translations, via the `loadTranslations` function `gt-react` will use that instead.
+
+Translation hot reloading is disabled since it is in production.
+
+## Development Behavior
+
+### Environment Variables
+
+Since development is local and not exposed to foreign users, `gt-react` will accept any General Translation environment variables, even if they are prefixed with `NEXT_PUBLIC_`, `VITE_`, (or similar).
+
+
+### Translation Loading Behavior
+
+In development, the `gt-react` provider will first attempt to load translations in the same way as production.
+These translations are loaded into memory.
+
+When rendering a component (that uses `useGT()`, `<T>`, or `useDict()`) in a language different than the default, the `gt-react` provider will do the following:
+
+1. If it detects a valid, stored translation for the given content, it will render the translation.
+2. If no translation is found, it will attempt to dynamically translate the content via the General Translation API.
+3. After translating, the translation will be rendered, and stored in memory for future use.
+4. If the translation times out, it will fallback and render the original content.
+
+<Callout type="info">
+  Our API also internally caches development translations for a short period of time, so if the same translation is requested again, it will be served from cache.
+
+  These translations are isolated at the project level, so they will not be mixed up with translations from other projects.
+  Additionally, the cache is unique to development sessions, so cached translations will not be used in production.
+</Callout>
+
+`gt-react` will detect changes to components that use `useGT()`, `<T>`, or `useDict()` and will dynamically translate the modified content via our API.
+
+
+## Production vs Development API Keys [#api-keys]
+
+To help distinguish between the production and development behavior of `gt-react`, we have the concept of "Production API Keys" and "Development API Keys".
+
+### Production API Keys
+
+Production API keys are API keys beginning with `gtx-api-`.
+
+When a Production API key is provided, `gt-react` will behave as described in the [Production Behavior](#production-behavior) section.
+
+This means that if you are running your React application in development mode, and you provide a Production API key, `gt-react` will behave as if you are in production.
+Translation hot reloading will be disabled, and components without translations will render the original content.
+
+Other than this behavior, `gt-react` will not utilize the Production API key in any way.
+
+<Callout type="info">
+  The reason why we ask you to create a separate, production API key when shipping to production is because the CLI tool only accesses Production API keys.
+
+  The CLI tool will apply billing and rate-limiting using the "production" category.
+</Callout>
+
+### Development API Keys
+
+Development API keys are API keys beginning with `gtx-dev-`.
+
+When a Development API key is provided, `gt-react` will behave as described in the [Development Behavior](#development-behavior) section.
+
+When using a Development API key, billing and rate-limiting will be applied using the "development" category.
+
+<Callout type="warn">
+  Translations created with a Development API key will not be stored, and will not be available for use in production.
+
+  The purpose of development translations is to allow you to test your application before shipping to production.
+</Callout>
+
+
