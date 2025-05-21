@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/logocard';
 import SupportedLocales from '@/components/SupportedLocales';
 import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
+import { Rate } from '@/components/rate';
 
 const customMdxComponents = {
   a: (props: React.ComponentProps<'a'>) => (
@@ -100,6 +101,7 @@ export default async function Page(props: {
           }}
         />
       </DocsBody>
+      <Rate />
     </DocsPage>
   );
 }
