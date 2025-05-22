@@ -5,7 +5,7 @@
   "scripts": {
     "build": "npm run i18n && next build",
     "build:base": "next build",
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "start": "next start",
     "postinstall": "fumadocs-mdx",
     "postbuild": "next-sitemap --config next-sitemap.config.mjs",
