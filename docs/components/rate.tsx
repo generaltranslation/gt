@@ -82,7 +82,7 @@ export function Rate() {
       className="border-y py-3"
     >
       <div className="flex flex-row items-center gap-2">
-        <T>
+        <T context="This is part of a docs page">
           <p className="text-sm font-medium pe-2">How is this guide?</p>
           <button
             disabled={previous !== null}
