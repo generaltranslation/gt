@@ -18,7 +18,6 @@
     "tutorials/quickstart",
     "tutorials/quickdeploy",
     "---Technical Concepts---",
-    "concepts/t-component",
     "concepts/environments",
     "---API---",
     "api/config",
