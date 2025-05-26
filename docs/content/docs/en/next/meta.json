@@ -20,8 +20,6 @@
     "tutorials/examples/next-speedrun",
     "tutorials/examples/currency-converter",
     "---Technical Concepts---",
-    "reference/locale-management",
-    "reference/change-language",
     "reference/stand-alone",
     "reference/i18n-configuration",
     "reference/i18n-routing",
