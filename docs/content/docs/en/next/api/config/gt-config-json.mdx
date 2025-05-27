@@ -10,8 +10,8 @@ It holds important information like your project's `projectId`, your supported l
 It also holds important internal information such as your project's `versionId`.
 
 
-This file is read by (1) your [`withGTConfig()`](/docs/next/api/config/withgtconfig) component and (2) the [`gtx-cli translate`](/docs/cli/translate) command.
-Because of this, we recommend storing your configuration in your `gt.config.json` file instead of passing it as a prop to your [`withGTConfig()`](/docs/next/api/config/withgtconfig) component.
+This file is read by (1) your [`withGTConfig()`](/docs/next/api/config/withGTConfig) component and (2) the [`gtx-cli translate`](/docs/cli/translate) command.
+Because of this, we recommend storing your configuration in your `gt.config.json` file instead of passing it as a prop to your [`withGTConfig()`](/docs/next/api/config/withGTConfig) component.
 
 Generally, anything that begins with an underscore (e.g. `_versionId`) is an internal property and should not be modified.
 Everything else is fair game.
@@ -87,7 +87,7 @@ Points to hit:
 
 ## Notes
  * The `gt.config.json` file is used to specify your project's configuration.
- * It is read by both the [`withGTConfig()`](/docs/next/api/config/withgtconfig) component and the [`gtx-cli translate`](/docs/cli/translate) command.
+ * It is read by both the [`withGTConfig()`](/docs/next/api/config/withGTConfig) component and the [`gtx-cli translate`](/docs/cli/translate) command.
  
 
 ## Next steps

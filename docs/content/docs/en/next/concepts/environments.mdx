@@ -5,7 +5,7 @@ description: Differences between production and development environments
 
 ## Overview
 
-`gt-react` behaves differently depending on the environment your React application is running in.
+`gt-next` behaves differently depending on the environment your Next.js application is running in.
 
 It detects the environment by checking the `NODE_ENV` environment variable.
 
@@ -14,31 +14,40 @@ It detects the environment by checking the `NODE_ENV` environment variable.
 
 ### Environment Variables
 
-In production, the only accepted environment variable is `GT_PROJECT_ID` (or a prefixed version thereof, such as `NEXT_PUBLIC_GT_PROJECT_ID`).
+In production, `gt-next` will only read the `GT_PROJECT_ID` and `GT_API_KEY` environment variables.
 
-If an API key is provided as an environment variable, `gt-react` will throw an error. This is to prevent API keys from being exposed to the client.
+The API Key must be a Production API Key, beginning with `gtx-api-`.
+
+If you are using a Development API Key, `gt-next` will throw an error.
 
 ### Translation Loading Behavior
 
-In production, the `gt-react` provider will attempt to load translations from the General Translation CDN, by default.
+In production, `gt-next` will attempt to load translations from the General Translation CDN, by default.
 
-If you have configured custom translation loading behavior, such as local translations, via the `loadTranslations` function `gt-react` will use that instead.
+If you have configured custom translation loading behavior, such as local translations, via the `loadTranslations` function, `gt-next` will use that instead.
 
 Translation hot reloading is disabled since it is in production.
+
+On-demand translation for dynamic content using the `<Tx>` component or `tx()` function is enabled, but only in server components.
 
 ## Development Behavior
 
 ### Environment Variables
 
-Since development is local and not exposed to foreign users, `gt-react` will accept any General Translation environment variables, even if they are prefixed with `NEXT_PUBLIC_`, `VITE_`, (or similar).
+`gt-next` will accept the `GT_PROJECT_ID` and `GT_API_KEY` environment variables.
+
+The API key can either be a Production API Key, beginning with `gtx-api-`, or a Development API Key, beginning with `gtx-dev-`.
+
+If a production API key is provided in development, `gt-next` will behave as if you are in production.
+This means that translation hot reloading will be disabled, and components without translations will render the original content.
 
 
 ### Translation Loading Behavior
 
-In development, the `gt-react` provider will first attempt to load translations in the same way as production.
+In development, `gt-next` will first attempt to load translations in the same way as production.
 These translations are loaded into memory.
 
-When rendering a component (that uses `useGT()`, `<T>`, or `useDict()`) in a language different than the default, the `gt-react` provider will do the following:
+When rendering a component (that uses `useGT()`, `<T>`, or `useDict()`) in a language different than the default, `gt-next` will do the following:
 
 1. If it detects a valid, stored translation for the given content, it will render the translation.
 2. If no translation is found, it will attempt to dynamically translate the content via the General Translation API.
@@ -52,26 +61,26 @@ When rendering a component (that uses `useGT()`, `<T>`, or `useDict()`) in a lan
   Additionally, the cache is unique to development sessions, so cached translations will not be used in production.
 </Callout>
 
-`gt-react` will detect changes to components that use `useGT()`, `<T>`, or `useDict()` and will dynamically translate the modified content via our API.
+`gt-next` will detect changes to components that use `useGT()`, `<T>`, or `useDict()` and will dynamically translate the modified content via our API.
 
 
 ## Production vs Development API Keys [#api-keys]
 
-To help distinguish between the production and development behavior of `gt-react`, we have the concept of "Production API Keys" and "Development API Keys".
+To help distinguish between the production and development behavior of `gt-next`, we have the concept of "Production API Keys" and "Development API Keys".
 
 ### Production API Keys
 
 Production API keys are API keys beginning with `gtx-api-`.
 
-When a Production API key is provided, `gt-react` will behave as described in the [Production Behavior](#production-behavior) section.
+When a Production API key is provided, `gt-next` will behave as described in the [Production Behavior](#production-behavior) section.
 
-This means that if you are running your React application in development mode, and you provide a Production API key, `gt-react` will behave as if you are in production.
+This means that if you are running your Next.js application in development mode, and you provide a Production API key, `gt-next` will behave as if you are in production.
 Translation hot reloading will be disabled, and components without translations will render the original content.
 
-Other than this behavior, `gt-react` will not utilize the Production API key in any way.
+Other than this behavior, `gt-next` will not utilize the Production API key in any way.
 
 <Callout type="info">
-  The reason why we ask you to create a separate, production API key when shipping to production is because the CLI tool only accesses Production API keys.
+  The CLI tool reads the `GT_API_KEY` environment variable and only accepts Production API keys.
 
   The CLI tool will apply billing and rate-limiting using the "production" category.
 </Callout>
@@ -80,7 +89,7 @@ Other than this behavior, `gt-react` will not utilize the Production API key in 
 
 Development API keys are API keys beginning with `gtx-dev-`.
 
-When a Development API key is provided, `gt-react` will behave as described in the [Development Behavior](#development-behavior) section.
+When a Development API key is provided, `gt-next` will behave as described in the [Development Behavior](#development-behavior) section.
 
 When using a Development API key, billing and rate-limiting will be applied using the "development" category.
 
