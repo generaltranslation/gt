@@ -1,0 +1,41 @@
+---
+title: Standalone i18n
+description: How to use gt-react as a standalone i18n library
+---
+
+## Overview
+
+`gt-react` has feature parity with many other i18n libraries.
+This means that you can use `gt-react` as a standalone i18n library, without using the General Translation platform.
+
+To do this, simply don't provide any environment variables such as `GT_API_KEY` or `GT_PROJECT_ID`.
+
+See our [migration guide](/docs/react/guides/migration) for more information on how to migrate from another i18n library to `gt-react`.
+
+## Tradeoffs
+
+Using `gt-react` as a standalone i18n library has some tradeoffs.
+
+### Manual translation
+
+You will need to manually translate your app. If you use our platform, we automatically translate your app for you.
+
+If your project only uses [dictionaries](/docs/react/guides/dictionaries) with the `useDict()` function,
+you'll need to manually translate your dictionaries, as you would with any other i18n library.
+
+Make sure you load your translated dictionaries with the [`loadDictionary()`](/docs/react/api/config/load-dictionary) function.
+
+---
+
+If your project is using inline translations with the [`<T>`](/docs/react/guides/jsx) component
+or the [`useGT()`](/docs/react/guides/strings) functions,
+you'll also need to manually translate your strings.
+
+Since there are no keys with in-line translations, the CLI tool has a command: [`gtx-cli generate`](/docs/cli/generate)
+which will automatically generate template files for your project. You'll just need to edit the template files with your translations for each language.
+
+Make sure you load your translated strings with the [`loadTranslations()`](/docs/react/api/config/load-translations) function.
+
+### No development translations
+
+Without an API key, translation hot-reload will not work. Untranslated content will only be rendered in your default language.

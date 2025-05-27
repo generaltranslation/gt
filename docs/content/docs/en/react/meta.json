@@ -14,18 +14,19 @@
     "guides/local-tx",
     "guides/dictionaries",
     "guides/migration",
-    "---Tutorials---",
-    "tutorials/quickstart",
-    "tutorials/quickdeploy",
     "---Technical Concepts---",
     "concepts/environments",
+    "concepts/stand-alone",
     "---API---",
     "api/config",
     "api/components",
     "api/strings",
     "api/dictionary",
     "api/helpers",
-    "api/types"
+    "api/types",
+    "---Tutorials---",
+    "tutorials/quickstart",
+    "tutorials/quickdeploy"
   ],
   "root": true,
   "description": "gt-react"
