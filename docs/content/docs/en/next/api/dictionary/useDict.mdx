@@ -5,7 +5,7 @@ description: API Reference for the useDict hook
 
 ## Overview
 
-`useDict()` is used to access string translations from the [translation dictionary](/docs/next/reference/dictionary) for client-side components.
+`useDict()` is used to access string translations from the [translation dictionary](/docs/next/guides/dictionaries) for client-side components.
 It must be used within a component wrapped by a [`<GTProvider>`](/docs/next/api/components/gtprovider).
 
 ```jsx
@@ -16,8 +16,8 @@ d('greeting.hello'); // pass the id to get a translation
 For server-side translations, see [`getDict()`](/docs/next/api/dictionary/getDict).
 
 <Callout>
-  `getDict()` and `useDict()` use a [dictionary](/docs/next/reference/dictionary) to store all content for translation.
-  This is different from using the [`<T>` component](/docs/next/reference/t-reference) for translation.
+  `getDict()` and `useDict()` use a [dictionary](/docs/next/guides/dictionaries) to store all content for translation.
+  This is different from using the [`<T>` component](/docs/next/guides/jsx) for translation.
   If you are interested in only using `<T>` components for translation, then this document is not relevant.
 </Callout>
 
@@ -152,5 +152,5 @@ export default function UserDetails() {
 
 ## Next Steps
  * For server-side translations, see [`getDict()`](/docs/next/api/dictionary/getDict).
- * Learn more about using dictionaries in the [dictionaries reference](/docs/next/reference/dictionary).
+ * Learn more about using dictionaries in the [dictionaries reference](/docs/next/guides/dictionaries).
  * See [DictionaryTranslationOptions](/docs/next/api/types/DictionaryTranslationOptions) for more information on translation options.

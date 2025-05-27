@@ -94,7 +94,7 @@ This delay will not occur during for production builds as everything will alread
 ### Basic usage
 
 The `<T>` component can translate simple strings using an `id` and its children.
-Remember, the `<T>` component must be used inside a [`<GTProvider>`](/docs/react/reference/t-reference#gtprovider) to access the translations.
+Remember, the `<T>` component must be used inside a [`<GTProvider>`](/docs/react/guides/jsx#gtprovider) to access the translations.
 
 ```jsx title="SimpleTranslation.jsx" copy
 import { T } from 'gt-react';
@@ -191,9 +191,9 @@ export default function Example() {
 ## Notes
  * The `<T>` component is designed for translating content in your application. It is the primary method for localization in `gt-react`.
  * Use the `<T>` component to translate plain text or JSX structures, including variables and pluralization.
- * Ensure the `<T>` component is wrapped in a [`<GTProvider>`](/docs/react/reference/t-reference#gtprovider) to access the translation context.
+ * Ensure the `<T>` component is wrapped in a [`<GTProvider>`](/docs/react/guides/jsx#gtprovider) to access the translation context.
 
 ## Next steps
- * Look into more advanced features like on-demand translation, variables, context, and handling plurals, refer to the [`<T>` Design Patterns](/docs/react/reference/t-reference) documentation.
+ * Look into more advanced features like on-demand translation, variables, context, and handling plurals, refer to the [`<T>` Design Patterns](/docs/react/guides/jsx) documentation.
  * For translating strings, look into [`useGT()`](/docs/react/api/strings/useGT).
- * Checkout [using variable components](/docs/react/reference/using-variable-components) and [using branching components](/docs/react/reference/using-branching-components) for more advanced translation patterns.
+ * Checkout [using variable components](/docs/react/guides/variables) and [using branching components](/docs/react/guides/branches) for more advanced translation patterns.

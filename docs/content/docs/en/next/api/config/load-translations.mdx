@@ -15,7 +15,7 @@ You can specify a `loadTranslations()` function to load translations from a diff
  * From a different CDN
 
 We have integrated support for loading translations from local files in your app's bundle.
-Follow [this guide](/docs/next/reference/local-tx) to set up local translations in your Next.js app.
+Follow [this guide](/docs/next/guides/local-tx) to set up local translations in your Next.js app.
 
 If you are looking to manually define your own translations, check out the [custom translations guide](/docs/next/reference/stand-alone)
  and the [`loadDictionary()`](/docs/next/api/config/load-dictionary) function.
@@ -72,7 +72,7 @@ export default async function loadTranslations(locale) {
 };
 ```
 
-When configured to use [local translations](/docs/next/reference/local-tx), the [`gtx-cli translate`](/docs/cli/translate) command,
+When configured to use [local translations](/docs/next/guides/local-tx), the [`gtx-cli translate`](/docs/cli/translate) command,
 will save translations in your project's file tree.
 
 You can  translation files for your bundle with this command:
@@ -131,9 +131,9 @@ export default async function loadTranslations(locale) {
 
 ## Notes
  * `loadTranslations()` gives you the ability to customize how translations are loaded in your app in production.
- * Its most common use case is for adding [local translations](/docs/next/reference/local-tx)
+ * Its most common use case is for adding [local translations](/docs/next/guides/local-tx)
 
 ## Next steps
- * Learn about why you might want to use [local translations](/docs/next/reference/local-tx)
+ * Learn about why you might want to use [local translations](/docs/next/guides/local-tx)
  * Add your own translations with the [custom translations guide](/docs/next/reference/stand-alone)
 
