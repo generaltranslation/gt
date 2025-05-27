@@ -5,10 +5,10 @@ description: How to use branch components
 
 ## Overview
 
-Branching components in `gt-react` enable dynamic content rendering based on specific conditions. These components include:
+Branching components in `gt-next` enable dynamic content rendering based on specific conditions. These components include:
 
-- [`<Branch>`](/docs/react/api/components/branch): Renders content based on a matching `branch` prop.
-- [`<Plural>`](/docs/react/api/components/plural): Renders content based on pluralization rules for a given number.
+- [`<Branch>`](/docs/next/api/components/branch): Renders content based on a matching `branch` prop.
+- [`<Plural>`](/docs/next/api/components/plural): Renders content based on pluralization rules for a given number.
 
 Both components provide powerful tools for managing conditional logic and dynamic content in localized applications.
 
@@ -57,7 +57,7 @@ Plural components are often combined with `<Num>` components to localize a numbe
 
 ### Use with `<T>`
 
-The `<Branch>` and `<Plural>` components should be used within a [`<T>`](/docs/react/guides/jsx) component to sanitize dynamic content for translation.
+The `<Branch>` and `<Plural>` components should be used within a [`<T>`](/docs/next/guides/jsx) component to sanitize dynamic content for translation.
 
 When used within a `<T>` component, the content is automatically translated and rendered in your user's selected language.
 
@@ -90,7 +90,7 @@ const branch: 'option1' | 'option2' = 'option1';
 
 The `<Branch>` component should be used within a `<T>` component. This allows for the content to be automatically translated.
 
-See the [API Reference](/docs/react/api/components/branch) for more details.
+See the [API Reference](/docs/next/api/components/branch) for more details.
 
 ### Pluralization with `<Plural>` [#plural-logic]
 
@@ -118,7 +118,7 @@ const count: number = 1;
 
 The available plural forms depend on the locale and follow [Unicode CLDR pluralization rules](https://cldr.unicode.org/index/cldr-spec/plural-rules).
 
-See the [API Reference](/docs/react/api/components/plural) for more details.
+See the [API Reference](/docs/next/api/components/plural) for more details.
 
 ---
 
@@ -180,7 +180,7 @@ If you want to render content with correct pluralization, use `<Plural>`.
   The `<Branch>` and `<Plural>` components can be used standalone, without a `<T>` component.
   When used standalone, they will just render the content as-is, without translating it.
 
-  However, they are often used within a [`<T>`](/docs/react/guides/jsx) component to sanitize dynamic content for translation.
+  However, they are often used within a [`<T>`](/docs/next/guides/jsx) component to sanitize dynamic content for translation.
 </Callout>
 
 
@@ -191,7 +191,7 @@ If you want to render content with correct pluralization, use `<Plural>`.
 ### `<Branch>`
 
 ```tsx copy
-import { T, Branch, Var } from 'gt-react';
+import { T, Branch, Var } from 'gt-next';
 
 export default function UserStatus() {
   const [status, setStatus] = useState<'active' | 'inactive' | undefined>(undefined);
@@ -231,7 +231,7 @@ Since the `<Branch>` component is wrapped in a `<T>` component, the rendered con
 
 In this example, it displays different descriptions based on the user's subscription plan.
 ```tsx copy
-import { Branch } from 'gt-react';
+import { Branch } from 'gt-next';
 
 export default function SubscriptionDetails() {
   const [plan, setPlan] = useState<'free' | 'premium' | 'enterprise' | undefined>(undefined);
@@ -259,7 +259,7 @@ The `<Plural>` component dynamically handles singular and plural content based o
 This example displays the number of unread messages in a user's inbox.
 
 ```tsx copy
-import { T, Plural, Num } from 'gt-react';
+import { T, Plural, Num } from 'gt-next';
 
 export default function UnreadMessages() {
   const [unreadCount, setUnreadCount] = useState<number>(1);
@@ -288,7 +288,7 @@ If a branch value is not provided or does not match any keys, the `<Branch>` com
 Always ensure that the possible branch keys match the values passed to the branch prop.
 
 ```tsx copy
-import { Branch } from 'gt-react';
+import { Branch } from 'gt-next';
 
 export default function StatusMessage({ status }) {
   return (
@@ -308,12 +308,12 @@ If `status` is `undefined` or a value other than `active` or `inactive`, the fal
 ### Missing Plural Forms [#plural-locale]
 
 Remember to specify all necessary plural forms in your default language.
-This is how `gt-react` ensures that your application always has fallback content to display.
+This is how `gt-next` ensures that your application always has fallback content to display.
 
 For example, if English is your default language, you should provide all plural forms for English.
 
 ```tsx copy
-import { Plural, Num } from 'gt-react';
+import { Plural, Num } from 'gt-next';
 
 <Plural
   n={count}
@@ -336,6 +336,6 @@ Alternatively, you can also provide `singular` and `plural` for English.
  * Always include a fallback `children` prop for better error handling and user experience.
 
 ## Next Steps
- * Check out [`<Branch>`](/docs/react/api/components/branch) and [`<Plural>`](/docs/react/api/components/plural) in the API Reference for more details.
+ * Check out [`<Branch>`](/docs/next/api/components/branch) and [`<Plural>`](/docs/next/api/components/plural) in the API Reference for more details.
  * Learn more about pluralization rules and branching logic in [Unicode CLDR Pluralization Rules](https://cldr.unicode.org/index/cldr-spec/plural-rules).
- * Explore how to use [Variable Components](/docs/react/guides/variables).
+ * Explore how to use [Variable Components](/docs/next/guides/variables).

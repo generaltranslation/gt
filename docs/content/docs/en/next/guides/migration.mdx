@@ -1,22 +1,22 @@
 ---
-title: Migrations
-description: Learn how to migrate a project to gt-react
+title: Migrating
+description: Learn how to migrate a project to gt-next
 ---
 
 ## Overview
 
-This guide will cover the steps needed to migrate a project that's already using an i18n library to gt-react.
+This guide will cover the steps needed to migrate a project that's already using an i18n library to gt-next.
 
 We'll also provide some tips and suggestions for how to make the migration as smooth as possible.
 
 ## Prerequisites
 
 - A project that is currently using another i18n library.
-- A basic understanding of the `gt-react` library.
+- A basic understanding of the `gt-next` library.
 
 ## Why migrate?
 
-There are many reasons why you might want to migrate your project to gt-react.
+There are many reasons why you might want to migrate your project to gt-next.
 
 Here are just a few:
 
@@ -30,32 +30,32 @@ You'll never have to wait for translations again.
 
 <Steps>
   <Step>
-    Install `gt-react` and the `gtx-cli` CLI tool.
+    Install `gt-next` and the `gtx-cli` CLI tool.
 
     
 <Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
   <Tab value="npm">
   ```bash 
-  npm i gt-react
+  npm i gt-next
   npm i --save-dev gtx-cli
   ``` 
   </Tab>
   <Tab value="yarn">
   ```bash 
-  yarn add gt-react
+  yarn add gt-next
   yarn add --dev gtx-cli
   ```
   </Tab>
 
   <Tab value="bun">
   ```bash 
-  bun add gt-react
+  bun add gt-next
   bun add --dev gtx-cli
   ```
   </Tab>
   <Tab value="pnpm">
   ```bash 
-  pnpm add gt-react
+  pnpm add gt-next
   pnpm add --save-dev gtx-cli
   ```
   </Tab>
@@ -70,25 +70,42 @@ You'll never have to wait for translations again.
       "locales": ["en", "fr", "es"]
     }
     ```
+    Then, add the `<GTProvider>` component to the root layout of your app.
 
-    Add the `<GTProvider>` component to the root of your app, and spread the `config` object as props.
+    ```tsx title="app/layout.tsx" copy   
+    import { GTProvider } from 'gt-next'
 
-    ```tsx
-    import { GTProvider } from 'gt-react'
-    import config from './gt.config.json'
-
-    <GTProvider {...config}>
-      <App />
-    </GTProvider>
+    export default function RootLayout({ children }) {
+      return (
+        <html>
+          <body>
+            <GTProvider>
+              {children}
+            </GTProvider>
+          </body>
+        </html>
+      )
+    }
     ```
-    For more detailed steps, see the [project setup](/docs/react/guides/setup) guide.
+    Next, add `withGTConfig` to your `next.config.js` file.
+
+    ```js title="next.config.ts" copy
+    import withGTConfig from 'gt-next/next-config'
+    const nextConfig = {
+      // Your next.config.ts options
+    }
+    export default withGTConfig(nextConfig, {
+      // Your GT configuration
+    })
+    ```
+    For more detailed steps, see the [project setup](/docs/next/guides/setup) guide.
   </Step>
   <Step>
     At this point, you have 3 options: 
 
-    1. Fully migrate your entire project to `gt-react`, and remove the old i18n library.
+    1. Fully migrate your entire project to `gt-next`, and remove the old i18n library.
     2. Fully migrate your project, but keep using dictionaries from the old i18n library.
-    2. Keep using the old i18n library for now, and only migrate part of your project to `gt-react`.
+    2. Keep using the old i18n library for now, and only migrate part of your project to `gt-next`.
 
     For more details on each option, see the [migration strategies](#strategies) section.
   </Step>
@@ -100,7 +117,7 @@ You'll never have to wait for translations again.
 
 This option is the most straightforward, and will also require the most code changes in one go.
 
-After you've setup your project, you'll need to search for all instances of your old i18n library and replace them with `gt-react`.
+After you've setup your project, you'll need to search for all instances of your old i18n library and replace them with `gt-next`.
 
 If your app is using React hooks such as `useTranslation`, search for all instances of `useTranslation` in your codebase and replace them with `useGT`.
 
@@ -140,7 +157,7 @@ Do this for all instances of your old i18n library.
 
 ### Option 2: Fully migrate your project, but keep using dictionaries from the old i18n library
 
-Let's say that you want to migrate your project to `gt-react`, but you want to keep using dictionaries from the old i18n library
+Let's say that you want to migrate your project to `gt-next`, but you want to keep using dictionaries from the old i18n library
 and only use GT in-line features for new content.
 
 In this case, you can do something similar to Option 1:
@@ -161,7 +178,7 @@ The `useDict` hook behaves very similarly to `useTranslation` hooks, and you can
   </Tab>
   <Tab value="After">
   ```tsx
-  import { useDict } from 'gt-react'
+  import { useDict } from 'gt-next'
   export default function MyComponent() {
     const t = useDict()
     return <div>{t('hello.description')}</div>
@@ -171,27 +188,19 @@ The `useDict` hook behaves very similarly to `useTranslation` hooks, and you can
 </Tabs>
 
 In terms of configuration, you'll need to create a `dictionary.[js|ts|json]` file in your project root or `src` directory.
-Copy the contents of your old dictionary file into this new file, then pass it to the `GTProvider` component.
+Copy the contents of your old dictionary file into this new file. 
 
-```tsx
-import { GTProvider } from 'gt-react'
-import dictionary from './dictionary.json'
-import config from './gt.config.json'
+The initialization `withGTConfig` function in `next.config.js` will automatically pick up the dictionary file in your project root or `src` directory.
 
-<GTProvider {...config} dictionary={dictionary}>
-  <App />
-</GTProvider>
-```
+See the [dictionaries](/docs/next/guides/dictionaries) guide for more details.
 
-See the [dictionaries](/docs/react/guides/dictionaries) guide for more details.
-
-### Option 3: Keep using the old i18n library for now, and only migrate part of your project to `gt-react`
+### Option 3: Keep using the old i18n library for now, and only migrate part of your project to `gt-next`
 
 This option is the most flexible, and will require the least code changes in one go.
 
-In this case, you can do something similar to Option 2, but only migrate part of your project to `gt-react`.
+In this case, you can do something similar to Option 2, but only migrate part of your project to `gt-next`.
 
-For example, you can keep using the old i18n library for some components, and only use `gt-react` for others and for new content.
+For example, you can keep using the old i18n library for some components, and only use `gt-next` for others and for new content.
 
 <Callout type="warn">
   This option is not recommended, as you will have to manage two different i18n libraries in your project, which may be complex and lead to bugs.

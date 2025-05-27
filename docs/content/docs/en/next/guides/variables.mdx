@@ -5,13 +5,13 @@ description: How to use variable components
 
 ## Overview
 
-Variable components in `gt-react` allow you to insert dynamic content into translations.
+Variable components in `gt-next` allow you to insert dynamic content into translations.
 These components include:
 
-- [`<Var>`](/docs/react/api/components/var): For rendering variables.
-- [`<Num>`](/docs/react/api/components/num): For formatting numbers.
-- [`<Currency>`](/docs/react/api/components/currency): For formatting currency values.
-- [`<DateTime>`](/docs/react/api/components/datetime): For formatting dates and times.
+- [`<Var>`](/docs/next/api/components/var): For rendering variables.
+- [`<Num>`](/docs/next/api/components/num): For formatting numbers.
+- [`<Currency>`](/docs/next/api/components/currency): For formatting currency values.
+- [`<DateTime>`](/docs/next/api/components/datetime): For formatting dates and times.
 
 In this guide, we will cover:
 <Steps>
@@ -40,10 +40,10 @@ Use variable components in conjunction with the `<T>` component to ensure that d
 
 Each variable component has different behavior:
 
-- [`<Var>`](/docs/react/api/components/var): Renders any content dynamically, such as user names or identifiers.
-- [`<Num>`](/docs/react/api/components/num): Formats numerical values according to locale-specific rules.
-- [`<Currency>`](/docs/react/api/components/currency): Formats currency values with symbols and localization rules.
-- [`<DateTime>`](/docs/react/api/components/datetime): Formats dates and times using locale-specific conventions.
+- [`<Var>`](/docs/next/api/components/var): Renders any content dynamically, such as user names or identifiers.
+- [`<Num>`](/docs/next/api/components/num): Formats numerical values according to locale-specific rules.
+- [`<Currency>`](/docs/next/api/components/currency): Formats currency values with symbols and localization rules.
+- [`<DateTime>`](/docs/next/api/components/datetime): Formats dates and times using locale-specific conventions.
 
 While JSX content and strings are translated via the General Translation API, variable components are completely handled locally.
 
@@ -101,9 +101,9 @@ The `<Num>`, `<Currency>`, and `<DateTime>` components include built-in localiza
 These components automatically format their content based on your user's selected locale, or based on additional options passed as props.
 
 For example:
-* [`<Num>`](/docs/react/api/components/num) displays numbers with localized decimal separators.
-* [`<Currency>`](/docs/react/api/components/currency) displays values with localized currency symbols and positioning.
-* [`<DateTime>`](/docs/react/api/components/datetime) displays dates and times according to locale-specific rules.
+* [`<Num>`](/docs/next/api/components/num) displays numbers with localized decimal separators.
+* [`<Currency>`](/docs/next/api/components/currency) displays values with localized currency symbols and positioning.
+* [`<DateTime>`](/docs/next/api/components/datetime) displays dates and times according to locale-specific rules.
 
 You can also override the default locale and formatting options by passing props directly to these components.
 
@@ -114,18 +114,18 @@ This is perfect for keeping sensitive data, such as user names or account number
 
 Each variable component handles formatting differently and should be used for specific types of content:
 
-* [`<Var>`](/docs/react/api/components/var): Anything private that does not require formatting
+* [`<Var>`](/docs/next/api/components/var): Anything private that does not require formatting
   - User names, account numbers, etc.
-* [`<Num>`](/docs/react/api/components/num): Private numerical values that should be formatted according to locale
+* [`<Num>`](/docs/next/api/components/num): Private numerical values that should be formatted according to locale
   - Order quantities, age, distance, etc.
-* [`<Currency>`](/docs/react/api/components/currency): Private currency values that should be formatted according to locale
+* [`<Currency>`](/docs/next/api/components/currency): Private currency values that should be formatted according to locale
   - Transaction amounts, account balances, etc.
-* [`<DateTime>`](/docs/react/api/components/datetime): Private date and time values that should be formatted according to locale
+* [`<DateTime>`](/docs/next/api/components/datetime): Private date and time values that should be formatted according to locale
   - Account creation dates, order timestamps, etc.
 
 <Callout type="warn">
-  [Branching Components](/docs/react/reference/using-branching-components)
-  and [`<T>` components](/docs/react/reference/t-reference)
+  [Branching Components](/docs/next/guides/branches)
+  and [`<T>` components](/docs/next/guides/jsx)
   do send data to the General Translation APIs for translation.
 
   Additionally, nesting a `<T>` inside a `<Var>` component will send the content to the General Translation APIs for translation.
@@ -150,7 +150,7 @@ Each variable component handles formatting differently and should be used for sp
 Because the `<Var>` component does not do any formatting, it should always be used in conjunction with a `<T>` component.
 
 ```jsx
-import { T, Var } from 'gt-react';
+import { T, Var } from 'gt-next';
 
 export default function UserGreeting({ user }) {
   return (
@@ -165,7 +165,7 @@ export default function UserGreeting({ user }) {
 Variable components also isolate data, so they can be used to render dynamic content that is not part of a translation.
 
 ```jsx
-import { T, Var } from 'gt-react';
+import { T, Var } from 'gt-next';
 
 export default function Dashboard({ isAdmin }) {
   return (
@@ -191,7 +191,7 @@ Without the `<Var>`, component, this would be an invalid use of the `<T>` compon
 The `<Num>` component can be used as a child of a `<T>` component or as a standalone component.
 
 ```jsx
-import { T, Num } from 'gt-react';
+import { T, Num } from 'gt-next';
 import { Badge } from '@components/custom/cart/Badge';
 
 export default function OrderSummary() {
@@ -214,7 +214,7 @@ export default function OrderSummary() {
 The `<Currency>` component can be used as a child of a `<T>` component or as a standalone component.
 
 ```jsx
-import { T, Currency } from 'gt-react';
+import { T, Currency } from 'gt-next';
 import { Badge } from '@components/custom/cart/Badge';
 
 export default function OrderSummary() {
@@ -238,7 +238,7 @@ export default function OrderSummary() {
 The `<DateTime>` component can be used as a child of a `<T>` component or as a standalone component.
 
 ```jsx
-import { T, DateTime } from 'gt-react';
+import { T, DateTime } from 'gt-next';
 
 export default function OrderSummary() {
   const date = new Date();
@@ -267,12 +267,12 @@ Other components, such as `<Num>` and `<DateTime>`, also have optional props tha
 ## Notes
  * Variable components isolate data, so they can be used to render dynamic content that is not part of a translation.
  * Variable components do not send data to the General Translation APIs, so they are perfect for keeping sensitive data private and secure.
- * Variable components can be used either as a child of a [`<T>`](/docs/react/guides/jsx) component or as a standalone component.
+ * Variable components can be used either as a child of a [`<T>`](/docs/next/guides/jsx) component or as a standalone component.
 
 ## Next Steps
- * Explore conditional logic in [Branching Components](/docs/react/guides/branches).
+ * Explore conditional logic in [Branching Components](/docs/next/guides/branches).
  * Learn more about formatting options for specific variable components in the API Reference:
-   - [`<Num>`](/docs/react/api/components/num)
-   - [`<Currency>`](/docs/react/api/components/currency)
-   - [`<DateTime>`](/docs/react/api/components/datetime)
-   - [`<Var>`](/docs/react/api/components/var)
+   - [`<Num>`](/docs/next/api/components/num)
+   - [`<Currency>`](/docs/next/api/components/currency)
+   - [`<DateTime>`](/docs/next/api/components/datetime)
+   - [`<Var>`](/docs/next/api/components/var)
