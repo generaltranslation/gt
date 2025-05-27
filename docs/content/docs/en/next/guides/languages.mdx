@@ -1,28 +1,29 @@
 ---
 title: Changing Languages
-description: How to change the language of your React app
+description: How to change the language of your Next.js app
 ---
 
 ## Overview
 
-In this guide, we'll show you how to change the language of your React app.
+In this guide, we'll show you how to change the language of your Next.js app.
 
-If you have not yet setup your app with `gt-react`, please refer to the [setup guide](/docs/react/guides/setup) before continuing.
+If you have not yet setup your app with `gt-next`, please refer to the [setup guide](/docs/next/guides/setup) before continuing.
 
-There are three ways to change the language of your app using `gt-react`.
+There are three ways to change the language of your app using `gt-next`.
 
-1. Using the [`useSetLocale()`](/docs/react/api/helpers/useSetLocale) hook
-2. Using the [`<LocaleSelector>`](/docs/react/api/components/localeSelector) component
-3. Using the [`useLocaleSelector()`](/docs/react/api/helpers/useLocaleSelector) hook
+1. Using the [`useSetLocale()`](/docs/next/api/helpers/useSetLocale) hook
+2. Using the [`<LocaleSelector>`](/docs/next/api/components/localeSelector) component
+3. Using the [`useLocaleSelector()`](/docs/next/api/helpers/useLocaleSelector) hook
+4. Using [middleware i18n routing](/docs/next/guides/middleware)
 
-We'll cover all three methods in this guide.
+We'll cover the first three methods in this guide. See the [middleware routing](/docs/next/guides/middleware) guide for more information on how to change the language of your app using middleware.
 
 ## Using the `useSetLocale` hook
 
 The `useSetLocale` hook is a client-side hook that allows you to change the language of your app. It must be used within a `GTProvider` component.
 
 ```tsx
-import { useSetLocale } from 'gt-react';
+import { useSetLocale } from 'gt-next/client';
 export default function MyComponent() {
   const setLocale = useSetLocale();
 
@@ -39,7 +40,7 @@ The `<LocaleSelector>` component is a client-side component that allows you to c
 This is a bare-bones UI dropdown that displays all the locales you have enabled in your project, and allows users to select a different locale.
 
 ```tsx
-import { LocaleSelector } from 'gt-react';
+import { LocaleSelector } from 'gt-next/client';
 
 export default function MyComponent() {
   return <LocaleSelector />;
@@ -55,7 +56,7 @@ This hook returns the current locale, the list of locales your project supports,
 Here is an example of how to use the `useLocaleSelector` hook to create a custom locale selector component.
 
 ```tsx copy
-import { useLocaleSelector } from 'gt-react';
+import { useLocaleSelector } from 'gt-next/client';
 import { getLocaleProperties } from 'generaltranslation';
 
 function capitalizeLanguageName(language: string): string {
@@ -103,10 +104,11 @@ export default function LocaleDropdown({ className }: { className?: string }) {
 }
 ```
 
-See the [API reference](/docs/react/api/helpers/useLocaleSelector) for more information.
+See the [API reference](/docs/next/api/helpers/useLocaleSelector) for more information.
 
 ## Next steps
 
-- Learn more about the [`useSetLocale`](/docs/react/api/helpers/useSetLocale) hook.
-- Learn more about the [`<LocaleSelector>`](/docs/react/api/components/localeSelector) component.
-- Learn more about the [`useLocaleSelector`](/docs/react/api/helpers/useLocaleSelector) hook.
+- Learn more about the [`useSetLocale`](/docs/next/api/helpers/useSetLocale) hook.
+- Learn more about the [`<LocaleSelector>`](/docs/next/api/components/localeSelector) component.
+- Learn more about the [`useLocaleSelector`](/docs/next/api/helpers/useLocaleSelector) hook.
+- Learn more about [middleware i18n routing](/docs/next/guides/middleware).
