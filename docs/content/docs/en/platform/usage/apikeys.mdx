@@ -74,7 +74,7 @@ When using a production API key, translations **are persisted**.
 This means that translations will be saved (either in a CDN or in your app's bundle) to be used at runtime.
 
 This key is used in two places:
- * The [`gtx-cli`](/docs/cli) tool. Check out [this guide](/docs/cli/tutorials/quickstart) for more information.
+ * The [`gtx-cli`](/docs/cli) tool. Check out the [docs](/docs/cli) for more information.
  * The `gt-next` library when translations occur at runtime in a production build (server-side only, not used by `gt-react`).
     * [`<Tx>`](/docs/next/api/components/tx) and [`tx()`](/docs/next/api/strings/tx) functions are used to translate content at runtime.
 
@@ -91,5 +91,5 @@ GT_API_KEY=your-prod-api-key # This key should never be exported to the client
  * Production API keys are used for production purposes.
 
 ## Next steps
- * Check out how to use [the `<T>` component](/docs/usage/t) to see live translations in development.
+ * Check out how to use [the `<T>` component](/docs/react/guides/jsx) to see live translations in development.
  * See the [usage guide](/docs/cli/reference/usage) for the cli tool.

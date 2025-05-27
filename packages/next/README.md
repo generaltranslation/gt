@@ -35,7 +35,7 @@ GT_PROJECT_ID="your-project-id"
 ### 2. Add the `withGTConfig()` plugin
 
 Add `withGTConfig()` to your `next.config.js` file.
-You can specify the languages you want to support by passing an array of [locale codes](https://generaltranslation.com/docs/reference/locale-strings#supported-locales).
+You can specify the languages you want to support by passing an array of [locale codes](https://generaltranslation.com/docs/platform/locale-strings#supported-locales).
 
 ```js
 import { withGTConfig } from 'gt-next/config';

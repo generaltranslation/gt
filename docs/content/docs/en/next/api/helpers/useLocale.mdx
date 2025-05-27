@@ -6,7 +6,7 @@ description: API Reference for the useLocale hook
 ## Overview
 
 The `useLocale` hook retrieves the user's current locale from the [`<GTProvider>` context](/docs/next/api/components/gtprovider).
-The returned locale is [formatted as a string](/docs/reference/locale-strings), e.g., `'en-US'`.
+The returned locale is [formatted as a string](/docs/platform/locale-strings), e.g., `'en-US'`.
 
 
 <Callout>
@@ -64,7 +64,7 @@ export default function CurrentLocale() {
 ## Notes
  * The `useLocale()` hook relies on the [`<GTProvider>`](/docs/next/api/components/gtprovider) to access the context. Ensure your app is wrapped with a provider at the root level.
  * `useLocale()` is client-side only.
- * Learn more about locale strings [here](/docs/reference/locale-strings).
+ * Learn more about locale strings [here](/docs/platform/locale-strings).
 
 ## Next Steps
  * Learn how to manage and specify supported locales in your application with the [`gt.config.json`](/docs/next/api/config/gt-config-json) file.

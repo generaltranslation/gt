@@ -5,7 +5,7 @@ description: How to translate your project
 ## Usage
 
 <Callout type="error">
-    Run this in your CI pipeline **before** you build your Next.js app for production.
+    Run this in your CI pipeline **before** you build your app for production.
 </Callout>
 
 ```bash
@@ -18,7 +18,9 @@ npx gtx-cli translate
 
 ## Overview
 
-The `gtx-cli translate` command translates your project. It traverses your project's file tree and translates any content wrapped in a `<T>` component.
+The `gtx-cli translate` command translates your project. 
+It traverses your project's file tree and translates any content wrapped in a `<T>` component 
+or using the `useGT()` functions.
 
 Additionally, it includes content from the dictionary file (if one is provided).
 
@@ -35,7 +37,7 @@ This command is the primary way of using the General Translation API and related
 
 ## Usage
 
-There are four ways to use the `translate` command. Methods 1 and 2 require a production API key:
+There are 3 ways to use the `translate` command. Methods 1 and 2 require a production API key:
 
 <Callout type="info">
     We recommend running the setup wizard: [`npx gtx-cli configure`](/docs/cli/configure) to help configure your project before running the `translate` command.

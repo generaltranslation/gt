@@ -37,7 +37,7 @@ GT_PROJECT_ID="your-project-id"
 `<GTProvider>` is used to configure the behavior of `gt-react`.
 It should be placed as high up in your app as possible, ideally at the root.
 
-Just pass a list of [locale codes](https://generaltranslation.com/docs/reference/locale-strings#supported-locales) to add them to your app.
+Just pass a list of [locale codes](https://generaltranslation.com/docs/platform/locale-strings#supported-locales) to add them to your app.
 
 ```jsx
 import { GTProvider } from 'gt-react';

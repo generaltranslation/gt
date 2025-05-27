@@ -1,1 +1,47 @@
-tutorials/quickstart.mdx
+---
+title: Automatic Translation
+description: How to automatically translate your project using the General Translation CLI tool
+---
+
+```bash
+npx gtx-cli@latest
+```
+
+## Overview
+
+The General Translation CLI tool (`gtx-cli`) allows you to automatically translate your project into any of the [supported languages](/docs/platform/locale-strings#supported-locales).
+
+It provides first-class support for [`gt-next`](/docs/react) and [`gt-react`](/docs/react) with your project, allowing you to scan your project for translatable content, translate your project, and generate translation data JSON files.
+
+The CLI tool can also be used to generate translations for third-party i18n libraries like [next-intl](https://next-intl.dev/) or [i18next](https://react.i18next.com/).
+
+Lastly, the CLI tool can be used to translate JSON, Markdown, MDX, JS, and TS files.
+
+<Callout type="warn">
+  A Production API key is required for the `translate` command. Get one for free at [generaltranslation.com](https://generaltranslation.com)!
+</Callout>
+
+---
+
+Depending on what i18n library your project is using, please follow one of the following tutorials:
+
+* [gt-next](/docs/cli/formats/gt)
+* [gt-react](/docs/cli/formats/gt)
+* [next-intl](/docs/cli/formats/next-intl-quickstart)
+* [i18next](/docs/cli/formats/i18next-quickstart)
+* [JSON](/docs/cli/formats/json)
+* [Markdown](/docs/cli/formats/mdx)
+
+
+
+## Usage
+
+| Command | Description |
+| --- | --- |
+| [`npx gtx-cli init`](/docs/cli/init) | Run the GT setup wizard. |
+| [`npx gtx-cli setup`](/docs/cli/setup) | Run the GT React & Next.js setup wizard. |
+| [`npx gtx-cli configure`](/docs/cli/configure) | Configure your project's GT settings. |
+| [`npx gtx-cli translate`](/docs/cli/translate) | Translates your project via the GT API. |
+| [`npx gtx-cli auth`](/docs/cli/auth) | Generate an API key and project ID for your project. |
+| [`npx gtx-cli scan`](/docs/cli/scan) | Scans your project for translatable content. Can be used repeatedly to update your project. |
+| [`npx gtx-cli generate`](/docs/cli/generate) | Generates a new translation data JSON file. Should be used when using the library standalone. |

@@ -1,11 +1,16 @@
 ---
-title: next-intl
-description: Automatically translate your next-intl project (<5 min)
+title: gt-next & gt-react
+description: Automatically translate your gt-next or gt-react project
 ---
 
 ## Overview
 
-This tutorial will show you how to automatically manage your project's translation files in [`next-intl`](https://next-intl.dev/).
+This tutorial will show you how to automatically manage your project's translation files when using [`gt-next`](/docs/next) or [`gt-react`](/docs/react).
+
+<Callout type="warn">
+  **Note:**
+  This should only be used when you are shipping a production build. If you are using gt-next or gt-react in development, this command is not needed.
+</Callout>
 
 We will follow these 4 steps:
 <Steps>
@@ -13,10 +18,7 @@ We will follow these 4 steps:
     Add your environment variables
   </Step>
   <Step>
-    Install [`gtx-cli`](/docs/cli)
-  </Step>
-  <Step>
-    Create a `gt.config.json` file
+    Configure your project with the [`npx gtx-cli configure`](/docs/cli/configure) command
   </Step>
   <Step>
     Run [`gtx-cli translate`](/docs/cli/translate#translate-json)
@@ -25,7 +27,7 @@ We will follow these 4 steps:
 
 <Callout>
   **Tip:**
-  Avoid the hassle of using translation files with the [`<T>` component](/docs/usage/t).
+  Avoid the hassle of using translation files with the [`<T>` component](/docs/react/guides/jsx).
 </Callout>
 
 ---
@@ -41,58 +43,15 @@ GT_API_KEY=<your-api-key>
 GT_PROJECT_ID=<your-project-id>
 ```
 
-## Step 2: Install `gtx-cli`
+## Step 2: Configure your project with the `npx gtx-cli configure` command
 
-Install the `gtx-cli` tool in your project.
+Run the `gtx-cli configure` command to configure your project.
 
-<Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
-  <Tab value="npm">
-  ```bash 
-  npm i --save-dev gtx-cli
-  ``` 
-  </Tab>
-  <Tab value="yarn">
-  ```bash 
-  yarn add --dev gtx-cli
-  ```
-  </Tab>
-
-  <Tab value="bun">
-  ```bash 
-  bun add --dev gtx-cli
-  ```
-  </Tab>
-  <Tab value="pnpm">
-  ```bash 
-  pnpm add --save-dev gtx-cli
-  ```
-  </Tab>
-</Tabs>
-
-## Step 3: Create a `gt.config.json` file
-
-Create a `gt.config.json` file in the root of your project.
-
-```json title="gt.config.json" copy
-{
-  "defaultLocale": "en",
-  "locales": ["zh", "es", "ja"],
-  "files": {
-    "json": {
-      "include": ["i18n/[locale]/*.json"]
-    },
-  },
-}
+```bash
+npx gtx-cli configure
 ```
-Feel free to customize the `gt.config.json` file to your needs. See the [configuration](/docs/cli/reference/config) docs for more information.
 
-Update the `json` file format such that the `include` path matches your project structure.
-
-<Callout>
-  Translations will preserve the original string syntax.
-</Callout>
-
-## Step 4: Add the `gtx-cli translate` command to your build process
+## Step 3: Add the `gtx-cli translate` command to your build process
 
 Add the `gtx-cli translate` command to your build or CI process before the build command to automatically add translations to your project.
 
@@ -119,4 +78,4 @@ You're done! Now your project will automatically update all of your translation 
 
 ## Next steps
  * See the [usage guide](/docs/cli/reference/usage) for the cli tool.
- * If you want to see live translations in development (think hot reload), check out the [`<T>` component](/docs/usage/t).
+ * If you want to see live translations in development (think hot reload), check out the [`<T>` component](/docs/react/guides/jsx).
