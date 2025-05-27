@@ -5,9 +5,10 @@
   "root": true,
   "pages": [
     "index",
-    "quickstart",
-    "---Usage---",
-    "usage/t",
+    "---Features---",
+    "features/inline",
+    "features/hot-reload",
+    "features/files",
     "---Platform---",
     "context",
     "cdn",
