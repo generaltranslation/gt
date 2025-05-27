@@ -19,7 +19,8 @@ const inter = Inter({
 export function generateMetadata(): Metadata {
   return {
     title: 'Docs — General Translation',
-    description: 'Documentation for the General Translation i18n stack.',
+    description:
+      'Documentation for the General Translation internationalization platform',
     icons: {
       icon: [
         {
@@ -37,6 +38,7 @@ export function generateMetadata(): Metadata {
     keywords: [
       'translation',
       'localization',
+      'l10n',
       'i18n',
       'internationalization',
       'automate',
@@ -60,32 +62,10 @@ export default async function Layout({
 }) {
   const { locale } = await params;
   const options = await baseOptions(locale);
-  const locales = [
-    {
-      name: capitalize(getLocaleProperties('en', 'en').languageName),
-      locale: 'en',
-    },
-    {
-      name: capitalize(getLocaleProperties('zh', 'zh').languageName),
-      locale: 'zh',
-    },
-    {
-      name: capitalize(getLocaleProperties('de', 'de').languageName),
-      locale: 'de',
-    },
-    {
-      name: capitalize(getLocaleProperties('fr', 'fr').languageName),
-      locale: 'fr',
-    },
-    {
-      name: capitalize(getLocaleProperties('es', 'es').languageName),
-      locale: 'es',
-    },
-    {
-      name: capitalize(getLocaleProperties('ja', 'ja').languageName),
-      locale: 'ja',
-    },
-  ];
+  const locales = ['en', 'zh', 'de', 'fr', 'es', 'ja'].map((locale) => ({
+    name: capitalize(getLocaleProperties(locale, locale).languageName),
+    locale: locale,
+  }));
   return (
     <html lang={locale} className={inter.className} suppressHydrationWarning>
       <body suppressHydrationWarning>
