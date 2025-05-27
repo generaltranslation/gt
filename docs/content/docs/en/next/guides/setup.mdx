@@ -1,15 +1,15 @@
 ---
 title: Project Setup
-description: How to setup your React project with gt-react
+description: How to setup your Next.js application with gt-next
 ---
 
 ## Overview
 
-This guide will walk you through how to setup your React project with `gt-react`.
+This guide will walk you through how to setup your Next.js application with `gt-next`.
 
-By the end of this guide, you will have a React app that is ready to start translating content.
+By the end of this guide, you will have a Next.js app that is ready to start translating content.
 
-This is more in-depth and manual than the [Quickstart](/docs/react/tutorials/quickstart) guide, and is recommended for those who want to understand the different concepts and options available to them.
+This is more in-depth and manual than the [Quickstart](/docs/next/tutorials/quickstart) guide, and is recommended for those who want to understand the different concepts and options available to them.
 
 In this guide, we will cover the following:
 
@@ -30,35 +30,35 @@ In this guide, we will cover the following:
 
 ### Prerequisites
 
-- A React project using a supported framework (Next.js, Vite, etc.)
+- A Next.js application using the App Router
 
 ## Installation
 
-Install the `gt-react` and `gtx-cli` packages:
+Install the `gt-next` and `gtx-cli` packages:
 
 <Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
   <Tab value="npm">
   ```bash 
-  npm i gt-react
+  npm i gt-next
   npm i --save-dev gtx-cli
   ``` 
   </Tab>
   <Tab value="yarn">
   ```bash 
-  yarn add gt-react
+  yarn add gt-next
   yarn add --dev gtx-cli
   ```
   </Tab>
 
   <Tab value="bun">
   ```bash 
-  bun add gt-react
+  bun add gt-next
   bun add --dev gtx-cli
   ```
   </Tab>
   <Tab value="pnpm">
   ```bash 
-  pnpm add gt-react
+  pnpm add gt-next
   pnpm add --save-dev gtx-cli
   ```
   </Tab>
@@ -68,36 +68,63 @@ Install the `gt-react` and `gtx-cli` packages:
 
 ## Configuration
 
+### `withGTConfig`
+
+The `withGTConfig` function is a function that is used to initialize the SDK in a Next.js application.
+
+It should be placed in your `next.config.[js|ts]` file, and is used to configure the SDK.
+
+```tsx title="next.config.ts"
+import { withGTConfig } from 'gt-next/config';
+
+const nextConfig = {
+  // Your next.config.ts options
+};
+
+export default withGTConfig(nextConfig, {
+  // Your GT configuration
+});
+```
+
+See the [withGTConfig API Reference](/docs/next/api/config/withGTConfig) for more information.
+
 ### `GTProvider`
 
-The core of `gt-react` is the `GTProvider` component.
+`gt-next` also exports a `GTProvider` component. This component is used to provide context to client-side components in your Next.js application.
 
-It is responsible for:
+The `GTProvider` and `withGTConfig` work together to provide context to your application.
+
+This context includes:
 
 - Managing the user's current locale
-- Providing relevant translations to your application
-- Providing context to hooks for accessing translations
-- Providing context to hooks for changing the user's locale
+- The relevant translations for that locale
+- Context for the `useGT` hook
+- Context for the `useDict` hook
+
 
 <Steps>
   <Step>
-    First, add the `GTProvider` component to your application. It should be placed as high up in your component tree as possible.
+    First, add the `GTProvider` component to the root layout of your application. It should be placed as high up in your component tree as possible.
 
-    ```tsx copy title="src/App.tsx"
-    import { GTProvider } from 'gt-react';
+    ```tsx copy title="src/layout.tsx"
+    import { GTProvider } from 'gt-next';
 
-    export default function App() {
+    export default function RootLayout({ children }) {
       return (
-        <GTProvider>
-          <App />
-        </GTProvider>
+        <html>
+          <body>
+            <GTProvider>
+              {children}
+            </GTProvider>
+          </body>
+        </html>
       );
     }
     ```
   </Step>
   <Step>
     Next, create a [`gt.config.json`](/docs/cli/reference/config) file in the root of your project.
-    This file is used to configure both the `gtx-cli` tool and the `gt-react` library.
+    This file is used to configure both the `gtx-cli` tool and the `gt-next` library.
 
     ```json
     {
@@ -107,29 +134,7 @@ It is responsible for:
     ```
     You should customize the `defaultLocale` and `locales` to match your project. See the list of [supported locales](/docs/platform/locale-strings) for more information.
 
-  </Step>
-  <Step>
-    Lastly, spread the `gt.config.json` file into the provider's props.
-
-    ```tsx
-    import gtConfig from './gt.config.json';
-
-    <GTProvider {...gtConfig}>
-      <App />
-    </GTProvider>
-    ```
-    <Callout type="info">
-      Spreading the `gt.config.json` file makes the config consistent across your application and CLI tool.
-
-      Alternatively, you can individually specify each prop in the `GTProvider` component.
-
-      ```tsx
-      <GTProvider
-        defaultLocale="en"
-        locales={["fr", "es"]}
-      >
-      ```
-    </Callout>
+    `withGTConfig` will automatically detect the `gt.config.json` file in your project, and use it to configure the SDK.
   </Step>
 </Steps>
 
@@ -137,45 +142,10 @@ It is responsible for:
 
 Set the following environment variables:
 
-<Tabs items={["Vite", "Next.js Pages Router", "Gatsby", "RedwoodJS",  "create-react-app", "Other"]}>
-    <Tab value="Vite">
-    ```bash copy
-    VITE_GT_API_KEY="" # Your General Translation Developer API key
-    VITE_GT_PROJECT_ID="" # Your General Translation project ID
-    ```
-    </Tab>
-    <Tab value="Gatsby">
-    ```bash copy
-    GATSBY_GT_API_KEY="" # Your General Translation Developer API key
-    GATSBY_GT_PROJECT_ID="" # Your General Translation project ID
-    ```
-    </Tab>
-    <Tab value="RedwoodJS">
-    ```bash copy
-    REDWOOD_ENV_GT_API_KEY="" # Your General Translation Developer API key
-    REDWOOD_ENV_PROJECT_ID="" # Your General Translation project ID
-    ```
-    </Tab>
-    <Tab value="Next.js Pages Router">
-    ```bash copy
-    NEXT_PUBLIC_GT_API_KEY="" # Your General Translation Developer API key
-    NEXT_PUBLIC_GT_PROJECT_ID="" # Your General Translation project ID
-    ```
-    </Tab>
-    <Tab value="create-react-app">
-    ```bash copy
-    REACT_APP_GT_API_KEY="" # Your General Translation Developer API key
-    REACT_APP_GT_PROJECT_ID="" # Your General Translation project ID
-    ```
-    </Tab>
-    <Tab value="Other">
-    Many react frameworks each have a unique way of exporting environment variables to the client.
-    In development environments, both `GT_API_KEY` and `GT_PROJECT_ID` need to be exported to the client.
-
-    We have added support for a few libraries so far,
-    but please let us know if your framework is not listed by creating an issue on our [GitHub repository](https://github.com/generaltranslation/gt/issues/new).
-    </Tab>
-</Tabs>
+```bash copy
+GT_API_KEY="" # Your General Translation Developer API key
+GT_PROJECT_ID="" # Your General Translation project ID
+```
 
 <Callout type="warn">
   **Make sure your API key variable is only set in your development environment! It should not be set in production.**
@@ -189,16 +159,17 @@ Alternatively, you can also use the CLI tool command `npx gtx-cli auth` to gener
 
 <Accordions>
   <Accordion title="What if I don't want to use the General Translation platform?">
-  `gt-react` is an i18n library that can work standalone without any environment variables.
+  `gt-next` is an i18n library that can work standalone without any environment variables.
   Without them, the library will act very similarly to other i18n libraries, and will still have core internationalization functionality.
 
-  However, `gt-react` also offers a native integration with the General Translation platform.
+  However, `gt-next` also offers a native integration with the General Translation platform.
   This integration unlocks additional functionality in the library, such as:
 
   - Translation Hot Reloading in Development
   - Automatic AI translations
   - Syncing translations with the General Translation platform
   - Native integration with our translation CDN
+  - On-demand translation of React components in production (on the server side)
 
   To avoid using the General Translation platform, just don't set any environment variables.
   </Accordion>
@@ -209,7 +180,7 @@ Alternatively, you can also use the CLI tool command `npx gtx-cli auth` to gener
 
 ## Usage
 
-Great! If you've followed the steps above, your React project is now setup to use `gt-react`.
+Great! If you've followed the steps above, your Next.js app is now setup to use `gt-next`.
 
 The next step is to internationalize your content. 
 Here, we'll give a brief overview of the different ways to translate content in your application.
@@ -223,7 +194,7 @@ The `<T>` component is the main component for translating JSX content in your ap
 To use it, simply wrap the JSX you want to translate in the `<T>` component.
 
 ```tsx
-import { T } from 'gt-react';
+import { T } from 'gt-next';
 <T>
   <div>Your content</div>
 </T>
@@ -231,10 +202,10 @@ import { T } from 'gt-react';
 
 ### `useGT` Hook
 
-The `useGT` hook is a React hook that returns a function that can be used to translate strings.
+The `useGT` hook is a client-side hook that returns a function that can be used to translate strings.
 
 ```tsx
-import { useGT } from 'gt-react';
+import { useGT } from 'gt-next/client';
 
 const translate = useGT();
 translate('Hello, world!');
@@ -254,7 +225,7 @@ translate('Hello, world!');
 
 After you've setup your project and internationalized some content, here's how to deploy your application.
 
-The behavior of `gt-react` in production is slightly different from development. Specifically, no translations will be performed at runtime.
+The behavior of `gt-next` in production is slightly different from development. Specifically, no translations will be performed at runtime.
 
 This means that you'll need to translate your content before deploying your application, in the build process.
 
@@ -266,7 +237,7 @@ Luckily, the `gtx-cli` tool has a `translate` command that can be used to automa
 
     Please note that this key is different from your Development API key, and begins with `gtx-api-`, instead of `gtx-dev-`.
 
-    Read about the difference between Development and Production keys [here](/docs/react/concepts/environments).
+    Read about the difference between Development and Production keys [here](/docs/next/concepts/environments).
   </Step>
   <Step>
     Add this environment variable to your CI/CD pipeline.
@@ -276,7 +247,7 @@ Luckily, the `gtx-cli` tool has a `translate` command that can be used to automa
     GT_API_KEY=<your-production-api-key>
     ```
     <Callout type='warn'>
-      Make sure that `GT_API_KEY` is **NOT** prefixed with `NEXT_PUBLIC_` or `VITE_`, depending on your framework!
+      Make sure that `GT_API_KEY` is **NOT** prefixed with `NEXT_PUBLIC_`!
 
       If it is, you'll risk exposing your API key to the public.
     </Callout>
@@ -307,7 +278,7 @@ Luckily, the `gtx-cli` tool has a `translate` command that can be used to automa
 
 <Accordions>
   <Accordion title="What if I'm not using the General Translation platform?">
-    If you're not using the General Translation platform, you can still use `gt-react` in production.
+    If you're not using the General Translation platform, you can still use `gt-next` in production.
 
     However, you'll need to manually translate your content before deploying your application.
 
@@ -317,7 +288,7 @@ Luckily, the `gtx-cli` tool has a `translate` command that can be used to automa
     npx gtx-cli generate
     ```
 
-    Then, you'll need to manually edit / translate these files, and load them into your application with [`loadTranslations`](/docs/react/guides/local-tx).
+    Then, you'll need to manually edit / translate these files, and load them into your application with [`loadTranslations`](/docs/next/guides/local-tx).
   </Accordion>
 </Accordions>
 
@@ -325,7 +296,7 @@ Luckily, the `gtx-cli` tool has a `translate` command that can be used to automa
 
 ## Summary
 
- * In this guide, we covered how to setup your React project with `gt-react`, and the different ways to translate content in your application.
+ * In this guide, we covered how to setup your Next.js app with `gt-next`, and the different ways to translate content in your application.
  * We also covered how to deploy your application
 
 

@@ -5,7 +5,7 @@ description: How to internationalize strings
 
 ## Overview
 
-This guide will walk you through how to internationalize strings in your React app using the `useGT()` hook.
+This guide will walk you through how to internationalize strings in your Next.js app using the [`useGT()`](/docs/next/api/strings/useGT) hook & [`getGT()`](/docs/next/api/strings/getGT) function.
 
 We will cover the following:
 <Steps>
@@ -26,13 +26,49 @@ We will cover the following:
   </Step>
 </Steps>
 
+<Callout>
+  In this guide, when we refer to the `useGT()` hook, we are also referring to the `getGT()` function.
+  
+  **The only difference between the two is when to use them.**
+  
+  The `getGT()` function is an asynchronous server-side function that returns a promised function, 
+  while the `useGT()` hook returns the function directly.
+  
+  Use the `getGT()` function in server components, 
+  and the `useGT()` hook in client components.
+
+<Tabs items={['Server Component', 'Client Component']}>
+  <Tab value="Server Component">
+  ```tsx title="src/app/page.tsx"
+  import { getGT } from 'gt-next/server';
+  export async function MyComponent() {
+    const translate = await getGT();
+    const translatedString = translate('Hello, world!');
+    return <div>{translatedString}</div>;
+  }
+  ```
+  </Tab>
+  <Tab value="Client Component">
+  ```tsx title="src/app/page.tsx"
+  'use client';
+  import { useGT } from 'gt-next/client';
+  export function MyComponent() {
+    const translate = useGT();
+    const translatedString = translate('Hello, world!');
+    return <div>{translatedString}</div>;
+  }
+  ```
+  </Tab>
+</Tabs>
+</Callout>
+
 --- 
 
 ## When to use the `useGT()` hook
 
 The `useGT()` hook is a React hook that can be used to translate strings.
 
-In most cases, you can use the [`<T>` component](/docs/react/guides/jsx).
+In most cases, you can use the [`<T>` component](/docs/next/guides/jsx).
 However, in cases where JSX is not appropriate, the `useGT()` hook can be used. 
 
 Some cases where the `useGT()` hook could be more appropriate are:
@@ -49,7 +85,7 @@ const user = {
 Here, only the `description` property should be translated.
 
 <Callout>
-  Wherever possible, you should use the [`<T>` component](/docs/react/guides/jsx).
+  Wherever possible, you should use the [`<T>` component](/docs/next/guides/jsx).
   The `<T>` component allows you to translate JSX content, and is the recommended way to translate strings.
 </Callout>
 
@@ -57,14 +93,17 @@ Here, only the `description` property should be translated.
 
 ## How to use the `useGT()` hook
 
-The `useGT()` hook has to be called within the [`<GTProvider>`](/docs/react/api/components/gtprovider).
+The `useGT()` hook has to be called within the [`<GTProvider>`](/docs/next/api/components/gtprovider).
 
 To translate a string, simply pass the string directly to the function returned by the hook.
 
 
-```jsx copy
-const translate = useGT();
-translate('Hello, world!');
+```tsx copy
+import { useGT } from 'gt-next/client';
+export function MyComponent() {
+  const translate = useGT();
+  return <div>{translate('Hello, world!')}</div>;
+}
 ```
 
 <Callout>
@@ -73,6 +112,22 @@ translate('Hello, world!');
 
   This means that you don't need to use dictionaries!
 </Callout>
+
+## How to use the `getGT()` function
+
+On the other hand, since the `getGT()` function is an asynchronous server-side function, 
+it can be used in server components, and does not need to be called within the `<GTProvider>`.
+
+The context for `getGT()` is handed by the `withGTConfig` function in your `next.config.ts` file.
+
+```tsx copy
+import { getGT } from 'gt-next/server';
+export async function MyComponent() {
+  const translate = await getGT();
+  return <div>{translate('Hello, world!')}</div>;
+}
+```
+
 
 ## Using variables
 
@@ -93,7 +148,7 @@ The `{count}` placeholder will be replaced with the value of the `count` variabl
 
 This allows you to display dynamic values in your translations.
 
-For more information on the API, see the [API reference](/docs/react/api/strings/useGT).
+For more information on the API, see the [API reference](/docs/next/api/strings/useGT).
 
 ---
 
@@ -104,7 +159,7 @@ For more information on the API, see the [API reference](/docs/react/api/strings
 <Tabs items={['Result', 'Original']}>
   <Tab value="Result">
 ```jsx
-import { useGT } from 'gt-react';
+import { useGT } from 'gt-next/client';
 
 export default function MyComponent() {
   const t = useGT();
@@ -134,7 +189,7 @@ export default function MyComponent() {
 <Tabs items={['Result', 'Original']}>
   <Tab value="Result">
 ```jsx
-import { useGT } from 'gt-react';
+import { useGT } from 'gt-next/client';
 
 export default function MyComponent() {
   const t = useGT();
@@ -168,7 +223,7 @@ export default function MyComponent() {
 <Tabs items={['Result', 'Original']}>
   <Tab value="Result">
 ```jsx
-import { useGT } from 'gt-react';
+import { useGT } from 'gt-next/client';
 
 export default function MyComponent() {
   const t = useGT();
@@ -230,7 +285,7 @@ export default function MyComponent() {
 <Tabs items={['Result', 'Original']}>
   <Tab value="Result">
 ```jsx copy title="src/llms.ts"
-import { useGT } from 'gt-react';
+import { useGT } from 'gt-next/client';
 // Custom hook to get LLM data with translations
 export function useLLMData() {
   const t = useGT();
@@ -341,28 +396,27 @@ export default function MyComponent() {
   const t = useGT();
   return (
     <div>
-      <h1>{t(dynamicContent)}</h1> // This will not work
+      <h1>{t(dynamicContent)}</h1> {/* This will not work */}
     </div>
   )
 }
 ```
 
 <Accordions>
-  <Accordion title="Why can't I translate dynamic content?">
-    This is because React is client-side rendered, and no translations can ever occur in production
-    due to security vulnerabilities involving exposed API keys. 
-    In development, translations will work because the development server
-    is not exposed to the public internet.
+  <Accordion title="What if I need to translate dynamic content?">
+    If you need to translate dynamic content, read our guide on how to [translate content on-demand](/docs/next/guides/dynamic-content).
+    This only works on Next.js server components.
   </Accordion>
 </Accordions>
 
 <Callout type="warn">
-  The CLI tool will warn you if you try to translate dynamic content
+  The CLI tool will warn you if you try to translate dynamic content with the `useGT()` hook.
 </Callout>
 
 
 ---
 
 ## Next Steps
- * Learn more about the [`<T>` component](/docs/react/guides/jsx).
- * See the [API reference for `useGT()`](/docs/react/api/strings/useGT).
+ * Learn about how to [translate JSX content on-demand](/docs/next/guides/dynamic-content).
+ * Learn more about the [`<T>` component](/docs/next/guides/jsx).
+ * See the [API reference for `useGT()`](/docs/next/api/strings/useGT).

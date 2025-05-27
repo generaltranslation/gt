@@ -17,7 +17,7 @@ We will cover 4 simple steps:
     Add the GTProvider
   </Step>
   <Step>
-    Add environment variables
+    (Optional) Add environment variables
   </Step>
   <Step>
     Clean up strings
@@ -35,14 +35,14 @@ The setup wizard will walk you through the process of internationalizing your pr
 npx gtx-cli@latest
 ```
 
-If you don't want to use the setup wizard, you can follow the [manual setup guide](/docs/react/guides/setup).
+If you don't want to use the setup wizard, you can follow the [manual setup guide](/docs/react/guides/setup) instead.
 
 The setup wizard will:
 
 1. Install the required libraries.
 2. Configure your project's supported locales.
 3. Wrap your project's JSX components with the `<T>` component.
-4. Generate a production API key and project ID for your project.
+4. Generate a development API key and project ID for your project.
 
 See the [setup wizard docs](/docs/cli/init) for more information.
 
@@ -258,5 +258,11 @@ Follow our guide on [shipping to production](/docs/react/tutorials/quickdeploy).
 ---
 
 ## Next steps
- * See our [React API reference](/docs/react/api/components/t) for detailed information about the `<T>` component and other available components.
+
+- Read our guide on how to [translate JSX content](/docs/react/guides/jsx) with the `<T>` component.
+- Learn how to translate strings with the `useGT` hook: [Translating Strings](/docs/react/guides/strings)
+
+
+
+
 

@@ -8,9 +8,10 @@ description: Overview of General Translation's Next.js SDK
 The General Translation Next.js SDK is an open-source internationalization (i18n) library for Next.js.
 
 It offers a set of tools to help you internationalize your Next.js application in a easy and maintainable way,
-with feature parity to other popular i18n libraries.
+with feature parity to other popular i18n libraries. 
+It is built on top of the [React SDK](/docs/react), and offers additional features specific to Next.js.
 
-The React SDK can be used without the General Translation platform, and will act very similarly to other i18n libraries.
+The Next.js SDK can be used without the General Translation platform, and will act very similarly to other i18n libraries.
 
 However, it also integrates with our platform, offering additional features such as:
 
@@ -18,12 +19,16 @@ However, it also integrates with our platform, offering additional features such
 - Automatic AI translations
 - Syncing translations with the General Translation platform
 - Native integration with our translation CDN
+- On-demand translation of React components in production (on the server side)
 
 ## Concepts
 
-There are 4 main concepts to understand about the SDK.
+There are 5 main concepts to understand about the SDK.
 
 <Steps>
+  <Step>
+    Initialization with `withGTConfig`
+  </Step>
   <Step>
     The `<GTProvider>` component
   </Step>
@@ -38,10 +43,30 @@ There are 4 main concepts to understand about the SDK.
   </Step>
 </Steps>
 
+## Initialization with `withGTConfig`
+
+The `withGTConfig` function is a function that is used to initialize the SDK in a Next.js application.
+
+It should be placed in your `next.config.[js|ts]` file, and is used to configure the SDK.
+
+```tsx title="next.config.ts"
+import { withGTConfig } from 'gt-next/config';
+
+const nextConfig = {
+  // Your next.config.ts options
+};
+
+export default withGTConfig(nextConfig, {
+  // Your GT configuration
+});
+```
+
+See the [withGTConfig API Reference](/docs/next/api/config/withGTConfig) for more information.
+
 ## The `<GTProvider>` component
 
 ```tsx
-import { GTProvider } from 'gt-react';
+import { GTProvider } from 'gt-next';
 ```
 
 The `<GTProvider>` component is the main component that you need to add to your application.
@@ -50,12 +75,15 @@ It is used to provide the rest of your application with context.
 
 This context includes the current language and the relevant translations for that language.
 
+The provider is only required if you are using any client-side features. 
+If you are only using server-side features, the provider is not required, but can still be included.
+
 ### Important Considerations
 
 - The provider should wrap your entire application.
-- Ideally, it should be placed as high in the tree as possible, such as in your root component.
+- Ideally, it should be placed as high in the tree as possible, such as in your root layout.
 
-See the [GTProvider](/docs/react/api/components/gtprovider) page for more information.
+See the [GTProvider](/docs/next/api/components/gtprovider) page for more information.
 
 ## The `<T>` component
 
@@ -95,9 +123,9 @@ Unlike strings, the `<T>` component can be used to translate HTML content, makin
 </T>
 ```
 
-See the [components](/docs/react/guides/jsx) guide to learn about the different ways to use the `<T>` component.
+See the [components](/docs/next/guides/jsx) guide to learn about the different ways to use the `<T>` component.
 
-See the [T API Reference](/docs/react/api/components/t) for the API of the `<T>` component.
+See the [T API Reference](/docs/next/api/components/t) for the API of the `<T>` component.
 
 ## The `useGT` hook
 
@@ -123,9 +151,9 @@ const data = {
 };
 ```
 
-See the [strings](/docs/react/guides/strings) guide to learn more about the `useGT` hook.
+See the [strings](/docs/next/guides/strings) guide to learn more about the `useGT` hook.
 
-See the [useGT API Reference](/docs/react/api/strings/useGT) for more information.
+See the [useGT API Reference](/docs/next/api/strings/useGT) for more information.
 
 ## The `useDict` hook
 
@@ -155,14 +183,14 @@ Instead, we recommend using the `<T>` component or the `useGT` hook.
 If you are migrating from another i18n library, the `useDict` hook is a drop-in replacement and can useful for incrementally migrating your codebase.
 </Callout>
 
-See the [dictionaries](/docs/react/guides/dictionaries) guide to learn more about the `useDict` hook.
+See the [dictionaries](/docs/next/guides/dictionaries) guide to learn more about the `useDict` hook.
 
-See the [useDict API Reference](/docs/react/api/dictionary/useDict) for more information.
+See the [useDict API Reference](/docs/next/api/dictionary/useDict) for more information.
 
 ---
 
 ## Next Steps
 
-- Learn about how to setup your React project with the SDK: [Project Setup](/docs/react/guides/setup)
-- Learn about how to translate strings with the `useGT` hook: [Translating Strings](/docs/react/guides/hooks)
-- Learn about how to translate JSX content with the `<T>` component: [Translating JSX](/docs/react/guides/jsx)
+- Learn about how to setup your Next.js project with the SDK: [Project Setup](/docs/next/guides/setup)
+- Learn about how to translate strings with the `useGT` hook: [Translating Strings](/docs/next/guides/hooks)
+- Learn about how to translate JSX content with the `<T>` component: [Translating JSX](/docs/next/guides/jsx)

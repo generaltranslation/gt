@@ -393,6 +393,21 @@ export default function NestedTranslation() {
 
 The solution here is to remove the outtermost `<T>` component.
 
+### Translating dynamic content
+
+If you attempt to wrap dynamic content with the `<T>` component, the CLI tool will error.
+
+For example, the following will error:
+
+```jsx
+const username = 'John Doe';
+<T>
+  <p>Your username is {username}</p>
+</T>
+```
+
+To get around this, try to use [Variable Components](/docs/react/guides/variables) or [Branching Components](/docs/react/guides/branches) to wrap the dynamic content.
+
 ---
 
 ## Summary

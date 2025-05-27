@@ -5,7 +5,7 @@ description: How to internationalize JSX components
 
 ## Overview
 
-This guide will walk you through how to use the [`<T>` component](/docs/react/api/components/t) to internationalize JSX content.
+This guide will walk you through how to use the [`<T>` component](/docs/next/api/components/t) to internationalize JSX content.
 
 By the end of this guide, you will know the correct syntax for using the `<T>` component and what to avoid.
 
@@ -32,7 +32,7 @@ We will cover the following:
 </Steps>
 
 
-If you are looking for how to use [Variable Components](/docs/react/guides/variables) or [Branching Components](/docs/react/guides/branches), please refer to their respective guides.
+If you are looking for how to use [Variable Components](/docs/next/guides/variables) or [Branching Components](/docs/next/guides/branches), please refer to their respective guides.
 
 ---
 
@@ -49,7 +49,7 @@ function Greeting() {
 All you have to do is wrap the content in a `<T>` component.
 
 ```jsx
-import { T } from 'gt-react';
+import { T } from 'gt-next';
 
 function Greeting() {
   return <T><p>Hello, world!</p></T>;
@@ -57,7 +57,7 @@ function Greeting() {
 ```
 
 Depending on the current language your user has selected, this will render the appropriate translation. 
-See [switching languages](/docs/react/guides/languages) for more information on how to allow your users to switch languages.
+See [switching languages](/docs/next/guides/languages) for more information on how to allow your users to switch languages.
 
 ---
 
@@ -103,7 +103,7 @@ You should always try to use the `<T>` component when you have any **static HTML
 **DO NOT** use the `<T>` component when you have any unsafe **dynamic** content.
 
 Here, dynamic content means any content that could change at runtime. 
-This rule does not apply if you are using [Variable Components](/docs/react/guides/variables) or [Branching Components](/docs/react/guides/branches).
+This rule does not apply if you are using [Variable Components](/docs/next/guides/variables) or [Branching Components](/docs/next/guides/branches).
 
 <Callout>
   **Note:**
@@ -141,7 +141,7 @@ The following examples show invalid usage of the `<T>` component:
 ```
 
 <Callout>
-  In the above examples, the content can be safely internationalized using [variable components](/docs/react/guides/variables) and [branching components](/docs/react/guides/branches).
+  In the above examples, the content can be safely internationalized using [variable components](/docs/next/guides/variables) and [branching components](/docs/next/guides/branches).
 </Callout>
 
 ```jsx
@@ -265,7 +265,7 @@ We recommend adding it to your CD pipeline or as a part of your build script.
 }
 ```
 
-For a more detailed guide on deploying your application, please refer to the [Deployment](/docs/react/tutorials/quickdeploy) tutorial.
+For a more detailed guide on deploying your application, please refer to the [Deployment](/docs/next/tutorials/quickdeploy) tutorial.
 For more information on the command, please refer to the [CLI Tool](/docs/cli/translate) reference guide.
 
 ### Behavior: Development vs Production
@@ -289,7 +289,7 @@ This means that you have to run the translation command before deploying your ap
 With some exceptions, all content wrapped in a `<T>` component is sent to the General Translation API for translation.
 This might not be desirable for rendering sensitive data, such as usernames, account numbers, etc.
 
-To circumvent this issue, use [Variable Components](/docs/react/guides/variables#privacy) to handle private information.
+To circumvent this issue, use [Variable Components](/docs/next/guides/variables#privacy) to handle private information.
 This ensures that no sensitive data is sent to the General Translation API for translation.
 Localization of any content wrapped in a variable component is handled locally.
 
@@ -393,6 +393,25 @@ export default function NestedTranslation() {
 
 The solution here is to remove the outtermost `<T>` component.
 
+### Translating dynamic content
+
+If you attempt to wrap dynamic content with the `<T>` component, the CLI tool will error.
+
+For example, the following will error:
+
+```jsx
+const username = 'John Doe';
+<T>
+  <p>Your username is {username}</p>
+</T>
+```
+
+To get around this, try to use [Variable Components](/docs/next/guides/variables) or [Branching Components](/docs/next/guides/branches) to wrap the dynamic content.
+
+Alternatively, if your content truly is dynamic and needs to be translated on-demand, 
+you can use the [`<Tx>` component](/docs/next/guides/dynamic-content).
+
+
 ---
 
 ## Summary
@@ -402,7 +421,7 @@ The solution here is to remove the outtermost `<T>` component.
  * In production, all translations that the `<T>` component uses are completed at build time.
 
 ## Next Steps
- * Read about the [API](/docs/react/api/components/t) for the `<T>` component.
- * Explore [Variable Components](/docs/react/guides/variables) and [Branching Components](/docs/react/guides/branches).
- * Learn about [translating strings](/docs/react/guides/strings).
+ * Read about the [API](/docs/next/api/components/t) for the `<T>` component.
+ * Explore [Variable Components](/docs/next/guides/variables) and [Branching Components](/docs/next/guides/branches).
+ * Learn about [translating strings](/docs/next/guides/strings).
 
