@@ -13,13 +13,14 @@
     "context",
     "cdn",
     "review",
-    "ai-translations",
-    "usage/apikeys",
+    "apikeys",
+    "pricing",
     "---Reference---",
     "terminology",
     "supported-locales",
     "locale-strings",
     "faqs",
-    "examples"
+    "examples",
+    "open-source"
   ]
 }

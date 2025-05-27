@@ -11,7 +11,7 @@ The CLI setup wizard [`npx gtx-cli init`](/docs/cli/init) will create a `gt.conf
 
 ## Configuration
 
-The `gt.config.json` file contains the following settings:
+The `gt.config.json` file accepts the following properties, but is not limited to them:
 
 - `defaultLocale`: The default locale for your project. This is the locale that your source content is written in. This is also the fallback locale for your project (if using `gt-next` or `gt-react`).
 
@@ -20,6 +20,7 @@ If you are using `gt-next` or `gt-react`, these are also the locales that your a
 
 - `files`: This is an object that contains information about the content you want to translate.
 
+- `stageTranslations`: An optional boolean flag that indicates whether your project is configured to use human review.
 
 Here is an skeleton of the `gt.config.json` file:
 

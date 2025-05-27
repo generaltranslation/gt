@@ -67,9 +67,9 @@ export default async function Page(props: {
       full={page.data.full}
       editOnGithub={{
         owner: 'General-Translation',
-        repo: 'gt-docs',
+        repo: 'gt',
         sha: 'main',
-        path: `content/docs/${locale}/${page.file.path}`,
+        path: `docs/content/docs/${locale}/${page.file.path}`,
       }}
     >
       <DocsTitle>{page.data.title}</DocsTitle>

@@ -1,7 +1,17 @@
 ---
-title: Translate
-description: How to translate your project
+title: Stage
+description: How to stage your translations for review
 ---
+
+## Overview
+
+`gtx-cli stage` is a command that generates translations for your project and stages them for review.
+
+This command is only useful if you've enabled human review on your project.
+
+Currently, this command is only supported for apps using `gt-next` or `gt-react`.
+
+
 ## Usage
 
 <Callout type="error">
@@ -9,22 +19,16 @@ description: How to translate your project
 </Callout>
 
 ```bash
-npx gtx-cli translate
+npx gtx-cli stage
 ```
 <Callout type="info">
     **Note:**
     This command requires a production API key! Get one on the [platform](https://generaltranslation.com/dashboard).
 </Callout>
 
-## Overview
+The `gtx-cli stage` command works in the same way as the `translate` command, but instead of downloading the completed translations or publishing them to the CDN, it simply stages them for review.
 
-The `gtx-cli translate` command translates your project. 
-It traverses your project's file tree and translates any content wrapped in a `<T>` component 
-or using the `useGT()` functions.
-
-Additionally, it includes content from the dictionary file (if one is provided).
-
-This command is the primary way of using the General Translation API and related services.
+After running `gtx-cli stage`, you should run `gtx-cli translate` to complete the process and download the translations (if configured to do so).
 
 <Callout type="warn">
     **For Production Use Only!**
@@ -33,67 +37,6 @@ This command is the primary way of using the General Translation API and related
     Before running this command, please make sure you are on the branch that will be used for production.
     Remember to also specify your production API key (`GT_API_KEY`) and Project ID (`GT_PROJECT_ID`) in your environment variables.
 </Callout>
-
-
-## Usage
-
-There are 3 ways to use the `translate` command. Methods 1 and 2 require a production API key:
-
-<Callout type="info">
-    We recommend running the setup wizard: [`npx gtx-cli configure`](/docs/cli/configure) to help configure your project before running the `translate` command.
-    Depending on how your project is configured, the behavior of the translate command may change.
-</Callout>
-
-
-### Method 1: Translate your project's JSON files. [#translate-json]
-
-If you are using other i18n libraries such as `next-intl`, `react-i18next`, or `next-i18next`, you can use this method to translate your project's JSON files.
-
-Translations will be automatically saved to your codebase.
-
-To use the CLI tool to translate your project's JSON files, modify your `gt.config.json` file to include `json` in the `files` property.
-See the [CLI config docs](/docs/cli/reference/config#json) for more details.
-
-```bash
-npx gtx-cli translate
-```
-<Callout type="info">
-    The CLI tool will automatically detect your i18n library by reading your `package.json` file, and will translate your JSONs while respecting your i18n library's syntax.
-</Callout>
-
-### Method 2: Translate your GT project.
-
-If your project is using `gt-next` or `gt-react`, you can use this method to generate translations for your project.
-
-```bash
-npx gtx-cli translate
-```
-
-By default, translations are saved to the GT CDN. 
-
-However, if you would like to save the translations to your codebase, add the `gt` property to the `files` object in the `gt.config.json` file.
-
-<Callout type="info">
-  `gt-next` and `gt-react` support serving translations locally, as well as using General Translation's public CDN.
-  We recommend using the CDN for reduced latency, better performance, and smaller bundle sizes.
-</Callout>
-
-See the [CLI config docs](/docs/cli/reference/config#gt) for more details.
-
-
-### Method 3: Validate your project's `<T>` components and dictionary file. [#validate]
-
-This method is useful for validating your project's `<T>` components and dictionary file.
-
-This ensures that your project is correctly configured and that the translations will be valid and accurate.
-
-No translations will be generated if the `--dry-run` flag is provided.
-
-```bash
-npx gtx-cli translate --dry-run
-```
-
-
 
 
 ---
@@ -134,7 +77,9 @@ There are a few key parameters:
 
 ### Configuration file
 
-When running the CLI tool for the first time, it will attempt to create a `gt.config.json` file in the root of your project.
-This file contains metadata about your project that is used to translate your content.
+When running `gtx-cli stage`, the CLI will automatically add the `stageTranslations : true` property to your `gt.config.json` file.
 
-Read more about the `gt.config.json` file [here](/docs/cli/reference/config).
+This property ensures that if `translate` is ran without first running`stage` for a specific deployment version, 
+the CLI tool will error and exit.
+
+Additionally, this property ensures that the `translate` command will not duplicate the translations done by the `stage` command.

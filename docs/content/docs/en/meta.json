@@ -1,19 +1,3 @@
 {
-  "pages": [
-    "platform",
-    "react",
-    "next",
-    "cli",
-    "core",
-    "---Quickstart---",
-    "react/tutorials/quickstart",
-    "next/tutorials/quickstart",
-    "cli/tutorials/quickstart",
-    "---Usage---",
-    "usage/t",
-    "usage/dictionary",
-    "usage/cli-tool",
-    "usage/apikeys",
-    "faqs"
-  ]
+  "pages": ["platform", "react", "next", "cli", "core"]
 }
