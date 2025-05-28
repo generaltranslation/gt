@@ -1,4 +1,4 @@
-import './instrument.js';
+#!/usr/bin/env node
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -13,8 +13,8 @@ async function main() {
 
   addDocsResource(server);
   addDocsTools(server);
-
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  console.log('General Translation MCP server started on stdio');
 }
 main();

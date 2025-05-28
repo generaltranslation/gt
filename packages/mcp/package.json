@@ -7,13 +7,10 @@
     "gt-mcp-server": "dist/index.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0",
-    "dotenv": "^16.5.0"
+    "@modelcontextprotocol/sdk": "^1.12.0"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.13.0",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
     "@types/jest": "^29.5.14",
     "@types/node": ">=20.0.0",
     "tsx": "^4.16.5",
@@ -24,10 +21,10 @@
     "transpile": "tsc",
     "build": "npm run transpile",
     "build:clean": "rm -rf dist; npm run build",
-    "release": "npm run build:clean && npm publish",
-    "release:alpha": "npm run build:clean && npm publish --tag alpha",
-    "release:beta": "npm run build:clean && npm publish --tag beta",
-    "release:latest": "npm run build:clean && npm publish --tag latest",
+    "release": "npm run build:clean && npm publish --access public",
+    "release:alpha": "npm run build:clean && npm publish --access public --tag alpha",
+    "release:beta": "npm run build:clean && npm publish --access public --tag beta",
+    "release:latest": "npm run build:clean && npm publish --access public --tag latest",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -35,7 +32,7 @@
     "url": "git+https://github.com/generaltranslation/gt.git"
   },
   "author": "General Translation, Inc.",
-  "license": "MIT",
+  "license": "FSL-1.1-ALv2",
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
   },
