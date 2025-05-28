@@ -27,7 +27,7 @@ export async function GET() {
     const list = map.get(dir) ?? [];
     if (page.locale === 'en') {
       list.push(
-        `- [${page.data.title}](${process.env.NEXT_PUBLIC_APP_URL}${page.url}.mdx): ${page.data.description}`
+        `- [${page.data.title}](${process.env.NEXT_PUBLIC_APP_URL || 'https://generaltranslation.com'}${page.url}.mdx): ${page.data.description}`
       );
     }
     list.sort();
