@@ -14,7 +14,7 @@ export async function getLLMText(page: InferPageType<typeof source>) {
     }[page.slugs[0]] ?? page.slugs[0];
 
   return `# ${category}: ${page.data.title}
-URL: ${process.env.NEXT_PUBLIC_APP_URL || 'https://generaltranslation.com'}${page.url}.mdx
+URL: ${process.env.NEXT_PUBLIC_HOMEPAGE_URL || 'https://generaltranslation.com'}${page.url}.mdx
 ${content}
 `;
 }
