@@ -3,6 +3,7 @@
   "version": "1.0.1",
   "description": "General Translation MCP Server",
   "main": "dist/index.js",
+  "type": "module",
   "bin": {
     "gt-mcp-server": "dist/index.js"
   },
