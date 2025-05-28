@@ -136,6 +136,6 @@ export type Settings = {
   _versionId?: string; // internal use only
   version?: string; // for specifying a custom version id to use. Should be unique
   description?: string;
-  src?: string[]; // src directory for gt-next and gt-react
+  src?: string[]; // list of src directories for gt-next and gt-react
   framework?: SupportedFrameworks;
 };

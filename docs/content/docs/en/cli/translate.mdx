@@ -138,3 +138,31 @@ When running the CLI tool for the first time, it will attempt to create a `gt.co
 This file contains metadata about your project that is used to translate your content.
 
 Read more about the `gt.config.json` file [here](/docs/cli/reference/config).
+
+## Important Tips
+
+### Content Sources
+
+The `translate` command will recursively search for translatable content in your project. 
+
+By default, it searches in the following directories:
+
+- `./src`
+- `./app`
+- `./pages`
+- `./components`
+
+You can specify alternate directories to search by using the `--src` flag, 
+or by modifying the `src` property in your [`gt.config.json`](/docs/cli/reference/config) file.
+
+### Dictionary File
+
+The `translate` command will automatically detect the dictionary file in your project.
+
+By default, it looks for a file named `dictionary.[json|ts|js]` in the following directories:
+
+- `./src`
+- `./`
+
+You can specify an alternate dictionary file by using the `--dictionary` flag, 
+or by modifying the `dictionary` property in your [`gt.config.json`](/docs/cli/reference/config) file.
