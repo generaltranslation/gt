@@ -5,15 +5,13 @@ import { fetchDocContent, getDocs } from '../utils/getDocs.js';
 export function addDocsTools(server: McpServer) {
   server.tool(
     'fetch-docs',
+    'Fetches the content of a documentation file by its path.',
     {
-      description: 'Fetches the content of a documentation file by its path.',
-      parameters: {
-        path: z
-          .string()
-          .describe(
-            'The path to the documentation file (e.g., "platform/index.mdx" or "react/introduction.mdx")'
-          ),
-      },
+      path: z
+        .string()
+        .describe(
+          'The path to the documentation file (e.g., "platform/index.mdx" or "react/introduction.mdx")'
+        ),
     },
     async ({ path }) => {
       try {
@@ -55,17 +53,14 @@ export function addDocsTools(server: McpServer) {
 
   server.tool(
     'list-docs',
+    'Lists available documentation files in the format of an llms.txt or llms-full.txt file. "full" returns the full documentation, "short" returns a summary.',
     {
-      description:
-        'Lists available documentation files in the format of an llms.txt or llms-full.txt file. "full" returns the full documentation, "short" returns a summary.',
-      parameters: {
-        type: z
-          .enum(['full', 'short'])
-          .default('short')
-          .describe(
-            'Type of documentation list: "full" for llms-full.txt or "short" for llms.txt'
-          ),
-      },
+      type: z
+        .enum(['full', 'short'])
+        .default('short')
+        .describe(
+          'Type of documentation list: "full" for llms-full.txt or "short" for llms.txt'
+        ),
     },
     async ({ type }) => {
       try {
