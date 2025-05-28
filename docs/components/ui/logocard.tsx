@@ -8,7 +8,9 @@ import { cn } from '@/lib/utils';
 import { useLayoutEffect, useState } from 'react';
 import Image from 'next/image';
 
-const BASE_URL = '/';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL
+  ? process.env.NEXT_PUBLIC_APP_URL + '/'
+  : 'https://gt-docs-ten.vercel.app/';
 const REACT_QUICK_START = '/docs/react';
 const NEXT_QUICK_START = '/docs/next';
 
