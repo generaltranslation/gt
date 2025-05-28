@@ -17,13 +17,12 @@
     "apikeys",
     "pricing",
     "---Reference---",
+    "ai-integrations",
     "terminology",
     "supported-locales",
     "locale-strings",
     "faqs",
     "examples",
-    "open-source",
-    "[llms.txt](/llms.txt)",
-    "[llms-full.txt](/llms-full.txt)"
+    "open-source"
   ]
 }
