@@ -3,6 +3,10 @@
 @import 'fumadocs-ui/css/preset.css';
 
 @source '../node_modules/fumadocs-ui/dist/**/*.js';
+@source ".";
+@source "../components";
+@source "../content";
+@plugin 'tailwindcss-animate';
 
 /* --------------- FUMADOCS --------------- */
 @theme {
@@ -44,6 +48,11 @@
 }
 
 #nd-sidebar {
+  --color-fd-accent-foreground: hsl(
+    270,
+    70%,
+    55%
+  ); /* Lighter purple background */
   --color-fd-primary: hsl(270, 70%, 55%); /* Lighter purple background */
   --color-fd-accent: hsl(270, 70%, 95%); /* Same as primary for consistency */
 }

@@ -12,7 +12,7 @@ It is required for any client-side translations on your application.
 
 - Wrap your entire application in `<GTProvider>` to enable translations on the client.
 - When working with dictionaries, optionally specify an `id` to limit the dictionary data sent to the client, optimizing performance for large dictionaries.
-- The `<GTProvider>` component is used for both [inline `<T>`](/docs/react/reference/t-reference) and [dictionaries](/docs/react/reference/dictionary-reference).
+- The `<GTProvider>` component is used for both [inline `<T>`](/docs/react/guides/jsx) and [dictionaries](/docs/react/guides/dictionaries).
 
 ## Reference
 
@@ -108,7 +108,7 @@ It is required for any client-side translations on your application.
 ### Basic usage
 
 Wrap your application in `<GTProvider>` to add translation to your app.
-Don't forget to add a [list of supported locales](/docs/reference/locale-strings#supported-locales) to enable translation.
+Don't forget to add a [list of supported locales](/docs/platform/locale-strings#supported-locales) to enable translation.
 
 
 ```jsx title="index.js" copy
@@ -143,7 +143,7 @@ createRoot(document.getElementById("root")!).render(
 );
 ```
 
-For more information on using dictionaries, check out this [guide](/docs/react/reference/dictionary-reference).
+For more information on using dictionaries, check out this [guide](/docs/react/guides/dictionaries).
 
 ### Adding configuration
 
@@ -217,8 +217,8 @@ In this case, it will return the fallback content immediately until the translat
 ---
 
 ## Notes
- * The `<GTProvider>` must wrap all [`<T>` components](/docs/react/api/components/t) and other translation-related functions. Learn more [here](/docs/react/reference/t-reference#gtprovider).
+ * The `<GTProvider>` must wrap all [`<T>` components](/docs/react/api/components/t) and other translation-related functions. Learn more [here](/docs/react/guides/jsx#gtprovider).
 
 ## Next steps
- * Learn more about the [`<T>` component](/docs/react/reference/t-reference) for translating text and components.
+ * Learn more about the [`<T>` component](/docs/react/guides/jsx) for translating text and components.
  * Check out translation components and functions: [`<T>`](/docs/react/api/components/t), [`useGT()`](/docs/react/api/strings/useGT), or [`useDict()`](/docs/react/api/dictionary/useDict).

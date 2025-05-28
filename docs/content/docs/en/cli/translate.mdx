@@ -5,7 +5,7 @@ description: How to translate your project
 ## Usage
 
 <Callout type="error">
-    Run this in your CI pipeline **before** you build your Next.js app for production.
+    Run this in your CI pipeline **before** you build your app for production.
 </Callout>
 
 ```bash
@@ -18,7 +18,9 @@ npx gtx-cli translate
 
 ## Overview
 
-The `gtx-cli translate` command translates your project. It traverses your project's file tree and translates any content wrapped in a `<T>` component.
+The `gtx-cli translate` command translates your project. 
+It traverses your project's file tree and translates any content wrapped in a `<T>` component 
+or using the `useGT()` functions.
 
 Additionally, it includes content from the dictionary file (if one is provided).
 
@@ -35,7 +37,7 @@ This command is the primary way of using the General Translation API and related
 
 ## Usage
 
-There are four ways to use the `translate` command. Methods 1 and 2 require a production API key:
+There are 3 ways to use the `translate` command. Methods 1 and 2 require a production API key:
 
 <Callout type="info">
     We recommend running the setup wizard: [`npx gtx-cli configure`](/docs/cli/configure) to help configure your project before running the `translate` command.
@@ -113,10 +115,8 @@ npx gtx-cli translate --dry-run
 | `--default-locale <locale>`| The source locale for the project                  | `string`  | `true`     |  `en`               |
 | `--ignore-errors` | Ignore errors and force translation for valid content       | `flag` | `true`     | `false`           |
 | `--dry-run`       | Dry run the command                                         | `flag` | `true`     | `false`           |
-| `--no-wait`       | Do not wait for the translations to complete before exiting | `flag` | `true`     | `false`           |
-| `--publish`    | Publish the translations to the CDN                  | `flag` | `true`     | `false`           |
 
-All of these parameters are optional and can be alternatively provided in the `gt.config.json` file.
+All of these parameters are optional.
 
 <Callout type="warn">
     Do not add your API key to the `gt.config.json` file!
@@ -130,7 +130,6 @@ There are a few key parameters:
 | `--dry-run` | This flag will cause the CLI to parse and validate your project, but will not communicate with the GT API. This is useful for validating your codebase.
 | `--api-key` | Unless you are using `--dry-run`, you must provide a production API key.
 | `--project-id` | Similarly, unless you are using `--dry-run`, you must provide a project ID.
-| `--publish` | If you are using local translations, and want to make your translations publicly available on the GT CDN, you can use this flag.
 | `--new, --locales <locales>` | Locales to translate your project into. These will be appended to the locales specified in your `gt.config.json` file.
 
 ### Configuration file
@@ -139,3 +138,31 @@ When running the CLI tool for the first time, it will attempt to create a `gt.co
 This file contains metadata about your project that is used to translate your content.
 
 Read more about the `gt.config.json` file [here](/docs/cli/reference/config).
+
+## Important Tips
+
+### Content Sources
+
+The `translate` command will recursively search for translatable content in your project. 
+
+By default, it searches in the following directories:
+
+- `./src`
+- `./app`
+- `./pages`
+- `./components`
+
+You can specify alternate directories to search by using the `--src` flag, 
+or by modifying the `src` property in your [`gt.config.json`](/docs/cli/reference/config) file.
+
+### Dictionary File
+
+The `translate` command will automatically detect the dictionary file in your project.
+
+By default, it looks for a file named `dictionary.[json|ts|js]` in the following directories:
+
+- `./src`
+- `./`
+
+You can specify an alternate dictionary file by using the `--dictionary` flag, 
+or by modifying the `dictionary` property in your [`gt.config.json`](/docs/cli/reference/config) file.

@@ -7,7 +7,7 @@ description: API Reference for the getDefaultLocale server-side method
 
 The `getDefaultLocale()` function retrieves the application's default locale.
 This locale is determined when the server starts and is used as the fallback language for translations.
-It returns a [locale string](/docs/reference/locale-strings), e.g., `'en-US'`.
+It returns a [locale string](/docs/platform/locale-strings), e.g., `'en-US'`.
 
 
 <Callout>
@@ -50,7 +50,7 @@ export default function GetDefaultLocale() {
 ## Notes
  * The `getDefaultLocale()` returns the default locale set in [`withGTConfig()`](/docs/next/api/config/withGTConfig).
  * `getDefaultLocale()` is server-side only.
- * The returned locale adheres to the [locale strings](/docs/reference/locale-strings) format.
+ * The returned locale adheres to the [locale strings](/docs/platform/locale-strings) format.
 
 ## Next Steps
  * See [`useLocale()`](/docs/next/api/helpers/useLocale) and [`getLocale()`](/docs/next/api/helpers/getLocale) to retrieve the user's locale.

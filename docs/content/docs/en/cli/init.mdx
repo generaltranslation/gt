@@ -10,29 +10,16 @@ npx gtx-cli init
 ```
 
 Use this command to run the GT setup wizard.
+
+This command is the same as running `setup`, then running `configure`.
+
 The wizard will:
 
-1. Create a `gt.config.json` file in the root of your project.
-2. Install the necessary dependencies for your project.
-3. Help you wrap your JSX content with `<T>` tags (in a React-based project).
+1. Install the necessary dependencies for your project.
+2. Help you wrap your JSX content with `<T>` tags (in a React-based project).
+3. Create a `gt.config.json` file in the root of your project.
 4. Generate an API key and project ID for your project.
 
-
-## `gt.config.json`
-
-The `init` command helps you configure your project's GT settings.
-
-It will create a `gt.config.json` file in the root of your project.
-
-The file will contain the following settings:
-
-- `defaultLocale`: The default locale for your project.
-- `locales`: An array of [supported locales](/docs/reference/locale-strings#supported-locales) for your project.
-- `files`: This is an object that contains information about the content you want to translate.
-
-For more specific information about the `gt.config.json` file, please see the [config docs](/docs/cli/reference/config).
-
-This part of the wizard can also be ran independently via `npx gtx-cli configure`.
 
 ## Dependencies
 
@@ -55,6 +42,23 @@ In these cases, you may need to manually setup your project.
 If you encounter any issues, please let us know on [GitHub](https://github.com/generaltranslation/gt/issues).
 
 This part of the wizard can also be ran independently via `npx gtx-cli setup`.
+
+
+## `gt.config.json`
+
+The `init` command helps you configure your project's GT settings.
+
+It will create a `gt.config.json` file in the root of your project.
+
+The file will contain the following settings:
+
+- `defaultLocale`: The default locale for your project.
+- `locales`: An array of [supported locales](/docs/platform/locale-strings#supported-locales) for your project.
+- `files`: This is an object that contains information about the content you want to translate.
+
+For more specific information about the `gt.config.json` file, please see the [config docs](/docs/cli/reference/config).
+
+This part of the wizard can also be ran independently via `npx gtx-cli configure`.
 
 ## Credentials
 

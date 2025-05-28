@@ -1,0 +1,27 @@
+{
+  "title": "General Translation",
+  "description": "Docs",
+  "icon": "House",
+  "root": true,
+  "pages": [
+    "index",
+    "---Features---",
+    "features/inline",
+    "features/hot-reload",
+    "features/files",
+    "---Platform---",
+    "context",
+    "cdn",
+    "review",
+    "roles",
+    "apikeys",
+    "pricing",
+    "---Reference---",
+    "terminology",
+    "supported-locales",
+    "locale-strings",
+    "faqs",
+    "examples",
+    "open-source"
+  ]
+}

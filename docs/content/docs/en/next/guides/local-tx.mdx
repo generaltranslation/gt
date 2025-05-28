@@ -1,0 +1,126 @@
+---
+title: Local Translations
+description: How to set up local translations for your Next.js app
+---
+
+## What are local translations?
+
+Local translations are stored in your app's bundle, as opposed to being fetched from a CDN (Content Distribution Network).
+
+Let's say that you have added the [`gtx-cli translate`](/docs/cli/translate) command to your CD process.
+This will generate translations in JSON format for your app.
+The final step is to get these translations out of our API and into your app, where they can be used.
+
+There are two ways to do this:
+ * **In your app's bundle:** After translations are generated, save them to your app's bundle.
+ * **In a CDN (default):** Fetch translations from a CDN at runtime.
+
+By default, `gt-next` will fetch translations from the General Translation CDN, and when translating your app using our API, translations will be automatically saved to our CDN.
+
+
+## Overview
+
+This guide will show you how to store translations in your Next.js app bundle, rather than using an external CDN, such as ours.
+This means that translations will live in your app's code and avoids reliance on external infrastructure.
+
+In this guide, we will walk you through:
+
+<Steps>
+  <Step>
+    The trade-offs of using local translations.
+  </Step>
+  <Step>
+    How to set up local translations for your Next.js app.
+  </Step>
+</Steps>
+
+
+
+---
+
+## Trade-offs
+
+### What are the benefits?
+
+1. **Faster load times:** Local translations are served directly from your app,
+meaning that they will load faster than translations served from a CDN.
+
+2. **No reliance on external services:** Your app's ability to load translations is not dependent on CDN uptime. 
+With `gt-next`, if translations are not found for a given locale, the app will automatically fall back to the default language and display the original content.
+
+### What are the drawbacks?
+
+1. **Increased bundle size:** Local translations will increase your app's bundle size as they will be served alongside your app.
+This means that your app may take longer to load on the client.
+
+2. **Content management:** If you want to edit a translation (i.e., you do not like how your content has been phrased in a different language),
+you must redeploy your app with the new translation every time you make changes.
+
+---
+
+## Setup
+
+### Prerequisites
+
+Make sure that you have already setup your Next.js app with GT. 
+If not, please complete the [Quick Start Guide](/docs/next/tutorials/quickstart) or [Project Setup](/docs/next/guides/setup) first.
+
+
+### Steps
+<Steps>
+  <Step>
+    Add a `loadTranslations.[js|ts]` file under `./src` with the following content:
+
+    <Tabs items={['ts', 'js']}>
+      <Tab value="ts">
+        ```ts title="src/loadTranslations.ts" copy
+        export default async function loadTranslations(locale: string) {
+          const t = await import(`../public/_gt/${locale}.json`);
+          return t.default;
+        }
+        ```
+      </Tab>
+      <Tab value="js">
+        ```js title="src/loadTranslations.js" copy
+        export default async function loadTranslations(locale) {
+          const t = await import(`../public/_gt/${locale}.json`);
+          return t.default;
+        }
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step>
+    Run the following command in your project root, and when asked if you want to save translations on the GT CDN, select the "No" option.
+    ```bash
+    npx gtx-cli configure
+    ```
+    When asked for the path to the translations directory, enter `./public/_gt`.
+    
+    Alternatively, you can manually configure the `gt.config.json` file to use local translations.
+    See the [CLI Configuration](/docs/cli/reference/config#gt) docs for more information.
+
+    Now, when you run the translate command, translations will be automatically downloaded and included in your codebase.
+    ```bash
+    npx gtx-cli translate
+    ```
+    The `loadTranslations` function will then be used to load these translations into your app.
+  </Step>
+</Steps>
+
+That's it! Your app will now only load translations from your local files.
+
+### Further customization
+
+You can further customize the `loadTranslations` function to load translations from other sources, such as your database or your own CDN.
+See the [`loadTranslations()`](/docs/next/api/config/load-translations) docs for more information.
+
+---
+
+## Notes
+ * Local translations are an alternative to fetching translations from a CDN.
+ * There are benefits and drawbacks to using local translations, which are discussed in the [Trade-offs](#trade-offs) section.
+
+## Next steps
+ * See [`loadTranslations()`](/docs/next/api/config/load-translations) for more information on writing a custom translation loader.

@@ -83,10 +83,10 @@ export default function CookieBanner() {
     >
       <T>
         <div className="flex flex-col max-w-sm">
-          <div className="pb-4">
+          <div>
             <p>
-              We use tracking cookies to understand how you use our docs and
-              help us improve them. Please accept cookies to help us improve.
+              We use analytics cookies to understand how you use our website and
+              help us improve it. Please accept cookies to help us improve.
             </p>
           </div>
           <div className="flex justify-between gap-x-4 gap-6 mt-4">

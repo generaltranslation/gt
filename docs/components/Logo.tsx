@@ -10,7 +10,9 @@ export default function Logo() {
 
   useLayoutEffect(() => {
     setLogoSrc(
-      resolvedTheme === 'dark' ? '/no-bg-gt-logo-dark.png' : '/no-bg-gt-logo-light.png'
+      resolvedTheme === 'dark'
+        ? '/no-bg-gt-logo-dark.png'
+        : '/no-bg-gt-logo-light.png'
     );
   }, [resolvedTheme]);
 

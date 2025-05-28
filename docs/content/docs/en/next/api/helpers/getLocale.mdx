@@ -6,7 +6,7 @@ description: API Reference for the getLocale server-side method
 ## Overview
 
 The `getLocale()` function retrieves the user's current locale during server-side rendering.
-The returned locale is [formatted as a string](/docs/reference/locale-strings), e.g., `'en-US'`.
+The returned locale is [formatted as a string](/docs/platform/locale-strings), e.g., `'en-US'`.
 
 <Callout>
     `getLocale()` is a server-side method and can only be used on server-side components.
@@ -23,6 +23,7 @@ A promise that resolves to a string representing the user's current locale, e.g.
 ---
 
 ## Fallback behavior
+
 When an unsupported locale is requested, a fallback locale will be selected.
 
 For instance, in the event of an unsupported locale,
@@ -36,7 +37,7 @@ then the locale will fallback to the supported locale that shares the same langu
 
 If neither condition can be met, then the the default locale will be used.
 
-See [`the locale management guide()`](/docs/next/reference/locale-management) for information on configuring supported locales.
+See [`gt.config.json`](/docs/next/api/config/gt-config-json) docs for information on configuring supported locales.
 
 ---
 
@@ -61,8 +62,8 @@ export default async function GetUserLocale() {
 ## Notes
  * The `getLocale()` function is asynchronous and must be awaited to retrieve the locale.
  * It is specifically designed for server-side use. See [`useLocale()`](/docs/next/api/helpers/useLocale) for client-side components.
- * The returned locale adheres to the [locale strings](/docs/reference/locale-strings) format.
+ * The returned locale adheres to the [locale strings](/docs/platform/locale-strings) format.
 
 ## Next Steps
- * Learn how to configure supported locales with [i18n Configuration](/docs/next/reference/i18n-configuration).
+ * Learn how to configure supported locales with [withGTConfig()](/docs/next/api/config/withGTConfig).
  * For managing fallback locales, see [`getDefaultLocale()`](/docs/next/api/helpers/getDefaultLocale).

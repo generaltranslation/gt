@@ -12,7 +12,7 @@ It is required for any client-side translations on your application.
 
 - Wrap your entire application in `<GTProvider>` to enable translations on the client.
 - When working with dictionaries, optionally specify an `id` to limit the dictionary data sent to the client, optimizing performance for large dictionaries.
-- The `<GTProvider>` component is used for both [inline `<T>`](/docs/next/reference/t-reference) and [dictionary design patterns](/docs/next/reference/dictionary).
+- The `<GTProvider>` component is used for both [inline `<T>`](/docs/next/guides/jsx) and [dictionaries](/docs/next/guides/dictionaries).
 
 ## Reference
 
@@ -88,9 +88,9 @@ export default function RootLayout({ children }) {
 ---
 
 ## Notes
- * The `<GTProvider>` must wrap all `<T>` components and other translation-related components in client components. Read more about it [here](/docs/next/reference/t-reference#gtprovider).
+ * The `<GTProvider>` must wrap all `<T>` components and other translation-related components in client components. Read more about it [here](/docs/next/guides/jsx).
  * For server-side translations, `<GTProvider>` is not required but can still be used.
 
 ## Next Steps
- * Learn more about the [`<T>` component](/docs/next/reference/t-reference) for translating text and components.
- * See [i18n configuration](/docs/next/reference/i18n-configuration) for advanced customization options.
+ * Learn more about the [`<T>` component](/docs/next/guides/jsx) for translating text and components.
+ * See [withGTConfig()](/docs/next/api/config/withGTConfig) docs for advanced customization options.

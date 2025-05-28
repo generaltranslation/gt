@@ -5,7 +5,7 @@ description: API Reference for the useDict hook
 
 ## Overview
 
-`useDict()` is used to access string translations from the [translation dictionary](/docs/react/reference/dictionary-reference).
+`useDict()` is used to access string translations from the [translation dictionary](/docs/react/guides/dictionaries).
 It must be used within a component wrapped by a [`<GTProvider>`](/docs/react/api/components/gtprovider).
 
 ```jsx
@@ -15,8 +15,8 @@ d('greeting.hello'); // pass the id to get a translation
 
 
 <Callout>
-  `useDict()` uses a [dictionary](/docs/react/reference/dictionary-reference) to store all content for translation.
-  This is different from using the [`<T>` component](/docs/react/reference/t-reference) for translation.
+  `useDict()` uses a [dictionary](/docs/react/guides/dictionaries) to store all content for translation.
+  This is different from using the [`<T>` component](/docs/react/guides/jsx) for translation.
   If you are interested in only using `<T>` components for translation, then this document is not relevant.
 </Callout>
 
@@ -153,4 +153,4 @@ export default function UserDetails() {
  * The `useDict()` hook can only be used within a component wrapped by a [`<GTProvider>` component](/docs/react/api/components/gtprovider).
 
 ## Next Steps
- * Learn more about using dictionaries in the [dictionaries reference](/docs/react/reference/dictionary-reference).
+ * Learn more about using dictionaries in the [dictionaries reference](/docs/react/guides/dictionaries).

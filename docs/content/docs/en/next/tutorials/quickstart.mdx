@@ -13,13 +13,13 @@ We will cover 3 simple steps:
 
 <Steps>
   <Step>
-    Running the setup wizard
+    Run the setup wizard
   </Step>
   <Step>
-    Adding environment variables
+    (Optional) Add environment variables
   </Step>
   <Step>
-    Cleaning up strings
+    Clean up strings
   </Step>
 </Steps>
 
@@ -31,50 +31,59 @@ We will cover 3 simple steps:
 
 ## Setup
 
-### 1. Running the setup wizard
+### 1. Run the setup wizard
 
 The setup wizard will walk you through the process of internationalizing your project.
 
 ```bash
-npx gtx-cli@latest init
+npx gtx-cli@latest
 ```
 
-To manually setup your project, follow the [manual setup guide](#manual-setup).
+If you don't want to use the setup wizard, you can follow the [manual setup guide](/docs/next/guides/setup) instead.
 
 The setup wizard will:
 
 1. Install the required libraries.
 2. Configure your project's supported locales.
 3. Wrap your project's JSX components with the `<T>` component.
-4. Add `withGTConfig()` to your `next.config.js` file.
-5. Generate a production API key and project ID for your project.
+4. Add `withGTConfig()` to your `next.config.ts` file.
+5. Generate a development API key and project ID for your project.
 
 See the [setup wizard docs](/docs/cli/init) for more information.
 
-### 2. Adding environment variables
 
-The setup wizard will create a `.env.local` file for you in the root of your project containing your production API key and project ID.
+### 2. (Optional) Add a Production API Key
 
-However, in order to use `gt-next` in development mode, you will need to add a development API key instead of a production one.
+The setup wizard will create a `.env.local` file for you in the root of your project containing a development API key and project ID.
 
+This development API key can be used to translate your app in development mode.
+
+However, in order to ship to production, you will need to add a production API key.
+Read about the difference between development and production keys [here](/docs/next/concepts/environments).
+
+<Callout>
+  The production API key is only required to translate your app in production.
+  If you do not plan to ship to production at this time, you can skip this step.
+</Callout>
+
+To add a production API key, follow these steps:
 
 <Steps>
-  <Step>
-    Navigate to the [Dashboard](https://generaltranslation.com/dashboard).
-    Go to the **Developer Keys** page in the sidebar.
-  </Step>
+    <Step>
+        Navigate to the [Dashboard](https://generaltranslation.com/dashboard).
+            * Navigate to the **API Keys** page in the sidebar.
+    </Step>
 
-  <Step>
-    Click **Create Dev API Key**.
-  </Step>
-
-  <Step>
-    Add the Project ID and Development API key to your environment.
-    ```bash title=".env.local" copy
-    GT_API_KEY="YOUR_GT_API_KEY"
-    GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
-    ```
-  </Step>
+    <Step>
+        Click **Create API Key** then copy the API key and Project ID to your clipboard.
+    </Step>
+    <Step>
+        Add the Project ID and API Key to your environment variables.
+        ```bash
+        GT_API_KEY="YOUR_GT_PRODUCTION_KEY"
+        GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
+        ```
+    </Step>
 </Steps>
 <Callout type="warn">
   **Protect Your API Keys!**
@@ -110,6 +119,7 @@ export default function Example() {
 }
 ```
 
+Read our [guide on translating strings](/docs/next/guides/strings) for more information.
 
 
 ---
@@ -196,7 +206,7 @@ Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
 
     Right now, the wizard automatically adds `<T>` components around text content.
     We are currently working on a solution that automatically setup string translations.
-    Until then, if you are rendering a string, please follow [this guide](/docs/next/reference/translating-strings) for translating strings.
+    Until then, if you are rendering a string, please follow [this guide](/docs/next/guides/strings) for translating strings.
   </Accordion>
   <Accordion title="Why are some translations inaccurate?">
     The most likely cause of an inaccurate translation is ambiguous wording.
@@ -218,148 +228,7 @@ Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
 Follow our guide on [shipping to production](/docs/next/tutorials/quickdeploy).
 
 ## Next steps
-{/* - Learn about how to use dictionaries with [`useGT()`](/docs/next/reference/dictionary) */}
-- See our [Next.js API reference](/docs/next/api/components/t) for detailed information about the `<T>` component and other available components.
-- Improve your content with [`<Num>`](/docs/next/api/components/num), [`<Currency>`](/docs/next/api/components/currency),
- [`<Branch>`](/docs/next/api/components/branch), and [`<Plural>`](/docs/next/api/components/plural) components.
-- Learn how to improve SEO with [i18n routing](/docs/next/reference/i18n-routing) (adding routes for each locale, e.g. `example.com/en`, `example.com/fr`) and [static site generation](/docs/next/reference/ssg).
-- Mirror your app to support [right-to-left languages](/docs/next/reference/rtl) such as Arabic and Hebrew.
-
-
-## Manual Setup [#manual-setup]
-
-If you prefer to do the setup manually, follow the steps below.
-
-### 1. Install libraries
-
-Install the [gt-next](https://www.npmjs.com/package/gt-next) and [gtx-cli](https://www.npmjs.com/package/gtx-cli) libraries.
-
-<Tabs items={["npm", "yarn", "bun", "pnpm"]}>
-  <Tab value="npm">
-  ```bash 
-  npm i gt-next
-  npm i gtx-cli --save-dev
-  ``` 
-  </Tab>
-  <Tab value="yarn">
-  ```bash 
-  yarn add gt-next
-  yarn add gtx-cli --dev
-  ```
-  </Tab>
-  <Tab value="bun">
-  ```bash 
-  bun add gt-next
-  bun add gtx-cli --dev
-  ```
-  </Tab>
-  <Tab value="pnpm">
-  ```bash 
-  pnpm add gt-next
-  pnpm add gtx-cli --save-dev
-  ```
-  </Tab>
-</Tabs>
-
-
-### 2. Add the `withGTConfig()` plugin
-
-Add [`withGTConfig()`](/docs/next/api/config/withGTConfig) to your `next.config.js` file.
-You can specify the languages you want to support by passing an array of [locale codes](/docs/reference/locale-strings#supported-locales).
-
-```js title="next.config.js" copy
-import { withGTConfig } from 'gt-next/config';
-
-const nextConfig = {};
-
-export default withGTConfig(nextConfig, {
-  locales: ['pt', 'es'], // Support for Portuguese and Spanish
-});
-```
-
-
-### 3. Add the `<T>` component
-
-Wrap any nested JSX content in the [`<T>` component](/docs/next/api/components/t) to make it translatable.
-For more information, check out the [guide on using `<T>` components](/docs/next/reference/t-reference).
-
-```jsx title="Example.js" copy
-import { T } from "gt-next";
-
-export default function Example() {
-  return (
-    // [!code highlight]
-    <T>
-      <p>
-        This gets translated.
-      </p>
-    </T>  // [!code highlight]
-  );
-}
-```
-
-Use the [`<Var>` component](/docs/next/api/components/var) to designate JSX content that should not be translated.
-
-```jsx title="Example.js" copy
-import { T, Var } from "gt-next";
-
-export default function Example() {
-  return (
-    // [!code highlight]
-    <T>
-      <p>
-        This gets translated. <Var>This does not.</Var>
-      </p>
-    </T>  // [!code highlight]
-  );
-}
-```
-
-For strings, you can use [`useGT()`](/docs/next/api/strings/useGT) or [`getGT()`](/docs/next/api/strings/getGT) for translation.
-
-```jsx title="Example.js" copy
-import { useGT } from "gt-next/client";
-import { getGT } from "gt-next/server";
-
-export default function Example() {
-  const t = useGT(); // client side // [!code highlight]
-  const t = await getGT(); // server side // [!code highlight]
-  return (
-    <p>
-      {/* [!code highlight] */}
-      {t("This gets translated.")}
-    </p>
-  );
-}
-```
-
-### 4. Add your environment variables
-
-Add your API key and Project ID to your local environment.
-
-<Steps>
-  <Step>
-    Navigate to the [Dashboard](https://generaltranslation.com/en-US/signin).
-    Go to the **Developer Keys** page in the sidebar.
-  </Step>
-
-  <Step>
-    Click **Create Dev API Key**.
-  </Step>
-
-  <Step>
-    Add the Project ID and Development API key to your environment.
-    ```bash title=".env.local" copy
-    GT_API_KEY="YOUR_GT_API_KEY"
-    GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
-    ```
-  </Step>
-</Steps>
-
-<Callout type="warn">
-  **Protect Your API Keys!**
-
-  Development keys should **only** ever be used in development.
-  Likewise, production keys should **only** ever be used in production.
-  *Never commit your API keys to a public repository!*
-</Callout>
+- Learn about how to [translate JSX content](/docs/next/guides/jsx) with the `<T>` component.
+- Learn how to translate strings with the `useGT` hook: [Translating Strings](/docs/next/guides/strings)
+- Learn how to improve SEO with [i18n routing](/docs/next/guides/middleware) (adding routes for each locale, e.g. `example.com/en`, `example.com/fr`) and [static site generation](/docs/next/guides/ssg).
+- Mirror your app to support [right-to-left languages](/docs/next/guides/rtl) such as Arabic and Hebrew.

@@ -5,7 +5,7 @@ description: API Reference for the getDict server-side translation function
 
 ## Overview
 
-`getDict()` is used to get string translations from the [translation dictionary](/docs/next/reference/dictionary) for server-side components.
+`getDict()` is used to get string translations from the [translation dictionary](/docs/next/guides/dictionaries) for server-side components.
 
 ```jsx
 const d = await getDict(); // Get the translation function
@@ -20,8 +20,8 @@ d('greeting.hello'); // pass the id to get a translation
 For client-side translations, see [`useDict()`](/docs/next/api/dictionary/useDict).
 
 <Callout>
-  `getDict()` and `useDict()` use a [dictionary](/docs/next/reference/dictionary) to store all content for translation.
-  This is different from using the [`<T>` component](/docs/next/reference/t-reference) for translation.
+  `getDict()` and `useDict()` use a [dictionary](/docs/next/guides/dictionaries) to store all content for translation.
+  This is different from using the [`<T>` component](/docs/next/guides/jsx) for translation.
   If you are interested in only using `<T>` components for translation, then this document is not relevant.
 </Callout>
 
@@ -156,4 +156,4 @@ export default function UserDetails() {
 
 ## Next Steps
  * See [`useDict()`](/docs/next/api/dictionary/useDict) for the client-side equivalent of `getDict()`.
- * Learn more about using dictionaries in the [dictionaries reference](/docs/next/reference/dictionary).
+ * Learn more about using dictionaries in the [dictionaries reference](/docs/next/guides/dictionaries).

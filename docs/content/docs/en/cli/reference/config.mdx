@@ -11,14 +11,20 @@ The CLI setup wizard [`npx gtx-cli init`](/docs/cli/init) will create a `gt.conf
 
 ## Configuration
 
-The `gt.config.json` file contains the following settings:
+The `gt.config.json` file accepts the following properties, but is not limited to them:
 
 - `defaultLocale`: The default locale for your project. This is the locale that your source content is written in. This is also the fallback locale for your project (if using `gt-next` or `gt-react`).
 
-- `locales`: An array of locales for your project. These are the locales that you want to translate your project into. See the [supported locales](/docs/reference/locale-strings#supported-locales) for more information. 
+- `locales`: An array of locales for your project. These are the locales that you want to translate your project into. See the [supported locales](/docs/platform/locale-strings#supported-locales) for more information. 
 If you are using `gt-next` or `gt-react`, these are also the locales that your app supports.
 
 - `files`: This is an object that contains information about the content you want to translate.
+
+- `stageTranslations`: An optional boolean flag that indicates whether your project is configured to use human review.
+
+- `src`: An optional array of relative directory paths that contain translatable content.
+
+- `dictionary`: An optional string that specifies the relative path to the dictionary file.
 
 
 Here is an skeleton of the `gt.config.json` file:
@@ -40,13 +46,17 @@ Here is an skeleton of the `gt.config.json` file:
     "md": {
       "include": [...]
     }
-  }
+  },
+  "src": ["./src", "./app", "./pages", "./components"],
+  "dictionary": "./dictionary.json"
 }
 ```
 
 ---
 
-## Supported File Types
+## `files`
+
+### Supported File Types
 
 `files` should contain a key for each file type that you want to translate.
 You can configure your project to mix and match different file types, and have them all be translated.
@@ -136,7 +146,7 @@ Currently, only one file for each locale can be generated.
 
 ---
 
-## File Type: `gt` [#gt]
+### File Type: `gt` [#gt]
 
 **Supported Keys**
 
@@ -162,7 +172,7 @@ By default, the CLI tool will not publish your translations to the GT CDN with t
 
 ---
 
-## File Type: `json` [#json]
+### File Type: `json` [#json]
 
 **Supported Keys**
 
@@ -193,7 +203,7 @@ It will ignore any files in the subdirectory `json_files/en/exclude/`.
 
 ---
 
-## File Type: `mdx` [#mdx]
+### File Type: `mdx` [#mdx]
 
 **Supported Keys**
 
@@ -222,7 +232,7 @@ The `transform` key causes the extension of the translated files to be changed t
 
 ---
 
-## File Type: `md` [#md]
+### File Type: `md` [#md]
 
 **Supported Keys**
 
@@ -254,7 +264,7 @@ All files in the `content/docs/en/exclude` directory will be ignored.
 
 ---
 
-## File Type: `js` [#js]
+### File Type: `js` [#js]
 
 **Supported Keys**
 
@@ -282,7 +292,7 @@ The `transform` key causes the extension of the translated files to be changed t
 
 ---
 
-## File Type: `ts` [#ts]
+### File Type: `ts` [#ts]
 
 **Supported Keys**
 
