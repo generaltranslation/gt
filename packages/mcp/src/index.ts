@@ -4,17 +4,18 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { addDocsTools } from './tools/docs.js';
 import { addDocsResource } from './resources/docs.js';
+import { readFileSync } from 'node:fs';
 
 async function main() {
   const server = new McpServer({
     name: 'General Translation MCP Server',
-    version: '1.0.0',
+    version: JSON.parse(readFileSync('../package.json', 'utf8')).version,
   });
 
   addDocsResource(server);
   addDocsTools(server);
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.log('General Translation MCP server started on stdio');
+  console.error('General Translation MCP server started on stdio');
 }
 main();

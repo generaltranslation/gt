@@ -89,10 +89,10 @@ export async function addDocsResource(server: McpServer) {
 export function startCacheRefreshJob() {
   const refreshCache = async () => {
     try {
-      console.log('Refreshing MCP resources cache...');
+      console.error('Refreshing MCP resources cache...');
       await fetchDocContent('llms.txt');
       await fetchDocContent('llms-full.txt');
-      console.log('Cache refresh complete');
+      console.error('Cache refresh complete');
     } catch (error) {
       console.error('Error refreshing cache:', error);
     }

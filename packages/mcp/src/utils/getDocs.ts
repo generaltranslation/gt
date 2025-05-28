@@ -5,7 +5,7 @@ export const DOCS_URL = 'https://docs.generaltranslation.app';
 
 export const getDocs = async (path: string) => {
   const url = `${GITHUB_URL}/${path}`;
-  console.log(`Fetching document from: ${url}`);
+  console.error(`Fetching document from: ${url}`);
 
   try {
     const response = await fetch(url);
@@ -39,7 +39,7 @@ export async function fetchDocContent(path: string): Promise<string> {
   }
 
   const url = `${DOCS_URL}/${path}`;
-  console.log(`Fetching document from: ${url}`);
+  console.error(`Fetching document from: ${url}`);
 
   try {
     const response = await fetch(url);
@@ -64,7 +64,7 @@ export async function fetchDocContent(path: string): Promise<string> {
 
     // Return cached content if available, even if expired
     if (cache[path]) {
-      console.log(`Returning stale cached content for ${path}`);
+      console.error(`Returning stale cached content for ${path}`);
       return cache[path].content;
     }
 
