@@ -7,7 +7,7 @@ export const revalidate = false;
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ slug?: string[]; locale: string }> },
+  { params }: { params: Promise<{ slug?: string[]; locale: string }> }
 ) {
   const { slug, locale } = await params;
   const page = source.getPage(slug, locale);
@@ -16,6 +16,6 @@ export async function GET(
   return new NextResponse(await getLLMText(page));
 }
 
-export function generateStaticParams() {
-  return source.generateParams();
+export async function generateStaticParams() {
+  return source.generateParams('slug', 'locale');
 }

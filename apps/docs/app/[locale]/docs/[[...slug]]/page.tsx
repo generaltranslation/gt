@@ -69,7 +69,7 @@ export default async function Page(props: {
         owner: 'General-Translation',
         repo: 'gt',
         sha: 'main',
-        path: `docs/content/docs/${locale}/${page.file.path}`,
+        path: `apps/docs/content/docs/${locale}/${page.file.path}`,
       }}
     >
       <DocsTitle>{page.data.title}</DocsTitle>
