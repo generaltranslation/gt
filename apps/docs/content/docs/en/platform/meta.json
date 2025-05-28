@@ -22,6 +22,8 @@
     "locale-strings",
     "faqs",
     "examples",
-    "open-source"
+    "open-source",
+    "[llms.txt](/llms.txt)",
+    "[llms-full.txt](/llms-full.txt)"
   ]
 }
