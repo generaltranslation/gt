@@ -3,9 +3,7 @@ import { createFromSource } from 'fumadocs-core/search/server';
 import { createTokenizer } from '@orama/tokenizers/mandarin';
 import { createTokenizer as createJapaneseTokenizer } from '@orama/tokenizers/japanese';
 
-export const revalidate = false;
-
-export const { staticGET: GET } = createFromSource(source, {
+export const { GET } = createFromSource(source, {
   localeMap: {
     // you can customise search configs for specific locales, like:
     // [locale]: Orama options

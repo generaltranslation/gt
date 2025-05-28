@@ -84,11 +84,6 @@ export default async function Layout({
                   ja: (await import('@/content/ui.ja.json')).default,
                 }[locale],
               }}
-              search={{
-                options: {
-                  type: 'static',
-                },
-              }}
             >
               <DocsLayout
                 sidebar={{
