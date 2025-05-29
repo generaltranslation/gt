@@ -13,8 +13,8 @@ export default function _determineLocale(
   approvedLocales: string[]
 ): string | undefined {
   if (typeof locales === 'string') locales = [locales];
-  locales = locales.filter(_isValidLocale);
-  approvedLocales = approvedLocales.filter(_isValidLocale);
+  locales = locales.filter(_isValidLocale).map(_standardizeLocale);
+  approvedLocales = approvedLocales.filter(_isValidLocale).map(_standardizeLocale);
   for (const locale of locales) {
     const candidates = approvedLocales.filter((approvedLocale) =>
       _isSameLanguage(locale, approvedLocale)
