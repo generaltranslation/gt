@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://generaltranslation.com" target="_blank">
-    <img src="./docs/public/gt-logo-light.svg" alt="General Translation, Inc." width="64" height="64">
+    <img src="./apps/docs/public/gt-logo-light.svg" alt="General Translation, Inc." width="64" height="64">
   </a>
 </div>
 
@@ -10,7 +10,7 @@
 
 </div>
 
-General Translation (GT) is a **one-stop solution** for launching software in multiple languages. 
+General Translation (GT) is a **one-stop solution** for launching software in multiple languages.
 
 The full GT stack includes:
 
@@ -18,7 +18,7 @@ The full GT stack includes:
 - Context-aware translation APIs
 - A platform for translation management
 
-**Install the libraries in your project, add `<T>` tags, and see translations as you code:** 
+**Install the libraries in your project, add `<T>` tags, and see translations as you code:**
 
 ![Demo](./docs/public/live_translations.gif)
 
@@ -84,8 +84,16 @@ Simple interface for native pluralization and conditional logic:
 ```tsx
 <Plural
   n={count}
-  singular={<>There is <Num>{count}</Num> item</>}
-  plural={<>There are <Num>{count}</Num> items</>}
+  singular={
+    <>
+      There is <Num>{count}</Num> item
+    </>
+  }
+  plural={
+    <>
+      There are <Num>{count}</Num> items
+    </>
+  }
 />
 ```
 
@@ -110,11 +118,14 @@ Intuitive i18n formatting syntax:
 return (
   <T>
     <h1> Your account information: </h1>
-    Account balance: <Currency>{account.bal}</Currency> {/* Currency Formatting */}
+    Account balance: <Currency>{account.bal}</Currency>{' '}
+    {/* Currency Formatting */}
     <br />
-    Updated at: <DateTime>{account.updateTime}</DateTime> {/* Datetime Formatting */}
+    Updated at: <DateTime>{account.updateTime}</DateTime>{' '}
+    {/* Datetime Formatting */}
     <br />
-    Transactions this month: <Num>{account.txCount}</Num> {/* Number Formatting */}
+    Transactions this month: <Num>{account.txCount}</Num>{' '}
+    {/* Number Formatting */}
   </T>
 );
 ```
