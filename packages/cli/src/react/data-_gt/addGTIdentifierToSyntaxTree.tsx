@@ -52,8 +52,9 @@ export default function addGTIdentifierToSyntaxTree(
             'datetime'
           ),
         };
+      } else if (type === "" || type === "React.Fragment") {
+        generaltranslation.transformation = 'fragment';
       }
-
       if (type === 'Plural') {
         generaltranslation.transformation = 'plural';
         const pluralBranches = Object.entries(props).reduce(
