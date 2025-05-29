@@ -10,3 +10,4 @@ _test_cli
 .env.local
 _testing
 dist/
+.turbo

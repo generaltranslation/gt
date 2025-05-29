@@ -8,6 +8,10 @@
     "react": ">=16.8.0 <20.0.0",
     "react-dom": ">=16.8.0 <20.0.0"
   },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
   "dependencies": {
     "@generaltranslation/supported-locales": "^2.0.7",
     "generaltranslation": "^6.2.2",

@@ -1,12 +1,13 @@
 {
   "name": "generaltranslation",
-  "version": "6.2.5",
+  "version": "6.2.6",
   "description": "A language toolkit for AI developers",
   "main": "dist/index.cjs.min.cjs",
   "module": "dist/index.esm.min.mjs",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build:clean": "rm -rf dist; npm run build",
