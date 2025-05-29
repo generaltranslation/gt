@@ -2,6 +2,7 @@ import { fetchTranslations } from '../api/fetchTranslations';
 import { Options, Settings } from '../types';
 import { waitForUpdates } from '../api/waitForUpdates';
 import { saveTranslations } from '../formats/gt/save';
+import { isUsingLocalTranslations } from '../config/utils';
 
 export async function translate(
   settings: Options & Settings,
@@ -30,7 +31,7 @@ export async function translate(
   );
 
   // Save translations to local directory if files.gt.output is provided
-  if (settings.files && settings.files.placeholderPaths.gt) {
+  if (settings.files && isUsingLocalTranslations(settings)) {
     await saveTranslations(
       translations,
       settings.files.placeholderPaths,

@@ -1,8 +1,9 @@
 import chalk from 'chalk';
-import { createSpinner, logSuccess } from '../console';
+import { createSpinner, logSuccess, logWarning } from '../console';
 import { Settings, SupportedLibraries, Updates } from '../types';
 import updateConfig from '../fs/config/updateConfig';
 import { DataFormat } from '../types/data';
+import { isUsingLocalTranslations } from '../config/utils';
 
 type ApiOptions = Settings & {
   timeout: string;
@@ -65,9 +66,27 @@ export async function sendUpdates(
       process.exit(1);
     }
 
-    const { versionId, message, locales } = await response.json();
+    const { versionId, message, locales, projectSettings } =
+      await response.json();
     spinner.stop(chalk.green('Sent updates'));
     logSuccess(message);
+
+    if (isUsingLocalTranslations(options) && projectSettings.cdnEnabled) {
+      logWarning(
+        chalk.yellow(
+          'Your project is configured to use the CDN, but you are also using local translations. Please disable one or the other.'
+        )
+      );
+    } else if (
+      !isUsingLocalTranslations(options) &&
+      !projectSettings.cdnEnabled
+    ) {
+      logWarning(
+        chalk.yellow(
+          'Your project is not using the CDN, nor are you using local translations. Please enable one or the other.'
+        )
+      );
+    }
 
     if (options.config) {
       await updateConfig({
