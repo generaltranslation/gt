@@ -3,6 +3,11 @@ import { libraryDefaultLocale } from '../internal';
 
 const scriptExceptions = ['Cham', 'Jamo', 'Kawi', 'Lisu', 'Toto', 'Thai'];
 
+// According to BCP 47, the range qaa–qtz is reserved for private-use language codes.
+const isCustomLanguage = (language: string) => {
+  return language >= 'qaa' && language <= 'qtz';
+};
+
 /**
  * Checks if a given BCP 47 language code is valid.
  * @param {string} code - The BCP 47 language code to validate.
@@ -29,7 +34,10 @@ export const _isValidLocale = (locale: string): boolean => {
         type: 'language',
       }
     );
-    if (displayLanguageNames.of(language) === language) return false;
+    if (
+      displayLanguageNames.of(language) === language &&
+      !isCustomLanguage(language)
+    ) return false;
     if (region) {
       const displayRegionNames = intlCache.get(
         'DisplayNames',
