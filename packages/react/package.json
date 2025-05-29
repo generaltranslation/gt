@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "9.2.20",
+  "version": "9.2.21",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -14,8 +14,8 @@
     "react-dom": ">=16.8.0"
   },
   "dependencies": {
-    "@generaltranslation/supported-locales": "^2.0.7",
-    "generaltranslation": "^6.2.3"
+    "@generaltranslation/supported-locales": "^2.0.8",
+    "generaltranslation": "^6.2.8"
   },
   "scripts": {
     "patch": "npm version patch",
