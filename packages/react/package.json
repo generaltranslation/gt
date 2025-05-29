@@ -5,6 +5,10 @@
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"

@@ -3,6 +3,10 @@
   "version": "1.2.15",
   "main": "dist/index.js",
   "bin": "dist/main.js",
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "tsc",
     "build:clean": "rm -rf dist; npm run build",
