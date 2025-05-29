@@ -5,6 +5,19 @@
   "description": "Configuration schema for gt.config.json files used by General Translation CLI",
   "type": "object",
   "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference for this configuration file"
+    },
+    "_versionId": {
+      "type": "string",
+      "description": "Internal version identifier for the configuration"
+    },
+    "runtimeUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Runtime URL for the General Translation service"
+    },
     "projectId": {
       "type": "string",
       "description": "The project ID for your General Translation project"
@@ -257,8 +270,8 @@
       "additionalProperties": false
     }
   },
-  "required": ["defaultLocale"],
-  "additionalProperties": false,
+  "required": ["defaultLocale", "locales"],
+  "additionalProperties": true,
   "examples": [
     {
       "defaultLocale": "en",
