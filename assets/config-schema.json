@@ -25,15 +25,13 @@
     "defaultLocale": {
       "type": "string",
       "description": "The default locale for your project. This is the locale that your source content is written in and serves as the fallback locale.",
-      "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
       "examples": ["en", "en-US", "fr", "es"]
     },
     "locales": {
       "type": "array",
       "description": "An array of locales for your project. These are the locales that you want to translate your project into.",
       "items": {
-        "type": "string",
-        "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+        "type": "string"
       },
       "uniqueItems": true,
       "examples": [
