@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 1.2.16
+
+### Patch Changes
+
+- [#302](https://github.com/generaltranslation/gt/pull/302) [`1b4a90c`](https://github.com/generaltranslation/gt/commit/1b4a90c60c1d8c974de3f098f95a20e88a55edb7) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - bump version
+
 ## 1.2.15
 
 ### Patch Changes
