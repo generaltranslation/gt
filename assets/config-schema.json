@@ -1,0 +1,295 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://generaltranslation.com/docs/config-schema.json",
+  "title": "General Translation Configuration",
+  "description": "Configuration schema for gt.config.json files used by General Translation CLI",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference for this configuration file"
+    },
+    "_versionId": {
+      "type": "string",
+      "description": "Internal version identifier for the configuration"
+    },
+    "runtimeUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Runtime URL for the General Translation service"
+    },
+    "projectId": {
+      "type": "string",
+      "description": "The project ID for your General Translation project"
+    },
+    "defaultLocale": {
+      "type": "string",
+      "description": "The default locale for your project. This is the locale that your source content is written in and serves as the fallback locale.",
+      "examples": ["en", "en-US", "fr", "es"]
+    },
+    "locales": {
+      "type": "array",
+      "description": "An array of locales for your project. These are the locales that you want to translate your project into.",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "examples": [
+        ["fr", "es", "de"],
+        ["en-US", "fr-FR", "es-ES"]
+      ]
+    },
+    "baseUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Base URL for the General Translation API"
+    },
+    "dashboardUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL for the General Translation dashboard"
+    },
+    "stageTranslations": {
+      "type": "boolean",
+      "description": "Optional boolean flag that indicates whether your project is configured to use human review",
+      "default": false
+    },
+    "src": {
+      "type": "array",
+      "description": "Optional array of relative directory paths that contain translatable content",
+      "items": {
+        "type": "string"
+      },
+      "examples": [["./src", "./app", "./pages", "./components"]]
+    },
+    "dictionary": {
+      "type": "string",
+      "description": "Optional string that specifies the relative path to the dictionary file",
+      "examples": ["./dictionary.json", "./src/dictionary.ts"]
+    },
+    "framework": {
+      "type": "string",
+      "description": "The framework being used in the project",
+      "enum": ["next-app", "next-pages", "vite", "gatsby", "react", "redwood"]
+    },
+    "version": {
+      "type": "string",
+      "description": "Custom version ID to use for translations. Should be unique"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the project or configuration"
+    },
+    "files": {
+      "type": "object",
+      "description": "Configuration for different file types that you want to translate",
+      "properties": {
+        "gt": {
+          "type": "object",
+          "description": "General Translation files configuration",
+          "properties": {
+            "output": {
+              "type": "string",
+              "description": "Output path pattern with [locale] placeholder for saving translations locally",
+              "pattern": ".*\\[locale\\].*",
+              "examples": [
+                "public/i18n/[locale].json",
+                "translations/[locale].json"
+              ]
+            }
+          },
+          "required": ["output"],
+          "additionalProperties": false
+        },
+        "json": {
+          "type": "object",
+          "description": "JSON files configuration",
+          "properties": {
+            "include": {
+              "type": "array",
+              "description": "Array of glob patterns that match the JSON files you want to translate",
+              "items": {
+                "type": "string",
+                "pattern": ".*\\[locale\\].*"
+              },
+              "minItems": 1,
+              "examples": [
+                ["content/[locale]/**/*.json", "data/[locale]/*.json"]
+              ]
+            },
+            "exclude": {
+              "type": "array",
+              "description": "Array of glob patterns that match the JSON files you want to exclude from translation",
+              "items": {
+                "type": "string",
+                "pattern": ".*\\[locale\\].*"
+              },
+              "examples": [["content/[locale]/exclude/**/*.json"]]
+            },
+            "transform": {
+              "type": "string",
+              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
+              "pattern": ".*\\*.*\\[locale\\].*",
+              "examples": ["*.[locale].json", "*-[locale].json"]
+            }
+          },
+          "required": ["include"],
+          "additionalProperties": false
+        },
+        "mdx": {
+          "type": "object",
+          "description": "MDX (Markdown component) files configuration",
+          "properties": {
+            "include": {
+              "type": "array",
+              "description": "Array of glob patterns that match the MDX files you want to translate",
+              "items": {
+                "type": "string",
+                "pattern": ".*\\[locale\\].*"
+              },
+              "minItems": 1,
+              "examples": [["content/docs/[locale]/**/*.mdx"]]
+            },
+            "exclude": {
+              "type": "array",
+              "description": "Array of glob patterns that match the MDX files you want to exclude from translation",
+              "items": {
+                "type": "string",
+                "pattern": ".*\\[locale\\].*"
+              }
+            },
+            "transform": {
+              "type": "string",
+              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
+              "pattern": ".*\\*.*\\[locale\\].*",
+              "examples": ["*.[locale].mdx"]
+            }
+          },
+          "required": ["include"],
+          "additionalProperties": false
+        },
+        "md": {
+          "type": "object",
+          "description": "Markdown files configuration",
+          "properties": {
+            "include": {
+              "type": "array",
+              "description": "Array of glob patterns that match the Markdown files you want to translate",
+              "items": {
+                "type": "string",
+                "pattern": ".*\\[locale\\].*"
+              },
+              "minItems": 1,
+              "examples": [["docs/[locale]/**/*.md"]]
+            },
+            "exclude": {
+              "type": "array",
+              "description": "Array of glob patterns that match the Markdown files you want to exclude from translation",
+              "items": {
+                "type": "string",
+                "pattern": ".*\\[locale\\].*"
+              }
+            },
+            "transform": {
+              "type": "string",
+              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
+              "pattern": ".*\\*.*\\[locale\\].*",
+              "examples": ["*.[locale].md"]
+            }
+          },
+          "required": ["include"],
+          "additionalProperties": false
+        },
+        "js": {
+          "type": "object",
+          "description": "JavaScript files configuration",
+          "properties": {
+            "include": {
+              "type": "array",
+              "description": "Array of glob patterns that match the JavaScript files you want to translate",
+              "items": {
+                "type": "string",
+                "pattern": ".*\\[locale\\].*"
+              },
+              "minItems": 1,
+              "examples": [["scripts/[locale]/**/*.js"]]
+            },
+            "exclude": {
+              "type": "array",
+              "description": "Array of glob patterns that match the JavaScript files you want to exclude from translation",
+              "items": {
+                "type": "string",
+                "pattern": ".*\\[locale\\].*"
+              }
+            },
+            "transform": {
+              "type": "string",
+              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
+              "pattern": ".*\\*.*\\[locale\\].*",
+              "examples": ["*.[locale].js"]
+            }
+          },
+          "required": ["include"],
+          "additionalProperties": false
+        },
+        "ts": {
+          "type": "object",
+          "description": "TypeScript files configuration",
+          "properties": {
+            "include": {
+              "type": "array",
+              "description": "Array of glob patterns that match the TypeScript files you want to translate",
+              "items": {
+                "type": "string",
+                "pattern": ".*\\[locale\\].*"
+              },
+              "minItems": 1,
+              "examples": [["scripts/[locale]/**/*.ts"]]
+            },
+            "exclude": {
+              "type": "array",
+              "description": "Array of glob patterns that match the TypeScript files you want to exclude from translation",
+              "items": {
+                "type": "string",
+                "pattern": ".*\\[locale\\].*"
+              }
+            },
+            "transform": {
+              "type": "string",
+              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
+              "pattern": ".*\\*.*\\[locale\\].*",
+              "examples": ["*.[locale].ts"]
+            }
+          },
+          "required": ["include"],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["defaultLocale", "locales"],
+  "additionalProperties": true,
+  "examples": [
+    {
+      "defaultLocale": "en",
+      "locales": ["fr", "es"],
+      "files": {
+        "gt": {
+          "output": "public/i18n/[locale].json"
+        },
+        "mdx": {
+          "include": ["content/docs/[locale]/**/*.mdx"],
+          "transform": "*.[locale].mdx"
+        },
+        "json": {
+          "include": ["resources/[locale]/**/*.json"],
+          "exclude": ["resources/[locale]/exclude/**/*.json"]
+        }
+      },
+      "src": ["./src", "./app", "./pages", "./components"],
+      "dictionary": "./dictionary.json",
+      "stageTranslations": false
+    }
+  ]
+}
