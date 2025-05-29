@@ -1,6 +1,6 @@
 ---
-title: AI Integrations
-description: General Translation AI Integrations including llms.txt and MCP server
+title: AI Tools
+description: General Translation support for AI Tools including llms.txt and MCP server
 ---
 
 ## Overview
@@ -17,10 +17,28 @@ Provide your AI tools with our [llms-full.txt](/llms-full.txt) file for the full
 
 ## MCP Server
 
-We also host an MCP server at `https://mcp.gtx.dev`.
-This server is a simple MCP server that AI tools like Cursor, Windsurf, and Claude Code can use to access our docs.
+We offer a simple MCP server that AI tools like Cursor, Windsurf, and Claude Code can use to access our docs.
 
 Add the following to your mcp config file to use our MCP server.
+
+### Local MCP Server
+
+For AI tools which maintain a persistent connection such as **Windsurf** and **Cursor**, you can run our local MCP docs server.
+
+```json title="mcp.json" copy
+{
+  "mcpServers": {
+    "generaltranslation": {
+      "command": "npx",
+      "args": ["-y", "@generaltranslation/mcp@latest"]
+    }
+  }
+}
+```
+
+### Streamable-HTTP
+
+Otherwise, you can use our MCP server hosted at `https://mcp.gtx.dev`.
 
 ```json title=".mcp.json"
 {
@@ -32,6 +50,8 @@ Add the following to your mcp config file to use our MCP server.
   }
 }
 ```
+
+### SSE
 
 For tools that don't support streamable-http, you can use the SSE endpoint instead.
 
@@ -55,3 +75,13 @@ Make sure you've added the MCP server to your mcp config file.
 To use the MCP server in Cursor, simply ask the AI to use the `generaltranslation` tool.
 
 For example, you can ask the AI: "Use the generaltranslation tool to explain how to use a `<T>` component."
+
+### Windsurf
+
+To use the MCP server in Windsurf, ask the AI to use the `generaltranslation` mcp server.
+
+For example, you can ask the AI: "Use the generaltranslation mcp server to explain how to use a `<T>` component."
+
+### Claude Code
+
+To use the MCP server in Claude Code, ask the AI to use the `generaltranslation` mcp server.
