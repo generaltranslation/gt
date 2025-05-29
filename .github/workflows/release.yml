@@ -28,11 +28,14 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Build packages
+        run: npm run build
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
         with:
-          publish: npm run release:alpha
+          publish: npm run release
           commit: '[ci] release'
           title: '[ci] release'
         env:
