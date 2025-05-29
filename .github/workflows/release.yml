@@ -32,7 +32,7 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          publish: npm run release
+          publish: npm run release:alpha
           commit: '[ci] release'
           title: '[ci] release'
         env:

@@ -6,7 +6,8 @@
   "module": "dist/index.esm.min.mjs",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build:clean": "rm -rf dist; npm run build",
