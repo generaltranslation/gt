@@ -268,9 +268,6 @@ export function parseJSXElement(
 
     const tree = addGTIdentifierToSyntaxTree(whitespaceHandledTree);
 
-    console.log('Tree', JSON.stringify(tree));
-    console.log('update test2');
-
     componentObj.tree = tree.length === 1 ? tree[0] : tree;
 
     const id = componentObj.props.id;

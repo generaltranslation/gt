@@ -1,4 +1,3 @@
-import React from 'react';
 import { getVariableName } from '../utils/getVariableName';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 
