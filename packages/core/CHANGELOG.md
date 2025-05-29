@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 6.2.7
+
+### Patch Changes
+
+- [#300](https://github.com/generaltranslation/gt/pull/300) [`6d98de0`](https://github.com/generaltranslation/gt/commit/6d98de0b0b0b56e58bf69dac96380eac2f1122b1) Thanks [@brian-lou](https://github.com/brian-lou)! - Re-release core package
+
 ## 6.2.6
 
 ### Patch Changes
