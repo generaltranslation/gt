@@ -1,3 +1,4 @@
+import React from 'react';
 import { getVariableName } from '../utils/getVariableName';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 
@@ -52,8 +53,9 @@ export default function addGTIdentifierToSyntaxTree(
             'datetime'
           ),
         };
+      } else if (type === "" || type === "React.Fragment") {
+        generaltranslation.transformation = 'fragment';
       }
-
       if (type === 'Plural') {
         generaltranslation.transformation = 'plural';
         const pluralBranches = Object.entries(props).reduce(

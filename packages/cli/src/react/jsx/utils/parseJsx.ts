@@ -158,11 +158,18 @@ export function buildJSXTree(
         )
       )
       .filter((child: any) => child !== null && child !== '');
+
+    const props: { [key: string]: any } = {};
+
+    if (children.length === 1) {
+      props.children = children[0];
+    } else if (children.length > 1) {
+      props.children = children;
+    }
+
     return {
       type: '',
-      props: {
-        children: children.length === 1 ? children[0] : children,
-      },
+      props,
     };
   }
   // If it's a string literal (standalone)
@@ -260,6 +267,9 @@ export function parseJSXElement(
     const whitespaceHandledTree = handleChildrenWhitespace(initialTree);
 
     const tree = addGTIdentifierToSyntaxTree(whitespaceHandledTree);
+
+    console.log('Tree', JSON.stringify(tree));
+    console.log('update test2');
 
     componentObj.tree = tree.length === 1 ? tree[0] : tree;
 
