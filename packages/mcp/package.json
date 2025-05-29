@@ -15,8 +15,6 @@
     "@types/jest": "^29.5.14",
     "@types/node": ">=20.0.0",
     "eslint": "^9.19.0",
-    "eslint-config-prettier": "^10.0.1",
-    "eslint-plugin-prettier": "^5.2.3",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
     "@typescript-eslint/parser": "^8.19.1",
     "prettier": "^3.4.2",

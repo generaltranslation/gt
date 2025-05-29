@@ -1,157 +1,282 @@
 ---
-title: React Quickstart
+title: Quickstart
 description: Easily internationalize your React App with gt-react
 ---
 
 ## Overview
 
-This guide describes how to internationalize an existing [React](https://react.dev) project.
+This quickstart guide will walk you through internationalizing your React app with `gt-react`.
 
-We will cover 4 simple steps:
+By the end of this guide, you will have a fully internationalized React app.
+
+In this guide, we will cover the following:
 
 <Steps>
   <Step>
-    Run the setup wizard
+    Installation
   </Step>
   <Step>
-    Add the GTProvider
+    Configuration
   </Step>
   <Step>
-    (Optional) Add environment variables
+    Usage
   </Step>
   <Step>
-    Clean up strings
+    Testing Your App
+  </Step>
+  <Step>
+    Deployment
   </Step>
 </Steps>
 
+### Prerequisites
+
+- A React project using a supported framework (Next.js, Vite, etc.)
+- Basic knowledge of React and JavaScript
+
+## Installation
+
+Install the `gt-react` and `gtx-cli` packages:
+
+<Tabs items={['npm', 'yarn', 'bun', 'pnpm']}>
+  <Tab value="npm">
+  ```bash 
+  npm i gt-react
+  npm i --save-dev gtx-cli
+  ``` 
+  </Tab>
+  <Tab value="yarn">
+  ```bash 
+  yarn add gt-react
+  yarn add --dev gtx-cli
+  ```
+  </Tab>
+
+  <Tab value="bun">
+  ```bash 
+  bun add gt-react
+  bun add --dev gtx-cli
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash 
+  pnpm add gt-react
+  pnpm add --save-dev gtx-cli
+  ```
+  </Tab>
+</Tabs>
 
 ---
 
-### 1. Run the setup wizard
+<Callout type="info">
+  **Tip:** We have an experimental Setup Wizard that can help you setup your project with `gt-react`.
 
-The setup wizard will walk you through the process of internationalizing your project.
+  Try it out by running `npx gtx-cli@latest`. You'll still need to manually internationalize strings, but it will help you get started.
 
-```bash
-npx gtx-cli@latest
-```
+  See the [Setup Wizard](/docs/cli/init) reference guide for more information.
+</Callout>
 
-If you don't want to use the setup wizard, you can follow the [manual setup guide](/docs/react/guides/setup) instead.
 
-The setup wizard will:
+## Configuration
 
-1. Install the required libraries.
-2. Configure your project's supported locales.
-3. Wrap your project's JSX components with the `<T>` component.
-4. Generate a development API key and project ID for your project.
+### `GTProvider`
 
-See the [setup wizard docs](/docs/cli/init) for more information.
+The core of `gt-react` is the `GTProvider` component.
 
-### 2. Add the GTProvider
+It is responsible for:
 
-Add the [`<GTProvider>`](/docs/react/api/components/gtprovider) component to your app.
-Place it as high up in your React component tree as possible, usually at the root.
+- Managing the user's current locale
+- Providing relevant translations to your application
+- Providing context to hooks for accessing translations
+- Providing context to hooks for changing the user's locale
 
-Additionally, the setup wizard will create a [`gt.config.json`](/docs/react/api/config/gt-config-json) file for you in your project root directory.
-Spread this JSON into the `config` prop.
+<Steps>
+  <Step>
+    First, add the `GTProvider` component to your application. It should be placed as high up in your component tree as possible.
 
-```tsx title="App.tsx" copy
-import { GTProvider } from "gt-react";
-import MyApp from "./MyApp";
-import config from "./gt.config.json"; // [!code highlight]
+    ```tsx copy title="src/App.tsx"
+    import { GTProvider } from 'gt-react';
 
-export default function App() {
-  return (
-    // [!code highlight]
-    <GTProvider {...config}> 
-      <MyApp />
+    export default function App() {
+      return (
+        <GTProvider>
+          <App />
+        </GTProvider>
+      );
+    }
+    ```
+  </Step>
+  <Step>
+    Next, create a [`gt.config.json`](/docs/react/api/config/gt-config-json) file in the root of your project.
+    This file is used to configure both the `gtx-cli` tool and the `gt-react` library.
+
+    ```json title="gt.config.json" copy
+    {
+      "defaultLocale": "en",
+      "locales": ["fr", "es"]
+    }
+    ```
+    You should customize the `defaultLocale` and `locales` to match your project. See the list of [supported locales](/docs/platform/locale-strings) for more information.
+
+  </Step>
+  <Step>
+    Lastly, spread the `gt.config.json` file into the provider's props.
+
+    ```tsx
+    import gtConfig from './gt.config.json';
+
+    <GTProvider {...gtConfig}>
+      <App />
     </GTProvider>
-  );
-}
-```
+    ```
+    <Callout type="info">
+      Spreading the `gt.config.json` file makes the config consistent across your application and CLI tool.
 
-<Callout>
-  For some React frameworks, the setup wizard will automatically add the GTProvider to your app.
-  If this is the case, you can skip this step.
-</Callout>
+      Alternatively, you can individually specify each prop in the `GTProvider` component.
 
-### 3. (Optional) Add a Production API Key
-
-The setup wizard will create a `.env.local` file for you in the root of your project containing a development API key and project ID.
-
-This development API key can be used to translate your app in development mode.
-
-However, in order to ship to production, you will need to add a production API key.
-Read about the difference between development and production keys [here](/docs/react/concepts/environments).
-
-<Callout>
-  The production API key is only required to translate your app in production.
-  If you do not plan to ship to production at this time, you can skip this step.
-</Callout>
-
-To add a production API key, follow these steps:
-
-<Steps>
-    <Step>
-        Navigate to the [Dashboard](https://generaltranslation.com/dashboard).
-            * Navigate to the **API Keys** page in the sidebar.
-    </Step>
-
-    <Step>
-        Click **Create API Key** then copy the API key and Project ID to your clipboard.
-    </Step>
-    <Step>
-        Add the Project ID and API Key to your environment variables.
-        ```bash
-        GT_API_KEY="YOUR_GT_PRODUCTION_KEY"
-        GT_PROJECT_ID="YOUR_GT_PROJECT_ID"
-        ```
-    </Step>
+      ```tsx
+      <GTProvider
+        defaultLocale="en"
+        locales={["fr", "es"]}
+      >
+      ```
+    </Callout>
+  </Step>
 </Steps>
-<Callout type="warn">
-    **Protect Your API Keys!**
 
-    React environment variables are often bundled into your application at build time and are publicly visible in the client-side code.
-    For security reasons, you should:
-    
-    - Only use development API keys during local development
-    - Only use production API keys with the CLI tool for deployment
-    - **Never include any API keys as environment variables in production**
+### Environment Variables
+
+Set the following environment variables:
+
+<Tabs items={["Vite", "Next.js Pages Router", "Gatsby", "RedwoodJS",  "create-react-app", "Other"]}>
+    <Tab value="Vite">
+    ```bash copy
+    VITE_GT_API_KEY="" # Your General Translation Developer API key
+    VITE_GT_PROJECT_ID="" # Your General Translation project ID
+    ```
+    </Tab>
+    <Tab value="Gatsby">
+    ```bash copy
+    GATSBY_GT_API_KEY="" # Your General Translation Developer API key
+    GATSBY_GT_PROJECT_ID="" # Your General Translation project ID
+    ```
+    </Tab>
+    <Tab value="RedwoodJS">
+    ```bash copy
+    REDWOOD_ENV_GT_API_KEY="" # Your General Translation Developer API key
+    REDWOOD_ENV_PROJECT_ID="" # Your General Translation project ID
+    ```
+    </Tab>
+    <Tab value="Next.js Pages Router">
+    ```bash copy
+    NEXT_PUBLIC_GT_API_KEY="" # Your General Translation Developer API key
+    NEXT_PUBLIC_GT_PROJECT_ID="" # Your General Translation project ID
+    ```
+    </Tab>
+    <Tab value="create-react-app">
+    ```bash copy
+    REACT_APP_GT_API_KEY="" # Your General Translation Developer API key
+    REACT_APP_GT_PROJECT_ID="" # Your General Translation project ID
+    ```
+    </Tab>
+    <Tab value="Other">
+    Many react frameworks each have a unique way of exporting environment variables to the client.
+    In development environments, both `GT_API_KEY` and `GT_PROJECT_ID` need to be exported to the client.
+
+    We have added support for a few libraries so far,
+    but please let us know if your framework is not listed by creating an issue on our [GitHub repository](https://github.com/generaltranslation/gt/issues/new).
+    </Tab>
+</Tabs>
+
+<Callout type="warn">
+  **Make sure your API key variable is only set in your development environment! It should not be set in production.**
 </Callout>
 
+You can get a free API key and project ID by creating a [General Translation account](https://dash.generaltranslation.com/signup).
 
-### 4. Clean up strings
+After creating an account, navigate to the [Development API Keys](https://dash.generaltranslation.com/settings/dev-api-keys) page to get your Dev API key and project ID.
 
-The setup wizard will wrap all of your project's JSX components with the `<T>` component.
-However, you may notice that strings are unaffected.
+Alternatively, you can also use the CLI tool command [`npx gtx-cli auth`](/docs/cli/auth) to generate an API key and project ID for your project, saved to your `.env.local` file.
 
-For example, if you have a string constant like this:
+<Accordions>
+  <Accordion title="What if I don't want to use the General Translation platform?">
+  `gt-react` is an i18n library that can work standalone without any environment variables.
+  Without them, the library will act very similarly to other i18n libraries, and will still have core internationalization functionality.
 
-```jsx title="Example.js" copy
-export default function Example() {
-  const greeting = "Hello, world!";
-  return <p>{greeting}</p>;
-}
-```
+  However, `gt-react` also offers a native integration with the General Translation platform.
+  This integration unlocks additional functionality in the library, such as:
 
-The setup wizard will not touch this string.
+  - Translation Hot Reloading in Development
+  - Automatic AI translations
+  - Syncing translations with the General Translation platform
+  - Native integration with our translation CDN
 
-To fix this, you can use the [`useGT()`](/docs/react/api/strings/useGT) hook to translate the string.
+  To avoid using the General Translation platform, just don't set any environment variables.
+  </Accordion>
+</Accordions>
 
-```jsx title="Example.js" copy
-import { useGT } from "gt-react";
-export default function Example() {
-  const t = useGT();
-  return <p>{t("Hello, world!")}</p>;
-}
-```
-
-Read our [guide on translating strings](/docs/react/guides/strings) for more information.
 
 ---
 
-## Let's try it out!
+## Usage
 
-Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
+Great! If you've followed the steps above, your React project is now setup to use `gt-react`.
+
+The next step is to internationalize your content. 
+Here, we'll give a brief overview of the different ways to translate content in your application.
+
+
+### `<T>` Component
+
+The `<T>` component is the main component for translating JSX content in your application.
+
+To use it, simply wrap the JSX you want to translate in the `<T>` component.
+
+```tsx
+import { T } from 'gt-react';
+<T>
+  <div>Your content</div>
+</T>
+```
+
+If you have dynamic content, you'll need to use [variable components](/docs/react/guides/variables) to pass in the dynamic values.
+
+```tsx
+import { T, Var } from 'gt-react';
+
+<T>
+  <div>Hello, <Var>{name}</Var>!</div>
+</T>
+```
+
+See the [Translating JSX](/docs/react/guides/jsx) guide for more information.
+
+
+### `useGT` Hook
+
+The `useGT` hook is a React hook that returns a function that can be used to translate strings.
+
+```tsx
+import { useGT } from 'gt-react';
+
+const translate = useGT();
+translate('Hello, world!');
+```
+
+See the [Translating Strings](/docs/react/guides/strings) guide for more information.
+
+
+<Callout type="info">
+  Utilizing the hot-reload translation functionality will be helpful for internationalizing your application.
+
+  To enable this, make sure you have the `GT_API_KEY` and `GT_PROJECT_ID` environment variables set in your development environment.
+</Callout>
+
+---
+
+## Testing Your App
+
+Congratulations! 🥳 If you've followed the steps above, your app is now multilingual! Let's see it in action.
 
 ### See Your App in a Different Language
 
@@ -161,7 +286,7 @@ Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
     This will allow you to select a different language for your app.
     <Callout>
       **Tip:**
-      You can also change your language in your browser settings.
+      You can also skip this step and just change your language in your browser settings.
     </Callout>
   </Step>
   <Step>
@@ -249,20 +374,91 @@ Congratulations! 🥳 Your app is now multilingual! Let's see it in action.
   </Accordion>
 </Accordions>
 
----
-
-## Shipping to Production
-
-Follow our guide on [shipping to production](/docs/react/tutorials/quickdeploy).
 
 ---
 
-## Next steps
+## Deployment
 
-- Read our guide on how to [translate JSX content](/docs/react/guides/jsx) with the `<T>` component.
-- Learn how to translate strings with the `useGT` hook: [Translating Strings](/docs/react/guides/strings)
+Great! If you're satisfied with your translations and the functionality of your app, you can now deploy your application.
+
+The behavior of `gt-react` in production is slightly different from development. Specifically, no translations will be performed at runtime.
+
+This means that you'll need to translate your content before deploying your application, in the build process.
+
+Luckily, the `gtx-cli` tool has a `translate` command that can be used to automatically translate your content.
+
+<Steps>
+  <Step>
+    First, you'll need to get a Production API key from the [General Translation platform](https://dash.generaltranslation.com).
+
+    Please note that this key is different from your Development API key, and begins with `gtx-api-`, instead of `gtx-dev-`.
+
+    Read about the difference between Development and Production keys [here](/docs/react/concepts/environments).
+  </Step>
+  <Step>
+    Add this environment variable to your CI/CD pipeline.
+
+    ```bash
+    GT_PROJECT_ID=<your-project-id>
+    GT_API_KEY=<your-production-api-key>
+    ```
+    <Callout type='warn'>
+      Make sure that `GT_API_KEY` is **NOT** prefixed with `NEXT_PUBLIC_` or `VITE_`, depending on your framework!
+
+      If it is, you'll risk exposing your API key to the public.
+    </Callout>
+  </Step>
+  <Step>
+    Run the `translate` command to translate your content.
+
+    ```bash
+    npx gtx-cli translate
+    ```
+    You can configure the behavior of the `translate` command with the [`gt.config.json`](/docs/cli/reference/config) file.
+
+    See the [CLI Tool](/docs/cli/translate) reference guide for more information.
+    
+  </Step>
+  <Step>
+    Add the `translate` command to your build process.
+
+    ```json title="package.json" copy
+    {
+      "scripts": {
+        "build": "npx gtx-cli translate && <...YOUR_BUILD_COMMAND...>"
+      }
+    }
+    ```
+  </Step>
+</Steps>
+
+<Accordions>
+  <Accordion title="What if I'm not using the General Translation platform?">
+    If you're not using the General Translation platform, you can still use `gt-react` in production.
+
+    However, you'll need to manually translate your content before deploying your application.
+
+    Instead of running `translate`, run the `generate` command to generate JSON files containing all of your translation data (in your source language).
+
+    ```bash
+    npx gtx-cli generate
+    ```
+
+    Then, you'll need to manually edit / translate these files, and load them into your application with [`loadTranslations`](/docs/react/guides/local-tx).
+  </Accordion>
+</Accordions>
+
+---
+
+## Summary
+
+ * In this guide, we covered how to setup your React project with `gt-react`
+ * We briefly covered the different ways to translate content in your application.
+ * We also covered how to deploy your application after you've internationalized your content.
 
 
+## Next Steps
 
-
-
+- Learn about how to translate JSX content with the `<T>` component: [Translating JSX](/docs/react/guides/jsx)
+- Learn about how to translate strings with the `useGT` hook: [Translating Strings](/docs/react/guides/hooks)
+- Learn how to use local translations: [Local Translations](/docs/react/guides/local-tx)
