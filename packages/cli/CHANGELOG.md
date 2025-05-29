@@ -1,6 +1,6 @@
 # gtx-cli
 
-## 1.2.16
+## 1.2.17
 
 ### Patch Changes
 
