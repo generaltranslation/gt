@@ -5,11 +5,11 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "transpile": "npm run transpile --workspaces --if-present",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "transpile": "turbo run transpile",
     "release": "changeset publish",
-    "build:clean": "npm run build:clean --workspaces --if-present",
+    "build:clean": "turbo run build:clean",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,yml,yaml}\"",
     "changeset": "changeset",
     "version-packages": "changeset version"
@@ -33,9 +33,10 @@
     "l10n"
   ],
   "devDependencies": {
-    "@changesets/cli": "^2.27.9",
     "@changesets/changelog-github": "^0.5.1",
+    "@changesets/cli": "^2.27.9",
     "prettier": "^3.5.3",
+    "turbo": "^2.5.3",
     "typescript": "^5.7.3"
   },
   "packageManager": "npm@11.3.0"
