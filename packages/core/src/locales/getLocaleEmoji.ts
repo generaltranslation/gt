@@ -299,4 +299,7 @@ const emojis = {
   ZM: '🇿🇲', // Zambia
   ZW: '🇿🇼', // Zimbabwe,
   EU: '🇪🇺', // European Union (EU)
+
+
+  QBR: '🥀 ', // brainrot
 } as Record<string, string>;

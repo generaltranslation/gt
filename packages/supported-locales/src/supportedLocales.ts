@@ -139,6 +139,9 @@ const supportedLocales = {
     'zh-SG', // Singapore
     'zh-TW', // Taiwan
   ],
+
+  //custom locales (all start with q)
+  qbr: ['qbr'], // Added qbr here``
 } as {
   [language: string]: string[];
 };
