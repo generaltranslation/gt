@@ -133,7 +133,7 @@ export default function renderTranslatedChildren({
       if (React.isValidElement(sourceChild)) {
         const generaltranslation = getGTProp(sourceChild);
         if (generaltranslation?.transformation === 'variable') {
-          let { variableName, variableValue, variableOptions } =
+          const { variableName, variableValue, variableOptions } =
             getVariableProps(sourceChild.props as any);
           variables[variableName] = variableValue;
           variablesOptions[variableName] = variableOptions;

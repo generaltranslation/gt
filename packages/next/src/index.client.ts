@@ -21,14 +21,18 @@ export function GTProvider({}): React.JSX.Element {
 export function Tx({}): React.JSX.Element {
   throw new Error(
     `You're attempting to use the <Tx> runtime translation component in a client component. ` +
-      `This is currently unsupported. Please use <T> with variables, ` + 
-        `or make sure <Tx> rendered on the server only. ` 
+      `This is currently unsupported. Please use <T> with variables, ` +
+      `or make sure <Tx> rendered on the server only. `
   );
 }
 
-export { 
+export {
   // GTProvider
   T, // Tx
-  Var, Num, Currency, DateTime, 
-  Branch, Plural 
+  Var,
+  Num,
+  Currency,
+  DateTime,
+  Branch,
+  Plural,
 };

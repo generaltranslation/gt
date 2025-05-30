@@ -53,7 +53,7 @@ export function buildJSXTree(
   } else if (t.isJSXText(node)) {
     // Updated JSX Text handling
     // JSX Text handling following React's rules
-    let text = node.value;
+    const text = node.value;
     return text;
   } else if (t.isJSXElement(node)) {
     const element = node;

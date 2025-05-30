@@ -28,10 +28,7 @@ export default function useGT() {
    * @param {InlineTranslationOptions} options Options for the translation and variable insertion
    * @returns {string} A translated string.
    */
-  function t(
-    string: string, 
-    options: InlineTranslationOptions = {}
-  ): string {
+  function t(string: string, options: InlineTranslationOptions = {}): string {
     return (_internalUseGTFunction as any)(string, options);
   }
 
