@@ -12,6 +12,9 @@
     "lint": {
       "cache": false
     },
+    "lint:fix": {
+      "cache": false
+    },
     "test": {
       "cache": false
     },

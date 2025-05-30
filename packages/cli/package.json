@@ -11,6 +11,7 @@
     "build": "tsc",
     "build:clean": "rm -rf dist; npm run build",
     "lint": "eslint \"src/**/*.{js,ts}\" \"__tests__/**/*.{js,ts}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts}\" \"__tests__/**/*.{js,ts}\" --fix",
     "test": "vitest run",
     "test:watch": "vitest",
     "release": "npm run build:clean && npm publish",

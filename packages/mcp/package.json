@@ -33,6 +33,7 @@
     "dev": "npm run build && node dist/index.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "release": "npm run build:clean && npm publish --access public",
     "release:alpha": "npm run build:clean && npm publish --access public --tag alpha",
     "release:beta": "npm run build:clean && npm publish --access public --tag beta",
