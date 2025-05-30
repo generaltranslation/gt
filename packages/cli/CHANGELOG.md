@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 1.2.20
+
+### Patch Changes
+
+- [#318](https://github.com/generaltranslation/gt/pull/318) [`5e6fabd`](https://github.com/generaltranslation/gt/commit/5e6fabdecd692ea26b1e709cc9a3dc5d22387410) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix wrapping behavior for JSX fragments
+
 ## 1.2.19
 
 ### Patch Changes
