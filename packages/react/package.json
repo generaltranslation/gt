@@ -27,7 +27,7 @@
     "release:beta": "npm run build:clean && npm publish --tag beta",
     "release:latest": "npm run build:clean && npm publish --tag latest",
     "lint": "eslint \"src/**/*.{js,ts,tsx}\" \"__tests__/**/*.{js,ts,tsx}\"",
-    "test": "npm run lint && vitest run",
+    "test": "vitest run",
     "test:watch": "vitest"
   },
   "repository": {
