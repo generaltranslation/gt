@@ -26,11 +26,23 @@ If you are using `gt-next` or `gt-react`, these are also the locales that your a
 
 - `dictionary`: An optional string that specifies the relative path to the dictionary file.
 
+<Callout type="info">
+  To help validate your `gt.config.json` file, you can use the [JSON Schema](https://assets.gtx.dev/config-schema.json) for the CLI.
+
+  Add it to the top of your `gt.config.json` file:
+
+  ```json title="gt.config.json" copy
+  {
+    "$schema": "https://assets.gtx.dev/config-schema.json",
+  }
+  ```
+</Callout>
 
 Here is an skeleton of the `gt.config.json` file:
 
 ```json title="gt.config.json"
 {
+  "$schema": "https://assets.gtx.dev/config-schema.json",
   "defaultLocale": "en",
   "locales": ["fr", "es"],
   "files": {
