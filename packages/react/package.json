@@ -26,7 +26,9 @@
     "release:alpha": "npm run build:clean && npm publish --tag alpha",
     "release:beta": "npm run build:clean && npm publish --tag beta",
     "release:latest": "npm run build:clean && npm publish --tag latest",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\" \"__tests__/**/*.{js,ts,tsx}\"",
+    "test": "npm run lint && vitest run",
+    "test:watch": "vitest"
   },
   "repository": {
     "type": "git",
@@ -46,8 +48,6 @@
     "@types/node": "^22.13.5",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
-    "babel-core": "^6.26.3",
-    "babel-loader": "^9.2.1",
     "rollup": "^4.32.1",
     "rollup-plugin-peer-deps-external": "^2.2.4",
     "rollup-plugin-postcss": "^4.0.2",

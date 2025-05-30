@@ -37,7 +37,8 @@
     "release:alpha": "npm run build:clean && npm publish --access public --tag alpha",
     "release:beta": "npm run build:clean && npm publish --access public --tag beta",
     "release:latest": "npm run build:clean && npm publish --access public --tag latest",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run lint && vitest run",
+    "test:watch": "vitest"
   },
   "repository": {
     "type": "git",
