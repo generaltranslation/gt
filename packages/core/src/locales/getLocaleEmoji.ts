@@ -301,5 +301,4 @@ const emojis = {
   EU: '🇪🇺', // European Union (EU)
 
   QBR: '🥀 ', // Brainrot
-
 } as Record<string, string>;

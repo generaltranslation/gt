@@ -377,8 +377,8 @@ export class ReactCLI extends BaseCLI {
     });
     options.disableIds = !includeTId;
 
-    let errors: string[] = [];
-    let warnings: string[] = [];
+    const errors: string[] = [];
+    const warnings: string[] = [];
     // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
     const { filesUpdated } = await this.wrapContent(
       options,

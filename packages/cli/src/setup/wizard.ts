@@ -87,8 +87,8 @@ Please let us know what you would like to see supported at https://github.com/ge
     spinner.stop(chalk.green('Automatically installed gt-react.'));
   }
 
-  let errors: string[] = [];
-  let warnings: string[] = [];
+  const errors: string[] = [];
+  const warnings: string[] = [];
   let filesUpdated: string[] = [];
 
   if (frameworkType === 'next-app') {

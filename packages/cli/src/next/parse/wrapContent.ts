@@ -67,9 +67,9 @@ export default async function wrapContentNext(
     }
 
     let modified = false;
-    let usedImports: string[] = [];
+    const usedImports: string[] = [];
 
-    let { importAlias, initialImports } = generateImportMap(ast, pkg);
+    const { importAlias, initialImports } = generateImportMap(ast, pkg);
 
     // If the file already has a T import, skip processing it
     if (initialImports.includes(IMPORT_MAP.T.name)) {
@@ -132,7 +132,7 @@ export default async function wrapContentNext(
           return;
         }
         // Check if this JSX element has any JSX element ancestors
-        let currentPath: NodePath = path;
+        const currentPath: NodePath = path;
         if (t.isJSXElement(currentPath.parentPath?.node)) {
           // If we found a JSX parent, skip processing this node
           return;
@@ -159,7 +159,7 @@ export default async function wrapContentNext(
     });
     if (!modified) continue;
 
-    let needsImport = usedImports.filter(
+    const needsImport = usedImports.filter(
       (imp) => !initialImports.includes(imp)
     );
 

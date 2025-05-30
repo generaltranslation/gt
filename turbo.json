@@ -9,8 +9,18 @@
       "dependsOn": ["^transpile"],
       "outputs": ["dist/**"]
     },
+    "lint": {
+      "cache": false
+    },
+    "lint:fix": {
+      "cache": false
+    },
     "test": {
-      "dependsOn": ["^build"]
+      "cache": false
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
     },
     "build:clean": {
       "dependsOn": ["^build:clean"],

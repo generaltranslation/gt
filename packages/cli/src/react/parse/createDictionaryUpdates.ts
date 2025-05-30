@@ -60,10 +60,10 @@ export default async function createDictionaryUpdates(
 
   // ----- CREATE PARTIAL UPDATES ----- //
 
-  let updates: Updates = [];
+  const updates: Updates = [];
 
   for (const id of Object.keys(dictionary)) {
-    let {
+    const {
       entry,
       metadata: props, // context, etc.
     } = getEntryAndMetadata(dictionary[id]);
