@@ -155,4 +155,4 @@ See our [docs](https://generaltranslation.com/docs) for more information.
 
 ## Contributing
 
-We welcome any contributions to our libraries. Please submit a pull request!
+We welcome all contributions to our libraries. Please submit a pull request!
