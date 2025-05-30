@@ -43,7 +43,7 @@ function wrapJsxExpression(
     ? node.expression.expression
     : node.expression;
 
-  // Ignore all template literals - they should not be counted as meaningful
+  // Ignore template literals containing quasis - they should not be counted as meaningful
   if (t.isTemplateLiteral(expression) && expression.expressions.length > 0) {
     return {
       node,
@@ -53,18 +53,31 @@ function wrapJsxExpression(
   }
 
   // Handle both JSX Elements and Fragments
-  if (t.isJSXElement(expression) || t.isJSXFragment(expression)) {
-    const result = wrapJsxElement(expression, options, isMeaningful, mark);
-    // re-wrap the result in a JSXExpressionContainer
-    if (t.isParenthesizedExpression(node.expression)) {
-      node.expression.expression = result.node;
-    } else {
-      node.expression = result.node;
+  if (
+    t.isJSXElement(expression) ||
+    t.isJSXFragment(expression) ||
+    t.isStringLiteral(expression) ||
+    t.isJSXText(expression) ||
+    t.isTemplateLiteral(expression)
+  ) {
+    if (t.isJSXElement(expression) || t.isJSXFragment(expression)) {
+      const result = wrapJsxElement(expression, options, isMeaningful, mark);
+      // re-wrap the result in a JSXExpressionContainer
+      if (t.isParenthesizedExpression(node.expression)) {
+        node.expression.expression = result.node;
+      } else {
+        node.expression = result.node;
+      }
+      return {
+        node,
+        hasMeaningfulContent: result.hasMeaningfulContent,
+        wrappedInT: result.wrappedInT,
+      };
     }
     return {
       node,
-      hasMeaningfulContent: result.hasMeaningfulContent,
-      wrappedInT: result.wrappedInT,
+      hasMeaningfulContent: isMeaningful(expression),
+      wrappedInT: false,
     };
   }
   // Handle conditional expressions (ternary)
@@ -336,6 +349,7 @@ export function wrapJsxElement(
   isMeaningful: (node: t.Node) => boolean,
   mark: boolean
 ): WrapResult {
+  console.log('wrapJsxElement called on', generate(node).code);
   const TComponentName = options.TComponent || 'T';
   const VarComponentName = options.VarComponent || 'Var';
 
@@ -370,6 +384,12 @@ export function wrapJsxElement(
       if (t.isJSXExpressionContainer(child)) {
         const result = wrapJsxExpression(child, options, isMeaningful, mark);
         wrappedInT = wrappedInT || result.wrappedInT;
+        hasMeaningfulContent =
+          hasMeaningfulContent || result.hasMeaningfulContent;
+
+        console.log('result', generate(result.node).code);
+        console.log('result.hasMeaningfulContent', result.hasMeaningfulContent);
+        console.log('result.wrappedInT', result.wrappedInT);
         // Expressions are never meaningful because they will either:
         // 1. be sub-wrapped in a T (if they contain meaningful content)
         // 2. be wrapped in a Var (if they are not static)
@@ -423,6 +443,7 @@ export function handleJsxElement(
 
   // Only wrap with T at the root level if there's meaningful content
   if (result.hasMeaningfulContent) {
+    console.log('wrapping with T', generate(result.node).code);
     const output = wrapJsxElement(result.node, options, isMeaningful, false);
     const node = wrapWithT(output.node, options, false);
     return {
