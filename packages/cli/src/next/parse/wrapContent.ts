@@ -132,8 +132,10 @@ export default async function wrapContentNext(
           return;
         }
         // Check if this JSX element has any JSX element ancestors
-        const currentPath: NodePath = path;
-        if (t.isJSXElement(currentPath.parentPath?.node)) {
+        if (
+          t.isJSXElement(path.parentPath?.node) ||
+          t.isJSXExpressionContainer(path.parentPath?.node)
+        ) {
           // If we found a JSX parent, skip processing this node
           return;
         }

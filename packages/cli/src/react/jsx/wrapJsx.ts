@@ -349,7 +349,6 @@ export function wrapJsxElement(
   isMeaningful: (node: t.Node) => boolean,
   mark: boolean
 ): WrapResult {
-  console.log('wrapJsxElement called on', generate(node).code);
   const TComponentName = options.TComponent || 'T';
   const VarComponentName = options.VarComponent || 'Var';
 
@@ -387,9 +386,6 @@ export function wrapJsxElement(
         hasMeaningfulContent =
           hasMeaningfulContent || result.hasMeaningfulContent;
 
-        console.log('result', generate(result.node).code);
-        console.log('result.hasMeaningfulContent', result.hasMeaningfulContent);
-        console.log('result.wrappedInT', result.wrappedInT);
         // Expressions are never meaningful because they will either:
         // 1. be sub-wrapped in a T (if they contain meaningful content)
         // 2. be wrapped in a Var (if they are not static)
@@ -443,7 +439,6 @@ export function handleJsxElement(
 
   // Only wrap with T at the root level if there's meaningful content
   if (result.hasMeaningfulContent) {
-    console.log('wrapping with T', generate(result.node).code);
     const output = wrapJsxElement(result.node, options, isMeaningful, false);
     const node = wrapWithT(output.node, options, false);
     return {
