@@ -140,8 +140,9 @@ const supportedLocales = {
     'zh-TW', // Taiwan
   ],
 
-  //custom locales (all start with q)
-  qbr: ['qbr'], // Added qbr here``
+  //Custom locales (all start with q)
+  qbr: ['qbr'], // Brainrot
+
 } as {
   [language: string]: string[];
 };
