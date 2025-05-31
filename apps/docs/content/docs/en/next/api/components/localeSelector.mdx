@@ -14,7 +14,13 @@ It is a client side component that provides a dropdown to select the locale.
 
 A component that allows the user to select their locale.
 
----
+### Props
+
+- **`locales`** (optional): `string[]`
+  - An optional list of locales (e.g., `['en', 'es-MX', 'fr']`) to populate the dropdown. If not provided, the list of locales from the `<GTProvider>` context is used.
+- **`customNames`** (optional): `{[locale: string]: string}`
+  - An optional object to map locale codes to custom display names.
+  - Example: `{{ 'en-US': 'English (United States)', 'es': 'Español' }}`
 
 ## Examples
 
@@ -27,6 +33,24 @@ import { LocaleSelector } from 'gt-next/client';
 export default function MyComponent() {
     return (
         <LocaleSelector />
+    );
+}
+```
+
+### Usage with `customNames`
+
+```jsx
+"use client";
+import { LocaleSelector } from 'gt-next/client';
+
+export default function MyComponent() {
+    const myCustomNames = {
+        'en': 'English',
+        'es': 'Español',
+        'fr-CA': 'Français (Canada)'
+    };
+    return (
+        <LocaleSelector customNames={myCustomNames} />
     );
 }
 ```

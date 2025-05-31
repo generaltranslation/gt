@@ -142,6 +142,7 @@ const supportedLocales = {
 
   //Custom locales (all start with q)
   qbr: ['qbr'], // Brainrot
+ 
 } as {
   [language: string]: string[];
 };

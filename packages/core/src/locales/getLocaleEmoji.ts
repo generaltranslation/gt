@@ -300,5 +300,4 @@ const emojis = {
   ZW: '🇿🇼', // Zimbabwe,
   EU: '🇪🇺', // European Union (EU)
 
-  QBR: '🥀 ', // Brainrot
 } as Record<string, string>;

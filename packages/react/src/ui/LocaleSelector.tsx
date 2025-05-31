@@ -19,13 +19,16 @@ function capitalizeLanguageName(language: string): string {
 /**
  * A dropdown component that allows users to select a locale.
  * @param {string[]} locales - An optional list of locales to use for the dropdown. If not provided, the list of locales from the `<GTProvider>` context is used.
+ * @param {object} customNames - An optional object to map locales to custom names.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
 export default function LocaleSelector({
   locales: _locales,
+  customNames,
   ...props
 }: {
   locales?: string[];
+  customNames?: { [key: string]: string };
   [key: string]: any;
 }): React.JSX.Element | null {
   // Get locale selector properties
@@ -35,6 +38,9 @@ export default function LocaleSelector({
 
   // Get display name
   const getDisplayName = (locale: string) => {
+    if (customNames && customNames[locale]) {
+      return customNames[locale];
+    }
     return capitalizeLanguageName(
       getLocaleProperties(locale).nativeNameWithRegionCode
     );
