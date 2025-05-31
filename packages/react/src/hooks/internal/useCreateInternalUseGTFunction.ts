@@ -78,7 +78,7 @@ export default function useCreateInternalUseGTFunction(
       }
 
       // Get translation
-      let translationEntry = translationWithIdExists
+      const translationEntry = translationWithIdExists
         ? translations?.[id as string]
         : translations?.[hash];
 

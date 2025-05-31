@@ -1,4 +1,4 @@
-import { intlCache } from "../cache/IntlCache";
+import { intlCache } from '../cache/IntlCache';
 
 /**
  * Get the text direction for a given locale code using the Intl.Locale API.

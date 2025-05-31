@@ -65,7 +65,7 @@ export function parseStrings(
 
               // get metadata and id from options
               const options = tPath.parent.arguments[1];
-              let metadata: Record<string, string> = {};
+              const metadata: Record<string, string> = {};
               if (options && options.type === 'ObjectExpression') {
                 options.properties.forEach((prop) => {
                   if (

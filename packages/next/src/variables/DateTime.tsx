@@ -34,7 +34,7 @@ async function DateTime({
 
   let final;
   let dateValue: Date | undefined;
-  let defaultValue = children;
+  const defaultValue = children;
   if (typeof defaultValue === 'number') {
     dateValue = new Date(defaultValue);
   } else if (typeof defaultValue === 'string') {

@@ -29,16 +29,20 @@ export const _isValidLocale = (locale: string): boolean => {
       return false;
     const displayLanguageNames = intlCache.get(
       'DisplayNames',
-      [libraryDefaultLocale], 
+      [libraryDefaultLocale],
       {
         type: 'language',
       }
     );
-    if (displayLanguageNames.of(language) === language && !isCustomLanguage(language)) return false;
+    if (
+      displayLanguageNames.of(language) === language &&
+      !isCustomLanguage(language)
+    )
+      return false;
     if (region) {
       const displayRegionNames = intlCache.get(
         'DisplayNames',
-        [libraryDefaultLocale], 
+        [libraryDefaultLocale],
         {
           type: 'region',
         }
@@ -48,7 +52,7 @@ export const _isValidLocale = (locale: string): boolean => {
     if (script) {
       const displayScriptNames = intlCache.get(
         'DisplayNames',
-        [libraryDefaultLocale], 
+        [libraryDefaultLocale],
         {
           type: 'script',
         }

@@ -83,7 +83,7 @@ export default function useCreateInternalUseDictFunction(
       // ----- CHECK TRANSLATIONS ----- //
 
       // Get hash
-      let hash = hashJsxChildren({
+      const hash = hashJsxChildren({
         source,
         ...(metadata?.context && { context: metadata.context }),
         id,
@@ -91,7 +91,7 @@ export default function useCreateInternalUseDictFunction(
       });
 
       // Check id first
-      let translationEntry = translations?.[hash];
+      const translationEntry = translations?.[hash];
 
       // Check translation successful
       if (translationEntry?.state === 'success') {

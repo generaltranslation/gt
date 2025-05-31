@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "1.2.18",
+  "version": "1.2.20",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "files": [
@@ -10,6 +10,10 @@
   "scripts": {
     "build": "tsc",
     "build:clean": "rm -rf dist; npm run build",
+    "lint": "eslint \"src/**/*.{js,ts}\" \"__tests__/**/*.{js,ts}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts}\" \"__tests__/**/*.{js,ts}\" --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "release": "npm run build:clean && npm publish",
     "release:alpha": "npm run build:clean && npm publish --tag alpha",
     "release:beta": "npm run build:clean && npm publish --tag beta",
@@ -75,7 +79,7 @@
     "esbuild": "^0.25.4",
     "fast-glob": "^3.3.3",
     "form-data": "^4.0.2",
-    "generaltranslation": "^6.2.8",
+    "generaltranslation": "^6.2.9",
     "open": "^10.1.1",
     "ora": "^8.2.0"
   },

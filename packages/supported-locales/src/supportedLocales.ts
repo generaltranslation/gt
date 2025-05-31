@@ -96,7 +96,7 @@ const supportedLocales = {
   my: ['my'], // Burmese
   nl: [
     // Dutch
-    'nl', 
+    'nl',
     'nl-NL', // Netherlands
     'nl-BE', // Belgium
   ],
@@ -142,7 +142,7 @@ const supportedLocales = {
 
   //Custom locales (all start with q)
   qbr: ['qbr'], // Brainrot
-
+ 
 } as {
   [language: string]: string[];
 };
