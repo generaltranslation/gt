@@ -1,3 +1,4 @@
 node_modules
 package-lock.json
 archived
+test_script.sh

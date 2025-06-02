@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import dotenv from 'dotenv';
-dotenv.config();
+
+dotenv.config({ path: '.env' });
+dotenv.config({ path: '.env.local', override: true });
+dotenv.config({ path: '.env.production', override: true });
 
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';

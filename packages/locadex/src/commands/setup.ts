@@ -1,29 +1,14 @@
-import { intro, outro, text, confirm, spinner } from '@clack/prompts';
+import { intro, outro, spinner } from '@clack/prompts';
 import chalk from 'chalk';
-import { writeFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { ClaudeCodeRunner } from '../utils/claudeCode.js';
 import { fromPackageRoot } from '../utils/getPaths.js';
-
-const SETUP_SYSTEM_PROMPT = ``;
+import { logInfo } from '../utils/logging.js';
 
 export async function setupCommand() {
   intro(chalk.blue('🌍 Locadex Setup'));
 
   try {
-    // Project analysis
-    const projectType = await text({
-      message:
-        'What type of project is this? (e.g., React, Vue, Node.js, etc.):',
-      placeholder: 'React',
-    });
-
-    const s = spinner();
-
     const mcpConfigPath = fromPackageRoot('.locadex-mcp.json');
-
-    // Run Claude Code for project analysis
-    s.start('Analyzing project for i18n setup...');
 
     const claudeRunner = new ClaudeCodeRunner({
       apiKey: process.env.ANTHROPIC_API_KEY,
@@ -36,13 +21,7 @@ Then, use gt-next to internationalize this next.js app`;
       // systemPrompt: SETUP_SYSTEM_PROMPT,
       prompt: setupPrompt,
       mcpConfig: mcpConfigPath,
-      allowedTools: ['mcp__*'],
     });
-
-    s.stop('Analysis complete');
-
-    console.log('\n' + chalk.green('📋 Setup Analysis:'));
-    console.log(result);
 
     outro(
       chalk.green(
