@@ -5,14 +5,21 @@
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "gt-mcp-server": "dist/index.js"
+    "locadex": "dist/cli.js",
+    "locadex-mcp": "dist/index.js"
   },
   "files": [
     "dist",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    ".locadex-mcp.json"
   ],
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0"
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@anthropic-ai/claude-code": "1.0.8",
+    "@clack/prompts": "^0.11.0",
+    "chalk": "^4.1.2",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.13.0",
@@ -27,8 +34,7 @@
   },
   "scripts": {
     "patch": "npm version patch",
-    "transpile": "tsc",
-    "build": "npm run transpile",
+    "build": "tsc",
     "build:clean": "rm -rf dist; npm run lint && npm run build",
     "dev": "npm run build && node dist/index.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",

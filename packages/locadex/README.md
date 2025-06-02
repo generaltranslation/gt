@@ -4,14 +4,14 @@
   </a>
 </p>
 
-# General Translation MCP Server
+# Locadex
 
-This is a basic stdio MCP server for General Translation.
+Locadex is an AI Agent for internationalization.
 
 Start it with
 
 ```bash
-npx @generaltranslation/mcp
+npx locadex@latest
 ```
 
 ## Documentation
