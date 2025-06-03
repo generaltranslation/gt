@@ -6,6 +6,7 @@ import { addDocsTools } from './tools/docs.js';
 import { addDocsResource } from './resources/docs.js';
 import { readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
+import { addGuidesTools } from './tools/guides.js';
 
 async function main() {
   const server = new McpServer({
@@ -15,6 +16,7 @@ async function main() {
   });
   addDocsResource(server);
   addDocsTools(server);
+  addGuidesTools(server);
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('Locadex started on stdio');
