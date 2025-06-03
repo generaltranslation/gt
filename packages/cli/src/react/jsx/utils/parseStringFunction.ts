@@ -154,9 +154,28 @@ function resolveImportPath(
       tsConfigResult.paths,
       ['main', 'module', 'browser']
     );
-    const tsResolved = matchPath(importPath, undefined, undefined, extensions);
+
+    // First try without any extension
+    let tsResolved = matchPath(importPath);
     if (tsResolved && fs.existsSync(tsResolved)) {
       return tsResolved;
+    }
+
+    // Then try with each extension
+    for (const ext of extensions) {
+      tsResolved = matchPath(importPath + ext);
+      if (tsResolved && fs.existsSync(tsResolved)) {
+        return tsResolved;
+      }
+
+      // Also try the resolved path with extension
+      tsResolved = matchPath(importPath);
+      if (tsResolved) {
+        const resolvedWithExt = tsResolved + ext;
+        if (fs.existsSync(resolvedWithExt)) {
+          return resolvedWithExt;
+        }
+      }
     }
   }
 
