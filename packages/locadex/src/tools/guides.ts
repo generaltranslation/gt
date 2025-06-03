@@ -12,49 +12,55 @@ export const guides: Guide[] = [
     id: 'guide-i18n-client-side-components',
     description:
       'This tool will provide you with a guide on how to internationalize client-side components.',
-    path: 'guides/client-side-components.md',
+    path: 'guides/next/client-side-components.md',
   },
   {
     id: 'guide-i18n-server-side-components',
     description:
       'This tool will provide you with a guide on how to internationalize server-side components.',
-    path: 'guides/server-side-components.md',
+    path: 'guides/next/server-side-components.md',
   },
   {
     id: 'guide-i18n-var-outside-client-component',
     description:
       'This tool will provide you with a guide that is useful for wherever you see a `const` or `let` declaration outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are ONLY used or imported by client side components.',
-    path: 'guides/var-outside-client-component.md',
+    path: 'guides/next/var-outside-client-component.md',
   },
   {
     id: 'guide-i18n-var-outside-server-component',
     description:
       'This tool will provide you with a guide that is useful for wherever you see a `const` or `let` declaration outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are ONLY used or importedby server side components.',
-    path: 'guides/var-outside-server-component.md',
+    path: 'guides/next/var-outside-server-component.md',
   },
   {
     id: 'guide-i18n-var-outside-client-server-component',
     description:
       'This tool will provide you with a guide that is useful for wherever you see a `const` or `let` declaration outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are used or imported by both client side and server side components.',
-    path: 'guides/var-outside-client-server-component.md',
+    path: 'guides/next/var-outside-client-server-component.md',
   },
   {
     id: 'guide-i18n-ternary-operators',
     description:
       'This tool will provide you with a guide that is useful for wherever you see a ternary operator or conditional statements that needs to be internationalized.',
-    path: 'guides/ternary-operators.md',
+    path: 'guides/next/ternary-operators.md',
   },
   {
     id: 'guide-i18n-complicated-mapping-expressions',
     description:
       'This tool will provide you with a guide that is useful for wherever you see a mapping expression that needs to be internationalized.',
-    path: 'guides/complicated-mapping-expressions.md',
+    path: 'guides/next/complicated-mapping-expressions.md',
   },
   {
     id: 'guide-i18n-interpolated-strings',
     description:
       'This tool will provide you with a guide that is useful for wherever you see an interpolated string that needs to be internationalized.',
-    path: 'guides/interpolated-strings.md',
+    path: 'guides/next/interpolated-strings.md',
+  },
+  {
+    id: 'guide-i18n-setup-nextjs',
+    description:
+      'This tool will provide you with a guide for setting up gt-next in a Next.js project.',
+    path: 'guides/next/setup.mdx',
   },
 ];
 

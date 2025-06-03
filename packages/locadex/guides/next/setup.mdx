@@ -1,0 +1,194 @@
+# Setup
+
+## `withGTConfig`
+
+The `withGTConfig` function is a function that is used to initialize the SDK in a Next.js application.
+
+Place this in the `next.config.[js|ts]` file, and wrap the default export.
+
+```tsx title="next.config.ts"
+import { withGTConfig } from 'gt-next/config';
+
+const nextConfig = {
+  // Your next.config.ts options
+};
+
+export default withGTConfig(nextConfig, {
+  // Additional GT configuration options
+});
+```
+
+See the [withGTConfig API Reference](/docs/next/api/config/withGTConfig) for more information.
+
+## `GTProvider`
+
+`gt-next` also exports a `GTProvider` component. This component is used to provide context to client-side components in your Next.js application.
+
+The `GTProvider` and `withGTConfig` work together to provide context to your application.
+
+This context includes:
+
+- Managing the user's current locale
+- The relevant translations for that locale
+- Context for the `useGT` hook
+- Context for the `useDict` hook
+
+<Steps>
+  <Step>
+    First, add the `GTProvider` component to the root layout of your application. It should be placed as high up in your component tree as possible.
+
+    Make sure it is placed as a child of the `<html>` and `<body>` elements.
+
+    ```tsx copy title="src/layout.tsx"
+    import { GTProvider } from 'gt-next';
+
+    export default function RootLayout({ children }) {
+      return (
+        <html>
+          <body>
+            <GTProvider>
+              {children}
+            </GTProvider>
+          </body>
+        </html>
+      );
+    }
+    ```
+    If you have multiple root layouts, place the `GTProvider` in each root layout.
+
+  </Step>
+  <Step>
+    Next, create a [`gt.config.json`](/docs/cli/reference/config) file in the root of your project.
+    This file is used to configure both the `gtx-cli` tool and the `gt-next` library.
+
+    ```json title="gt.config.json" copy
+    {
+      "defaultLocale": "en",
+      "locales": ["fr", "es"]
+    }
+    ```
+    You should customize the `defaultLocale` and `locales` to match your project. See the list of [supported locales](/docs/platform/locale-strings) for more information.
+
+    `withGTConfig` will automatically detect the `gt.config.json` file in your project, and use it to configure the SDK.
+
+  </Step>
+</Steps>
+
+## Usage
+
+Great! If you've followed the steps above, your Next.js app is now setup to use `gt-next`.
+
+The next step is to internationalize your content.
+Here, we'll give a brief overview of the different ways to translate content in your application.
+
+### `<T>` Component
+
+The `<T>` component is the main component for translating JSX content in your application.
+
+To use it, simply wrap the JSX you want to translate in the `<T>` component.
+
+```tsx
+import { T } from 'gt-next';
+<T>
+  <div>Your content</div>
+</T>;
+```
+
+If you have dynamic content, you'll need to use [variable components](/docs/next/guides/variables) to pass in the dynamic values.
+
+```tsx
+import { T, Var } from 'gt-next';
+
+<T>
+  <div>
+    Hello, <Var>{name}</Var>!
+  </div>
+</T>;
+```
+
+See the [Translating JSX](/docs/next/guides/jsx) guide for more information.
+
+### `useGT` Hook
+
+The `useGT` hook is a React hook that returns a function that can be used to translate strings.
+
+```tsx
+import { useGT } from 'gt-next/client';
+
+const translate = useGT();
+translate('Hello, world!');
+```
+
+The `useGT` hook is a client-side hook, and should only be used in client-side components.
+For server-side components, use the async `getGT()` function instead.
+
+See the [Translating Strings](/docs/next/guides/strings) guide for more information.
+
+<Callout type="info">
+  Utilizing the hot-reload translation functionality will be helpful for internationalizing your application.
+
+To enable this, make sure you have the `GT_API_KEY` and `GT_PROJECT_ID` environment variables set in your development environment.
+
+</Callout>
+
+---
+
+## Testing Your App
+
+Congratulations! 🥳 If you've followed the steps above, your app is now multilingual! Let's see it in action.
+
+### See Your App in a Different Language
+
+<Steps>
+  <Step>
+    Add the [`<LocaleSelector>`](/docs/next/api/components/localeSelector) component to your app.
+    This will allow you to select a different language for your app.
+    <Callout>
+      **Tip:**
+      You can also skip this step and just change your language in your browser settings.
+    </Callout>
+  </Step>
+  <Step>
+    Start your Next.js app in development mode.
+    <Tabs items={["npm", "yarn", "bun", "pnpm"]}>
+      <Tab value="npm">
+      ```bash
+      npm run dev 
+      ```
+      </Tab>
+      <Tab value="yarn">
+      ```bash 
+      yarn run dev 
+      ```
+      </Tab>
+      <Tab value="bun">
+      ```bash
+      bun run dev 
+      ```
+      </Tab>
+      <Tab value="pnpm">
+      ```bash
+      pnpm run dev 
+      ```
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step>
+    Open up your app in your preferred browser (usually at
+    [http://localhost:3000](http://localhost:3000)).
+  </Step>
+</Steps>
+
+---
+
+## Summary
+
+- In this guide, we covered how to setup your Next.js app with `gt-next`
+- We briefly covered the different ways to translate content in your application.
+- We also covered how to deploy your application after you've internationalized your content.
+
+## Next Steps
+
+- Learn about how to translate JSX content with the `<T>` component: [Translating JSX](/docs/next/guides/jsx)
+- Learn about how to translate strings with the `useGT` hook: [Translating Strings](/docs/next/guides/strings)
+- Learn how to use local translations: [Local Translations](/docs/next/guides/local-tx)
