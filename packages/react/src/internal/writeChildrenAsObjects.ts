@@ -34,7 +34,7 @@ const getTagName = (child: TaggedElement): string => {
 
 const handleSingleChildElement = (child: TaggedElement): JsxChild => {
   const { type, props } = child;
-  let objectElement: JsxElement = {
+  const objectElement: JsxElement = {
     type: getTagName(child),
     props: {},
   };
@@ -56,7 +56,7 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
     }
     if (transformation === 'plural' && generaltranslation.branches) {
       objectElement.type = 'Plural';
-      let newBranches: Record<string, any> = {};
+      const newBranches: Record<string, any> = {};
       Object.entries(generaltranslation.branches).forEach(
         ([key, value]: any) => {
           newBranches[key] = writeChildrenAsObjects(value);
@@ -66,7 +66,7 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
     }
     if (transformation === 'branch' && generaltranslation.branches) {
       objectElement.type = 'Branch';
-      let newBranches: Record<string, any> = {};
+      const newBranches: Record<string, any> = {};
       Object.entries(generaltranslation.branches).forEach(
         ([key, value]: any) => {
           newBranches[key] = writeChildrenAsObjects(value);

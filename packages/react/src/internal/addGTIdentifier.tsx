@@ -29,7 +29,7 @@ export default function addGTIdentifier(
   const createGTProp = (child: ReactElement<any>): GTProp => {
     const { type, props } = child;
     index += 1;
-    let result: GTProp = { id: index };
+    const result: GTProp = { id: index };
     let transformation: string;
     try {
       transformation =
@@ -86,8 +86,8 @@ export default function addGTIdentifier(
 
     if (props['data-_gt']) throw new Error(createNestedDataGTError(child));
     // Create new props for the element, including the GT identifier and a key
-    let generaltranslation: GTProp = createGTProp(child);
-    let newProps: TaggedElementProps = {
+    const generaltranslation: GTProp = createGTProp(child);
+    const newProps: TaggedElementProps = {
       ...props,
       'data-_gt': generaltranslation,
     };

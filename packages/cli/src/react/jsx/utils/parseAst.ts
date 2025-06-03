@@ -104,7 +104,7 @@ export function generateImports(
  * It also records the import aliases for the T and Var components. (in case of conflicts)
  */
 export function generateImportMap(ast: ParseResult<t.File>, pkg: string) {
-  let importAlias = { TComponent: 'T', VarComponent: 'Var' };
+  const importAlias = { TComponent: 'T', VarComponent: 'Var' };
   // Check existing imports
   let initialImports: string[] = [];
   traverse(ast, {

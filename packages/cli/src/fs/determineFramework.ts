@@ -9,7 +9,7 @@ export function determineLibrary(): {
   additionalModules: SupportedLibraries[];
 } {
   let library: SupportedLibraries = 'base';
-  let additionalModules: SupportedLibraries[] = [];
+  const additionalModules: SupportedLibraries[] = [];
   try {
     // Get the current working directory (where the CLI is being run)
     const cwd = process.cwd();

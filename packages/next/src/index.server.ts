@@ -8,9 +8,4 @@ import Plural from './branches/Plural';
 import GTProvider from './provider/GTProvider';
 import { Tx } from './server';
 
-export { 
-    GTProvider,
-    T, Tx,
-    Var, Num, Currency, DateTime, 
-    Branch, Plural 
-};
+export { GTProvider, T, Tx, Var, Num, Currency, DateTime, Branch, Plural };

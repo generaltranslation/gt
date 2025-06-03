@@ -96,7 +96,7 @@ const supportedLocales = {
   my: ['my'], // Burmese
   nl: [
     // Dutch
-    'nl', 
+    'nl',
     'nl-NL', // Netherlands
     'nl-BE', // Belgium
   ],

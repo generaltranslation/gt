@@ -1,12 +1,6 @@
-import {
-  DictionaryEntry,
-  Entry,
-  Metadata,
-} from '../../types/types';
+import { DictionaryEntry, Entry, Metadata } from '../../types/types';
 
-export default function getEntryAndMetadata(
-  value: DictionaryEntry
-): {
+export default function getEntryAndMetadata(value: DictionaryEntry): {
   entry: string;
   metadata?: Metadata;
 } {

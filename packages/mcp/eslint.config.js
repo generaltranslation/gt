@@ -1,30 +1,11 @@
-import tsParser from '@typescript-eslint/parser';
-import tsPlugin from '@typescript-eslint/eslint-plugin';
+import rootConfig from '../../eslint.config.mjs';
 
 export default [
-  {
-    ignores: [
-      '**/node_modules/**',
-      '**/dist/**',
-    ]
-  },
+  ...rootConfig,
   {
     files: ['**/*.ts', '**/*.tsx'],
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        ecmaFeatures: {
-          jsx: true
-        }
-      }
-    },
-    plugins: {
-      '@typescript-eslint': tsPlugin
-    },
     rules: {
-      'no-console': ['error', { allow: ['error'] }]
-    }
-  }
+      'no-console': ['error', { allow: ['error'] }],
+    },
+  },
 ];

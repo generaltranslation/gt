@@ -3,8 +3,8 @@ import { determineLocale } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
 
 // locale header name and cookie name
-let localeHeaderName = '';
-let localeCookieName = '';
+const localeHeaderName = '';
+const localeCookieName = '';
 
 /**
  * Retrieves the 'accept-language' header from the headers list.
@@ -23,7 +23,7 @@ export async function getNextLocale(
 
   const I18NConfig = getI18NConfig();
 
-  let userLocale = (() => {
+  const userLocale = (() => {
     const preferredLocales: string[] = [];
 
     // Language routed to by middleware

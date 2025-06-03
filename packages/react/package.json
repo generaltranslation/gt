@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "9.2.21",
+  "version": "9.2.22",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.cjs.min.cjs",
   "module": "./dist/index.esm.min.mjs",
@@ -14,8 +14,8 @@
     "react-dom": ">=16.8.0"
   },
   "dependencies": {
-    "@generaltranslation/supported-locales": "^2.0.8",
-    "generaltranslation": "^6.2.8"
+    "@generaltranslation/supported-locales": "^2.0.9",
+    "generaltranslation": "^6.2.9"
   },
   "scripts": {
     "patch": "npm version patch",
@@ -26,7 +26,10 @@
     "release:alpha": "npm run build:clean && npm publish --tag alpha",
     "release:beta": "npm run build:clean && npm publish --tag beta",
     "release:latest": "npm run build:clean && npm publish --tag latest",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\" \"__tests__/**/*.{js,ts,tsx}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" \"__tests__/**/*.{js,ts,tsx}\" --fix",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "repository": {
     "type": "git",
@@ -46,8 +49,6 @@
     "@types/node": "^22.13.5",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
-    "babel-core": "^6.26.3",
-    "babel-loader": "^9.2.1",
     "rollup": "^4.32.1",
     "rollup-plugin-peer-deps-external": "^2.2.4",
     "rollup-plugin-postcss": "^4.0.2",

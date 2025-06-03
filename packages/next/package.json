@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "5.2.29",
+  "version": "5.2.30",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -13,9 +13,9 @@
     "CHANGELOG.md"
   ],
   "dependencies": {
-    "@generaltranslation/supported-locales": "^2.0.8",
-    "generaltranslation": "^6.2.8",
-    "gt-react": "^9.2.21"
+    "@generaltranslation/supported-locales": "^2.0.9",
+    "generaltranslation": "^6.2.9",
+    "gt-react": "^9.2.22"
   },
   "scripts": {
     "patch": "npm version patch",
@@ -26,7 +26,10 @@
     "release:alpha": "npm run build:clean && npm publish --tag alpha",
     "release:beta": "npm run build:clean && npm publish --tag beta",
     "release:latest": "npm run build:clean && npm publish --tag latest",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\" \"__tests__/**/*.{js,ts,tsx}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" \"__tests__/**/*.{js,ts,tsx}\" --fix",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "repository": {
     "type": "git",

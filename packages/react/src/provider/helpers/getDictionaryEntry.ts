@@ -24,7 +24,7 @@ export default function getDictionaryEntry<T extends Dictionary>(
   id: string
 ): Dictionary | DictionaryEntry | undefined {
   let current: Dictionary | DictionaryEntry = dictionary;
-  let dictionaryPath = id.split('.');
+  const dictionaryPath = id.split('.');
   for (const key of dictionaryPath) {
     if (
       typeof current !== 'object' ||
