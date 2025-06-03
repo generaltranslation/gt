@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 6.2.10
+
+### Patch Changes
+
+- [#316](https://github.com/generaltranslation/gt/pull/316) [`274a88e`](https://github.com/generaltranslation/gt/commit/274a88e2ac2e4d60360bf950f56c4ee2850804fe) Thanks [@michellee-wang](https://github.com/michellee-wang)! - updated localeselector
+
 ## 6.2.9
 
 ### Patch Changes
