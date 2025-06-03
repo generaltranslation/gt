@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 1.2.21
+
+### Patch Changes
+
+- [#324](https://github.com/generaltranslation/gt/pull/324) [`34a8c97`](https://github.com/generaltranslation/gt/commit/34a8c97a9d4c9efb3b441eecf0f7ea77ccc1ad7a) Thanks [@brian-lou](https://github.com/brian-lou)! - Add support for passing useGT and getGT function callback into other functions
+
 ## 1.2.20
 
 ### Patch Changes
