@@ -92,21 +92,25 @@ async function T({
   // Begin by sending check to cache for translations
   const translationsPromise = I18NConfig.getCachedTranslations(locale);
 
-  // Turns tagged children into objects
-  // The hash is used to identify the translation
-  const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-  const hash = hashJsxChildren({
-    source: childrenAsObjects,
-    ...(context && { context }),
-    ...(id && { id }),
-    dataFormat: 'JSX',
-  });
-
   // Get the translation entry object
   const translations = await translationsPromise;
-  const translationEntry = id
-    ? translations?.[id] || translations?.[hash]
-    : translations?.[hash];
+  let translationEntry = translations?.[id || ''];
+
+  let childrenAsObjects;
+  let hash;
+
+  if (!translationEntry) {
+    // Turns tagged children into objects
+    // The hash is used to identify the translation
+    childrenAsObjects = writeChildrenAsObjects(taggedChildren);
+    hash = hashJsxChildren({
+      source: childrenAsObjects,
+      ...(context && { context }),
+      ...(id && { id }),
+      dataFormat: 'JSX',
+    });
+    translationEntry = translations?.[hash];
+  }
 
   // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
 
@@ -143,6 +147,13 @@ async function T({
   // (no entry has been found, this means that the translation is either (1) loading or (2) missing)
   const translationPromise = (async () => {
     try {
+      childrenAsObjects ||= writeChildrenAsObjects(taggedChildren);
+      hash ||= hashJsxChildren({
+        source: childrenAsObjects,
+        ...(context && { context }),
+        ...(id && { id }),
+        dataFormat: 'JSX',
+      });
       const target = await I18NConfig.translateJsx({
         // do on demand translation
         source: childrenAsObjects,
