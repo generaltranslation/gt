@@ -3,7 +3,7 @@ import path from 'node:path';
 import { Options, Updates } from '../../types';
 
 import { parse } from '@babel/parser';
-import traverse from '@babel/traverse';
+import traverse, { NodePath } from '@babel/traverse';
 
 import { hashJsxChildren } from 'generaltranslation/id';
 import { parseJSXElement } from '../jsx/utils/parseJsx';
@@ -81,7 +81,10 @@ export default async function createInlineUpdates(
       'Plural',
     ];
     const importAliases: Record<string, string> = {};
-    // handle imports & alias & handle string functions
+
+    // First pass: collect imports and process translation functions
+    const translationPaths: Array<{ name: string; path: NodePath }> = [];
+
     traverse(ast, {
       ImportDeclaration(path) {
         if (path.node.source.value.startsWith(pkg)) {
@@ -92,7 +95,7 @@ export default async function createInlineUpdates(
           );
           for (const name of importName) {
             if (name.original === 'useGT' || name.original === 'getGT') {
-              parseStrings(name.local, path, updates, errors, file);
+              translationPaths.push({ name: name.local, path });
             } else {
               importAliases[name.local] = name.original;
             }
@@ -122,7 +125,7 @@ export default async function createInlineUpdates(
               );
               for (const name of importName) {
                 if (name.original === 'useGT' || name.original === 'getGT') {
-                  parseStrings(name.local, parentPath, updates, errors, file);
+                  translationPaths.push({ name: name.local, path: parentPath });
                 } else {
                   importAliases[name.local] = name.original;
                 }
@@ -132,6 +135,12 @@ export default async function createInlineUpdates(
         }
       },
     });
+
+    // Process translation functions asynchronously
+    for (const { name, path } of translationPaths) {
+      parseStrings(name, path, updates, errors, file);
+    }
+
     // Parse <T> components
     traverse(ast, {
       JSXElement(path) {

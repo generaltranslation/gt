@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import path from 'node:path';
 import fs from 'node:fs';
 import { logErrorAndExit } from '../console';
+import { fromPackageRoot } from '../fs/getPackageResource';
 
 // search for package.json such that we can run init in non-js projects
 export async function searchForPackageJson(): Promise<Record<
@@ -46,6 +47,18 @@ export async function getPackageJson(): Promise<Record<string, any>> {
   }
 }
 
+export function getCLIVersion(): string {
+  const packageJsonPath = fromPackageRoot('package.json');
+
+  if (!fs.existsSync(packageJsonPath)) {
+    return 'unknown';
+  }
+  try {
+    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).version;
+  } catch (error) {
+    return 'unknown';
+  }
+}
 export async function updatePackageJson(packageJson: Record<string, any>) {
   try {
     await fs.promises.writeFile(
