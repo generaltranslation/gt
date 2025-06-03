@@ -161,7 +161,8 @@ We can solve this issue by creating a custom function that takes a callback func
 For example, create this new function that wraps the navMap.
 
 ```jsx title="navMap.ts"
-const navMap = (t: (string: string, options?: any) => string) => {
+import { InlineTranslationOptions } from "gt-next/types"
+const navMap = (t: (string: string, options?: InlineTranslationOptions) => string) => {
   return (
     {
       name: t("dashboard"),
