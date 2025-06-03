@@ -1,11 +1,11 @@
 import { readFile } from 'fs/promises';
-import { join } from 'path';
+import { fromPackageRoot } from './getPaths';
 
 export default async function getGuide(
   path: string
 ): Promise<{ content?: string; error?: string }> {
   try {
-    const filePath = join(process.cwd(), path);
+    const filePath = fromPackageRoot(path);
     const content = await readFile(filePath, 'utf-8');
     return { content };
   } catch (error) {

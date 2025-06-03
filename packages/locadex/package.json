@@ -11,7 +11,8 @@
   "files": [
     "dist",
     "CHANGELOG.md",
-    ".locadex-mcp.json"
+    ".locadex-mcp.json",
+    "guides"
   ],
   "dependencies": {
     "@anthropic-ai/claude-code": "1.0.8",
