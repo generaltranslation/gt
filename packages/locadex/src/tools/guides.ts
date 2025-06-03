@@ -13,7 +13,13 @@ export function addGuidesTools(server: McpServer) {
       name: 'How to internationalize client-side components',
       description:
         'This tool will provide you with a guide on how to internationalize client-side components.',
-      path: 'guides/client-components.md',
+      path: 'guides/client-side-components.md',
+    },
+    {
+      name: 'How to internationalize server-side components',
+      description:
+        'This tool will provide you with a guide on how to internationalize server-side components.',
+      path: 'guides/server-side-components.md',
     },
     {
       name: 'How to internationalize variables outside of a function scope for client side components only',

@@ -1,11 +1,11 @@
-# How to internationalize client-side components
+# How to internationalize server-side components
 
-You have three methods for internationalizing content on the client side: `<T>`, `useGT()`, and `useDict()`.
-The syntax for `<T>` is identical on both client and server side components so this will not be covered in this guide, but `useGT()`, and `useDict()` differs, so they will.
+You have three methods for internationalizing content on the server side: `<T>`, `getGT()`, and `getDict()`.
+The syntax for `<T>` is identical on both server and server side components so this will not be covered in this guide, but `getGT()`, and `getDict()` differs, so they will.
 
-## The `useGT()` hook
+## The `getGT()` function
 
-The `useGT()` hook can only be used on the client side and allows you to translate strings.
+The `getGT()` function can only be used on the server side and allows you to translate strings.
 This is the preferred method for translating strings.
 
 ### Basic usage
@@ -22,9 +22,9 @@ export default function Example() {
 You can internationalize this simply:
 
 ```jsx
-import { useGT } from 'gt-next/client';
-export default function Example() {
-  const t = useGT();
+import { getGT } from 'gt-next/server';
+export default async function Example() {
+  const t = await getGT();
   const greeting = t('Hello, World!');
   return <>{greeting}</>;
 }
@@ -49,14 +49,14 @@ export const nestedContent = {
 Internationalized version:
 
 ```jsx
-import { useGT } from 'gt-next';
-export const useContent = () => {
-  const t = useGT();
+import { getGT } from 'gt-next';
+export const useContent = async () => {
+  const t = await getGT();
   return t('hi');
 };
 
-export const useNestedContent = () => {
-  const t = useGT();
+export const useNestedContent = async () => {
+  const t = await getGT();
   return {
     name: t('Brian'),
     title: t('Engineer'),
@@ -64,12 +64,12 @@ export const useNestedContent = () => {
 };
 ```
 
-We create these hooks so we can access to the `useGT()` function.
+We create these functions so we can access to the `getGT()` function.
 For more examples, you can check out the tools about variables outside of functions.
 
-## The `useDict()` hook
+## The `getDict()` function
 
-This hook is useful for centralizing data in one place.
+This function is useful for centralizing data in one place.
 It access a `dictionary.json` file that maps keys (or nested keys) to string values.
 
 In this case,
@@ -86,12 +86,12 @@ We can move these values to a `dictionary.json` file:
 }
 ```
 
-These can be accessed in a client component via the key:
+These can be accessed in a server component via the key:
 
 ```jsx
-import { useGT } from 'gt-next/client';
-export default function MyComponent() {
-  const t = useGT();
+import { getGT } from 'gt-next/server';
+export default async function MyComponent() {
+  const t = await getGT();
   return <>{t('content')}</>;
 }
 ```
