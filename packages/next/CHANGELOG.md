@@ -1,5 +1,11 @@
 # gt-next
 
+## 5.2.32
+
+### Patch Changes
+
+- [#322](https://github.com/generaltranslation/gt/pull/322) [`70e21bb`](https://github.com/generaltranslation/gt/commit/70e21bbdc0720c1ff8db3700d341b67a7fcd146e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Conditionally calcualte hashes for the server T component
+
 ## 5.2.31
 
 ### Patch Changes
