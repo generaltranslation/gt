@@ -60,7 +60,13 @@ export const guides: Guide[] = [
     id: 'guide-i18n-setup-nextjs',
     description:
       'This tool will provide you with a guide for setting up gt-next in a Next.js project.',
-    path: 'guides/next/setup.mdx',
+    path: 'guides/next/basic/setup.mdx',
+  },
+  {
+    id: 'guide-i18n-jsx-nextjs',
+    description:
+      'This tool will provide you with a guide for translating JSX content in a Next.js project.',
+    path: 'guides/next/basic/jsx.mdx',
   },
 ];
 

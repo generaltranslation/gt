@@ -1,0 +1,329 @@
+# Translating JSX
+
+This guide will walk you through how to use the [`<T>` component](/docs/next/api/components/t) to internationalize JSX content.
+
+## How to use the `<T>` component
+
+Let's say you have some HTML content that you want to translate.
+
+```jsx
+function Greeting() {
+  return <p>Hello, world!</p>;
+}
+```
+
+All you have to do is wrap the content in a `<T>` component.
+
+```jsx
+import { T } from 'gt-next';
+
+function Greeting() {
+  return (
+    <T>
+      <p>Hello, world!</p>
+    </T>
+  );
+}
+```
+
+Depending on the current language your user has selected, this will render the appropriate translation.
+See [switching languages](/docs/next/guides/languages) for more information on how to allow your users to switch languages.
+
+---
+
+# Additional Options
+
+## Context (Optional)
+
+In some cases, you may want to provide additional context to the translation.
+This can be done by passing a `context` prop to the `<T>` component.
+
+```jsx
+<T context='toast, as in a pop-up notification'>
+  Click on the toast to dismiss it.
+</T>
+```
+
+This is useful in cases where words may have multiple meanings depending on the context.
+For example, "toast" can refer to the food or a pop-up notification.
+
+The context prop is helpful for the AI to understand the intent of the translation.
+
+## `id` (Optional)
+
+You can also pass an `id` prop to the `<T>` component.
+This is useful for debugging purposes and makes editing the translation easier.
+
+```jsx
+<T id='toast'>Click on the toast to dismiss it.</T>
+```
+
+# When to use the `<T>` component
+
+While the `<T>` component is very flexible, it is not always the best solution.
+
+You should always try to use the `<T>` component when you have any **static HTML or JSX content.**
+
+## When not to use the `<T>` component
+
+**DO NOT** use the `<T>` component when you have any unsafe **dynamic** content.
+
+Here, dynamic content means any content that could change at runtime.
+This rule does not apply if you are using [Variable Components](/docs/next/guides/variables) or [Branching Components](/docs/next/guides/branches).
+
+<Callout>
+  **Note:**
+  
+  Variable components are a special case where the content is dynamic, but the content has been wrapped and sanitized, so it is safe to use the `<T>` component.
+
+Content wrapped in variable components are never translated directly by the `<T>` component.
+
+</Callout>
+
+The following examples show invalid usage of the `<T>` component:
+
+```jsx
+<T>
+  <p>Your username is {username}</p>
+</T>
+```
+
+```jsx
+<T>
+  <p>Current date: {new Date().toLocaleDateString()}</p>
+</T>
+```
+
+```jsx
+<T>
+  <p>Logical Expressions: {username === 'admin' ? 'Yes' : 'No'}</p>
+</T>
+```
+
+```jsx
+<T>
+  <p>Conditional Rendering: {isAdmin ? 'Yes' : 'No'}</p>
+</T>
+```
+
+<Callout>
+  In the above examples, the content can be safely internationalized using
+  [variable components](/docs/next/guides/variables) and [branching
+  components](/docs/next/guides/branches).
+</Callout>
+
+```jsx
+const chatMessage = getChatMessageFromServer();
+<T>
+  <p>{chatMessage}</p>
+</T>;
+```
+
+<Callout>
+  In this example, the content is fully dynamic, so it should be translated on the server side before being passed to the client.
+
+See the [core](/docs/core) library for more information on how to dynamically translate content via our API.
+
+</Callout>
+
+# Examples
+
+Here are some examples of how to use the `<T>` component. These are all correct.
+
+## HTML content
+
+### Original
+
+```jsx
+<p>Hello, world!</p>
+```
+
+### Result
+
+```jsx
+<T>
+  <p>Hello, world!</p>
+</T>
+```
+
+## Simple JSX content
+
+### Original
+
+```jsx
+<Button>Click me!</Button>
+```
+
+### Result
+
+```jsx
+<T>
+  <Button>Click me!</Button>
+</T>
+```
+
+## Complex JSX content
+
+### Original
+
+```jsx
+<Tooltip>
+  <TooltipTrigger>
+    <div className='flex items-center gap-2 rounded-full bg-destructive px-3 py-1.5 text-sm text-destructive-foreground'>
+      <AlertCircle className='h-4 w-4' />
+      <span>Free Usage</span>
+    </div>
+  </TooltipTrigger>
+  <TooltipContent>
+    <p>
+      You are nearing your free monthly limit. Please upgrade your plan to avoid
+      any disruptions to your service.
+    </p>
+  </TooltipContent>
+</Tooltip>
+```
+
+### Result
+
+```jsx
+<T>
+  <Tooltip>
+    <TooltipTrigger>
+      <div className='flex items-center gap-2 rounded-full bg-destructive px-3 py-1.5 text-sm text-destructive-foreground'>
+        <AlertCircle className='h-4 w-4' />
+        <span>Free Usage</span>
+      </div>
+    </TooltipTrigger>
+    <TooltipContent>
+      <p>
+        You are nearing your free monthly limit. Please upgrade your plan to
+        avoid any disruptions to your service.
+      </p>
+    </TooltipContent>
+  </Tooltip>
+</T>
+```
+
+<Callout>
+  The `<T>` component can handle any nested content in the same component.
+</Callout>
+
+# Common Pitfalls
+
+## Direct descendants only
+
+The `<T>` component only translates text passed directly as a child.
+This means that if you have content inside a component that is not directly passed to `<T>`, it will not be translated.
+
+Let's illustrate this with an example:
+
+```jsx copy
+function UntranslatedContent() {
+  return <p>This content is not translated</p>;
+}
+
+export default function DisplayGreetings() {
+  return (
+    <T>
+      <h1>Hello, this text will be translated</h1>
+      <UntranslatedContent />
+    </T>
+  );
+}
+```
+
+In this example, the content inside `<UntranslatedContent>` will not be translated.
+Only the content directly inside `<T>` will be translated, like the `<h1>` tag and its children.
+
+<Accordions>
+  <Accordion title="Why does this happen?">
+    This occurs because of how React renders components.
+    It is a bit complicated, but the gist is that React does not know the content of a component until it has rendered.
+    Therefore, the contents of components like `<UntranslatedContent>` are not translated.
+    However, any text directly between the two `<T>` tags will be translated.
+  </Accordion>
+</Accordions>
+<Callout>
+  **Note:** A good rule of thumb is that any content that is *literally* between the two `<T>` tags in the file will be translated.
+  You can always add another `<T>` to translate the content that is not being translated, though nesting `<T>` components is not recommended.
+</Callout>
+
+## What's the fix?
+
+Wrap the text in the `<T>` component directly, like so:
+
+```jsx copy
+function TranslatedContent() {
+  return (
+    <T>
+      <p>
+        This content <b>IS</b> translated
+      </p>
+    </T>
+  );
+}
+
+export default function DisplayGreetings() {
+  return (
+    <>
+      <T>
+        <h1>Hello, this text will be translated</h1>
+      </T>
+      <TranslatedContent />
+    </>
+  );
+}
+```
+
+## Nested `<T>` Components
+
+Nesting `<T>` components is not allowed.
+Because of React's rendering system, this can lead to unexpected behavior and performance issues.
+
+Here is an example of **what not to do**:
+
+```jsx copy
+function SomeComponent() {
+  return <T>Hello, friend!</T>;
+}
+
+export default function NestedTranslation() {
+  return (
+    <T>
+      <T>
+        {' '}
+        {/* Don't do this! */}
+        Hello, world!
+      </T>
+      <SomeComponent /> {/* This still counts. Don't do this! */}
+    </T>
+  );
+}
+```
+
+The solution here is to remove the outtermost `<T>` component.
+
+## Translating dynamic content
+
+If you attempt to wrap dynamic content with the `<T>` component, the CLI tool will error.
+
+For example, the following will error:
+
+```jsx
+const username = 'John Doe';
+<T>
+  <p>Your username is {username}</p>
+</T>;
+```
+
+To get around this, try to use [Variable Components](/docs/next/guides/variables) or [Branching Components](/docs/next/guides/branches) to wrap the dynamic content.
+
+Alternatively, if your content truly is dynamic and needs to be translated on-demand,
+you can use the [`<Tx>` component](/docs/next/guides/dynamic-content).
+
+# Summary
+
+- `<T>` components are used to internationalize arbitrary JSX Content.
+- `<T>` components should not be used for dynamic content, without using variable components or branching components.
+- In development, the `<T>` component will translate content on-demand.
+- In production, all translations that the `<T>` component uses are completed at build time.
