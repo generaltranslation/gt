@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import path from 'node:path';
 import fs from 'node:fs';
 import { logErrorAndExit } from '../console';
+import { fromPackageRoot } from '../fs/getPackageResource';
 
 // search for package.json such that we can run init in non-js projects
 export async function searchForPackageJson(): Promise<Record<
@@ -46,24 +47,16 @@ export async function getPackageJson(): Promise<Record<string, any>> {
   }
 }
 
-export function getCLIVersion(): Promise<Record<string, any>> {
-  // Get the current working directory (where the CLI is being run)
-  const cwd = process.cwd();
-  const packageJsonPath = path.join(cwd, 'package.json');
+export function getCLIVersion(): string {
+  const packageJsonPath = fromPackageRoot('package.json');
 
-  // Check if package.json exists
   if (!fs.existsSync(packageJsonPath)) {
-    logErrorAndExit(
-      chalk.red(
-        'No package.json found in the current directory. Please run this command from the root of your project.'
-      )
-    );
+    return 'unknown';
   }
   try {
     return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).version;
   } catch (error) {
-    logError(chalk.red('Error parsing package.json: ' + String(error)));
-    process.exit(1);
+    return 'unknown';
   }
 }
 export async function updatePackageJson(packageJson: Record<string, any>) {

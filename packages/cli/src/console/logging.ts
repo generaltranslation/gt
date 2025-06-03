@@ -76,7 +76,7 @@ function displayInitializingText() {
   console.log(
     `\n${chalk.bold.blue('General Translation, Inc.')}
 ${chalk.gray('https://generaltranslation.com/docs')}
-${chalk.gray(`CLI Version: ${version}`)}`
+${chalk.gray(`CLI Version: ${version}\n`)}`
   );
 }
 
