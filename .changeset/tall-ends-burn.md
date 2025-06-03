@@ -3,7 +3,7 @@
 'gt-react': patch
 'generaltranslation': patch
 'gt-next': patch
-'gt-cli': patch
+'gtx-cli': patch
 ---
 
 updated localeselector
