@@ -138,7 +138,7 @@ export default async function createInlineUpdates(
 
     // Process translation functions asynchronously
     for (const { name, path } of translationPaths) {
-      await parseStrings(name, path, updates, errors, file);
+      parseStrings(name, path, updates, errors, file);
     }
 
     // Parse <T> components
