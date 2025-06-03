@@ -13,7 +13,7 @@ This guide only applies to when these variables are exclusively used inside of c
 Let's say we have a constant outside of a component on the client side.
 
 ```jsx
-const OUTSIDE_CONST = "Hello there!";
+const OUTSIDE_CONST = 'Hello there!';
 
 export function Example() {
   const [state, setState] = useState();
@@ -25,11 +25,11 @@ export function Example() {
 We can internationalize this by moving the declaration inside of the component function definition:
 
 ```jsx
-import { useGT } from "gt-next/client";
+import { useGT } from 'gt-next/client';
 export function Example() {
   const [state, setState] = useState();
   const t = useGT();
-  const OUTSIDE_CONST = t("Hello there!");
+  const OUTSIDE_CONST = t('Hello there!');
 
   return <>{OUTSIDE_CONST}</>;
 }
@@ -40,7 +40,7 @@ export function Example() {
 But, what if this is used in multiple places?
 
 ```jsx
-const OUTSIDE_CONST = "Hello there!";
+const OUTSIDE_CONST = 'Hello there!';
 
 export function Example1() {
   const [state, setState] = useState();
@@ -58,10 +58,10 @@ export function Example2() {
 In such a simple example, it would be best to turn `OUTSIDE_CONST` into its own hook.
 
 ```jsx
-import { useGT } from "gt-next/client";
+import { useGT } from 'gt-next/client';
 const useOutsideConst = () => {
   const t = useGT();
-  return t("Hello there!");
+  return t('Hello there!');
 };
 
 export function Example1() {
@@ -88,26 +88,26 @@ Say that you have a centralized data structure:
 ```jsx title="navMap.ts"
 const navMap = [
   {
-    name: "dashboard",
-    url: "/dashboard",
-    type: "page",
+    name: 'dashboard',
+    url: '/dashboard',
+    type: 'page',
   },
   {
-    name: "landing",
-    url: "/landing",
-    type: "page",
+    name: 'landing',
+    url: '/landing',
+    type: 'page',
   },
   {
-    name: "links",
-    type: "divider",
+    name: 'links',
+    type: 'divider',
     children: [
       {
-        name: "blog",
-        url: "/blog",
+        name: 'blog',
+        url: '/blog',
       },
       {
-        name: "help",
-        url: "/help",
+        name: 'help',
+        url: '/help',
       },
     ],
   },
@@ -118,8 +118,8 @@ export default navMap;
 That is used in different client side compents files.
 
 ```jsx title="Example1.tsx"
-import navMap from "./navMap";
-import NavItem from "./NavItem";
+import navMap from './navMap';
+import NavItem from './NavItem';
 export default function Example1() {
   return (
     <>
@@ -132,13 +132,13 @@ export default function Example1() {
 ```
 
 ```jsx title="Example2.tsx"
-import navMap from "./navMap";
-import NavItem from "./NavItem";
+import navMap from './navMap';
+import NavItem from './NavItem';
 export default function Example2() {
   return (
     <>
       {navMap
-        .filter(() => navItem.type === "page")
+        .filter(() => navItem.type === 'page')
         .map((navItem) => (
           <NavItem item={navItem} />
         ))}
@@ -150,31 +150,31 @@ export default function Example2() {
 In this case, we would want to cange `navMap` to a hook:
 
 ```jsx title="navMap.ts"
-import { useGT } from "gt-next/client";
+import { useGT } from 'gt-next/client';
 const useNavMap = () => {
   const t = useGT();
   return [
     {
-      name: t("dashboard"),
-      url: "/dashboard",
-      type: "page",
+      name: t('dashboard'),
+      url: '/dashboard',
+      type: 'page',
     },
     {
-      name: t("landing"),
-      url: "/landing",
-      type: "page",
+      name: t('landing'),
+      url: '/landing',
+      type: 'page',
     },
     {
-      name: t("links"),
-      type: "divider",
+      name: t('links'),
+      type: 'divider',
       children: [
         {
-          name: t("blog"),
-          url: "/blog",
+          name: t('blog'),
+          url: '/blog',
         },
         {
-          name: t("help"),
-          url: "/help",
+          name: t('help'),
+          url: '/help',
         },
       ],
     },
@@ -186,8 +186,8 @@ export default useNavMap;
 And, then the client components can access the translated version using a hook.
 
 ```jsx title="Example1.tsx"
-import useNavMap from "./navMap";
-import NavItem from "./NavItem";
+import useNavMap from './navMap';
+import NavItem from './NavItem';
 export default function Example1() {
   const navMap = useNavMap();
   return (
@@ -201,18 +201,55 @@ export default function Example1() {
 ```
 
 ```jsx title="Example2.tsx"
-import navMap from "./navMap";
-import NavItem from "./NavItem";
+import navMap from './navMap';
+import NavItem from './NavItem';
 export default function Example2() {
   const navMap = useNavMap();
   return (
     <>
       {navMap
-        .filter(() => navItem.type === "page")
+        .filter(() => navItem.type === 'page')
         .map((navItem) => (
           <NavItem item={navItem} />
         ))}
     </>
   );
+}
+```
+
+## Example 4: Strings used in other files, but only imported in one place
+
+It is generally best to keep variables in the file where they were declared.
+Say we have the following scenario: a string is declared in one file, and is only imported in another file.
+
+```jsx
+export const some_string = 'Hello, World!';
+```
+
+```jsx
+import { some_string } from './constants';
+
+export default function MyComponent() {
+  return <>{some_string}</>;
+}
+```
+
+In order to minimize the footprint of the changes, we need to keep `some_string` in the file where it was originally declared.
+
+```jsx
+import { useGT } from 'gt-next/client';
+
+export const getSomeString = () => {
+  const t = useGT();
+  return t('Hello, World!');
+};
+```
+
+```jsx
+import { getSomeString } from './constants';
+
+export default function MyComponent() {
+  const some_string = getSomeString();
+  return <>{some_string}</>;
 }
 ```
