@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { ClaudeCodeRunner } from '../utils/claudeCode.js';
 import { fromPackageRoot } from '../utils/getPaths.js';
 import { displayHeader } from '../logging/console.js';
-import { ADDITIONAL_SETUP_SYSTEM_PROMPT } from '../prompts/system.js';
+import { ADDITIONAL_TOOLS_PROMPT } from '../prompts/system.js';
 
 export async function i18nCommand() {
   displayHeader(chalk.blue('🌍 Locadex i18n'));
@@ -25,10 +25,12 @@ Your job is to internationalize the app's content using gt-next, specifically us
 - <T> 
 
 To validate the use of gt-next, you can run the following command:
-'npx gtx-cli translate --dry-run'`;
+'npx gtx-cli translate --dry-run'
+${ADDITIONAL_TOOLS_PROMPT}
+`;
 
     await claudeRunner.run({
-      additionalSystemPrompt: ADDITIONAL_SETUP_SYSTEM_PROMPT,
+      additionalSystemPrompt: ADDITIONAL_TOOLS_PROMPT,
       prompt: setupPrompt,
       mcpConfig: mcpConfigPath,
     });

@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { ClaudeCodeRunner } from '../utils/claudeCode.js';
 import { fromPackageRoot } from '../utils/getPaths.js';
 import { displayHeader } from '../logging/console.js';
-import { ADDITIONAL_SETUP_SYSTEM_PROMPT } from '../prompts/system.js';
+import { ADDITIONAL_TOOLS_PROMPT } from '../prompts/system.js';
 
 export async function setupCommand() {
   displayHeader(chalk.blue('🌍 Locadex Setup'));
@@ -16,10 +16,11 @@ export async function setupCommand() {
     });
 
     const setupPrompt = `Use gt-next to setup this project for internationalization.
-Only prepare the project for internationalization, do not internationalize any content.`;
+Only prepare the project for internationalization, do not internationalize any content.
+${ADDITIONAL_TOOLS_PROMPT}
+`;
 
     await claudeRunner.run({
-      additionalSystemPrompt: ADDITIONAL_SETUP_SYSTEM_PROMPT,
       prompt: setupPrompt,
       mcpConfig: mcpConfigPath,
     });
