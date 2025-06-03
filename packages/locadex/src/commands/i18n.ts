@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { ClaudeCodeRunner } from '../utils/claudeCode.js';
 import { fromPackageRoot } from '../utils/getPaths.js';
 import { displayHeader } from '../logging/console.js';
+import { ADDITIONAL_SETUP_SYSTEM_PROMPT } from '../prompts/system.js';
 
 export async function i18nCommand() {
   displayHeader(chalk.blue('🌍 Locadex i18n'));
@@ -14,14 +15,20 @@ export async function i18nCommand() {
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
-    const setupPrompt = `Use the locadex mcp server to learn how to use gt-next. 
-This project is already setup for internationalization.
-Your job is to internationalize the project using gt-next. 
+    const setupPrompt = `This project is already setup for internationalization.
+You do not need to setup the project again.
+Your job is to internationalize the app's content using gt-next, specifically using:
+- useGT
+- getGT
+- useDict
+- getDict
+- <T> 
+
 To validate the use of gt-next, you can run the following command:
 'npx gtx-cli translate --dry-run'`;
 
     await claudeRunner.run({
-      // systemPrompt: SETUP_SYSTEM_PROMPT,
+      additionalSystemPrompt: ADDITIONAL_SETUP_SYSTEM_PROMPT,
       prompt: setupPrompt,
       mcpConfig: mcpConfigPath,
     });

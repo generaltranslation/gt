@@ -3,7 +3,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { addDocsTools } from './tools/docs.js';
-import { addDocsResource } from './resources/docs.js';
 import { readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
 import { addGuidesTools } from './tools/guides.js';
@@ -14,7 +13,6 @@ async function main() {
     version: JSON.parse(readFileSync(fromPackageRoot('package.json'), 'utf8'))
       .version,
   });
-  addDocsResource(server);
   addDocsTools(server);
   addGuidesTools(server);
   const transport = new StdioServerTransport();

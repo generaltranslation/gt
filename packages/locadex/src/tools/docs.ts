@@ -53,26 +53,18 @@ export function addDocsTools(server: McpServer) {
 
   server.tool(
     'list-docs',
-    'Lists available documentation files in the format of an llms.txt or llms-full.txt file. "full" returns the full documentation, "short" returns a summary.',
-    {
-      type: z
-        .enum(['full', 'short'])
-        .default('short')
-        .describe(
-          'Type of documentation list: "full" for llms-full.txt or "short" for llms.txt'
-        ),
-    },
-    async ({ type }) => {
+    'Lists available documentation files in the format of an llms.txt file.',
+    {},
+    async () => {
       try {
-        const filename = type === 'full' ? 'llms-full.txt' : 'llms.txt';
-        const content = await fetchDocContent(filename);
+        const content = await fetchDocContent('llms.txt');
 
         if (!content) {
           return {
             content: [
               {
                 type: 'text',
-                text: `Failed to fetch ${filename} documentation index`,
+                text: `Failed to fetch documentation index`,
               },
             ],
             isError: true,

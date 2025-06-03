@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { ClaudeCodeRunner } from '../utils/claudeCode.js';
 import { fromPackageRoot } from '../utils/getPaths.js';
 import { displayHeader } from '../logging/console.js';
+import { ADDITIONAL_SETUP_SYSTEM_PROMPT } from '../prompts/system.js';
 
 export async function setupCommand() {
   displayHeader(chalk.blue('🌍 Locadex Setup'));
@@ -14,12 +15,11 @@ export async function setupCommand() {
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
-    const setupPrompt = `Use the locadex mcp server to learn how to use gt-next. 
-Then, use gt-next to setup this project for internationalization.
+    const setupPrompt = `Use gt-next to setup this project for internationalization.
 Only prepare the project for internationalization, do not internationalize any content.`;
 
     await claudeRunner.run({
-      // systemPrompt: SETUP_SYSTEM_PROMPT,
+      additionalSystemPrompt: ADDITIONAL_SETUP_SYSTEM_PROMPT,
       prompt: setupPrompt,
       mcpConfig: mcpConfigPath,
     });

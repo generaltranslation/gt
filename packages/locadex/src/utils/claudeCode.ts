@@ -9,6 +9,7 @@ import {
 } from '../logging/console.js';
 import { ClaudeSDKMessage } from '../types/claude-sdk.js';
 import { constructResultInfo } from '../logging/constructInfo.js';
+import { guides } from '../tools/guides.js';
 
 export interface ClaudeCodeOptions {
   additionalSystemPrompt?: string;
@@ -25,7 +26,7 @@ const DEFAULT_ALLOWED_TOOLS = [
   'Edit',
   'MultiEdit',
   'Write',
-];
+].concat(guides.map((guide) => `mcp__locadex__${guide.id}`));
 
 const DISALLOWED_TOOLS = ['NotebookEdit', 'WebFetch', 'WebSearch'];
 
@@ -86,6 +87,7 @@ export class ClaudeCodeRunner {
 
         for (const line of lines) {
           if (line.trim()) {
+            logMessage(line);
             try {
               const outputData: ClaudeSDKMessage = JSON.parse(line);
               if (outputData.type === 'assistant') {
