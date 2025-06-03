@@ -11,6 +11,7 @@ import {
   multiselect, // @ts-expect-error
 } from '@clack/prompts';
 import chalk from 'chalk';
+import { getCLIVersion } from '../utils/packageJson';
 
 // Basic logging functions
 export function logInfo(message: string) {
@@ -49,6 +50,7 @@ export function endCommand(message: string) {
 export function displayHeader(introString?: string) {
   displayAsciiTitle();
   displayInitializingText();
+
   if (introString) {
     startCommand(introString);
   }
@@ -70,8 +72,11 @@ Y8,        88      88
 }
 
 function displayInitializingText() {
+  const version = getCLIVersion();
   console.log(
-    `\n${chalk.bold.blue('General Translation, Inc.')}\n${chalk.gray('https://generaltranslation.com/docs')}\n`
+    `\n${chalk.bold.blue('General Translation, Inc.')}
+${chalk.gray('https://generaltranslation.com/docs')}
+${chalk.gray(`CLI Version: ${version}`)}`
   );
 }
 

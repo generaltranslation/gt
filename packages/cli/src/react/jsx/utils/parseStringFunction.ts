@@ -143,6 +143,7 @@ function resolveImportPath(
   currentFile: string,
   importPath: string
 ): string | null {
+  console.log('resolveImportPath', currentFile, importPath);
   const basedir = path.dirname(currentFile);
   const extensions = ['.tsx', '.ts', '.jsx', '.js'];
 
@@ -183,6 +184,7 @@ function resolveImportPath(
   try {
     return resolve.sync(importPath, { basedir, extensions });
   } catch {
+    console.log('Failed to resolve import path', importPath);
     return null;
   }
 }
