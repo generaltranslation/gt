@@ -7,6 +7,10 @@ For more complicated scenarios, the solution is generally to create an asynchron
 
 This guide only applies to when these variables are exclusively used inside of server-side components.
 
+Remember, a core principle is to leave as small of a footprint as possible.
+You should avoid moving content between files as much as possible.
+Try to internationalize content in the same file where they came frome.
+
 ## Example 1: Declaration outside of function
 
 Let's say we have a constant outside of a component on the server side.

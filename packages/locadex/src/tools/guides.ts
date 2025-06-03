@@ -47,7 +47,7 @@ export const guides: Guide[] = [
   {
     id: 'guide-i18n-complicated-mapping-expressions',
     description:
-      'This tool will provide you with a guide that is useful for wherever you see a mapping expression that needs to be internationalized.',
+      'This tool will provide you with a guide that is useful for wherever you see a mapping expression or mapping expression for a nested data structure that needs to be internationalized.',
     path: 'guides/next/advanced/complicated-mapping-expressions.md',
   },
   {

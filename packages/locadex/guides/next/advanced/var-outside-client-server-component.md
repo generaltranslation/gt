@@ -10,19 +10,23 @@ It makes things much much easier to handle, and you can follow the guide on inte
 
 However, sometimes, you cannot make a component into a client component. This guide tackles how to handle this specific edge case.
 
-# Example 1: String being used by both server and client
+Remember, a core principle is to leave as small of a footprint as possible.
+You should avoid moving content between files as much as possible.
+Try to internationalize content in the same file where they came frome.
+
+## Example 1: String being used by both server and client
 
 Say that you have a constant string being imported by both the server and the client:
 
 ```jsx title="content.ts"
-const SOME_STRING = "Hello, World!";
+const SOME_STRING = 'Hello, World!';
 export default SOME_STRING;
 ```
 
 This is being imported by a client component:
 
 ```jsx title="client-component.tsx"
-import SOME_STRING from "./content.ts";
+import SOME_STRING from './content.ts';
 export default function clientComponent() {
   const [state, setState] = useState();
   return <>{SOME_STRING}</>;
@@ -32,7 +36,7 @@ export default function clientComponent() {
 And a server component:
 
 ```jsx title="server-component.tsx"
-import SOME_STRING from "./content.ts";
+import SOME_STRING from './content.ts';
 export default function serverComponent() {
   return <>{SOME_STRING}</>;
 }
@@ -40,7 +44,7 @@ export default function serverComponent() {
 
 In this case, we have to (1) set up a dictionary (unless one already is set up), (2) add the content to the dictionary, and (3) reference the ids to load the content.
 
-## Step 1: set up a dictionary
+### Step 1: set up a dictionary
 
 (You can check out the how to set up dictionary guide for more details)
 
@@ -50,7 +54,7 @@ Note: The path to the `dictionary.json` file may be specified in `gt.config.json
 
 If the file does exist, you can skip this step.
 
-## Step 2: add the content to the dictionary
+### Step 2: add the content to the dictionary
 
 The next step is to add the string content to the dictionary.
 You must choose a unique id that makes sense.
@@ -64,33 +68,33 @@ For example, you could add in the string as follows:
 }
 ```
 
-## Step 3: access the dictionary content
+### Step 3: access the dictionary content
 
 Now that this has been added the string to the dictionary, you can access it with the `getDict()` function on server side components and the `useGT()` hook on client side components and passing the corresponding keys.
 
 Remember, for any instance of `useGT()` it must be wrapped in a `<GTProvider />` component at a higher level.\
 
-### Client side
+#### Client side
 
 ```jsx title="client-component.tsx"
 export default function clientComponent() {
   const [state, setState] = useState();
   const d = useDict();
 
-  return <>{d("greeting")}</>;
+  return <>{d('greeting')}</>;
 }
 ```
 
-### Server side
+#### Server side
 
 ```jsx title="server-component.tsx"
 export default async function serverComponent() {
   const d = await getDict();
-  return <>{d("greeting")}</>;
+  return <>{d('greeting')}</>;
 }
 ```
 
-# Example 2: A more complicated data structure being used on both client and server sides
+## Example 2: A more complicated data structure being used on both client and server sides
 
 Imagine there is a more complicated object that is being exported to components for both the client and the server.
 
@@ -123,8 +127,8 @@ export default navMap;
 ```
 
 ```jsx title="client-component.tsx"
-import navMap from "./navMap";
-import NavItem from "./NavItem";
+import navMap from './navMap';
+import NavItem from './NavItem';
 export default function clientComponent() {
   return (
     <>
@@ -137,13 +141,13 @@ export default function clientComponent() {
 ```
 
 ```jsx title="server-component.tsx"
-import navMap from "./navMap";
-import NavItem from "./NavItem";
+import navMap from './navMap';
+import NavItem from './NavItem';
 export default function serverComponent() {
   return (
     <>
       {navMap
-        .filter(() => navItem.type === "page")
+        .filter(() => navItem.type === 'page')
         .map((navItem) => (
           <NavItem item={navItem} />
         ))}
@@ -191,9 +195,9 @@ export default navMap;
 Then the client and server components would pass the respective `t()` function when invoking the `navMap()` function.
 
 ```jsx title="client-component.tsx"
-import navMap from "./navMap";
-import NavItem from "./NavItem";
-import { useGT } from "gt-next/client";
+import navMap from './navMap';
+import NavItem from './NavItem';
+import { useGT } from 'gt-next/client';
 export default function clientComponent() {
   const t = useGT();
   return (

@@ -115,8 +115,10 @@ The `useGT` hook is a React hook that returns a function that can be used to tra
 ```tsx
 import { useGT } from 'gt-next/client';
 
-const translate = useGT();
-translate('Hello, world!');
+export default function MyComponent() {
+  const t = useGT();
+  return <div>{t('Hello, world!')}</div>;
+}
 ```
 
 The `useGT` hook is a client-side hook, and should only be used in client-side components.

@@ -26,6 +26,11 @@ Your job is to internationalize the app's content using gt-next, specifically us
 
 To validate the use of gt-next, you can run the following command:
 'npx gtx-cli translate --dry-run'
+
+Your core principles are:
+- Minimize the footprint of the changes
+- Keep content in the same file where it came from
+- Use the tools provided to you to internationalize the content
 ${ADDITIONAL_TOOLS_PROMPT}
 `;
 
