@@ -9,6 +9,7 @@ import {
   isCancel,
   cancel,
   multiselect,
+  taskLog,
 } from '@clack/prompts';
 import chalk from 'chalk';
 
@@ -77,35 +78,9 @@ function displayInitializingText() {
   );
 }
 
-export function displayProjectId(projectId: string) {
-  logMessage(chalk.gray(`Project ID: ${chalk.bold(projectId)}`));
-}
-
-export function displayResolvedPaths(resolvedPaths: [string, string][]) {
-  const paths = resolvedPaths.map(([key, resolvedPath]) => {
-    return chalk.gray(`'${chalk.white(key)}' → '${chalk.green(resolvedPath)}'`);
-  });
-  log.step(`Resolved path aliases:\n${paths.join('\n')}`);
-}
-
-export function displayCreatedConfigFile(configFilepath: string) {
-  log.success(`Created config file ${chalk.cyan(configFilepath)}`);
-}
-
-export function displayUpdatedConfigFile(configFilepath: string) {
-  log.success(`Updated config file ${chalk.cyan(configFilepath)}`);
-}
-
 // Spinner functionality
 export function createSpinner(indicator: 'dots' | 'timer' = 'timer') {
   return spinner({ indicator });
-}
-// Spinner functionality
-export async function createOraSpinner(
-  indicator: 'dots' | 'circleHalves' = 'circleHalves'
-) {
-  const ora = await import('ora');
-  return ora.default({ spinner: indicator });
 }
 
 // Input prompts
@@ -217,4 +192,8 @@ export async function promptConfirm({
   }
 
   return result;
+}
+
+export function createTaskLogger(message: string) {
+  return taskLog({ title: message });
 }

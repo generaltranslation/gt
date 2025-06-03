@@ -1,41 +1,36 @@
-import { intro, outro, text, select, spinner } from '@clack/prompts';
+import { intro, outro, spinner } from '@clack/prompts';
 import chalk from 'chalk';
-import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { ClaudeCodeRunner } from '../utils/claudeCode.js';
 import { fromPackageRoot } from '../utils/getPaths.js';
-import { logInfo } from '../utils/logging.js';
-
-const I18N_SYSTEM_PROMPT = ``;
-
-interface LocadexConfig {
-  projectType?: string;
-  apiKey?: string;
-  mcpConfig?: string;
-  setupComplete?: boolean;
-}
+import { displayHeader } from '../logging/console.js';
 
 export async function i18nCommand() {
-  intro(chalk.blue('🌍 Locadex i18n'));
+  displayHeader(chalk.blue('🌍 Locadex i18n'));
 
   try {
+    const mcpConfigPath = fromPackageRoot('.locadex-mcp.json');
+
     const claudeRunner = new ClaudeCodeRunner({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
-    const mcpConfigPath = fromPackageRoot('.locadex-mcp.json');
+    const setupPrompt = `Use the locadex mcp server to learn how to use gt-next. 
+This project is already setup for internationalization.
+Your job is to internationalize the project using gt-next. 
+To validate the use of gt-next, you can run the following command:
+'npx gtx-cli translate --dry-run'`;
 
-    const result = await claudeRunner.run({
-      // systemPrompt: I18N_SYSTEM_PROMPT,
-      prompt: 'Internationalize this next.js app',
+    await claudeRunner.run({
+      // systemPrompt: SETUP_SYSTEM_PROMPT,
+      prompt: setupPrompt,
       mcpConfig: mcpConfigPath,
     });
 
-    outro(chalk.green('✅ Task completed!'));
+    outro(chalk.green('✅ Locadex i18n complete!'));
   } catch (error) {
     outro(
       chalk.red(
-        `❌ Task failed: ${error instanceof Error ? error.message : String(error)}`
+        `❌ Setup failed: ${error instanceof Error ? error.message : String(error)}`
       )
     );
     process.exit(1);

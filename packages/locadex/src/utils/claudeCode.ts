@@ -1,9 +1,17 @@
 import { spawn } from 'node:child_process';
-import { logInfo, logMessage, logWarning } from './logging.js';
+import {
+  logError,
+  logInfo,
+  logMessage,
+  logStep,
+  logSuccess,
+  logWarning,
+} from '../logging/console.js';
 import { ClaudeSDKMessage } from '../types/claude-sdk.js';
+import { constructResultInfo } from '../logging/constructInfo.js';
 
 export interface ClaudeCodeOptions {
-  systemPrompt?: string;
+  additionalSystemPrompt?: string;
   prompt: string;
   mcpConfig?: string;
   additionalAllowedTools?: string[];
@@ -19,6 +27,8 @@ const DEFAULT_ALLOWED_TOOLS = [
   'Write',
 ];
 
+const DISALLOWED_TOOLS = ['NotebookEdit', 'WebFetch', 'WebSearch'];
+
 export class ClaudeCodeRunner {
   constructor(private options: { apiKey?: string } = {}) {
     // Ensure API key is set
@@ -33,8 +43,8 @@ export class ClaudeCodeRunner {
     return new Promise((resolve, reject) => {
       const args = ['-p', options.prompt];
 
-      if (options.systemPrompt) {
-        args.push('--system-prompt', options.systemPrompt);
+      if (options.additionalSystemPrompt) {
+        args.push('--append-system-prompt', options.additionalSystemPrompt);
       }
 
       args.push('--output-format', 'stream-json');
@@ -51,6 +61,8 @@ export class ClaudeCodeRunner {
           ...(options?.additionalAllowedTools || []),
         ].join(',')
       );
+
+      args.push('--disallowedTools', DISALLOWED_TOOLS.join(','));
 
       if (options.maxTurns) {
         args.push('--max-turns', options.maxTurns.toString());
@@ -74,7 +86,6 @@ export class ClaudeCodeRunner {
 
         for (const line of lines) {
           if (line.trim()) {
-            logMessage(line.trim());
             try {
               const outputData: ClaudeSDKMessage = JSON.parse(line);
               if (outputData.type === 'assistant') {
@@ -88,12 +99,15 @@ export class ClaudeCodeRunner {
                   .join('')
                   .trim();
                 if (content) {
-                  logInfo(content);
+                  logStep(content);
+                }
+              } else if (outputData.type === 'result') {
+                const resultInfo = constructResultInfo(outputData);
+                if (resultInfo) {
+                  logSuccess(resultInfo);
                 }
               }
-            } catch (error) {
-              logWarning(`Failed to parse JSON line: ${line}`);
-            }
+            } catch (error) {}
           }
         }
       });
