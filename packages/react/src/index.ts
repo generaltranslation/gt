@@ -14,6 +14,11 @@ import useLocales from './hooks/useLocales';
 import useSetLocale from './hooks/useSetLocale';
 import LocaleSelector from './ui/LocaleSelector';
 import useLocaleSelector from './hooks/useLocaleSelector';
+import {
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
+} from './types/types';
 
 export {
   Var,
@@ -32,4 +37,7 @@ export {
   useSetLocale,
   useLocaleSelector,
   LocaleSelector,
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
 };
