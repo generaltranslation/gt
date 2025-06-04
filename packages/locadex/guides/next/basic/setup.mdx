@@ -1,10 +1,10 @@
-# Setup
+# Next.js App Router with gt-next Setup Guide
 
-## `withGTConfig`
+## Required Configuration: `withGTConfig`
 
-The `withGTConfig` function is a function that is used to initialize the SDK in a Next.js application.
+**Purpose**: Initialize the gt-next SDK in Next.js applications.
 
-Place this in the `next.config.[js|ts]` file, and wrap the default export.
+**Implementation**: Configure `withGTConfig` in your `next.config.[js|ts]` file as the default export wrapper:
 
 ```tsx title="next.config.ts"
 import { withGTConfig } from 'gt-next/config';
@@ -18,74 +18,61 @@ export default withGTConfig(nextConfig, {
 });
 ```
 
-See the [withGTConfig API Reference](/docs/next/api/config/withGTConfig) for more information.
+**Reference**: [withGTConfig API Reference](/docs/next/api/config/withGTConfig)
 
-## `GTProvider`
+## Required Provider: `GTProvider`
 
-`gt-next` also exports a `GTProvider` component. This component is used to provide context to client-side components in your Next.js application.
+**Purpose**: Provides internationalization context to client-side components in Next.js applications.
 
-The `GTProvider` and `withGTConfig` work together to provide context to your application.
+**Functionality**: Works in conjunction with `withGTConfig` to provide:
 
-This context includes:
+- User locale management
+- Locale-specific translations
+- Context for `useGT` hook
+- Context for `useDict` hook
 
-- Managing the user's current locale
-- The relevant translations for that locale
-- Context for the `useGT` hook
-- Context for the `useDict` hook
+**Setup Steps**:
 
-<Steps>
-  <Step>
-    First, add the `GTProvider` component to the root layout of your application. It should be placed as high up in your component tree as possible.
+1. **Root Layout Integration**: Add `GTProvider` to your application's root layout, positioned as high as possible in the component tree, within `<html>` and `<body>` elements:
 
-    Make sure it is placed as a child of the `<html>` and `<body>` elements.
+   ```tsx copy title="src/layout.tsx"
+   import { GTProvider } from 'gt-next';
 
-    ```tsx copy title="src/layout.tsx"
-    import { GTProvider } from 'gt-next';
+   export default function RootLayout({ children }) {
+     return (
+       <html>
+         <body>
+           <GTProvider>{children}</GTProvider>
+         </body>
+       </html>
+     );
+   }
+   ```
 
-    export default function RootLayout({ children }) {
-      return (
-        <html>
-          <body>
-            <GTProvider>
-              {children}
-            </GTProvider>
-          </body>
-        </html>
-      );
-    }
-    ```
-    If you have multiple root layouts, place the `GTProvider` in each root layout.
+   **Note**: For applications with multiple root layouts, include `GTProvider` in each layout.
 
-  </Step>
-  <Step>
-    Next, create a [`gt.config.json`](/docs/cli/reference/config) file in the root of your project.
-    This file is used to configure both the `gtx-cli` tool and the `gt-next` library.
+2. **Configuration File**: Create a [`gt.config.json`](/docs/cli/reference/config) file in the project root for configuring both `gtx-cli` and `gt-next`:
 
-    ```json title="gt.config.json" copy
-    {
-      "defaultLocale": "en",
-      "locales": ["fr", "es"]
-    }
-    ```
-    You should customize the `defaultLocale` and `locales` to match your project. See the list of [supported locales](/docs/platform/locale-strings) for more information.
+   ```json title="gt.config.json" copy
+   {
+     "defaultLocale": "en",
+     "locales": ["fr", "es"]
+   }
+   ```
 
-    `withGTConfig` will automatically detect the `gt.config.json` file in your project, and use it to configure the SDK.
+   **Customization**: Set `defaultLocale` and `locales` array to match project requirements. Reference [supported locales](/docs/platform/locale-strings) for valid values.
 
-  </Step>
-</Steps>
+   **Auto-Detection**: `withGTConfig` automatically detects and uses this configuration file.
 
-## Usage
+## Content Translation Methods
 
-Great! If you've followed the steps above, your Next.js app is now setup to use `gt-next`.
+Once setup is complete, implement internationalization using these translation approaches:
 
-The next step is to internationalize your content.
-Here, we'll give a brief overview of the different ways to translate content in your application.
+### JSX Translation: `<T>` Component
 
-### `<T>` Component
+**Purpose**: Primary component for translating JSX content.
 
-The `<T>` component is the main component for translating JSX content in your application.
-
-To use it, simply wrap the JSX you want to translate in the `<T>` component.
+**Basic Usage**: Wrap translatable JSX content:
 
 ```tsx
 import { T } from 'gt-next';
@@ -94,7 +81,7 @@ import { T } from 'gt-next';
 </T>;
 ```
 
-If you have dynamic content, you'll need to use [variable components](/docs/next/guides/variables) to pass in the dynamic values.
+**Dynamic Content**: Use variable components for dynamic values:
 
 ```tsx
 import { T, Var } from 'gt-next';
@@ -106,11 +93,13 @@ import { T, Var } from 'gt-next';
 </T>;
 ```
 
-See the [Translating JSX](/docs/next/guides/jsx) guide for more information.
+**Reference**: Call the tool for the guide on translating JSX content for more information.
 
-### `useGT` Hook
+### String Translation: `useGT` Hook
 
-The `useGT` hook is a React hook that returns a function that can be used to translate strings.
+**Purpose**: React hook returning a translation function for string content.
+
+**Client-Side Usage**:
 
 ```tsx
 import { useGT } from 'gt-next/client';
@@ -121,68 +110,17 @@ export default function MyComponent() {
 }
 ```
 
-The `useGT` hook is a client-side hook, and should only be used in client-side components.
-For server-side components, use the async `getGT()` function instead.
+**Context Restriction**: Client-side components only. Use async `getGT()` function for server-side components.
 
-See the [Translating Strings](/docs/next/guides/strings) guide for more information.
+**Reference**: Call the tool for the guide on client-side components or server-side components for more information.
 
-<Callout type="info">
-  Utilizing the hot-reload translation functionality will be helpful for internationalizing your application.
+## Setup Summary
 
-To enable this, make sure you have the `GT_API_KEY` and `GT_PROJECT_ID` environment variables set in your development environment.
+**Core Components Configured**:
 
-</Callout>
+- `withGTConfig`: SDK initialization in Next.js configuration
+- `GTProvider`: Context provider for internationalization
+- `gt.config.json`: Locale and translation configuration
+- Translation methods: `<T>` component for JSX, `useGT` hook & `getGT` for strings
 
----
-
-## Testing Your App
-
-Congratulations! 🥳 If you've followed the steps above, your app is now multilingual! Let's see it in action.
-
-### See Your App in a Different Language
-
-<Steps>
-  <Step>
-    Add the [`<LocaleSelector>`](/docs/next/api/components/localeSelector) component to your app.
-    This will allow you to select a different language for your app.
-    <Callout>
-      **Tip:**
-      You can also skip this step and just change your language in your browser settings.
-    </Callout>
-  </Step>
-  <Step>
-    Start your Next.js app in development mode.
-    <Tabs items={["npm", "yarn", "bun", "pnpm"]}>
-      <Tab value="npm">
-      ```bash
-      npm run dev 
-      ```
-      </Tab>
-      <Tab value="yarn">
-      ```bash 
-      yarn run dev 
-      ```
-      </Tab>
-      <Tab value="bun">
-      ```bash
-      bun run dev 
-      ```
-      </Tab>
-      <Tab value="pnpm">
-      ```bash
-      pnpm run dev 
-      ```
-      </Tab>
-    </Tabs>
-  </Step>
-  <Step>
-    Open up your app in your preferred browser (usually at
-    [http://localhost:3000](http://localhost:3000)).
-  </Step>
-</Steps>
-
-# Summary
-
-- In this guide, we covered how to setup your Next.js app with `gt-next`
-- We briefly covered the different ways to translate content in your application.
-- We also covered how to deploy your application after you've internationalized your content.
+**Result**: Fully internationalized Next.js application with hot-reload translation support.

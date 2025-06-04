@@ -12,13 +12,31 @@ export const guides: Guide[] = [
     id: 'guide-i18n-client-side-components',
     description:
       'This tool will provide you with a guide on how to internationalize client-side components.',
-    path: 'guides/next/basic/client-side-components.md',
+    path: 'guides/next/basic/client-side-components.mdx',
   },
   {
     id: 'guide-i18n-server-side-components',
     description:
       'This tool will provide you with a guide on how to internationalize server-side components.',
-    path: 'guides/next/basic/server-side-components.md',
+    path: 'guides/next/basic/server-side-components.mdx',
+  },
+  {
+    id: 'guide-i18n-locale-selector',
+    description:
+      'This tool will provide you with a guide on how to add a locale selector to your application.',
+    path: 'guides/next/basic/locale-selector.mdx',
+  },
+  {
+    id: 'guide-i18n-setup-nextjs',
+    description:
+      'This tool will provide you with a guide for setting up gt-next in a Next.js project.',
+    path: 'guides/next/basic/setup.mdx',
+  },
+  {
+    id: 'guide-i18n-jsx-nextjs',
+    description:
+      'This tool will provide you with a guide for translating JSX content in a Next.js project.',
+    path: 'guides/next/basic/jsx.mdx',
   },
   {
     id: 'guide-i18n-var-outside-client-component',
@@ -55,18 +73,6 @@ export const guides: Guide[] = [
     description:
       'This tool will provide you with a guide that is useful for wherever you see an interpolated string that needs to be internationalized.',
     path: 'guides/next/advanced/interpolated-strings.md',
-  },
-  {
-    id: 'guide-i18n-setup-nextjs',
-    description:
-      'This tool will provide you with a guide for setting up gt-next in a Next.js project.',
-    path: 'guides/next/basic/setup.mdx',
-  },
-  {
-    id: 'guide-i18n-jsx-nextjs',
-    description:
-      'This tool will provide you with a guide for translating JSX content in a Next.js project.',
-    path: 'guides/next/basic/jsx.mdx',
   },
 ];
 
