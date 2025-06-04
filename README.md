@@ -31,7 +31,7 @@ This open-source repo contains internationalization libraries for React framewor
 
 - [supported-locales](packages/supported-locales/README.md): Helper library for currently supported locales on [generaltranslation.com](https://generaltranslation.com)
 
-## Install `gt-react`, add `<T>` tags, and see translations as you code:
+## Add the `<T>` component and see translations as you code:
 
 ![Demo](./apps/docs/public/live_translations.gif)
 
