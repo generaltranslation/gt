@@ -1,21 +1,22 @@
-# How to internationalize a variable outside of a function scope for server side components
+# Internationalizing Variables Outside Function Scope in Server Components
 
-In the case where you find a function declaration (i.e., `let`, `const`, or `var`) outside of a function declaration.
+## When to Apply This Pattern
 
-In one off cases, typically it is best to move the variable directly into a component, and use the `getGT()` function.
-For more complicated scenarios, the solution is generally to create an asynchronous function, and access the string from this function.
+Apply this pattern when you encounter variable declarations (`let`, `const`, or `var`) outside of function scope that contain strings needing internationalization, and these variables are exclusively used within server-side components.
 
-This guide only applies to when these variables are exclusively used inside of server-side components.
+## Core Principles
 
-Remember, a core principle is to leave as small of a footprint as possible.
-You should avoid moving content between files as much as possible.
-Try to internationalize content in the same file where they came from.
+- Minimize code changes by keeping internationalized content in the same file where it originated
+- Avoid moving content between files unless absolutely necessary
+- Do not add "use client" or "use server" directives
+- For single-use cases: move variable into component and use `getGT()`
+- For complex scenarios: create async function to access translated strings
 
-It may be tempting to add a directive. Do not add "use client", "use server", etc. directives.
+## Required Approach Based on Usage Pattern
 
-## Example 1: Declaration outside of function
+## Pattern 1: Single Variable Used in One Component
 
-Let's say we have a constant outside of a component on the server side.
+**Scenario:** Constant declared outside server component function scope.
 
 ```jsx
 const OUTSIDE_CONST = 'Hello there!';
@@ -25,7 +26,7 @@ export function Example() {
 }
 ```
 
-We can internationalize this by moving the declaration inside of the component function definition, and marking the function as async:
+**Solution:** Move declaration inside server component and make function async:
 
 ```jsx
 import { getGT } from 'gt-next/server';
@@ -37,9 +38,9 @@ export async function Example() {
 }
 ```
 
-## Example 2: Reused variables declared outside of functions
+## Pattern 2: Variable Reused Across Multiple Components
 
-But, what if this is used in multiple places?
+**Scenario:** Variable used in multiple server components within same file.
 
 ```jsx
 const OUTSIDE_CONST = 'Hello there!';
@@ -53,7 +54,7 @@ export function Example2() {
 }
 ```
 
-In such a simple example, it would be best to turn `OUTSIDE_CONST` into its own function.
+**Solution:** Convert variable to async function that returns translated value:
 
 ```jsx
 import { getGT } from 'gt-next/server';
@@ -75,11 +76,9 @@ export async function Example2() {
 }
 ```
 
-## Example 3: Larger data structures declared outside of functions and across multiple files
+## Pattern 3: Complex Data Structures Across Multiple Files
 
-You can extrapolate this example to larger data structures as well as being strewn across multiple files.
-
-Say that you have a centralized data structure:
+**Scenario:** Centralized data structure with translatable strings used across multiple files.
 
 ```jsx title="navMap.ts"
 const navMap = [
@@ -111,7 +110,7 @@ const navMap = [
 export default navMap;
 ```
 
-That is used in different server side compents files.
+Usage: Imported and used in different server-side component files.
 
 ```jsx title="Example1.tsx"
 import navMap from './navMap';
@@ -143,7 +142,7 @@ export default function Example2() {
 }
 ```
 
-In this case, we would want to cange `navMap` to a function:
+**Solution:** Convert data structure export to async function:
 
 ```jsx title="navMap.ts"
 import { getGT } from 'gt-next/server';
@@ -176,15 +175,15 @@ const getNavMap = async () => {
     },
   ];
 };
-export default useNavMap;
+export default getNavMap;
 ```
 
-And, then the server components can access the translated version using a function.
+**Updated Components:** Make components async and await the function call:
 
 ```jsx title="Example1.tsx"
-import getNavMap from "./navMap";
-import NavItem from "./NavItem";
-export default function Example1() {
+import getNavMap from './navMap';
+import NavItem from './NavItem';
+export default async function Example1() {
   const navMap = await getNavMap();
   return (
     <>
@@ -197,14 +196,14 @@ export default function Example1() {
 ```
 
 ```jsx title="Example2.tsx"
-import getNavMap from "./navMap";
-import NavItem from "./NavItem";
-export default function Example2() {
+import getNavMap from './navMap';
+import NavItem from './NavItem';
+export default async function Example2() {
   const navMap = await getNavMap();
   return (
     <>
       {navMap
-        .filter(() => navItem.type === "page")
+        .filter(() => navItem.type === 'page')
         .map((navItem) => (
           <NavItem item={navItem} />
         ))}
@@ -213,10 +212,13 @@ export default function Example2() {
 }
 ```
 
-## Example 4: Strings used in other files, but only imported in one place
+**Warning**: Be careful to only modify non-functional strings.
+Avoid modifying functional strings such as ids.
 
-It is generally best to keep variables in the file where they were declared.
-Say we have the following scenario: a string is declared in one file, and is only imported in another file.
+## Pattern 4: Cross-File String Declaration with Single Import
+
+**Scenario:** String declared in one file, imported and used in only one other file.
+**Principle:** Keep variables in their original declaration file to minimize changes.
 
 ```jsx
 export const some_string = 'Hello, World!';
@@ -230,7 +232,7 @@ export default function MyComponent() {
 }
 ```
 
-In order to minimize the footprint of the changes, we need to keep `some_string` in the file where it was originally declared.
+**Solution:** Convert string export to async function in original file:
 
 ```jsx
 import { getGT } from 'gt-next/server';

@@ -21,12 +21,9 @@ import { Var, Num, Currency, DateTime } from 'gt-next';
 - Variable components → Local formatting only (never sent to API)
 - `<Num>`, `<Currency>`, `<DateTime>` → Use JS Intl API for locale formatting
 
-<Callout type="info">
-  Content wrapped in variable components is never sent to the General Translation API, ensuring data privacy and security.
+**Important:** Content wrapped in variable components is never sent to the General Translation API, ensuring data privacy and security.
 
 See the section on [Data Privacy](#privacy) for more information.
-
-</Callout>
 
 ---
 
@@ -76,8 +73,7 @@ The `<T>` component provides locale context and translates surrounding text whil
 - `<Currency>`: Private currency values (transactions, balances)
 - `<DateTime>`: Private dates/times (timestamps, creation dates)
 
-<Callout type="warn">
-**API Data Transmission Rules:**
+**Warning - API Data Transmission Rules:**
 - [Branching Components](/docs/next/guides/branches) and [`<T>` components](/docs/next/guides/jsx) → Sent to API
 - `<T>` nested inside `<Var>` → Sent to API
 
@@ -88,8 +84,6 @@ The `<T>` component provides locale context and translates surrounding text whil
   </Var>
 </T>
 ```
-
-</Callout>
 
 ---
 
@@ -114,9 +108,7 @@ The `<T>` component provides locale context and translates surrounding text whil
 </T>
 ```
 
-<Callout type="info">
 **Rule:** Wrap all dynamic content in `<Var>` when using `<T>` components.
-</Callout>
 
 ### `<Num>` - Number Formatting
 
