@@ -36,7 +36,10 @@ const DEFAULT_ALLOWED_TOOLS = [
 const DISALLOWED_TOOLS = ['NotebookEdit', 'WebFetch', 'WebSearch'];
 
 export class ClaudeCodeRunner {
-  constructor(private options: { apiKey?: string } = {}) {
+  private verbose: boolean;
+
+  constructor(private options: { apiKey?: string; verbose?: boolean } = {}) {
+    this.verbose = options.verbose ?? false;
     // Ensure API key is set
     if (!process.env.ANTHROPIC_API_KEY && !this.options.apiKey) {
       throw new Error(
@@ -95,21 +98,27 @@ export class ClaudeCodeRunner {
 
         for (const line of lines) {
           if (line.trim()) {
-            logMessage(line);
+            if (this.verbose) {
+              logMessage(line);
+            }
             try {
               const outputData: ClaudeSDKMessage = JSON.parse(line);
               if (outputData.type === 'assistant') {
-                const content = outputData.message.content
-                  .map((c) => {
-                    if (c.type === 'text') {
-                      return c.text;
-                    }
-                    return '';
-                  })
-                  .join('')
-                  .trim();
-                if (content) {
-                  logStep(content);
+                const text: string[] = [];
+                const toolUses: string[] = [];
+                outputData.message.content.forEach((c) => {
+                  if (c.type === 'text') {
+                    text.push(c.text);
+                  }
+                  if (c.type === 'tool_use') {
+                    toolUses.push(c.name);
+                  }
+                });
+                if (text.length > 0) {
+                  logStep(text.join('').trim());
+                }
+                if (toolUses.length > 0) {
+                  logStep(`Used tools: ${toolUses.join(', ')}`);
                 }
               } else if (outputData.type === 'result') {
                 const resultInfo = constructResultInfo(outputData);

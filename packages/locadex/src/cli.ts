@@ -11,6 +11,7 @@ import { fromPackageRoot } from './utils/getPaths.js';
 import { setupCommand } from './commands/setup.js';
 import { i18nCommand } from './commands/i18n.js';
 import { startCommand } from './commands/run.js';
+import { CliOptions } from './types/cli.js';
 
 const packageJson = JSON.parse(
   readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -22,21 +23,25 @@ program
   .name('locadex')
   .description('AI agent for internationalization')
   .version(packageJson.version)
-  .action(startCommand);
+  .option('-v, --verbose', 'Verbose output')
+  .action((options: CliOptions) => startCommand(options));
 
 program
   .command('run')
   .description('Fully internationalize your project')
-  .action(startCommand);
+  .option('-v, --verbose', 'Verbose output')
+  .action((options: CliOptions) => startCommand(options));
 
 program
   .command('setup')
   .description('Set up locadex for your project')
-  .action(setupCommand);
+  .option('-v, --verbose', 'Verbose output')
+  .action((options: CliOptions) => setupCommand(options));
 
 program
   .command('i18n')
   .description('Run AI-powered internationalization tasks')
-  .action(i18nCommand);
+  .option('-v, --verbose', 'Verbose output')
+  .action((options: CliOptions) => i18nCommand(options));
 
 program.parse();

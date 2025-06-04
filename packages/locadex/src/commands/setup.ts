@@ -4,8 +4,9 @@ import { ClaudeCodeRunner } from '../utils/claudeCode.js';
 import { fromPackageRoot } from '../utils/getPaths.js';
 import { createSpinner, displayHeader } from '../logging/console.js';
 import { allMcpPrompt, allMcpTools } from '../prompts/system.js';
+import { CliOptions } from '../types/cli.js';
 
-export async function setupCommand() {
+export async function setupCommand(options: CliOptions) {
   displayHeader();
 
   const spinner = createSpinner();
@@ -17,6 +18,7 @@ export async function setupCommand() {
 
     const claudeRunner = new ClaudeCodeRunner({
       apiKey: process.env.ANTHROPIC_API_KEY,
+      verbose: options.verbose,
     });
 
     const setupPrompt = `Use gt-next to setup this project for internationalization.

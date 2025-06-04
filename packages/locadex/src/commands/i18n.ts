@@ -10,8 +10,9 @@ import {
   FILE_LIST_PATH,
 } from '../utils/getFiles.js';
 import { unlinkSync, existsSync } from 'node:fs';
+import { CliOptions } from '../types/cli.js';
 
-export async function i18nCommand() {
+export async function i18nCommand(options: CliOptions) {
   displayHeader();
 
   const spinner = createSpinner();
@@ -29,6 +30,7 @@ export async function i18nCommand() {
 
     const claudeRunner = new ClaudeCodeRunner({
       apiKey: process.env.ANTHROPIC_API_KEY,
+      verbose: options.verbose,
     });
 
     const setupPrompt = `This project is already setup for internationalization.
