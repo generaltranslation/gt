@@ -1,9 +1,24 @@
-import { readdirSync, statSync, existsSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { readdirSync, statSync, existsSync, mkdirSync } from 'node:fs';
+import { join, relative, dirname } from 'node:path';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fromPackageRoot } from './getPaths.js';
 
-export const FILE_LIST_PATH = fromPackageRoot('.locadex-files.json');
+// Default file path - can be overridden for concurrent instances
+export const DEFAULT_FILE_LIST_PATH = fromPackageRoot(
+  '.tmp/locadex-files.json'
+);
+
+// Global variable to store the current session's file path
+let currentFileListPath = DEFAULT_FILE_LIST_PATH;
+
+export function setFileListPath(uniqueId: string): string {
+  currentFileListPath = fromPackageRoot(`.tmp/locadex-files-${uniqueId}.json`);
+  return currentFileListPath;
+}
+
+export function getFileListPath(): string {
+  return currentFileListPath;
+}
 
 interface FileEntry {
   path: string;
@@ -12,18 +27,23 @@ interface FileEntry {
 }
 
 function getFileList(): FileEntry[] {
-  if (!existsSync(FILE_LIST_PATH)) {
+  if (!existsSync(currentFileListPath)) {
     return [];
   }
   try {
-    return JSON.parse(readFileSync(FILE_LIST_PATH, 'utf8'));
+    return JSON.parse(readFileSync(currentFileListPath, 'utf8'));
   } catch {
     return [];
   }
 }
 
 function saveFileList(files: FileEntry[]): void {
-  writeFileSync(FILE_LIST_PATH, JSON.stringify(files, null, 2));
+  // Ensure the directory exists before writing the file
+  const dir = dirname(currentFileListPath);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+  writeFileSync(currentFileListPath, JSON.stringify(files, null, 2));
 }
 
 function addFileToList(
@@ -132,6 +152,14 @@ export function addNextJsFilesToManager(projectPath: string = process.cwd()): {
   }
 
   return { added, existing };
+}
+
+export function getCurrentFileList(): {
+  path: string;
+  addedAt: string;
+  status: 'pending' | 'in_progress' | 'completed';
+}[] {
+  return getFileList();
 }
 
 export function getNextJsAppRouterStats(projectPath: string = process.cwd()): {

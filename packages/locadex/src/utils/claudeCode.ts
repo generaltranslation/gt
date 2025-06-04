@@ -18,6 +18,7 @@ export interface ClaudeCodeOptions {
   mcpConfig?: string;
   additionalAllowedTools?: string[];
   maxTurns?: number;
+  sessionId?: string;
 }
 
 export interface ClaudeCodeObservation {
@@ -36,16 +37,22 @@ const DEFAULT_ALLOWED_TOOLS = [
 const DISALLOWED_TOOLS = ['NotebookEdit', 'WebFetch', 'WebSearch'];
 
 export class ClaudeCodeRunner {
+  private sessionId: string = '';
   private verbose: boolean;
 
   constructor(private options: { apiKey?: string; verbose?: boolean } = {}) {
     this.verbose = options.verbose ?? false;
+
     // Ensure API key is set
     if (!process.env.ANTHROPIC_API_KEY && !this.options.apiKey) {
       throw new Error(
         'ANTHROPIC_API_KEY environment variable or apiKey option is required'
       );
     }
+  }
+
+  getSessionId(): string {
+    return this.sessionId;
   }
 
   async run(
@@ -61,6 +68,9 @@ export class ClaudeCodeRunner {
 
       args.push('--output-format', 'stream-json');
       args.push('--verbose');
+      if (options.sessionId) {
+        args.push('--session-id', options.sessionId);
+      }
 
       if (options.mcpConfig) {
         args.push('--mcp-config', options.mcpConfig);
@@ -128,6 +138,7 @@ export class ClaudeCodeRunner {
               } else if (outputData.type === 'system') {
                 if (outputData.subtype === 'init') {
                   obs.spinner.stop('Locadex initialized');
+                  this.sessionId = outputData.session_id;
                 }
               }
             } catch (error) {}

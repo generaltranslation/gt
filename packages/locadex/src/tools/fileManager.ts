@@ -1,7 +1,14 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  unlinkSync,
+  mkdirSync,
+} from 'node:fs';
+import { dirname } from 'node:path';
 import { z } from 'zod';
-import { FILE_LIST_PATH } from '../utils/getFiles.js';
+import { getFileListPath } from '../utils/getFiles.js';
 
 interface FileEntry {
   path: string;
@@ -10,18 +17,25 @@ interface FileEntry {
 }
 
 function getFileList(): FileEntry[] {
-  if (!existsSync(FILE_LIST_PATH)) {
+  const filePath = getFileListPath();
+  if (!existsSync(filePath)) {
     return [];
   }
   try {
-    return JSON.parse(readFileSync(FILE_LIST_PATH, 'utf8'));
+    return JSON.parse(readFileSync(filePath, 'utf8'));
   } catch {
     return [];
   }
 }
 
 function saveFileList(files: FileEntry[]): void {
-  writeFileSync(FILE_LIST_PATH, JSON.stringify(files, null, 2));
+  const filePath = getFileListPath();
+  // Ensure the directory exists before writing the file
+  const dir = dirname(filePath);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+  writeFileSync(filePath, JSON.stringify(files, null, 2));
 }
 
 export function addFileManagerTools(server: McpServer) {
@@ -60,7 +74,7 @@ export function addFileManagerTools(server: McpServer) {
         content: [
           {
             type: 'text',
-            text: `File "${filePath}" added to internationalization checklist with status: ${status}`,
+            text: `File has been added to internationalization checklist successfully. Ensure that you continue to use the internationalization checklist to track your progress. Please proceed with the current tasks if applicable`,
           },
         ],
       };
@@ -68,35 +82,40 @@ export function addFileManagerTools(server: McpServer) {
   );
 
   server.tool(
-    'removeFile',
-    'Remove a file from the internationalization checklist',
+    'markFileAsCompleted',
+    'Mark a file as completed in the internationalization checklist',
     {
-      filePath: z
-        .string()
-        .describe('Path to the file to remove from the checklist'),
+      filePath: z.string().describe('Path to the file to mark as completed'),
     },
     async ({ filePath }) => {
       const files = getFileList();
-      const filteredFiles = files.filter((f) => f.path !== filePath);
+      let foundFile = false;
+      const updatedFiles = files.map((f) => {
+        if (f.path === filePath) {
+          foundFile = true;
+          return { ...f, status: 'completed' } as FileEntry;
+        }
+        return f;
+      });
 
-      if (files.length === filteredFiles.length) {
+      if (!foundFile) {
         return {
           content: [
             {
               type: 'text',
-              text: `File "${filePath}" was not found in the checklist`,
+              text: `File "${filePath}" was not found in the checklist.`,
             },
           ],
         };
       }
 
-      saveFileList(filteredFiles);
+      saveFileList(updatedFiles);
 
       return {
         content: [
           {
             type: 'text',
-            text: `File "${filePath}" removed from internationalization checklist`,
+            text: `File "${filePath}" has been marked as completed in the internationalization checklist successfully. Ensure that you continue to use the internationalization checklist to track your progress. Please proceed with the current tasks if applicable`,
           },
         ],
       };
@@ -154,8 +173,9 @@ export function addFileManagerTools(server: McpServer) {
       const files = getFileList();
       const fileCount = files.length;
 
-      if (existsSync(FILE_LIST_PATH)) {
-        unlinkSync(FILE_LIST_PATH);
+      const filePath = getFileListPath();
+      if (existsSync(filePath)) {
+        unlinkSync(filePath);
       }
 
       return {

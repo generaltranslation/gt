@@ -1,4 +1,4 @@
-import { intro, outro, spinner } from '@clack/prompts';
+import { intro, outro, spinner, confirm } from '@clack/prompts';
 import chalk from 'chalk';
 import { ClaudeCodeRunner } from '../utils/claudeCode.js';
 import { fromPackageRoot } from '../utils/getPaths.js';
@@ -7,10 +7,13 @@ import { allMcpPrompt, allMcpTools } from '../prompts/system.js';
 import {
   addNextJsFilesToManager,
   getNextJsAppRouterStats,
-  FILE_LIST_PATH,
+  setFileListPath,
+  getFileListPath,
+  getCurrentFileList,
 } from '../utils/getFiles.js';
 import { unlinkSync, existsSync } from 'node:fs';
 import { CliOptions } from '../types/cli.js';
+import { randomBytes } from 'node:crypto';
 
 export async function i18nCommand(options: CliOptions) {
   displayHeader();
@@ -18,6 +21,11 @@ export async function i18nCommand(options: CliOptions) {
   const spinner = createSpinner();
 
   spinner.start('Initializing Locadex...');
+
+  // Generate unique ID for this execution to support concurrent instances
+  const uniqueId = randomBytes(8).toString('hex');
+  const fileListPath = setFileListPath(uniqueId);
+  console.error(`[i18nCommand] Using unique file list: ${fileListPath}`);
 
   try {
     // Scan and preload Next.js app router files into file manager
@@ -57,7 +65,7 @@ The file manager has been preloaded with ${stats.totalFiles} TypeScript files ($
 4. **Track your progress**: When you start working on a file, use 'addFile' to update its status to 'in_progress'
 5. **Mark completion**: When you finish internationalizing a file, use 'addFile' to update its status to 'completed'
 
-Always use the file manager as your source of truth for which files need to be processed. Be proactive about removing files that don't need translation to keep your checklist focused. The checklist will be automatically cleaned up when the script finishes.
+Always use the file manager as your source of truth for which files need to be processed. Be proactive about removing files that don't need translation to keep your checklist focused.
 
 Your core principles are:
 - Minimize the footprint of the changes
@@ -68,6 +76,7 @@ Your core principles are:
 ${allMcpPrompt}
 `;
 
+    // Initial run
     await claudeRunner.run(
       {
         additionalSystemPrompt: allMcpTools,
@@ -76,6 +85,90 @@ ${allMcpPrompt}
       },
       { spinner }
     );
+
+    const sessionId = claudeRunner.getSessionId();
+
+    // Give Claude up to 3 attempts to finish all files
+    let attempt = 1;
+    const maxAttempts = 3;
+
+    while (attempt <= maxAttempts) {
+      const remainingFiles = getCurrentFileList();
+      const pendingFiles = remainingFiles.filter((f) => f.status === 'pending');
+      const inProgressFiles = remainingFiles.filter(
+        (f) => f.status === 'in_progress'
+      );
+      const unfinishedFiles = [...pendingFiles, ...inProgressFiles];
+
+      if (unfinishedFiles.length === 0) {
+        // All files completed!
+        console.log(
+          chalk.green(
+            `\n✅ All files completed! ${JSON.stringify(
+              getCurrentFileList(),
+              null,
+              2
+            )}`
+          )
+        );
+        break;
+      }
+
+      if (attempt === maxAttempts) {
+        // Final attempt - ask user for confirmation
+        spinner.stop();
+        console.log(
+          chalk.yellow(
+            `\n⚠️  Warning: After ${maxAttempts} attempts, ${unfinishedFiles.length} files remain unfinished:`
+          )
+        );
+        console.log(chalk.yellow(`   - ${pendingFiles.length} pending files`));
+        console.log(
+          chalk.yellow(`   - ${inProgressFiles.length} in-progress files`)
+        );
+
+        const shouldContinue = await confirm({
+          message:
+            'Are you sure you want to finish? These files may still need internationalization.',
+          initialValue: false,
+        });
+
+        if (!shouldContinue) {
+          outro(
+            chalk.yellow(
+              '❓ Internationalization paused. You can resume by running the command again.'
+            )
+          );
+          return;
+        }
+        break;
+      } else {
+        // Continue with additional attempts
+        console.log(
+          `Attempt ${attempt + 1}/${maxAttempts}: Continuing internationalization...`
+        );
+
+        const continuePrompt = `You still have ${unfinishedFiles.length} unfinished files in your checklist:
+- ${pendingFiles.length} pending files
+- ${inProgressFiles.length} in-progress files
+
+Please continue working on these files. Use 'listFiles' to see what needs to be done and continue internationalizing the remaining content.
+
+This is attempt ${attempt + 1} of ${maxAttempts}.`;
+
+        await claudeRunner.run(
+          {
+            additionalSystemPrompt: allMcpTools,
+            prompt: continuePrompt,
+            mcpConfig: mcpConfigPath,
+            sessionId,
+          },
+          { spinner }
+        );
+      }
+
+      attempt++;
+    }
 
     outro(chalk.green('✅ Locadex i18n complete!'));
   } catch (error) {
@@ -87,8 +180,15 @@ ${allMcpPrompt}
     process.exit(1);
   } finally {
     // Always clean up the file list when done, regardless of success or failure
-    if (existsSync(FILE_LIST_PATH)) {
-      unlinkSync(FILE_LIST_PATH);
+    const currentFileListPath = getFileListPath();
+    if (existsSync(currentFileListPath)) {
+      console.error(
+        `[i18nCommand] Cleaning up file list: ${currentFileListPath}`
+      );
+      unlinkSync(currentFileListPath);
+      console.error(`[i18nCommand] File list deleted successfully`);
+    } else {
+      console.error(`[i18nCommand] No file list to clean up`);
     }
   }
 }
