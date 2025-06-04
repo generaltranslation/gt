@@ -2,13 +2,9 @@ import { intro, outro, spinner } from '@clack/prompts';
 import chalk from 'chalk';
 import { createSpinner, displayHeader } from '../logging/console.js';
 import { allMcpPrompt } from '../prompts/system.js';
-import { CliOptions } from '../types/cli.js';
 import { configureAgent } from '../utils/configuration.js';
-import { logger } from '../logging/logger.js';
 
-export async function startCommand(options: CliOptions) {
-  logger.initialize(options);
-
+export async function startCommand() {
   displayHeader();
 
   const spinner = createSpinner();

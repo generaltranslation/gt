@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { FileEntry } from './getFiles.js';
 import { logger } from '../logging/logger.js';
+import { addToGitIgnore } from './fs/writeFiles.js';
 
 const mcpConfig = {
   mcpServers: {
@@ -21,6 +22,9 @@ export function configureAgent() {
   fs.mkdirSync(tempDir, { recursive: true });
 
   logger.debugMessage(`Temp directory created at: ${tempDir}`);
+
+  addToGitIgnore(tempDir);
+  logger.debugMessage(`Added ${tempDir} to .gitignore`);
 
   let mcpConfigPath = path.resolve(tempDir, 'mcp.json');
   const filesStateFilePath = path.resolve(tempDir, 'files-state.json');

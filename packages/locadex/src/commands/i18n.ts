@@ -8,13 +8,10 @@ import {
   getCurrentFileList,
 } from '../utils/getFiles.js';
 import { unlinkSync, existsSync } from 'node:fs';
-import { CliOptions } from '../types/cli.js';
 import { configureAgent } from '../utils/configuration.js';
 import { logger } from '../logging/logger.js';
 
-export async function i18nCommand(options: CliOptions) {
-  logger.initialize(options);
-
+export async function i18nCommand() {
   displayHeader();
 
   const spinner = createSpinner();
