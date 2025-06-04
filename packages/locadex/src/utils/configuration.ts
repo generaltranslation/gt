@@ -18,13 +18,15 @@ const mcpConfig = {
 };
 
 export function configureAgent() {
-  const tempDir = path.resolve(process.cwd(), '.locadex', randomUUID());
+  const cwd = process.cwd();
+  const tempDir = path.resolve(cwd, '.locadex', randomUUID());
   fs.mkdirSync(tempDir, { recursive: true });
 
   logger.debugMessage(`Temp directory created at: ${tempDir}`);
 
-  addToGitIgnore(tempDir);
-  logger.debugMessage(`Added ${tempDir} to .gitignore`);
+  addToGitIgnore(cwd, '.locadex');
+
+  logger.debugMessage(`Added .locadex to .gitignore`);
 
   let mcpConfigPath = path.resolve(tempDir, 'mcp.json');
   const filesStateFilePath = path.resolve(tempDir, 'files-state.json');
