@@ -24,8 +24,13 @@ class Logger {
   }
 
   initialize(options: CliOptions): void {
-    this._verbose = options.verbose ?? false;
-    this._debug = options.debug ?? false;
+    if (options.debug) {
+      this._debug = true;
+      this._verbose = true;
+    }
+    if (options.verbose) {
+      this._verbose = true;
+    }
   }
 
   get verbose(): boolean {
