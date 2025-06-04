@@ -10,27 +10,34 @@
 
 </div>
 
-General Translation (GT) is a **one-stop solution** for launching software in multiple languages.
+General Translation (GT) is fully integrated suite of internationalization (i18n) tools for developers.
 
-The full GT stack includes:
+This open-source repo contains internationalization libraries for React frameworks like Next.js and React Router.
 
-- Open source developer libraries
-- Context-aware translation APIs
-- A platform for translation management
+📖&nbsp;&nbsp;For guides, examples, and API references, read the [docs](https://generaltranslation.com/docs).
 
-**Install the libraries in your project, add `<T>` tags, and see translations as you code:**
+🔑&nbsp;&nbsp;Create a free API key for the translation service [generaltranslation.com](https://generaltranslation.com)!
+
+💬&nbsp;&nbsp;Join the [Discord community](https://discord.gg/W99K6fchSu) to get help and stay updated!
+
+## Projects
+
+- [gt-next](packages/next/README.md): AI-powered i18n library for Next.js
+- [gt-react](packages/react/README.md): AI-powered i18n library for React
+
+- [gtx-cli](packages/cli/README.md): CLI tool for continuous localization
+
+- [generaltranslation](packages/core/README.md): Core TypeScript language infrastructure library
+
+- [supported-locales](packages/supported-locales/README.md): Helper library for currently supported locales on [generaltranslation.com](https://generaltranslation.com)
+
+## Install `gt-react`, add `<T>` tags, and see translations as you code:
 
 ![Demo](./docs/public/live_translations.gif)
 
-Full documentation, including guides, examples, and API references, can be found in the [docs](https://generaltranslation.com/docs).
+## Features
 
-Create an API key at [generaltranslation.com](https://generaltranslation.com)!
-
-Join our [Discord community](https://discord.gg/W99K6fchSu) to get help and stay updated!
-
-## Library Features
-
-### ⚛️ Translate entire React components, not just strings
+### ⚛️&nbsp;&nbsp;Translate entire React components, not just strings
 
 - Just wrap your content in a `<T>` component!
 - No need for complex refactoring or managing JSON files.
@@ -55,12 +62,12 @@ export default function Page() {
 }
 ```
 
-### 🔎 Feature parity with existing libraries
+### 🔎&nbsp;&nbsp;Feature parity with existing libraries
 
 - GT libraries also support the same features as existing libraries like `next-intl` and `react-i18next`.
 - Features such as dictionaries, plurals, currencies, and automatic routing are all supported.
 
-### 🔧 Developer-friendly
+### 🔧&nbsp;&nbsp;Developer-friendly
 
 - Setup is simple and can be done in minutes.
 - All GT libraries are open-source and work standalone.
@@ -68,77 +75,16 @@ export default function Page() {
 - No more managing translation keys like `t('menu.header.title')`.
   - Just write everything in-line!
 
-### 🧠 Free, context-aware AI translation service
+### 🧠&nbsp;&nbsp;Free, context-aware AI translation service
 
 - Translation hot reload in development
-- Libraries integrate natively with our translation platform.
+- Libraries integrate natively with the translation platform.
 - Translations are generated for your app in seconds.
 - HTML content is re-arranged and customized according to the language.
 
 ## Examples
 
-See the [examples](examples) directory for some example projects that use our libraries. We currently support React and Next.js.
-
-Simple interface for native pluralization and conditional logic:
-
-```tsx
-<Plural
-  n={count}
-  singular={
-    <>
-      There is <Num>{count}</Num> item
-    </>
-  }
-  plural={
-    <>
-      There are <Num>{count}</Num> items
-    </>
-  }
-/>
-```
-
-Support for translation at runtime:
-
-```tsx
-export default function Comment() {
-  const comment = await getComment();
-
-  return (
-    <h1>Author: {comment.author}</h1>
-    <Tx>
-      <p>{comment.content}</p>
-    </Tx>
-  );
-}
-```
-
-Intuitive i18n formatting syntax:
-
-```tsx
-return (
-  <T>
-    <h1> Your account information: </h1>
-    Account balance: <Currency>{account.bal}</Currency>{' '}
-    {/* Currency Formatting */}
-    <br />
-    Updated at: <DateTime>{account.updateTime}</DateTime>{' '}
-    {/* Datetime Formatting */}
-    <br />
-    Transactions this month: <Num>{account.txCount}</Num>{' '}
-    {/* Number Formatting */}
-  </T>
-);
-```
-
-## Libraries
-
-See the below for links to the relevant libraries:
-
-- [gt-next](packages/next/README.md): Automatic i18n for Next.js
-- [gt-react](packages/react/README.md): Automatic i18n for React
-- [generaltranslation](packages/core/README.md): Core library for General Translation
-- [supported-locales](packages/supported-locales/README.md): Currently supported locales
-- [gtx-cli](packages/cli/README.md): CLI tool for React apps
+See the [examples](examples) directory for some example projects that use our libraries.
 
 ## Installation
 
@@ -151,8 +97,8 @@ npm install gt-next
 yarn add gt-next
 ```
 
-See our [docs](https://generaltranslation.com/docs) for more information.
+See the [docs](https://generaltranslation.com/docs) for more information.
 
 ## Contributing
 
-We welcome any contributions to our libraries. Please submit a pull request!
+We welcome any contributions to the libraries. Please submit a pull request!
