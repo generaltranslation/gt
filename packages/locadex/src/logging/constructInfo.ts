@@ -1,4 +1,4 @@
-import { ClaudeSDKMessage } from '../types/claude-sdk';
+import { ClaudeSDKMessage } from '../types/claude-sdk.js';
 
 export function constructResultInfo(result: ClaudeSDKMessage) {
   if (result.type === 'result') {

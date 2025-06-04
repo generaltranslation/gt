@@ -3,8 +3,10 @@ import { z } from 'zod';
 import { fetchDocContent, getDocs } from '../utils/getDocs.js';
 
 export const docsTools: { [id: string]: string } = {
-  'fetch-docs': 'Fetches the content of a specific documentation file by its path.',
-  'list-docs': 'Lists available documentation files in the format of an llms.txt file. This is a list of all the documentation files available to you.'
+  'fetch-docs':
+    'Fetches the content of a specific documentation file by its path.',
+  'list-docs':
+    'Lists available documentation files in the format of an llms.txt file. This is a list of all the documentation files available to you.',
 };
 
 export function addDocsTools(server: McpServer) {
@@ -56,45 +58,40 @@ export function addDocsTools(server: McpServer) {
     }
   );
 
-  server.tool(
-    'list-docs',
-    docsTools['list-docs'],
-    {},
-    async () => {
-      try {
-        const content = await fetchDocContent('llms.txt');
+  server.tool('list-docs', docsTools['list-docs'], {}, async () => {
+    try {
+      const content = await fetchDocContent('llms.txt');
 
-        if (!content) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Failed to fetch documentation index`,
-              },
-            ],
-            isError: true,
-          };
-        }
-
+      if (!content) {
         return {
           content: [
             {
               type: 'text',
-              text: content,
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error listing documentation: ${error instanceof Error ? error.message : String(error)}`,
+              text: `Failed to fetch documentation index`,
             },
           ],
           isError: true,
         };
       }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: content,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error listing documentation: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+        isError: true,
+      };
     }
-  );
+  });
 }

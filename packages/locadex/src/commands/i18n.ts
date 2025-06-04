@@ -14,8 +14,8 @@ import { logger } from '../logging/logger.js';
 
 export async function i18nCommand(options: CliOptions) {
   logger.initialize(options);
-  
-  displayHeader(chalk.cyan('Locadex: i18n AI Agent'));
+
+  displayHeader();
 
   const spinner = createSpinner();
 
@@ -111,7 +111,7 @@ ${allMcpPrompt}
 
       if (unfinishedFiles.length === 0) {
         // All files completed!
-        console.log(
+        logger.step(
           chalk.green(
             `\n✅ All files completed! ${JSON.stringify(
               getCurrentFileList(stateFilePath),
@@ -126,16 +126,14 @@ ${allMcpPrompt}
       if (attempt === maxAttempts) {
         // Final attempt - ask user for confirmation
         spinner.stop();
-        console.log(
+        logger.warning(
           chalk.yellow(
-            `\n⚠️  Warning: After ${maxAttempts} attempts, ${unfinishedFiles.length} files remain unfinished:`
+            `\n⚠️  Warning: After ${maxAttempts} attempts, ${unfinishedFiles.length} files remain unfinished:
+            - ${pendingFiles.length} pending files
+            - ${inProgressFiles.length} in-progress files
+            `
           )
         );
-        console.log(chalk.yellow(`   - ${pendingFiles.length} pending files`));
-        console.log(
-          chalk.yellow(`   - ${inProgressFiles.length} in-progress files`)
-        );
-
         const shouldContinue = await confirm({
           message:
             'Are you sure you want to finish? These files may still need internationalization.',
@@ -153,7 +151,7 @@ ${allMcpPrompt}
         break;
       } else {
         // Continue with additional attempts
-        console.log(
+        logger.step(
           `Attempt ${attempt + 1}/${maxAttempts}: Continuing internationalization...`
         );
 
@@ -195,11 +193,13 @@ This is attempt ${attempt + 1} of ${maxAttempts}.`;
   } finally {
     // Always clean up the file list when done, regardless of success or failure
     if (stateFilePath && existsSync(stateFilePath)) {
-      console.error(`[i18nCommand] Cleaning up file list: ${stateFilePath}`);
+      logger.debugMessage(
+        `[i18nCommand] Cleaning up file list: ${stateFilePath}`
+      );
       unlinkSync(stateFilePath);
-      console.error(`[i18nCommand] File list deleted successfully`);
+      logger.debugMessage(`[i18nCommand] File list deleted successfully`);
     } else {
-      console.error(`[i18nCommand] No file list to clean up`);
+      logger.debugMessage(`[i18nCommand] No file list to clean up`);
     }
   }
 }

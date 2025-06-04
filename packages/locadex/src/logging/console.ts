@@ -48,12 +48,10 @@ export function endCommand(message: string) {
 }
 
 // GT specific logging
-export function displayHeader(introString?: string) {
+export function displayHeader() {
   displayAsciiTitle();
   displayInitializingText();
-  if (introString) {
-    startCommand(introString);
-  }
+  startCommand(chalk.cyan(`Locadex v${getLocadexVersion()}`));
 }
 
 function displayAsciiTitle() {
@@ -73,13 +71,13 @@ Y8,        88      88
 }
 
 function displayInitializingText() {
-  const version = getLocadexVersion();
   // eslint-disable-next-line no-console
   console.log(
     `\n${chalk.bold.blue('General Translation, Inc.')}
 ${chalk.dim('https://generaltranslation.com/docs')}
-${chalk.dim(`Locadex Version: ${version}\n`)}
-${chalk.dim('Locadex uses Sentry and PostHog to collect telemetry data. You can opt out by running with the --no-telemetry flag.')}`
+
+${chalk.dim('Locadex uses Sentry and PostHog to collect telemetry data. You can opt out by running with the --no-telemetry flag.')}
+`
   );
 }
 

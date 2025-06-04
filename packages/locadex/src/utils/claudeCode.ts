@@ -125,8 +125,8 @@ export class ClaudeCodeRunner {
 
       activeClaudeProcesses.add(claude);
 
-      let output = '';
-      let errorOutput = '';
+      const output = '';
+      const errorOutput = '';
 
       claude.stdout?.on('data', (data) => {
         const lines = data.toString().trim().split('\n');

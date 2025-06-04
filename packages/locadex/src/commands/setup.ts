@@ -8,8 +8,8 @@ import { logger } from '../logging/logger.js';
 
 export async function setupCommand(options: CliOptions) {
   logger.initialize(options);
-  
-  displayHeader(chalk.cyan('Locadex: i18n AI Agent'));
+
+  displayHeader();
 
   const spinner = createSpinner();
 

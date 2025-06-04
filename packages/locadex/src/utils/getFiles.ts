@@ -1,6 +1,7 @@
 import { readdirSync, statSync, existsSync, mkdirSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { logger } from '../logging/logger.js';
 
 export interface FileEntry {
   path: string;
@@ -81,7 +82,7 @@ function scanDirectory(dirPath: string, basePath: string): string[] {
       }
     }
   } catch (error) {
-    console.warn(`Warning: Could not read directory ${dirPath}:`, error);
+    logger.warning(`Warning: Could not read directory ${dirPath}: ${error}`);
   }
 
   return files;
