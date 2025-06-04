@@ -33,7 +33,7 @@ This open-source repo contains internationalization libraries for React framewor
 
 ## Install `gt-react`, add `<T>` tags, and see translations as you code:
 
-![Demo](./docs/public/live_translations.gif)
+![Demo](./apps/docs/public/live_translations.gif)
 
 ## Features
 
