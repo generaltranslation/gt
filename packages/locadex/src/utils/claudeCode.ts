@@ -1,7 +1,5 @@
 import { spawn } from 'node:child_process';
 import {
-  logError,
-  logInfo,
   logMessage,
   logStep,
   logSuccess,
@@ -43,6 +41,28 @@ const DEFAULT_ALLOWED_TOOLS = [
 
 const DISALLOWED_TOOLS = ['NotebookEdit', 'WebFetch', 'WebSearch'];
 
+// Global tracking of all Claude processes
+const activeClaudeProcesses = new Set<any>();
+
+// Setup global process termination handlers once
+let handlersSetup = false;
+const setupProcessHandlers = () => {
+  if (handlersSetup) return;
+  handlersSetup = true;
+
+  const killAllClaudeProcesses = () => {
+    activeClaudeProcesses.forEach((proc) => {
+      if (!proc.killed) {
+        proc.kill('SIGTERM');
+      }
+    });
+    activeClaudeProcesses.clear();
+  };
+
+  process.on('SIGINT', killAllClaudeProcesses);
+  process.on('SIGTERM', killAllClaudeProcesses);
+};
+
 export class ClaudeCodeRunner {
   private sessionId: string = '';
   private verbose: boolean;
@@ -56,6 +76,9 @@ export class ClaudeCodeRunner {
         'ANTHROPIC_API_KEY environment variable or apiKey option is required'
       );
     }
+
+    // Setup global process handlers
+    setupProcessHandlers();
   }
 
   getSessionId(): string {
@@ -107,6 +130,8 @@ export class ClaudeCodeRunner {
         env,
       });
 
+      activeClaudeProcesses.add(claude);
+
       let output = '';
       let errorOutput = '';
 
@@ -153,11 +178,12 @@ export class ClaudeCodeRunner {
         }
       });
 
-      claude.stderr?.on('data', (data) => {
+      claude.stderr?.on('data', () => {
         logWarning('An error occurred while running Claude Code');
       });
 
       claude.on('close', (code) => {
+        activeClaudeProcesses.delete(claude);
         if (code === 0) {
           resolve(output.trim());
         } else {
@@ -168,6 +194,7 @@ export class ClaudeCodeRunner {
       });
 
       claude.on('error', (error) => {
+        activeClaudeProcesses.delete(claude);
         reject(new Error(`Failed to run Claude Code: ${error.message}`));
       });
     });
