@@ -1,12 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { CliOptions } from '../types/cli.js';
 import { ClaudeCodeRunner } from './claudeCode.js';
 import { fromPackageRoot } from './getPaths.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { logMessage } from '../logging/console.js';
 import { FileEntry } from './getFiles.js';
+import { logger } from '../logging/logger.js';
 
 const mcpConfig = {
   mcpServers: {
@@ -18,13 +17,11 @@ const mcpConfig = {
   },
 };
 
-export function configureAgent(options: CliOptions) {
+export function configureAgent() {
   const tempDir = path.resolve(os.tmpdir(), '.locadex', randomUUID());
   fs.mkdirSync(tempDir, { recursive: true });
 
-  if (options.verbose) {
-    logMessage(`[locadex] Temp directory created at: ${tempDir}`);
-  }
+  logger.debugMessage(`Temp directory created at: ${tempDir}`);
 
   let mcpConfigPath = path.resolve(tempDir, 'mcp.json');
   const filesStateFilePath = path.resolve(tempDir, 'files-state.json');
@@ -45,7 +42,6 @@ export function configureAgent(options: CliOptions) {
 
   const agent = new ClaudeCodeRunner({
     apiKey: process.env.ANTHROPIC_API_KEY,
-    verbose: options.verbose,
     mcpConfig: mcpConfigPath,
   });
 

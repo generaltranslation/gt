@@ -26,6 +26,7 @@ program
   .description('AI agent for internationalization')
   .version(packageJson.version)
   .option('-v, --verbose', 'Verbose output')
+  .option('-d, --debug', 'Debug output')
   .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions) =>
     withTelemetry({ enabled: !options.noTelemetry, options }, () =>
@@ -37,6 +38,7 @@ program
   .command('run')
   .description('Fully internationalize your project')
   .option('-v, --verbose', 'Verbose output')
+  .option('-d, --debug', 'Debug output')
   .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions) =>
     withTelemetry({ enabled: !options.noTelemetry, options }, () =>
@@ -48,6 +50,7 @@ program
   .command('setup')
   .description('Set up locadex for your project')
   .option('-v, --verbose', 'Verbose output')
+  .option('-d, --debug', 'Debug output')
   .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions) =>
     withTelemetry({ enabled: !options.noTelemetry, options }, () =>
@@ -59,6 +62,7 @@ program
   .command('i18n')
   .description('Run AI-powered internationalization tasks')
   .option('-v, --verbose', 'Verbose output')
+  .option('-d, --debug', 'Debug output')
   .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions) =>
     withTelemetry({ enabled: !options.noTelemetry, options }, () =>

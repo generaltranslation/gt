@@ -20,11 +20,6 @@ function getFileList(filePath: string): FileEntry[] {
 }
 
 function saveFileList(files: FileEntry[], filePath: string): void {
-  // Ensure the directory exists before writing the file
-  const dir = dirname(filePath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
   writeFileSync(filePath, JSON.stringify(files, null, 2));
 }
 
@@ -106,7 +101,6 @@ export function addNextJsFilesToManager(
   existing: string[];
 } {
   const discoveredFiles = scanNextJsAppFiles(projectPath);
-  console.log(`[addNextJsFilesToManager] stateFilePath: ${stateFilePath}`);
   const existingFiles = getFileList(stateFilePath);
   const existingPaths = new Set(existingFiles.map((f) => f.path));
 

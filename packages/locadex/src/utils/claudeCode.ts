@@ -1,14 +1,9 @@
 import { spawn } from 'node:child_process';
-import {
-  logMessage,
-  logStep,
-  logSuccess,
-  logWarning,
-} from '../logging/console.js';
 import { ClaudeSDKMessage } from '../types/claude-sdk.js';
 import { constructResultInfo } from '../logging/constructInfo.js';
 import { guides } from '../tools/guides.js';
 import { SpinnerResult } from '@clack/prompts';
+import { logger } from '../logging/logger.js';
 
 export interface ClaudeCodeOptions {
   additionalSystemPrompt?: string;
@@ -58,17 +53,14 @@ const setupProcessHandlers = () => {
 
 export class ClaudeCodeRunner {
   private sessionId: string = '';
-  private verbose: boolean;
   private mcpConfig: string | undefined;
 
   constructor(
     private options: {
       apiKey?: string;
-      verbose?: boolean;
       mcpConfig?: string;
     } = {}
   ) {
-    this.verbose = options.verbose ?? false;
     this.mcpConfig = options.mcpConfig;
 
     // Ensure API key is set
@@ -141,9 +133,7 @@ export class ClaudeCodeRunner {
 
         for (const line of lines) {
           if (line.trim()) {
-            if (this.verbose) {
-              logMessage(line);
-            }
+            logger.verboseMessage(line);
             try {
               const outputData: ClaudeSDKMessage = JSON.parse(line);
               if (outputData.type === 'assistant') {
@@ -158,15 +148,15 @@ export class ClaudeCodeRunner {
                   }
                 });
                 if (text.length > 0) {
-                  logStep(text.join('').trim());
+                  logger.step(text.join('').trim());
                 }
                 if (toolUses.length > 0) {
-                  logMessage(`Used tools: ${toolUses.join(', ')}`);
+                  logger.message(`Used tools: ${toolUses.join(', ')}`);
                 }
               } else if (outputData.type === 'result') {
                 const resultInfo = constructResultInfo(outputData);
                 if (resultInfo) {
-                  logSuccess(resultInfo);
+                  logger.success(resultInfo);
                 }
               } else if (outputData.type === 'system') {
                 if (outputData.subtype === 'init') {
@@ -180,7 +170,7 @@ export class ClaudeCodeRunner {
       });
 
       claude.stderr?.on('data', () => {
-        logWarning('An error occurred while running Claude Code');
+        logger.warning('An error occurred while running Claude Code');
       });
 
       claude.on('close', (code) => {

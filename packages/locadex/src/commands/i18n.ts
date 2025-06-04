@@ -10,9 +10,12 @@ import {
 import { unlinkSync, existsSync } from 'node:fs';
 import { CliOptions } from '../types/cli.js';
 import { configureAgent } from '../utils/configuration.js';
+import { logger } from '../logging/logger.js';
 
 export async function i18nCommand(options: CliOptions) {
-  displayHeader();
+  logger.initialize(options);
+  
+  displayHeader(chalk.cyan('Locadex: i18n AI Agent'));
 
   const spinner = createSpinner();
 
@@ -25,7 +28,7 @@ export async function i18nCommand(options: CliOptions) {
 
     const stats = getNextJsAppRouterStats();
 
-    const { agent, filesStateFilePath } = configureAgent(options);
+    const { agent, filesStateFilePath } = configureAgent();
     stateFilePath = filesStateFilePath;
     const scanResult = addNextJsFilesToManager(stateFilePath);
 

@@ -1,21 +1,22 @@
 import { intro, outro, spinner } from '@clack/prompts';
 import chalk from 'chalk';
-import { ClaudeCodeRunner } from '../utils/claudeCode.js';
-import { fromPackageRoot } from '../utils/getPaths.js';
 import { createSpinner, displayHeader } from '../logging/console.js';
 import { allMcpPrompt } from '../prompts/system.js';
 import { CliOptions } from '../types/cli.js';
 import { configureAgent } from '../utils/configuration.js';
+import { logger } from '../logging/logger.js';
 
 export async function startCommand(options: CliOptions) {
-  displayHeader();
+  logger.initialize(options);
+  
+  displayHeader(chalk.cyan('Locadex: i18n AI Agent'));
 
   const spinner = createSpinner();
 
   spinner.start('Initializing Locadex...');
 
   try {
-    const { agent } = configureAgent(options);
+    const { agent } = configureAgent();
 
     const setupPrompt = `This project is a Next.js app router app.
 Your task is to internationalize the project using gt-next.
