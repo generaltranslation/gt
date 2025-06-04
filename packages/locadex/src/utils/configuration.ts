@@ -5,6 +5,7 @@ import { fromPackageRoot } from './getPaths.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { logMessage } from '../logging/console.js';
 
 const mcpConfig = {
   mcpServers: {
@@ -18,6 +19,12 @@ const mcpConfig = {
 
 export function configureAgent(options: CliOptions) {
   const tempDir = path.resolve(os.tmpdir(), '.locadex', randomUUID());
+  fs.mkdirSync(tempDir, { recursive: true });
+
+  if (options.verbose) {
+    logMessage(`[locadex] Temp directory created at: ${tempDir}`);
+  }
+
   let mcpConfigPath = path.resolve(tempDir, 'mcp.json');
   const stateFilePath = path.resolve(tempDir, 'files-state.json');
 
