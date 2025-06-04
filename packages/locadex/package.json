@@ -2,7 +2,7 @@
   "name": "locadex",
   "version": "0.0.2-alpha.1",
   "description": "An AI agent for internationalization",
-  "main": "dist/mcp.js",
+  "main": "dist/index.js",
   "type": "module",
   "bin": {
     "locadex": "dist/cli.js",

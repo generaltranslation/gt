@@ -20,6 +20,7 @@ export async function startCommand() {
     });
 
     const setupPrompt = `Use gt-next to internationalize this project.
+
 You additionally have access to the following mcp tools made available via the 'locadex' mcp server:
 ${mcpTools}
 Use these tools to help you with your tasks.

@@ -17,6 +17,6 @@ async function main() {
   addGuidesTools(server);
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('Locadex started on stdio');
+  console.error('locadex-mcp started on stdio');
 }
 main();
