@@ -2,7 +2,7 @@ import { readdirSync, statSync, existsSync, mkdirSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 import { readFileSync, writeFileSync } from 'node:fs';
 
-interface FileEntry {
+export interface FileEntry {
   path: string;
   addedAt: string;
   status: 'pending' | 'in_progress' | 'edited';
@@ -105,6 +105,7 @@ export function addNextJsFilesToManager(
   existing: string[];
 } {
   const discoveredFiles = scanNextJsAppFiles(projectPath);
+  console.log(`[addNextJsFilesToManager] stateFilePath: ${stateFilePath}`);
   const existingFiles = getFileList(stateFilePath);
   const existingPaths = new Set(existingFiles.map((f) => f.path));
 

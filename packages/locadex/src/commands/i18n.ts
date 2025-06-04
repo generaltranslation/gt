@@ -25,8 +25,8 @@ export async function i18nCommand(options: CliOptions) {
 
     const stats = getNextJsAppRouterStats();
 
-    const { agent, stateFilePath: tempStateFilePath } = configureAgent(options);
-    stateFilePath = tempStateFilePath;
+    const { agent, filesStateFilePath } = configureAgent(options);
+    stateFilePath = filesStateFilePath;
     const scanResult = addNextJsFilesToManager(stateFilePath);
 
     const setupPrompt = `This project is already setup for internationalization.

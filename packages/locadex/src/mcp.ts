@@ -10,7 +10,7 @@ import { addGuidesTools } from './tools/guides.js';
 import { addFileManagerTools } from './tools/fileManager.js';
 
 async function main() {
-  const stateFile = process.env.LOCADEX_FILES_STATE_FILE;
+  const stateFile = process.env.LOCADEX_FILES_STATE_FILE_PATH;
   if (stateFile && existsSync(stateFile)) {
     const state = JSON.parse(readFileSync(stateFile, 'utf8'));
     console.error(`[locadex-mcp] state: ${JSON.stringify(state, null, 2)}`);

@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { logMessage } from '../logging/console.js';
+import { FileEntry } from './getFiles.js';
 
 const mcpConfig = {
   mcpServers: {
@@ -26,14 +27,14 @@ export function configureAgent(options: CliOptions) {
   }
 
   let mcpConfigPath = path.resolve(tempDir, 'mcp.json');
-  const stateFilePath = path.resolve(tempDir, 'files-state.json');
+  const filesStateFilePath = path.resolve(tempDir, 'files-state.json');
 
-  const state = {};
+  const filesState: FileEntry[] = [];
 
-  fs.writeFileSync(stateFilePath, JSON.stringify(state, null, 2));
+  fs.writeFileSync(filesStateFilePath, JSON.stringify(filesState, null, 2));
 
   mcpConfig.mcpServers.locadex.env = {
-    LOCADEX_FILES_STATE_FILE: stateFilePath,
+    LOCADEX_FILES_STATE_FILE_PATH: filesStateFilePath,
   };
 
   try {
@@ -50,6 +51,6 @@ export function configureAgent(options: CliOptions) {
 
   return {
     agent,
-    stateFilePath,
+    filesStateFilePath,
   };
 }
