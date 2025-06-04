@@ -1,14 +1,14 @@
-# Internationalizing Ternary Operators
+# Conditional Content Internationalization Patterns
 
-This guide will discuss how to handle ternary operators in internationalization using `<T>`, `useGT()`/`getGT()`, and `useDict()`/`getDict()`.
+**Objective**: Transform ternary operators and conditional rendering into translatable patterns using `<T>`, `<Branch>`, `useGT()`/`getGT()`, and `useDict()`/`getDict()`.
 
-## Basic Examples
+## Core Constraint: Dynamic Content in `<T>` Components
 
-### Using `<T>` with Ternary Operators
+### `<Branch>` Component Pattern
 
-Generally, its good to use the `<Branch>` component when dealing with ternaries.
+**Rule**: `<T>` components cannot contain dynamic expressions. Use `<Branch>` for conditional JSX within `<T>`.
 
-Here is an example of a ternary statement
+**Non-internationalized conditional**:
 
 ```jsx
 const MyComponent = ({ isLoggedIn }) => {
@@ -24,8 +24,7 @@ const MyComponent = ({ isLoggedIn }) => {
 };
 ```
 
-Remember, the `<T>` component cannot take in any dynamic or changing content. All of its children must be static.
-Here is an invalid solution:
+**Invalid approach** - Dynamic ternary inside `<T>`:
 
 ```jsx
 const MyComponent = ({ isLoggedIn }) => {
@@ -41,7 +40,7 @@ const MyComponent = ({ isLoggedIn }) => {
 };
 ```
 
-Here is a valid solution:
+**Correct implementation** - `<Branch>` component:
 
 ```jsx
 const MyComponent = ({ isLoggedIn }) => {
@@ -57,11 +56,23 @@ const MyComponent = ({ isLoggedIn }) => {
 };
 ```
 
-This is a way of handling dynamic content while still allowing for translation to occur.
+**Requirements**:
 
-### Using `useGT()` with Ternary Operators
+- Convert boolean to string: `isLoggedIn.toString()`
+- Define static JSX for `true` and `false` props
+- Wrap entire structure in `<T>` component
 
-Here is an example of a non-internationalized ternary:
+**Recommendation**:
+
+- Whenever possible, use `<T>` component with Branches for internationalizing ternaries.
+- All ternaries used in JSX components can be converted to use Branches.
+- Use Variable components to wrap dynamic content.
+
+### String-Based Conditional Translation
+
+**Pattern**: Apply translation functions to each branch of ternary operators
+
+**Non-internationalized ternary**:
 
 ```jsx
 const MyComponent = ({ count }) => {
@@ -71,7 +82,7 @@ const MyComponent = ({ count }) => {
 };
 ```
 
-And here is the internationalized version:
+**Internationalized implementation**:
 
 ```jsx
 const MyComponent = ({ count }) => {
@@ -86,20 +97,13 @@ const MyComponent = ({ count }) => {
 };
 ```
 
-### Using `useDict()` with Ternary Operators
+**Key technique**: Apply `t()` function to each branch separately, using variable interpolation where needed.
 
-```jsx
-const MyComponent = ({ status }) => {
-  const t = useDict();
-  return (
-    <div>{status === 'active' ? t('Status.Active') : t('Status.Inactive')}</div>
-  );
-};
-```
+## Advanced Conditional Patterns
 
-## Complex Examples
+### Multi-Level Nested Conditions
 
-### Nested Ternary Operators
+**Pattern**: Chain ternary operators with translation applied to each outcome
 
 ```jsx
 const MyComponent = ({ user }) => {
@@ -116,7 +120,11 @@ const MyComponent = ({ user }) => {
 };
 ```
 
-### Ternary with Multiple Conditions
+**Technique**: Each condition level receives separate translation call.
+
+### Numerical Condition Branching
+
+**Pattern**: Handle zero, singular, and plural cases with appropriate translations
 
 ```jsx
 const MyComponent = ({ items }) => {
@@ -133,11 +141,18 @@ const MyComponent = ({ items }) => {
 };
 ```
 
-### Ternary with JSX Elements
+**Key requirements**:
+
+- Handle zero state explicitly
+- Use singular form for count === 1
+- Apply variable interpolation for plural cases
+
+### Complex JSX Conditional Rendering
+
+**Pattern**: Wrap each conditional JSX branch in separate `<T>` components
 
 ```jsx
 const MyComponent = ({ error, loading }) => {
-  const t = useGT();
   return (
     <div>
       {loading ? (

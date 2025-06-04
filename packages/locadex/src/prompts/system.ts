@@ -1,5 +1,21 @@
 import { guides } from '../tools/guides.js';
 
-export const mcpTools = `mcp__locadex__fetch-docs
-mcp__locadex__list-docs
+export const mcpDocsTools = `mcp__locadex__fetch-docs
+mcp__locadex__list-docs`;
+
+export const allMcpTools = `${mcpDocsTools}
 ${guides.map((guide) => `mcp__locadex__${guide.id}`).join('\n')}`;
+
+export const basicMcpGuides = guides
+  .filter((guide) => guide.type === 'basic')
+  .map((guide) => `mcp__locadex__${guide.id}`)
+  .join('\n');
+
+export const advancedMcpGuides = guides
+  .filter((guide) => guide.type === 'advanced')
+  .map((guide) => `mcp__locadex__${guide.id}`)
+  .join('\n');
+
+export const allMcpPrompt = `You have access to mcp tools made available via the 'locadex' mcp server:
+${allMcpTools}
+Use these tools to help you with your tasks. Call them as needed.`;

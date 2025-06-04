@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { ClaudeCodeRunner } from '../utils/claudeCode.js';
 import { fromPackageRoot } from '../utils/getPaths.js';
 import { createSpinner, displayHeader } from '../logging/console.js';
-import { mcpTools } from '../prompts/system.js';
+import { allMcpPrompt, allMcpTools } from '../prompts/system.js';
 
 export async function i18nCommand() {
   displayHeader();
@@ -21,7 +21,7 @@ export async function i18nCommand() {
 
     const setupPrompt = `This project is already setup for internationalization.
 You do not need to setup the project again.
-Your job is to internationalize the app's content using gt-next, specifically using:
+Your task is to internationalize the app's content using gt-next, specifically using:
 - useGT
 - getGT
 - useDict
@@ -36,14 +36,12 @@ Your core principles are:
 - Keep content in the same file where it came from
 - Use the tools provided to you to internationalize the content
 
-You additionally have access to the following mcp tools made available via the 'locadex' mcp server:
-${mcpTools}
-Use these tools to help you with your tasks.
+${allMcpPrompt}
 `;
 
     await claudeRunner.run(
       {
-        additionalSystemPrompt: mcpTools,
+        additionalSystemPrompt: allMcpTools,
         prompt: setupPrompt,
         mcpConfig: mcpConfigPath,
       },

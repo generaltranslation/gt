@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { ClaudeCodeRunner } from '../utils/claudeCode.js';
 import { fromPackageRoot } from '../utils/getPaths.js';
 import { createSpinner, displayHeader } from '../logging/console.js';
-import { mcpTools } from '../prompts/system.js';
+import { allMcpPrompt } from '../prompts/system.js';
 
 export async function startCommand() {
   displayHeader();
@@ -30,9 +30,8 @@ Your core principles are:
 - Keep content in the same file where it came from
 - Use the tools provided to you to internationalize the content
 
-You have access to the following mcp tools made available via the 'locadex' mcp server:
-${mcpTools}
-Use these tools to help you with your tasks.`;
+${allMcpPrompt}
+`;
 
     await claudeRunner.run(
       {

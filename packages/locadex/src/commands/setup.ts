@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { ClaudeCodeRunner } from '../utils/claudeCode.js';
 import { fromPackageRoot } from '../utils/getPaths.js';
 import { createSpinner, displayHeader } from '../logging/console.js';
-import { mcpTools } from '../prompts/system.js';
+import { allMcpPrompt, allMcpTools } from '../prompts/system.js';
 
 export async function setupCommand() {
   displayHeader();
@@ -22,9 +22,7 @@ export async function setupCommand() {
     const setupPrompt = `Use gt-next to setup this project for internationalization.
 Only prepare the project for internationalization, do not internationalize any content.
 
-You additionally have access to the following mcp tools made available via the 'locadex' mcp server:
-${mcpTools}
-Use these tools to help you with your tasks.
+${allMcpPrompt}
 `;
 
     await claudeRunner.run(

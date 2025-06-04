@@ -1,21 +1,21 @@
-# Internationalizing Interpolated Strings
+# String Interpolation Internationalization Patterns
 
-This guide will discuss how to handle string interpolation in internationalization using `useGT()`/`getGT()` and `useDict()`/`getDict()`.
+**Objective**: Transform template literal strings with dynamic variables into translatable strings using `useGT()`/`getGT()` and `useDict()`/`getDict()`.
 
-## Basic Examples
+## Core Pattern: Variable Injection
 
-### Using `useGT()`/`getGT()` with String Interpolation
+### `useGT()`/`getGT()` Method
 
-Here is an example of a non-internationalized interpolated string:
+**Transform**: Template literals → Translatable strings with variable placeholders
 
+**Non-internationalized pattern**:
 ```jsx
 const MyComponent = ({ name, count }) => {
   return <div>{`Welcome ${name}, you have ${count} items`}</div>;
 };
 ```
 
-And here is the internationalized version:
-
+**Internationalized implementation**:
 ```jsx
 const MyComponent = ({ name, count }) => {
   const t = useGT(); // Client-side
@@ -30,18 +30,23 @@ const MyComponent = ({ name, count }) => {
 };
 ```
 
-### Using `useDict()`/`getDict()` with String Interpolation
+**Key requirements**:
+- Replace `${variable}` syntax with `{variable}` placeholders
+- Pass dynamic values via `variables` object
+- Variable names must match placeholder names exactly
 
-Here is an example of a non-internationalized interpolated string:
+### `useDict()`/`getDict()` Method  
 
+**Transform**: Template literals → Dictionary keys with variable placeholders
+
+**Non-internationalized pattern**:
 ```jsx
 const MyComponent = ({ username, role }) => {
   return <div>{`User ${username} has the role of ${role}`}</div>;
 };
 ```
 
-And here is the internationalized version:
-
+**Dictionary structure**:
 ```json
 {
   "Users": {
@@ -50,6 +55,7 @@ And here is the internationalized version:
 }
 ```
 
+**Implementation**:
 ```jsx
 const MyComponent = ({ username, role }) => {
   const t = useDict(); // Client-side
@@ -64,13 +70,16 @@ const MyComponent = ({ username, role }) => {
 };
 ```
 
-## Complex Examples
+## Advanced Patterns
 
-### Multiple Variables with `useGT()`/`getGT()`
+### Multi-Variable Interpolation
 
+**Scenario**: Multiple dynamic values in a single translatable string
+
+**Implementation**:
 ```jsx
 const MyComponent = ({ firstName, lastName, age, city }) => {
-  const t = useGT(); // Client-side
+  const t = useGT(); // Client-side  
   // const t = await getGT(); // Server-side
   return (
     <div>
@@ -82,8 +91,13 @@ const MyComponent = ({ firstName, lastName, age, city }) => {
 };
 ```
 
-### Nested Objects with `useDict()`/`getDict()`
+**Requirements**: All placeholder names must have corresponding entries in `variables` object.
 
+### Object Property Extraction
+
+**Scenario**: Extract values from nested objects for interpolation
+
+**Dictionary definition**:
 ```json
 {
   "Users": {
@@ -92,6 +106,7 @@ const MyComponent = ({ firstName, lastName, age, city }) => {
 }
 ```
 
+**Implementation**:
 ```jsx
 const MyComponent = ({ user }) => {
   const t = useDict(); // Client-side
@@ -109,3 +124,5 @@ const MyComponent = ({ user }) => {
   );
 };
 ```
+
+**Pattern**: Explicitly map object properties to named variables for clear placeholder relationships.

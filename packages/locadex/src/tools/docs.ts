@@ -5,7 +5,7 @@ import { fetchDocContent, getDocs } from '../utils/getDocs.js';
 export function addDocsTools(server: McpServer) {
   server.tool(
     'fetch-docs',
-    'Fetches the content of a documentation file by its path.',
+    'Fetches the content of a specific documentation file by its path.',
     {
       path: z
         .string()
@@ -53,7 +53,7 @@ export function addDocsTools(server: McpServer) {
 
   server.tool(
     'list-docs',
-    'Lists available documentation files in the format of an llms.txt file.',
+    'Lists available documentation files in the format of an llms.txt file. This is a list of all the documentation files available to you.',
     {},
     async () => {
       try {

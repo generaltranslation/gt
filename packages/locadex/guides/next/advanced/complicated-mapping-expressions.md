@@ -1,13 +1,14 @@
-# Internationalizing complicated mapping expressions
+# Internationalization Patterns for Dynamic Content
 
-This guide will discuss how to internationalize maps using `<T>`, `useGT()`/`getGT()`, and `useDict()`/`getDict()`
+**Objective**: Implement internationalization for mapping expressions using `<T>`, `useGT()`/`getGT()`, and `useDict()`/`getDict()`.
 
-## Basic case
+## Core Principles
 
-### Using `<T>`
+### `<T>` Component Usage
 
-You generally use a `<T>` to translate jsx content.
+**Rule**: `<T>` components translate static JSX content only. Dynamic content requires alternative approaches.
 
+**Valid pattern**:
 ```jsx
 <T>
   <div> Here's some translated text </div>
@@ -15,8 +16,7 @@ You generally use a `<T>` to translate jsx content.
 </T>
 ```
 
-But, `<T>`s cannot handle dynamic content. `<T>` can only read static content. This would be invalid.
-
+**Invalid pattern** - `<T>` cannot process dynamic mapping:
 ```jsx
 const MyComponent = () => {
   const someList = [
@@ -24,44 +24,39 @@ const MyComponent = () => {
     <div>Hello Ernest</div>,
     <div>Hello Brian</div>,
   ];
-  return <T>{someList.map((item) => item)}</T>;
+  return <T>{someList.map((item) => item)}</T>; // INVALID
 };
 ```
 
-In this case, we can instead add a `<T>` component for each item in the list, and remove the `<T>` components wrapping the map.
-
+**Solution**: Apply `<T>` to individual static items, not the mapping operation:
 ```jsx
 const MyComponent = () => {
   const someList = [
-    <T>
-      <div>Hello Archie</div>
-    </T>,
-    <T>
-      <div>Hello Ernest</div>
-    </T>,
-    <T>
-      <div>Hello Brian</div>
-    </T>,
+    <T><div>Hello Archie</div></T>,
+    <T><div>Hello Ernest</div></T>,
+    <T><div>Hello Brian</div></T>,
   ];
   return <>{someList.map((item) => item)}</>;
 };
 ```
 
-Notice how each `<T>` compnent now has direct access to static text.
+**Key requirement**: Each `<T>` component must have direct access to static text content.
 
-### Strings with `useGT()` and `getGT()`
+### String Translation Methods
 
-A similar principle would apply to strings as well
+#### `useGT()` and `getGT()` Pattern
+
+**Implementation**: Translate individual strings within data structures before mapping:
 
 ```jsx
 import { useGT } from "gt-next/client";
 import { getGT } from "gt-next/server";
 
 const MyComponent = () => {
-  // Client
-  const t = useGT();
-  // Server
-  const t = await getGT();
+  // Client-side: const t = useGT();
+  // Server-side: const t = await getGT();
+  const t = useGT(); // or await getGT()
+  
   const someList = [
     t('Hello Archie'),
     t('Hello Ernest'),
@@ -71,32 +66,31 @@ const MyComponent = () => {
 };
 ```
 
-### Strings with `useDict()` and `getDict()`
+#### `useDict()` and `getDict()` Pattern
 
-A similar principle would apply to dictionary strings as well.
-However, this is not super desirable as we are now moving content away from where it is being implemented.
+**Note**: Dictionary approach separates content from implementation context. Use sparingly - only when content reuse across components justifies the separation.
 
-Here is the dictionary file
-
+**Dictionary structure**:
 ```json
 {
-  "Greetings" {
+  "Greetings": {
     "Archie": "Archie",
-    "Ernest": "Ernest",
+    "Ernest": "Ernest", 
     "Brian": "Brian"
   }
 }
 ```
 
+**Implementation**:
 ```jsx
 import { useDict } from "gt-next/client";
 import { getDict } from "gt-next/server";
 
 const MyComponent = () => {
-  // Client
-  const t = useDict();
-  // Server
-  const t = await getDict();
+  // Client-side: const t = useDict();
+  // Server-side: const t = await getDict();
+  const t = useDict(); // or await getDict()
+  
   const someList = [
     t('Greetings.Archie'),
     t('Greetings.Ernest'),
@@ -106,10 +100,13 @@ const MyComponent = () => {
 };
 ```
 
-## Nested objects
+## Complex Nested Object Translation
 
-Typically nested objects that are exported are combined with maps.
+### Challenge: Multi-level Data Structures
 
+**Scenario**: Nested objects with translatable content at multiple levels require systematic translation approach.
+
+**Non-internationalized example**:
 ```jsx
 const MyComponent = () => {
   const users = {
@@ -119,13 +116,13 @@ const MyComponent = () => {
       skills: ['JavaScript', 'React', 'TypeScript'],
     },
     ernest: {
-      name: 'Ernest',
+      name: 'Ernest', 
       role: 'Designer',
       skills: ['UI/UX', 'Figma', 'Illustration'],
     },
     brian: {
       name: 'Brian',
-      role: 'Product Manager',
+      role: 'Product Manager', 
       skills: ['Strategy', 'Planning', 'Communication'],
     },
   };
@@ -148,19 +145,23 @@ const MyComponent = () => {
 };
 ```
 
-Internationalizing this proves more challenging because we have the word role which needs to be translated as well as other content.
+### Solution: Comprehensive Translation Strategy
 
-This solution primarily relies on the `useGT()` hook to facilitate translation. You can also notice that we provide a context for one of the translations.
-We also use the string interpolation syntax to represent Role, and to inject it into the string.
+**Requirements**:
+- Translate role labels and skill names
+- Handle string interpolation for template text
+- Provide contextual information for ambiguous terms
 
+**Implementation**:
 ```jsx
 import { useGT } from 'gt-next/client';
+
 const MyComponent = () => {
   const t = useGT();
   const users = {
     archie: {
       name: 'Archie',
-      role: t('Developer', { context: 'As in a software developer' }), // Sometimes it's important to provide additional context for easier translation
+      role: t('Developer', { context: 'As in a software developer' }),
       skills: [t('JavaScript'), t('React'), t('TypeScript')],
     },
     ernest: {
@@ -174,6 +175,7 @@ const MyComponent = () => {
       skills: [t('Strategy'), t('Planning'), t('Communication')],
     },
   };
+  
   return (
     <div>
       {Object.entries(users).map(([key, user]) => (
@@ -191,3 +193,8 @@ const MyComponent = () => {
   );
 };
 ```
+
+**Key techniques**:
+1. **Context provision**: `{ context: 'As in a software developer' }` for disambiguation
+2. **Variable interpolation**: `t('Role: {role}', { variables: { role: user.role } })`
+3. **Systematic translation**: Apply `t()` to all user-facing strings within data structure
