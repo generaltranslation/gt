@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import './instrument.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { addDocsTools } from './tools/docs.js';

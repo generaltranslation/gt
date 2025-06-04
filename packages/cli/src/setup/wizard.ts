@@ -46,7 +46,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
       { value: 'gatsby', label: chalk.magenta('Gatsby') },
       { value: 'react', label: chalk.yellow('React') },
       { value: 'redwood', label: chalk.red('RedwoodJS') },
-      { value: 'other', label: chalk.gray('Other') },
+      { value: 'other', label: chalk.dim('Other') },
     ],
     defaultValue: 'next-app',
   });
@@ -236,7 +236,7 @@ Please let us know what you would like to see supported at https://github.com/ge
   }
 
   const applyFormatting = await promptConfirm({
-    message: `Would you like the wizard to auto-format the modified files? ${chalk.gray(
+    message: `Would you like the wizard to auto-format the modified files? ${chalk.dim(
       `(${formatter})`
     )}`,
     defaultValue: true,

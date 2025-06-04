@@ -63,7 +63,7 @@ export async function stageProject(
     } else {
       logErrorAndExit(
         chalk.red(
-          `Error: CLI tool encountered syntax errors while scanning for translatable content. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
+          `Error: CLI tool encountered syntax errors while scanning for translatable content. ${chalk.dim('To ignore these errors, re-run with --ignore-errors')}\n` +
             errors
               .map((error) => chalk.red('• ') + chalk.white(error) + '\n')
               .join('')

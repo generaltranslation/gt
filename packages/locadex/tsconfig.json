@@ -14,7 +14,13 @@
     "declarationDir": "./dist",
     "declarationMap": true,
     "removeComments": false,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "inlineSources": true,
+
+    // Set `sourceRoot` to  "/" to strip the build path prefix
+    // from generated source code references.
+    // This improves issue grouping in Sentry.
+    "sourceRoot": "/"
   },
   "include": ["src/**/*", "src/.ts"],
   "exclude": ["node_modules", "dist"]

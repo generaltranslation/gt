@@ -28,7 +28,7 @@ export async function retrieveCredentials(
   );
 
   logMessage(
-    `${chalk.gray(
+    `${chalk.dim(
       `If the browser window didn't open automatically, please open the following link:`
     )}\n\n${chalk.cyan(urlToOpen)}`
   );

@@ -356,7 +356,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
 
     const message = !isUsingGT
       ? 'What is the format of your language resource files? Select as many as applicable.\nAdditionally, you can translate any other files you have in your project.'
-      : `${chalk.gray(
+      : `${chalk.dim(
           '(Optional)'
         )} Do you have any separate files you would like to translate? For example, extra Markdown files for docs.`;
     const dataFormats = await promptMultiSelect({

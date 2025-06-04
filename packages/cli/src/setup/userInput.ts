@@ -15,7 +15,7 @@ export async function getDesiredLocales(): Promise<{
 
   // Ask for the locales
   const locales = await promptText({
-    message: `What locales would you like to translate your project into? ${chalk.gray('(space-separated list)')}`,
+    message: `What locales would you like to translate your project into? ${chalk.dim('(space-separated list)')}`,
     defaultValue: 'es zh fr de ja',
     validate: (input) => {
       const localeList = input.split(' ');

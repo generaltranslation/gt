@@ -77,8 +77,9 @@ function displayInitializingText() {
   // eslint-disable-next-line no-console
   console.log(
     `\n${chalk.bold.blue('General Translation, Inc.')}
-${chalk.gray('https://generaltranslation.com/docs')}
-${chalk.gray(`Locadex Version: ${version}\n`)}`
+${chalk.dim('https://generaltranslation.com/docs')}
+${chalk.dim(`Locadex Version: ${version}\n`)}
+${chalk.dim('Locadex uses Sentry and PostHog to collect telemetry data. You can opt out by running with the --no-telemetry flag.')}`
   );
 }
 

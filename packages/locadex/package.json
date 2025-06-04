@@ -19,9 +19,12 @@
     "@anthropic-ai/sdk": "^0.52.0",
     "@clack/prompts": "^1.0.0-alpha.0",
     "@modelcontextprotocol/sdk": "^1.12.0",
+    "@sentry/cli": "^2.46.0",
+    "@sentry/node": "^9.26.0",
     "chalk": "^4.1.2",
     "commander": "^12.1.0",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "posthog-node": "^4.18.0"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.13.0",
@@ -37,17 +40,19 @@
   "scripts": {
     "patch": "npm version patch",
     "build": "tsc",
-    "build:clean": "rm -rf dist; npm run lint && npm run build",
+    "build:release": "npm run build:clean && npm run sentry:sourcemaps",
+    "build:clean": "rm -rf dist && npm run build",
     "dev": "npm run build && node dist/index.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "release": "npm run build:clean && npm publish --access public",
-    "release:alpha": "npm run build:clean && npm publish --access public --tag alpha",
-    "release:beta": "npm run build:clean && npm publish --access public --tag beta",
-    "release:latest": "npm run build:clean && npm publish --access public --tag latest",
+    "release": "npm run build:release && npm publish --access public",
+    "release:alpha": "npm run build:release && npm publish --access public --tag alpha",
+    "release:beta": "npm run build:release && npm publish --access public --tag beta",
+    "release:latest": "npm run build:release && npm publish --access public --tag latest",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org general-translation --project locadex ./dist && sentry-cli sourcemaps upload --org general-translation --project locadex ./dist"
   },
   "repository": {
     "type": "git",

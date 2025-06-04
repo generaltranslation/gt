@@ -3,3 +3,5 @@ package-lock.json
 archived
 test_script.sh
 .tmp
+# Sentry Config File
+.sentryclirc
