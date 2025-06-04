@@ -10,76 +10,76 @@ type Guide = {
 
 export const guides: Guide[] = [
   {
-    id: 'basic_guide-nextjs-client-side-components',
+    id: 'basic_next-client-side-components',
     description:
       'Basic guide on how to internationalize client-side components.',
     path: 'guides/next/basic/client-side-components.md',
     type: 'basic',
   },
   {
-    id: 'basic_guide-nextjs-server-side-components',
+    id: 'basic_next-server-side-components',
     description:
       'Basic guide on how to internationalize server-side components.',
     path: 'guides/next/basic/server-side-components.md',
     type: 'basic',
   },
   {
-    id: 'basic_guide-nextjs-locale-selector',
+    id: 'basic_next-locale-selector',
     description:
       'Basic guide on how to add a locale selector to your application.',
     path: 'guides/next/basic/locale-selector.md',
     type: 'basic',
   },
   {
-    id: 'basic_guide-nextjs-setup',
+    id: 'basic_next-setup',
     description: 'Basic guide for setting up gt-next in a Next.js project.',
     path: 'guides/next/basic/setup.md',
     type: 'basic',
   },
   {
-    id: 'basic_guide-nextjs-jsx',
+    id: 'basic_next-jsx',
     description:
       'Basic guide for translating JSX content in a Next.js project.',
     path: 'guides/next/basic/jsx.md',
     type: 'basic',
   },
   {
-    id: 'advanced_guide-nextjs-var-outside-client-component',
+    id: 'advanced_next-var-outside-client-component',
     description:
       'Advanced guide for wherever you see a `const` or `let` declaration outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are ONLY used or imported by client side components.',
     path: 'guides/next/advanced/var-outside-client-component.md',
     type: 'advanced',
   },
   {
-    id: 'advanced_guide-nextjs-var-outside-server-component',
+    id: 'advanced_next-var-outside-server-component',
     description:
       'Advanced guide for wherever you see a `const` or `let` declaration outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are ONLY used or imported by server side components.',
     path: 'guides/next/advanced/var-outside-server-component.md',
     type: 'advanced',
   },
   {
-    id: 'advanced_guide-nextjs-var-outside-client-server-component',
+    id: 'advanced_next-var-outside-client-server-component',
     description:
       'Advanced guide for wherever you see a `const` or `let` declaration outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are used or imported by both client side and server side components.',
     path: 'guides/next/advanced/var-outside-client-server-component.md',
     type: 'advanced',
   },
   {
-    id: 'advanced_guide-nextjs-ternary-operators',
+    id: 'advanced_next-ternary-operators',
     description:
       'Advanced guide for wherever you see a ternary operator or conditional statements that needs to be internationalized.',
     path: 'guides/next/advanced/ternary-operators.md',
     type: 'advanced',
   },
   {
-    id: 'advanced_guide-nextjs-complicated-mapping-expressions',
+    id: 'advanced_next-complicated-mapping-expressions',
     description:
       'Advanced guide for wherever you see a mapping expression or mapping expression for a nested data structure that needs to be internationalized.',
     path: 'guides/next/advanced/complicated-mapping-expressions.md',
     type: 'advanced',
   },
   {
-    id: 'advanced_guide-nextjs-interpolated-strings',
+    id: 'advanced_next-interpolated-strings',
     description:
       'Advanced guide for wherever you see an interpolated string that needs to be internationalized.',
     path: 'guides/next/advanced/interpolated-strings.md',
