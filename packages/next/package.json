@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "5.2.30",
+  "version": "5.2.33",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -13,9 +13,9 @@
     "CHANGELOG.md"
   ],
   "dependencies": {
-    "@generaltranslation/supported-locales": "^2.0.9",
-    "generaltranslation": "^6.2.9",
-    "gt-react": "^9.2.22"
+    "@generaltranslation/supported-locales": "^2.0.10",
+    "generaltranslation": "^6.2.10",
+    "gt-react": "^9.2.24"
   },
   "scripts": {
     "patch": "npm version patch",
@@ -70,6 +70,10 @@
       "types": "./dist/middleware.d.ts",
       "default": "./dist/middleware.js"
     },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    },
     "./_request": {
       "default": "./dist/_request.js"
     },
@@ -96,6 +100,9 @@
       ],
       "middleware": [
         "./dist/middleware.d.ts"
+      ],
+      "types": [
+        "./dist/types.d.ts"
       ],
       "_request": [
         "./dist/_request.d.ts"
@@ -125,6 +132,9 @@
       ],
       "gt-next/middleware": [
         "/dist/middleware"
+      ],
+      "gt-next/types": [
+        "/dist/types"
       ],
       "gt-next/_request": [
         "/dist/_request"

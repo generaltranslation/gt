@@ -116,7 +116,9 @@ export function buildJSXTree(
     if (elementIsVariable) {
       parseJSXElement(importAliases, element, updates, errors, file);
       return {
-        type: componentType,
+        // if componentType is undefined, use typeName
+        // Basically, if componentType is not a GT component, use typeName such as <div>
+        type: componentType ?? typeName,
         props,
       };
     }
@@ -141,7 +143,9 @@ export function buildJSXTree(
     }
 
     return {
-      type: componentType,
+      // if componentType is undefined, use typeName
+      // Basically, if componentType is not a GT component, use typeName such as <div>
+      type: componentType ?? typeName,
       props,
     };
   }
