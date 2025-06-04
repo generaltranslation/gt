@@ -45,11 +45,11 @@ export async function i18nCommand(options: CliOptions) {
     const setupPrompt = `This project is already setup for internationalization.
 You do not need to setup the project again.
 Your task is to internationalize the app's content using gt-next, specifically using:
+- <T> component (HIGHLY PREFERRED)
 - useGT
 - getGT
 - useDict
 - getDict
-- <T> 
 
 To validate the use of gt-next, you can run the following command:
 'npx gtx-cli translate --dry-run'
@@ -58,19 +58,22 @@ To validate the use of gt-next, you can run the following command:
 The i18n file manager has been preloaded with ${stats.totalFiles} TypeScript files (${stats.tsFiles} .ts files, ${stats.tsxFiles} .tsx files) from the Next.js app directory.
 ${scanResult.added.length > 0 ? `${scanResult.added.length} new files were added to your internationalization checklist.` : 'All files were already in your internationalization checklist.'}
 
-**Important**: This is a scan that includes ALL .ts and .tsx files. You should actively review and mark completed files that don't contain user-facing content.
+**Important**: This is a scan that includes ALL .ts and .tsx files. You should actively review and mark files as edited files that don't contain user-facing content.
 
 ### Workflow:
-1. **Start by checking your checklist**: Use 'listFiles' to see what files were preloaded
-2. **Remove irrelevant files**: Use 'removeFile' to remove files that don't need internationalization (API routes, utility functions, type definitions, etc.)
-3. **Add new files when needed**: If you discover a file that needs internationalization that's not in the checklist, use 'addFile' to add it with status 'pending'
-4. **Track your progress**: When you start working on a file, use 'addFile' to update its status to 'in_progress'
-5. **Mark completion**: When you finish internationalizing a file, use 'addFile' to update its status to 'completed'
+1. **Start by checking your checklist**: Use 'listFiles' to see files that need to be internationalized
+2. **Select a file to internationalize**: Select a file that is marked as 'pending' and mark it as 'in_progress' with the 'markFileAsInProgress' tool
+3. **Read the selected file**: Read the file that you just got from the checklist
+4. **Decide if you need to internationalize**: Not all files need to be internationalized. Mark the file as 'edited' if it doesn't contain user-facing content with the 'markFileAsEdited' tool then go back to step 1. If it does contain user-facing content, continue to the next step.
+5. **Identify the tools to use**: Choose from the list of guides to help you with your task. If you need to look up documentation, use the 'get-docs' and 'fetch-docs' tools in tandem
+6. **Internationalize**: You now have the necessary knowledge. Internationalize the file using the information from the tools provided to you.
+4. **Track your progress**: When you are finished, mark the tool as 'edited' to show that you have made changes to the file with the 'markFileAsEdited' tool
+5. **Continue**: Return to step 1 and repeat the process until all files are marked as 'edited'
 
 Always use the file manager as your source of truth for which files need to be processed. Be proactive about removing files that don't need translation to keep your checklist focused.
 
 Our advice to you is:
-- You should strongly prefer using <T> component over using getGT() or useGT() and getDict() or useDict()
+- You should strongly prefer using <T> component over all others. Only use getGT() or useGT() and getDict() or useDict() for string content. All other JSX content should ALWAYS be internationalized using <T> component.
 - You should not be adding i18n middleware to the app
 
 CORE PRINCIPLES OF I18N:

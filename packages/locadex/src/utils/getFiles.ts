@@ -11,6 +11,18 @@ export const DEFAULT_FILE_LIST_PATH = fromPackageRoot(
 // Global variable to store the current session's file path
 let currentFileListPath = DEFAULT_FILE_LIST_PATH;
 
+// Initialize file path from environment variable if available (for MCP server)
+function initializeFileListPath() {
+  const uniqueId = process.env.LOCADEX_FILE_LIST_ID;
+  if (uniqueId) {
+    currentFileListPath = fromPackageRoot(`.tmp/locadex-files-${uniqueId}.json`);
+    console.error(`[getFiles] Initialized file list path from env: ${currentFileListPath}`);
+  }
+}
+
+// Call initialization when module loads
+initializeFileListPath();
+
 export function setFileListPath(uniqueId: string): string {
   currentFileListPath = fromPackageRoot(`.tmp/locadex-files-${uniqueId}.json`);
   return currentFileListPath;
@@ -23,7 +35,7 @@ export function getFileListPath(): string {
 interface FileEntry {
   path: string;
   addedAt: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: 'pending' | 'in_progress' | 'edited';
 }
 
 function getFileList(): FileEntry[] {
@@ -48,7 +60,7 @@ function saveFileList(files: FileEntry[]): void {
 
 function addFileToList(
   filePath: string,
-  status: 'pending' | 'in_progress' | 'completed' = 'pending'
+  status: 'pending' | 'in_progress' | 'edited' = 'pending'
 ): void {
   const files = getFileList();
   const existingIndex = files.findIndex((f) => f.path === filePath);
@@ -157,7 +169,7 @@ export function addNextJsFilesToManager(projectPath: string = process.cwd()): {
 export function getCurrentFileList(): {
   path: string;
   addedAt: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: 'pending' | 'in_progress' | 'edited';
 }[] {
   return getFileList();
 }

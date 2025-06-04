@@ -26,8 +26,15 @@ export interface ClaudeCodeObservation {
 }
 
 const DEFAULT_ALLOWED_TOOLS = [
-  'mcp__locadex__list-docs',
+  'mcp__locadex__listFiles',
   'mcp__locadex__fetch-docs',
+  'mcp__locadex__list-docs',
+  'mcp__locadex__addFile',
+  'mcp__locadex__markFileAsPending',
+  'mcp__locadex__markFileAsInProgress',
+  'mcp__locadex__markFileAsEdited',
+  'mcp__locadex__removeFile',
+  'mcp__locadex__clearFiles',
   'Bash',
   'Edit',
   'MultiEdit',

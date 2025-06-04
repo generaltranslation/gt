@@ -2,10 +2,15 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { fetchDocContent, getDocs } from '../utils/getDocs.js';
 
+export const docsTools: { [id: string]: string } = {
+  'fetch-docs': 'Fetches the content of a specific documentation file by its path.',
+  'list-docs': 'Lists available documentation files in the format of an llms.txt file. This is a list of all the documentation files available to you.'
+};
+
 export function addDocsTools(server: McpServer) {
   server.tool(
     'fetch-docs',
-    'Fetches the content of a specific documentation file by its path.',
+    docsTools['fetch-docs'],
     {
       path: z
         .string()
@@ -53,7 +58,7 @@ export function addDocsTools(server: McpServer) {
 
   server.tool(
     'list-docs',
-    'Lists available documentation files in the format of an llms.txt file. This is a list of all the documentation files available to you.',
+    docsTools['list-docs'],
     {},
     async () => {
       try {

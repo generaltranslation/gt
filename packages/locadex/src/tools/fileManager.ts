@@ -10,10 +10,20 @@ import { dirname } from 'node:path';
 import { z } from 'zod';
 import { getFileListPath } from '../utils/getFiles.js';
 
+export const fileManagerTools: { [id: string]: string } = {
+  'addFile': 'Add a file to the internationalization checklist',
+  'markFileAsPending': 'Mark a file as pending internationalization in the internationalization checklist',
+  'markFileAsInProgress': 'Mark a file as in progress in the internationalization checklist',
+  'markFileAsEdited': 'Mark a file as edited in the internationalization checklist',
+  'removeFile': 'Remove a file from the internationalization checklist',
+  'listFiles': 'List all files in the internationalization checklist',
+  'clearFiles': 'Clear all files from the internationalization checklist by deleting the file'
+};
+
 interface FileEntry {
   path: string;
   addedAt: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: 'pending' | 'in_progress' | 'edited';
 }
 
 function getFileList(): FileEntry[] {
@@ -41,13 +51,13 @@ function saveFileList(files: FileEntry[]): void {
 export function addFileManagerTools(server: McpServer) {
   server.tool(
     'addFile',
-    'Add a file to the internationalization checklist',
+    fileManagerTools['addFile'],
     {
       filePath: z
         .string()
         .describe('Path to the file that needs to be internationalized'),
       status: z
-        .enum(['pending', 'in_progress', 'completed'])
+        .enum(['pending', 'in_progress', 'edited'])
         .optional()
         .default('pending')
         .describe('Status of the file (default: pending)'),
@@ -83,7 +93,7 @@ export function addFileManagerTools(server: McpServer) {
 
   server.tool(
     'markFileAsPending',
-    'Mark a file as pending internationalization in the internationalization checklist',
+    fileManagerTools['markFileAsPending'],
     {
       filePath: z.string().describe('Path to the file to mark as pending'),
     },
@@ -124,7 +134,7 @@ export function addFileManagerTools(server: McpServer) {
 
   server.tool(
     'markFileAsInProgress',
-    'Mark a file as in progress in the internationalization checklist',
+    fileManagerTools['markFileAsInProgress'],
     {
       filePath: z.string().describe('Path to the file to mark as in progress'),
     },
@@ -164,10 +174,10 @@ export function addFileManagerTools(server: McpServer) {
   );
 
   server.tool(
-    'markFileAsCompleted',
-    'Mark a file as completed in the internationalization checklist',
+    'markFileAsEdited',
+    fileManagerTools['markFileAsEdited'],
     {
-      filePath: z.string().describe('Path to the file to mark as completed'),
+      filePath: z.string().describe('Path to the file to mark as edited'),
     },
     async ({ filePath }) => {
       const files = getFileList();
@@ -175,7 +185,7 @@ export function addFileManagerTools(server: McpServer) {
       const updatedFiles = files.map((f) => {
         if (f.path === filePath) {
           foundFile = true;
-          return { ...f, status: 'completed' } as FileEntry;
+          return { ...f, status: 'edited' } as FileEntry;
         }
         return f;
       });
@@ -197,7 +207,7 @@ export function addFileManagerTools(server: McpServer) {
         content: [
           {
             type: 'text',
-            text: `File "${filePath}" has been marked as completed in the internationalization checklist successfully. Ensure that you continue to use the internationalization checklist to track your progress. Please proceed with the current tasks if applicable`,
+            text: `File "${filePath}" has been marked as edited in the internationalization checklist successfully. Ensure that you continue to use the internationalization checklist to track your progress. Please proceed with the current tasks if applicable`,
           },
         ],
       };
@@ -206,10 +216,10 @@ export function addFileManagerTools(server: McpServer) {
 
   server.tool(
     'listFiles',
-    'List all files in the internationalization checklist',
+    fileManagerTools['listFiles'],
     {
       status: z
-        .enum(['pending', 'in_progress', 'completed'])
+        .enum(['pending', 'in_progress', 'edited'])
         .optional()
         .describe('Filter by status (optional)'),
     },
@@ -249,7 +259,7 @@ export function addFileManagerTools(server: McpServer) {
 
   server.tool(
     'clearFiles',
-    'Clear all files from the internationalization checklist by deleting the file',
+    fileManagerTools['clearFiles'],
     {},
     async () => {
       const files = getFileList();
