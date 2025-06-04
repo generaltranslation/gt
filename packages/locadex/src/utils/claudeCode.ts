@@ -5,6 +5,7 @@ import { guides } from '../tools/guides.js';
 import { SpinnerResult } from '@clack/prompts';
 import { logger } from '../logging/logger.js';
 import { fileManagerTools } from '../tools/fileManager.js';
+import { posthog } from '../telemetry.js';
 
 export interface ClaudeCodeOptions {
   additionalSystemPrompt?: string;
@@ -136,37 +137,8 @@ export class ClaudeCodeRunner {
         for (const line of lines) {
           if (line.trim()) {
             logger.verboseMessage(line);
-            try {
-              const outputData: ClaudeSDKMessage = JSON.parse(line);
-              if (outputData.type === 'assistant') {
-                const text: string[] = [];
-                const toolUses: string[] = [];
-                outputData.message.content.forEach((c) => {
-                  if (c.type === 'text') {
-                    text.push(c.text);
-                  }
-                  if (c.type === 'tool_use') {
-                    toolUses.push(c.name);
-                  }
-                });
-                if (text.length > 0) {
-                  logger.step(text.join('').trim());
-                }
-                if (toolUses.length > 0) {
-                  logger.message(`Used tools: ${toolUses.join(', ')}`);
-                }
-              } else if (outputData.type === 'result') {
-                const resultInfo = constructResultInfo(outputData);
-                if (resultInfo) {
-                  logger.success(resultInfo);
-                }
-              } else if (outputData.type === 'system') {
-                if (outputData.subtype === 'init') {
-                  obs.spinner.stop('Locadex initialized');
-                  this.sessionId = outputData.session_id;
-                }
-              }
-            } catch (error) {}
+            const outputData: ClaudeSDKMessage = JSON.parse(line);
+            this.handleSDKOutput(outputData, obs);
           }
         }
       });
@@ -191,5 +163,50 @@ export class ClaudeCodeRunner {
         reject(new Error(`Failed to run Claude Code: ${error.message}`));
       });
     });
+  }
+
+  private handleSDKOutput(
+    outputData: ClaudeSDKMessage,
+    obs: ClaudeCodeObservation
+  ) {
+    try {
+      if (outputData.type === 'assistant') {
+        const text: string[] = [];
+        const toolUses: string[] = [];
+        outputData.message.content.forEach((c) => {
+          if (c.type === 'text') {
+            text.push(c.text);
+          }
+          if (c.type === 'tool_use') {
+            toolUses.push(c.name);
+            if (c.name.startsWith('mcp__locadex__')) {
+              posthog.capture({
+                distinctId: 'anonymous',
+                event: 'tool_used',
+                properties: {
+                  tool: c.name,
+                },
+              });
+            }
+          }
+        });
+        if (text.length > 0) {
+          logger.step(text.join('').trim());
+        }
+        if (toolUses.length > 0) {
+          logger.message(`Used tools: ${toolUses.join(', ')}`);
+        }
+      } else if (outputData.type === 'result') {
+        const resultInfo = constructResultInfo(outputData);
+        if (resultInfo) {
+          logger.success(resultInfo);
+        }
+      } else if (outputData.type === 'system') {
+        if (outputData.subtype === 'init') {
+          obs.spinner.stop('Locadex initialized');
+          this.sessionId = outputData.session_id;
+        }
+      }
+    } catch (error) {}
   }
 }

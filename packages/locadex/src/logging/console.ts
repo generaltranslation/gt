@@ -76,7 +76,7 @@ function displayInitializingText() {
     `\n${chalk.bold.blue('General Translation, Inc.')}
 ${chalk.dim('https://generaltranslation.com/docs')}
 
-${chalk.dim('Locadex uses Sentry and PostHog to collect telemetry data. You can opt out by running with the --no-telemetry flag.')}
+${chalk.dim('Locadex uses Sentry and PostHog to collect anonymous telemetry data. You can opt out by running with the --no-telemetry flag.')}
 `
   );
 }
