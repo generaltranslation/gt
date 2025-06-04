@@ -60,7 +60,7 @@ export const useContent = async () => {
 export const useNestedContent = async () => {
   const t = await getGT();
   return {
-    name: t('Brian'),
+    name: 'Brian',
     title: t('Engineer'),
   };
 };
@@ -72,6 +72,8 @@ For more examples, you can check out the tools about variables outside of functi
 ## The `getDict()` function
 
 This function is useful for centralizing data in one place.
+You should avoid using `getDict()` when it's possible to use `getGT()`.
+
 It access a `dictionary.json` file that maps keys (or nested keys) to string values.
 
 In this case,

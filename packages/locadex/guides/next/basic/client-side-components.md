@@ -1,19 +1,22 @@
-# How to internationalize client-side components
+# Client-Side Component Internationalization
 
-You have three methods for internationalizing content on the client side: `<T>`, `useGT()`, and `useDict()`.
-The syntax for `<T>` is identical on both client and server side components so this will not be covered in this guide, but `useGT()`, and `useDict()` differs, so they will.
+## Available Methods
+Three methods exist for internationalizing client-side components:
+- `<T>` component (syntax identical to server-side)
+- `useGT()` hook (client-side specific)
+- `useDict()` hook (client-side specific)
 
-It may be tempting to add a directive. Do not add "use client", "use server", etc. directives.
+## Critical Rule
+NEVER add React directives ("use client", "use server", etc.) when internationalizing components.
 
-## The `useGT()` hook
+## useGT() Hook
 
-The `useGT()` hook can only be used on the client side and allows you to translate strings.
-This is the preferred method for translating strings.
+**Purpose**: Client-side string translation (preferred method)
+**Scope**: Client components only
 
-### Basic usage
+### Basic Pattern
 
-Here is the most basic case.
-
+**Before internationalization:**
 ```jsx
 export default function Example() {
   const greeting = 'Hello, World!';
@@ -21,8 +24,7 @@ export default function Example() {
 }
 ```
 
-You can internationalize this simply:
-
+**After internationalization:**
 ```jsx
 import { useGT } from 'gt-next/client';
 export default function Example() {
@@ -32,12 +34,11 @@ export default function Example() {
 }
 ```
 
-### Complicated scenarios
+### Reusable Content Pattern
 
-When strings or objects are reused across multiple files, we will want to reduce reused code.
-The best way to do this is as follows
+**Requirement**: When content is shared across multiple files, create custom hooks to avoid code duplication.
 
-Original version:
+**Before internationalization:**
 
 ```jsx
 export const content = 'hi';
@@ -48,8 +49,7 @@ export const nestedContent = {
 };
 ```
 
-Internationalized version:
-
+**After internationalization:**
 ```jsx
 import { useGT } from 'gt-next';
 export const useContent = () => {
@@ -60,36 +60,31 @@ export const useContent = () => {
 export const useNestedContent = () => {
   const t = useGT();
   return {
-    name: t('Brian'),
+    name: 'Brian',
     title: t('Engineer'),
   };
 };
 ```
 
-We create these hooks so we can access to the `useGT()` function.
-For more examples, you can check out the tools about variables outside of functions.
+**Key principle**: Create custom hooks to provide access to the `useGT()` function for reusable content.
+**Reference**: See guides about variables outside of functions for additional examples.
 
-## The `useDict()` hook
+## useDict() Hook
 
-This hook is useful for centralizing data in one place.
-It access a `dictionary.json` file that maps keys (or nested keys) to string values.
+**Purpose**: Centralized data management via dictionary files
+**Priority**: Use `useGT()` when possible; `useDict()` only when centralization is required
+**Mechanism**: Accesses `dictionary.json` file with key-value mappings
 
-In this case,
+### Dictionary Pattern
 
-```jsx
-export const content = 'hi';
-```
-
-We can move these values to a `dictionary.json` file:
-
+**Step 1**: Move string values to `dictionary.json`:
 ```json
 {
   "content": "hi"
 }
 ```
 
-These can be accessed in a client component via the key:
-
+**Step 2**: Access via key in client component:
 ```jsx
 import { useGT } from 'gt-next/client';
 export default function MyComponent() {

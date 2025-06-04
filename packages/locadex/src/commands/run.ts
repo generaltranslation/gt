@@ -19,12 +19,20 @@ export async function startCommand() {
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
-    const setupPrompt = `Use gt-next to internationalize this project.
+    const setupPrompt = `This project is a Next.js app router app.
+Your task is to internationalize the project using gt-next.
 
-You additionally have access to the following mcp tools made available via the 'locadex' mcp server:
+After you finish internationalizing the project, you can run the following command to validate the use of gt-next:
+'npx gtx-cli translate --dry-run'
+
+Your core principles are:
+- Minimize the footprint of the changes
+- Keep content in the same file where it came from
+- Use the tools provided to you to internationalize the content
+
+You have access to the following mcp tools made available via the 'locadex' mcp server:
 ${mcpTools}
-Use these tools to help you with your tasks.
-`;
+Use these tools to help you with your tasks.`;
 
     await claudeRunner.run(
       {

@@ -1,10 +1,8 @@
-# Translating JSX
+# JSX Translation with `<T>` Component
 
-This guide will walk you through how to use the [`<T>` component](/docs/next/api/components/t) to internationalize JSX content.
+Use the `<T>` component to internationalize HTML and JSX content.
 
-## How to use the `<T>` component
-
-Let's say you have some HTML content that you want to translate.
+Before:
 
 ```jsx
 function Greeting() {
@@ -12,7 +10,7 @@ function Greeting() {
 }
 ```
 
-All you have to do is wrap the content in a `<T>` component.
+After:
 
 ```jsx
 import { T } from 'gt-next';
@@ -26,17 +24,9 @@ function Greeting() {
 }
 ```
 
-Depending on the current language your user has selected, this will render the appropriate translation.
-See [switching languages](/docs/next/guides/languages) for more information on how to allow your users to switch languages.
+# Context Prop
 
----
-
-# Additional Options
-
-## Context (Optional)
-
-In some cases, you may want to provide additional context to the translation.
-This can be done by passing a `context` prop to the `<T>` component.
+Add `context` prop when content meaning is ambiguous:
 
 ```jsx
 <T context='toast, as in a pop-up notification'>
@@ -44,43 +34,20 @@ This can be done by passing a `context` prop to the `<T>` component.
 </T>
 ```
 
-This is useful in cases where words may have multiple meanings depending on the context.
-For example, "toast" can refer to the food or a pop-up notification.
+Rule: Provide context for words with multiple meanings (e.g., "toast" = bread vs notification).
 
-The context prop is helpful for the AI to understand the intent of the translation.
+# Usage Rules
 
-## `id` (Optional)
+**USE `<T>` for:**
 
-You can also pass an `id` prop to the `<T>` component.
-This is useful for debugging purposes and makes editing the translation easier.
+- Static HTML or JSX content
+- Dynamic content wrapped in Variable Components or Branching Components
 
-```jsx
-<T id='toast'>Click on the toast to dismiss it.</T>
-```
+**DO NOT USE `<T>` for:** Raw dynamic content (unwrapped variables, expressions, conditionals)
 
-# When to use the `<T>` component
+Variable components are safe for `<T>` because content is wrapped and sanitized. Variable component content is never translated directly by `<T>`.
 
-While the `<T>` component is very flexible, it is not always the best solution.
-
-You should always try to use the `<T>` component when you have any **static HTML or JSX content.**
-
-## When not to use the `<T>` component
-
-**DO NOT** use the `<T>` component when you have any unsafe **dynamic** content.
-
-Here, dynamic content means any content that could change at runtime.
-This rule does not apply if you are using [Variable Components](/docs/next/guides/variables) or [Branching Components](/docs/next/guides/branches).
-
-<Callout>
-  **Note:**
-  
-  Variable components are a special case where the content is dynamic, but the content has been wrapped and sanitized, so it is safe to use the `<T>` component.
-
-Content wrapped in variable components are never translated directly by the `<T>` component.
-
-</Callout>
-
-The following examples show invalid usage of the `<T>` component:
+## Invalid Usage Examples (Raw Dynamic Content)
 
 ```jsx
 <T>
@@ -106,67 +73,38 @@ The following examples show invalid usage of the `<T>` component:
 </T>
 ```
 
-<Callout>
-  In the above examples, the content can be safely internationalized using
-  [variable components](/docs/next/guides/variables) and [branching
-  components](/docs/next/guides/branches).
-</Callout>
+Solution: Wrap dynamic content in variable components or branching components, then use with `<T>`.
+
+# Valid Usage Examples
+
+## HTML Content
 
 ```jsx
-const chatMessage = getChatMessageFromServer();
-<T>
-  <p>{chatMessage}</p>
-</T>;
-```
-
-<Callout>
-  In this example, the content is fully dynamic, so it should be translated on the server side before being passed to the client.
-
-See the [core](/docs/core) library for more information on how to dynamically translate content via our API.
-
-</Callout>
-
-# Examples
-
-Here are some examples of how to use the `<T>` component. These are all correct.
-
-## HTML content
-
-### Original
-
-```jsx
+// Before
 <p>Hello, world!</p>
-```
 
-### Result
-
-```jsx
+// After
 <T>
   <p>Hello, world!</p>
 </T>
 ```
 
-## Simple JSX content
-
-### Original
+## Simple JSX Content
 
 ```jsx
+// Before
 <Button>Click me!</Button>
-```
 
-### Result
-
-```jsx
+// After
 <T>
   <Button>Click me!</Button>
 </T>
 ```
 
-## Complex JSX content
-
-### Original
+## Complex JSX Content
 
 ```jsx
+// Before
 <Tooltip>
   <TooltipTrigger>
     <div className='flex items-center gap-2 rounded-full bg-destructive px-3 py-1.5 text-sm text-destructive-foreground'>
@@ -181,11 +119,8 @@ Here are some examples of how to use the `<T>` component. These are all correct.
     </p>
   </TooltipContent>
 </Tooltip>
-```
 
-### Result
-
-```jsx
+// After
 <T>
   <Tooltip>
     <TooltipTrigger>
@@ -204,20 +139,16 @@ Here are some examples of how to use the `<T>` component. These are all correct.
 </T>
 ```
 
-<Callout>
-  The `<T>` component can handle any nested content in the same component.
-</Callout>
+Note: `<T>` handles any nested content within the same component.
 
 # Common Pitfalls
 
-## Direct descendants only
+## Direct Descendants Only
 
-The `<T>` component only translates text passed directly as a child.
-This means that if you have content inside a component that is not directly passed to `<T>`, it will not be translated.
+Rule: `<T>` only translates content directly between its tags. Content inside nested components is not translated.
 
-Let's illustrate this with an example:
-
-```jsx copy
+```jsx
+// INCORRECT - UntranslatedContent not translated
 function UntranslatedContent() {
   return <p>This content is not translated</p>;
 }
@@ -232,27 +163,12 @@ export default function DisplayGreetings() {
 }
 ```
 
-In this example, the content inside `<UntranslatedContent>` will not be translated.
-Only the content directly inside `<T>` will be translated, like the `<h1>` tag and its children.
+Only content literally between `<T>` tags is translated. The `<h1>` is translated, but `<UntranslatedContent>` is not.
 
-<Accordions>
-  <Accordion title="Why does this happen?">
-    This occurs because of how React renders components.
-    It is a bit complicated, but the gist is that React does not know the content of a component until it has rendered.
-    Therefore, the contents of components like `<UntranslatedContent>` are not translated.
-    However, any text directly between the two `<T>` tags will be translated.
-  </Accordion>
-</Accordions>
-<Callout>
-  **Note:** A good rule of thumb is that any content that is *literally* between the two `<T>` tags in the file will be translated.
-  You can always add another `<T>` to translate the content that is not being translated, though nesting `<T>` components is not recommended.
-</Callout>
+## Solution
 
-## What's the fix?
-
-Wrap the text in the `<T>` component directly, like so:
-
-```jsx copy
+```jsx
+// CORRECT - Each component wraps its own content
 function TranslatedContent() {
   return (
     <T>
@@ -277,12 +193,10 @@ export default function DisplayGreetings() {
 
 ## Nested `<T>` Components
 
-Nesting `<T>` components is not allowed.
-Because of React's rendering system, this can lead to unexpected behavior and performance issues.
+Rule: Never nest `<T>` components. This causes unexpected behavior and performance issues.
 
-Here is an example of **what not to do**:
-
-```jsx copy
+```jsx
+// INCORRECT - Nested T components
 function SomeComponent() {
   return <T>Hello, friend!</T>;
 }
@@ -290,40 +204,36 @@ function SomeComponent() {
 export default function NestedTranslation() {
   return (
     <T>
-      <T>
-        {' '}
-        {/* Don't do this! */}
-        Hello, world!
-      </T>
-      <SomeComponent /> {/* This still counts. Don't do this! */}
+      <T>Hello, world!</T> {/* Don't nest */}
+      <SomeComponent /> {/* This also nests */}
     </T>
   );
 }
 ```
 
-The solution here is to remove the outtermost `<T>` component.
+Solution: Remove the outer `<T>` component.
 
-## Translating dynamic content
+## Raw Dynamic Content Error
 
-If you attempt to wrap dynamic content with the `<T>` component, the CLI tool will error.
-
-For example, the following will error:
+CLI will error on raw dynamic content in `<T>`:
 
 ```jsx
+// WILL ERROR - Raw dynamic content
 const username = 'John Doe';
 <T>
   <p>Your username is {username}</p>
 </T>;
 ```
 
-To get around this, try to use [Variable Components](/docs/next/guides/variables) or [Branching Components](/docs/next/guides/branches) to wrap the dynamic content.
+Solutions:
 
-Alternatively, if your content truly is dynamic and needs to be translated on-demand,
-you can use the [`<Tx>` component](/docs/next/guides/dynamic-content).
+1. Wrap dynamic content in Variable Components or Branching Components, then use with `<T>`
+2. Use `<Tx>` component for on-demand translation
 
 # Summary
 
-- `<T>` components are used to internationalize arbitrary JSX Content.
-- `<T>` components should not be used for dynamic content, without using variable components or branching components.
-- In development, the `<T>` component will translate content on-demand.
-- In production, all translations that the `<T>` component uses are completed at build time.
+- Use `<T>` to internationalize static JSX content
+- Use `<T>` with dynamic content only when wrapped in Variable/Branching Components
+- Never use `<T>` for raw dynamic content (unwrapped variables, expressions, conditionals)
+- Never nest `<T>` components
+- Only content directly between `<T>` tags is translated
