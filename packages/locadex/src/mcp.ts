@@ -6,6 +6,7 @@ import { addDocsTools } from './tools/docs.js';
 import { readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
 import { addGuidesTools } from './tools/guides.js';
+import { addFileManagerTools } from './tools/fileManager.js';
 
 async function main() {
   const server = new McpServer({
@@ -15,6 +16,7 @@ async function main() {
   });
   addDocsTools(server);
   addGuidesTools(server);
+  addFileManagerTools(server);
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('locadex-mcp started on stdio');
