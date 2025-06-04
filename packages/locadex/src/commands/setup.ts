@@ -5,6 +5,7 @@ import { fromPackageRoot } from '../utils/getPaths.js';
 import { createSpinner, displayHeader } from '../logging/console.js';
 import { allMcpPrompt, allMcpTools } from '../prompts/system.js';
 import { CliOptions } from '../types/cli.js';
+import { configureAgent } from '../utils/configuration.js';
 
 export async function setupCommand(options: CliOptions) {
   displayHeader();
@@ -14,12 +15,7 @@ export async function setupCommand(options: CliOptions) {
   spinner.start('Initializing Locadex...');
 
   try {
-    const mcpConfigPath = fromPackageRoot('.locadex-mcp.json');
-
-    const claudeRunner = new ClaudeCodeRunner({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      verbose: options.verbose,
-    });
+    const { agent } = configureAgent(options);
 
     const setupPrompt = `Use gt-next to setup this project for internationalization.
 Only prepare the project for internationalization, do not internationalize any content.
@@ -27,13 +23,7 @@ Only prepare the project for internationalization, do not internationalize any c
 ${allMcpPrompt}
 `;
 
-    await claudeRunner.run(
-      {
-        prompt: setupPrompt,
-        mcpConfig: mcpConfigPath,
-      },
-      { spinner }
-    );
+    await agent.run({ prompt: setupPrompt }, { spinner });
 
     outro(
       chalk.green(

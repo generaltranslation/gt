@@ -1,40 +1,6 @@
 import { readdirSync, statSync, existsSync, mkdirSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { fromPackageRoot } from './getPaths.js';
-
-// Default file path - can be overridden for concurrent instances
-export const DEFAULT_FILE_LIST_PATH = fromPackageRoot(
-  '.tmp/locadex-files.json'
-);
-
-// Global variable to store the current session's file path
-let currentFileListPath = DEFAULT_FILE_LIST_PATH;
-
-// Initialize file path from environment variable if available (for MCP server)
-function initializeFileListPath() {
-  const uniqueId = process.env.LOCADEX_FILE_LIST_ID;
-  if (uniqueId) {
-    currentFileListPath = fromPackageRoot(
-      `.tmp/locadex-files-${uniqueId}.json`
-    );
-    console.log(
-      `[getFiles] Initialized file list path from env: ${currentFileListPath}`
-    );
-  }
-}
-
-// Call initialization when module loads
-initializeFileListPath();
-
-export function setFileListPath(uniqueId: string): string {
-  currentFileListPath = fromPackageRoot(`.tmp/locadex-files-${uniqueId}.json`);
-  return currentFileListPath;
-}
-
-export function getFileListPath(): string {
-  return currentFileListPath;
-}
 
 interface FileEntry {
   path: string;
@@ -42,31 +8,31 @@ interface FileEntry {
   status: 'pending' | 'in_progress' | 'edited';
 }
 
-function getFileList(): FileEntry[] {
-  if (!existsSync(currentFileListPath)) {
+function getFileList(filePath: string): FileEntry[] {
+  if (!existsSync(filePath)) {
     return [];
   }
   try {
-    return JSON.parse(readFileSync(currentFileListPath, 'utf8'));
+    return JSON.parse(readFileSync(filePath, 'utf8'));
   } catch {
     return [];
   }
 }
 
-function saveFileList(files: FileEntry[]): void {
+function saveFileList(files: FileEntry[], filePath: string): void {
   // Ensure the directory exists before writing the file
-  const dir = dirname(currentFileListPath);
+  const dir = dirname(filePath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
-  writeFileSync(currentFileListPath, JSON.stringify(files, null, 2));
+  writeFileSync(filePath, JSON.stringify(files, null, 2));
 }
 
 function addFileToList(
   filePath: string,
   status: 'pending' | 'in_progress' | 'edited' = 'pending'
 ): void {
-  const files = getFileList();
+  const files = getFileList(filePath);
   const existingIndex = files.findIndex((f) => f.path === filePath);
 
   if (existingIndex >= 0) {
@@ -80,7 +46,7 @@ function addFileToList(
     });
   }
 
-  saveFileList(files);
+  saveFileList(files, filePath);
 }
 
 function isTypeScriptFile(filePath: string): boolean {
@@ -131,12 +97,15 @@ export function scanNextJsAppFiles(
   return scanDirectory(projectPath, projectPath);
 }
 
-export function addNextJsFilesToManager(projectPath: string = process.cwd()): {
+export function addNextJsFilesToManager(
+  stateFilePath: string,
+  projectPath: string = process.cwd()
+): {
   added: string[];
   existing: string[];
 } {
   const discoveredFiles = scanNextJsAppFiles(projectPath);
-  const existingFiles = getFileList();
+  const existingFiles = getFileList(stateFilePath);
   const existingPaths = new Set(existingFiles.map((f) => f.path));
 
   const added: string[] = [];
@@ -154,12 +123,12 @@ export function addNextJsFilesToManager(projectPath: string = process.cwd()): {
   return { added, existing };
 }
 
-export function getCurrentFileList(): {
+export function getCurrentFileList(stateFilePath: string): {
   path: string;
   addedAt: string;
   status: 'pending' | 'in_progress' | 'edited';
 }[] {
-  return getFileList();
+  return getFileList(stateFilePath);
 }
 
 export function getNextJsAppRouterStats(projectPath: string = process.cwd()): {

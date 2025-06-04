@@ -13,7 +13,6 @@ import { SpinnerResult } from '@clack/prompts';
 export interface ClaudeCodeOptions {
   additionalSystemPrompt?: string;
   prompt: string;
-  mcpConfig?: string;
   additionalAllowedTools?: string[];
   maxTurns?: number;
   sessionId?: string;
@@ -60,9 +59,17 @@ const setupProcessHandlers = () => {
 export class ClaudeCodeRunner {
   private sessionId: string = '';
   private verbose: boolean;
+  private mcpConfig: string | undefined;
 
-  constructor(private options: { apiKey?: string; verbose?: boolean } = {}) {
+  constructor(
+    private options: {
+      apiKey?: string;
+      verbose?: boolean;
+      mcpConfig?: string;
+    } = {}
+  ) {
     this.verbose = options.verbose ?? false;
+    this.mcpConfig = options.mcpConfig;
 
     // Ensure API key is set
     if (!process.env.ANTHROPIC_API_KEY && !this.options.apiKey) {
@@ -96,8 +103,8 @@ export class ClaudeCodeRunner {
         args.push('--resume', options.sessionId);
       }
 
-      if (options.mcpConfig) {
-        args.push('--mcp-config', options.mcpConfig);
+      if (this.mcpConfig) {
+        args.push('--mcp-config', this.mcpConfig);
       }
 
       args.push(

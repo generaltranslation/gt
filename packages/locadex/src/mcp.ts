@@ -4,12 +4,20 @@ import './telemetry.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { addDocsTools } from './tools/docs.js';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
 import { addGuidesTools } from './tools/guides.js';
 import { addFileManagerTools } from './tools/fileManager.js';
 
 async function main() {
+  const stateFile = process.env.LOCADEX_FILES_STATE_FILE;
+  if (stateFile && existsSync(stateFile)) {
+    const state = JSON.parse(readFileSync(stateFile, 'utf8'));
+    console.error(`[locadex-mcp] state: ${JSON.stringify(state, null, 2)}`);
+  } else {
+    throw new Error(`[locadex-mcp] state file not found: ${stateFile}`);
+  }
+
   const server = new McpServer({
     name: 'Locadex: AI Agent for Internationalization',
     version: JSON.parse(readFileSync(fromPackageRoot('package.json'), 'utf8'))
@@ -17,9 +25,9 @@ async function main() {
   });
   addDocsTools(server);
   addGuidesTools(server);
-  addFileManagerTools(server);
+  addFileManagerTools(server, stateFile);
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('locadex-mcp started on stdio');
+  console.error('[locadex-mcp] started on stdio');
 }
 main();

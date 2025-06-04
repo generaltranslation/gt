@@ -5,6 +5,7 @@ import { fromPackageRoot } from '../utils/getPaths.js';
 import { createSpinner, displayHeader } from '../logging/console.js';
 import { allMcpPrompt } from '../prompts/system.js';
 import { CliOptions } from '../types/cli.js';
+import { configureAgent } from '../utils/configuration.js';
 
 export async function startCommand(options: CliOptions) {
   displayHeader();
@@ -14,12 +15,7 @@ export async function startCommand(options: CliOptions) {
   spinner.start('Initializing Locadex...');
 
   try {
-    const mcpConfigPath = fromPackageRoot('.locadex-mcp.json');
-
-    const claudeRunner = new ClaudeCodeRunner({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      verbose: options.verbose,
-    });
+    const { agent } = configureAgent(options);
 
     const setupPrompt = `This project is a Next.js app router app.
 Your task is to internationalize the project using gt-next.
@@ -35,13 +31,7 @@ Your core principles are:
 ${allMcpPrompt}
 `;
 
-    await claudeRunner.run(
-      {
-        prompt: setupPrompt,
-        mcpConfig: mcpConfigPath,
-      },
-      { spinner }
-    );
+    await agent.run({ prompt: setupPrompt }, { spinner });
 
     outro(chalk.green('✅ Locadex run complete!'));
   } catch (error) {

@@ -1,23 +1,19 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import {
-  readFileSync,
-  writeFileSync,
-  existsSync,
-  unlinkSync,
-  mkdirSync,
-} from 'node:fs';
-import { dirname } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { z } from 'zod';
-import { getFileListPath } from '../utils/getFiles.js';
 
 export const fileManagerTools: { [id: string]: string } = {
-  'addFile': 'Add a file to the internationalization checklist',
-  'markFileAsPending': 'Mark a file as pending internationalization in the internationalization checklist',
-  'markFileAsInProgress': 'Mark a file as in progress in the internationalization checklist',
-  'markFileAsEdited': 'Mark a file as edited in the internationalization checklist',
-  'removeFile': 'Remove a file from the internationalization checklist',
-  'listFiles': 'List all files in the internationalization checklist',
-  'clearFiles': 'Clear all files from the internationalization checklist by deleting the file'
+  addFile: 'Add a file to the internationalization checklist',
+  markFileAsPending:
+    'Mark a file as pending internationalization in the internationalization checklist',
+  markFileAsInProgress:
+    'Mark a file as in progress in the internationalization checklist',
+  markFileAsEdited:
+    'Mark a file as edited in the internationalization checklist',
+  removeFile: 'Remove a file from the internationalization checklist',
+  listFiles: 'List all files in the internationalization checklist',
+  clearFiles:
+    'Clear all files from the internationalization checklist by deleting the file',
 };
 
 interface FileEntry {
@@ -26,29 +22,22 @@ interface FileEntry {
   status: 'pending' | 'in_progress' | 'edited';
 }
 
-function getFileList(): FileEntry[] {
-  const filePath = getFileListPath();
-  if (!existsSync(filePath)) {
+function getFileList(stateFilePath: string): FileEntry[] {
+  if (!stateFilePath || !existsSync(stateFilePath)) {
     return [];
   }
   try {
-    return JSON.parse(readFileSync(filePath, 'utf8'));
+    return JSON.parse(readFileSync(stateFilePath, 'utf8'));
   } catch {
     return [];
   }
 }
 
-function saveFileList(files: FileEntry[]): void {
-  const filePath = getFileListPath();
-  // Ensure the directory exists before writing the file
-  const dir = dirname(filePath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-  writeFileSync(filePath, JSON.stringify(files, null, 2));
+function saveFileList(files: FileEntry[], stateFilePath: string): void {
+  writeFileSync(stateFilePath, JSON.stringify(files, null, 2));
 }
 
-export function addFileManagerTools(server: McpServer) {
+export function addFileManagerTools(server: McpServer, stateFilePath: string) {
   server.tool(
     'addFile',
     fileManagerTools['addFile'],
@@ -63,7 +52,7 @@ export function addFileManagerTools(server: McpServer) {
         .describe('Status of the file (default: pending)'),
     },
     async ({ filePath, status = 'pending' }) => {
-      const files = getFileList();
+      const files = getFileList(stateFilePath);
       const existingIndex = files.findIndex((f) => f.path === filePath);
 
       if (existingIndex >= 0) {
@@ -78,7 +67,7 @@ export function addFileManagerTools(server: McpServer) {
         });
       }
 
-      saveFileList(files);
+      saveFileList(files, stateFilePath);
 
       return {
         content: [
@@ -98,7 +87,7 @@ export function addFileManagerTools(server: McpServer) {
       filePath: z.string().describe('Path to the file to mark as pending'),
     },
     async ({ filePath }) => {
-      const files = getFileList();
+      const files = getFileList(stateFilePath);
       let foundFile = false;
       const updatedFiles = files.map((f) => {
         if (f.path === filePath) {
@@ -119,7 +108,7 @@ export function addFileManagerTools(server: McpServer) {
         };
       }
 
-      saveFileList(updatedFiles);
+      saveFileList(updatedFiles, stateFilePath);
 
       return {
         content: [
@@ -139,7 +128,7 @@ export function addFileManagerTools(server: McpServer) {
       filePath: z.string().describe('Path to the file to mark as in progress'),
     },
     async ({ filePath }) => {
-      const files = getFileList();
+      const files = getFileList(stateFilePath);
       let foundFile = false;
       const updatedFiles = files.map((f) => {
         if (f.path === filePath) {
@@ -160,7 +149,7 @@ export function addFileManagerTools(server: McpServer) {
         };
       }
 
-      saveFileList(updatedFiles);
+      saveFileList(updatedFiles, stateFilePath);
 
       return {
         content: [
@@ -180,7 +169,7 @@ export function addFileManagerTools(server: McpServer) {
       filePath: z.string().describe('Path to the file to mark as edited'),
     },
     async ({ filePath }) => {
-      const files = getFileList();
+      const files = getFileList(stateFilePath);
       let foundFile = false;
       const updatedFiles = files.map((f) => {
         if (f.path === filePath) {
@@ -201,7 +190,7 @@ export function addFileManagerTools(server: McpServer) {
         };
       }
 
-      saveFileList(updatedFiles);
+      saveFileList(updatedFiles, stateFilePath);
 
       return {
         content: [
@@ -224,7 +213,7 @@ export function addFileManagerTools(server: McpServer) {
         .describe('Filter by status (optional)'),
     },
     async ({ status }) => {
-      let files = getFileList();
+      let files = getFileList(stateFilePath);
 
       if (status) {
         files = files.filter((f) => f.status === status);
@@ -257,27 +246,22 @@ export function addFileManagerTools(server: McpServer) {
     }
   );
 
-  server.tool(
-    'clearFiles',
-    fileManagerTools['clearFiles'],
-    {},
-    async () => {
-      const files = getFileList();
-      const fileCount = files.length;
+  server.tool('clearFiles', fileManagerTools['clearFiles'], {}, async () => {
+    const files = getFileList(stateFilePath);
+    const fileCount = files.length;
 
-      const filePath = getFileListPath();
-      if (existsSync(filePath)) {
-        unlinkSync(filePath);
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Deleted internationalization checklist file (contained ${fileCount} files)`,
-          },
-        ],
-      };
+    const filePath = stateFilePath;
+    if (existsSync(filePath)) {
+      unlinkSync(filePath);
     }
-  );
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Deleted internationalization checklist file (contained ${fileCount} files)`,
+        },
+      ],
+    };
+  });
 }

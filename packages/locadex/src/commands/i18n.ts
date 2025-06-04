@@ -1,19 +1,15 @@
 import { intro, outro, spinner, confirm } from '@clack/prompts';
 import chalk from 'chalk';
-import { ClaudeCodeRunner } from '../utils/claudeCode.js';
-import { fromPackageRoot } from '../utils/getPaths.js';
 import { createSpinner, displayHeader } from '../logging/console.js';
 import { allMcpPrompt, allMcpTools } from '../prompts/system.js';
 import {
   addNextJsFilesToManager,
   getNextJsAppRouterStats,
-  setFileListPath,
-  getFileListPath,
   getCurrentFileList,
 } from '../utils/getFiles.js';
 import { unlinkSync, existsSync } from 'node:fs';
 import { CliOptions } from '../types/cli.js';
-import { randomBytes } from 'node:crypto';
+import { configureAgent } from '../utils/configuration.js';
 
 export async function i18nCommand(options: CliOptions) {
   displayHeader();
@@ -22,25 +18,16 @@ export async function i18nCommand(options: CliOptions) {
 
   spinner.start('Initializing Locadex...');
 
-  // Generate unique ID for this execution to support concurrent instances
-  const uniqueId = randomBytes(8).toString('hex');
-  const fileListPath = setFileListPath(uniqueId);
-  console.error(`[i18nCommand] Using unique file list: ${fileListPath}`);
-
+  let stateFilePath: string | undefined = undefined;
   try {
     // Scan and preload Next.js app router files into file manager
     spinner.message('Scanning Next.js app router files...');
 
-    const scanResult = addNextJsFilesToManager();
     const stats = getNextJsAppRouterStats();
 
-    const mcpConfigPath = fromPackageRoot('.locadex-mcp.json');
-
-    options.verbose = true;
-    const claudeRunner = new ClaudeCodeRunner({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      verbose: options.verbose,
-    });
+    const { agent, stateFilePath: tempStateFilePath } = configureAgent(options);
+    stateFilePath = tempStateFilePath;
+    const scanResult = addNextJsFilesToManager(stateFilePath);
 
     const setupPrompt = `This project is already setup for internationalization.
 You do not need to setup the project again.
@@ -94,11 +81,10 @@ ${allMcpPrompt}
 
     // Initial run
     try {
-      await claudeRunner.run(
+      await agent.run(
         {
           additionalSystemPrompt: allMcpTools,
           prompt: setupPrompt,
-          mcpConfig: mcpConfigPath,
         },
         { spinner }
       );
@@ -106,14 +92,14 @@ ${allMcpPrompt}
       console.error(`[i18nCommand] Error in initial run: ${error}`);
     }
 
-    const sessionId = claudeRunner.getSessionId();
+    const sessionId = agent.getSessionId();
 
     // Give Claude up to 3 attempts to finish all files
     let attempt = 1;
     const maxAttempts = 3;
 
     while (attempt <= maxAttempts) {
-      const remainingFiles = getCurrentFileList();
+      const remainingFiles = getCurrentFileList(stateFilePath);
       const pendingFiles = remainingFiles.filter((f) => f.status === 'pending');
       const inProgressFiles = remainingFiles.filter(
         (f) => f.status === 'in_progress'
@@ -125,7 +111,7 @@ ${allMcpPrompt}
         console.log(
           chalk.green(
             `\n✅ All files completed! ${JSON.stringify(
-              getCurrentFileList(),
+              getCurrentFileList(stateFilePath),
               null,
               2
             )}`
@@ -177,11 +163,10 @@ Please continue working on these files. Use 'listFiles' to see what needs to be 
 This is attempt ${attempt + 1} of ${maxAttempts}.`;
 
         try {
-          await claudeRunner.run(
+          await agent.run(
             {
               additionalSystemPrompt: allMcpTools,
               prompt: continuePrompt,
-              mcpConfig: mcpConfigPath,
               sessionId,
             },
             { spinner }
@@ -206,12 +191,9 @@ This is attempt ${attempt + 1} of ${maxAttempts}.`;
     process.exit(1);
   } finally {
     // Always clean up the file list when done, regardless of success or failure
-    const currentFileListPath = getFileListPath();
-    if (existsSync(currentFileListPath)) {
-      console.error(
-        `[i18nCommand] Cleaning up file list: ${currentFileListPath}`
-      );
-      unlinkSync(currentFileListPath);
+    if (stateFilePath && existsSync(stateFilePath)) {
+      console.error(`[i18nCommand] Cleaning up file list: ${stateFilePath}`);
+      unlinkSync(stateFilePath);
       console.error(`[i18nCommand] File list deleted successfully`);
     } else {
       console.error(`[i18nCommand] No file list to clean up`);
