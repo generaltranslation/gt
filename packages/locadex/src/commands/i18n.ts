@@ -25,22 +25,6 @@ export async function i18nCommand() {
     const scanResult = addNextJsFilesToManager();
     const stats = getNextJsAppRouterStats();
 
-    if (scanResult.added.length > 0) {
-      spinner.message(
-        `Added ${scanResult.added.length} files to internationalization checklist`
-      );
-    }
-
-    if (scanResult.existing.length > 0) {
-      spinner.message(
-        `Found ${scanResult.existing.length} files already in checklist`
-      );
-    }
-
-    spinner.message(
-      `Total files to process: ${stats.totalFiles} (${stats.tsFiles} .ts files, ${stats.tsxFiles} .tsx files)`
-    );
-
     const mcpConfigPath = fromPackageRoot('.locadex-mcp.json');
 
     const claudeRunner = new ClaudeCodeRunner({
