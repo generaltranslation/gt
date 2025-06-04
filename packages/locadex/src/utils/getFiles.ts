@@ -15,8 +15,12 @@ let currentFileListPath = DEFAULT_FILE_LIST_PATH;
 function initializeFileListPath() {
   const uniqueId = process.env.LOCADEX_FILE_LIST_ID;
   if (uniqueId) {
-    currentFileListPath = fromPackageRoot(`.tmp/locadex-files-${uniqueId}.json`);
-    console.error(`[getFiles] Initialized file list path from env: ${currentFileListPath}`);
+    currentFileListPath = fromPackageRoot(
+      `.tmp/locadex-files-${uniqueId}.json`
+    );
+    console.log(
+      `[getFiles] Initialized file list path from env: ${currentFileListPath}`
+    );
   }
 }
 
@@ -124,23 +128,7 @@ function scanDirectory(dirPath: string, basePath: string): string[] {
 export function scanNextJsAppFiles(
   projectPath: string = process.cwd()
 ): string[] {
-  // Look for app directory (Next.js app router)
-  const appDir = join(projectPath, 'app');
-  const srcAppDir = join(projectPath, 'src', 'app');
-
-  let targetDir: string;
-
-  if (existsSync(appDir)) {
-    targetDir = appDir;
-  } else if (existsSync(srcAppDir)) {
-    targetDir = srcAppDir;
-  } else {
-    throw new Error(
-      'No Next.js app router directory found. Looking for "app" or "src/app" directory.'
-    );
-  }
-
-  return scanDirectory(targetDir, projectPath);
+  return scanDirectory(projectPath, projectPath);
 }
 
 export function addNextJsFilesToManager(projectPath: string = process.cwd()): {

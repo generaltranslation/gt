@@ -73,7 +73,7 @@ ${scanResult.added.length > 0 ? `${scanResult.added.length} new files were added
 Always use the file manager as your source of truth for which files need to be processed. Be proactive about removing files that don't need translation to keep your checklist focused.
 
 Our advice to you is:
-- You should strongly prefer using <T> component over all others. Only use getGT() or useGT() and getDict() or useDict() for string content. All other JSX content should ALWAYS be internationalized using <T> component.
+- ALWAYS use the <T> component to internationalize JSX. Only use getGT() or useGT() and getDict() or useDict() for string content. All other JSX content should ALWAYS be internationalized using <T> component.
 - You should not be adding i18n middleware to the app
 
 CORE PRINCIPLES OF I18N:
@@ -83,6 +83,11 @@ CORE PRINCIPLES OF I18N:
 - Use the tools provided to you to gain knowledge about how to internationalize the content
 - Never create or remove any files, only modify current files (if you need to create a new file, make sure to remove it when you are done by adding it to your todo list)
 - Any files that CONTAIN USER FACING content, must be internationalized.
+
+### When you are done
+- Please add a markdown file called 'locadex-report.md' to the root of the project.
+- The report should include a summary of the changes you made to the project.
+- A list of items the user needs to complete to finish the internationalization process (adding env vars, etc.).
 
 ${allMcpPrompt}
 `;
