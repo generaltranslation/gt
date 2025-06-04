@@ -1,31 +1,27 @@
-# How to internationalize a variable outside of a function scope for client and server side components
+# Internationalization Pattern: Variables Used in Both Client and Server Components
 
-This guide will walk you through how to internationalize a variable that has been declared outside of a function, and is being used/imported by both server and client components.
+## When to Apply This Pattern
 
-The solution is to use a dictionary. This allows us to reference the translation from both client and server side components without replicating data.
+Apply this pattern when variables declared outside function scope contain strings needing internationalization AND are used by both client-side and server-side components.
 
-Generally, it is advisable to convert the server components invoking this variable into a client component as well.
-Before beginning, first ask yourself if this is possible.
-It makes things much much easier to handle, and you can follow the guide on internationalizing variables outside of function scope for client components.
+## Rules
 
-However, sometimes, you cannot make a component into a client component. This guide tackles how to handle this specific edge case.
+1. **Minimal footprint**: Minimize code changes by keeping internationalized content in the same file where it originated
+2. **No file movement**: Avoid moving content between files unless absolutely necessary
+3. **No directives**: Do not add "use client" or "use server" directives
 
-Remember, a core principle is to leave as small of a footprint as possible.
-You should avoid moving content between files as much as possible.
-Try to internationalize content in the same file where they came from.
+## Implementation Patterns
 
-It may be tempting to add a directive. Do not add "use client", "use server", etc. directives.
+### Pattern 1: Simple String Shared Between Client and Server
 
-## Example 1: String being used by both server and client
-
-Say that you have a constant string being imported by both the server and the client:
+**Scenario**: Constant string imported by both server and client components
 
 ```jsx title="content.ts"
 const SOME_STRING = 'Hello, World!';
 export default SOME_STRING;
 ```
 
-This is being imported by a client component:
+**Client component usage**:
 
 ```jsx title="client-component.tsx"
 import SOME_STRING from './content.ts';
@@ -35,7 +31,7 @@ export default function clientComponent() {
 }
 ```
 
-And a server component:
+**Server component usage**:
 
 ```jsx title="server-component.tsx"
 import SOME_STRING from './content.ts';
@@ -44,61 +40,50 @@ export default function serverComponent() {
 }
 ```
 
-In this case, we have to (1) set up a dictionary (unless one already is set up), (2) add the content to the dictionary, and (3) reference the ids to load the content.
+**Solution**: Convert the variable to a function that accepts translation callback parameter to resolve translations dynamically.
 
-### Step 1: set up a dictionary
-
-(You can check out the how to set up dictionary guide for more details)
-
-If it does not already exist, you will create a `dictionary.json` file.
-The standard locations for `dictionary.json` files is (1) in the `/src` directory or (2) at the root `/` directory.
-Note: The path to the `dictionary.json` file may be specified in `gt.config.json` or passed as aparameter to `withGTConfig()` in NextJS's configuration file.
-
-If the file does exist, you can skip this step.
-
-### Step 2: add the content to the dictionary
-
-The next step is to add the string content to the dictionary.
-You must choose a unique id that makes sense.
-
-For example, you could add in the string as follows:
-
-```json title="dictionary.json"
-{
-  "exampleId": "example string value",
-  "greeting": "Hello, World!"
-}
+```tsx title="content.ts"
+import { InlineTranslationOptions } from 'gt-next/types';
+const SOME_STRING = (
+  t: (string: string, options?: InlineTranslationOptions) => string
+) => {
+  return t('Hello, World!');
+};
+export default SOME_STRING;
 ```
 
-### Step 3: access the dictionary content
+**Important**: Note that the translation function must be called directly on the string.
+It cannot be called on a variable, such as `t(SOME_STRING)`
 
-Now that this has been added the string to the dictionary, you can access it with the `getDict()` function on server side components and the `useGT()` hook on client side components and passing the corresponding keys.
+**Updated Components**: Pass respective `t()` function when calling `navMap()`
 
-Remember, for any instance of `useGT()` it must be wrapped in a `<GTProvider />` component at a higher level.\
-
-#### Client side
+**Updated Client component**:
 
 ```jsx title="client-component.tsx"
+'use client';
+import SOME_STRING from './content.ts';
+import { useGT } from 'gt-next/client';
 export default function clientComponent() {
   const [state, setState] = useState();
-  const d = useDict();
-
-  return <>{d('greeting')}</>;
+  const t = useGT();
+  return <>{SOME_STRING(t)}</>;
 }
 ```
 
-#### Server side
+**Updated Server component**:
 
 ```jsx title="server-component.tsx"
+import SOME_STRING from './content.ts';
+import { getGT } from 'gt-next/server';
 export default async function serverComponent() {
-  const d = await getDict();
-  return <>{d('greeting')}</>;
+  const t = await getGT();
+  return <>{SOME_STRING(t)}</>;
 }
 ```
 
-## Example 2: A more complicated data structure being used on both client and server sides
+### Pattern 2: Complex Data Structure Shared Between Client and Server
 
-Imagine there is a more complicated object that is being exported to components for both the client and the server.
+**Scenario**: Complex object exported to both client and server components
 
 ```jsx title="navMap.ts"
 const navMap = {
@@ -158,12 +143,10 @@ export default function serverComponent() {
 }
 ```
 
-We can solve this issue by creating a custom function that takes a callback function as a parameter that helps us resolve the translation.
-
-For example, create this new function that wraps the navMap.
+**Solution**: Create function that accepts translation callback parameter to resolve translations dynamically
 
 ```jsx title="navMap.ts"
-import { InlineTranslationOptions } from "gt-next/types"
+import { InlineTranslationOptions } from "gt-next/types";
 const navMap = (t: (string: string, options?: InlineTranslationOptions) => string) => {
   return (
     {
@@ -195,7 +178,9 @@ const navMap = (t: (string: string, options?: InlineTranslationOptions) => strin
 export default navMap;
 ```
 
-Then the client and server components would pass the respective `t()` function when invoking the `navMap()` function.
+**Updated Components**: Pass respective `t()` function when calling `navMap()`
+
+**Client component**:
 
 ```jsx title="client-component.tsx"
 import navMap from './navMap';
@@ -212,6 +197,8 @@ export default function clientComponent() {
   );
 }
 ```
+
+**Server component**:
 
 ```jsx title="server-component.tsx"
 import navMap from "./navMap";
@@ -231,4 +218,8 @@ export default function serverComponent() {
 }
 ```
 
-Passing the `t()` function allows for both client and server to have access to the translations.
+**Result**: Both client and server components access translations through passed `t()` function.
+
+## IMPORTANT
+
+Be careful to only modify non-functional strings. Avoid modifying functional strings such as ids.

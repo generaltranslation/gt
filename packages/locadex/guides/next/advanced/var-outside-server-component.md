@@ -4,13 +4,13 @@
 
 Apply this pattern when you encounter variable declarations (`let`, `const`, or `var`) outside of function scope that contain strings needing internationalization, and these variables are exclusively used within server-side components.
 
-## Core Principles
+## Rules
 
-- Minimize code changes by keeping internationalized content in the same file where it originated
-- Avoid moving content between files unless absolutely necessary
-- Do not add "use client" or "use server" directives
-- For single-use cases: move variable into component and use `getGT()`
-- For complex scenarios: create async function to access translated strings
+1. **Minimal footprint**: Minimize code changes by keeping internationalized content in the same file where it originated
+2. **No file movement**: Avoid moving content between files unless absolutely necessary
+3. **No directives**: Do not add "use client" or "use server" directives
+4. **Simple cases**: For single-use cases, move variable into component and use `getGT()`
+5. **Complex cases**: For complex scenarios, create async function to access translated strings
 
 ## Required Approach Based on Usage Pattern
 
@@ -212,9 +212,6 @@ export default async function Example2() {
 }
 ```
 
-**Warning**: Be careful to only modify non-functional strings.
-Avoid modifying functional strings such as ids.
-
 ## Pattern 4: Cross-File String Declaration with Single Import
 
 **Scenario:** String declared in one file, imported and used in only one other file.
@@ -251,3 +248,7 @@ export default async function MyComponent() {
   return <>{some_string}</>;
 }
 ```
+
+## IMPORTANT
+
+Be careful to only modify non-functional strings. Avoid modifying functional strings such as ids.

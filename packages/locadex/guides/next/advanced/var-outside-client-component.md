@@ -1,22 +1,22 @@
-# How to internationalize a variable outside of a function scope for client side components
+# Internationalization Pattern: Variables Outside Function Scope in Client Components
 
-In the case where you find a function declaration (i.e., `let`, `const`, or `var`) outside of a function declaration.
-This makes it hard to internationalize because this means you don't always have access to hooks.
+## When to Apply This Pattern
 
-In one off cases, typically it is best to move the variable directly into a component, and use the `useGT()` hook.
-For more complicated scenarios, the solution is generally to create a new hook, and access the string from the hook.
+Apply this pattern when you encounter variable declarations (`let`, `const`, or `var`) outside of function scope that contain strings needing internationalization, and these variables are exclusively used within client-side components.
 
-This guide only applies to when these variables are exclusively used inside of client-side components.
+## Rules
 
-Remember, a core principle is to leave as small of a footprint as possible.
-You should avoid moving content between files as much as possible.
-Try to internationalize content in the same file where they came from.
+1. **Scope**: Apply this pattern ONLY when variables are exclusively used in client-side components
+2. **Minimal footprint**: Keep internationalized content in the same file as the original declaration
+3. **Simple cases**: Move variables into component functions and use `useGT()` hook
+4. **Complex cases**: Create custom hooks to access internationalized strings
+5. **Never add**: Do not add "use client" or "use server" directives
 
-It may be tempting to add a directive. Do not add "use client", "use server", etc. directives.
+## Implementation Patterns
 
-## Example 1: Declaration outside of function
+### Pattern 1: Single Variable Outside Function
 
-Let's say we have a constant outside of a component on the client side.
+**Scenario**: Variable declared outside component scope within same file
 
 ```jsx
 const OUTSIDE_CONST = 'Hello there!';
@@ -28,7 +28,7 @@ export function Example() {
 }
 ```
 
-We can internationalize this by moving the declaration inside of the component function definition:
+**Solution**: Move variable inside component and use `useGT()` hook
 
 ```jsx
 import { useGT } from 'gt-next/client';
@@ -41,9 +41,9 @@ export function Example() {
 }
 ```
 
-## Example 2: Reused variables declared outside of functions
+### Pattern 2: Variable Reused Across Multiple Components
 
-But, what if this is used in multiple places?
+**Scenario**: Variable shared between multiple components
 
 ```jsx
 const OUTSIDE_CONST = 'Hello there!';
@@ -61,7 +61,7 @@ export function Example2() {
 }
 ```
 
-In such a simple example, it would be best to turn `OUTSIDE_CONST` into its own hook.
+**Solution**: Convert to custom hook for reusability
 
 ```jsx
 import { useGT } from 'gt-next/client';
@@ -85,11 +85,9 @@ export function Example2() {
 }
 ```
 
-## Example 3: Larger data structures declared outside of functions and across multiple files
+### Pattern 3: Complex Data Structures Across Files
 
-You can extrapolate this example to larger data structures as well as being strewn across multiple files.
-
-Say that you have a centralized data structure:
+**Scenario**: Centralized data structure with hardcoded strings
 
 ```jsx title="navMap.ts"
 const navMap = [
@@ -121,7 +119,7 @@ const navMap = [
 export default navMap;
 ```
 
-That is used in different client side compents files.
+Usage: Imported and used in different client component files.
 
 ```jsx title="Example1.tsx"
 import navMap from './navMap';
@@ -153,7 +151,7 @@ export default function Example2() {
 }
 ```
 
-In this case, we would want to cange `navMap` to a hook:
+**Solution**: Convert data structure to custom hook with internationalization
 
 ```jsx title="navMap.ts"
 import { useGT } from 'gt-next/client';
@@ -189,7 +187,7 @@ const useNavMap = () => {
 export default useNavMap;
 ```
 
-And, then the client components can access the translated version using a hook.
+**Updated Components**: Components now call the hook to get internationalized data
 
 ```jsx title="Example1.tsx"
 import useNavMap from './navMap';
@@ -223,10 +221,11 @@ export default function Example2() {
 }
 ```
 
-## Example 4: Strings used in other files, but only imported in one place
+### Pattern 4: Cross-File String Constants
 
-It is generally best to keep variables in the file where they were declared.
-Say we have the following scenario: a string is declared in one file, and is only imported in another file.
+**Constraint**: Keep variables in their original declaration file to minimize changes.
+
+**Scenario**: String exported from one file, imported in another
 
 ```jsx
 export const some_string = 'Hello, World!';
@@ -240,7 +239,7 @@ export default function MyComponent() {
 }
 ```
 
-In order to minimize the footprint of the changes, we need to keep `some_string` in the file where it was originally declared.
+**Solution**: Convert to function that uses `useGT()` in original file
 
 ```jsx
 import { useGT } from 'gt-next/client';
@@ -259,3 +258,7 @@ export default function MyComponent() {
   return <>{some_string}</>;
 }
 ```
+
+## IMPORTANT
+
+Be careful to only modify non-functional strings. Avoid modifying functional strings such as ids.

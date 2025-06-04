@@ -1,5 +1,14 @@
 # Next.js App Router with gt-next Setup Guide
 
+## Required libraries
+
+Install the `gt-next` and `gtx-cli` libraries using the project's package manager:
+
+```bash
+npm i gt-next
+npm i --save-dev gtx-cli
+```
+
 ## Required Configuration: `withGTConfig`
 
 **Purpose**: Initialize the gt-next SDK in Next.js applications.
