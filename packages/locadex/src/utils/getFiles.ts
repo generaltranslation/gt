@@ -30,9 +30,10 @@ function saveFileList(files: FileEntry[], filePath: string): void {
 
 function addFileToList(
   filePath: string,
+  stateFilePath: string,
   status: 'pending' | 'in_progress' | 'edited' = 'pending'
 ): void {
-  const files = getFileList(filePath);
+  const files = getFileList(stateFilePath);
   const existingIndex = files.findIndex((f) => f.path === filePath);
 
   if (existingIndex >= 0) {
@@ -46,7 +47,7 @@ function addFileToList(
     });
   }
 
-  saveFileList(files, filePath);
+  saveFileList(files, stateFilePath);
 }
 
 function isTypeScriptFile(filePath: string): boolean {
@@ -116,7 +117,7 @@ export function addNextJsFilesToManager(
     if (existingPaths.has(filePath)) {
       existing.push(filePath);
     } else {
-      addFileToList(filePath, 'pending');
+      addFileToList(filePath, stateFilePath, 'pending');
       added.push(filePath);
     }
   }
