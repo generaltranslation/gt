@@ -44,21 +44,24 @@ export default withGTConfig(nextConfig, {
 
 1. **Root Layout Integration**: Add `GTProvider` to your application's root layout, positioned as high as possible in the component tree, within `<html>` and `<body>` elements:
 
-   ```tsx copy title="src/layout.tsx"
-   import { GTProvider } from 'gt-next';
+```tsx copy title="src/layout.tsx"
+import { GTProvider } from 'gt-next';
+import { getLocale } from 'gt-next/server';
 
-   export default function RootLayout({ children }) {
-     return (
-       <html>
-         <body>
-           <GTProvider>{children}</GTProvider>
-         </body>
-       </html>
-     );
-   }
-   ```
+export default async function RootLayout({ children }) {
+  return (
+    <html lang={await getLocale()}>
+      <body>
+        <GTProvider>{children}</GTProvider>
+      </body>
+    </html>
+  );
+}
+```
 
-   **Note**: For applications with multiple root layouts, include `GTProvider` in each layout.
+Make sure to include `lang={await getLocale()}` in the `<html>` props.
+
+**Note**: For applications with multiple root layouts, include `GTProvider` in each layout.
 
 2. **Configuration File**: Create a [`gt.config.json`](/docs/cli/reference/config) file in the project root for configuring both `gtx-cli` and `gt-next`:
 

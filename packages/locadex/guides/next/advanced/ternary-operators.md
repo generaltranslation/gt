@@ -1,6 +1,6 @@
 # Conditional Content Internationalization Patterns
 
-**Objective**: Transform ternary operators and conditional rendering into translatable patterns using `<T>`, `<Branch>`, `useGT()`/`getGT()`, and `useDict()`/`getDict()`.
+**Objective**: Transform ternary operators and conditional rendering into translatable patterns using `<T>`, `<Branch>`, `<Var>`, `useGT()`/`getGT()`, and `useDict()`/`getDict()`.
 
 ## Core Constraint: Dynamic Content in `<T>` Components
 

@@ -10,6 +10,32 @@ type Guide = {
 
 export const guides: Guide[] = [
   {
+    id: 'basic_next-setup',
+    description: 'Basic guide for setting up gt-next in a Next.js project.',
+    path: 'guides/next/basic/setup.md',
+    type: 'basic',
+  },
+  {
+    id: 'basic_next-jsx',
+    description:
+      'Basic guide for translating JSX content in a Next.js project.',
+    path: 'guides/next/basic/jsx.md',
+    type: 'basic',
+  },
+  {
+    id: 'basic_next-branches',
+    description:
+      'Basic guide for using branch components in a Next.js project.',
+    path: 'guides/next/basic/branches.md',
+    type: 'basic',
+  },
+  {
+    id: 'basic_next-variables',
+    description: 'Basic guide for using variables in a Next.js project.',
+    path: 'guides/next/basic/variables.md',
+    type: 'basic',
+  },
+  {
     id: 'basic_next-client-side-components',
     description:
       'Basic guide on how to internationalize client-side components.',
@@ -28,19 +54,6 @@ export const guides: Guide[] = [
     description:
       'Basic guide on how to add a locale selector to your application.',
     path: 'guides/next/basic/locale-selector.md',
-    type: 'basic',
-  },
-  {
-    id: 'basic_next-setup',
-    description: 'Basic guide for setting up gt-next in a Next.js project.',
-    path: 'guides/next/basic/setup.md',
-    type: 'basic',
-  },
-  {
-    id: 'basic_next-jsx',
-    description:
-      'Basic guide for translating JSX content in a Next.js project.',
-    path: 'guides/next/basic/jsx.md',
     type: 'basic',
   },
   {
@@ -67,7 +80,7 @@ export const guides: Guide[] = [
   {
     id: 'advanced_next-ternary-operators',
     description:
-      'Advanced guide for wherever you see a ternary operator or conditional statements that needs to be internationalized.',
+      'Advanced guide for complex scenarios with ternary operators or conditional statements that needs to be internationalized.',
     path: 'guides/next/advanced/ternary-operators.md',
     type: 'advanced',
   },
@@ -81,7 +94,7 @@ export const guides: Guide[] = [
   {
     id: 'advanced_next-interpolated-strings',
     description:
-      'Advanced guide for wherever you see an interpolated string that needs to be internationalized.',
+      'Advanced guide for wherever you see an interpolated string (template string literal with quasis) that needs to be internationalized.',
     path: 'guides/next/advanced/interpolated-strings.md',
     type: 'advanced',
   },

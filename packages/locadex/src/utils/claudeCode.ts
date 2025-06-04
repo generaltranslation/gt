@@ -118,7 +118,7 @@ export class ClaudeCodeRunner {
                   logStep(text.join('').trim());
                 }
                 if (toolUses.length > 0) {
-                  logStep(`Used tools: ${toolUses.join(', ')}`);
+                  logMessage(`Used tools: ${toolUses.join(', ')}`);
                 }
               } else if (outputData.type === 'result') {
                 const resultInfo = constructResultInfo(outputData);
