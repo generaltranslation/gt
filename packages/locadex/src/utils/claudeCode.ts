@@ -10,6 +10,7 @@ import {
 import { ClaudeSDKMessage } from '../types/claude-sdk.js';
 import { constructResultInfo } from '../logging/constructInfo.js';
 import { guides } from '../tools/guides.js';
+import { SpinnerResult } from '@clack/prompts';
 
 export interface ClaudeCodeOptions {
   additionalSystemPrompt?: string;
@@ -17,6 +18,10 @@ export interface ClaudeCodeOptions {
   mcpConfig?: string;
   additionalAllowedTools?: string[];
   maxTurns?: number;
+}
+
+export interface ClaudeCodeObservation {
+  spinner: SpinnerResult;
 }
 
 const DEFAULT_ALLOWED_TOOLS = [
@@ -40,7 +45,10 @@ export class ClaudeCodeRunner {
     }
   }
 
-  async run(options: ClaudeCodeOptions): Promise<string> {
+  async run(
+    options: ClaudeCodeOptions,
+    obs: ClaudeCodeObservation
+  ): Promise<string> {
     return new Promise((resolve, reject) => {
       const args = ['-p', options.prompt];
 
@@ -107,6 +115,10 @@ export class ClaudeCodeRunner {
                 const resultInfo = constructResultInfo(outputData);
                 if (resultInfo) {
                   logSuccess(resultInfo);
+                }
+              } else if (outputData.type === 'system') {
+                if (outputData.subtype === 'init') {
+                  obs.spinner.stop('Locadex initialized');
                 }
               }
             } catch (error) {}

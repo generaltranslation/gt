@@ -2,11 +2,15 @@ import { intro, outro, spinner } from '@clack/prompts';
 import chalk from 'chalk';
 import { ClaudeCodeRunner } from '../utils/claudeCode.js';
 import { fromPackageRoot } from '../utils/getPaths.js';
-import { displayHeader } from '../logging/console.js';
-import { ADDITIONAL_TOOLS_PROMPT } from '../prompts/system.js';
+import { createSpinner, displayHeader } from '../logging/console.js';
+import { mcpTools } from '../prompts/system.js';
 
 export async function i18nCommand() {
-  displayHeader(chalk.blue('🌍 Locadex i18n'));
+  displayHeader();
+
+  const spinner = createSpinner();
+
+  spinner.start('Initializing Locadex...');
 
   try {
     const mcpConfigPath = fromPackageRoot('.locadex-mcp.json');
@@ -31,14 +35,20 @@ Your core principles are:
 - Minimize the footprint of the changes
 - Keep content in the same file where it came from
 - Use the tools provided to you to internationalize the content
-${ADDITIONAL_TOOLS_PROMPT}
+
+You additionally have access to the following mcp tools made available via the 'locadex' mcp server:
+${mcpTools}
+Use these tools to help you with your tasks.
 `;
 
-    await claudeRunner.run({
-      additionalSystemPrompt: ADDITIONAL_TOOLS_PROMPT,
-      prompt: setupPrompt,
-      mcpConfig: mcpConfigPath,
-    });
+    await claudeRunner.run(
+      {
+        additionalSystemPrompt: mcpTools,
+        prompt: setupPrompt,
+        mcpConfig: mcpConfigPath,
+      },
+      { spinner }
+    );
 
     outro(chalk.green('✅ Locadex i18n complete!'));
   } catch (error) {

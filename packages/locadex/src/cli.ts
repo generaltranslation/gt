@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
 import { setupCommand } from './commands/setup.js';
 import { i18nCommand } from './commands/i18n.js';
+import { startCommand } from './commands/run.js';
 
 const packageJson = JSON.parse(
   readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -20,7 +21,13 @@ const program = new Command();
 program
   .name('locadex')
   .description('AI agent for internationalization')
-  .version(packageJson.version);
+  .version(packageJson.version)
+  .action(startCommand);
+
+program
+  .command('run')
+  .description('Fully internationalize your project')
+  .action(startCommand);
 
 program
   .command('setup')

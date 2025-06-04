@@ -5,7 +5,7 @@ import { fromPackageRoot } from '../utils/getPaths.js';
 import { createSpinner, displayHeader } from '../logging/console.js';
 import { mcpTools } from '../prompts/system.js';
 
-export async function setupCommand() {
+export async function startCommand() {
   displayHeader();
 
   const spinner = createSpinner();
@@ -19,9 +19,7 @@ export async function setupCommand() {
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
-    const setupPrompt = `Use gt-next to setup this project for internationalization.
-Only prepare the project for internationalization, do not internationalize any content.
-
+    const setupPrompt = `Use gt-next to internationalize this project.
 You additionally have access to the following mcp tools made available via the 'locadex' mcp server:
 ${mcpTools}
 Use these tools to help you with your tasks.
@@ -35,11 +33,7 @@ Use these tools to help you with your tasks.
       { spinner }
     );
 
-    outro(
-      chalk.green(
-        "✅ Locadex setup complete! Run `npx locadex i18n` to internationalize your project's content."
-      )
-    );
+    outro(chalk.green('✅ Locadex run complete!'));
   } catch (error) {
     outro(
       chalk.red(

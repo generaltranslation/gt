@@ -12,6 +12,7 @@ import {
   taskLog,
 } from '@clack/prompts';
 import chalk from 'chalk';
+import { getLocadexVersion } from '../utils/getPaths.js';
 
 // Basic logging functions
 export function logInfo(message: string) {
@@ -72,9 +73,12 @@ Y8,        88      88
 }
 
 function displayInitializingText() {
+  const version = getLocadexVersion();
   // eslint-disable-next-line no-console
   console.log(
-    `\n${chalk.bold.blue('General Translation, Inc.')}\n${chalk.gray('https://generaltranslation.com/docs')}\n`
+    `\n${chalk.bold.blue('General Translation, Inc.')}
+${chalk.gray('https://generaltranslation.com/docs')}
+${chalk.gray(`Locadex Version: ${version}\n`)}`
   );
 }
 
