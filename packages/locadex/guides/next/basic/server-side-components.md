@@ -3,6 +3,8 @@
 You have three methods for internationalizing content on the server side: `<T>`, `getGT()`, and `getDict()`.
 The syntax for `<T>` is identical on both server and server side components so this will not be covered in this guide, but `getGT()`, and `getDict()` differs, so they will.
 
+It may be tempting to add a directive. Do not add "use client", "use server", etc. directives.
+
 ## The `getGT()` function
 
 The `getGT()` function can only be used on the server side and allows you to translate strings.

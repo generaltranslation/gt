@@ -3,6 +3,8 @@
 You have three methods for internationalizing content on the client side: `<T>`, `useGT()`, and `useDict()`.
 The syntax for `<T>` is identical on both client and server side components so this will not be covered in this guide, but `useGT()`, and `useDict()` differs, so they will.
 
+It may be tempting to add a directive. Do not add "use client", "use server", etc. directives.
+
 ## The `useGT()` hook
 
 The `useGT()` hook can only be used on the client side and allows you to translate strings.

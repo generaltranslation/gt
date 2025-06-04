@@ -12,7 +12,9 @@ However, sometimes, you cannot make a component into a client component. This gu
 
 Remember, a core principle is to leave as small of a footprint as possible.
 You should avoid moving content between files as much as possible.
-Try to internationalize content in the same file where they came frome.
+Try to internationalize content in the same file where they came from.
+
+It may be tempting to add a directive. Do not add "use client", "use server", etc. directives.
 
 ## Example 1: String being used by both server and client
 
