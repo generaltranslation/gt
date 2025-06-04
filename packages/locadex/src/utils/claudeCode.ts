@@ -69,7 +69,7 @@ export class ClaudeCodeRunner {
       args.push('--output-format', 'stream-json');
       args.push('--verbose');
       if (options.sessionId) {
-        args.push('--session-id', options.sessionId);
+        args.push('--resume', options.sessionId);
       }
 
       if (options.mcpConfig) {

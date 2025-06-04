@@ -25,13 +25,14 @@ export const guides: Guide[] = [
   {
     id: 'basic_next-branches',
     description:
-      'Basic guide for using branch components in a Next.js project.',
+      'Basic guide for using branch components and dealing with conditional JSX in a Next.js project.',
     path: 'guides/next/basic/branches.md',
     type: 'basic',
   },
   {
     id: 'basic_next-variables',
-    description: 'Basic guide for using variables in a Next.js project.',
+    description:
+      'Basic guide for using internationalizing variable content (Currency, DateTime, Numbers, and other dynamic content) in a Next.js project.',
     path: 'guides/next/basic/variables.md',
     type: 'basic',
   },

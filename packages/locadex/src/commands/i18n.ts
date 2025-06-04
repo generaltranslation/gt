@@ -36,6 +36,7 @@ export async function i18nCommand(options: CliOptions) {
 
     const mcpConfigPath = fromPackageRoot('.locadex-mcp.json');
 
+    options.verbose = true;
     const claudeRunner = new ClaudeCodeRunner({
       apiKey: process.env.ANTHROPIC_API_KEY,
       verbose: options.verbose,
@@ -53,10 +54,11 @@ Your task is to internationalize the app's content using gt-next, specifically u
 To validate the use of gt-next, you can run the following command:
 'npx gtx-cli translate --dry-run'
 
-## File Management System
-The file manager has been preloaded with ${stats.totalFiles} TypeScript files (${stats.tsFiles} .ts files, ${stats.tsxFiles} .tsx files) from the Next.js app directory. ${scanResult.added.length > 0 ? `${scanResult.added.length} new files were added to your checklist.` : 'All files were already in your checklist.'}
+## I18n Files Checklist
+The i18n file manager has been preloaded with ${stats.totalFiles} TypeScript files (${stats.tsFiles} .ts files, ${stats.tsxFiles} .tsx files) from the Next.js app directory.
+${scanResult.added.length > 0 ? `${scanResult.added.length} new files were added to your internationalization checklist.` : 'All files were already in your internationalization checklist.'}
 
-**Important**: This is a scan that includes ALL .ts and .tsx files. You should actively review and remove files that don't contain user-facing content. Any files that DO CONTAIN content, must be internationalized.
+**Important**: This is a scan that includes ALL .ts and .tsx files. You should actively review and mark completed files that don't contain user-facing content.
 
 ### Workflow:
 1. **Start by checking your checklist**: Use 'listFiles' to see what files were preloaded
@@ -67,24 +69,34 @@ The file manager has been preloaded with ${stats.totalFiles} TypeScript files ($
 
 Always use the file manager as your source of truth for which files need to be processed. Be proactive about removing files that don't need translation to keep your checklist focused.
 
-Your core principles are:
+Our advice to you is:
+- You should strongly prefer using <T> component over using getGT() or useGT() and getDict() or useDict()
+- You should not be adding i18n middleware to the app
+
+CORE PRINCIPLES OF I18N:
 - Minimize the footprint of the changes
 - Keep content in the same file where it came from
 - Use the file manager tools to systematically track progress
-- Use the tools provided to you to internationalize the content
+- Use the tools provided to you to gain knowledge about how to internationalize the content
+- Never create or remove any files, only modify current files (if you need to create a new file, make sure to remove it when you are done by adding it to your todo list)
+- Any files that CONTAIN USER FACING content, must be internationalized.
 
 ${allMcpPrompt}
 `;
 
     // Initial run
-    await claudeRunner.run(
-      {
-        additionalSystemPrompt: allMcpTools,
-        prompt: setupPrompt,
-        mcpConfig: mcpConfigPath,
-      },
-      { spinner }
-    );
+    try {
+      await claudeRunner.run(
+        {
+          additionalSystemPrompt: allMcpTools,
+          prompt: setupPrompt,
+          mcpConfig: mcpConfigPath,
+        },
+        { spinner }
+      );
+    } catch (error) {
+      console.error(`[i18nCommand] Error in initial run: ${error}`);
+    }
 
     const sessionId = claudeRunner.getSessionId();
 
@@ -156,15 +168,21 @@ Please continue working on these files. Use 'listFiles' to see what needs to be 
 
 This is attempt ${attempt + 1} of ${maxAttempts}.`;
 
-        await claudeRunner.run(
-          {
-            additionalSystemPrompt: allMcpTools,
-            prompt: continuePrompt,
-            mcpConfig: mcpConfigPath,
-            sessionId,
-          },
-          { spinner }
-        );
+        try {
+          await claudeRunner.run(
+            {
+              additionalSystemPrompt: allMcpTools,
+              prompt: continuePrompt,
+              mcpConfig: mcpConfigPath,
+              sessionId,
+            },
+            { spinner }
+          );
+        } catch (error) {
+          console.error(
+            `[i18nCommand] Error in attempt ${attempt + 1}: ${error}`
+          );
+        }
       }
 
       attempt++;

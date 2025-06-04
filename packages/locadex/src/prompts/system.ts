@@ -5,6 +5,8 @@ mcp__locadex__list-docs`;
 
 export const mcpFileManagerTools = `mcp__locadex__addFile
 mcp__locadex__markFileAsCompleted
+mcp__locadex__markFileAsPending
+mcp__locadex__markFileAsInProgress
 mcp__locadex__removeFile
 mcp__locadex__listFiles
 mcp__locadex__clearFiles`;

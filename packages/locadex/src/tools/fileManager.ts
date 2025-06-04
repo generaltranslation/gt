@@ -82,6 +82,88 @@ export function addFileManagerTools(server: McpServer) {
   );
 
   server.tool(
+    'markFileAsPending',
+    'Mark a file as pending internationalization in the internationalization checklist',
+    {
+      filePath: z.string().describe('Path to the file to mark as pending'),
+    },
+    async ({ filePath }) => {
+      const files = getFileList();
+      let foundFile = false;
+      const updatedFiles = files.map((f) => {
+        if (f.path === filePath) {
+          foundFile = true;
+          return { ...f, status: 'pending' } as FileEntry;
+        }
+        return f;
+      });
+
+      if (!foundFile) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `File "${filePath}" was not found in the checklist.`,
+            },
+          ],
+        };
+      }
+
+      saveFileList(updatedFiles);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `File "${filePath}" has been marked as pending in the internationalization checklist successfully. Ensure that you continue to use the internationalization checklist to track your progress. Please proceed with the current tasks if applicable`,
+          },
+        ],
+      };
+    }
+  );
+
+  server.tool(
+    'markFileAsInProgress',
+    'Mark a file as in progress in the internationalization checklist',
+    {
+      filePath: z.string().describe('Path to the file to mark as in progress'),
+    },
+    async ({ filePath }) => {
+      const files = getFileList();
+      let foundFile = false;
+      const updatedFiles = files.map((f) => {
+        if (f.path === filePath) {
+          foundFile = true;
+          return { ...f, status: 'in_progress' } as FileEntry;
+        }
+        return f;
+      });
+
+      if (!foundFile) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `File "${filePath}" was not found in the checklist.`,
+            },
+          ],
+        };
+      }
+
+      saveFileList(updatedFiles);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `File "${filePath}" has been marked as in progress in the internationalization checklist successfully. Ensure that you continue to use the internationalization checklist to track your progress. Please proceed with the current tasks if applicable`,
+          },
+        ],
+      };
+    }
+  );
+
+  server.tool(
     'markFileAsCompleted',
     'Mark a file as completed in the internationalization checklist',
     {
