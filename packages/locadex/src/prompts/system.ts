@@ -23,6 +23,11 @@ export const advancedMcpGuides = guides
   .map((guide) => `mcp__locadex__${guide.id}`)
   .join('\n');
 
-export const allMcpPrompt = `You have access to mcp tools made available via the 'locadex' mcp server:
-${allMcpTools}
-Use these tools to help you with your tasks. Call them as needed.`;
+export const allMcpPrompt = `You have access to mcp tools made available via the 'locadex' mcp server.
+Generally, you should use the guides tools to help you with your tasks:
+${basicMcpGuides}
+${advancedMcpGuides}
+
+You should only call the docs tools: 
+${mcpDocsTools}
+when you need specific information not covered by the guides.`;

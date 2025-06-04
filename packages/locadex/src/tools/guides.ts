@@ -98,6 +98,13 @@ export const guides: Guide[] = [
     path: 'guides/next/advanced/interpolated-strings.md',
     type: 'advanced',
   },
+  {
+    id: 'advanced_next-migrating',
+    description:
+      'Advanced guide for migrating from an existing i18n library such as react-i18next or next-i18next to gt-next.',
+    path: 'guides/next/advanced/migrating.md',
+    type: 'advanced',
+  },
 ];
 
 export function addGuidesTools(server: McpServer) {
