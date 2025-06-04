@@ -4,6 +4,7 @@ import { constructResultInfo } from '../logging/constructInfo.js';
 import { guides } from '../tools/guides.js';
 import { SpinnerResult } from '@clack/prompts';
 import { logger } from '../logging/logger.js';
+import { fileManagerTools } from '../tools/fileManager.js';
 
 export interface ClaudeCodeOptions {
   additionalSystemPrompt?: string;
@@ -18,14 +19,15 @@ export interface ClaudeCodeObservation {
 }
 
 const DEFAULT_ALLOWED_TOOLS = [
-  'mcp__locadex__listFiles',
   'mcp__locadex__fetch-docs',
   'mcp__locadex__list-docs',
   'Bash',
   'Edit',
   'MultiEdit',
   'Write',
-].concat(guides.map((guide) => `mcp__locadex__${guide.id}`));
+]
+  .concat(guides.map((guide) => `mcp__locadex__${guide.id}`))
+  .concat(Object.keys(fileManagerTools).map((key) => `mcp__locadex__${key}`));
 
 const DISALLOWED_TOOLS = ['NotebookEdit', 'WebFetch', 'WebSearch'];
 

@@ -15,7 +15,7 @@ export const mcpGuidesTools = guides.map(
 );
 
 export const allMcpTools = `${mcpDocsTools}
-${mcpFileManagerTools}
+${mcpFileManagerTools.join('\n')}
 ${guides.map((guide) => `mcp__locadex__${guide.id}`).join('\n')}`;
 
 // Helper function to generate tool strings with mcp__locadex__ prefix
@@ -50,3 +50,5 @@ ${docsToolsWithDescriptions}
 ${guidesToolsWithDescriptions}
 
 Generally, you should use the guides tools to help you with your tasks. You should only call the docs tools when you need specific information not covered by the guides. Always use the file manager tools to track your progress systematically.`;
+
+console.log(allMcpPrompt);

@@ -23,18 +23,32 @@ interface FileEntry {
 }
 
 function getFileList(stateFilePath: string): FileEntry[] {
-  if (!stateFilePath || !existsSync(stateFilePath)) {
+  if (!stateFilePath) {
     return [];
   }
+
+  const fileExists = existsSync(stateFilePath);
+
+  if (!fileExists) {
+    return [];
+  }
+
   try {
-    return JSON.parse(readFileSync(stateFilePath, 'utf8'));
-  } catch {
+    const fileContent = readFileSync(stateFilePath, 'utf8');
+    const parsed = JSON.parse(fileContent);
+    return parsed;
+  } catch (error) {
     return [];
   }
 }
 
 function saveFileList(files: FileEntry[], stateFilePath: string): void {
-  writeFileSync(stateFilePath, JSON.stringify(files, null, 2));
+  try {
+    const jsonData = JSON.stringify(files, null, 2);
+    writeFileSync(stateFilePath, jsonData);
+  } catch (error) {
+    throw error;
+  }
 }
 
 export function addFileManagerTools(server: McpServer, stateFilePath: string) {
@@ -53,6 +67,7 @@ export function addFileManagerTools(server: McpServer, stateFilePath: string) {
     },
     async ({ filePath, status = 'pending' }) => {
       const files = getFileList(stateFilePath);
+
       const existingIndex = files.findIndex((f) => f.path === filePath);
 
       if (existingIndex >= 0) {
@@ -128,37 +143,41 @@ export function addFileManagerTools(server: McpServer, stateFilePath: string) {
       filePath: z.string().describe('Path to the file to mark as in progress'),
     },
     async ({ filePath }) => {
-      const files = getFileList(stateFilePath);
-      let foundFile = false;
-      const updatedFiles = files.map((f) => {
-        if (f.path === filePath) {
-          foundFile = true;
-          return { ...f, status: 'in_progress' } as FileEntry;
-        }
-        return f;
-      });
+      try {
+        const files = getFileList(stateFilePath);
+        let foundFile = false;
+        const updatedFiles = files.map((f) => {
+          if (f.path === filePath) {
+            foundFile = true;
+            return { ...f, status: 'in_progress' } as FileEntry;
+          }
+          return f;
+        });
 
-      if (!foundFile) {
+        if (!foundFile) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `File "${filePath}" was not found in the checklist.`,
+              },
+            ],
+          };
+        }
+
+        saveFileList(updatedFiles, stateFilePath);
+
         return {
           content: [
             {
               type: 'text',
-              text: `File "${filePath}" was not found in the checklist.`,
+              text: `File "${filePath}" has been marked as in progress in the internationalization checklist successfully. Ensure that you continue to use the internationalization checklist to track your progress. Please proceed with the current tasks if applicable`,
             },
           ],
         };
+      } catch (error) {
+        throw error;
       }
-
-      saveFileList(updatedFiles, stateFilePath);
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `File "${filePath}" has been marked as in progress in the internationalization checklist successfully. Ensure that you continue to use the internationalization checklist to track your progress. Please proceed with the current tasks if applicable`,
-          },
-        ],
-      };
     }
   );
 
@@ -169,37 +188,41 @@ export function addFileManagerTools(server: McpServer, stateFilePath: string) {
       filePath: z.string().describe('Path to the file to mark as edited'),
     },
     async ({ filePath }) => {
-      const files = getFileList(stateFilePath);
-      let foundFile = false;
-      const updatedFiles = files.map((f) => {
-        if (f.path === filePath) {
-          foundFile = true;
-          return { ...f, status: 'edited' } as FileEntry;
-        }
-        return f;
-      });
+      try {
+        const files = getFileList(stateFilePath);
+        let foundFile = false;
+        const updatedFiles = files.map((f) => {
+          if (f.path === filePath) {
+            foundFile = true;
+            return { ...f, status: 'edited' } as FileEntry;
+          }
+          return f;
+        });
 
-      if (!foundFile) {
+        if (!foundFile) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `File "${filePath}" was not found in the checklist.`,
+              },
+            ],
+          };
+        }
+
+        saveFileList(updatedFiles, stateFilePath);
+
         return {
           content: [
             {
               type: 'text',
-              text: `File "${filePath}" was not found in the checklist.`,
+              text: `File "${filePath}" has been marked as edited in the internationalization checklist successfully. Ensure that you continue to use the internationalization checklist to track your progress. Please proceed with the current tasks if applicable`,
             },
           ],
         };
+      } catch (error) {
+        throw error;
       }
-
-      saveFileList(updatedFiles, stateFilePath);
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `File "${filePath}" has been marked as edited in the internationalization checklist successfully. Ensure that you continue to use the internationalization checklist to track your progress. Please proceed with the current tasks if applicable`,
-          },
-        ],
-      };
     }
   );
 
@@ -249,9 +272,10 @@ export function addFileManagerTools(server: McpServer, stateFilePath: string) {
   server.tool('clearFiles', fileManagerTools['clearFiles'], {}, async () => {
     const files = getFileList(stateFilePath);
     const fileCount = files.length;
-
     const filePath = stateFilePath;
-    if (existsSync(filePath)) {
+    const fileExists = existsSync(filePath);
+
+    if (fileExists) {
       unlinkSync(filePath);
     }
 

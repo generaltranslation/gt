@@ -51,10 +51,10 @@ ${scanResult.added.length > 0 ? `${scanResult.added.length} new files were added
 1. **Start by checking your checklist**: Use 'listFiles' to see files that need to be internationalized
 2. **Select a file to internationalize**: Select a file that is marked as 'pending' and mark it as 'in_progress' with the 'markFileAsInProgress' tool
 3. **Read the selected file**: Read the file that you just got from the checklist
-4. **Decide if you need to internationalize**: Not all files need to be internationalized. Mark the file as 'edited' if it doesn't contain user-facing content with the 'markFileAsEdited' tool then go back to step 1. If it does contain user-facing content, continue to the next step.
+4. **Decide if you need to internationalize**: Not all files need to be internationalized. Mark the file as 'edited' if it doesn't contain user-facing content with the 'mcp__locadex__markFileAsEdited' tool then go back to step 1. If it does contain user-facing content, continue to the next step.
 5. **Identify the tools to use**: Choose from the list of guides to help you with your task. If you need to look up documentation, use the 'get-docs' and 'fetch-docs' tools in tandem
 6. **Internationalize**: You now have the necessary knowledge. Internationalize the file using the information from the tools provided to you.
-4. **Track your progress**: When you are finished, mark the tool as 'edited' to show that you have made changes to the file with the 'markFileAsEdited' tool
+4. **Track your progress**: When you are finished, mark the tool as 'edited' to show that you have made changes to the file with the 'mcp__locadex__markFileAsEdited' tool
 5. **Continue**: Return to step 1 and repeat the process until all files are marked as 'edited'
 
 Always use the file manager as your source of truth for which files need to be processed. Be proactive about removing files that don't need translation to keep your checklist focused.

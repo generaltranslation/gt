@@ -26,6 +26,8 @@ async function main() {
   addDocsTools(server);
   addGuidesTools(server);
   addFileManagerTools(server, stateFile);
+  
+  console.error('[locadex-mcp] All tools registered');
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('[locadex-mcp] started on stdio');
