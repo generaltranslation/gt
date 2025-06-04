@@ -118,7 +118,7 @@ export class ClaudeCodeRunner {
         env.ANTHROPIC_API_KEY = this.options.apiKey;
       }
 
-      const claude = spawn('claude', args, {
+      const claude = spawn('npx', ['claude', ...args], {
         stdio: ['inherit', 'pipe', 'pipe'],
         env,
       });
