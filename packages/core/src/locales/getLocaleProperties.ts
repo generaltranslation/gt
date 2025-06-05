@@ -178,7 +178,7 @@ export default function _getLocaleProperties(
     // Emoji
 
     const emoji = customLocaleProperties?.emoji || _getLocaleEmoji(standardizedLocale, customMapping);
-throw new Error()
+
     return {
       code: standardizedLocale,
       name,
