@@ -97,4 +97,4 @@ export type TranslationError = {
     id: string;
     key: string;
   };
-};
+}; 
