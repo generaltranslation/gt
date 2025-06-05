@@ -94,6 +94,7 @@ export function scanNextJsAppFiles(
   return scanDirectory(projectPath, projectPath);
 }
 
+// Used by dag command
 export function addFilesToManager(
   projectPath: string = process.cwd(),
   files: string[] = []
@@ -108,6 +109,22 @@ export function addFilesToManager(
   );
 
   return stateFilePath;
+}
+
+// Used by dag command
+export function markFileAsInProgress(
+  filePath: string,
+  stateFilePath: string
+): void {
+  addFileToList(filePath, stateFilePath, 'in_progress');
+}
+
+// Used by dag command
+export function markFileAsEdited(
+  filePath: string,
+  stateFilePath: string
+): void {
+  addFileToList(filePath, stateFilePath, 'edited');
 }
 
 export function addNextJsFilesToManager(

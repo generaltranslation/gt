@@ -7,7 +7,8 @@ import { findTsConfig, findWebpackConfig } from '../utils/fs/findConfigs.js';
 import { configureAgent } from '../utils/agentManager.js';
 import {
   addFilesToManager,
-  addNextJsFilesToManager,
+  markFileAsEdited,
+  markFileAsInProgress,
 } from '../utils/getFiles.js';
 export async function dagCommand() {
   // Init message
@@ -30,7 +31,8 @@ export async function dagCommand() {
   const taskQueue = dag.getTopologicalOrder();
 
   // Add files to manager
-  const scanResult = addFilesToManager(filesStateFilePath, taskQueue);
+  const stateFilePath = addFilesToManager(filesStateFilePath, taskQueue);
+  console.log('[dagCommand] Track progress here: ', stateFilePath);
 
   // Main loop
   while (taskQueue.length > 0) {
@@ -40,8 +42,8 @@ export async function dagCommand() {
       break;
     }
 
-    // TODO: Mark task as in progress
-    logger.info(`[dagCommand] Marking task as in progress: ${task}`);
+    // Mark task as in progress
+    markFileAsInProgress(task, filesStateFilePath);
 
     // Construct prompt
     const prompt = getPrompt({
@@ -50,7 +52,7 @@ export async function dagCommand() {
       dependentFiles: dag.getDependents(task),
     });
 
-    // Initial run
+    // Claude call
     try {
       await agent.run(
         {
@@ -59,11 +61,11 @@ export async function dagCommand() {
         { spinner }
       );
     } catch (error) {
-      logger.debugMessage(`[i18nCommand] Error in initial run: ${error}`);
+      logger.debugMessage(`[dagCommand] Error in claude: ${error}`);
     }
 
-    // TODO: Mark task as complete
-    logger.info(`[dagCommand] Marking task as complete: ${task}`);
+    // Mark task as complete
+    markFileAsEdited(task, filesStateFilePath);
   }
 }
 
