@@ -17,6 +17,7 @@ import { CliOptions } from './types/cli.js';
 import { withTelemetry } from './telemetry.js';
 import { logger } from './logging/logger.js';
 import { dagCommand } from './commands/dag.js';
+import { tempCommand } from './commands/temp.js';
 
 const packageJson = JSON.parse(
   readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -111,6 +112,21 @@ program
       () => {
         logger.initialize(allOptions);
         dagCommand();
+      }
+    );
+  });
+
+program
+  .command('temp')
+  .description('Run a temporary command')
+  .action((options: CliOptions, command: Command) => {
+    const parentOptions = command.parent?.opts() || {};
+    const allOptions = { ...parentOptions, ...options };
+    withTelemetry(
+      { enabled: !allOptions.noTelemetry, options: allOptions },
+      () => {
+        logger.initialize(allOptions);
+        tempCommand();
       }
     );
   });

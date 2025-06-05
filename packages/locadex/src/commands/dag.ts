@@ -29,6 +29,18 @@ export async function dagCommand() {
     webpackConfig: findWebpackConfig() || undefined,
   });
 
+  logger.info(
+    'dag.getDag().length: ' + String(Object.keys(dag.getDag()).length)
+  );
+  logger.info(
+    'dag.getReverseDag().length: ' +
+      String(Object.keys(dag.getReverseDag()).length)
+  );
+  logger.info(
+    'dag.getTopologicalOrder().length: ' +
+      String(dag.getTopologicalOrder().length)
+  );
+
   // Configure agent
   const { agent, filesStateFilePath } = configureAgent({
     mcpTransport: 'sse',
@@ -65,6 +77,7 @@ export async function dagCommand() {
 
     // Claude call
     try {
+      logger.debugMessage(`[dagCommand] Session ID: ${sessionId}`);
       await agent.run(
         {
           prompt,
