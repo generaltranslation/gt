@@ -13,7 +13,7 @@ export const guides: Guide[] = [
     id: 'important_next-functions',
     description:
       'Important documentation outlining the imports available in `gt-next`.',
-    path: 'guides/next/basic/functions.md',
+    path: 'guides/next/important/functions.md',
     type: 'important',
   },
   {

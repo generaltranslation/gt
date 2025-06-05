@@ -32,4 +32,6 @@ import {
   LocaleSelector,
   useLocaleSelector,
 } from 'gt-next/client';
+
+import { withGTConfig } from 'gt-next/config';
 ```
