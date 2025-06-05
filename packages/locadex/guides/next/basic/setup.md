@@ -114,11 +114,12 @@ import { T, Var } from 'gt-next';
 **Client-Side Usage**:
 
 ```tsx
+'use client'; // must include use client when using useGT
 import { useGT } from 'gt-next/client';
 
 export default function MyComponent() {
   const t = useGT();
-  return <div>{t('Hello, world!')}</div>;
+  return t('Hello, world!');
 }
 ```
 
