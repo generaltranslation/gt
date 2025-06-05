@@ -40,7 +40,7 @@ export async function dagCommand() {
 
   // Add files to manager
   const stateFilePath = addFilesToManager(filesStateFilePath, taskQueue);
-  console.log('[dagCommand] Track progress here: ', stateFilePath);
+  logger.info(`[dagCommand] Track progress here: ${stateFilePath}`);
 
   // Main loop
   let hasError = false;
