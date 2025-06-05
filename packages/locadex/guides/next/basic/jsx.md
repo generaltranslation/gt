@@ -230,6 +230,26 @@ Solutions:
 1. Wrap dynamic content in Variable Components or Branching Components, then use with `<T>`
 2. Use `<Tx>` component for on-demand translation
 
+## Implementing Variable contents incorrectly
+
+The following syntax is wrong and was likely confused with the `useGT()` hook.
+
+```jsx
+// WILL ERROR - Improper syntax
+const username = 'John Doe';
+<T variables={{ username }}>Hello, {username}</T>;
+```
+
+The correct implementation is as follows:
+
+```jsx
+// WILL ERROR - Improper syntax
+const username = 'John Doe';
+<T>
+  Hello, <Var>{username}</Var>
+</T>;
+```
+
 # Summary
 
 - Use `<T>` to internationalize static JSX content

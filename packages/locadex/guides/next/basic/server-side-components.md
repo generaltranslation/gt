@@ -4,9 +4,9 @@
 
 Three methods exist for internationalizing server-side components:
 
-- `<T>` component (syntax identical to client-side)
-- `getGT()` function (server-side specific)
-- `getDict()` function (server-side specific)
+- `<T>` component (syntax identical to client-side) (STRONGLY PREFERRED)
+- `getGT()` function (server-side specific) (string only)
+- `getDict()` function (server-side specific) (string only)
 
 **Importing:** The `getGT()` and `getDict()` functions are exported from `gt-next/server`.
 
@@ -104,13 +104,9 @@ export const useNestedContent = async () => {
 import { getGT } from 'gt-next/server';
 export default async function NotificationComponent() {
   const t = await getGT();
-  return (
-    <div>
-      {t('Click on the toast to dismiss it.', {
-        context: 'toast, as in a pop-up notification',
-      })}
-    </div>
-  );
+  return t('Click on the toast to dismiss it.', {
+    context: 'toast, as in a pop-up notification',
+  });
 }
 ```
 
@@ -140,10 +136,10 @@ export default async function NotificationComponent() {
 **Step 2**: Access via key in server component:
 
 ```jsx
-import { getGT } from 'gt-next/server';
+import { getDict } from 'gt-next/server';
 export default async function MyComponent() {
-  const t = await getGT();
-  return <>{t('user.profile.name')}</>;
+  const t = await getDict();
+  return t('user.profile.name');
 }
 ```
 

@@ -4,9 +4,9 @@
 
 Three methods exist for internationalizing client-side components:
 
-- `<T>` component (syntax identical to server-side)
-- `useGT()` hook (client-side specific)
-- `useDict()` hook (client-side specific)
+- `<T>` component (syntax identical to server-side) (STRONGLY PREFERRED)
+- `useGT()` hook (client-side specific) (string only)
+- `useDict()` hook (client-side specific) (string only)
 
 **Importing:** The `useGT()` and `useDict()` hooks are exported from `gt-next/client`.
 
@@ -71,6 +71,7 @@ export const nestedContent = {
 **After internationalization:**
 
 ```jsx
+'use client'; // Must always add this directive when adding the useGT hook
 import { useGT } from 'gt-next/client';
 // Example 1
 export const useContent = () => {
@@ -99,16 +100,16 @@ export const useNestedContent = () => {
 **Example with ambiguous word:**
 
 ```jsx
+'use client'; // Must always add this directive when adding the useGT hook
 import { useGT } from 'gt-next/client';
 export default function NotificationComponent() {
   const t = useGT();
-  return (
-    <div>
-      {t('Click on the toast to dismiss it.', {
-        context: 'toast, as in a pop-up notification',
-      })}
-    </div>
-  );
+  return;
+  {
+    t('Click on the toast to dismiss it.', {
+      context: 'toast, as in a pop-up notification',
+    });
+  }
 }
 ```
 
@@ -139,9 +140,10 @@ export default function NotificationComponent() {
 **Step 2**: Access via key path in client component:
 
 ```jsx
-import { useGT } from 'gt-next/client';
+'use client'; // Must always add this directive when adding the useDict hook
+import { useDict } from 'gt-next/client';
 export default function MyComponent() {
-  const t = useGT();
+  const t = useDict();
   return (
     <>
       <div>{t('content')}</div>
