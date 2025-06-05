@@ -3,7 +3,11 @@ import { allMcpPrompt } from '../prompts/system.js';
 
 import { logger } from '../logging/logger.js';
 import { createDag } from '../utils/dag/createDag.js';
-import { findTsConfig, findWebpackConfig } from '../utils/fs/findConfigs.js';
+import {
+  findFilepaths,
+  findTsConfig,
+  findWebpackConfig,
+} from '../utils/fs/findConfigs.js';
 import { configureAgent } from '../utils/agentManager.js';
 import {
   addFilesToManager,
@@ -20,10 +24,13 @@ export async function dagCommand() {
   spinner.start('Initializing Locadex...');
 
   // Create DAG
-  const dag = createDag(['src'], {
-    tsConfig: findTsConfig() || undefined,
-    webpackConfig: findWebpackConfig() || undefined,
-  });
+  const dag = createDag(
+    findFilepaths(['./src', './app', './pages', './components']),
+    {
+      tsConfig: findTsConfig() || undefined,
+      webpackConfig: findWebpackConfig() || undefined,
+    }
+  );
 
   // Configure agent
   const { agent, filesStateFilePath } = configureAgent({

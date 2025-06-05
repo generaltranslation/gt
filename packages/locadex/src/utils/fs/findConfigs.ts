@@ -1,5 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import { logger } from '../../logging/logger.js';
 
 export function findTsConfig(): string | null {
   const cwd = process.cwd();
@@ -34,4 +35,19 @@ export function findWebpackConfig(): string | null {
   }
 
   return null;
+}
+/**
+ * Resolve the file paths from the given file paths or default paths.
+ * @param {string[]} paths - The file paths to resolve.
+ * @param {string} errorMessage - The error message to throw if no paths are found.
+ * @returns {string[]} - The resolved file paths.
+ */
+export function findFilepaths(paths: string[]): string[] {
+  const resolvedPaths: string[] = [];
+  for (const possiblePath of paths) {
+    if (fs.existsSync(possiblePath)) {
+      resolvedPaths.push(possiblePath);
+    }
+  }
+  return resolvedPaths;
 }
