@@ -221,7 +221,7 @@ class GT {
 /**
  * Get the text direction for a given locale code using the Intl.Locale API.
  *
- * @param {string} locale - The locale code to check.
+ * @param locale - A BCP-47 locale code.
  * @returns {string} - 'rtl' if the locale is right-to-left, otherwise 'ltr'.
  */
 export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
