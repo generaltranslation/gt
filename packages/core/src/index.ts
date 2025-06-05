@@ -32,7 +32,7 @@ import {
   Metadata,
 } from './types';
 import _isSameLanguage from './locales/isSameLanguage';
-import _getLocaleProperties from './locales/getLocaleProperties';
+import _getLocaleProperties, { LocaleProperties } from './locales/getLocaleProperties';
 import _getLocaleEmoji from './locales/getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
 import { _getLocaleName } from './locales/getLocaleName';
@@ -40,6 +40,7 @@ import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { defaultBaseUrl, libraryDefaultLocale } from './internal';
 import _isSameDialect from './locales/isSameDialect';
 import _isSupersetLocale from 'src/locales/isSupersetLocale';
+import { CustomMapping } from './locales/customLocaleMapping';
 
 // ----- CORE CLASS ----- //
 
@@ -52,6 +53,7 @@ type GTConstructorParams = {
   sourceLocale?: string;
   projectId?: string;
   baseUrl?: string;
+  customMapping?: Record<string, LocaleProperties | string>;
 };
 
 /**
@@ -63,6 +65,7 @@ class GT {
   sourceLocale: string;
   projectId: string;
   baseUrl: string;
+  customMapping: Record<string, LocaleProperties | string>;
 
   /**
    * Constructs an instance of the GT class.
@@ -79,12 +82,14 @@ class GT {
     sourceLocale = '',
     projectId = '',
     baseUrl = defaultBaseUrl,
+    customMapping = {},
   }: GTConstructorParams = {}) {
     this.apiKey = apiKey || process.env.GT_API_KEY || '';
     this.devApiKey = devApiKey || process.env.GT_DEV_API_KEY || '';
     this.projectId = projectId || process.env.GT_PROJECT_ID || '';
     this.sourceLocale = _standardizeLocale(sourceLocale) || '';
     this.baseUrl = baseUrl;
+    this.customMapping = customMapping;
   }
 
   /**
@@ -148,6 +153,67 @@ class GT {
       ...metadata,
     });
   }
+
+  /**
+  * Retrieves the display name of locale code using Intl.DisplayNames.
+  *
+  * @param {string} locale - A BCP-47 locale code.
+  * @returns {string} The display name corresponding to the code.
+  */
+  getLocaleName(
+    locale: string, 
+  ): string {
+    return _getLocaleName(locale, this.sourceLocale, this.customMapping);
+  }
+
+  /**
+   * Retrieves an emoji based on a given locale code, taking into account region, language, and specific exceptions.
+   * This function uses the locale's region (if present) to select an emoji or falls back on default emojis for certain languages.
+   *
+   * @param locale - A string representing the locale code (e.g., 'en-US', 'fr-CA').
+   * @returns The emoji representing the locale or its region, or a default emoji if no specific match is found.
+  */
+  getLocaleEmoji(
+    locale: string
+  ): string {
+    return _getLocaleEmoji(locale, this.customMapping);
+  }
+
+  /**
+ * Generates linguistic details for a given locale code.
+ *
+ * This function returns information about the locale,
+ * script, and region of a given language code both in a standard form and in a maximized form (with likely script and region).
+ * The function provides these names in both your default language and native forms, and an associated emoji.
+ *
+ * @param {string} locale - The locale code to get properties for (e.g., "de-AT").
+ * @returns {LocaleProperties} - An object containing detailed information about the locale.
+ *
+ * @property {string} code - The full locale code, e.g., "de-AT".
+ * @property {string} name - Language name in the default display language, e.g., "Austrian German".
+ * @property {string} nativeName - Language name in the locale's native language, e.g., "Österreichisches Deutsch".
+ * @property {string} languageCode - The base language code, e.g., "de".
+ * @property {string} languageName - The language name in the default display language, e.g., "German".
+ * @property {string} nativeLanguageName - The language name in the native language, e.g., "Deutsch".
+ * @property {string} nameWithRegionCode - Language name with region in the default language, e.g., "German (AT)".
+ * @property {string} nativeNameWithRegionCode - Language name with region in the native language, e.g., "Deutsch (AT)".
+ * @property {string} regionCode - The region code from maximization, e.g., "AT".
+ * @property {string} regionName - The region name in the default display language, e.g., "Austria".
+ * @property {string} nativeRegionName - The region name in the native language, e.g., "Österreich".
+ * @property {string} scriptCode - The script code from maximization, e.g., "Latn".
+ * @property {string} scriptName - The script name in the default display language, e.g., "Latin".
+ * @property {string} nativeScriptName - The script name in the native language, e.g., "Lateinisch".
+ * @property {string} maximizedCode - The maximized locale code, e.g., "de-Latn-AT".
+ * @property {string} maximizedName - Maximized locale name with likely script in the default language, e.g., "Austrian German (Latin)".
+ * @property {string} nativeMaximizedName - Maximized locale name in the native language, e.g., "Österreichisches Deutsch (Lateinisch)".
+ * @property {string} minimizedCode - Minimized locale code, e.g., "de-AT" (or "de" for "de-DE").
+ * @property {string} minimizedName - Minimized language name in the default language, e.g., "Austrian German".
+ * @property {string} nativeMinimizedName - Minimized language name in the native language, e.g., "Österreichisches Deutsch".
+ * @property {string} emoji - The emoji associated with the locale's region, if applicable.
+ */
+  getLocaleProperties(locale: string): LocaleProperties {
+    return _getLocaleProperties(locale, this.sourceLocale, this.customMapping);
+  }
 }
 
 // ----- EXPORTS ----- //
@@ -155,7 +221,7 @@ class GT {
 /**
  * Get the text direction for a given locale code using the Intl.Locale API.
  *
- * @param {string} locale - The locale code to check.
+ * @param locale - A BCP-47 locale code.
  * @returns {string} - 'rtl' if the locale is right-to-left, otherwise 'ltr'.
  */
 export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
@@ -167,13 +233,15 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
  *
  * @param {string} locale - A BCP-47 locale code.
  * @param {string} [defaultLocale = 'en'] - The locale for display names.
+ * @param {CustomMapping} [customMapping] - Optional custom mapping of locale codes to names.
  * @returns {string} The display name corresponding to the code.
  */
 export function getLocaleName(
   locale: string,
-  defaultLocale: string = libraryDefaultLocale
+  defaultLocale: string = libraryDefaultLocale,
+  customMapping?: CustomMapping
 ): string {
-  return _getLocaleName(locale, defaultLocale);
+  return _getLocaleName(locale, defaultLocale, customMapping);
 }
 
 /**
@@ -185,6 +253,7 @@ export function getLocaleName(
  *
  * @param {string} locale - The locale code to get properties for (e.g., "de-AT").
  * @param {string} [defaultLocale=libraryDefaultLocale] - The default locale code for display names.
+ * @param {CustomMapping} [customMapping] - Optional custom mapping of locale codes to properties.
  * @returns {LocaleProperties} - An object containing detailed information about the locale.
  *
  * @property {string} code - The full locale code, e.g., "de-AT".
@@ -211,7 +280,8 @@ export function getLocaleName(
  */
 export function getLocaleProperties(
   locale: string,
-  defaultLocale?: string
+  defaultLocale?: string,
+  customMapping?: CustomMapping
 ): {
   // assume code = "de-AT", defaultLocale = "en-US"
   code: string; // "de-AT"
@@ -240,22 +310,22 @@ export function getLocaleProperties(
   // In order not to accidentally spark international conflict, some emojis are hard-coded
   emoji: string;
 } {
-  return _getLocaleProperties(locale, defaultLocale);
+  return _getLocaleProperties(locale, defaultLocale, customMapping);
 }
 
 /**
  * Retrieves an emoji based on a given locale code, taking into account region, language, and specific exceptions.
  * This function uses the locale's region (if present) to select an emoji or falls back on default emojis for certain languages.
  *
- * @param code - A string representing the locale code (e.g., 'en-US', 'fr-CA').
- * @param custom - An optional custom mapping of locale codes to emojis.
+ * @param locale - A string representing the locale code (e.g., 'en-US', 'fr-CA').
+ * @param customMapping - An optional custom mapping of locale codes to emojis.
  * @returns The emoji representing the locale or its region, or a default emoji if no specific match is found.
  */
 export function getLocaleEmoji(
   locale: string,
-  custom?: Record<string, string>
+  customMapping?: CustomMapping
 ) {
-  return _getLocaleEmoji(locale, custom);
+  return _getLocaleEmoji(locale, customMapping);
 }
 
 /**
