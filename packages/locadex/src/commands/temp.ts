@@ -12,8 +12,6 @@ export async function tempCommand() {
   });
 
   logger.info(JSON.stringify(dag.getDag(), null, 2));
-  logger.info(JSON.stringify(dag.getReverseDag(), null, 2));
-  logger.info(String(Object.keys(dag.getDag()).length));
   logger.info(dag.getTopologicalOrder().join('\n'));
   logger.info(
     'dag.getDag().length: ' + String(Object.keys(dag.getDag()).length)
@@ -26,4 +24,5 @@ export async function tempCommand() {
     'dag.getTopologicalOrder().length: ' +
       String(dag.getTopologicalOrder().length)
   );
+  logger.info(String(Object.keys(dag.getDag()).length));
 }

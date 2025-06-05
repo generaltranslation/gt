@@ -104,6 +104,7 @@ program
 program
   .command('dag')
   .description('Run AI-powered dependency graph analysis')
+  .option('-b, --batch-size <number>', 'Batch size', '1')
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
     const allOptions = { ...parentOptions, ...options };
@@ -111,7 +112,7 @@ program
       { enabled: !allOptions.noTelemetry, options: allOptions },
       () => {
         logger.initialize(allOptions);
-        dagCommand();
+        dagCommand(Number(allOptions.batchSize) || 1);
       }
     );
   });

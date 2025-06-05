@@ -17,7 +17,7 @@ import {
 } from '../utils/getFiles.js';
 import { outro } from '@clack/prompts';
 import chalk from 'chalk';
-export async function dagCommand() {
+export async function dagCommand(batchSize: number) {
   // Init message
   const spinner = createSpinner();
   displayHeader();
@@ -60,24 +60,32 @@ export async function dagCommand() {
   let hasError = false;
   while (taskQueue.length > 0) {
     // Get the next task
-    const task = taskQueue.shift();
-    if (!task) {
+    const tasks = taskQueue.splice(0, batchSize);
+    if (tasks.length === 0) {
       break;
     }
 
     // Mark task as in progress
-    markFileAsInProgress(task, filesStateFilePath);
+    tasks.forEach((task) => markFileAsInProgress(task, filesStateFilePath));
 
     // Construct prompt
+    const dependencies = Object.fromEntries(
+      tasks.map((task) => [
+        task,
+        Array.from(new Set(dag.getDependencies(task))),
+      ])
+    );
+    const dependents = Object.fromEntries(
+      tasks.map((task) => [task, Array.from(new Set(dag.getDependents(task)))])
+    );
     const prompt = getPrompt({
-      targetFile: task,
-      dependencyFiles: dag.getDependencies(task),
-      dependentFiles: dag.getDependents(task),
+      targetFile: tasks,
+      dependencyFiles: dependencies,
+      dependentFiles: dependents,
     });
 
     // Claude call
     try {
-      logger.debugMessage(`[dagCommand] Session ID: ${sessionId}`);
       await agent.run(
         {
           prompt,
@@ -97,7 +105,7 @@ export async function dagCommand() {
     }
 
     // Mark task as complete
-    markFileAsEdited(task, filesStateFilePath);
+    tasks.forEach((task) => markFileAsEdited(task, filesStateFilePath));
   }
 
   // Always clean up the file list when done, regardless of success or failure
@@ -134,28 +142,28 @@ function getPrompt({
   dependencyFiles,
   dependentFiles,
 }: {
-  targetFile: string;
-  dependencyFiles: string[];
-  dependentFiles: string[];
+  targetFile: string[];
+  dependencyFiles: Record<string, string[]>;
+  dependentFiles: Record<string, string[]>;
 }) {
   const prompt = `# Task: Internationalize the target file using gt-next.
 
 --- INSTRUCTIONS ---
 
-- You are given a target file and a list of dependency/dependent files.
+- You are given a list of target files and a list of dependency/dependent files.
 - The project is already setup for internationalization. You do not need to setup the project again for i18n.
 
 ## Workflow:
-1. **Gather background** Read the target file closely and read the dependency/dependent files (if you have not already).
-2. **Evaluate if i18n is necessary** Evaluate if just the target file needs to be internationalized using gt-next (the target file may have no relevant content, or it may already be internationalized).
-**IMPORTANT**: IF THE FILE DOES NOT NEED TO BE INTERNATIONALIZED, YOUR TASK IS COMPLETE AND YOU MAY RETURN.
-3. **Identify the tools to use** Given the contents of the files, ask yourself which tools and guides you need to use to get the necessary knowledge to internationalize the target file. Here are some helpful questions to ask yourself:
+1. **Gather background** Read the target files closely (you should not have to read the dependency/dependent files).
+2. **Evaluate if i18n is necessary** Evaluate if just the target files need to be internationalized using gt-next (the target files may have no relevant content, or it may already be internationalized).
+**IMPORTANT**: IF NONE OF THE TARGET FILES NEED TO BE INTERNATIONALIZED, YOUR TASK IS COMPLETE AND YOU MAY RETURN.
+3. **Identify the tools to use** Given the contents of the files, ask yourself which tools and guides you need to use to get the necessary knowledge to internationalize the target files. Here are some helpful questions to ask yourself:
   - 3.a. Does this file contain a component? If so, is it a server-side component or a client-side component?
   - 3.b. Is the content that needs to be i18ned being used in this same file, or is it being used in another file?
   - 3.c. Is there any string interpolation that needs to be i18ned?
   - 3.d. Is there any conditional logic or rendering that needs to be i18ned?
   - 3.e. Is the content that needs to be i18ned HTML/JSX or a string?
-4. **Internationalize** You now have the necessary knowledge. Internationalize the file using the information from the tools provided to you.
+4. **Internationalize** You now have the necessary knowledge. Internationalize the files using the information from the tools provided to you.
 5. **Check** For .ts and .tsx files, run a type check to make sure your changes are valid.
 
 ## RULES:
@@ -164,24 +172,26 @@ function getPrompt({
 - When adding 'useGT()' or 'useDict()' to a client component, you must add 'use client' to the top of the file.
 - Strictly adhere to the guides provided to gain necessary knowledge about how to internationalize the content.
 - Minimize the footprint of the changes.
-- Only focus on internationalizing the content of the target file.
+- Only focus on internationalizing the content of the target files.
 - NEVER move internationalized content to a different file. All content MUST remain in the same file where it came from.
 - NEVER CREATE OR REMOVE ANY FILES (especially .bak files)
-- Internationalize all user facing content in the target file. Do not internationalize content that is not user facing.
+- Internationalize all user facing content in the target files. Do not internationalize content that is not user facing.
 - NEVER EDIT FILES THAT ARE NOT GIVEN TO YOU.
 
 
 --- TARGET FILE INFORMATION ---
-
+${targetFile.map(
+  (file) => `
 Target file path:
-${targetFile}
+${file}
 
 Dependency files (files imported by the target file):
-${dependencyFiles.length > 0 ? ` ${dependencyFiles.join(', ')}` : 'none'}
+${dependencyFiles[file].length > 0 ? ` ${dependencyFiles[file].join(', ')}` : 'none'}
 
 Dependent files (files that import the target file):
-${dependentFiles.length > 0 ? ` ${dependentFiles.join(', ')}` : 'none'}
-
+${dependentFiles[file].length > 0 ? ` ${dependentFiles[file].join(', ')}` : 'none'}
+`
+)}
 --- MCP TOOLS ---
 
 ${allMcpPrompt}
