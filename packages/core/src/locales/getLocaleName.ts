@@ -17,6 +17,7 @@ export function _getLocaleName(
   defaultLanguage: string = libraryDefaultLocale,
   customMapping?: Record<string, string | LocaleProperties>
 ): string {
+  defaultLanguage ||= libraryDefaultLocale;
   try {
     const standardizedLocale = _standardizeLocale(locale);
     if (customMapping) {

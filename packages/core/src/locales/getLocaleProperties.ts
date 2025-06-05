@@ -45,6 +45,34 @@ export type LocaleProperties = {
 };
 
 /**
+ * Creates a set of custom locale properties from a custom mapping.
+ *
+ * @param lArray - An array of locale codes to search for in the custom mapping.
+ * @param customMapping - Optional custom mapping of locale codes to names.
+ * @returns A partial set of locale properties, or undefined if no custom mapping is provided.
+ */
+function createCustomLocaleProperties(
+  lArray: string[],
+  customMapping?: CustomMapping
+): Partial<LocaleProperties> | undefined {
+  if (customMapping) {
+    const merged: Partial<LocaleProperties> = {};
+    for (
+      const l of lArray
+    ) {
+      const value = customMapping[l];
+      if (typeof value === 'string') {
+        merged.name = value;
+      } else if (value) {
+        Object.assign(merged, value);
+      }
+    }
+    return merged;
+  }
+  return undefined;
+}
+
+/**
  * @internal
  */
 export default function _getLocaleProperties(
@@ -53,22 +81,20 @@ export default function _getLocaleProperties(
   customMapping?: CustomMapping
 ): LocaleProperties {
 
-  const standardizedLocale = _standardizeLocale(locale); // "de-AT"
-  let customLocaleProperties: Partial<LocaleProperties> | undefined;
-  if (customMapping) {
-    for (const l of [locale, standardizedLocale]) {
-      if (typeof customMapping[l] === 'string') {
-        customLocaleProperties = { name: customMapping[l] };
-      } else if (customMapping[l]) {
-        customLocaleProperties = customMapping[l];
-      }
-    }
-  }
-
+  defaultLocale ||= libraryDefaultLocale;
+ 
   try {
 
-    const localeObject = intlCache.get('Locale', standardizedLocale);
+    const standardizedLocale = _standardizeLocale(locale); // "de-AT"
+
+    const localeObject = intlCache.get('Locale', locale);
     const languageCode = localeObject.language; // "de"
+
+    const customLocaleProperties = createCustomLocaleProperties(
+      [locale, standardizedLocale, languageCode],
+      customMapping
+    );
+
     const baseRegion = localeObject.region; // "AT"
 
     const maximizedLocale = localeObject.maximize();
@@ -95,24 +121,27 @@ export default function _getLocaleProperties(
       { type: 'language' }
     );
 
-    const name = customLocaleProperties?.name || languageNames.of(locale) || locale; // "Austrian German"
-    const nativeName = customLocaleProperties?.nativeName || nativeLanguageNames.of(locale) || locale; // "Österreichisches Deutsch"
+    const customName = customLocaleProperties?.name;
+    const customNativeName = customLocaleProperties?.nativeName || customLocaleProperties?.name;
 
-    const maximizedName = customLocaleProperties?.maximizedName || languageNames.of(maximizedCode) || locale; // "Austrian German (Latin)"
-    const nativeMaximizedName = customLocaleProperties?.nativeMaximizedName || nativeLanguageNames.of(maximizedCode) || locale; // "Österreichisches Deutsch (Lateinisch)"
+    const name = customName || languageNames.of(locale) || locale; // "Austrian German"
+    const nativeName = customNativeName || nativeLanguageNames.of(locale) || locale; // "Österreichisches Deutsch"
 
-    const minimizedName = customLocaleProperties?.minimizedName || languageNames.of(minimizedCode) || locale; // "Austrian German", but for "de-DE" would just be "German"
-    const nativeMinimizedName = customLocaleProperties?.nativeMinimizedName || nativeLanguageNames.of(minimizedCode) || locale; // "Österreichisches Deutsch", but for "de-DE" would just be "Deutsch"
+    const maximizedName = customLocaleProperties?.maximizedName || customName || languageNames.of(maximizedCode) || locale; // "Austrian German (Latin)"
+    const nativeMaximizedName = customLocaleProperties?.nativeMaximizedName || customNativeName || nativeLanguageNames.of(maximizedCode) || locale; // "Österreichisches Deutsch (Lateinisch)"
 
-    const languageName = customLocaleProperties?.languageName || languageNames.of(languageCode) || locale; // "German"
-    const nativeLanguageName = customLocaleProperties?.nativeLanguageName || nativeLanguageNames.of(languageCode) || locale; // "Deutsch"
+    const minimizedName = customLocaleProperties?.minimizedName || customName || languageNames.of(minimizedCode) || locale; // "Austrian German", but for "de-DE" would just be "German"
+    const nativeMinimizedName = customLocaleProperties?.nativeMinimizedName || customNativeName || nativeLanguageNames.of(minimizedCode) || locale; // "Österreichisches Deutsch", but for "de-DE" would just be "Deutsch"
+
+    const languageName = customLocaleProperties?.languageName || customName || languageNames.of(languageCode) || locale; // "German"
+    const nativeLanguageName = customLocaleProperties?.nativeLanguageName || customNativeName || nativeLanguageNames.of(languageCode) || locale; // "Deutsch"
 
     const nameWithRegionCode = baseRegion
       ? `${languageName} (${baseRegion})`
       : languageName; // German (AT)
-    const nativeNameWithRegionCode = baseRegion
+    const nativeNameWithRegionCode = (baseRegion
       ? `${nativeLanguageName} (${baseRegion})`
-      : nativeLanguageName; // "Deutsch (AT)"
+      : nativeLanguageName) || nameWithRegionCode; // "Deutsch (AT)"
 
     // Region names (default and native)
 
@@ -127,8 +156,8 @@ export default function _getLocaleProperties(
       { type: 'region' }
     );
 
-    const regionName = customLocaleProperties?.regionName || regionNames.of(regionCode) || ''; // "Austria"
-    const nativeRegionName = customLocaleProperties?.nativeRegionName || nativeRegionNames.of(regionCode) || ''; // "Österreich"
+    const regionName = customLocaleProperties?.regionName || (regionCode ? regionNames.of(regionCode) : '') || ''; // "Austria"
+    const nativeRegionName = customLocaleProperties?.nativeRegionName || (regionCode ? nativeRegionNames.of(regionCode) : '') || ''; // "Österreich"
 
     // Script names (default and native)
 
@@ -143,8 +172,8 @@ export default function _getLocaleProperties(
       { type: 'script' }
     );
 
-    const scriptName = customLocaleProperties?.scriptName || scriptNames.of(scriptCode) || ''; // "Latin"
-    const nativeScriptName = customLocaleProperties?.nativeScriptName || nativeScriptNames.of(scriptCode) || ''; // "Lateinisch"
+    const scriptName = customLocaleProperties?.scriptName || (scriptCode ? scriptNames.of(scriptCode) : '') || ''; // "Latin"
+    const nativeScriptName = customLocaleProperties?.nativeScriptName || (scriptCode ? nativeScriptNames.of(scriptCode) : '') || ''; // "Lateinisch"
 
     // Emoji
 
@@ -175,41 +204,70 @@ export default function _getLocaleProperties(
     };
   } catch (error) {
 
-    const code = locale || '';
+    let code = locale || '';
     const codeParts = code?.split('-');
-    const languageCode = codeParts?.[0] || code || '';
-    const regionCode =
+    let languageCode = codeParts?.[0] || code || '';
+    let regionCode =
       codeParts.length > 2 ? codeParts?.[2] : codeParts?.[1] || '';
-    const scriptCode = codeParts?.[3] || '';
-    const nameWithRegionCode = languageCode
-      ? regionCode
-        ? `${languageCode} (${regionCode})`
-        : languageCode
-      : '';
+    let scriptCode = codeParts?.[3] || '';
+    
+    const customLocaleProperties = createCustomLocaleProperties(
+      [code, languageCode],
+      customMapping
+    );
+
+    code = customLocaleProperties?.code || code;
+    const name = customLocaleProperties?.name || code;
+    const nativeName = customLocaleProperties?.nativeName || name;
+
+    const maximizedCode = customLocaleProperties?.maximizedCode || code;
+    const maximizedName = customLocaleProperties?.maximizedName || name;
+    const nativeMaximizedName = customLocaleProperties?.nativeMaximizedName || nativeName;
+
+    const minimizedCode = customLocaleProperties?.minimizedCode || code;
+    const minimizedName = customLocaleProperties?.minimizedName || name;
+    const nativeMinimizedName = customLocaleProperties?.nativeMinimizedName || nativeName;
+
+    languageCode = customLocaleProperties?.languageCode || languageCode;
+    const languageName = customLocaleProperties?.languageName || name;
+    const nativeLanguageName = customLocaleProperties?.nativeLanguageName || nativeName;
+
+    regionCode = customLocaleProperties?.regionCode || regionCode;
+    const regionName = customLocaleProperties?.regionName || '';
+    const nativeRegionName = customLocaleProperties?.nativeRegionName || '';
+
+    scriptCode = customLocaleProperties?.scriptCode || scriptCode;
+    const scriptName = customLocaleProperties?.scriptName || '';
+    const nativeScriptName = customLocaleProperties?.nativeScriptName || '';
+
+    const nameWithRegionCode = customLocaleProperties?.nameWithRegionCode || regionName ? `${name} (${regionName})` : name;
+    const nativeNameWithRegionCode = customLocaleProperties?.nativeNameWithRegionCode || nativeRegionName ? `${nativeName} (${nativeRegionName})` : nativeName;
+
+    const emoji = customLocaleProperties?.emoji || _getLocaleEmoji(code, customMapping);
 
     return {
       code,
-      name: code,
-      nativeName: code,
-      maximizedCode: code,
-      maximizedName: code,
-      nativeMaximizedName: code,
-      minimizedCode: code,
-      minimizedName: code,
-      nativeMinimizedName: code,
+      name,
+      nativeName,
+      maximizedCode,
+      maximizedName,
+      nativeMaximizedName,
+      minimizedCode,
+      minimizedName,
+      nativeMinimizedName,
       languageCode,
-      languageName: languageCode,
-      nativeLanguageName: languageCode,
-      regionCode,
-      regionName: regionCode,
-      nativeRegionName: regionCode,
-      scriptCode,
-      scriptName: scriptCode,
-      nativeScriptName: scriptCode,
+      languageName,
+      nativeLanguageName,
       nameWithRegionCode,
-      nativeNameWithRegionCode: code,
-      emoji: _getLocaleEmoji(code, customMapping),
-      ...customLocaleProperties,
+      nativeNameWithRegionCode,
+      regionCode,
+      regionName,
+      nativeRegionName,
+      scriptCode,
+      scriptName,
+      nativeScriptName,
+      emoji,
     };
   }
+
 }
