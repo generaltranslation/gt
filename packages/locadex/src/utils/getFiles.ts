@@ -94,6 +94,22 @@ export function scanNextJsAppFiles(
   return scanDirectory(projectPath, projectPath);
 }
 
+export function addFilesToManager(
+  projectPath: string = process.cwd(),
+  files: string[] = []
+): string {
+  const stateFilePath = join(projectPath, 'locadex-files-state.json');
+  const existingFiles = getFileList(stateFilePath);
+  const existingPaths = new Set(existingFiles.map((f) => f.path));
+  files = files.filter((f) => !existingPaths.has(f));
+
+  files.forEach((filePath) =>
+    addFileToList(filePath, stateFilePath, 'pending')
+  );
+
+  return stateFilePath;
+}
+
 export function addNextJsFilesToManager(
   stateFilePath: string,
   projectPath: string = process.cwd()
