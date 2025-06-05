@@ -131,14 +131,25 @@ export class ClaudeCodeRunner {
       const output = '';
       const errorOutput = '';
 
+      let buffer = '';
       claude.stdout?.on('data', (data) => {
-        const lines = data.toString().trim().split('\n');
+        buffer += data.toString();
+        const lines = buffer.split('\n');
+
+        // Keep the last incomplete line in buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           if (line.trim()) {
-            logger.verboseMessage(line);
-            const outputData: ClaudeSDKMessage = JSON.parse(line);
-            this.handleSDKOutput(outputData, obs);
+            try {
+              logger.verboseMessage(line);
+              const outputData: ClaudeSDKMessage = JSON.parse(line);
+              this.handleSDKOutput(outputData, obs);
+            } catch (error) {
+              logger.verboseMessage(
+                `Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
+              );
+            }
           }
         }
       });
@@ -169,44 +180,42 @@ export class ClaudeCodeRunner {
     outputData: ClaudeSDKMessage,
     obs: ClaudeCodeObservation
   ) {
-    try {
-      if (outputData.type === 'assistant') {
-        const text: string[] = [];
-        const toolUses: string[] = [];
-        outputData.message.content.forEach((c) => {
-          if (c.type === 'text') {
-            text.push(c.text);
+    if (outputData.type === 'assistant') {
+      const text: string[] = [];
+      const toolUses: string[] = [];
+      outputData.message.content.forEach((c) => {
+        if (c.type === 'text') {
+          text.push(c.text);
+        }
+        if (c.type === 'tool_use') {
+          toolUses.push(c.name);
+          if (c.name.startsWith('mcp__locadex__')) {
+            posthog.capture({
+              distinctId: 'anonymous',
+              event: 'tool_used',
+              properties: {
+                tool: c.name,
+              },
+            });
           }
-          if (c.type === 'tool_use') {
-            toolUses.push(c.name);
-            if (c.name.startsWith('mcp__locadex__')) {
-              posthog.capture({
-                distinctId: 'anonymous',
-                event: 'tool_used',
-                properties: {
-                  tool: c.name,
-                },
-              });
-            }
-          }
-        });
-        if (text.length > 0) {
-          logger.step(text.join('').trim());
         }
-        if (toolUses.length > 0) {
-          logger.message(`Used tools: ${toolUses.join(', ')}`);
-        }
-      } else if (outputData.type === 'result') {
-        const resultInfo = constructResultInfo(outputData);
-        if (resultInfo) {
-          logger.success(resultInfo);
-        }
-      } else if (outputData.type === 'system') {
-        if (outputData.subtype === 'init') {
-          obs.spinner.stop('Locadex initialized');
-          this.sessionId = outputData.session_id;
-        }
+      });
+      if (text.length > 0) {
+        logger.step(text.join('').trim());
       }
-    } catch (error) {}
+      if (toolUses.length > 0) {
+        logger.message(`Used tools: ${toolUses.join(', ')}`);
+      }
+    } else if (outputData.type === 'result') {
+      const resultInfo = constructResultInfo(outputData);
+      if (resultInfo) {
+        logger.success(resultInfo);
+      }
+    } else if (outputData.type === 'system') {
+      if (outputData.subtype === 'init') {
+        obs.spinner.stop('Locadex initialized');
+        this.sessionId = outputData.session_id;
+      }
+    }
   }
 }

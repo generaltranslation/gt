@@ -2,7 +2,7 @@ import { intro, outro, spinner } from '@clack/prompts';
 import chalk from 'chalk';
 import { createSpinner, displayHeader } from '../logging/console.js';
 import { allMcpPrompt } from '../prompts/system.js';
-import { configureAgent } from '../utils/configuration.js';
+import { configureAgent } from '../utils/agentManager.js';
 import { logger } from '../logging/logger.js';
 import type { ChildProcess } from 'node:child_process';
 

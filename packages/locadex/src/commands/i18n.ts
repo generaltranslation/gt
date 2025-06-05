@@ -8,7 +8,7 @@ import {
   getCurrentFileList,
 } from '../utils/getFiles.js';
 import { unlinkSync, existsSync } from 'node:fs';
-import { configureAgent } from '../utils/configuration.js';
+import { configureAgent } from '../utils/agentManager.js';
 import { logger } from '../logging/logger.js';
 import type { ChildProcess } from 'node:child_process';
 
