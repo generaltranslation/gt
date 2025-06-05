@@ -1,4 +1,10 @@
-import { readdirSync, statSync, existsSync, mkdirSync } from 'node:fs';
+import {
+  readdirSync,
+  statSync,
+  existsSync,
+  mkdirSync,
+  unlinkSync,
+} from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { logger } from '../logging/logger.js';
@@ -109,6 +115,13 @@ export function addFilesToManager(
   );
 
   return stateFilePath;
+}
+
+// Used by dag command
+export function cleanUp(stateFilePath: string): void {
+  if (stateFilePath && existsSync(stateFilePath)) {
+    unlinkSync(stateFilePath);
+  }
 }
 
 // Used by dag command

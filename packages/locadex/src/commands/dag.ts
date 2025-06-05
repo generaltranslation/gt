@@ -7,9 +7,14 @@ import { findTsConfig, findWebpackConfig } from '../utils/fs/findConfigs.js';
 import { configureAgent } from '../utils/agentManager.js';
 import {
   addFilesToManager,
+  cleanUp,
   markFileAsEdited,
   markFileAsInProgress,
 } from '../utils/getFiles.js';
+import { unlinkSync } from 'node:fs';
+import { existsSync } from 'node:fs';
+import { outro } from '@clack/prompts';
+import chalk from 'chalk/index.js';
 export async function dagCommand() {
   // Init message
   const spinner = createSpinner();
@@ -27,6 +32,9 @@ export async function dagCommand() {
     mcpTransport: 'sse',
   });
 
+  // Track session id
+  let sessionId: string | undefined = undefined;
+
   // Create the list of files (aka tasks) to process
   const taskQueue = dag.getTopologicalOrder();
 
@@ -35,6 +43,7 @@ export async function dagCommand() {
   console.log('[dagCommand] Track progress here: ', stateFilePath);
 
   // Main loop
+  let hasError = false;
   while (taskQueue.length > 0) {
     // Get the next task
     const task = taskQueue.shift();
@@ -57,16 +66,51 @@ export async function dagCommand() {
       await agent.run(
         {
           prompt,
+          sessionId,
         },
         { spinner }
       );
+      if (!sessionId) {
+        sessionId = agent.getSessionId();
+      }
     } catch (error) {
-      logger.debugMessage(`[dagCommand] Error in claude: ${error}`);
+      hasError = true;
+      logger.debugMessage(
+        `[dagCommand] Error in claude i18n process: ${error}`
+      );
+      break;
     }
 
     // Mark task as complete
     markFileAsEdited(task, filesStateFilePath);
   }
+
+  // Always clean up the file list when done, regardless of success or failure
+  cleanUp(stateFilePath);
+
+  // If there was an error, exit with code 1
+  if (hasError) {
+    outro(chalk.red('❌ Locadex i18n failed!'));
+    process.exit(1);
+  }
+
+  // Generate report
+  const reportPrompt = getReportPrompt();
+  try {
+    await agent.run(
+      {
+        prompt: reportPrompt,
+        sessionId,
+      },
+      { spinner }
+    );
+  } catch (error) {
+    logger.debugMessage(
+      `[dagCommand] Error in claude report generation: ${error}`
+    );
+  }
+
+  outro(chalk.green('✅ Locadex i18n complete!'));
 }
 
 function getPrompt({
@@ -128,6 +172,16 @@ ${dependentFiles.length > 0 ? ` ${dependentFiles.join(', ')}` : 'none'}
 
 ${allMcpPrompt}
 `;
+
+  return prompt;
+}
+
+function getReportPrompt() {
+  const prompt = `--- INSTRUCTIONS ---
+
+- Please add a markdown file called 'locadex-report.md' to the root of the project.
+- The report should include a summary of the changes you made to the project.
+- A list of items the user needs to complete to finish the internationalization process (adding env vars, etc.).`;
 
   return prompt;
 }
