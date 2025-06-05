@@ -1,5 +1,4 @@
 import { intlCache } from '../cache/IntlCache';
-import { CustomMapping, getCustomProperty } from './customLocaleMapping';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 
 /**
@@ -7,39 +6,28 @@ import { _isValidLocale, _standardizeLocale } from './isValidLocale';
  */
 export default function _getLocaleEmoji(
   locale: string,
-  customMapping?: CustomMapping
+  customMapping: Record<string, string> = {}
 ): string {
+  if (!_isValidLocale(locale)) return defaultEmoji;
 
-  try {
+  locale = _standardizeLocale(locale);
 
-    const standardizedLocale = _standardizeLocale(locale);
-    const localeObject = intlCache.get('Locale', standardizedLocale);
-    const { language, region } = localeObject;
+  if (customMapping[locale]) return customMapping[locale];
 
-    // if a custom mapping is specified, use it
-    if (customMapping) {
-      for (const l of [locale, standardizedLocale, language]) {
-        const customEmoji = getCustomProperty(customMapping, l, 'emoji');
-        if (customEmoji) return customEmoji;
-      }
-    }
+  // if a region is specified, use it!
+  const localeObject = intlCache.get('Locale', locale);
+  const { region } = localeObject;
+  if (region && emojis[region]) return emojis[region];
 
-    // if a region is specified, use it!
-    if (region && emojis[region]) return emojis[region];
+  // if not, attempt to extrapolate
+  const extrapolated = localeObject.maximize();
+  const extrapolatedRegion = extrapolated.region || '';
 
-    // if not, attempt to extrapolate
-    const extrapolated = localeObject.maximize();
-    const extrapolatedRegion = extrapolated.region || '';
-
-    return (
-      exceptions[extrapolated.language] ||
-      emojis[extrapolatedRegion] ||
-      defaultEmoji
-    );
-
-  } catch {
-    return defaultEmoji;
-  }
+  return (
+    exceptions[extrapolated.language] ||
+    emojis[extrapolatedRegion] ||
+    defaultEmoji
+  );
 }
 
 // Default language emoji for when none else can be found
