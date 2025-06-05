@@ -2,7 +2,6 @@ import { logger } from '../../logging/logger.js';
 import dependencyTree, { Tree } from 'dependency-tree';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { findTsConfig, findWebpackConfig } from '../fs/findConfigs.js';
 
 export type DagOptions = {
   tsConfig?: string;
@@ -17,12 +16,14 @@ export class Dag {
   private dag: DagNode;
   private reverseDag: Record<string, string[]>;
   private dependenciesMap: Record<string, string[]>;
+  private topologicalOrder: string[];
 
   constructor(dag: DagNode) {
     this.dag = dag;
     const { reverseDag, dependenciesMap } = this.buildMaps(dag);
     this.reverseDag = reverseDag;
     this.dependenciesMap = dependenciesMap;
+    this.topologicalOrder = this.buildTopologicalOrder();
   }
 
   private buildMaps(dag: DagNode): {
@@ -58,6 +59,31 @@ export class Dag {
     traverse(dag);
     return { reverseDag, dependenciesMap };
   }
+
+  // No need to worry about cycles since the DAG is a tree
+  private buildTopologicalOrder(): string[] {
+    const visited = new Set<string>();
+    const result: string[] = [];
+
+    const dfs = (file: string) => {
+      if (visited.has(file)) return;
+      visited.add(file);
+
+      const dependencies = this.dependenciesMap[file] || [];
+      for (const dep of dependencies) {
+        dfs(dep);
+      }
+
+      result.push(file);
+    };
+
+    // Visit all files in the DAG
+    for (const file of Object.keys(this.dependenciesMap)) {
+      dfs(file);
+    }
+
+    return result;
+  }
   // Get all direct dependencies of a file
   getDependencies(filename: string): string[] {
     // return this.dependenciesMap[filename] || [];
@@ -75,6 +101,10 @@ export class Dag {
 
   getReverseDag(): Record<string, string[]> {
     return this.reverseDag;
+  }
+
+  getTopologicalOrder(): string[] {
+    return this.topologicalOrder;
   }
 }
 

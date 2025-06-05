@@ -12,6 +12,16 @@ export async function dagCommand() {
   });
 
   logger.info(JSON.stringify(dag.getDag(), null, 2));
-  logger.info(JSON.stringify(dag.getReverseDag(), null, 2));
-  logger.info(String(Object.keys(dag.getDag()).length));
+  logger.info(dag.getTopologicalOrder().join('\n'));
+  logger.info(
+    'dag.getDag().length: ' + String(Object.keys(dag.getDag()).length)
+  );
+  logger.info(
+    'dag.getReverseDag().length: ' +
+      String(Object.keys(dag.getReverseDag()).length)
+  );
+  logger.info(
+    'dag.getTopologicalOrder().length: ' +
+      String(dag.getTopologicalOrder().length)
+  );
 }

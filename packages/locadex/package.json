@@ -16,7 +16,7 @@
     "guides"
   ],
   "dependencies": {
-    "@anthropic-ai/claude-code": "^1.0.11",
+    "@anthropic-ai/claude-code": "^1.0.14",
     "@anthropic-ai/sdk": "^0.52.0",
     "@clack/prompts": "^1.0.0-alpha.0",
     "@modelcontextprotocol/sdk": "^1.12.0",
