@@ -28,6 +28,7 @@ export async function i18nCommand() {
     const { agent, filesStateFilePath } = configureAgent();
     stateFilePath = filesStateFilePath;
     const scanResult = addNextJsFilesToManager(stateFilePath);
+    console.log('Track progress here:', `${stateFilePath}/files-state.json`);
 
     const setupPrompt = `This project is already setup for internationalization.
 You do not need to setup the project again.
@@ -68,7 +69,7 @@ CORE PRINCIPLES OF I18N:
 - Keep content in the same file where it came from
 - Use the file manager tools to systematically track progress
 - Use the tools provided to you to gain knowledge about how to internationalize the content
-- Never create or remove any files, only modify current files (if you need to create a new file, make sure to remove it when you are done by adding it to your todo list)
+- NEVER CREATE OR REMOVE ANY FILES (such as .bak files), only modify current files (only unless you are explicitly instructed to do so)
 - Any files that CONTAIN USER FACING content, must be internationalized.
 
 ### When you are done
