@@ -10,30 +10,38 @@ export default function _getLocaleEmoji(
   customMapping?: CustomMapping
 ): string {
 
-  const standardizedLocale = _standardizeLocale(locale);
-  const localeObject = intlCache.get('Locale', standardizedLocale);
-  const { language, region } = localeObject;
+  try {
 
-  // if a custom mapping is specified, use it
-  if (customMapping) {
-    for (const l of [locale, standardizedLocale, language]) {
-      const customEmoji = getCustomProperty(customMapping, l, 'emoji');
-      if (customEmoji) return customEmoji;
+    const standardizedLocale = _standardizeLocale(locale);
+    const localeObject = intlCache.get('Locale', standardizedLocale);
+    const { language, region } = localeObject;
+
+    // if a custom mapping is specified, use it
+    if (customMapping) {
+      for (const l of [locale, standardizedLocale, language]) {
+        const customEmoji = getCustomProperty(customMapping, l, 'emoji');
+        if (customEmoji) return customEmoji;
+      }
     }
+
+    // if a region is specified, use it!
+    if (region && emojis[region]) return emojis[region];
+
+    // if not, attempt to extrapolate
+    const extrapolated = localeObject.maximize();
+    const extrapolatedRegion = extrapolated.region || '';
+
+    return (
+      exceptions[extrapolated.language] ||
+      emojis[extrapolatedRegion] ||
+      defaultEmoji
+    );
+
+  } catch {
+
+    return defaultEmoji;
+    
   }
-
-  // if a region is specified, use it!
-  if (region && emojis[region]) return emojis[region];
-
-  // if not, attempt to extrapolate
-  const extrapolated = localeObject.maximize();
-  const extrapolatedRegion = extrapolated.region || '';
-
-  return (
-    exceptions[extrapolated.language] ||
-    emojis[extrapolatedRegion] ||
-    defaultEmoji
-  );
 }
 
 // Default language emoji for when none else can be found

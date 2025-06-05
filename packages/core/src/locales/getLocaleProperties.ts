@@ -1,5 +1,5 @@
 import { libraryDefaultLocale } from '../internal';
-import _getLocale from './getLocaleEmoji';
+import _getLocale, { defaultEmoji } from './getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 import _getLocaleEmoji from './getLocaleEmoji';
 import { intlCache } from 'src/cache/IntlCache';
@@ -99,8 +99,8 @@ export default function _getLocaleProperties(
 
     const maximizedLocale = localeObject.maximize();
     const maximizedCode = maximizedLocale.toString(); // "de-Latn-AT"
-    const regionCode = maximizedLocale.region || ''; // "AT"
-    const scriptCode = maximizedLocale.script || ''; // "Latn"
+    const regionCode = localeObject.region || customLocaleProperties?.regionCode || maximizedLocale.region || ''; // "AT"
+    const scriptCode = localeObject.script || customLocaleProperties?.scriptCode || maximizedLocale.script || ''; // "Latn"
 
     const minimizedLocale = localeObject.minimize();
     const minimizedCode = minimizedLocale.toString(); // "de-AT"
@@ -177,10 +177,10 @@ export default function _getLocaleProperties(
 
     // Emoji
 
-    const emoji = customLocaleProperties?.emoji || _getLocaleEmoji(locale, customMapping);
-
+    const emoji = customLocaleProperties?.emoji || _getLocaleEmoji(standardizedLocale, customMapping);
+throw new Error()
     return {
-      code: locale,
+      code: standardizedLocale,
       name,
       nativeName,
       maximizedCode,
@@ -204,7 +204,7 @@ export default function _getLocaleProperties(
     };
   } catch (error) {
 
-    let code = locale || '';
+    let code = _isValidLocale(locale) ? _standardizeLocale(locale) : locale;
     const codeParts = code?.split('-');
     let languageCode = codeParts?.[0] || code || '';
     let regionCode =
@@ -243,7 +243,7 @@ export default function _getLocaleProperties(
     const nameWithRegionCode = customLocaleProperties?.nameWithRegionCode || regionName ? `${name} (${regionName})` : name;
     const nativeNameWithRegionCode = customLocaleProperties?.nativeNameWithRegionCode || nativeRegionName ? `${nativeName} (${nativeRegionName})` : nativeName;
 
-    const emoji = customLocaleProperties?.emoji || _getLocaleEmoji(code, customMapping);
+    const emoji = customLocaleProperties?.emoji || defaultEmoji;
 
     return {
       code,
