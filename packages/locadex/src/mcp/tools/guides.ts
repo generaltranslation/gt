@@ -25,7 +25,7 @@ export const guides: Guide[] = [
   {
     id: 'basic_next-jsx',
     description:
-      'Basic guide for translating JSX content in a Next.js project.',
+      'Basic guide for translating JSX and HTML content in a Next.js project.',
     path: 'guides/next/basic/jsx.md',
     type: 'basic',
   },
