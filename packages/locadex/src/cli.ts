@@ -16,6 +16,7 @@ import { startCommand } from './commands/run.js';
 import { CliOptions } from './types/cli.js';
 import { withTelemetry } from './telemetry.js';
 import { logger } from './logging/logger.js';
+import { dagCommand } from './commands/dag.js';
 
 const packageJson = JSON.parse(
   readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -95,6 +96,21 @@ program
       () => {
         logger.initialize(allOptions);
         i18nDagCommand();
+      }
+    );
+  });
+
+program
+  .command('dag')
+  .description('Run AI-powered dependency graph analysis')
+  .action((options: CliOptions, command: Command) => {
+    const parentOptions = command.parent?.opts() || {};
+    const allOptions = { ...parentOptions, ...options };
+    withTelemetry(
+      { enabled: !allOptions.noTelemetry, options: allOptions },
+      () => {
+        logger.initialize(allOptions);
+        dagCommand();
       }
     );
   });
