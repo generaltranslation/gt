@@ -240,8 +240,8 @@ export default function _getLocaleProperties(
     const scriptName = customLocaleProperties?.scriptName || '';
     const nativeScriptName = customLocaleProperties?.nativeScriptName || '';
 
-    const nameWithRegionCode = customLocaleProperties?.nameWithRegionCode || regionName ? `${name} (${regionName})` : name;
-    const nativeNameWithRegionCode = customLocaleProperties?.nativeNameWithRegionCode || nativeRegionName ? `${nativeName} (${nativeRegionName})` : nativeName;
+const nameWithRegionCode = customLocaleProperties?.nameWithRegionCode || (regionName ? `${name} (${regionName})` : name);
+const nativeNameWithRegionCode = customLocaleProperties?.nativeNameWithRegionCode || (nativeRegionName ? `${nativeName} (${nativeRegionName})` : nativeName);
 
     const emoji = customLocaleProperties?.emoji || defaultEmoji;
 
