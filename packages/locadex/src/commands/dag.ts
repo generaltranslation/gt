@@ -11,10 +11,8 @@ import {
   markFileAsEdited,
   markFileAsInProgress,
 } from '../utils/getFiles.js';
-import { unlinkSync } from 'node:fs';
-import { existsSync } from 'node:fs';
 import { outro } from '@clack/prompts';
-import chalk from 'chalk/index.js';
+import chalk from 'chalk';
 export async function dagCommand() {
   // Init message
   const spinner = createSpinner();
