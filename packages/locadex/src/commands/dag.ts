@@ -122,36 +122,34 @@ function getPrompt({
   dependencyFiles: string[];
   dependentFiles: string[];
 }) {
-  const prompt = `--- INSTRUCTIONS ---
+  const prompt = `# Task: Internationalize the target file using gt-next.
 
-## Overview
-- Your task is to internationalize the target file using gt-next.
+--- INSTRUCTIONS ---
+
 - You are given a target file and a list of dependency/dependent files.
 - The project is already setup for internationalization. You do not need to setup the project again for i18n.
 
 ## Workflow:
-1. **Gather background** Read the target file closely and read the dependency/dependent files if you have not already.
-2. **Evaluate if i18n is necessary** Evaluate if just the target file needs to be internationalized using gt-next (the target file may have no content to be internationalizated, or it may already be internationalized).
-** IMPORTANT: IF THE FILE DOES NOT NEED TO BE INTERNATIONALIZED, YOUR TASK IS COMPLETE AND YOU MAY RETURN.
+1. **Gather background** Read the target file closely and read the dependency/dependent files (if you have not already).
+2. **Evaluate if i18n is necessary** Evaluate if just the target file needs to be internationalized using gt-next (the target file may have no relevant content, or it may already be internationalized).
+**IMPORTANT**: IF THE FILE DOES NOT NEED TO BE INTERNATIONALIZED, YOUR TASK IS COMPLETE AND YOU MAY RETURN.
 3. **Identify the tools to use** Given the contents of the files, ask yourself which tools and guides you need to use to get the necessary knowledge to internationalize the target file. Here are some helpful questions to ask yourself:
   - 3.a. Does this file contain a component? If so, is it a server-side component or a client-side component?
-  - 3.b. Is the contents that needs to be i18ned being used in this same file, or is it being used in another file?
+  - 3.b. Is the content that needs to be i18ned being used in this same file, or is it being used in another file?
   - 3.c. Is there any string interpolation that needs to be i18ned?
   - 3.d. Is there any conditional logic or rendering that needs to be i18ned?
   - 3.e. Is the content that needs to be i18ned HTML/JSX or a string?
 4. **Internationalize** You now have the necessary knowledge. Internationalize the file using the information from the tools provided to you.
 5. **Check** For .ts and .tsx files, run a type check to make sure your changes are valid.
 
-Our advice to you is:
+## RULES:
 - ALWAYS use the <T> component to internationalize HTML/JSX content. Only use getGT() or useGT() and getDict() or useDict() for string content.
-- You should not be adding i18n middleware to the app
+- Do not add i18n middleware to the app
 - When adding 'useGT()' or 'useDict()' to a client component, you must add 'use client' to the top of the file.
-- Make liberal use of the guides provided to gain necessary knowledge about how to internationalize the content, adhering to them strictly.
-
-CORE PRINCIPLES OF I18N:
+- Strictly adhere to the guides provided to gain necessary knowledge about how to internationalize the content.
 - Minimize the footprint of the changes.
-- Your main focus is soley to internationalize the content of the target file.
-- NEVER move internationalized content to a different files. All content MUST remain in the same file where it came from.
+- Only focus on internationalizing the content of the target file.
+- NEVER move internationalized content to a different file. All content MUST remain in the same file where it came from.
 - NEVER CREATE OR REMOVE ANY FILES (especially .bak files)
 - Internationalize all user facing content in the target file. Do not internationalize content that is not user facing.
 - NEVER EDIT FILES THAT ARE NOT GIVEN TO YOU.

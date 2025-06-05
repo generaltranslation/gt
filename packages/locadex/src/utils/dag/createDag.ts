@@ -33,6 +33,9 @@ export class Dag {
     const reverseDag: Record<string, string[]> = {};
     const dependenciesMap: Record<string, string[]> = {};
 
+    // Clean the file paths recursively
+    const cleanedDag = cleanFilePaths(dag);
+
     function traverse(node: DagNode, parent?: string): void {
       for (const [filename, subtree] of Object.entries(node)) {
         // Build dependencies map - direct dependencies are the keys of subtree
@@ -56,7 +59,7 @@ export class Dag {
       }
     }
 
-    traverse(dag);
+    traverse(cleanedDag);
     return { reverseDag, dependenciesMap };
   }
 
@@ -141,6 +144,21 @@ export function createDag(directories: string[], options: DagOptions): Dag {
   });
 
   return new Dag(mergeTrees(allTrees));
+}
+
+function cleanFilePath(filePath: string): string {
+  return path.relative(process.cwd(), filePath);
+}
+
+function cleanFilePaths(dag: DagNode): DagNode {
+  const result: DagNode = {};
+
+  for (const [filename, subtree] of Object.entries(dag)) {
+    const cleanedFilename = cleanFilePath(filename);
+    result[cleanedFilename] = cleanFilePaths(subtree);
+  }
+
+  return result;
 }
 
 function mergeTrees(trees: Tree[]): DagNode {
