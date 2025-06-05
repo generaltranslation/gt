@@ -91,6 +91,7 @@ export async function dagCommand() {
   }
 
   // Always clean up the file list when done, regardless of success or failure
+  logger.info(`[dagCommand] Cleaning up file list: ${stateFilePath}`);
   cleanUp(stateFilePath);
 
   // If there was an error, exit with code 1

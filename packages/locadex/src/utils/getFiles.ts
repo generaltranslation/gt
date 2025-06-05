@@ -105,16 +105,13 @@ export function addFilesToManager(
   projectPath: string = process.cwd(),
   files: string[] = []
 ): string {
-  const stateFilePath = join(projectPath, 'locadex-files-state.json');
-  const existingFiles = getFileList(stateFilePath);
+  const existingFiles = getFileList(projectPath);
   const existingPaths = new Set(existingFiles.map((f) => f.path));
   files = files.filter((f) => !existingPaths.has(f));
 
-  files.forEach((filePath) =>
-    addFileToList(filePath, stateFilePath, 'pending')
-  );
+  files.forEach((filePath) => addFileToList(filePath, projectPath, 'pending'));
 
-  return stateFilePath;
+  return projectPath;
 }
 
 // Used by dag command
