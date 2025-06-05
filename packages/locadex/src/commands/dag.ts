@@ -24,13 +24,10 @@ export async function dagCommand() {
   spinner.start('Initializing Locadex...');
 
   // Create DAG
-  const dag = createDag(
-    findFilepaths(['./src', './app', './pages', './components']),
-    {
-      tsConfig: findTsConfig() || undefined,
-      webpackConfig: findWebpackConfig() || undefined,
-    }
-  );
+  const dag = createDag(['.'], {
+    tsConfig: findTsConfig() || undefined,
+    webpackConfig: findWebpackConfig() || undefined,
+  });
 
   // Configure agent
   const { agent, filesStateFilePath } = configureAgent({
