@@ -10,8 +10,6 @@ import {
 import { unlinkSync, existsSync } from 'node:fs';
 import { configureAgent } from '../utils/agentManager.js';
 import { logger } from '../logging/logger.js';
-import type { ChildProcess } from 'node:child_process';
-
 export async function i18nCommand() {
   displayHeader();
 
@@ -20,21 +18,15 @@ export async function i18nCommand() {
   spinner.start('Initializing Locadex...');
 
   let stateFilePath: string | undefined = undefined;
-  let mcpProcess: ChildProcess | undefined = undefined;
   try {
     // Scan and preload Next.js app router files into file manager
     spinner.message('Scanning Next.js app router files...');
 
     const stats = getNextJsAppRouterStats();
 
-    const {
-      agent,
-      filesStateFilePath,
-      mcpProcess: childProcess,
-    } = configureAgent({
+    const { agent, filesStateFilePath } = configureAgent({
       mcpTransport: 'sse',
     });
-    mcpProcess = childProcess;
 
     stateFilePath = filesStateFilePath;
     const scanResult = addNextJsFilesToManager(stateFilePath);
@@ -194,12 +186,6 @@ This is attempt ${attempt + 1} of ${maxAttempts}.`;
     );
     process.exit(1);
   } finally {
-    // Clean up the MCP process
-    if (mcpProcess) {
-      logger.debugMessage(`[i18nCommand] Cleaning up MCP process`);
-      mcpProcess.kill();
-    }
-
     // Always clean up the file list when done, regardless of success or failure
     if (stateFilePath && existsSync(stateFilePath)) {
       logger.debugMessage(

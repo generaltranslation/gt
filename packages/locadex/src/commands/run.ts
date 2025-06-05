@@ -3,9 +3,6 @@ import chalk from 'chalk';
 import { createSpinner, displayHeader } from '../logging/console.js';
 import { allMcpPrompt } from '../prompts/system.js';
 import { configureAgent } from '../utils/agentManager.js';
-import { logger } from '../logging/logger.js';
-import type { ChildProcess } from 'node:child_process';
-
 export async function startCommand() {
   displayHeader();
 
@@ -13,12 +10,10 @@ export async function startCommand() {
 
   spinner.start('Initializing Locadex...');
 
-  let mcpProcess: ChildProcess | undefined = undefined;
   try {
-    const { agent, mcpProcess: childProcess } = configureAgent({
+    const { agent } = configureAgent({
       mcpTransport: 'sse',
     });
-    mcpProcess = childProcess;
 
     const setupPrompt = `This project is a Next.js app router app.
 Your task is to internationalize the project using gt-next.
@@ -44,11 +39,5 @@ ${allMcpPrompt}
       )
     );
     process.exit(1);
-  } finally {
-    // Clean up the MCP process
-    if (mcpProcess) {
-      logger.debugMessage(`[startCommand] Cleaning up MCP process`);
-      mcpProcess.kill();
-    }
   }
 }

@@ -70,6 +70,22 @@ export class LocadexManager {
         stdio: 'inherit',
       });
 
+      this.mcpProcess.on('error', (error) => {
+        logger.error(`MCP server failed to start: ${error.message}`);
+        process.exit(1);
+      });
+
+      this.mcpProcess.on('exit', (code, signal) => {
+        if (code !== 0 && code !== null) {
+          logger.error(`MCP server exited with code ${code}`);
+          process.exit(code);
+        }
+        if (signal) {
+          logger.error(`MCP server was killed with signal ${signal}`);
+          process.exit(1);
+        }
+      });
+
       process.on('exit', () => {
         this.cleanup();
       });
@@ -103,6 +119,5 @@ export function configureAgent(options: { mcpTransport: 'sse' | 'stdio' }) {
   return {
     agent,
     filesStateFilePath: manager.getFilesStateFilePath(),
-    mcpProcess: (manager as any).mcpProcess,
   };
 }
