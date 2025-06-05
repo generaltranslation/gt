@@ -6,7 +6,7 @@ Apply this pattern when you encounter variable declarations (`let`, `const`, or 
 
 ## Rules
 
-1. **Scope**: Apply this pattern ONLY when variables are exclusively used in client-side components
+1. **Scope**: Apply this pattern ONLY when variables are exclusively used in client-side components, for string translation (for HTML translation use ALWAYS `<T>`)
 2. **Minimal footprint**: Keep internationalized content in the same file as the original declaration
 3. **Simple cases**: Move variables into component functions and use `useGT()` hook
 4. **Complex cases**: Create custom hooks to access internationalized strings

@@ -44,16 +44,7 @@ export default function MyComponent() {
 
 **Migrated implementations**:
 
-**Option A - Hook-based**:
-
-```tsx
-export default function MyComponent() {
-  const t = useGT();
-  return <div>{t('Hello, world!')}</div>;
-}
-```
-
-**Option B - Component-based**:
+**Option A - Component-based** (preferred):
 
 ```tsx
 export default function MyComponent() {
@@ -62,6 +53,17 @@ export default function MyComponent() {
       <div>Hello, world!</div>
     </T>
   );
+}
+```
+
+**Option B - Hook-based**:
+
+```tsx
+'use client'; // Always add 'use client' when working with the useGT() hook
+import { useGT } from 'gt-next/client';
+export default function MyComponent() {
+  const t = useGT();
+  return <div>{t('Hello, world!')}</div>;
 }
 ```
 

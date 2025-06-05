@@ -9,6 +9,7 @@
 **Transform**: Template literals → Translatable strings with variable placeholders
 
 **Non-internationalized pattern**:
+
 ```jsx
 const MyComponent = ({ name, count }) => {
   return <div>{`Welcome ${name}, you have ${count} items`}</div>;
@@ -16,7 +17,29 @@ const MyComponent = ({ name, count }) => {
 ```
 
 **Internationalized implementation**:
+
+**Option A** the `<T>` component (preferred for JSX/HTML):
+
 ```jsx
+import { T } from 'gt-next';
+
+const MyComponent = ({ name, count }) => {
+  return (
+    <div>
+      <T>
+        Welcome <Var>{name}</Var>, you have <Var>{count}</Var> items
+      </T>
+    </div>
+  );
+};
+```
+
+**Option B** the `useGT()` hook:
+
+```jsx
+'use client';
+import { useGT } from 'gt-next/client';
+
 const MyComponent = ({ name, count }) => {
   const t = useGT(); // Client-side
   // const t = await getGT(); // Server-side
@@ -31,15 +54,17 @@ const MyComponent = ({ name, count }) => {
 ```
 
 **Key requirements**:
+
 - Replace `${variable}` syntax with `{variable}` placeholders
 - Pass dynamic values via `variables` object
 - Variable names must match placeholder names exactly
 
-### `useDict()`/`getDict()` Method  
+### `useDict()`/`getDict()` Method
 
-**Transform**: Template literals → Dictionary keys with variable placeholders
+**Option C**: Template literals → Dictionary keys with variable placeholders
 
 **Non-internationalized pattern**:
+
 ```jsx
 const MyComponent = ({ username, role }) => {
   return <div>{`User ${username} has the role of ${role}`}</div>;
@@ -47,6 +72,7 @@ const MyComponent = ({ username, role }) => {
 ```
 
 **Dictionary structure**:
+
 ```json
 {
   "Users": {
@@ -56,7 +82,10 @@ const MyComponent = ({ username, role }) => {
 ```
 
 **Implementation**:
+
 ```jsx
+'use client';
+import { useDict } from 'gt-next/client';
 const MyComponent = ({ username, role }) => {
   const t = useDict(); // Client-side
   // const t = await getDict(); // Server-side
@@ -77,9 +106,12 @@ const MyComponent = ({ username, role }) => {
 **Scenario**: Multiple dynamic values in a single translatable string
 
 **Implementation**:
+
 ```jsx
+'use client';
+import { useGT } from 'gt-next/client';
 const MyComponent = ({ firstName, lastName, age, city }) => {
-  const t = useGT(); // Client-side  
+  const t = useGT(); // Client-side
   // const t = await getGT(); // Server-side
   return (
     <div>
@@ -98,6 +130,7 @@ const MyComponent = ({ firstName, lastName, age, city }) => {
 **Scenario**: Extract values from nested objects for interpolation
 
 **Dictionary definition**:
+
 ```json
 {
   "Users": {
@@ -107,6 +140,7 @@ const MyComponent = ({ firstName, lastName, age, city }) => {
 ```
 
 **Implementation**:
+
 ```jsx
 const MyComponent = ({ user }) => {
   const t = useDict(); // Client-side

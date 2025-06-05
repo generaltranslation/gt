@@ -10,6 +10,7 @@ Apply this pattern when you encounter variable declarations (`let`, `const`, or 
 2. **No file movement**: Avoid moving content between files unless absolutely necessary
 3. **Simple cases**: For single-use cases, move variable into component and use `getGT()`
 4. **Complex cases**: For complex scenarios, create async function to access translated strings
+5. **Scope**: Only use this implementation for string translation (for HTML translation use ALWAYS `<T>`)
 
 Rule of thumb for implementation:
 

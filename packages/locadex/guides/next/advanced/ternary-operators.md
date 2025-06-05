@@ -1,12 +1,15 @@
 # Conditional Content Internationalization Patterns
 
-**Objective**: Transform ternary operators and conditional rendering into translatable patterns using `<T>`, `<Branch>`, `<Var>`, `useGT()`/`getGT()`, and `useDict()`/`getDict()`.
+**Objective**: Transform ternary operators and conditional rendering into translatable patterns using `<T>`, `<Branch>`, `<Plural>`, `<Var>`, `useGT()`/`getGT()`, and `useDict()`/`getDict()`.
 
 ## Core Constraint: Dynamic Content in `<T>` Components
 
 ### `<Branch>` Component Pattern
 
-**Rule**: `<T>` components cannot contain dynamic expressions. Use `<Branch>` for conditional JSX within `<T>`.
+**Rules**:
+
+- `<T>` components cannot contain dynamic expressions. Use `<Branch>` for conditional JSX within `<T>`.
+- When working with `useGT()` always add a `"use client"` directive.
 
 **Non-internationalized conditional**:
 
@@ -75,25 +78,21 @@ const MyComponent = ({ isLoggedIn }) => {
 **Non-internationalized ternary**:
 
 ```jsx
-const MyComponent = ({ count }) => {
-  return (
-    <div>{count === 1 ? 'You have 1 item' : `You have ${count} items`}</div>
-  );
+const getCountMessage = ({ count }) => {
+  return count === 1 ? 'You have 1 item' : `You have ${count} items`;
 };
 ```
 
 **Internationalized implementation**:
 
 ```jsx
-const MyComponent = ({ count }) => {
+'use client'; // TIP: always add the 'use client' directive when importing useGT()
+import { useGT } from 'gt-next/client';
+const getCountMessage = ({ count }) => {
   const t = useGT();
-  return (
-    <div>
-      {count === 1
-        ? t('You have 1 item')
-        : t('You have {count} items', { variables: { count } })}
-    </div>
-  );
+  return count === 1
+    ? t('You have 1 item')
+    : t('You have {count} items', { variables: { count } });
 };
 ```
 
@@ -105,39 +104,83 @@ const MyComponent = ({ count }) => {
 
 **Pattern**: Chain ternary operators with translation applied to each outcome
 
-```jsx
-const MyComponent = ({ user }) => {
-  const t = useGT();
-  return (
-    <div>
-      {user.isAdmin
-        ? t('Welcome, administrator')
-        : user.isPremium
-          ? t('Welcome, premium user')
-          : t('Welcome, user')}
-    </div>
-  );
-};
-```
+**Technique**:
 
-**Technique**: Each condition level receives separate translation call.
+- For JSX: Use a `<Branch>` or `<Plural>` component.
+- For Strings: Each condition level receives separate translation call.
 
 ### Numerical Condition Branching
 
 **Pattern**: Handle zero, singular, and plural cases with appropriate translations
 
+#### JSX Approach
+
+Original
+
 ```jsx
-const MyComponent = ({ items }) => {
-  const t = useGT();
+const getItemsFoundMessage = ({ items }) => {
   return (
-    <div>
-      {items.length === 0
-        ? t('No items found')
-        : items.length === 1
-          ? t('Found 1 item')
-          : t('Found {count} items', { variables: { count: items.length } })}
-    </div>
+    <>
+      {items.color === 'red' ? (
+        <>An amazing color was found</>
+      ) : items.shape === 'square' ? (
+        <>A disgusting color but an amazing shape was found</>
+      ) : (
+        <>A disgusting color and disgusting shape was found</>
+      )}
+    </>
   );
+};
+```
+
+Internationalized
+
+```jsx
+import { T, Branch } from 'gt-next';
+const getItemsFoundMessage = ({ items }) => {
+  return (
+    <T>
+      <Branch branch={items.color} red={<>An amazing color was found</>}>
+        {/* Children are the catch all for the branch component */}
+        <Branch
+          branch={items.shape}
+          square={<>A disgusting color but an amazing shape was found</>}
+        >
+          A disgusting color and disgusting shape was found
+        </Branch>
+      </Branch>
+    </T>
+  );
+};
+```
+
+#### String Approach
+
+Original
+
+```jsx
+const getItemsFoundMessage = ({ items }) => {
+  return items.color === 'red'
+    ? 'An amazing color was found'
+    : items.shape === 'square'
+      ? 'A disgusting color but an amazing shape was found'
+      : 'A disgusting color and disgusting shape was found';
+};
+```
+
+Internationalized
+
+```jsx
+'use client';
+import { useGT } from 'gt-next/client';
+
+const getItemsFoundMessage = ({ items }) => {
+  const t = useGT();
+  return items.color === 'red'
+    ? t('An amazing color was found')
+    : items.shape === 'square'
+      ? t('A disgusting color but an amazing shape was found')
+      : t('A disgusting color and disgusting shape was found');
 };
 ```
 
