@@ -5,8 +5,10 @@ import path from 'node:path';
 import { FileEntry } from './getFiles.js';
 import { logger } from '../logging/logger.js';
 import { addToGitIgnore } from './fs/writeFiles.js';
+import { spawn } from 'node:child_process';
+import type { ChildProcess } from 'node:child_process';
 
-const mcpConfig = {
+const mcpStdioConfig = {
   mcpServers: {
     locadex: {
       command: 'npx',
@@ -16,7 +18,7 @@ const mcpConfig = {
   },
 };
 
-export function configureAgent() {
+export function configureAgent(options: { mcpTransport: 'sse' | 'stdio' }) {
   const cwd = process.cwd();
   const tempDir = path.resolve(cwd, '.locadex', Date.now().toString());
   fs.mkdirSync(tempDir, { recursive: true });
@@ -34,13 +36,34 @@ export function configureAgent() {
 
   fs.writeFileSync(filesStateFilePath, JSON.stringify(filesState, null, 2));
 
-  mcpConfig.mcpServers.locadex.env = {
-    LOCADEX_FILES_STATE_FILE_PATH: filesStateFilePath,
-  };
+  let mcpProcess: ChildProcess | undefined = undefined;
 
-  try {
-    fs.writeFileSync(mcpConfigPath, JSON.stringify(mcpConfig, null, 2));
-  } catch (error) {
+  if (options.mcpTransport === 'stdio') {
+    mcpStdioConfig.mcpServers.locadex.env = {
+      LOCADEX_FILES_STATE_FILE_PATH: filesStateFilePath,
+    };
+    try {
+      fs.writeFileSync(mcpConfigPath, JSON.stringify(mcpStdioConfig, null, 2));
+    } catch {
+      mcpConfigPath = fromPackageRoot('.locadex-mcp-stdio.json');
+    }
+  } else {
+    // Start the SSE MCP server as a child process
+    mcpProcess = spawn('node', [fromPackageRoot('dist/mcp-sse.js')], {
+      env: {
+        LOCADEX_FILES_STATE_FILE_PATH: filesStateFilePath,
+        LOCADEX_VERBOSE: logger.verbose ? 'true' : 'false',
+        LOCADEX_DEBUG: logger.debug ? 'true' : 'false',
+        ...process.env,
+      },
+      stdio: 'inherit',
+    });
+
+    // Handle process cleanup
+    process.on('exit', () => {
+      mcpProcess?.kill();
+    });
+
     mcpConfigPath = fromPackageRoot('.locadex-mcp.json');
   }
 
@@ -52,5 +75,6 @@ export function configureAgent() {
   return {
     agent,
     filesStateFilePath,
+    mcpProcess,
   };
 }

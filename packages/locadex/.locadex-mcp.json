@@ -1,9 +1,8 @@
 {
   "mcpServers": {
     "locadex": {
-      "command": "npx",
-      "args": ["locadex-mcp"],
-      "env": {}
+      "type": "sse",
+      "url": "http://localhost:8888/sse"
     }
   }
 }

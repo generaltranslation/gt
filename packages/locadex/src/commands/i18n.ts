@@ -10,6 +10,7 @@ import {
 import { unlinkSync, existsSync } from 'node:fs';
 import { configureAgent } from '../utils/configuration.js';
 import { logger } from '../logging/logger.js';
+import type { ChildProcess } from 'node:child_process';
 
 export async function i18nCommand() {
   displayHeader();
@@ -19,25 +20,31 @@ export async function i18nCommand() {
   spinner.start('Initializing Locadex...');
 
   let stateFilePath: string | undefined = undefined;
+  let mcpProcess: ChildProcess | undefined = undefined;
   try {
     // Scan and preload Next.js app router files into file manager
     spinner.message('Scanning Next.js app router files...');
 
     const stats = getNextJsAppRouterStats();
 
-    const { agent, filesStateFilePath } = configureAgent();
+    const {
+      agent,
+      filesStateFilePath,
+      mcpProcess: childProcess,
+    } = configureAgent({
+      mcpTransport: 'sse',
+    });
+    mcpProcess = childProcess;
+
     stateFilePath = filesStateFilePath;
     const scanResult = addNextJsFilesToManager(stateFilePath);
-    console.log('Track progress here:', `${stateFilePath}/files-state.json`);
+    logger.debugMessage(
+      `[i18nCommand] Track progress here: ${stateFilePath}/files-state.json`
+    );
 
     const setupPrompt = `This project is already setup for internationalization.
 You do not need to setup the project again.
-Your task is to internationalize the app's content using gt-next, specifically using:
-- <T> component (HIGHLY PREFERRED)
-- useGT
-- getGT
-- useDict
-- getDict
+Your task is to internationalize the app's content using gt-next.
 
 To validate the use of gt-next, you can run the following command:
 'npx gtx-cli translate --dry-run'
@@ -187,6 +194,12 @@ This is attempt ${attempt + 1} of ${maxAttempts}.`;
     );
     process.exit(1);
   } finally {
+    // Clean up the MCP process
+    if (mcpProcess) {
+      logger.debugMessage(`[i18nCommand] Cleaning up MCP process`);
+      mcpProcess.kill();
+    }
+
     // Always clean up the file list when done, regardless of success or failure
     if (stateFilePath && existsSync(stateFilePath)) {
       logger.debugMessage(
