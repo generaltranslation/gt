@@ -1,7 +1,7 @@
 import { intro, outro, spinner, confirm } from '@clack/prompts';
 import chalk from 'chalk';
 import { createSpinner, displayHeader } from '../logging/console.js';
-import { allMcpPrompt, allMcpTools } from '../prompts/system.js';
+import { allMcpPrompt } from '../prompts/system.js';
 import {
   addNextJsFilesToManager,
   getNextJsAppRouterStats,
@@ -83,13 +83,12 @@ ${allMcpPrompt}
     try {
       await agent.run(
         {
-          additionalSystemPrompt: allMcpTools,
           prompt: setupPrompt,
         },
         { spinner }
       );
     } catch (error) {
-      console.error(`[i18nCommand] Error in initial run: ${error}`);
+      logger.debugMessage(`[i18nCommand] Error in initial run: ${error}`);
     }
 
     const sessionId = agent.getSessionId();
@@ -163,14 +162,13 @@ This is attempt ${attempt + 1} of ${maxAttempts}.`;
         try {
           await agent.run(
             {
-              additionalSystemPrompt: allMcpTools,
               prompt: continuePrompt,
               sessionId,
             },
             { spinner }
           );
         } catch (error) {
-          console.error(
+          logger.debugMessage(
             `[i18nCommand] Error in attempt ${attempt + 1}: ${error}`
           );
         }

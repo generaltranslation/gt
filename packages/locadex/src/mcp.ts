@@ -3,11 +3,11 @@
 import './telemetry.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { addDocsTools } from './tools/docs.js';
+import { addDocsTools } from './mcp/tools/docs.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
-import { addGuidesTools } from './tools/guides.js';
-import { addFileManagerTools } from './tools/fileManager.js';
+import { addGuidesTools } from './mcp/tools/guides.js';
+import { addFileManagerTools } from './mcp/tools/fileManager.js';
 
 async function main() {
   const stateFile = process.env.LOCADEX_FILES_STATE_FILE_PATH;
@@ -26,7 +26,7 @@ async function main() {
   addDocsTools(server);
   addGuidesTools(server);
   addFileManagerTools(server, stateFile);
-  
+
   console.error('[locadex-mcp] All tools registered');
   const transport = new StdioServerTransport();
   await server.connect(transport);

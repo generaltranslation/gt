@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { fetchDocContent, getDocs } from '../utils/getDocs.js';
+import { fetchDocContent, getDocs } from '../getDocs.js';
 
 export const docsTools: { [id: string]: string } = {
   'fetch-docs':

@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { fromPackageRoot } from './getPaths.js';
+import { fromPackageRoot } from '../utils/getPaths.js';
 
 export default async function getGuide(
   path: string

@@ -1,10 +1,10 @@
 import { spawn } from 'node:child_process';
 import { ClaudeSDKMessage } from '../types/claude-sdk.js';
 import { constructResultInfo } from '../logging/constructInfo.js';
-import { guides } from '../tools/guides.js';
+import { guides } from '../mcp/tools/guides.js';
 import { SpinnerResult } from '@clack/prompts';
 import { logger } from '../logging/logger.js';
-import { fileManagerTools } from '../tools/fileManager.js';
+import { fileManagerTools } from '../mcp/tools/fileManager.js';
 import { posthog } from '../telemetry.js';
 
 export interface ClaudeCodeOptions {

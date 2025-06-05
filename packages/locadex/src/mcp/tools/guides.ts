@@ -1,14 +1,21 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import getGuide from '../utils/getGuide.js';
+import getGuide from '../getGuide.js';
 
 type Guide = {
   id: string;
   description: string;
   path: string;
-  type: 'basic' | 'advanced';
+  type: 'important' | 'basic' | 'advanced';
 };
 
 export const guides: Guide[] = [
+  {
+    id: 'important_next-functions',
+    description:
+      'Important documentation outlining the imports available in `gt-next`.',
+    path: 'guides/next/basic/functions.md',
+    type: 'important',
+  },
   {
     id: 'basic_next-setup',
     description: 'Basic guide for setting up gt-next in a Next.js project.',
