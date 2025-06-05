@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { ClaudeCodeRunner } from './claudeCode.js';
 import { fromPackageRoot } from './getPaths.js';
 import fs from 'node:fs';
@@ -19,7 +18,7 @@ const mcpConfig = {
 
 export function configureAgent() {
   const cwd = process.cwd();
-  const tempDir = path.resolve(cwd, '.locadex', randomUUID());
+  const tempDir = path.resolve(cwd, '.locadex', Date.now().toString());
   fs.mkdirSync(tempDir, { recursive: true });
 
   logger.debugMessage(`Temp directory created at: ${tempDir}`);

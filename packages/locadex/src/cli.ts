@@ -30,11 +30,10 @@ program
   .option('-d, --debug', 'Debug output')
   .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions) => {
-    logger.initialize(options);
-    console.log('startCommand', options);
-    withTelemetry({ enabled: !options.noTelemetry, options }, () =>
-      startCommand()
-    );
+    withTelemetry({ enabled: !options.noTelemetry, options }, () => {
+      logger.initialize(options);
+      startCommand();
+    });
   });
 
 program
@@ -43,10 +42,12 @@ program
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
     const allOptions = { ...parentOptions, ...options };
-    logger.initialize(allOptions);
-    console.log('runCommand', allOptions);
-    withTelemetry({ enabled: !allOptions.noTelemetry, options: allOptions }, () =>
-      startCommand()
+    withTelemetry(
+      { enabled: !allOptions.noTelemetry, options: allOptions },
+      () => {
+        logger.initialize(allOptions);
+        startCommand();
+      }
     );
   });
 
@@ -56,11 +57,13 @@ program
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
     const allOptions = { ...parentOptions, ...options };
-    withTelemetry({ enabled: !allOptions.noTelemetry, options: allOptions }, () => {
-      logger.initialize(allOptions);
-      console.log('setupCommand', allOptions);
-      setupCommand();
-    });
+    withTelemetry(
+      { enabled: !allOptions.noTelemetry, options: allOptions },
+      () => {
+        logger.initialize(allOptions);
+        setupCommand();
+      }
+    );
   });
 
 program
@@ -69,11 +72,13 @@ program
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
     const allOptions = { ...parentOptions, ...options };
-    withTelemetry({ enabled: !allOptions.noTelemetry, options: allOptions }, () => {
-      logger.initialize(allOptions);
-      console.log('i18nCommand', allOptions);
-      i18nCommand();
-    });
+    withTelemetry(
+      { enabled: !allOptions.noTelemetry, options: allOptions },
+      () => {
+        logger.initialize(allOptions);
+        i18nCommand();
+      }
+    );
   });
 
 program.parse();

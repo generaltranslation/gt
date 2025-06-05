@@ -50,5 +50,3 @@ ${docsToolsWithDescriptions}
 ${guidesToolsWithDescriptions}
 
 Generally, you should use the guides tools to help you with your tasks. You should only call the docs tools when you need specific information not covered by the guides. Always use the file manager tools to track your progress systematically.`;
-
-console.log(allMcpPrompt);
