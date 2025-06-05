@@ -10,13 +10,18 @@ Apply this pattern when you encounter variable declarations (`let`, `const`, or 
 2. **Minimal footprint**: Keep internationalized content in the same file as the original declaration
 3. **Simple cases**: Move variables into component functions and use `useGT()` hook
 4. **Complex cases**: Create custom hooks to access internationalized strings
-5. **Never add**: Do not add "use client" or "use server" directives
+5. **Always add "use client"**: Always add the "use client" directive when working with `useGT()`
+
+Rule of thumb for implementation:
+
+- If data is being imported, wrap it in a function that takes `t()` as a parameter
+- If data is in the same file, you can either wrap it in a function or move it directly into the components that need it
 
 ## Implementation Patterns
 
 ### Pattern 1: Single Variable Outside Function
 
-**Scenario**: Variable declared outside component scope within same file
+**Scenario**: Variable declared outside component scope within SAME FILE
 
 ```jsx
 const OUTSIDE_CONST = 'Hello there!';
@@ -30,20 +35,27 @@ export function Example() {
 
 **Solution**: Move variable inside component and use `useGT()` hook
 
+1. Move the variable inside the component
+2. Add the `useGT()` hook.
+3. Translate with the `t()` function
+4. Add the `"use client"` directive
+
 ```jsx
+'use client';
 import { useGT } from 'gt-next/client';
+
 export function Example() {
   const [state, setState] = useState();
   const t = useGT();
-  const OUTSIDE_CONST = t('Hello there!');
+  const outside_const = t('Hello there!');
 
-  return <>{OUTSIDE_CONST}</>;
+  return <>{outside_const}</>;
 }
 ```
 
 ### Pattern 2: Variable Reused Across Multiple Components
 
-**Scenario**: Variable shared between multiple components
+**Scenario**: Variable shared between multiple components in the SAME FILE
 
 ```jsx
 const OUTSIDE_CONST = 'Hello there!';
@@ -63,8 +75,16 @@ export function Example2() {
 
 **Solution**: Convert to custom hook for reusability
 
+1. Add the `"use client"` directive
+2. Import `useGT()` from `'gt-next/client'`
+3. Define a new hook with the old variable name (i.e., `OUTSIDE_CONST` becomes `useOutsideConst()`)
+4. Add the `useGT()` hook.
+5. Translate with the `t()` function
+
 ```jsx
+'use client';
 import { useGT } from 'gt-next/client';
+
 const useOutsideConst = () => {
   const t = useGT();
   return t('Hello there!');
@@ -87,7 +107,8 @@ export function Example2() {
 
 ### Pattern 3: Complex Data Structures Across Files
 
-**Scenario**: Centralized data structure with hardcoded strings
+**Scenario**: Centralized data structure with hardcoded strings across MULTIPLE FILES
+Note: This case only applies to strings being imported by client components
 
 ```jsx title="navMap.ts"
 const navMap = [
@@ -153,10 +174,14 @@ export default function Example2() {
 
 **Solution**: Convert data structure to custom hook with internationalization
 
+1. Turn the constant into a function that takes `t()` as a parameter, adding the word get infront (i.e., `navMap` becomes `getNavMap()`)
+2. Add the `"use client"` directive
+3. For each use, import `useGT()` from `gt-next/client` and import the new function you defined
+4. Call the `useGT()` hook
+5. Pass the `t()` function to the newly defined function
+
 ```jsx title="navMap.ts"
-import { useGT } from 'gt-next/client';
-const useNavMap = () => {
-  const t = useGT();
+const getNavMap = (t: (string: string, options?: InlineTranslationOptions) => string) => {
   return [
     {
       name: t('dashboard'),
@@ -190,10 +215,14 @@ export default useNavMap;
 **Updated Components**: Components now call the hook to get internationalized data
 
 ```jsx title="Example1.tsx"
-import useNavMap from './navMap';
+'use client';
+import { useGT } from 'gt-next';
+
+import getNavMap from './navMap';
 import NavItem from './NavItem';
 export default function Example1() {
-  const navMap = useNavMap();
+  const t = useGT();
+  const navMap = getNavMap(t);
   return (
     <>
       {navMap.map((navItem) => (
@@ -205,10 +234,14 @@ export default function Example1() {
 ```
 
 ```jsx title="Example2.tsx"
-import navMap from './navMap';
+'use client';
+import { useGT } from 'gt-next';
+
+import getNavMap from './navMap';
 import NavItem from './NavItem';
 export default function Example2() {
-  const navMap = useNavMap();
+  const t = useGT();
+  const navMap = getNavMap(t);
   return (
     <>
       {navMap
@@ -221,11 +254,20 @@ export default function Example2() {
 }
 ```
 
+**Common Pitfalls**
+
+- Forgetting to add "/client" when importing `useGT()`
+- Forgetting to call the `useGT()` hook
+- Not passing the `t` function to the newly defined getter function
+- Forgetting to add the word `get` at the beginning of the function
+- Treating the function like an object instead of a function (syntax error)
+- Adding the `'use client'` hook in the file where the newly defined function lives (`"use client"` directive should only be for the components invoking the function).
+
 ### Pattern 4: Cross-File String Constants
 
 **Constraint**: Keep variables in their original declaration file to minimize changes.
 
-**Scenario**: String exported from one file, imported in another
+**Scenario**: String exported from one file, imported in another (MULTIPLE FILES)
 
 ```jsx
 export const some_string = 'Hello, World!';
@@ -241,11 +283,15 @@ export default function MyComponent() {
 
 **Solution**: Convert to function that uses `useGT()` in original file
 
-```jsx
-import { useGT } from 'gt-next/client';
+1. Add the `"use client"` directive
+2. Import `useGT()` from `'gt-next/client'`
+3. Define a new hook with the old variable name (i.e., `OUTSIDE_CONST` becomes `useOutsideConst()`)
+4. Add the `useGT()` hook.
+5. Translate with the `t()` function
 
-export const getSomeString = () => {
-  const t = useGT();
+```jsx
+
+export const getSomeString = (t: (string: string, options?: InlineTranslationOptions) => string) => {
   return t('Hello, World!');
 };
 ```
@@ -254,6 +300,8 @@ export const getSomeString = () => {
 import { getSomeString } from './constants';
 
 export default function MyComponent() {
+  import { useGT } from 'gt-next/client';
+  const t = useGT();
   const some_string = getSomeString();
   return <>{some_string}</>;
 }
