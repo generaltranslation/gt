@@ -38,9 +38,7 @@ export default function _getLocaleEmoji(
     );
 
   } catch {
-
     return defaultEmoji;
-    
   }
 }
 
