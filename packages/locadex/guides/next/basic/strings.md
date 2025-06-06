@@ -129,3 +129,15 @@ Never use the `${}` syntax for dynamic strings inside the translation callback.
 ```tsx
 const invalidUsage = t(`Hello, ${name}!`);
 ```
+
+Never use double curly braces `{{}}` to indicate variables
+
+```tsx
+const invalidUsage = t(`Hello, {{name}}!`);
+```
+
+Always add the `variable` key in the options field of `t()` when specifying variables. The following is invalid:
+
+```tsx
+const invalidUsage = t(`Hello, {name}!`, { name: 'Brian' });
+```
