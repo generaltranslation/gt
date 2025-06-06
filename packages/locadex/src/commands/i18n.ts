@@ -1,4 +1,4 @@
-import { createSpinner } from '../logging/console.js';
+import { createProgressBar, createSpinner } from '../logging/console.js';
 import { allMcpPrompt } from '../prompts/system.js';
 
 import { logger } from '../logging/logger.js';
@@ -8,7 +8,7 @@ import {
   findWebpackConfig,
   findRequireConfig,
 } from '../utils/fs/findConfigs.js';
-import { configureAgent, LocadexManager } from '../utils/agentManager.js';
+import { LocadexManager } from '../utils/agentManager.js';
 import {
   addFilesToManager,
   markFileAsEdited,
@@ -19,6 +19,7 @@ import chalk from 'chalk';
 import { readdirSync, statSync } from 'node:fs';
 import { EXCLUDED_DIRS } from '../utils/shared.js';
 import { validateInitialConfig } from '../utils/validateConfig.js';
+import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 
 function getCurrentDirectories(): string[] {
   try {
@@ -46,46 +47,45 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
   const spinner = createSpinner();
   spinner.start('Initializing Locadex...');
 
-  // Create DAG
-  logger.debugMessage(
-    'getCurrentDirectories(): ' + getCurrentDirectories().join(', ')
-  );
   const dag = createDag(getCurrentDirectories(), {
     tsConfig: findTsConfig(),
     webpackConfig: findWebpackConfig(),
     requireConfig: findRequireConfig(),
   });
 
-  logger.info(
-    'dag.getDag().length: ' + String(Object.keys(dag.getDag()).length)
+  logger.verboseMessage(
+    `Number of files to process: ${dag.getTopologicalOrder().length}`
   );
-  logger.info(
-    'dag.getReverseDag().length: ' +
-      String(Object.keys(dag.getReverseDag()).length)
-  );
-  logger.info(
-    'dag.getTopologicalOrder().length: ' +
-      String(dag.getTopologicalOrder().length)
-  );
+  // If no manager is provided, create a new one
+  if (!manager) {
+    manager = new LocadexManager({
+      mcpTransport: 'sse',
+      metadata: {
+        batchSize: batchSize,
+      },
+    });
+    process.on('beforeExit', () => manager!.cleanup());
+  }
 
-  // Configure agent
-  const { agent, filesStateFilePath, metadataFilePath } = configureAgent({
-    mcpTransport: 'sse',
-    metadata: {
-      batchSize: batchSize,
-    },
-  }, manager);
+  const agent = manager.createAgent();
+  const filesStateFilePath = manager.getFilesStateFilePath();
 
   // Track session id
   let sessionId: string | undefined = undefined;
 
   // Create the list of files (aka tasks) to process
-  const taskQueue = dag.getTopologicalOrder();
+  const taskQueue = [...dag.getTopologicalOrder()];
+
+  const allFiles = [...dag.getTopologicalOrder()];
 
   // Add files to manager
   const stateFilePath = addFilesToManager(filesStateFilePath, taskQueue);
-  logger.info(`[dagCommand] Track progress here: ${stateFilePath}`);
+  spinner.stop('Locadex initialized');
 
+  logger.verboseMessage(`Track progress here: ${stateFilePath}`);
+
+  logger.initializeProgressBar(taskQueue.length);
+  logger.startProgressBar('Processing files...');
   // Main loop
   let hasError = false;
   while (taskQueue.length > 0) {
@@ -128,15 +128,22 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
       }
     } catch (error) {
       hasError = true;
-      logger.debugMessage(
-        `[dagCommand] Error in claude i18n process: ${error}`
-      );
+      logger.debugMessage(`Error in claude i18n process: ${error}`);
       break;
     }
 
     // Mark task as complete
     tasks.forEach((task) => markFileAsEdited(task, filesStateFilePath));
+    logger.advanceProgressBar(
+      tasks.length,
+      `Processed ${Number(((allFiles.length - taskQueue.length) / allFiles.length) * 100).toFixed(2)}% of files`
+    );
+    manager.stats.updateStats({
+      newProcessedFiles: tasks.length,
+    });
   }
+
+  logger.stopProgressBar('Files processed');
 
   // TODO: uncomment
   // // Always clean up the file list when done, regardless of success or failure
@@ -176,6 +183,22 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
     outro(chalk.red('❌ Locadex i18n failed!'));
     process.exit(1);
   }
+
+  // cleanup
+
+  const formatter = await detectFormatter();
+
+  if (formatter) {
+    await formatFiles(allFiles, formatter);
+  }
+
+  logger.info(`Total cost: $${manager.stats.getStats().totalCost.toFixed(2)}`);
+  logger.info(
+    `Total api duration: ${manager.stats.getStats().totalApiDuration / 1000}s`
+  );
+  logger.info(
+    `Total files processed: ${manager.stats.getStats().processedFiles}`
+  );
 
   outro(chalk.green('✅ Locadex i18n complete!'));
   process.exit(0);

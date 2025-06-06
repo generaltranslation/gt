@@ -7,6 +7,7 @@ import { logger } from '../logging/logger.js';
 import { addToGitIgnore } from './fs/writeFiles.js';
 import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
+import { AgentStats } from './stats.js';
 
 export interface LocadexMetadata {
   createdAt: string;
@@ -39,13 +40,15 @@ export class LocadexManager {
   private metadataFilePath: string;
   private tempDir: string;
   private apiKey?: string;
+  stats: AgentStats;
 
-  constructor(options: { 
-    mcpTransport: 'sse' | 'stdio'; 
+  constructor(options: {
+    mcpTransport: 'sse' | 'stdio';
     apiKey?: string;
     metadata?: Partial<LocadexMetadata>;
   }) {
     this.apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY;
+    this.stats = new AgentStats();
 
     const cwd = process.cwd();
     this.tempDir = path.resolve(cwd, '.locadex', Date.now().toString());
@@ -71,7 +74,9 @@ export class LocadexManager {
     // Create metadata.json
     const metadata: LocadexMetadata = {
       createdAt: new Date().toISOString(),
-      locadexVersion: JSON.parse(fs.readFileSync(fromPackageRoot('package.json'), 'utf8')).version,
+      locadexVersion: JSON.parse(
+        fs.readFileSync(fromPackageRoot('package.json'), 'utf8')
+      ).version,
       workingDirectory: cwd,
       projectName: path.basename(cwd),
       transport: options.mcpTransport,
@@ -79,12 +84,9 @@ export class LocadexManager {
       nodeVersion: process.version,
       platform: process.platform,
       arch: process.arch,
-      ...options.metadata
+      ...options.metadata,
     };
-    fs.writeFileSync(
-      this.metadataFilePath,
-      JSON.stringify(metadata, null, 2)
-    );
+    fs.writeFileSync(this.metadataFilePath, JSON.stringify(metadata, null, 2));
 
     logger.debugMessage(`Created metadata.json at: ${this.metadataFilePath}`);
 
@@ -136,7 +138,7 @@ export class LocadexManager {
   }
 
   createAgent(): ClaudeCodeRunner {
-    return new ClaudeCodeRunner({
+    return new ClaudeCodeRunner(this, {
       apiKey: this.apiKey,
       mcpConfig: this.mcpConfigPath,
     });
@@ -160,28 +162,4 @@ export class LocadexManager {
       }, 1000);
     }
   }
-}
-
-export function configureAgent(options: { 
-  mcpTransport: 'sse' | 'stdio';
-  metadata?: Partial<LocadexMetadata>;
-}, manager?: LocadexManager) {
-  // If no manager is provided, create a new one
-  if (!manager) {
-    manager = new LocadexManager(options);
-    logger.debugMessage(`Configure agent called with no manager. Creating new manager.`);
-  }
-
-  // Create agent
-  const agent = manager.createAgent();
-
-  process.on('beforeExit', () => {
-    manager.cleanup();
-  });
-
-  return {
-    agent,
-    filesStateFilePath: manager.getFilesStateFilePath(),
-    metadataFilePath: manager.getMetadataFilePath(),
-  };
 }

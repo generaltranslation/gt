@@ -4,6 +4,7 @@ import { guides } from '../mcp/tools/guides.js';
 import { SpinnerResult } from '@clack/prompts';
 import { logger } from '../logging/logger.js';
 import { posthog } from '../telemetry.js';
+import { LocadexManager } from './agentManager.js';
 
 export interface ClaudeCodeOptions {
   additionalSystemPrompt?: string;
@@ -13,9 +14,7 @@ export interface ClaudeCodeOptions {
   sessionId?: string;
 }
 
-export interface ClaudeCodeObservation {
-  spinner: SpinnerResult;
-}
+export interface ClaudeCodeObservation {}
 
 const DEFAULT_ALLOWED_TOOLS = [
   'mcp__locadex__fetch-docs',
@@ -54,13 +53,16 @@ const setupProcessHandlers = () => {
 export class ClaudeCodeRunner {
   private sessionId: string = '';
   private mcpConfig: string | undefined;
+  private manager: LocadexManager;
 
   constructor(
+    manager: LocadexManager,
     private options: {
       apiKey?: string;
       mcpConfig?: string;
     } = {}
   ) {
+    this.manager = manager;
     this.mcpConfig = options.mcpConfig;
 
     // Ensure API key is set
@@ -198,28 +200,35 @@ export class ClaudeCodeRunner {
         }
       });
       if (text.length > 0) {
-        logger.step(text.join('').trim());
+        logger.verboseMessage(text.join('').trim());
       }
       if (toolUses.length > 0) {
-        logger.message(`Used tools: ${toolUses.join(', ')}`);
+        logger.verboseMessage(`Used tools: ${toolUses.join(', ')}`);
       }
+      this.manager.stats.updateStats({
+        newToolCalls: toolUses.length,
+      });
     } else if (outputData.type === 'result') {
       if (!outputData.is_error) {
-        logger.success(
-          `Done!\nCost: $${Number(outputData.cost_usd).toFixed(2)}\nDuration: ${
+        logger.verboseMessage(
+          `Claude Code finished\nCost: $${Number(outputData.cost_usd).toFixed(2)}\nDuration: ${
             Number(outputData.duration_ms) / 1000
           }s`
         );
       } else {
-        logger.error(
-          `Error: ${outputData.subtype}\nCost: $${outputData.cost_usd}\nDuration: ${
+        logger.verboseMessage(
+          `Claude Code finished with error: ${outputData.subtype}\nCost: $${outputData.cost_usd}\nDuration: ${
             Number(outputData.duration_ms) / 1000
           }s`
         );
       }
+      this.manager.stats.updateStats({
+        newCost: Number(outputData.cost_usd),
+        newWallDuration: Number(outputData.duration_ms),
+        newApiDuration: Number(outputData.duration_api_ms),
+      });
     } else if (outputData.type === 'system') {
       if (outputData.subtype === 'init') {
-        obs.spinner.stop('Locadex initialized');
         this.sessionId = outputData.session_id;
       }
     }

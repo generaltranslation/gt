@@ -1,3 +1,4 @@
+import { ProgressResult } from '@clack/prompts';
 import { CliOptions } from '../types/cli.js';
 import {
   logInfo,
@@ -7,13 +8,14 @@ import {
   logStep,
   logMessage,
   logErrorAndExit,
+  createProgressBar,
 } from './console.js';
 
 class Logger {
   private static instance: Logger;
   private _verbose: boolean = false;
   private _debug: boolean = false;
-
+  private progressBar: ProgressResult | undefined;
   private constructor() {}
 
   static getInstance(): Logger {
@@ -85,6 +87,35 @@ class Logger {
   debugMessage(message: string): void {
     if (this._debug) {
       this.message(`[locadex] ${message}`);
+    }
+  }
+
+  initializeProgressBar(total: number): void {
+    if (!this._verbose && !this._debug && !this.progressBar) {
+      this.progressBar = createProgressBar(total);
+    }
+  }
+
+  startProgressBar(message?: string): void {
+    if (this.progressBar) {
+      this.progressBar.start(message);
+    }
+  }
+
+  advanceProgressBar(amount: number, message?: string): void {
+    if (this.progressBar) {
+      this.progressBar.advance(amount, message);
+    }
+  }
+
+  stopProgressBar(message?: string): void {
+    if (this.progressBar) {
+      try {
+        this.progressBar.stop(message);
+        this.progressBar = undefined;
+      } catch (error) {
+        this.progressBar = undefined;
+      }
     }
   }
 }

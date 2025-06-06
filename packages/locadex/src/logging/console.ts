@@ -10,6 +10,7 @@ import {
   cancel,
   multiselect,
   taskLog,
+  progress,
 } from '@clack/prompts';
 import chalk from 'chalk';
 import { getLocadexVersion } from '../utils/getPaths.js';
@@ -84,6 +85,10 @@ ${chalk.dim('Locadex uses Sentry and PostHog to collect anonymous telemetry data
 // Spinner functionality
 export function createSpinner(indicator: 'dots' | 'timer' = 'timer') {
   return spinner({ indicator });
+}
+
+export function createProgressBar(total: number) {
+  return progress({ max: total });
 }
 
 // Input prompts
