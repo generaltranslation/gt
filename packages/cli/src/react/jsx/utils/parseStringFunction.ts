@@ -115,6 +115,91 @@ function extractParameterName(param: t.Node): string | null {
 }
 
 /**
+ * Builds a map of imported function names to their import paths from a given program path.
+ * Handles both named imports and default imports.
+ *
+ * Example: import { getInfo } from './constants' -> Map { 'getInfo' => './constants' }
+ * Example: import utils from './utils' -> Map { 'utils' => './utils' }
+ */
+function buildImportMap(programPath: NodePath): Map<string, string> {
+  const importMap = new Map<string, string>();
+
+  programPath.traverse({
+    ImportDeclaration(importPath) {
+      if (t.isStringLiteral(importPath.node.source)) {
+        const importSource = importPath.node.source.value;
+        importPath.node.specifiers.forEach((spec) => {
+          if (
+            t.isImportSpecifier(spec) &&
+            t.isIdentifier(spec.imported) &&
+            t.isIdentifier(spec.local)
+          ) {
+            importMap.set(spec.local.name, importSource);
+          } else if (
+            t.isImportDefaultSpecifier(spec) &&
+            t.isIdentifier(spec.local)
+          ) {
+            importMap.set(spec.local.name, importSource);
+          }
+        });
+      }
+    },
+  });
+
+  return importMap;
+}
+
+/**
+ * Recursively resolves variable assignments to find all aliases of a translation callback parameter.
+ * Handles cases like: const t = translate; const a = translate; const b = a; const c = b;
+ *
+ * @param scope The scope to search within
+ * @param variableName The variable name to resolve
+ * @param visited Set to track already visited variables to prevent infinite loops
+ * @returns Array of all variable names that reference the original translation callback
+ */
+function resolveVariableAliases(
+  scope: any,
+  variableName: string,
+  visited: Set<string> = new Set()
+): string[] {
+  if (visited.has(variableName)) {
+    return []; // Prevent infinite loops
+  }
+  visited.add(variableName);
+
+  const aliases = [variableName];
+  const binding = scope.bindings[variableName];
+
+  if (binding) {
+    // Look for variable declarations that assign this variable to another name
+    // Example: const t = translate; or const a = t;
+    for (const [otherVarName, otherBinding] of Object.entries(scope.bindings)) {
+      if (otherVarName === variableName || visited.has(otherVarName)) continue;
+
+      const otherBindingTyped = otherBinding as any;
+      if (
+        otherBindingTyped.path &&
+        otherBindingTyped.path.isVariableDeclarator() &&
+        otherBindingTyped.path.node.init &&
+        t.isIdentifier(otherBindingTyped.path.node.init) &&
+        otherBindingTyped.path.node.init.name === variableName
+      ) {
+        // Found an alias: const otherVarName = variableName;
+        const nestedAliases = resolveVariableAliases(
+          scope,
+          otherVarName,
+          visited
+        );
+        aliases.push(...nestedAliases);
+      }
+    }
+  }
+
+  return aliases;
+}
+
+/**
  * Handles how translation callbacks are used within code.
  * This covers both direct translation calls (t('hello')) and prop drilling
  * where the translation callback is passed to other functions (getData(t)).
@@ -242,38 +327,27 @@ function findFunctionParameterUsage(
   // Look for the function body and find all usages of the parameter
   if (functionPath.isFunction()) {
     const functionScope = functionPath.scope;
-    const binding = functionScope.bindings[parameterName];
 
-    if (binding) {
-      // Build import map for this function's scope to handle cross-file calls
-      const importMap = new Map<string, string>();
-      const programPath = functionPath.scope.getProgramParent().path;
-      programPath.traverse({
-        ImportDeclaration(importPath) {
-          if (t.isStringLiteral(importPath.node.source)) {
-            const importSource = importPath.node.source.value;
-            importPath.node.specifiers.forEach((spec) => {
-              if (
-                t.isImportSpecifier(spec) &&
-                t.isIdentifier(spec.imported) &&
-                t.isIdentifier(spec.local)
-              ) {
-                importMap.set(spec.local.name, importSource);
-              } else if (
-                t.isImportDefaultSpecifier(spec) &&
-                t.isIdentifier(spec.local)
-              ) {
-                importMap.set(spec.local.name, importSource);
-              }
-            });
-          }
-        },
-      });
+    // Resolve all aliases of the translation callback parameter
+    // Example: translate -> [translate, t, a, b] for const t = translate; const a = t; const b = a;
+    const allParameterNames = resolveVariableAliases(
+      functionScope,
+      parameterName
+    );
 
-      binding.referencePaths.forEach((refPath) => {
-        handleFunctionCall(refPath, updates, errors, file, importMap);
-      });
-    }
+    // Build import map for this function's scope to handle cross-file calls
+    const programPath = functionPath.scope.getProgramParent().path;
+    const importMap = buildImportMap(programPath);
+
+    // Process references for all parameter names and their aliases
+    allParameterNames.forEach((name) => {
+      const binding = functionScope.bindings[name];
+      if (binding) {
+        binding.referencePaths.forEach((refPath) => {
+          handleFunctionCall(refPath, updates, errors, file, importMap);
+        });
+      }
+    });
   }
 }
 
@@ -435,29 +509,7 @@ export function parseStrings(
   file: string
 ): void {
   // First, collect all imports in this file to track cross-file function calls
-  const importMap = new Map<string, string>(); // functionName -> importPath
-
-  path.scope.getProgramParent().path.traverse({
-    ImportDeclaration(importPath) {
-      if (t.isStringLiteral(importPath.node.source)) {
-        const importSource = importPath.node.source.value;
-        importPath.node.specifiers.forEach((spec) => {
-          if (
-            t.isImportSpecifier(spec) &&
-            t.isIdentifier(spec.imported) &&
-            t.isIdentifier(spec.local)
-          ) {
-            importMap.set(spec.local.name, importSource);
-          } else if (
-            t.isImportDefaultSpecifier(spec) &&
-            t.isIdentifier(spec.local)
-          ) {
-            importMap.set(spec.local.name, importSource);
-          }
-        });
-      }
-    },
-  });
+  const importMap = buildImportMap(path.scope.getProgramParent().path);
 
   const referencePaths = path.scope.bindings[importName]?.referencePaths || [];
 
