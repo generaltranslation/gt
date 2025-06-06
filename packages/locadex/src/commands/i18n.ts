@@ -1,4 +1,4 @@
-import { createSpinner, displayHeader } from '../logging/console.js';
+import { createSpinner } from '../logging/console.js';
 import { allMcpPrompt } from '../prompts/system.js';
 
 import { logger } from '../logging/logger.js';
@@ -11,14 +11,11 @@ import {
 import { configureAgent } from '../utils/agentManager.js';
 import {
   addFilesToManager,
-  cleanUp,
   markFileAsEdited,
   markFileAsInProgress,
 } from '../utils/getFiles.js';
 import { outro } from '@clack/prompts';
 import chalk from 'chalk';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { readdirSync, statSync } from 'node:fs';
 import { EXCLUDED_DIRS } from '../utils/shared.js';
 import { validateInitialConfig } from '../utils/validateConfig.js';
@@ -192,7 +189,7 @@ function getPrompt({
 }) {
   const prompt = `# Task: Internationalize the target file using gt-next.
 
---- INSTRUCTIONS ---
+Here are the details of your instructions:
 
 - You are given a list of target files and a list of dependency/dependent files.
 - The project is already setup for internationalization. You do not need to setup the project again for i18n.
