@@ -105,6 +105,44 @@ function processTranslationCall(
 }
 
 /**
+ * Extracts the parameter name from a function parameter node, handling TypeScript annotations.
+ */
+function extractParameterName(param: t.Node): string | null {
+  if (t.isIdentifier(param)) {
+    return param.name;
+  }
+  return null;
+}
+
+/**
+ * Processes a function if it matches the target name and has enough parameters.
+ */
+function processFunctionIfMatches(
+  functionName: string,
+  argIndex: number,
+  functionNode: t.Function,
+  functionPath: NodePath,
+  updates: Updates,
+  errors: string[],
+  filePath: string
+): void {
+  if (functionNode.params.length > argIndex) {
+    const param = functionNode.params[argIndex];
+    const paramName = extractParameterName(param);
+
+    if (paramName) {
+      findFunctionParameterUsage(
+        functionPath,
+        paramName,
+        updates,
+        errors,
+        filePath
+      );
+    }
+  }
+}
+
+/**
  * Finds all usages of a function parameter within a function's scope and processes
  * any translation calls made with that parameter.
  *
@@ -183,6 +221,22 @@ function resolveImportPath(
   try {
     return resolve.sync(importPath, { basedir, extensions });
   } catch {
+    // If resolution fails, try to manually replace .js/.jsx with .ts/.tsx for source files
+    if (importPath.endsWith('.js')) {
+      const tsPath = importPath.replace(/\.js$/, '.ts');
+      try {
+        return resolve.sync(tsPath, { basedir, extensions });
+      } catch {
+        // Continue to return null
+      }
+    } else if (importPath.endsWith('.jsx')) {
+      const tsxPath = importPath.replace(/\.jsx$/, '.tsx');
+      try {
+        return resolve.sync(tsxPath, { basedir, extensions });
+      } catch {
+        // Continue to return null
+      }
+    }
     return null;
   }
 }
@@ -209,45 +263,19 @@ function findFunctionInFile(
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
     });
-
     traverse(ast, {
       // Handle function declarations: function getInfo(t) { ... }
       FunctionDeclaration(path) {
-        if (
-          path.node.id?.name === functionName &&
-          path.node.params.length > argIndex
-        ) {
-          const param = path.node.params[argIndex];
-          if (t.isIdentifier(param)) {
-            findFunctionParameterUsage(
-              path,
-              param.name,
-              updates,
-              errors,
-              filePath
-            );
-          }
-        }
-      },
-      // Handle exported function declarations: export function getInfo(t) { ... }
-      ExportNamedDeclaration(path) {
-        if (
-          path.node.declaration &&
-          t.isFunctionDeclaration(path.node.declaration)
-        ) {
-          const func = path.node.declaration;
-          if (func.id?.name === functionName && func.params.length > argIndex) {
-            const param = func.params[argIndex];
-            if (t.isIdentifier(param)) {
-              findFunctionParameterUsage(
-                path.get('declaration') as NodePath,
-                param.name,
-                updates,
-                errors,
-                filePath
-              );
-            }
-          }
+        if (path.node.id?.name === functionName) {
+          processFunctionIfMatches(
+            functionName,
+            argIndex,
+            path.node,
+            path,
+            updates,
+            errors,
+            filePath
+          );
         }
       },
       // Handle variable declarations: const getInfo = (t) => { ... }
@@ -257,20 +285,18 @@ function findFunctionInFile(
           path.node.id.name === functionName &&
           path.node.init &&
           (t.isArrowFunctionExpression(path.node.init) ||
-            t.isFunctionExpression(path.node.init)) &&
-          path.node.init.params.length > argIndex
+            t.isFunctionExpression(path.node.init))
         ) {
-          const param = path.node.init.params[argIndex];
-          if (t.isIdentifier(param)) {
-            const initPath = path.get('init') as NodePath;
-            findFunctionParameterUsage(
-              initPath,
-              param.name,
-              updates,
-              errors,
-              filePath
-            );
-          }
+          const initPath = path.get('init') as NodePath;
+          processFunctionIfMatches(
+            functionName,
+            argIndex,
+            path.node.init,
+            initPath,
+            updates,
+            errors,
+            filePath
+          );
         }
       },
     });
@@ -375,18 +401,15 @@ export function parseStrings(
 
               if (calleeBinding && calleeBinding.path.isFunction()) {
                 const functionPath = calleeBinding.path;
-                const params = functionPath.node.params;
-
-                if (params[argIndex] && t.isIdentifier(params[argIndex])) {
-                  const paramName = params[argIndex].name;
-                  findFunctionParameterUsage(
-                    functionPath,
-                    paramName,
-                    updates,
-                    errors,
-                    file
-                  );
-                }
+                processFunctionIfMatches(
+                  callee.name,
+                  argIndex,
+                  functionPath.node,
+                  functionPath,
+                  updates,
+                  errors,
+                  file
+                );
               }
               // If not found locally, check if it's an imported function
               else if (importMap.has(callee.name)) {
