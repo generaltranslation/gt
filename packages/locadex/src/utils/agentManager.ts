@@ -12,6 +12,7 @@ export interface LocadexMetadata {
   createdAt: string;
   locadexVersion: string;
   workingDirectory: string;
+  projectName: string;
   transport: 'sse' | 'stdio';
   tempDirectory: string;
   nodeVersion: string;
@@ -72,6 +73,7 @@ export class LocadexManager {
       createdAt: new Date().toISOString(),
       locadexVersion: JSON.parse(fs.readFileSync(fromPackageRoot('package.json'), 'utf8')).version,
       workingDirectory: cwd,
+      projectName: path.basename(cwd),
       transport: options.mcpTransport,
       tempDirectory: this.tempDir,
       nodeVersion: process.version,
