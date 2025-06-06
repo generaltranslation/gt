@@ -15,6 +15,7 @@ import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { createOrUpdateConfig } from 'gtx-cli/fs/config/setupConfig';
 import { i18nCommand } from './i18n.js';
 import { validateInitialConfig } from '../utils/validateConfig.js';
+import { getNextDirectories } from '../utils/fs/getFiles.js';
 
 export async function setupCommand(batchSize: number) {
   validateInitialConfig();
@@ -64,7 +65,7 @@ export async function setupCommand(batchSize: number) {
   // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
   const { filesUpdated: filesUpdatedNext } = await wrapContentNext(
     {
-      src: findFilepaths(['./src', './app']),
+      src: getNextDirectories(),
       config: nextConfigPath,
       disableIds: true,
       disableFormatting: true,
@@ -77,7 +78,7 @@ export async function setupCommand(batchSize: number) {
   );
   filesUpdated = [...filesUpdated, ...filesUpdatedNext];
 
-  babel.stop(chalk.green(`Success! Modified ${filesUpdated.length} files.`));
+  babel.stop(chalk.green(`Modified ${filesUpdated.length} files.`));
   // Add the withGTConfig() function to the next.config.js file
   await handleInitGT(nextConfigPath, errors, warnings, filesUpdated);
   logger.step(
