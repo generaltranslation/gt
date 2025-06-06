@@ -12,6 +12,8 @@ import { logger } from '../logging/logger.js';
 export interface FileEntry {
   path: string;
   addedAt: string;
+  setToInProgressAt: string | null;
+  setToEditedAt: string | null;
   status: 'pending' | 'in_progress' | 'edited';
 }
 
@@ -37,14 +39,24 @@ function addFileToList(
 ): void {
   const files = getFileList(stateFilePath);
   const existingIndex = files.findIndex((f) => f.path === filePath);
+  const now = new Date().toISOString();
 
   if (existingIndex >= 0) {
-    files[existingIndex].status = status;
-    files[existingIndex].addedAt = new Date().toISOString();
+    const file = files[existingIndex];
+    const previousStatus = file.status;
+    file.status = status;
+    
+    if (status === 'in_progress' && previousStatus !== 'in_progress') {
+      file.setToInProgressAt = now;
+    } else if (status === 'edited' && previousStatus !== 'edited') {
+      file.setToEditedAt = now;
+    }
   } else {
     files.push({
       path: filePath,
-      addedAt: new Date().toISOString(),
+      addedAt: now,
+      setToInProgressAt: status === 'in_progress' ? now : null,
+      setToEditedAt: status === 'edited' ? now : null,
       status,
     });
   }
@@ -166,6 +178,8 @@ export function addNextJsFilesToManager(
 export function getCurrentFileList(stateFilePath: string): {
   path: string;
   addedAt: string;
+  setToInProgressAt: string | null;
+  setToEditedAt: string | null;
   status: 'pending' | 'in_progress' | 'edited';
 }[] {
   return getFileList(stateFilePath);
