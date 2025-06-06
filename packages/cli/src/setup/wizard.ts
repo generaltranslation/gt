@@ -13,7 +13,7 @@ import { wrapContentReact } from '../react/parse/wrapContent';
 import { wrapContentNext } from '../next/parse/wrapContent';
 import { getPackageManager } from '../utils/packageManager';
 import { installPackage } from '../utils/installPackage';
-import createOrUpdateConfig from '../fs/config/setupConfig';
+import { createOrUpdateConfig } from '../fs/config/setupConfig';
 
 export async function handleSetupReactCommand(
   options: SetupOptions

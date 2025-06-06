@@ -9,7 +9,7 @@ import { FilesOptions, SupportedFrameworks } from '../../types';
  * @param {string} configFilepath - The path to the config file.
  * @param {Record<string, any>} configObject - The config object to write if the file does not exist.
  */
-export default async function createOrUpdateConfig(
+export async function createOrUpdateConfig(
   configFilepath: string,
   options: {
     projectId?: string;

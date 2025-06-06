@@ -1,5 +1,5 @@
 import { program } from 'commander';
-import createOrUpdateConfig from '../fs/config/setupConfig';
+import { createOrUpdateConfig } from '../fs/config/setupConfig';
 import findFilepath, { findFilepaths, readFile } from '../fs/findFilepath';
 import {
   displayHeader,

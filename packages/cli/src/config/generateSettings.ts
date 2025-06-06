@@ -8,7 +8,7 @@ import {
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
 import fs from 'node:fs';
-import createOrUpdateConfig from '../fs/config/setupConfig';
+import { createOrUpdateConfig } from '../fs/config/setupConfig';
 import { resolveFiles } from '../fs/config/parseFilesConfig';
 import { findFilepaths } from '../fs/findFilepath';
 import { validateSettings } from './validateSettings';

@@ -27,17 +27,18 @@ program
   .version(packageJson.version)
   .option('-v, --verbose', 'Verbose output')
   .option('-d, --debug', 'Debug output')
+  .option('-b, --batch-size <number>', 'Batch size', '1')
   .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions) => {
     withTelemetry({ enabled: !options.noTelemetry, options }, () => {
       logger.initialize(options);
-      setupCommand();
+      setupCommand(Number(options.batchSize) || 1);
     });
   });
 
 program
   .command('setup')
-  .description('Set up locadex for your project')
+  .description('Run Locadex on your project')
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
     const allOptions = { ...parentOptions, ...options };
@@ -45,15 +46,14 @@ program
       { enabled: !allOptions.noTelemetry, options: allOptions },
       () => {
         logger.initialize(allOptions);
-        setupCommand();
+        setupCommand(Number(allOptions.batchSize) || 1);
       }
     );
   });
 
 program
   .command('i18n')
-  .description('Run AI-powered dependency graph analysis')
-  .option('-b, --batch-size <number>', 'Batch size', '1')
+  .description('Run Locadex i18n on your project')
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
     const allOptions = { ...parentOptions, ...options };
