@@ -21,7 +21,11 @@ export function _getLocaleName(
   try {
     const standardizedLocale = _standardizeLocale(locale);
     if (customMapping) {
-      for (const l of [locale, standardizedLocale, intlCache.get('Locale', standardizedLocale).language]) {
+      for (const l of [
+        locale,
+        standardizedLocale,
+        intlCache.get('Locale', standardizedLocale).language,
+      ]) {
         const customName = getCustomProperty(customMapping, l, 'name');
         if (customName) return customName;
       }
