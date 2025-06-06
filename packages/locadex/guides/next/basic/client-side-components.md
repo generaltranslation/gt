@@ -1,5 +1,11 @@
 # Client-Side Component Internationalization Guide
 
+RULES:
+
+- NEVER INTERNATIONALIZE ERROR STRINGS OR OTHER FUNCTIONAL STRINGS
+- Always use `<T>` for HTML/JSX content
+- Always add `'use client'` when working with `useGT()` and `useDict()`
+
 ## Available Methods
 
 Three methods exist for internationalizing client-side components:

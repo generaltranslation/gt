@@ -25,7 +25,6 @@ const DEFAULT_ALLOWED_TOOLS = [
   'MultiEdit',
   'Write',
 ].concat(guides.map((guide) => `mcp__locadex__${guide.id}`));
-// .concat(Object.keys(fileManagerTools).map((key) => `mcp__locadex__${key}`));
 
 const DISALLOWED_TOOLS = ['NotebookEdit', 'WebFetch', 'WebSearch'];
 

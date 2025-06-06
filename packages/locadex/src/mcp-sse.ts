@@ -5,7 +5,6 @@ import { addDocsTools } from './mcp/tools/docs.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
 import { addGuidesTools } from './mcp/tools/guides.js';
-import { addFileManagerTools } from './mcp/tools/fileManager.js';
 import express from 'express';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
@@ -46,7 +45,6 @@ export async function start() {
 
   addDocsTools(mcpServer);
   addGuidesTools(mcpServer);
-  addFileManagerTools(mcpServer, stateFile);
 
   // SSE endpoint for legacy clients
   // Claude Code only supports SSE as of 2025-06-04
