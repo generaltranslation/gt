@@ -115,10 +115,92 @@ function extractParameterName(param: t.Node): string | null {
 }
 
 /**
- * Processes a function if it matches the target name and has enough parameters.
+ * Handles how translation callbacks are used within code.
+ * This covers both direct translation calls (t('hello')) and prop drilling
+ * where the translation callback is passed to other functions (getData(t)).
+ */
+function handleFunctionCall(
+  tPath: NodePath,
+  updates: Updates,
+  errors: string[],
+  file: string,
+  importMap: Map<string, string>
+): void {
+  if (
+    tPath.parent.type === 'CallExpression' &&
+    tPath.parent.callee === tPath.node
+  ) {
+    // Direct translation call: t('hello')
+    processTranslationCall(tPath, updates, errors, file);
+  } else if (
+    tPath.parent.type === 'CallExpression' &&
+    t.isExpression(tPath.node) &&
+    tPath.parent.arguments.includes(tPath.node)
+  ) {
+    // Parameter passed to another function: getData(t)
+    const argIndex = tPath.parent.arguments.indexOf(tPath.node);
+    const callee = tPath.parent.callee;
+
+    if (t.isIdentifier(callee)) {
+      const calleeBinding = tPath.scope.getBinding(callee.name);
+
+      if (calleeBinding && calleeBinding.path.isFunction()) {
+        const functionPath = calleeBinding.path;
+        processFunctionIfMatches(
+          callee.name,
+          argIndex,
+          functionPath.node,
+          functionPath,
+          updates,
+          errors,
+          file
+        );
+      }
+      // Handle arrow functions assigned to variables: const getData = (t) => {...}
+      else if (
+        calleeBinding &&
+        calleeBinding.path.isVariableDeclarator() &&
+        calleeBinding.path.node.init &&
+        (t.isArrowFunctionExpression(calleeBinding.path.node.init) ||
+          t.isFunctionExpression(calleeBinding.path.node.init))
+      ) {
+        const initPath = calleeBinding.path.get('init') as NodePath;
+        processFunctionIfMatches(
+          callee.name,
+          argIndex,
+          calleeBinding.path.node.init,
+          initPath,
+          updates,
+          errors,
+          file
+        );
+      }
+      // If not found locally, check if it's an imported function
+      else if (importMap.has(callee.name)) {
+        const importPath = importMap.get(callee.name)!;
+        const resolvedPath = resolveImportPath(file, importPath);
+
+        if (resolvedPath) {
+          findFunctionInFile(
+            resolvedPath,
+            callee.name,
+            argIndex,
+            updates,
+            errors
+          );
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Processes a user-defined function that receives a translation callback as a parameter.
+ * Validates the function has enough parameters and traces how the translation callback
+ * is used within that function's body.
  */
 function processFunctionIfMatches(
-  functionName: string,
+  _functionName: string,
   argIndex: number,
   functionNode: t.Function,
   functionPath: NodePath,
@@ -143,10 +225,12 @@ function processFunctionIfMatches(
 }
 
 /**
- * Finds all usages of a function parameter within a function's scope and processes
- * any translation calls made with that parameter.
+ * Finds all usages of a translation callback parameter within a user-defined function's scope.
+ * Processes both direct translation calls and cases where the translation callback is passed
+ * to other functions (prop drilling).
  *
  * Example: In function getInfo(t) { return t('hello'); }, this finds the t('hello') call.
+ * Example: In function getData(t) { return getFooter(t); }, this finds and traces into getFooter.
  */
 function findFunctionParameterUsage(
   functionPath: NodePath,
@@ -161,8 +245,33 @@ function findFunctionParameterUsage(
     const binding = functionScope.bindings[parameterName];
 
     if (binding) {
+      // Build import map for this function's scope to handle cross-file calls
+      const importMap = new Map<string, string>();
+      const programPath = functionPath.scope.getProgramParent().path;
+      programPath.traverse({
+        ImportDeclaration(importPath) {
+          if (t.isStringLiteral(importPath.node.source)) {
+            const importSource = importPath.node.source.value;
+            importPath.node.specifiers.forEach((spec) => {
+              if (
+                t.isImportSpecifier(spec) &&
+                t.isIdentifier(spec.imported) &&
+                t.isIdentifier(spec.local)
+              ) {
+                importMap.set(spec.local.name, importSource);
+              } else if (
+                t.isImportDefaultSpecifier(spec) &&
+                t.isIdentifier(spec.local)
+              ) {
+                importMap.set(spec.local.name, importSource);
+              }
+            });
+          }
+        },
+      });
+
       binding.referencePaths.forEach((refPath) => {
-        processTranslationCall(refPath, updates, errors, file);
+        handleFunctionCall(refPath, updates, errors, file, importMap);
       });
     }
   }
@@ -242,8 +351,8 @@ function resolveImportPath(
 }
 
 /**
- * Searches for a specific function in a file and analyzes how a particular parameter
- * (at argIndex position) is used within that function for translation calls.
+ * Searches for a specific user-defined function in a file and analyzes how a translation callback
+ * parameter (at argIndex position) is used within that function.
  *
  * Handles multiple function declaration patterns:
  * - function getInfo(t) { ... }
@@ -310,13 +419,13 @@ function findFunctionInFile(
  *
  * Supports complex patterns including:
  * 1. Direct calls: const t = useGT(); t('hello');
- * 2. Function parameters: const t = useGT(); getInfo(t); where getInfo uses t() internally
- * 3. Cross-file function calls: imported functions that receive t as a parameter
+ * 2. Translation callback prop drilling: const t = useGT(); getInfo(t); where getInfo uses t() internally
+ * 3. Cross-file function calls: imported functions that receive the translation callback as a parameter
  *
  * Example flow:
  * - const t = useGT();
  * - const { home } = getInfo(t); // getInfo is imported from './constants'
- * - This will parse constants.ts to find t() calls within getInfo function
+ * - This will parse constants.ts to find translation calls within getInfo function
  */
 export function parseStrings(
   importName: string,
@@ -376,76 +485,7 @@ export function parseStrings(
           variableScope.bindings[tFuncName]?.referencePaths || [];
 
         for (const tPath of tReferencePaths) {
-          // Check if this is a direct call to the translation function
-          if (
-            tPath.parent.type === 'CallExpression' &&
-            tPath.parent.callee === tPath.node
-          ) {
-            processTranslationCall(tPath, updates, errors, file);
-          }
-          // Check if this is being passed as an argument to another function
-          else if (
-            tPath.parent.type === 'CallExpression' &&
-            t.isExpression(tPath.node) &&
-            tPath.parent.arguments.includes(tPath.node)
-          ) {
-            // Find which parameter position this is
-            const argIndex = tPath.parent.arguments.indexOf(tPath.node);
-
-            // Try to find the function definition being called
-            const callee = tPath.parent.callee;
-
-            if (t.isIdentifier(callee)) {
-              // Look for function declarations or function expressions with this name
-              const calleeBinding = tPath.scope.getBinding(callee.name);
-              if (calleeBinding && calleeBinding.path.isFunction()) {
-                const functionPath = calleeBinding.path;
-                processFunctionIfMatches(
-                  callee.name,
-                  argIndex,
-                  functionPath.node,
-                  functionPath,
-                  updates,
-                  errors,
-                  file
-                );
-              }
-              // Handle arrow functions assigned to variables: const getData = (t) => {...}
-              else if (
-                calleeBinding &&
-                calleeBinding.path.isVariableDeclarator() &&
-                calleeBinding.path.node.init &&
-                (t.isArrowFunctionExpression(calleeBinding.path.node.init) ||
-                  t.isFunctionExpression(calleeBinding.path.node.init))
-              ) {
-                const initPath = calleeBinding.path.get('init') as NodePath;
-                processFunctionIfMatches(
-                  callee.name,
-                  argIndex,
-                  calleeBinding.path.node.init,
-                  initPath,
-                  updates,
-                  errors,
-                  file
-                );
-              }
-              // If not found locally, check if it's an imported function
-              else if (importMap.has(callee.name)) {
-                const importPath = importMap.get(callee.name)!;
-                const resolvedPath = resolveImportPath(file, importPath);
-
-                if (resolvedPath) {
-                  findFunctionInFile(
-                    resolvedPath,
-                    callee.name,
-                    argIndex,
-                    updates,
-                    errors
-                  );
-                }
-              }
-            }
-          }
+          handleFunctionCall(tPath, updates, errors, file, importMap);
         }
       }
     }
