@@ -138,9 +138,10 @@ export async function i18nCommand(batchSize: number) {
     tasks.forEach((task) => markFileAsEdited(task, filesStateFilePath));
   }
 
-  // Always clean up the file list when done, regardless of success or failure
-  logger.info(`[dagCommand] Cleaning up file list: ${stateFilePath}`);
-  cleanUp(stateFilePath);
+  // TODO: uncomment
+  // // Always clean up the file list when done, regardless of success or failure
+  // logger.info(`[dagCommand] Cleaning up file list: ${stateFilePath}`);
+  // cleanUp(stateFilePath);
 
   // If there was an error, exit with code 1
   if (hasError) {
@@ -149,28 +150,13 @@ export async function i18nCommand(batchSize: number) {
   }
 
   // Fix prompt
-  let fixPrompt: string | undefined = undefined;
+  const fixPrompt = getFixPrompt();
   try {
-    const dryRunResults = await promisify(exec)(
-      'npx gtx-cli translate --dry-run'
-    );
-    const tsCheckResults = await promisify(exec)('npx tsc --noEmit');
-    fixPrompt = getFixPrompt(dryRunResults.stdout, tsCheckResults.stdout);
+    await agent.run({ prompt: fixPrompt, sessionId }, { spinner });
   } catch (error) {
-    logger.debugMessage(
-      `[dagCommand] Generating linter prompt failed: ${error}`
-    );
+    logger.debugMessage(`[dagCommand] Fixing errors failed: ${error}`);
     outro(chalk.red('❌ Locadex i18n failed!'));
     process.exit(1);
-  }
-  if (fixPrompt) {
-    try {
-      await agent.run({ prompt: fixPrompt, sessionId }, { spinner });
-    } catch (error) {
-      logger.debugMessage(`[dagCommand] Fixing errors failed: ${error}`);
-      outro(chalk.red('❌ Locadex i18n failed!'));
-      process.exit(1);
-    }
   }
 
   // Generate report
@@ -260,15 +246,13 @@ ${allMcpPrompt}
 
 // check (dry run and ts check) should be at the end
 
-function getFixPrompt(dryRunResults: string, tsCheckResults: string) {
+function getFixPrompt() {
   const prompt = `--- INSTRUCTIONS ---
   
-  - You are also given the results of a special gt-next linter.
-  - You are also given the results of a ts check.
-
   Your task is as follows:
-  (1) You need to fix all errors relevant to the gt implementation code (either from the gt-next linter or the ts check).
-  (2) Whenever you are finished with your changes please run the gt-next linter and ts check again.
+  Start by running the gt-next linter (and ts type check if there are ts/tsx files).
+  (1) You need to fix all errors relevant to the gt implementation code.
+  (2) Whenever you are finished with your changes please run the gt-next linter (and ts type check if applicable).
   (3) Repeat steps 1-2 until there are no more errors or until you believe that you have fixed all errors.
 
   Rules:
@@ -276,16 +260,7 @@ function getFixPrompt(dryRunResults: string, tsCheckResults: string) {
   - ONLY fix errors that are relevant to the gt implementation code and your implementation.
 
   To run the gt-next linter, run the following command:
-  'npx gtx-cli translate --dry-run'
-  To run the ts check, run the following command:
-  'npx tsc --noEmit'
-
-  --- ORIGINAL LINTING RESULTS ---
-  ${dryRunResults}
-
-  --- ORIGINAL TS CHECK RESULTS ---
-  ${tsCheckResults}
-  `;
+  'npx gtx-cli translate --dry-run'and is appropriate for the files you have modified.`;
 
   return prompt;
 }
