@@ -247,9 +247,7 @@ ${allMcpPrompt}
 // check (dry run and ts check) should be at the end
 
 function getFixPrompt() {
-  const prompt = `--- INSTRUCTIONS ---
-  
-  Your task is as follows:
+  const prompt = `Your new task is as follows:
   Start by running the gt-next linter (and ts type check if there are ts/tsx files).
   (1) You need to fix all errors relevant to the gt implementation code.
   (2) Whenever you are finished with your changes please run the gt-next linter (and ts type check if applicable).
@@ -260,14 +258,13 @@ function getFixPrompt() {
   - ONLY fix errors that are relevant to the gt implementation code and your implementation.
 
   To run the gt-next linter, run the following command:
-  'npx gtx-cli translate --dry-run'and is appropriate for the files you have modified.`;
+  'npx locadex translate --dry-run'and is appropriate for the files you have modified.`;
 
   return prompt;
 }
 
 function getReportPrompt() {
-  const prompt = `--- INSTRUCTIONS ---
-
+  const prompt = `Your new task is as follows:
 - Please add a markdown file called 'locadex-report.md' to the root of the project.
 - The report should include a summary of the changes you made to the project.
 - A list of items the user needs to complete to finish the internationalization process (adding env vars, etc.).`;
