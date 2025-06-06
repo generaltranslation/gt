@@ -1,8 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { logger } from '../../logging/logger.js';
 
-export function findTsConfig(): string | null {
+export function findTsConfig(): string | undefined {
   const cwd = process.cwd();
   const possiblePaths = [
     path.join(cwd, 'tsconfig.json'),
@@ -16,10 +15,10 @@ export function findTsConfig(): string | null {
     }
   }
 
-  return null;
+  return undefined;
 }
 
-export function findWebpackConfig(): string | null {
+export function findWebpackConfig(): string | undefined {
   const cwd = process.cwd();
   const possiblePaths = [
     path.join(cwd, 'webpack.config.js'),
@@ -34,7 +33,7 @@ export function findWebpackConfig(): string | null {
     }
   }
 
-  return null;
+  return undefined;
 }
 /**
  * Resolve the file paths from the given file paths or default paths.
@@ -42,6 +41,22 @@ export function findWebpackConfig(): string | null {
  * @param {string} errorMessage - The error message to throw if no paths are found.
  * @returns {string[]} - The resolved file paths.
  */
+export function findRequireConfig(): string | undefined {
+  const cwd = process.cwd();
+  const possiblePaths = [
+    path.join(cwd, 'require.config.js'),
+    path.join(cwd, 'requirejs.config.js'),
+  ];
+
+  for (const configPath of possiblePaths) {
+    if (fs.existsSync(configPath)) {
+      return configPath;
+    }
+  }
+
+  return undefined;
+}
+
 export function findFilepaths(paths: string[]): string[] {
   const resolvedPaths: string[] = [];
   for (const possiblePath of paths) {

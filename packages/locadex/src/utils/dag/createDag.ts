@@ -6,6 +6,7 @@ import * as path from 'node:path';
 export type DagOptions = {
   tsConfig?: string;
   webpackConfig?: string;
+  requireConfig?: string;
 };
 
 export type DagNode = {
@@ -136,6 +137,7 @@ export function createDag(directories: string[], options: DagOptions): Dag {
         nonExistent: nonExistent,
         tsConfig: options.tsConfig,
         webpackConfig: options.webpackConfig,
+        requireConfig: options.requireConfig,
       });
       allTrees.push(tree);
     } catch (error) {

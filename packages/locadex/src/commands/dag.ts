@@ -4,9 +4,9 @@ import { allMcpPrompt } from '../prompts/system.js';
 import { logger } from '../logging/logger.js';
 import { createDag } from '../utils/dag/createDag.js';
 import {
-  findFilepaths,
   findTsConfig,
   findWebpackConfig,
+  findRequireConfig,
 } from '../utils/fs/findConfigs.js';
 import { configureAgent } from '../utils/agentManager.js';
 import {
@@ -52,8 +52,9 @@ export async function dagCommand(batchSize: number) {
     'getCurrentDirectories(): ' + getCurrentDirectories().join(', ')
   );
   const dag = createDag(getCurrentDirectories(), {
-    tsConfig: findTsConfig() || undefined,
-    webpackConfig: findWebpackConfig() || undefined,
+    tsConfig: findTsConfig(),
+    webpackConfig: findWebpackConfig(),
+    requireConfig: findRequireConfig(),
   });
 
   logger.info(
