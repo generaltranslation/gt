@@ -1,4 +1,8 @@
-import { createSpinner, displayHeader } from '../logging/console.js';
+import {
+  createSpinner,
+  displayHeader,
+  promptConfirm,
+} from '../logging/console.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 import { getPackageManager } from 'gtx-cli/utils/packageManager';
 import { installPackage } from 'gtx-cli/utils/installPackage';
@@ -14,6 +18,17 @@ import { validateInitialConfig } from '../utils/validateConfig.js';
 
 export async function setupCommand(batchSize: number) {
   validateInitialConfig();
+  const answer = await promptConfirm({
+    message: chalk.yellow(
+      `Locadex will modify files! Make sure you have committed or stashed any changes. Do you want to continue?`
+    ),
+    defaultValue: true,
+    cancelMessage: 'Operation cancelled.',
+  });
+  if (!answer) {
+    logger.info('Operation cancelled.');
+    process.exit(0);
+  }
 
   const packageJson = await getPackageJson();
   const packageManager = await getPackageManager();
