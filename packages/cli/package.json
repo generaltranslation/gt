@@ -49,6 +49,9 @@
     },
     "./*": {
       "import": "./dist/*.js"
+    },
+    "./utils/*": {
+      "import": "./dist/utils/*.js"
     }
   },
   "repository": {

@@ -31,7 +31,7 @@ program
   .action((options: CliOptions) => {
     withTelemetry({ enabled: !options.noTelemetry, options }, () => {
       logger.initialize(options);
-      setupCommand(1);
+      setupCommand();
     });
   });
 
@@ -45,7 +45,7 @@ program
       { enabled: !allOptions.noTelemetry, options: allOptions },
       () => {
         logger.initialize(allOptions);
-        setupCommand(1);
+        setupCommand();
       }
     );
   });

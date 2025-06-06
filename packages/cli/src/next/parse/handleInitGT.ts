@@ -5,7 +5,7 @@ import traverse from '@babel/traverse';
 import * as t from '@babel/types';
 import { logError } from '../../console';
 
-export default async function handleInitGT(
+export async function handleInitGT(
   filepath: string,
   errors: string[],
   warnings: string[],

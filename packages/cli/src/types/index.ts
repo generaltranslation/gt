@@ -37,6 +37,7 @@ export type Options = {
 export type WrapOptions = {
   src: string[];
   config: string;
+  skipTs: boolean;
   disableIds: boolean;
   disableFormatting: boolean;
   addGTProvider: boolean;

@@ -1,6 +1,6 @@
 import { WrapOptions, SupportedFrameworks, SupportedLibraries } from '../types';
 import { ReactCLI } from './react';
-import wrapContentNext from '../next/parse/wrapContent';
+import { wrapContentNext } from '../next/parse/wrapContent';
 
 const pkg = 'gt-next';
 

@@ -126,7 +126,7 @@ export async function promptText({
     placeholder: defaultValue,
     validate: validate
       ? (value) => {
-          const validation = validate(value);
+          const validation = validate(value || '');
           return validation === true ? undefined : validation.toString();
         }
       : undefined,

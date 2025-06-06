@@ -36,7 +36,7 @@ const IMPORT_MAP = {
  * @param options - The options object
  * @returns An object containing the updates and errors
  */
-export default async function wrapContentNext(
+export async function wrapContentNext(
   options: WrapOptions,
   pkg: 'gt-next',
   errors: string[],
@@ -129,6 +129,10 @@ export default async function wrapContentNext(
           usedImports.push('GTProvider');
           modified = true;
           path.skip();
+          return;
+        }
+        // If skip wrapping Ts, skip processing this node
+        if (options.skipTs) {
           return;
         }
         // Check if this JSX element has any JSX element ancestors

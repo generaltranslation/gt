@@ -7,10 +7,10 @@ import { SetupOptions, SupportedFrameworks } from '../types';
 import findFilepath from '../fs/findFilepath';
 import { generateSettings } from '../config/generateSettings';
 import { formatFiles } from '../hooks/postProcess';
-import handleInitGT from '../next/parse/handleInitGT';
+import { handleInitGT } from '../next/parse/handleInitGT';
 import { getPackageJson, isPackageInstalled } from '../utils/packageJson';
-import wrapContentReact from '../react/parse/wrapContent';
-import wrapContentNext from '../next/parse/wrapContent';
+import { wrapContentReact } from '../react/parse/wrapContent';
+import { wrapContentNext } from '../next/parse/wrapContent';
 import { getPackageManager } from '../utils/packageManager';
 import { installPackage } from '../utils/installPackage';
 import createOrUpdateConfig from '../fs/config/setupConfig';
@@ -122,6 +122,7 @@ Please let us know what you would like to see supported at https://github.com/ge
       ...options,
       disableIds: !includeTId,
       disableFormatting: true,
+      skipTs: false,
       addGTProvider,
     };
     const spinner = createSpinner();
@@ -184,6 +185,7 @@ Please let us know what you would like to see supported at https://github.com/ge
       ...options,
       disableIds: !includeTId,
       disableFormatting: true,
+      skipTs: false,
       addGTProvider,
     };
     const spinner = createSpinner();

@@ -22,7 +22,7 @@ import findFilepath, { findFilepaths } from '../fs/findFilepath';
 import chalk from 'chalk';
 import { formatFiles } from '../hooks/postProcess';
 import { BaseCLI } from './base';
-import wrapContentReact from '../react/parse/wrapContent';
+import { wrapContentReact } from '../react/parse/wrapContent';
 import { generateSettings } from '../config/generateSettings';
 import { saveJSON } from '../fs/saveJSON';
 import { resolveLocaleFiles } from '../fs/config/parseFilesConfig';
@@ -248,6 +248,7 @@ export class ReactCLI extends BaseCLI {
         'Disable formatting of edited files',
         false
       )
+      .option('--skip-ts', 'Skip wrapping <T> tags in TypeScript files', false)
       .action(async (options: WrapOptions) => {
         displayHeader('Scanning project...');
         await this.handleScanCommand(options);
