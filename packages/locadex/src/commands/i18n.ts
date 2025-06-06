@@ -212,6 +212,7 @@ Here are the details of your instructions:
 - ALWAYS use the <T> component to internationalize HTML/JSX content.
 - ALWAYS use getGT() or useGT() and getDict() or useDict() to internationalize string content.
   - When possible, avoid using getDict() or useDict(); getGT() and useGT() are preferred.
+- DO NOT internationalize non-user facing content or content that is functional, such as ids, class names, etc.
 - Do not add i18n middleware to the app.
 - When adding 'useGT()' or 'useDict()' to a client component, you must add 'use client' to the top of the file.
 - Always adhere to the guides provided via the 'mcp__locadex__' tools.
@@ -221,9 +222,7 @@ Here are the details of your instructions:
 - NEVER move internationalized content to a different file. All content MUST remain in the same file where it came from.
 - NEVER CREATE OR REMOVE ANY FILES (especially .bak files)
 - Internationalize all user facing content in the target files. 
-- Do not internationalize content that is not user facing.
 - NEVER EDIT FILES THAT ARE NOT GIVEN TO YOU.
-
 
 --- TARGET FILE INFORMATION ---
 ${targetFile.map(
