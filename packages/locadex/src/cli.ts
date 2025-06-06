@@ -33,7 +33,7 @@ program
   .description('Run Locadex on your project')
   .option('-v, --verbose', 'Verbose output')
   .option('-d, --debug', 'Debug output')
-  .option('-b, --batch-size <number>', 'Batch size', '1')
+  .option('-b, --batch-size <number>', 'Batch size', '10')
   .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
@@ -53,7 +53,7 @@ program
   .description('Run Locadex i18n on your project')
   .option('-v, --verbose', 'Verbose output')
   .option('-d, --debug', 'Debug output')
-  .option('-b, --batch-size <number>', 'Batch size', '1')
+  .option('-b, --batch-size <number>', 'Batch size', '10')
   .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
