@@ -10,9 +10,10 @@ import { handleInitGT } from 'gtx-cli/next/parse/handleInitGT';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { createOrUpdateConfig } from 'gtx-cli/fs/config/setupConfig';
 import { i18nCommand } from './i18n.js';
+import { validateInitialConfig } from '../utils/validateConfig.js';
 
 export async function setupCommand(batchSize: number) {
-  displayHeader();
+  validateInitialConfig();
 
   const packageJson = await getPackageJson();
   const packageManager = await getPackageManager();

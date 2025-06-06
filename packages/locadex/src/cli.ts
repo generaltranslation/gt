@@ -14,6 +14,7 @@ import { CliOptions } from './types/cli.js';
 import { withTelemetry } from './telemetry.js';
 import { logger } from './logging/logger.js';
 import { i18nCommand } from './commands/i18n.js';
+import { displayHeader } from './logging/console.js';
 
 const packageJson = JSON.parse(
   readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -32,6 +33,7 @@ program
   .action((options: CliOptions) => {
     withTelemetry({ enabled: !options.noTelemetry, options }, () => {
       logger.initialize(options);
+      displayHeader();
       setupCommand(Number(options.batchSize) || 1);
     });
   });
@@ -46,6 +48,7 @@ program
       { enabled: !allOptions.noTelemetry, options: allOptions },
       () => {
         logger.initialize(allOptions);
+        displayHeader();
         setupCommand(Number(allOptions.batchSize) || 1);
       }
     );
@@ -61,6 +64,7 @@ program
       { enabled: !allOptions.noTelemetry, options: allOptions },
       () => {
         logger.initialize(allOptions);
+        displayHeader();
         i18nCommand(Number(allOptions.batchSize) || 1);
       }
     );

@@ -21,6 +21,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { readdirSync, statSync } from 'node:fs';
 import { EXCLUDED_DIRS } from '../utils/shared.js';
+import { validateInitialConfig } from '../utils/validateConfig.js';
 
 function getCurrentDirectories(): string[] {
   try {
@@ -42,9 +43,10 @@ function getCurrentDirectories(): string[] {
 }
 
 export async function i18nCommand(batchSize: number) {
+  validateInitialConfig();
+
   // Init message
   const spinner = createSpinner();
-  displayHeader();
   spinner.start('Initializing Locadex...');
 
   // Create DAG
