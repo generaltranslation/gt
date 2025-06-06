@@ -11,13 +11,14 @@ Apply this pattern when you encounter variable declarations (`let`, `const`, or 
 3. **Simple cases**: Move variables into component functions and use `useGT()` hook
 4. **Complex cases**: Create custom hooks to access internationalized strings
 5. **Always add "use client"**: Always add the "use client" directive when working with `useGT()`
+6. **For functions, always pass t**: For function declarations, always pass `t()` as a parameter
 
 Rule of thumb for implementation:
 
 - If data is being imported, wrap it in a function that takes `t()` as a parameter
 - If data is in the same file, you can either wrap it in a function or move it directly into the components that need it
 
-## Implementation Patterns
+## Implementation Patterns: Variables
 
 ### Pattern 1: Single Variable Outside Function
 
@@ -310,3 +311,136 @@ export default function MyComponent() {
 ## IMPORTANT
 
 Be careful to only modify non-functional strings. Avoid modifying functional strings such as ids.
+
+## Implementation Patterns: Functions
+
+### Pattern 1: Function in Same File
+
+**Scenario**: Function declared outside component scope within SAME FILE
+
+```jsx
+function getErrorMessage(errorType) {
+  switch (errorType) {
+    case 'network':
+      return 'Network connection failed';
+    case 'auth':
+      return 'Authentication failed';
+    default:
+      return 'Unknown error occurred';
+  }
+}
+
+export function Example() {
+  const [error, setError] = useState('network');
+  const message = getErrorMessage(error);
+
+  return <div>{message}</div>;
+}
+```
+
+**Solution**: Pass `t()` function as parameter to the function
+
+1. Add the `"use client"` directive
+2. Import `useGT()` from `'gt-next/client'`
+3. Modify the function to accept `t()` as a parameter
+4. Use `t()` for string translations within the function
+5. Pass `t()` when calling the function in the component
+
+```jsx
+'use client';
+import { useGT } from 'gt-next/client';
+
+function getErrorMessage(errorType, t: (string: string, options?: InlineTranslationOptions) => string) {
+  switch (errorType) {
+    case 'network':
+      return t('Network connection failed');
+    case 'auth':
+      return t('Authentication failed');
+    default:
+      return t('Unknown error occurred');
+  }
+}
+
+export function Example() {
+  const [error, setError] = useState('network');
+  const t = useGT();
+  const message = getErrorMessage(error, t);
+
+  return <div>{message}</div>;
+}
+```
+
+### Pattern 2: Function in Different File
+
+**Scenario**: Function exported from one file and imported in another (MULTIPLE FILES)
+
+```jsx title="utils.ts"
+export function formatStatus(status) {
+  switch (status) {
+    case 'pending':
+      return 'Pending approval';
+    case 'approved':
+      return 'Request approved';
+    case 'rejected':
+      return 'Request rejected';
+    default:
+      return 'Status unknown';
+  }
+}
+```
+
+```jsx title="StatusComponent.tsx"
+import { formatStatus } from './utils';
+
+export function StatusComponent() {
+  const [status, setStatus] = useState('pending');
+  const statusText = formatStatus(status);
+
+  return <div>{statusText}</div>;
+}
+```
+
+**Solution**: Modify function to accept `t()` parameter and pass it from component
+
+1. Modify the function in the utils file to accept `t()` as a parameter
+2. Use `t()` for string translations within the function
+3. Add the `"use client"` directive to the component file
+4. Import `useGT()` from `'gt-next/client'` in the component
+5. Pass `t()` when calling the imported function
+
+```jsx title="utils.ts"
+export function formatStatus(status, t: (string: string, options?: InlineTranslationOptions) => string) {
+  switch (status) {
+    case 'pending':
+      return t('Pending approval');
+    case 'approved':
+      return t('Request approved');
+    case 'rejected':
+      return t('Request rejected');
+    default:
+      return t('Status unknown');
+  }
+}
+```
+
+```jsx title="StatusComponent.tsx"
+'use client';
+import { useGT } from 'gt-next/client';
+import { formatStatus } from './utils';
+
+export function StatusComponent() {
+  const [status, setStatus] = useState('pending');
+  const t = useGT();
+  const statusText = formatStatus(status, t);
+
+  return <div>{statusText}</div>;
+}
+```
+
+**Common Pitfalls for Functions**
+
+- Forgetting to add the `t` parameter to the function signature
+- Not passing `t()` when calling the function
+- Forgetting to add `"use client"` directive when using `useGT()`
+- Modifying functional strings that shouldn't be translated (e.g., API keys, IDs)
+- Adding `"use client"` to utility files that should remain server-side compatible

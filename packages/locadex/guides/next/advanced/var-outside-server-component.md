@@ -11,6 +11,7 @@ Apply this pattern when you encounter variable declarations (`let`, `const`, or 
 3. **Simple cases**: For single-use cases, move variable into component and use `getGT()`
 4. **Complex cases**: For complex scenarios, create async function to access translated strings
 5. **Scope**: Only use this implementation for string translation (for HTML translation use ALWAYS `<T>`)
+6. **No adding async**: Never mark a function as async that wasn't already marked async (unless they are a component function)
 
 Rule of thumb for implementation:
 
@@ -288,3 +289,257 @@ export default async function MyComponent() {
 ## IMPORTANT
 
 Be careful to only modify non-functional strings. Avoid modifying functional strings such as ids.
+
+## Implementation Patterns: Functions
+
+### Pattern 1: Function in Same File
+
+**Scenario**: Function declared outside component scope within SAME FILE
+
+```jsx
+function getErrorMessage(errorType) {
+  switch (errorType) {
+    case 'network':
+      return 'Network connection failed';
+    case 'auth':
+      return 'Authentication failed';
+    default:
+      return 'Unknown error occurred';
+  }
+}
+
+export default function Example() {
+  const error = 'network';
+  const message = getErrorMessage(error);
+
+  return <div>{message}</div>;
+}
+```
+
+**Solution**: Pass `t()` function as parameter to the function
+
+1. Import `getGT()` from `'gt-next/server'`
+2. Modify the function to accept `t()` as a parameter
+3. Use `t()` for string translations within the function
+4. Make the component async and await `getGT()`
+5. Pass `t()` when calling the function in the component
+
+```jsx
+import { getGT } from 'gt-next/server';
+
+function getErrorMessage(errorType, t: (string: string, options?: InlineTranslationOptions) => string) {
+  switch (errorType) {
+    case 'network':
+      return t('Network connection failed');
+    case 'auth':
+      return t('Authentication failed');
+    default:
+      return t('Unknown error occurred');
+  }
+}
+
+export default async function Example() {
+  const error = 'network';
+  const t = await getGT();
+  const message = getErrorMessage(error, t);
+
+  return <div>{message}</div>;
+}
+```
+
+### Pattern 2: Function in Different File
+
+**Scenario**: Function exported from one file and imported in another (MULTIPLE FILES)
+
+```jsx title="utils.ts"
+export function formatStatus(status) {
+  switch (status) {
+    case 'pending':
+      return 'Pending approval';
+    case 'approved':
+      return 'Request approved';
+    case 'rejected':
+      return 'Request rejected';
+    default:
+      return 'Status unknown';
+  }
+}
+```
+
+```jsx title="StatusComponent.tsx"
+import { formatStatus } from './utils';
+
+export default function StatusComponent() {
+  const status = 'pending';
+  const statusText = formatStatus(status);
+
+  return <div>{statusText}</div>;
+}
+```
+
+**Solution**: Modify function to accept `t()` parameter and pass it from component
+
+1. Modify the function in the utils file to accept `t()` as a parameter
+2. Use `t()` for string translations within the function
+3. Import `getGT()` from `'gt-next/server'` in the component
+4. Make the component async and await `getGT()`
+5. Pass `t()` when calling the imported function
+
+```jsx title="utils.ts"
+export function formatStatus(status, t: (string: string, options?: InlineTranslationOptions) => string) {
+  switch (status) {
+    case 'pending':
+      return t('Pending approval');
+    case 'approved':
+      return t('Request approved');
+    case 'rejected':
+      return t('Request rejected');
+    default:
+      return t('Status unknown');
+  }
+}
+```
+
+```jsx title="StatusComponent.tsx"
+import { getGT } from 'gt-next/server';
+import { formatStatus } from './utils';
+
+export default async function StatusComponent() {
+  const status = 'pending';
+  const t = await getGT();
+  const statusText = formatStatus(status, t);
+
+  return <div>{statusText}</div>;
+}
+```
+
+### Pattern 3: Complex Server Action Chain
+
+**Scenario**: Server action that calls functions across multiple files to reach translatable content
+
+```jsx title="actions.ts"
+'use server';
+
+import { handleOrderSubmission } from './orderProcessor';
+
+export async function submitOrderAction(formData) {
+  const result = handleOrderSubmission(formData);
+  return result;
+}
+```
+
+```jsx title="orderProcessor.ts"
+import { validatePayment } from './paymentValidator';
+
+export function handleOrderSubmission(orderData) {
+  const paymentResult = validatePayment(orderData.payment);
+
+  if (!paymentResult.success) {
+    return {
+      success: false,
+      message: paymentResult.errorMessage,
+    };
+  }
+
+  return {
+    success: true,
+    message: 'Order processed successfully',
+  };
+}
+```
+
+```jsx title="paymentValidator.ts"
+export function validatePayment(paymentData) {
+  if (!paymentData.cardNumber) {
+    return {
+      success: false,
+      errorMessage: 'Credit card number is required',
+    };
+  }
+
+  if (!paymentData.expiryDate) {
+    return {
+      success: false,
+      errorMessage: 'Expiry date is required',
+    };
+  }
+
+  return {
+    success: true,
+    message: 'Payment validated successfully',
+  };
+}
+```
+
+**Solution**: Pass `t()` function through the entire call chain
+
+1. Import `getGT()` in the server action file
+2. Await `getGT()` in the server action and pass `t()` down the chain
+3. Modify each function in the chain to accept and pass through the `t()` parameter
+4. Use `t()` for string translations at the final destination
+
+```jsx title="actions.ts"
+'use server';
+
+import { getGT } from 'gt-next/server';
+import { handleOrderSubmission } from './orderProcessor';
+
+export async function submitOrderAction(formData) {
+  const t = await getGT();
+  const result = handleOrderSubmission(formData, t);
+  return result;
+}
+```
+
+```jsx title="orderProcessor.ts"
+import { validatePayment } from './paymentValidator';
+
+export function handleOrderSubmission(orderData, t: (string: string, options?: InlineTranslationOptions) => string) {
+  const paymentResult = validatePayment(orderData.payment, t);
+
+  if (!paymentResult.success) {
+    return {
+      success: false,
+      message: paymentResult.errorMessage
+    };
+  }
+
+  return {
+    success: true,
+    message: t('Order processed successfully')
+  };
+}
+```
+
+```jsx title="paymentValidator.ts"
+export function validatePayment(paymentData, t: (string: string, options?: InlineTranslationOptions) => string) {
+  if (!paymentData.cardNumber) {
+    return {
+      success: false,
+      errorMessage: t('Credit card number is required')
+    };
+  }
+
+  if (!paymentData.expiryDate) {
+    return {
+      success: false,
+      errorMessage: t('Expiry date is required')
+    };
+  }
+
+  return {
+    success: true,
+    message: t('Payment validated successfully')
+  };
+}
+```
+
+**Common Pitfalls for Functions**
+
+- Forgetting to add the `t` parameter to the function signature
+- Not passing `t()` when calling the function
+- Importing `getGT()` from `'gt-next'` instead of `'gt-next/server'`
+- Making utility functions async when they shouldn't be (only component functions should be made async)
+- Using `useGT()` or `'use client'` in server components
+- Not making the component async when using `getGT()`
+- Breaking the `t()` parameter chain when passing through multiple function calls

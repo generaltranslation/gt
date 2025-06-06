@@ -72,23 +72,23 @@ export const guides: Guide[] = [
     type: 'basic',
   },
   {
-    id: 'advanced_next-var-outside-client-component',
+    id: 'advanced_next-var-or-function-outside-client-component',
     description:
-      'Advanced guide for wherever you see a `const` or `let` declaration outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are ONLY used or imported by client side components.',
+      'Advanced guide for wherever you see a `const` or `let` or a function outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are ONLY used or imported by client side components.',
     path: 'guides/next/advanced/var-outside-client-component.md',
     type: 'advanced',
   },
   {
     id: 'advanced_next-var-outside-server-component',
     description:
-      'Advanced guide for wherever you see a `const` or `let` declaration outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are ONLY used or imported by server side components.',
+      'Advanced guide for wherever you see a `const` or `let` or a function outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are ONLY used or imported by server side components.',
     path: 'guides/next/advanced/var-outside-server-component.md',
     type: 'advanced',
   },
   {
     id: 'advanced_next-var-outside-client-server-component',
     description:
-      'Advanced guide for wherever you see a `const` or `let` declaration outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are used or imported by both client side and server side components.',
+      'Advanced guide for wherever you see a `const` or `let` or a function outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are used or imported by both client side and server side components.',
     path: 'guides/next/advanced/var-outside-client-server-component.md',
     type: 'advanced',
   },

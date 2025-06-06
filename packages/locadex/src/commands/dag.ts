@@ -136,9 +136,10 @@ export async function dagCommand(batchSize: number) {
     tasks.forEach((task) => markFileAsEdited(task, filesStateFilePath));
   }
 
-  // Always clean up the file list when done, regardless of success or failure
-  logger.info(`[dagCommand] Cleaning up file list: ${stateFilePath}`);
-  cleanUp(stateFilePath);
+  // TODO: uncomment this
+  // // Always clean up the file list when done, regardless of success or failure
+  // logger.info(`[dagCommand] Cleaning up file list: ${stateFilePath}`);
+  // cleanUp(stateFilePath);
 
   // If there was an error, exit with code 1
   if (hasError) {
@@ -233,6 +234,7 @@ function getPrompt({
 - NEVER CREATE OR REMOVE ANY FILES (especially .bak files)
 - Internationalize all user facing content in the target files. Do not internationalize content that is not user facing.
 - NEVER EDIT FILES THAT ARE NOT GIVEN TO YOU.
+- NEVER make a component async that was not already async (unless it is a component function). If you need to get translations, mark the file as 'use client' and use 'useGT()' or 'useDict()' to get the translations. 
 
 
 --- TARGET FILE INFORMATION ---

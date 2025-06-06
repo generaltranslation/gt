@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   unlinkSync,
+  rmSync,
 } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -128,8 +129,9 @@ export function addFilesToManager(
 
 // Used by dag command
 export function cleanUp(stateFilePath: string): void {
-  if (stateFilePath && existsSync(stateFilePath)) {
-    unlinkSync(stateFilePath);
+  const locadexDir = '.locadex';
+  if (existsSync(locadexDir)) {
+    rmSync(locadexDir, { recursive: true, force: true });
   }
 }
 

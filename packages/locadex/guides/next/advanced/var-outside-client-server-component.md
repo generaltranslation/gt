@@ -247,3 +247,304 @@ export default function serverComponent() {
 ## IMPORTANT
 
 Be careful to only modify non-functional strings. Avoid modifying functional strings such as ids.
+
+## Implementation Patterns: Functions
+
+### Pattern 1: Function in Same File (Client and Server)
+
+**Scenario**: Function declared outside component scope within SAME FILE, used by both client and server components
+
+```jsx
+function getErrorMessage(errorType) {
+  switch (errorType) {
+    case 'network':
+      return 'Network connection failed';
+    case 'auth':
+      return 'Authentication failed';
+    default:
+      return 'Unknown error occurred';
+  }
+}
+
+// Client component usage
+export function ClientExample() {
+  const [error, setError] = useState('network');
+  const message = getErrorMessage(error);
+  return <div>{message}</div>;
+}
+
+// Server component usage
+export function ServerExample() {
+  const error = 'network';
+  const message = getErrorMessage(error);
+  return <div>{message}</div>;
+}
+```
+
+**Solution**: Pass `t()` function as parameter to the function
+
+1. Modify the function to accept `t()` as a parameter
+2. Use `t()` for string translations within the function
+3. Add `'use client'` directive and import `useGT()` for client component
+4. Import `getGT()` and make server component async
+5. Pass `t()` when calling the function in both components
+
+```jsx
+import { useGT } from 'gt-next/client';
+import { getGT } from 'gt-next/server';
+
+function getErrorMessage(errorType, t: (string: string, options?: InlineTranslationOptions) => string) {
+  switch (errorType) {
+    case 'network':
+      return t('Network connection failed');
+    case 'auth':
+      return t('Authentication failed');
+    default:
+      return t('Unknown error occurred');
+  }
+}
+
+// Client component usage
+'use client';
+export function ClientExample() {
+  const [error, setError] = useState('network');
+  const t = useGT();
+  const message = getErrorMessage(error, t);
+  return <div>{message}</div>;
+}
+
+// Server component usage
+export async function ServerExample() {
+  const error = 'network';
+  const t = await getGT();
+  const message = getErrorMessage(error, t);
+  return <div>{message}</div>;
+}
+```
+
+### Pattern 2: Function in Different File (Client and Server)
+
+**Scenario**: Function exported from one file and imported by both client and server components (MULTIPLE FILES)
+
+```jsx title="utils.ts"
+export function formatStatus(status) {
+  switch (status) {
+    case 'pending':
+      return 'Pending approval';
+    case 'approved':
+      return 'Request approved';
+    case 'rejected':
+      return 'Request rejected';
+    default:
+      return 'Status unknown';
+  }
+}
+```
+
+```jsx title="ClientComponent.tsx"
+import { formatStatus } from './utils';
+
+export function ClientComponent() {
+  const [status, setStatus] = useState('pending');
+  const statusText = formatStatus(status);
+  return <div>{statusText}</div>;
+}
+```
+
+```jsx title="ServerComponent.tsx"
+import { formatStatus } from './utils';
+
+export function ServerComponent() {
+  const status = 'pending';
+  const statusText = formatStatus(status);
+  return <div>{statusText}</div>;
+}
+```
+
+**Solution**: Modify function to accept `t()` parameter and pass it from both component types
+
+1. Modify the function in the utils file to accept `t()` as a parameter
+2. Use `t()` for string translations within the function
+3. Add `'use client'` directive and import `useGT()` for client component
+4. Import `getGT()` and make server component async
+5. Pass `t()` when calling the imported function from both components
+
+```jsx title="utils.ts"
+export function formatStatus(status, t: (string: string, options?: InlineTranslationOptions) => string) {
+  switch (status) {
+    case 'pending':
+      return t('Pending approval');
+    case 'approved':
+      return t('Request approved');
+    case 'rejected':
+      return t('Request rejected');
+    default:
+      return t('Status unknown');
+  }
+}
+```
+
+```jsx title="ClientComponent.tsx"
+'use client';
+import { useGT } from 'gt-next/client';
+import { formatStatus } from './utils';
+
+export function ClientComponent() {
+  const [status, setStatus] = useState('pending');
+  const t = useGT();
+  const statusText = formatStatus(status, t);
+  return <div>{statusText}</div>;
+}
+```
+
+```jsx title="ServerComponent.tsx"
+import { getGT } from 'gt-next/server';
+import { formatStatus } from './utils';
+
+export async function ServerComponent() {
+  const status = 'pending';
+  const t = await getGT();
+  const statusText = formatStatus(status, t);
+  return <div>{statusText}</div>;
+}
+```
+
+### Pattern 3: Complex Function Chain Across Client and Server
+
+**Scenario**: Function chain that calls other functions across multiple files, used by both client and server components
+
+```jsx title="userActions.ts"
+import { validateUserData } from './userValidator';
+
+export function processUserRegistration(userData) {
+  const validationResult = validateUserData(userData);
+
+  if (!validationResult.success) {
+    return {
+      success: false,
+      message: validationResult.errorMessage,
+    };
+  }
+
+  return {
+    success: true,
+    message: 'User registration completed successfully',
+  };
+}
+```
+
+```jsx title="userValidator.ts"
+export function validateUserData(userData) {
+  if (!userData.email) {
+    return {
+      success: false,
+      errorMessage: 'Email address is required',
+    };
+  }
+
+  if (!userData.password) {
+    return {
+      success: false,
+      errorMessage: 'Password is required',
+    };
+  }
+
+  return {
+    success: true,
+    message: 'User data validated successfully',
+  };
+}
+```
+
+**Solution**: Pass `t()` function through the entire call chain for both client and server usage
+
+1. Modify each function in the chain to accept and pass through the `t()` parameter
+2. Use `t()` for string translations at the final destination
+3. Handle both client and server component usage patterns
+
+```jsx title="userActions.ts"
+import { validateUserData } from './userValidator';
+
+export function processUserRegistration(userData, t: (string: string, options?: InlineTranslationOptions) => string) {
+  const validationResult = validateUserData(userData, t);
+
+  if (!validationResult.success) {
+    return {
+      success: false,
+      message: validationResult.errorMessage
+    };
+  }
+
+  return {
+    success: true,
+    message: t('User registration completed successfully')
+  };
+}
+```
+
+```jsx title="userValidator.ts"
+export function validateUserData(userData, t: (string: string, options?: InlineTranslationOptions) => string) {
+  if (!userData.email) {
+    return {
+      success: false,
+      errorMessage: t('Email address is required')
+    };
+  }
+
+  if (!userData.password) {
+    return {
+      success: false,
+      errorMessage: t('Password is required')
+    };
+  }
+
+  return {
+    success: true,
+    message: t('User data validated successfully')
+  };
+}
+```
+
+**Client Component Usage**:
+
+```jsx title="ClientRegistration.tsx"
+'use client';
+import { useGT } from 'gt-next/client';
+import { processUserRegistration } from './userActions';
+
+export function ClientRegistration() {
+  const [userData, setUserData] = useState({});
+  const t = useGT();
+
+  const handleSubmit = () => {
+    const result = processUserRegistration(userData, t);
+    console.log(result.message);
+  };
+
+  return <button onClick={handleSubmit}>Register</button>;
+}
+```
+
+**Server Component Usage**:
+
+```jsx title="ServerRegistration.tsx"
+import { getGT } from 'gt-next/server';
+import { processUserRegistration } from './userActions';
+
+export async function ServerRegistration() {
+  const userData = { email: 'test@example.com', password: 'password123' };
+  const t = await getGT();
+  const result = processUserRegistration(userData, t);
+
+  return <div>{result.message}</div>;
+}
+```
+
+**Common Pitfalls for Functions (Addresses Both Client and Server)**
+
+- Forgetting to add the `t` parameter to the function signature
+- Not passing `t()` when calling the function
+- **Client-specific pitfalls**: Importing `useGT()` from `'gt-next'` instead of `'gt-next/client'`, forgetting `'use client'` directive
+- **Server-specific pitfalls**: Importing `getGT()` from `'gt-next'` instead of `'gt-next/server'`, not making the component async when using `getGT()`
+- Making utility functions async when they shouldn't be (only server component functions should be made async)
+- Breaking the `t()` parameter chain when passing through multiple function calls
