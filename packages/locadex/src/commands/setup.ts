@@ -16,6 +16,8 @@ import { createOrUpdateConfig } from 'gtx-cli/fs/config/setupConfig';
 import { i18nCommand } from './i18n.js';
 import { validateInitialConfig } from '../utils/validateConfig.js';
 import { getNextDirectories } from '../utils/fs/getFiles.js';
+import { configureAgent } from '../utils/agentManager.js';
+import { outro } from '@clack/prompts';
 
 export async function setupCommand(batchSize: number) {
   validateInitialConfig();
@@ -119,5 +121,58 @@ export async function setupCommand(batchSize: number) {
     spinner.stop(chalk.green('Installed locadex.'));
   }
 
+  // Set up locale selector
+  await setupLocaleSelector();
+
+  // Run i18n command
   i18nCommand(batchSize);
+}
+
+async function setupLocaleSelector() {
+  // Spinner
+  const spinner = createSpinner();
+  spinner.start('Setting up locale selector...');
+
+  // Configure agent
+  const { agent, filesStateFilePath } = configureAgent({
+    mcpTransport: 'sse',
+  });
+
+  // Fix prompt
+  const localeSelectorPrompt = getLocaleSelectorPrompt();
+  try {
+    await agent.run({ prompt: localeSelectorPrompt }, { spinner });
+  } catch (error) {
+    logger.debugMessage(`[setup] Adding locale selector failed: ${error}`);
+    outro(chalk.red('❌ Locadex setup failed!'));
+    process.exit(1);
+  }
+}
+
+function getLocaleSelectorPrompt() {
+  const prompt = `Here is your task:
+- Please add a locale selector to the project.
+- The locale selector should be a dropdown that allows the user to select the locale.
+
+--- LOCALE SELECTOR USAGE ---
+(1) Import the locale selector component from 'gt-next/client'
+(2) Add the locale selector to the project
+
+For example:
+import { LocaleSelector } from 'gt-next/client';
+
+function MyComponent() {
+  return (
+    <div>
+      <LocaleSelector />
+      <p>Hello, world!</p>
+    </div>
+  );
+}
+
+--- ADVICE ---
+- The locale selector should be added to a header or footer or some other very obvious place in the project.
+- Scan across files to find the best place to add the locale selector.
+`;
+  return prompt;
 }
