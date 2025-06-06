@@ -31,6 +31,13 @@ export const guides: Guide[] = [
     type: 'basic',
   },
   {
+    id: 'basic_next-strings',
+    description:
+      'Basic guide for how to use `useGT()` and `getGT()` to internationalize strings in a Next.js project.',
+    path: 'guides/next/basic/strings.md',
+    type: 'basic',
+  },
+  {
     id: 'basic_next-variables',
     description:
       'Basic guide for using internationalizing variable content (Currency, DateTime, Numbers, and other dynamic content) in a Next.js project.',
@@ -66,7 +73,7 @@ export const guides: Guide[] = [
     type: 'advanced',
   },
   {
-    id: 'advanced_nex-outside-server-component',
+    id: 'advanced_next-outside-server-component',
     description:
       'Advanced guide for wherever you see a `const` or `let` or a function outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are ONLY used or imported by server side components.',
     path: 'guides/next/advanced/var-outside-server-component.md',
