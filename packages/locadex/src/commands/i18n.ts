@@ -189,7 +189,7 @@ function getPrompt({
 }) {
   const prompt = `# Task: Internationalize the target file(s) using gt-next.
 
-Here are the details of your instructions:
+## INSTRUCTIONS
 
 - You are given a list of target files and their corresponding dependency/dependent files.
 - The project is already setup for internationalization. Do not try to setup the project again for i18n.
