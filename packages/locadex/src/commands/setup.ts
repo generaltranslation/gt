@@ -77,7 +77,7 @@ export async function setupCommand(batchSize: number) {
   // Create gt.config.json
   await createOrUpdateConfig('gt.config.json', {
     defaultLocale: 'en',
-    locales: ['en'],
+    locales: ['es', 'fr', 'de', 'ja', 'zh'],
     framework: 'next-app',
   });
 
