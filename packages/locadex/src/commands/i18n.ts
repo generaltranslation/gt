@@ -8,7 +8,7 @@ import {
   findWebpackConfig,
   findRequireConfig,
 } from '../utils/fs/findConfigs.js';
-import { configureAgent } from '../utils/agentManager.js';
+import { configureAgent, LocadexManager } from '../utils/agentManager.js';
 import {
   addFilesToManager,
   markFileAsEdited,
@@ -39,7 +39,7 @@ function getCurrentDirectories(): string[] {
   }
 }
 
-export async function i18nCommand(batchSize: number) {
+export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
   validateInitialConfig();
 
   // Init message
@@ -74,7 +74,7 @@ export async function i18nCommand(batchSize: number) {
     metadata: {
       batchSize: batchSize,
     },
-  });
+  }, manager);
 
   // Track session id
   let sessionId: string | undefined = undefined;

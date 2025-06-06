@@ -16,7 +16,7 @@ import { createOrUpdateConfig } from 'gtx-cli/fs/config/setupConfig';
 import { i18nCommand } from './i18n.js';
 import { validateInitialConfig } from '../utils/validateConfig.js';
 import { getNextDirectories } from '../utils/fs/getFiles.js';
-import { configureAgent } from '../utils/agentManager.js';
+import { configureAgent, LocadexManager } from '../utils/agentManager.js';
 import { outro } from '@clack/prompts';
 
 export async function setupCommand(batchSize: number) {
@@ -121,14 +121,22 @@ export async function setupCommand(batchSize: number) {
     spinner.stop(chalk.green('Installed locadex.'));
   }
 
+  // Create manager
+  const manager = new LocadexManager({
+    mcpTransport: 'sse',
+    metadata: {
+      batchSize: batchSize,
+    },
+  });
+
   // Set up locale selector
-  await setupLocaleSelector();
+  await setupLocaleSelector(manager);
 
   // Run i18n command
-  i18nCommand(batchSize);
+  i18nCommand(batchSize, manager);
 }
 
-async function setupLocaleSelector() {
+async function setupLocaleSelector(manager: LocadexManager) {
   // Spinner
   const spinner = createSpinner();
   spinner.start('Setting up locale selector...');
@@ -136,12 +144,13 @@ async function setupLocaleSelector() {
   // Configure agent
   const { agent, filesStateFilePath, metadataFilePath } = configureAgent({
     mcpTransport: 'sse',
-  });
+  }, manager);
 
   // Fix prompt
   const localeSelectorPrompt = getLocaleSelectorPrompt();
   try {
     await agent.run({ prompt: localeSelectorPrompt }, { spinner });
+    return { agent, filesStateFilePath, metadataFilePath };
   } catch (error) {
     logger.debugMessage(`[setup] Adding locale selector failed: ${error}`);
     outro(chalk.red('❌ Locadex setup failed!'));

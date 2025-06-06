@@ -163,8 +163,14 @@ export class LocadexManager {
 export function configureAgent(options: { 
   mcpTransport: 'sse' | 'stdio';
   metadata?: Partial<LocadexMetadata>;
-}) {
-  const manager = new LocadexManager(options);
+}, manager?: LocadexManager) {
+  // If no manager is provided, create a new one
+  if (!manager) {
+    manager = new LocadexManager(options);
+    logger.debugMessage(`Configure agent called with no manager. Creating new manager.`);
+  }
+
+  // Create agent
   const agent = manager.createAgent();
 
   process.on('beforeExit', () => {
