@@ -8,10 +8,17 @@ export const EXCLUDED_DIRS = [
   './out',
   './public',
   './static',
-  './next.config.js',
-  './next.config.ts',
-  './next.config.mjs',
-  './next.config.cjs',
-  './next.config.mts',
-  './next.config.cts',
 ];
+
+export const DAG_IGNORED_FILES = [
+  'next.config.js',
+  'next.config.ts',
+  'next.config.mjs',
+  'next.config.mts',
+  'next.config.cjs',
+  'next.config.cts',
+  'tailwind.config.js',
+  'webpack.config.js',
+];
+
+export const DAG_IGNORED_EXTENSIONS = ['.css', '.scss', '.sass', '.less'];
