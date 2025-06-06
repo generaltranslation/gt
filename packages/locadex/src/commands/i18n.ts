@@ -215,7 +215,7 @@ function getPrompt({
 - ALWAYS use the <T> component to internationalize HTML/JSX content.
 - ALWAYS use getGT() or useGT() and getDict() or useDict() to internationalize string content.
   - When possible, avoid using getDict() or useDict(); getGT() and useGT() are preferred.
-- DO NOT internationalize non-user facing content or content that is functional, such as ids, class names, etc.
+- DO NOT internationalize non-user facing content or content that is functional, such as ids, class names, error strings, logical strings, etc.
 - Do not add i18n middleware to the app.
 - When adding 'useGT()' or 'useDict()' to a client component, you must add 'use client' to the top of the file.
 - Always adhere to the guides provided via the 'mcp__locadex__' tools.
