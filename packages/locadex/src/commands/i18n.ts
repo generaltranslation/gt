@@ -46,6 +46,7 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
   // Init message
   const spinner = createSpinner();
   spinner.start('Initializing Locadex...');
+  const startTime = Date.now();
 
   const dag = createDag(getCurrentDirectories(), {
     tsConfig: findTsConfig(),
@@ -192,12 +193,11 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
     await formatFiles(allFiles, formatter);
   }
 
-  logger.info(`Total cost: $${manager.stats.getStats().totalCost.toFixed(2)}`);
   logger.info(
-    `Total api duration: ${manager.stats.getStats().totalApiDuration / 1000}s`
-  );
-  logger.info(
-    `Total files processed: ${manager.stats.getStats().processedFiles}`
+    `Total Cost: $${manager.stats.getStats().totalCost.toFixed(2)}
+Total API duration: ${Math.round(manager.stats.getStats().totalApiDuration / 1000)}s
+Total wall duration: ${Math.round((Date.now() - startTime) / 1000)}s
+Total files processed: ${manager.stats.getStats().processedFiles}`
   );
 
   outro(chalk.green('✅ Locadex i18n complete!'));
