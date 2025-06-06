@@ -32,6 +32,7 @@ ${allMcpPrompt}
     await agent.run({ prompt: setupPrompt }, { spinner });
 
     outro(chalk.green('✅ Locadex run complete!'));
+    process.exit(0);
   } catch (error) {
     outro(
       chalk.red(

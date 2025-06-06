@@ -135,6 +135,7 @@ export async function dagCommand(batchSize: number) {
   }
 
   outro(chalk.green('✅ Locadex i18n complete!'));
+  process.exit(0);
 }
 
 function getPrompt({
