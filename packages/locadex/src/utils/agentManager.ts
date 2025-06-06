@@ -107,7 +107,12 @@ export class LocadexManager {
 
   cleanup(): void {
     if (this.mcpProcess && !this.mcpProcess.killed) {
-      this.mcpProcess.kill();
+      this.mcpProcess.kill('SIGTERM');
+      setTimeout(() => {
+        if (this.mcpProcess && !this.mcpProcess.killed) {
+          this.mcpProcess.kill('SIGKILL');
+        }
+      }, 1000);
     }
   }
 }
@@ -115,6 +120,10 @@ export class LocadexManager {
 export function configureAgent(options: { mcpTransport: 'sse' | 'stdio' }) {
   const manager = new LocadexManager(options);
   const agent = manager.createAgent();
+
+  process.on('beforeExit', () => {
+    manager.cleanup();
+  });
 
   return {
     agent,

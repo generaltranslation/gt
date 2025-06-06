@@ -28,6 +28,7 @@ ${allMcpPrompt}
         "✅ Locadex setup complete! Run `npx locadex i18n` to internationalize your project's content."
       )
     );
+    process.exit(0);
   } catch (error) {
     outro(
       chalk.red(

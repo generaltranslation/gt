@@ -178,6 +178,7 @@ This is attempt ${attempt + 1} of ${maxAttempts}.`;
     }
 
     outro(chalk.green('✅ Locadex i18n complete!'));
+    process.exit(0);
   } catch (error) {
     outro(
       chalk.red(
