@@ -398,7 +398,6 @@ export function parseStrings(
             if (t.isIdentifier(callee)) {
               // Look for function declarations or function expressions with this name
               const calleeBinding = tPath.scope.getBinding(callee.name);
-
               if (calleeBinding && calleeBinding.path.isFunction()) {
                 const functionPath = calleeBinding.path;
                 processFunctionIfMatches(
@@ -406,6 +405,25 @@ export function parseStrings(
                   argIndex,
                   functionPath.node,
                   functionPath,
+                  updates,
+                  errors,
+                  file
+                );
+              }
+              // Handle arrow functions assigned to variables: const getData = (t) => {...}
+              else if (
+                calleeBinding &&
+                calleeBinding.path.isVariableDeclarator() &&
+                calleeBinding.path.node.init &&
+                (t.isArrowFunctionExpression(calleeBinding.path.node.init) ||
+                  t.isFunctionExpression(calleeBinding.path.node.init))
+              ) {
+                const initPath = calleeBinding.path.get('init') as NodePath;
+                processFunctionIfMatches(
+                  callee.name,
+                  argIndex,
+                  calleeBinding.path.node.init,
+                  initPath,
                   updates,
                   errors,
                   file
