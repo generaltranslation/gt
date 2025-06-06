@@ -2,7 +2,10 @@
 
 Use `useGT()` and `getGT()` to internationalize strings.
 
-**Important:** For JSX and HTML content, ALWAYS use the `<T>` component over `useGT()` and `getGT()`.
+**Important:**
+
+- For JSX and HTML content, ALWAYS use the `<T>` component over `useGT()` and `getGT()`.
+- If you see strings present in HTML that you think need pluralization, do not use strings. Instead use the `<T>` component and the `<Plural>` component. Read the "basic_next-branches" for instructions.
 
 **Import:** The `useGT()` and `getGT()` functions are exported from `gt-next/client` and `gt-next/server` respectively.
 

@@ -26,7 +26,7 @@ export const guides: Guide[] = [
   {
     id: 'basic_next-branches',
     description:
-      'Basic guide for using branch components and dealing with conditional JSX in a Next.js project.',
+      'Basic guide for using branch components and dealing with conditional logic in or pluralization in JSX in a Next.js project.',
     path: 'guides/next/basic/branches.md',
     type: 'basic',
   },
