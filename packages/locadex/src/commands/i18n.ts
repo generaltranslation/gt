@@ -1,201 +1,299 @@
-import { intro, outro, spinner, confirm } from '@clack/prompts';
-import chalk from 'chalk';
 import { createSpinner, displayHeader } from '../logging/console.js';
 import { allMcpPrompt } from '../prompts/system.js';
-import {
-  addNextJsFilesToManager,
-  getNextJsAppRouterStats,
-  getCurrentFileList,
-} from '../utils/getFiles.js';
-import { unlinkSync, existsSync } from 'node:fs';
-import { configureAgent } from '../utils/agentManager.js';
+
 import { logger } from '../logging/logger.js';
-export async function i18nCommand() {
-  displayHeader();
+import { createDag } from '../utils/dag/createDag.js';
+import {
+  findTsConfig,
+  findWebpackConfig,
+  findRequireConfig,
+} from '../utils/fs/findConfigs.js';
+import { configureAgent } from '../utils/agentManager.js';
+import {
+  addFilesToManager,
+  cleanUp,
+  markFileAsEdited,
+  markFileAsInProgress,
+} from '../utils/getFiles.js';
+import { outro } from '@clack/prompts';
+import chalk from 'chalk';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { readdirSync, statSync } from 'node:fs';
+import { EXCLUDED_DIRS } from '../utils/shared.js';
 
+function getCurrentDirectories(): string[] {
+  try {
+    return readdirSync(process.cwd())
+      .filter((item) => {
+        try {
+          return statSync(item).isDirectory();
+        } catch {
+          return false;
+        }
+      })
+      .map((dir) => `./${dir}`)
+      .filter((dir) => {
+        return !EXCLUDED_DIRS.includes(dir);
+      });
+  } catch {
+    return [];
+  }
+}
+
+export async function i18nCommand(batchSize: number) {
+  // Init message
   const spinner = createSpinner();
-
+  displayHeader();
   spinner.start('Initializing Locadex...');
 
-  let stateFilePath: string | undefined = undefined;
-  try {
-    // Scan and preload Next.js app router files into file manager
-    spinner.message('Scanning Next.js app router files...');
+  // Create DAG
+  logger.debugMessage(
+    'getCurrentDirectories(): ' + getCurrentDirectories().join(', ')
+  );
+  const dag = createDag(getCurrentDirectories(), {
+    tsConfig: findTsConfig(),
+    webpackConfig: findWebpackConfig(),
+    requireConfig: findRequireConfig(),
+  });
 
-    const stats = getNextJsAppRouterStats();
+  logger.info(
+    'dag.getDag().length: ' + String(Object.keys(dag.getDag()).length)
+  );
+  logger.info(
+    'dag.getReverseDag().length: ' +
+      String(Object.keys(dag.getReverseDag()).length)
+  );
+  logger.info(
+    'dag.getTopologicalOrder().length: ' +
+      String(dag.getTopologicalOrder().length)
+  );
 
-    const { agent, filesStateFilePath } = configureAgent({
-      mcpTransport: 'sse',
+  // Configure agent
+  const { agent, filesStateFilePath } = configureAgent({
+    mcpTransport: 'sse',
+  });
+
+  // Track session id
+  let sessionId: string | undefined = undefined;
+
+  // Create the list of files (aka tasks) to process
+  const taskQueue = dag.getTopologicalOrder();
+
+  // Add files to manager
+  const stateFilePath = addFilesToManager(filesStateFilePath, taskQueue);
+  logger.info(`[dagCommand] Track progress here: ${stateFilePath}`);
+
+  // Main loop
+  let hasError = false;
+  while (taskQueue.length > 0) {
+    // Get the next task
+    const tasks = taskQueue.splice(0, batchSize);
+    if (tasks.length === 0) {
+      break;
+    }
+
+    // Mark task as in progress
+    tasks.forEach((task) => markFileAsInProgress(task, filesStateFilePath));
+
+    // Construct prompt
+    const dependencies = Object.fromEntries(
+      tasks.map((task) => [
+        task,
+        Array.from(new Set(dag.getDependencies(task))),
+      ])
+    );
+    const dependents = Object.fromEntries(
+      tasks.map((task) => [task, Array.from(new Set(dag.getDependents(task)))])
+    );
+    const prompt = getPrompt({
+      targetFile: tasks,
+      dependencyFiles: dependencies,
+      dependentFiles: dependents,
     });
 
-    stateFilePath = filesStateFilePath;
-    const scanResult = addNextJsFilesToManager(stateFilePath);
-    logger.debugMessage(
-      `[i18nCommand] Track progress here: ${stateFilePath}/files-state.json`
+    // Claude call
+    try {
+      await agent.run(
+        {
+          prompt,
+          sessionId,
+        },
+        { spinner }
+      );
+      if (!sessionId) {
+        sessionId = agent.getSessionId();
+      }
+    } catch (error) {
+      hasError = true;
+      logger.debugMessage(
+        `[dagCommand] Error in claude i18n process: ${error}`
+      );
+      break;
+    }
+
+    // Mark task as complete
+    tasks.forEach((task) => markFileAsEdited(task, filesStateFilePath));
+  }
+
+  // Always clean up the file list when done, regardless of success or failure
+  logger.info(`[dagCommand] Cleaning up file list: ${stateFilePath}`);
+  cleanUp(stateFilePath);
+
+  // If there was an error, exit with code 1
+  if (hasError) {
+    outro(chalk.red('❌ Locadex i18n failed!'));
+    process.exit(1);
+  }
+
+  // Fix prompt
+  let fixPrompt: string | undefined = undefined;
+  try {
+    const dryRunResults = await promisify(exec)(
+      'npx gtx-cli translate --dry-run'
     );
+    const tsCheckResults = await promisify(exec)('npx tsc --noEmit');
+    fixPrompt = getFixPrompt(dryRunResults.stdout, tsCheckResults.stdout);
+  } catch (error) {
+    logger.debugMessage(
+      `[dagCommand] Generating linter prompt failed: ${error}`
+    );
+    outro(chalk.red('❌ Locadex i18n failed!'));
+    process.exit(1);
+  }
+  if (fixPrompt) {
+    try {
+      await agent.run({ prompt: fixPrompt, sessionId }, { spinner });
+    } catch (error) {
+      logger.debugMessage(`[dagCommand] Fixing errors failed: ${error}`);
+      outro(chalk.red('❌ Locadex i18n failed!'));
+      process.exit(1);
+    }
+  }
 
-    const setupPrompt = `This project is already setup for internationalization.
-You do not need to setup the project again.
-Your task is to internationalize the app's content using gt-next.
+  // Generate report
+  const reportPrompt = getReportPrompt();
+  try {
+    await agent.run(
+      {
+        prompt: reportPrompt,
+        sessionId,
+      },
+      { spinner }
+    );
+  } catch (error) {
+    logger.debugMessage(
+      `[dagCommand] Error in claude report generation: ${error}`
+    );
+    outro(chalk.red('❌ Locadex i18n failed!'));
+    process.exit(1);
+  }
 
-To validate the use of gt-next, you can run the following command:
-'npx gtx-cli translate --dry-run'
+  outro(chalk.green('✅ Locadex i18n complete!'));
+  process.exit(0);
+}
 
-## I18n Files Checklist
-The i18n file manager has been preloaded with ${stats.totalFiles} TypeScript files (${stats.tsFiles} .ts files, ${stats.tsxFiles} .tsx files) from the Next.js app directory.
-${scanResult.added.length > 0 ? `${scanResult.added.length} new files were added to your internationalization checklist.` : 'All files were already in your internationalization checklist.'}
+function getPrompt({
+  targetFile,
+  dependencyFiles,
+  dependentFiles,
+}: {
+  targetFile: string[];
+  dependencyFiles: Record<string, string[]>;
+  dependentFiles: Record<string, string[]>;
+}) {
+  const prompt = `# Task: Internationalize the target file using gt-next.
 
-**Important**: This is a scan that includes ALL .ts and .tsx files. You should actively review and mark files as edited files that don't contain user-facing content.
+--- INSTRUCTIONS ---
 
-### Workflow:
-1. **Start by checking your checklist**: Use 'listFiles' to see files that need to be internationalized
-2. **Select a file to internationalize**: Select a file that is marked as 'pending' and mark it as 'in_progress' with the 'markFileAsInProgress' tool
-3. **Read the selected file**: Read the file that you just got from the checklist
-4. **Decide if you need to internationalize**: Not all files need to be internationalized. Mark the file as 'edited' if it doesn't contain user-facing content with the 'mcp__locadex__markFileAsEdited' tool then go back to step 1. If it does contain user-facing content, continue to the next step.
-5. **Identify the tools to use**: Choose from the list of guides to help you with your task. If you need to look up documentation, use the 'get-docs' and 'fetch-docs' tools in tandem
-6. **Internationalize**: You now have the necessary knowledge. Internationalize the file using the information from the tools provided to you.
-4. **Track your progress**: When you are finished, mark the file as 'edited' to show that you have made changes to the file with the 'mcp__locadex__markFileAsEdited' tool
-5. **Continue**: Return to step 1 and repeat the process until all files are marked as 'edited'
+- You are given a list of target files and a list of dependency/dependent files.
+- The project is already setup for internationalization. You do not need to setup the project again for i18n.
 
-Always use the file manager as your source of truth for which files need to be processed. Be proactive about removing files that don't need translation to keep your checklist focused.
+## Workflow:
+1. **Gather background** Read the target files closely (you should not have to read the dependency/dependent files).
+2. **Evaluate if i18n is necessary** Evaluate if just the target files need to be internationalized using gt-next (the target files may have no relevant content, they may already be internationalized, or they contain build-time code (e.g. nextjs plugins) should never be internationalized).
+**IMPORTANT**: IF NONE OF THE TARGET FILES NEED TO BE INTERNATIONALIZED, YOUR TASK IS COMPLETE AND YOU MAY RETURN.
+3. **Identify the tools to use** Given the contents of the files, ask yourself which tools and guides you need to use to get the necessary knowledge to internationalize the target files. Here are some helpful questions to evaluate for tool selection:
+  - 3.a. Does this file contain a component? If so, is it a server-side component or a client-side component?
+  - 3.b. Is the content that needs to be i18ned being used in this same file, or is it being used in another file?
+  - 3.c. Is there any string interpolation that needs to be i18ned?
+  - 3.d. Is there any conditional logic or rendering that needs to be i18ned?
+  - 3.e. Is the content that needs to be i18ned HTML/JSX or a string?
+4. **Internationalize** You now have the necessary knowledge. Internationalize the files using the information from the tools provided to you.
+  - 4.a. Do not worry about running tsc. We will do that later.
 
-Our advice to you is:
-- ALWAYS use the <T> component to internationalize JSX. Only use getGT() or useGT() and getDict() or useDict() for string content. All other JSX content should ALWAYS be internationalized using <T> component.
-- You should not be adding i18n middleware to the app
+## RULES:
+- ALWAYS use the <T> component to internationalize HTML/JSX content. Only use getGT() or useGT() and getDict() or useDict() for string content.
+- Do not add i18n middleware to the app
+- When adding 'useGT()' or 'useDict()' to a client component, you must add 'use client' to the top of the file.
+- Strictly adhere to the guides provided to gain necessary knowledge about how to internationalize the content.
+- Minimize the footprint of the changes.
+- Only focus on internationalizing the content of the target files.
+- NEVER move internationalized content to a different file. All content MUST remain in the same file where it came from.
+- NEVER CREATE OR REMOVE ANY FILES (especially .bak files)
+- Internationalize all user facing content in the target files. Do not internationalize content that is not user facing.
+- NEVER EDIT FILES THAT ARE NOT GIVEN TO YOU.
 
-CORE PRINCIPLES OF I18N:
-- Minimize the footprint of the changes
-- Keep content in the same file where it came from
-- Use the file manager tools to systematically track progress
-- Use the tools provided to you to gain knowledge about how to internationalize the content
-- NEVER CREATE OR REMOVE ANY FILES (such as .bak files), only modify current files (only unless you are explicitly instructed to do so)
-- Any files that CONTAIN USER FACING content, must be internationalized.
 
-### When you are done
-- Please add a markdown file called 'locadex-report.md' to the root of the project.
-- The report should include a summary of the changes you made to the project.
-- A list of items the user needs to complete to finish the internationalization process (adding env vars, etc.).
+--- TARGET FILE INFORMATION ---
+${targetFile.map(
+  (file) => `
+Target file path:
+${file}
+
+Dependency files (files imported by the target file):
+${dependencyFiles[file].length > 0 ? ` ${dependencyFiles[file].join(', ')}` : 'none'}
+
+Dependent files (files that import the target file):
+${dependentFiles[file].length > 0 ? ` ${dependentFiles[file].join(', ')}` : 'none'}
+`
+)}
+--- MCP TOOLS ---
 
 ${allMcpPrompt}
 `;
 
-    // Initial run
-    try {
-      await agent.run(
-        {
-          prompt: setupPrompt,
-        },
-        { spinner }
-      );
-    } catch (error) {
-      logger.debugMessage(`[i18nCommand] Error in initial run: ${error}`);
-    }
+  return prompt;
+}
 
-    const sessionId = agent.getSessionId();
+// check (dry run and ts check) should be at the end
 
-    // Give Claude up to 3 attempts to finish all files
-    let attempt = 1;
-    const maxAttempts = 3;
+function getFixPrompt(dryRunResults: string, tsCheckResults: string) {
+  const prompt = `--- INSTRUCTIONS ---
+  
+  - You are also given the results of a special gt-next linter.
+  - You are also given the results of a ts check.
 
-    while (attempt <= maxAttempts) {
-      const remainingFiles = getCurrentFileList(stateFilePath);
-      const pendingFiles = remainingFiles.filter((f) => f.status === 'pending');
-      const inProgressFiles = remainingFiles.filter(
-        (f) => f.status === 'in_progress'
-      );
-      const unfinishedFiles = [...pendingFiles, ...inProgressFiles];
+  Your task is as follows:
+  (1) You need to fix all errors relevant to the gt implementation code (either from the gt-next linter or the ts check).
+  (2) Whenever you are finished with your changes please run the gt-next linter and ts check again.
+  (3) Repeat steps 1-2 until there are no more errors or until you believe that you have fixed all errors.
 
-      if (unfinishedFiles.length === 0) {
-        // All files completed!
-        logger.step(
-          chalk.green(
-            `\n✅ All files completed! ${JSON.stringify(
-              getCurrentFileList(stateFilePath),
-              null,
-              2
-            )}`
-          )
-        );
-        break;
-      }
+  Rules:
+  - DO NOT modify any files that are not relevant to the gt implementation code.
+  - ONLY fix errors that are relevant to the gt implementation code and your implementation.
 
-      if (attempt === maxAttempts) {
-        // Final attempt - ask user for confirmation
-        spinner.stop();
-        logger.warning(
-          chalk.yellow(
-            `\n⚠️  Warning: After ${maxAttempts} attempts, ${unfinishedFiles.length} files remain unfinished:
-            - ${pendingFiles.length} pending files
-            - ${inProgressFiles.length} in-progress files
-            `
-          )
-        );
-        const shouldContinue = await confirm({
-          message:
-            'Are you sure you want to finish? These files may still need internationalization.',
-          initialValue: false,
-        });
+  To run the gt-next linter, run the following command:
+  'npx gtx-cli translate --dry-run'
+  To run the ts check, run the following command:
+  'npx tsc --noEmit'
 
-        if (!shouldContinue) {
-          outro(
-            chalk.yellow(
-              '❓ Internationalization paused. You can resume by running the command again.'
-            )
-          );
-          return;
-        }
-        break;
-      } else {
-        // Continue with additional attempts
-        logger.step(
-          `Attempt ${attempt + 1}/${maxAttempts}: Continuing internationalization...`
-        );
+  --- ORIGINAL LINTING RESULTS ---
+  ${dryRunResults}
 
-        const continuePrompt = `You still have ${unfinishedFiles.length} unfinished files in your checklist:
-- ${pendingFiles.length} pending files
-- ${inProgressFiles.length} in-progress files
+  --- ORIGINAL TS CHECK RESULTS ---
+  ${tsCheckResults}
+  `;
 
-Please continue working on these files. Use 'listFiles' to see what needs to be done and continue internationalizing the remaining content.
+  return prompt;
+}
 
-This is attempt ${attempt + 1} of ${maxAttempts}.`;
+function getReportPrompt() {
+  const prompt = `--- INSTRUCTIONS ---
 
-        try {
-          await agent.run(
-            {
-              prompt: continuePrompt,
-              sessionId,
-            },
-            { spinner }
-          );
-        } catch (error) {
-          logger.debugMessage(
-            `[i18nCommand] Error in attempt ${attempt + 1}: ${error}`
-          );
-        }
-      }
+- Please add a markdown file called 'locadex-report.md' to the root of the project.
+- The report should include a summary of the changes you made to the project.
+- A list of items the user needs to complete to finish the internationalization process (adding env vars, etc.).`;
 
-      attempt++;
-    }
-
-    outro(chalk.green('✅ Locadex i18n complete!'));
-    process.exit(0);
-  } catch (error) {
-    outro(
-      chalk.red(
-        `❌ Setup failed: ${error instanceof Error ? error.message : String(error)}`
-      )
-    );
-    process.exit(1);
-  } finally {
-    // Always clean up the file list when done, regardless of success or failure
-    if (stateFilePath && existsSync(stateFilePath)) {
-      logger.debugMessage(
-        `[i18nCommand] Cleaning up file list: ${stateFilePath}`
-      );
-      unlinkSync(stateFilePath);
-      logger.debugMessage(`[i18nCommand] File list deleted successfully`);
-    } else {
-      logger.debugMessage(`[i18nCommand] No file list to clean up`);
-    }
-  }
+  return prompt;
 }

@@ -10,14 +10,10 @@ import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
 import { setupCommand } from './commands/setup.js';
-import { i18nCommand } from './commands/i18n.js';
-import { i18nDagCommand } from './commands/i18n-dag.js';
-import { startCommand } from './commands/run.js';
 import { CliOptions } from './types/cli.js';
 import { withTelemetry } from './telemetry.js';
 import { logger } from './logging/logger.js';
-import { dagCommand } from './commands/dag.js';
-import { tempCommand } from './commands/temp.js';
+import { i18nCommand } from './commands/i18n.js';
 
 const packageJson = JSON.parse(
   readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -35,23 +31,8 @@ program
   .action((options: CliOptions) => {
     withTelemetry({ enabled: !options.noTelemetry, options }, () => {
       logger.initialize(options);
-      startCommand();
+      setupCommand(1);
     });
-  });
-
-program
-  .command('run')
-  .description('Fully internationalize your project')
-  .action((options: CliOptions, command: Command) => {
-    const parentOptions = command.parent?.opts() || {};
-    const allOptions = { ...parentOptions, ...options };
-    withTelemetry(
-      { enabled: !allOptions.noTelemetry, options: allOptions },
-      () => {
-        logger.initialize(allOptions);
-        startCommand();
-      }
-    );
   });
 
 program
@@ -64,45 +45,13 @@ program
       { enabled: !allOptions.noTelemetry, options: allOptions },
       () => {
         logger.initialize(allOptions);
-        setupCommand();
+        setupCommand(1);
       }
     );
   });
 
 program
   .command('i18n')
-  .description('Run AI-powered internationalization tasks')
-  .action((options: CliOptions, command: Command) => {
-    const parentOptions = command.parent?.opts() || {};
-    const allOptions = { ...parentOptions, ...options };
-    withTelemetry(
-      { enabled: !allOptions.noTelemetry, options: allOptions },
-      () => {
-        logger.initialize(allOptions);
-        i18nCommand();
-      }
-    );
-  });
-
-program
-  .command('i18n-dag')
-  .description(
-    'Run AI-powered internationalization tasks with concurrent processing'
-  )
-  .action((options: CliOptions, command: Command) => {
-    const parentOptions = command.parent?.opts() || {};
-    const allOptions = { ...parentOptions, ...options };
-    withTelemetry(
-      { enabled: !allOptions.noTelemetry, options: allOptions },
-      () => {
-        logger.initialize(allOptions);
-        i18nDagCommand();
-      }
-    );
-  });
-
-program
-  .command('dag')
   .description('Run AI-powered dependency graph analysis')
   .option('-b, --batch-size <number>', 'Batch size', '1')
   .action((options: CliOptions, command: Command) => {
@@ -112,22 +61,7 @@ program
       { enabled: !allOptions.noTelemetry, options: allOptions },
       () => {
         logger.initialize(allOptions);
-        dagCommand(Number(allOptions.batchSize) || 1);
-      }
-    );
-  });
-
-program
-  .command('temp')
-  .description('Run a temporary command')
-  .action((options: CliOptions, command: Command) => {
-    const parentOptions = command.parent?.opts() || {};
-    const allOptions = { ...parentOptions, ...options };
-    withTelemetry(
-      { enabled: !allOptions.noTelemetry, options: allOptions },
-      () => {
-        logger.initialize(allOptions);
-        tempCommand();
+        i18nCommand(Number(allOptions.batchSize) || 1);
       }
     );
   });
