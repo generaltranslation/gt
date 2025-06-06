@@ -15,16 +15,6 @@ import { Var, Num, Currency, DateTime } from 'gt-next';
 - `<Currency>`: Formats currency with symbols and localization
 - `<DateTime>`: Formats dates/times with locale conventions
 
-**Processing Model:**
-
-- JSX content → General Translation API for translation
-- Variable components → Local formatting only (never sent to API)
-- `<Num>`, `<Currency>`, `<DateTime>` → Use JS Intl API for locale formatting
-
-**Important:** Content wrapped in variable components is never sent to the General Translation API, ensuring data privacy and security.
-
-See the section on [Data Privacy](#privacy) for more information.
-
 ---
 
 ## Usage Patterns
@@ -34,13 +24,15 @@ See the section on [Data Privacy](#privacy) for more information.
 All variable components use identical wrapping syntax:
 
 ```tsx
-<Var>{user.name}</Var>
-<Num>{user.age}</Num>
-<Currency>{user.balance}</Currency>
-<DateTime>{user.birthday}</DateTime>
+import { Var, Num, Currency, DateTime } from 'gt-next';
+
+<Var>{user.name}</Var>;
+<Num>{user.age}</Num>;
+<Currency>{user.balance}</Currency>;
+<DateTime>{user.birthday}</DateTime>;
 ```
 
-### Integration with `<T>` Components [#variable-in-t]
+### Integration with `<T>` Components
 
 Variable components require locale context for formatting. Use within `<T>` components for automatic locale handling:
 
@@ -52,7 +44,7 @@ Variable components require locale context for formatting. Use within `<T>` comp
 
 The `<T>` component provides locale context and translates surrounding text while preserving variable formatting.
 
-### Localization Behavior [#localization]
+### Localization Behavior
 
 **Automatic Formatting:**
 
@@ -62,28 +54,12 @@ The `<T>` component provides locale context and translates surrounding text whil
 
 **Customization:** Override default locale and formatting via component props.
 
-### Data Privacy [#privacy]
+## Use Cases by Component
 
-**Security Model:** Variable components process content locally and never send data to General Translation APIs.
-
-**Use Cases by Component:**
-
-- `<Var>`: Unformatted private data (user names, account numbers)
+- `<Var>`: Unformatted private data (user names, account numbers), or conditional content that should be excluded from translation
 - `<Num>`: Private numbers needing locale formatting (quantities, ages, distances)
 - `<Currency>`: Private currency values (transactions, balances)
 - `<DateTime>`: Private dates/times (timestamps, creation dates)
-
-**Warning - API Data Transmission Rules:**
-- [Branching Components](/docs/next/guides/branches) and [`<T>` components](/docs/next/guides/jsx) → Sent to API
-- `<T>` nested inside `<Var>` → Sent to API
-
-```tsx
-<T>
-  <Var>
-    <T>Hello, World!</T> // → API Goodbye, World! // → Local only
-  </Var>
-</T>
-```
 
 ---
 

@@ -2,6 +2,12 @@
 
 Use the `<T>` component to internationalize HTML and JSX content.
 
+**Import:** The `<T>` component is exported from `gt-next`.
+
+```tsx
+import { T } from 'gt-next';
+```
+
 Before:
 
 ```jsx
@@ -34,7 +40,10 @@ Add `context` prop when content meaning is ambiguous:
 </T>
 ```
 
-Rule: Provide context for words with multiple meanings (e.g., "toast" = bread vs notification).
+RULES:
+
+- Provide context for words with multiple meanings (e.g., "toast" = bread vs notification).
+- Provide context when the additional context can help the translator understand the meaning of the content.
 
 # Usage Rules
 
@@ -139,7 +148,7 @@ Solution: Wrap dynamic content in variable components or branching components, t
 </T>
 ```
 
-Note: `<T>` handles any nested content within the same component.
+NOTE: `<T>` handles any nested content within the same component.
 
 # Common Pitfalls
 

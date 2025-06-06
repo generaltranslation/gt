@@ -59,13 +59,6 @@ export const guides: Guide[] = [
     type: 'basic',
   },
   {
-    id: 'basic_next-translating-html',
-    description:
-      'Basic guide on how to translate HTML and JSX content in a Next.js project.',
-    path: 'guides/next/basic/translating-html.md',
-    type: 'basic',
-  },
-  {
     id: 'advanced_next-outside-client-component',
     description:
       'Advanced guide for wherever you see a `const` or `let` or a function outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are ONLY used or imported by client side components.',

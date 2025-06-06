@@ -187,16 +187,17 @@ function getPrompt({
   dependencyFiles: Record<string, string[]>;
   dependentFiles: Record<string, string[]>;
 }) {
-  const prompt = `# Task: Internationalize the target file using gt-next.
+  const prompt = `# Task: Internationalize the target file(s) using gt-next.
 
 Here are the details of your instructions:
 
-- You are given a list of target files and a list of dependency/dependent files.
-- The project is already setup for internationalization. You do not need to setup the project again for i18n.
+- You are given a list of target files and their corresponding dependency/dependent files.
+- The project is already setup for internationalization. Do not try to setup the project again for i18n.
 
 ## Workflow:
-1. **Gather background** Read the target files closely (you should not have to read the dependency/dependent files).
-2. **Evaluate if i18n is necessary** Evaluate if just the target files need to be internationalized using gt-next (the target files may have no relevant content, they may already be internationalized, or they contain build-time code (e.g. nextjs plugins) should never be internationalized).
+1. **Gather context** Read the target files closely (you should not have to read the dependency/dependent files).
+2. **Evaluate if i18n is necessary** Evaluate if the target files need to be internationalized using gt-next 
+  - If the target files have no relevant content, are already internationalized, or contain build-time code (e.g. nextjs plugins) they should never be internationalized.
 **IMPORTANT**: IF NONE OF THE TARGET FILES NEED TO BE INTERNATIONALIZED, YOUR TASK IS COMPLETE AND YOU MAY RETURN.
 3. **Identify the tools to use** Given the contents of the files, ask yourself which tools and guides you need to use to get the necessary knowledge to internationalize the target files. Here are some helpful questions to evaluate for tool selection:
   - 3.a. Does this file contain a component? If so, is it a server-side component or a client-side component?
@@ -208,28 +209,32 @@ Here are the details of your instructions:
   - 4.a. Do not worry about running tsc. We will do that later.
 
 ## RULES:
-- ALWAYS use the <T> component to internationalize HTML/JSX content. Only use getGT() or useGT() and getDict() or useDict() for string content.
-- Do not add i18n middleware to the app
+- ALWAYS use the <T> component to internationalize HTML/JSX content.
+- ALWAYS use getGT() or useGT() and getDict() or useDict() to internationalize string content.
+  - When possible, avoid using getDict() or useDict(); getGT() and useGT() are preferred.
+- Do not add i18n middleware to the app.
 - When adding 'useGT()' or 'useDict()' to a client component, you must add 'use client' to the top of the file.
-- Strictly adhere to the guides provided to gain necessary knowledge about how to internationalize the content.
-- Minimize the footprint of the changes.
-- Only focus on internationalizing the content of the target files.
+- Always adhere to the guides provided via the 'mcp__locadex__' tools.
+  - These guides provide additional knowledge about how to internationalize the content.
+- Minimize the footprint of your changes.
+- Focus on internationalizing the content of the target files.
 - NEVER move internationalized content to a different file. All content MUST remain in the same file where it came from.
 - NEVER CREATE OR REMOVE ANY FILES (especially .bak files)
-- Internationalize all user facing content in the target files. Do not internationalize content that is not user facing.
+- Internationalize all user facing content in the target files. 
+- Do not internationalize content that is not user facing.
 - NEVER EDIT FILES THAT ARE NOT GIVEN TO YOU.
 
 
 --- TARGET FILE INFORMATION ---
 ${targetFile.map(
-  (file) => `
-Target file path:
+  (file, index) => `
+TARGET FILE ${index + 1}:
 ${file}
 
-Dependency files (files imported by the target file):
+DEPENDENCY FILES (files imported by target file ${index + 1}):
 ${dependencyFiles[file].length > 0 ? ` ${dependencyFiles[file].join(', ')}` : 'none'}
 
-Dependent files (files that import the target file):
+DEPENDENT FILES (files that import target file ${index + 1}):
 ${dependentFiles[file].length > 0 ? ` ${dependentFiles[file].join(', ')}` : 'none'}
 `
 )}
@@ -245,17 +250,17 @@ ${allMcpPrompt}
 
 function getFixPrompt() {
   const prompt = `Your new task is as follows:
-  Start by running the gt-next linter (and ts type check if there are ts/tsx files).
-  (1) You need to fix all errors relevant to the gt implementation code.
-  (2) Whenever you are finished with your changes please run the gt-next linter (and ts type check if applicable).
-  (3) Repeat steps 1-2 until there are no more errors or until you believe that you have fixed all errors.
+1. Start by running the gt-next validator.
+2. You need to fix all errors relevant to the gt implementation code.
+3. Whenever you are finished with your changes please run the gt-next validator again.
+4. Repeat steps 1-3 until there are no more errors, or until you believe that you have fixed all errors.
 
-  Rules:
-  - DO NOT modify any files that are not relevant to the gt implementation code.
-  - ONLY fix errors that are relevant to the gt implementation code and your implementation.
+Rules:
+- DO NOT modify any files that are not relevant to the gt implementation code.
+- ONLY fix errors that are relevant to the gt implementation code and your implementation.
 
-  To run the gt-next linter, run the following command:
-  'npx locadex translate --dry-run'and is appropriate for the files you have modified.`;
+To run the gt-next validator, run the following command:
+'npx locadex translate --dry-run'`;
 
   return prompt;
 }

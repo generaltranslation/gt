@@ -1,14 +1,14 @@
-# Server-Side Component Internationalization
+# Server-Side Component Internationalization Guide
 
 ## Available Methods
 
 Three methods exist for internationalizing server-side components:
 
-- `<T>` component (syntax identical to client-side) (STRONGLY PREFERRED)
-- `getGT()` function (server-side specific) (string only)
-- `getDict()` function (server-side specific) (string only)
+- `<T>` component (syntax identical to client-side) (For HTML/JSX content)
+- `getGT()` function (server-side specific) (For string content)
+- `getDict()` function (server-side specific) (For string content)
 
-**Importing:** The `getGT()` and `getDict()` functions are exported from `gt-next/server`.
+**Imports:** The `getGT()` and `getDict()` functions are exported from `gt-next/server`.
 
 ```tsx
 import { getGT } from 'gt-next/server';
@@ -20,9 +20,12 @@ The `<T>` component is exported from `gt-next`.
 import { T } from 'gt-next';
 ```
 
-## Critical Rule
+## RULES
 
-NEVER add React directives ("use client", "use server", etc.) when internationalizing components.
+- NEVER add "use server" to server-side components.
+- This guide only applies to async server-side components.
+  - If a component is not explicitly marked as async, this guide does NOT apply.
+  - You should refer to the client-side guide instead.
 
 ## getGT() Function
 
@@ -65,7 +68,7 @@ export const content = 'hi';
 // Example 2
 export const nestedContent = {
   name: 'Brian',
-  title: 'Engineer',
+  description: 'Brian is an engineer',
 };
 ```
 
@@ -85,7 +88,7 @@ export const useNestedContent = async () => {
   const t = await getGT();
   return {
     name: 'Brian',
-    title: t('Engineer'),
+    description: t('Brian is an engineer'),
   };
 };
 ```
@@ -124,11 +127,9 @@ export default async function NotificationComponent() {
 
 ```json
 {
-  "user": {
-    "profile": {
-      "name": "User Name",
-      "title": "Job Title"
-    }
+  "home": {
+    "name": "Home",
+    "description": "Home is a place where you live"
   }
 }
 ```
@@ -139,7 +140,7 @@ export default async function NotificationComponent() {
 import { getDict } from 'gt-next/server';
 export default async function MyComponent() {
   const t = await getDict();
-  return t('user.profile.name');
+  return t('home.description');
 }
 ```
 

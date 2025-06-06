@@ -1,14 +1,14 @@
-# Client-Side Component Internationalization
+# Client-Side Component Internationalization Guide
 
 ## Available Methods
 
 Three methods exist for internationalizing client-side components:
 
-- `<T>` component (syntax identical to server-side) (STRONGLY PREFERRED)
-- `useGT()` hook (client-side specific) (string only)
-- `useDict()` hook (client-side specific) (string only)
+- `<T>` component (syntax identical to server-side) (For HTML/JSX content)
+- `useGT()` hook (client-side specific) (For string content)
+- `useDict()` hook (client-side specific) (For string content)
 
-**Importing:** The `useGT()` and `useDict()` hooks are exported from `gt-next/client`.
+**Imports:** The `useGT()` and `useDict()` hooks are exported from `gt-next/client`.
 
 ```tsx
 import { useGT } from 'gt-next/client';
@@ -20,9 +20,12 @@ The `<T>` component is exported from `gt-next`.
 import { T } from 'gt-next';
 ```
 
-## Critical Rule
+## RULES
 
-NEVER add React directives ("use client", "use server", etc.) when internationalizing components.
+- If a component is explicitly marked as async, this guide does NOT apply.
+  - You should refer to the server-side guide instead.
+- If you decided to use `useGT()` or `useDict()`, the file MUST have the "use client" directive at the top of the file.
+  - If it does not, you must add it.
 
 ## useGT() Hook
 
@@ -43,6 +46,7 @@ export default function Example() {
 **After internationalization:**
 
 ```jsx
+'use client'; // Must always add this directive when adding the useGT hook
 import { useGT } from 'gt-next/client';
 export default function Example() {
   const t = useGT();
@@ -53,7 +57,7 @@ export default function Example() {
 
 ### Important: T Component as Props
 
-**NEVER pass `<T>` components as props to non-gt-next components** - this will cause rendering errors.
+**NEVER pass `<T>` components as props to non gt-next components** - this will cause rendering errors.
 
 **Before internationalization:**
 
@@ -64,7 +68,7 @@ import { Dialog } from '@/primitives/Dialog';
 export default function Example() {
   return (
     <Dialog
-      title={<T>Delete document</T>}  // This will break!
+      title={<T>Delete document</T>} // This will break!
     />
   );
 }
@@ -73,6 +77,7 @@ export default function Example() {
 **After internationalization:**
 
 ```jsx
+'use client'; // Must always add this directive when adding the useGT hook
 import { useGT } from 'gt-next/client';
 import { Dialog } from '@/primitives/Dialog';
 
@@ -80,15 +85,15 @@ export default function Example() {
   const t = useGT();
   return (
     <Dialog
-      title={t('Delete document')}  // Use string for props
+      title={t('Delete document')} // Use string for props
     >
-      <T>This content works fine</T>  {/* T component in JSX content is OK */}
+      <T>This content works fine</T> {/* T component in JSX content is OK */}
     </Dialog>
   );
 }
 ```
 
-**Rule**: Use `useGT()` for component props, `<T>` only for JSX content.
+**Rule**: Use `useGT()` for strings, `<T>` only for JSX content.
 
 ### Reusable Content Pattern
 
@@ -103,7 +108,7 @@ export const content = 'hi';
 // Example 2
 export const nestedContent = {
   name: 'Brian',
-  title: 'Engineer',
+  description: 'Brian is an engineer',
 };
 ```
 
@@ -123,7 +128,7 @@ export const useNestedContent = () => {
   const t = useGT();
   return {
     name: 'Brian',
-    title: t('Engineer'),
+    description: t('Brian is an engineer'),
   };
 };
 ```
@@ -166,12 +171,9 @@ export default function NotificationComponent() {
 
 ```json
 {
-  "content": "hi",
-  "user": {
-    "profile": {
-      "name": "User Name",
-      "title": "Job Title"
-    }
+  "home": {
+    "name": "Home",
+    "description": "Home is a place where you live"
   }
 }
 ```
@@ -185,9 +187,8 @@ export default function MyComponent() {
   const t = useDict();
   return (
     <>
-      <div>{t('content')}</div>
-      <div>{t('user.profile.name')}</div>
-      <div>{t('user.profile.title')}</div>
+      <div>{t('home.name')}</div>
+      <div>{t('home.description')}</div>
     </>
   );
 }

@@ -41,11 +41,13 @@ Branch components use condition-based prop patterns:
 </Plural>
 ```
 
-### Integration with `<T>` Components [#branch-in-t]
+### Integration with `<T>` Components
 
 Branch components require translation context for localized content. Use within `<T>` components for automatic translation:
 
 ```tsx
+import { T, Branch } from 'gt-next';
+
 <T>
   <Branch
     branch={status}
@@ -54,18 +56,20 @@ Branch components require translation context for localized content. Use within 
   >
     Status unknown
   </Branch>
-</T>
+</T>;
 ```
 
 The `<T>` component provides translation context and localizes branch content.
 
-### Pluralization Behavior [#plural-logic]
+### Pluralization Behavior
 
 **Automatic Rule Selection:** `<Plural>` uses Unicode CLDR rules to determine correct plural form based on `n` value and current locale.
 
 **Customization:** Override default plural forms with specific CLDR categories:
 
 ```tsx
+import { Plural } from 'gt-next';
+
 <Plural
   n={count}
   zero={<>No items</>}
@@ -78,7 +82,7 @@ The `<T>` component provides translation context and localizes branch content.
   // OR simplified
   singular={<>One item</>}
   plural={<>Multiple items</>}
-/>
+/>;
 ```
 
 **Available Forms:** zero, one, two, few, many, other, dual (locale-dependent), plus simplified singular/plural.
@@ -87,7 +91,7 @@ The `<T>` component provides translation context and localizes branch content.
 
 ## Implementation Examples
 
-### `<Branch>` - Conditional Logic Replacement [#branch-conditionals]
+### `<Branch>` - Conditional Logic Replacement
 
 **Replacing Ternary Operators:** Convert inline conditional logic to declarative branch syntax.
 
@@ -102,15 +106,39 @@ The `<T>` component provides translation context and localizes branch content.
 For example, if isActive is a boolean, convert it to a string first.
 
 **Replacing Conditional Rendering:** Convert `&&` operator patterns to branch syntax.
+This is only applicable if the content is being used in a `<T>` component.
+
+**Invalid Syntax**:
 
 ```tsx
-// Instead of: {isActive && <p>Active</p>}
-<Branch branch={isActive} true={<p>Active</p>}>
-  <></>
-</Branch>
+<T>{isActive && <p>Active</p>}</T>
 ```
 
-### `<Plural>` - Number-Based Rendering [#plural-numbers]
+**Valid Syntax**:
+
+```tsx
+<T>
+  <Branch branch={isActive} true={<p>Active</p>}>
+    <></>
+  </Branch>
+</T>
+```
+
+**Alternative Valid Syntax**:
+
+```tsx
+{
+  isActive && (
+    <T>
+      <p>Active</p>
+    </T>
+  );
+}
+```
+
+In this case, the `<T>` component is not wrapping the conditional, so the branch component is not needed.
+
+### `<Plural>` - Number-Based Rendering
 
 **Basic Pluralization:** Replace manual plural logic with locale-aware components.
 
@@ -227,7 +255,7 @@ import { T, Plural, Num } from 'gt-next';
 
 ## Common Implementation Issues
 
-### Missing Branch Values [#missing-branch]
+### Missing Branch Values
 
 **Critical:** Unmatched branch values fall back to children content. Ensure branch prop values match defined keys.
 
@@ -243,7 +271,7 @@ import { T, Plural, Num } from 'gt-next';
 
 **Rule:** Always provide fallback children for robust error handling.
 
-### Missing Plural Forms [#plural-locale]
+### Missing Plural Forms
 
 **Critical:** Provide required plural forms for your default locale to ensure fallback content availability.
 
