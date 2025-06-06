@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { ClaudeSDKMessage } from '../types/claude-sdk.js';
 import { guides } from '../mcp/tools/guides.js';
 import { SpinnerResult } from '@clack/prompts';
@@ -190,7 +191,12 @@ export class ClaudeCodeRunner {
           toolUses.push(c.name);
           if (c.name.startsWith('mcp__locadex__')) {
             posthog.capture({
-              distinctId: 'anonymous',
+              distinctId: this.sessionId
+                ? createHash('sha256')
+                    .update(this.sessionId)
+                    .digest('base64url')
+                    .slice(0, 8)
+                : 'anonymous',
               event: 'tool_used',
               properties: {
                 tool: c.name,
