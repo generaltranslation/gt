@@ -17,12 +17,6 @@ export const guides: Guide[] = [
     type: 'important',
   },
   {
-    id: 'basic_next-setup',
-    description: 'Basic guide for setting up gt-next in a Next.js project.',
-    path: 'guides/next/basic/setup.md',
-    type: 'basic',
-  },
-  {
     id: 'basic_next-jsx',
     description:
       'Basic guide for translating JSX and HTML content in a Next.js project.',

@@ -1,6 +1,6 @@
 {
   "name": "locadex",
-  "version": "0.0.2-alpha.3",
+  "version": "0.0.2-alpha.4",
   "description": "An AI agent for internationalization",
   "main": "dist/index.js",
   "type": "module",
@@ -58,7 +58,7 @@
     "release:latest": "npm run build:release && npm publish --access public --tag latest",
     "test": "vitest run",
     "test:watch": "vitest",
-    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org general-translation --project locadex ./dist && sentry-cli sourcemaps upload --org general-translation --project locadex ./dist"
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org general-translation --project locadex ./dist && sentry-cli sourcemaps upload --org general-translation --project locadex ./dist --release=${npm_package_version}"
   },
   "repository": {
     "type": "git",

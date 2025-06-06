@@ -206,9 +206,18 @@ export class ClaudeCodeRunner {
         logger.message(`Used tools: ${toolUses.join(', ')}`);
       }
     } else if (outputData.type === 'result') {
-      const resultInfo = constructResultInfo(outputData);
-      if (resultInfo) {
-        logger.success(resultInfo);
+      if (!outputData.is_error) {
+        logger.success(
+          `Done!\nCost: $${Number(outputData.cost_usd).toFixed(2)}\nDuration: ${
+            Number(outputData.duration_ms) / 1000
+          }s`
+        );
+      } else {
+        logger.error(
+          `Error: ${outputData.subtype}\nCost: $${outputData.cost_usd}\nDuration: ${
+            Number(outputData.duration_ms) / 1000
+          }s`
+        );
       }
     } else if (outputData.type === 'system') {
       if (outputData.subtype === 'init') {
