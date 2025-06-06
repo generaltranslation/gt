@@ -51,6 +51,45 @@ export default function Example() {
 }
 ```
 
+### Important: T Component as Props
+
+**NEVER pass `<T>` components as props to non-gt-next components** - this will cause rendering errors.
+
+**Before internationalization:**
+
+```jsx
+import { T } from 'gt-next';
+import { Dialog } from '@/primitives/Dialog';
+
+export default function Example() {
+  return (
+    <Dialog
+      title={<T>Delete document</T>}  // This will break!
+    />
+  );
+}
+```
+
+**After internationalization:**
+
+```jsx
+import { useGT } from 'gt-next/client';
+import { Dialog } from '@/primitives/Dialog';
+
+export default function Example() {
+  const t = useGT();
+  return (
+    <Dialog
+      title={t('Delete document')}  // Use string for props
+    >
+      <T>This content works fine</T>  {/* T component in JSX content is OK */}
+    </Dialog>
+  );
+}
+```
+
+**Rule**: Use `useGT()` for component props, `<T>` only for JSX content.
+
 ### Reusable Content Pattern
 
 **Requirement**: When content is shared across multiple files or locations, create custom hooks to avoid code duplication.

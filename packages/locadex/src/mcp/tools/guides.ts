@@ -109,7 +109,7 @@ export const guides: Guide[] = [
   {
     id: 'advanced_next-interpolated-strings',
     description:
-      'Advanced guide for wherever you see an interpolated string (template string literal with quasis) that needs to be internationalized.',
+      'Advanced guide for wherever you see a string with variables within/around it or interpolated string (template string literal with quasis) that needs to be internationalized.',
     path: 'guides/next/advanced/interpolated-strings.md',
     type: 'advanced',
   },
