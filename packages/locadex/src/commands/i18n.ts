@@ -148,7 +148,7 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
 
   // TODO: uncomment
   // // Always clean up the file list when done, regardless of success or failure
-  // logger.info(`[dagCommand] Cleaning up file list: ${stateFilePath}`);
+  // logger.info(`Cleaning up file list: ${stateFilePath}`);
   // cleanUp(stateFilePath);
 
   // If there was an error, exit with code 1
@@ -162,7 +162,7 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
   try {
     await agent.run({ prompt: fixPrompt, sessionId }, { spinner });
   } catch (error) {
-    logger.debugMessage(`[dagCommand] Fixing errors failed: ${error}`);
+    logger.debugMessage(`Fixing errors failed: ${error}`);
     outro(chalk.red('❌ Locadex i18n failed!'));
     process.exit(1);
   }
@@ -178,9 +178,7 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
       { spinner }
     );
   } catch (error) {
-    logger.debugMessage(
-      `[dagCommand] Error in claude report generation: ${error}`
-    );
+    logger.debugMessage(`Error in claude report generation: ${error}`);
     outro(chalk.red('❌ Locadex i18n failed!'));
     process.exit(1);
   }
@@ -250,7 +248,7 @@ function getPrompt({
 - Internationalize all user facing content in the target files. 
 - NEVER EDIT FILES THAT ARE NOT GIVEN TO YOU.
 
---- TARGET FILE INFORMATION ---
+## TARGET FILE INFORMATION
 ${targetFile.map(
   (file, index) => `
 TARGET FILE ${index + 1}:
@@ -263,7 +261,10 @@ DEPENDENT FILES (files that import target file ${index + 1}):
 ${dependentFiles[file].length > 0 ? ` ${dependentFiles[file].join(', ')}` : 'none'}
 `
 )}
---- MCP TOOLS ---
+
+---
+
+## MCP TOOLS
 
 ${allMcpPrompt}
 `;
@@ -274,18 +275,31 @@ ${allMcpPrompt}
 // check (dry run and ts check) should be at the end
 
 function getFixPrompt() {
-  const prompt = `Your new task is as follows:
-1. Start by running the gt-next validator.
-2. You need to fix all errors relevant to the gt implementation code.
-3. Whenever you are finished with your changes please run the gt-next validator again.
-4. Repeat steps 1-3 until there are no more errors, or until you believe that you have fixed all errors.
+  const prompt = `# Task: Fix implementation errors in the project.
 
-Rules:
-- DO NOT modify any files that are not relevant to the gt implementation code.
-- ONLY fix errors that are relevant to the gt implementation code and your implementation.
+## INSTRUCTIONS
+
+Previously, you helped me internationalize a set of files in this project.
+Your new task is as follows:
+
+1. Run the gt-next validator.
+2. Fix all errors relevant to the gt-next implementation code.
+3. Whenever you are finished with your changes, run the gt-next validator.
+4. Repeat steps 1-3 until there are no more errors, or until you believe that you have fixed all errors.
+5. If the project is setup with linting, lint the project and fix all errors.
+
+## RULES:
+- DO NOT modify any files that are not relevant to the gt-next implementation code.
+- ONLY fix errors that are relevant to the gt-next implementation code and your current or previous implementation.
+- Resolve unused imports from 'gt-next'. 
+  - In particular, if a file contains user-facing content that should be internationalized and is not, you should internationalize it.
+- Resolve missing imports from 'gt-next'. If a file is missing an import from 'gt-next', add it.
 
 To run the gt-next validator, run the following command:
-'npx locadex translate --dry-run'`;
+'npx locadex translate --dry-run'
+
+## MCP TOOLS
+${allMcpPrompt}`;
 
   return prompt;
 }
