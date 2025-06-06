@@ -46,7 +46,7 @@ function addFileToList(
     const file = files[existingIndex];
     const previousStatus = file.status;
     file.status = status;
-    
+
     if (status === 'in_progress' && previousStatus !== 'in_progress') {
       file.setToInProgressAt = now;
     } else if (status === 'edited' && previousStatus !== 'edited') {

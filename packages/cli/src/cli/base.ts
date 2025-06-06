@@ -1,15 +1,10 @@
-import { program } from 'commander';
+import { Command } from 'commander';
 import { createOrUpdateConfig } from '../fs/config/setupConfig';
 import findFilepath, { findFilepaths, readFile } from '../fs/findFilepath';
 import {
   displayHeader,
   promptText,
   logErrorAndExit,
-  noDefaultLocaleError,
-  noLocalesError,
-  noApiKeyError,
-  noProjectIdError,
-  noFilesError,
   endCommand,
   promptConfirm,
   promptMultiSelect,
@@ -56,11 +51,14 @@ export type LoginOptions = {
 export class BaseCLI {
   protected library: SupportedLibraries;
   protected additionalModules: SupportedLibraries[];
+  protected program: Command;
   // Constructor is shared amongst all CLI class types
   public constructor(
+    program: Command,
     library: SupportedLibraries,
     additionalModules?: SupportedLibraries[]
   ) {
+    this.program = program;
     this.library = library;
     this.additionalModules = additionalModules || [];
     this.setupInitCommand();
@@ -78,11 +76,10 @@ export class BaseCLI {
     if (process.argv.length <= 2) {
       process.argv.push('init');
     }
-    program.parse();
   }
 
   protected setupGTCommand(): void {
-    program
+    this.program
       .command('translate')
       .description('Translate your project using General Translation')
       .option(
@@ -120,7 +117,7 @@ export class BaseCLI {
   }
 
   protected setupLoginCommand(): void {
-    program
+    this.program
       .command('auth')
       .description('Generate a General Translation API key and project ID')
       .option(
@@ -165,7 +162,7 @@ export class BaseCLI {
   }
 
   protected setupInitCommand(): void {
-    program
+    this.program
       .command('init')
       .description(
         'Run the setup wizard to configure your project for General Translation'
@@ -219,7 +216,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
   }
 
   protected setupConfigureCommand(): void {
-    program
+    this.program
       .command('configure')
       .description(
         'Configure your project for General Translation. This will create a gt.config.json file in your codebase.'
@@ -241,7 +238,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
   }
 
   protected setupSetupCommand(): void {
-    program
+    this.program
       .command('setup')
       .description(
         'Run the setup to configure your Next.js or React project for General Translation'

@@ -15,6 +15,7 @@ import { withTelemetry } from './telemetry.js';
 import { logger } from './logging/logger.js';
 import { i18nCommand } from './commands/i18n.js';
 import { displayHeader } from './logging/console.js';
+import { main } from 'gtx-cli/index';
 
 const packageJson = JSON.parse(
   readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -25,22 +26,15 @@ const program = new Command();
 program
   .name('locadex')
   .description('AI agent for internationalization')
-  .version(packageJson.version)
+  .version(packageJson.version);
+
+program
+  .command('start')
+  .description('Run Locadex on your project')
   .option('-v, --verbose', 'Verbose output')
   .option('-d, --debug', 'Debug output')
   .option('-b, --batch-size <number>', 'Batch size', '1')
   .option('--no-telemetry', 'Disable telemetry')
-  .action((options: CliOptions) => {
-    withTelemetry({ enabled: !options.noTelemetry, options }, () => {
-      logger.initialize(options);
-      displayHeader();
-      setupCommand(Number(options.batchSize) || 1);
-    });
-  });
-
-program
-  .command('setup')
-  .description('Run Locadex on your project')
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
     const allOptions = { ...parentOptions, ...options };
@@ -57,6 +51,10 @@ program
 program
   .command('i18n')
   .description('Run Locadex i18n on your project')
+  .option('-v, --verbose', 'Verbose output')
+  .option('-d, --debug', 'Debug output')
+  .option('-b, --batch-size <number>', 'Batch size', '1')
+  .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
     const allOptions = { ...parentOptions, ...options };
@@ -69,5 +67,7 @@ program
       }
     );
   });
+
+main(program);
 
 program.parse();

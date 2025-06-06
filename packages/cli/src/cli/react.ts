@@ -1,5 +1,4 @@
-// packages/gt-cli-core/src/BaseCLI.ts
-import { program } from 'commander';
+import { Command } from 'commander';
 import {
   Options,
   SupportedFrameworks,
@@ -37,10 +36,11 @@ const pkg = 'gt-react';
 
 export class ReactCLI extends BaseCLI {
   constructor(
+    command: Command,
     library: 'gt-react' | 'gt-next',
     additionalModules?: SupportedLibraries[]
   ) {
-    super(library, additionalModules);
+    super(command, library, additionalModules);
   }
   public init() {
     this.setupStageCommand();
@@ -62,7 +62,7 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected setupStageCommand(): void {
-    program
+    this.program
       .command('stage')
       .description(
         'Submits the project to the General Translation API for translation. Translations created using this command will require human approval.'
@@ -124,7 +124,7 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected setupTranslateCommand(): void {
-    program
+    this.program
       .command('translate')
       .description(
         'Scans the project for a dictionary and/or <T> tags, and sends the updates to the General Translation API for translation.'
@@ -186,7 +186,7 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected setupGenerateSourceCommand(): void {
-    program
+    this.program
       .command('generate')
       .description(
         'Generate a translation file for the source locale. The -t flag must be provided. This command should be used if you are handling your own translations.'
@@ -227,7 +227,7 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected setupScanCommand(): void {
-    program
+    this.program
       .command('scan')
       .description(
         'Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids'
