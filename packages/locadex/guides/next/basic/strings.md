@@ -2,6 +2,8 @@
 
 Use `useGT()` and `getGT()` to internationalize strings.
 
+**Important:** For JSX and HTML content, ALWAYS use the `<T>` component over `useGT()` and `getGT()`.
+
 **Import:** The `useGT()` and `getGT()` functions are exported from `gt-next/client` and `gt-next/server` respectively.
 
 ```tsx
@@ -23,7 +25,7 @@ Before:
 ```jsx
 function Greeting() {
   const greeting = 'Hello, world!';
-  return <p>{greeting}</p>;
+  return greeting;
 }
 ```
 
@@ -35,8 +37,8 @@ import { useGT } from 'gt-next/client';
 
 function Greeting() {
   const t = useGT();
-  const greeting = 'Hello, world!';
-  return <p>{t(greeting)}</p>;
+  const greeting = t('Hello, world!');
+  return greeting;
 }
 ```
 
@@ -46,8 +48,8 @@ Before:
 
 ```tsx
 export async function Greeting() {
-  const greeting = 'Hello, world!';
-  return <p>{greeting}</p>;
+  const greeting = t('Hello, world!');
+  return greeting;
 }
 ```
 
@@ -58,8 +60,8 @@ import { getGT } from 'gt-next/server';
 
 export async function Greeting() {
   const t = await getGT();
-  const greeting = 'Hello, world!';
-  return <p>{t(greeting)}</p>;
+  const greeting = t('Hello, world!');
+  return greeting;
 }
 ```
 
@@ -68,12 +70,15 @@ export async function Greeting() {
 Add `context` when content meaning is ambiguous:
 
 ```jsx
+'use client';
 import { useGT } from 'gt-next/client';
 
 function Greeting() {
   const t = useGT();
-  const toast = 'Click on the toast to dismiss it.';
-  return <p>{t(toast, { context: 'toast, as in a pop-up notification' })}</p>;
+  const toast = t('Click on the toast to dismiss it.', {
+    context: 'toast, as in a pop-up notification',
+  });
+  return toast;
 }
 ```
 
@@ -94,22 +99,18 @@ RULES:
 In the following examples, `t` is the translation function callback.
 
 ```tsx
-return <p>{t('Hello, world!')}</p>;
+const greeting = t('Hello, world!');
 ```
 
 ```tsx
-return <p>{t('Hello, {name}!', { variables: { name: 'John' } })}</p>;
+const greeting = t('Hello, {name}!', { variables: { name: 'John' } });
 ```
 
 ```tsx
-return (
-  <p>
-    {t('You have {dollars} dollars!', {
-      variables: { dollars: 123 },
-      variableOptions: { dollars: { style: 'currency', currency: 'USD' } },
-    })}
-  </p>
-);
+const message = t('You have {dollars} dollars!', {
+  variables: { dollars: 123 },
+  variableOptions: { dollars: { style: 'currency', currency: 'USD' } },
+});
 ```
 
 `variables` is an object that maps variable names to their values.
@@ -123,5 +124,5 @@ The options are the same as the options for the Intl.NumberFormat and Intl.DateT
 Never use the `${}` syntax for dynamic strings inside the translation callback.
 
 ```tsx
-return <p>{t(`Hello, ${name}!`)}</p>;
+const invalidUsage = t(`Hello, ${name}!`);
 ```
