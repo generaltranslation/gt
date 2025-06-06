@@ -8,6 +8,19 @@ import { addToGitIgnore } from './fs/writeFiles.js';
 import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 
+export interface LocadexMetadata {
+  createdAt: string;
+  locadexVersion: string;
+  workingDirectory: string;
+  transport: 'sse' | 'stdio';
+  tempDirectory: string;
+  nodeVersion: string;
+  platform: string;
+  arch: string;
+  batchSize?: number;
+  [key: string]: any;
+}
+
 const mcpStdioConfig = {
   mcpServers: {
     locadex: {
@@ -22,10 +35,15 @@ export class LocadexManager {
   private mcpProcess: ChildProcess | undefined;
   private mcpConfigPath: string;
   private filesStateFilePath: string;
+  private metadataFilePath: string;
   private tempDir: string;
   private apiKey?: string;
 
-  constructor(options: { mcpTransport: 'sse' | 'stdio'; apiKey?: string }) {
+  constructor(options: { 
+    mcpTransport: 'sse' | 'stdio'; 
+    apiKey?: string;
+    metadata?: Partial<LocadexMetadata>;
+  }) {
     this.apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY;
 
     const cwd = process.cwd();
@@ -40,12 +58,33 @@ export class LocadexManager {
 
     this.mcpConfigPath = path.resolve(this.tempDir, 'mcp.json');
     this.filesStateFilePath = path.resolve(this.tempDir, 'files-state.json');
+    this.metadataFilePath = path.resolve(this.tempDir, 'metadata.json');
 
+    // Create files-state.json
     const filesState: FileEntry[] = [];
     fs.writeFileSync(
       this.filesStateFilePath,
       JSON.stringify(filesState, null, 2)
     );
+
+    // Create metadata.json
+    const metadata: LocadexMetadata = {
+      createdAt: new Date().toISOString(),
+      locadexVersion: JSON.parse(fs.readFileSync(fromPackageRoot('package.json'), 'utf8')).version,
+      workingDirectory: cwd,
+      transport: options.mcpTransport,
+      tempDirectory: this.tempDir,
+      nodeVersion: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      ...options.metadata
+    };
+    fs.writeFileSync(
+      this.metadataFilePath,
+      JSON.stringify(metadata, null, 2)
+    );
+
+    logger.debugMessage(`Created metadata.json at: ${this.metadataFilePath}`);
 
     if (options.mcpTransport === 'stdio') {
       mcpStdioConfig.mcpServers.locadex.env = {
@@ -105,6 +144,10 @@ export class LocadexManager {
     return this.filesStateFilePath;
   }
 
+  getMetadataFilePath(): string {
+    return this.metadataFilePath;
+  }
+
   cleanup(): void {
     if (this.mcpProcess && !this.mcpProcess.killed) {
       this.mcpProcess.kill('SIGTERM');
@@ -117,7 +160,10 @@ export class LocadexManager {
   }
 }
 
-export function configureAgent(options: { mcpTransport: 'sse' | 'stdio' }) {
+export function configureAgent(options: { 
+  mcpTransport: 'sse' | 'stdio';
+  metadata?: Partial<LocadexMetadata>;
+}) {
   const manager = new LocadexManager(options);
   const agent = manager.createAgent();
 
@@ -128,5 +174,6 @@ export function configureAgent(options: { mcpTransport: 'sse' | 'stdio' }) {
   return {
     agent,
     filesStateFilePath: manager.getFilesStateFilePath(),
+    metadataFilePath: manager.getMetadataFilePath(),
   };
 }

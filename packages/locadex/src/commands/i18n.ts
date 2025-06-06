@@ -69,8 +69,11 @@ export async function i18nCommand(batchSize: number) {
   );
 
   // Configure agent
-  const { agent, filesStateFilePath } = configureAgent({
+  const { agent, filesStateFilePath, metadataFilePath } = configureAgent({
     mcpTransport: 'sse',
+    metadata: {
+      batchSize: batchSize,
+    },
   });
 
   // Track session id

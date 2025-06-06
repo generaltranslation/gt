@@ -134,7 +134,7 @@ async function setupLocaleSelector() {
   spinner.start('Setting up locale selector...');
 
   // Configure agent
-  const { agent, filesStateFilePath } = configureAgent({
+  const { agent, filesStateFilePath, metadataFilePath } = configureAgent({
     mcpTransport: 'sse',
   });
 
