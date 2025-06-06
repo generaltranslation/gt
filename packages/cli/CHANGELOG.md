@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 1.2.23
+
+### Patch Changes
+
+- [#336](https://github.com/generaltranslation/gt/pull/336) [`d22c287`](https://github.com/generaltranslation/gt/commit/d22c2871f1b474bc6cf981621a37400a92b4bbff) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix string translation fallback function tracing when translating
+
 ## 1.2.22
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # generaltranslation
 
+## 6.3.0
+
+### Minor Changes
+
+- [#334](https://github.com/generaltranslation/gt/pull/334) [`f08ebb9`](https://github.com/generaltranslation/gt/commit/f08ebb92680c6158dd75ea1089924e74a8731774) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Added custom mapping in the GT driver
+
+### Patch Changes
+
+- [#334](https://github.com/generaltranslation/gt/pull/334) [`f08ebb9`](https://github.com/generaltranslation/gt/commit/f08ebb92680c6158dd75ea1089924e74a8731774) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - fix error that was introduced during testing
+
 ## 6.2.10
 
 ### Patch Changes
