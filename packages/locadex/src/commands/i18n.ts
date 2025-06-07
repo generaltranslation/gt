@@ -129,7 +129,7 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
       }
     } catch (error) {
       hasError = true;
-      logger.debugMessage(`Error in claude i18n process: ${error}`);
+      logger.debugMessage(`[i18n] Error in claude i18n process: ${error}`);
       break;
     }
 
@@ -164,7 +164,7 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
   try {
     await agent.run({ prompt: fixPrompt, sessionId }, { spinner });
   } catch (error) {
-    logger.debugMessage(`Fixing errors failed: ${error}`);
+    logger.debugMessage(`[i18n] Fixing errors failed: ${error}`);
     outro(chalk.red('❌ Locadex i18n failed!'));
     process.exit(1);
   }
@@ -183,7 +183,7 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
       { spinner }
     );
   } catch (error) {
-    logger.debugMessage(`Error in claude report generation: ${error}`);
+    logger.debugMessage(`[i18n] Error in claude report generation: ${error}`);
     outro(chalk.red('❌ Locadex i18n failed!'));
     process.exit(1);
   }

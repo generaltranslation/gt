@@ -139,7 +139,7 @@ export async function setupCommand(batchSize: number) {
 
 async function setupLocaleSelector(manager: LocadexManager) {
   logger.initializeSpinner();
-  logger.spinner.start('Setting up locale selector...');
+  logger.spinner.start('Creating locale selector...');
 
   // Create agent
   const agent = manager.createAgent();
