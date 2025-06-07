@@ -144,7 +144,7 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
     });
   }
 
-  logger.progressBar.stop('Files processed');
+  logger.progressBar.stop(`Processed ${allFiles.length} files`);
 
   // TODO: uncomment
   // // Always clean up the file list when done, regardless of success or failure
