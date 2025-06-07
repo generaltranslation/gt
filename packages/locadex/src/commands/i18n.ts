@@ -54,9 +54,6 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
     requireConfig: findRequireConfig(),
   });
 
-  logger.verboseMessage(
-    `Number of files to process: ${dag.getTopologicalOrder().length}`
-  );
   // If no manager is provided, create a new one
   if (!manager) {
     manager = new LocadexManager({
@@ -83,7 +80,10 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
   const stateFilePath = addFilesToManager(filesStateFilePath, taskQueue);
   spinner.stop('Locadex initialized');
 
-  logger.verboseMessage(`Track progress here: ${stateFilePath}`);
+  logger.verboseMessage(
+    `Number of files to process: ${dag.getTopologicalOrder().length}`
+  );
+  logger.debugMessage(`Track progress here: ${stateFilePath}`);
 
   logger.initializeProgressBar(taskQueue.length);
   logger.progressBar.start('Processing files...');
