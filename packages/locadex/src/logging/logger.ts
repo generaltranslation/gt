@@ -156,7 +156,7 @@ class Logger {
 
   debugMessage(message: string): void {
     if (this._debug) {
-      this.message(`[locadex] ${message}`);
+      this.message(message);
     }
   }
 
