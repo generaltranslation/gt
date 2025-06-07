@@ -130,7 +130,6 @@ export async function setupCommand(batchSize: number) {
 
   const formatter = await detectFormatter();
   if (formatter && filesUpdated.length > 0) {
-    logger.step(chalk.green(`Formatting ${filesUpdated.length} files...`));
     await formatFiles(filesUpdated, formatter);
   }
 
@@ -139,7 +138,8 @@ export async function setupCommand(batchSize: number) {
 }
 
 async function setupLocaleSelector(manager: LocadexManager) {
-  logger.step('Setting up locale selector...');
+  logger.initializeSpinner();
+  logger.spinner.start('Setting up locale selector...');
 
   // Create agent
   const agent = manager.createAgent();
@@ -154,7 +154,7 @@ async function setupLocaleSelector(manager: LocadexManager) {
     process.exit(1);
   }
 
-  logger.success('Locale selector setup complete');
+  logger.spinner.stop('Locale selector setup complete');
 }
 
 function getLocaleSelectorPrompt() {

@@ -6,7 +6,8 @@
   "type": "module",
   "bin": {
     "locadex": "dist/cli.js",
-    "locadex-mcp": "dist/mcp.js"
+    "locadex-mcp": "dist/mcp.js",
+    "locadex-mcp-sse": "dist/mcp-sse.js"
   },
   "files": [
     "dist",

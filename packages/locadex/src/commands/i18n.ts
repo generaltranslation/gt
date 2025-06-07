@@ -86,7 +86,7 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
   logger.verboseMessage(`Track progress here: ${stateFilePath}`);
 
   logger.initializeProgressBar(taskQueue.length);
-  logger.startProgressBar('Processing files...');
+  logger.progressBar.start('Processing files...');
   // Main loop
   let hasError = false;
   while (taskQueue.length > 0) {
@@ -135,7 +135,7 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
 
     // Mark task as complete
     tasks.forEach((task) => markFileAsEdited(task, filesStateFilePath));
-    logger.advanceProgressBar(
+    logger.progressBar.advance(
       tasks.length,
       `Processed ${Number(((allFiles.length - taskQueue.length) / allFiles.length) * 100).toFixed(2)}% of files`
     );
@@ -144,7 +144,7 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
     });
   }
 
-  logger.stopProgressBar('Files processed');
+  logger.progressBar.stop('Files processed');
 
   // TODO: uncomment
   // // Always clean up the file list when done, regardless of success or failure
@@ -158,6 +158,8 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
   }
 
   // Fix prompt
+  logger.initializeSpinner();
+  logger.spinner.start('Fixing errors...');
   const fixPrompt = getFixPrompt();
   try {
     await agent.run({ prompt: fixPrompt, sessionId }, { spinner });
@@ -166,8 +168,11 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
     outro(chalk.red('❌ Locadex i18n failed!'));
     process.exit(1);
   }
+  logger.spinner.stop('Fixed errors');
 
   // Generate report
+  logger.initializeSpinner();
+  logger.spinner.start('Generating report...');
   const reportPrompt = getReportPrompt();
   try {
     await agent.run(
@@ -182,6 +187,7 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
     outro(chalk.red('❌ Locadex i18n failed!'));
     process.exit(1);
   }
+  logger.spinner.stop('Report generated');
 
   // cleanup
 

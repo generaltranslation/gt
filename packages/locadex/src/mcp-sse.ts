@@ -9,10 +9,34 @@ import express from 'express';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { logger } from './logging/logger.js';
+import { createServer } from 'node:http';
+
+async function findAvailablePort(startPort: number): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+
+    server.listen(startPort, () => {
+      const port = (server.address() as any)?.port;
+      server.close(() => resolve(port));
+    });
+
+    server.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        // Port is in use, try the next one
+        findAvailablePort(startPort + 1)
+          .then(resolve)
+          .catch(reject);
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
 
 export async function start() {
   const stateFile = process.env.LOCADEX_FILES_STATE_FILE_PATH;
-  const port = process.env.PORT || 8888;
+  const requestedPort = process.env.PORT ? parseInt(process.env.PORT) : 8888;
+  const port = await findAvailablePort(requestedPort);
 
   const verbose = process.env.LOCADEX_VERBOSE === 'true';
   const debug = process.env.LOCADEX_DEBUG === 'true';
@@ -71,8 +95,12 @@ export async function start() {
   });
 
   app.listen(port, () => {
+    const portMessage =
+      port !== requestedPort
+        ? `${port} (requested ${requestedPort} was in use)`
+        : `${port}`;
     logger.debugMessage(
-      `[locadex-mcp] started on port ${port} with state file ${stateFile}`
+      `[locadex-mcp] started on port ${portMessage} with state file ${stateFile}`
     );
   });
 }

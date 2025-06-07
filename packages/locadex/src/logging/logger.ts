@@ -1,4 +1,4 @@
-import { ProgressResult } from '@clack/prompts';
+import { ProgressResult, SpinnerResult } from '@clack/prompts';
 import { CliOptions } from '../types/cli.js';
 import {
   logInfo,
@@ -9,13 +9,83 @@ import {
   logMessage,
   logErrorAndExit,
   createProgressBar,
+  createSpinner,
 } from './console.js';
+
+class ProgressBar {
+  private progressBar: ProgressResult | undefined;
+  constructor() {}
+
+  init(total: number): void {
+    if (!this.progressBar) {
+      this.progressBar = createProgressBar(total);
+    }
+  }
+
+  start(message?: string): void {
+    if (this.progressBar) {
+      this.progressBar.start(message);
+    }
+  }
+
+  advance(amount: number, message?: string): void {
+    if (this.progressBar) {
+      this.progressBar.advance(amount, message);
+    }
+  }
+
+  stop(message?: string): void {
+    if (this.progressBar) {
+      try {
+        this.progressBar.stop(message);
+        this.progressBar = undefined;
+      } catch (error) {
+        this.progressBar = undefined;
+      }
+    }
+  }
+}
+
+class Spinner {
+  private spinner: SpinnerResult | undefined;
+  constructor() {}
+
+  init(): void {
+    if (!this.spinner) {
+      this.spinner = createSpinner();
+    }
+  }
+
+  start(message?: string): void {
+    if (this.spinner) {
+      this.spinner.start(message);
+    }
+  }
+
+  update(message?: string): void {
+    if (this.spinner) {
+      this.spinner.message(message);
+    }
+  }
+
+  stop(message?: string): void {
+    if (this.spinner) {
+      try {
+        this.spinner.stop(message);
+        this.spinner = undefined;
+      } catch (error) {
+        this.spinner = undefined;
+      }
+    }
+  }
+}
 
 class Logger {
   private static instance: Logger;
   private _verbose: boolean = false;
   private _debug: boolean = false;
-  private progressBar: ProgressResult | undefined;
+  progressBar: ProgressBar = new ProgressBar();
+  spinner: Spinner = new Spinner();
   private constructor() {}
 
   static getInstance(): Logger {
@@ -91,31 +161,13 @@ class Logger {
   }
 
   initializeProgressBar(total: number): void {
-    if (!this._verbose && !this._debug && !this.progressBar) {
-      this.progressBar = createProgressBar(total);
+    if (!this._verbose && !this._debug) {
+      this.progressBar.init(total);
     }
   }
-
-  startProgressBar(message?: string): void {
-    if (this.progressBar) {
-      this.progressBar.start(message);
-    }
-  }
-
-  advanceProgressBar(amount: number, message?: string): void {
-    if (this.progressBar) {
-      this.progressBar.advance(amount, message);
-    }
-  }
-
-  stopProgressBar(message?: string): void {
-    if (this.progressBar) {
-      try {
-        this.progressBar.stop(message);
-        this.progressBar = undefined;
-      } catch (error) {
-        this.progressBar = undefined;
-      }
+  initializeSpinner(): void {
+    if (!this._verbose && !this._debug) {
+      this.spinner.init();
     }
   }
 }
