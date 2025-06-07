@@ -198,10 +198,12 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
   }
 
   logger.info(
-    `Total Cost: $${manager.stats.getStats().totalCost.toFixed(2)}
+    chalk.dim(
+      `Total Cost: $${manager.stats.getStats().totalCost.toFixed(2)}
 Total API duration: ${Math.round(manager.stats.getStats().totalApiDuration / 1000)}s
 Total wall duration: ${Math.round((Date.now() - startTime) / 1000)}s
 Total files processed: ${manager.stats.getStats().processedFiles}`
+    )
   );
 
   outro(chalk.green('✅ Locadex i18n complete!'));

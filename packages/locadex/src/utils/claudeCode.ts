@@ -141,12 +141,12 @@ export class ClaudeCodeRunner {
         for (const line of lines) {
           if (line.trim()) {
             try {
-              logger.verboseMessage(line);
+              logger.debugMessage(`[Claude Code SDK] ${line}`);
               const outputData: ClaudeSDKMessage = JSON.parse(line);
               this.handleSDKOutput(outputData, obs);
             } catch (error) {
-              logger.verboseMessage(
-                `Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
+              logger.debugMessage(
+                `[Claude Code SDK] Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
               );
             }
           }
@@ -208,7 +208,9 @@ export class ClaudeCodeRunner {
         logger.verboseMessage(text.join('').trim());
       }
       if (toolUses.length > 0) {
-        logger.verboseMessage(`Used tools: ${toolUses.join(', ')}`);
+        logger.debugMessage(
+          `[Claude Code SDK] Used tools: ${toolUses.join(', ')}`
+        );
       }
       this.manager.stats.updateStats({
         newToolCalls: toolUses.length,
@@ -216,13 +218,13 @@ export class ClaudeCodeRunner {
     } else if (outputData.type === 'result') {
       if (!outputData.is_error) {
         logger.verboseMessage(
-          `Claude Code finished\nCost: $${Number(outputData.cost_usd).toFixed(2)}\nDuration: ${
+          `[Claude Code SDK] Finished\nCost: $${Number(outputData.cost_usd).toFixed(2)}\nDuration: ${
             Number(outputData.duration_ms) / 1000
           }s`
         );
       } else {
         logger.verboseMessage(
-          `Claude Code finished with error: ${outputData.subtype}\nCost: $${outputData.cost_usd}\nDuration: ${
+          `[Claude Code SDK] Finished with error: ${outputData.subtype}\nCost: $${outputData.cost_usd}\nDuration: ${
             Number(outputData.duration_ms) / 1000
           }s`
         );
