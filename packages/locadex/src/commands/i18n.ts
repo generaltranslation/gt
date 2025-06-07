@@ -46,7 +46,6 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
   // Init message
   const spinner = createSpinner();
   spinner.start('Initializing Locadex...');
-  const startTime = Date.now();
 
   const dag = createDag(getCurrentDirectories(), {
     tsConfig: findTsConfig(),
@@ -201,7 +200,9 @@ export async function i18nCommand(batchSize: number, manager?: LocadexManager) {
     chalk.dim(
       `Total Cost: $${manager.stats.getStats().totalCost.toFixed(2)}
 Total API duration: ${Math.round(manager.stats.getStats().totalApiDuration / 1000)}s
-Total wall duration: ${Math.round((Date.now() - startTime) / 1000)}s
+Total wall time: ${Math.round(
+        (Date.now() - manager.stats.getStats().startTime) / 1000
+      )}s
 Total files processed: ${manager.stats.getStats().processedFiles}`
     )
   );

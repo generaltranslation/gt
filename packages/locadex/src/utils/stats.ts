@@ -5,8 +5,11 @@ export class AgentStats {
   private totalToolCalls: number = 0;
   private totalApiDuration: number = 0;
   private totalWallDuration: number = 0;
+  private startTime: number;
 
-  constructor() {}
+  constructor() {
+    this.startTime = Date.now();
+  }
 
   updateStats(stats: {
     newProcessedFiles?: number;
@@ -39,6 +42,7 @@ export class AgentStats {
     totalToolCalls: number;
     totalApiDuration: number;
     totalWallDuration: number;
+    startTime: number;
   } {
     return {
       totalFiles: this.totalFiles,
@@ -47,6 +51,7 @@ export class AgentStats {
       totalToolCalls: this.totalToolCalls,
       totalApiDuration: this.totalApiDuration,
       totalWallDuration: this.totalWallDuration,
+      startTime: this.startTime,
     };
   }
 }
