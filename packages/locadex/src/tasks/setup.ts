@@ -23,6 +23,8 @@ import { LocadexManager } from '../utils/locadexManager.js';
 import { outro } from '@clack/prompts';
 import { getPackageInfo } from 'gtx-cli/utils/packageInfo';
 import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
+import { appendFileSync } from 'node:fs';
+import path from 'node:path';
 
 export async function setupTask(batchSize: number) {
   validateInitialConfig();
@@ -158,6 +160,16 @@ async function setupLocaleSelector() {
   const localeSelectorPrompt = getLocaleSelectorPrompt();
   try {
     await agent.run({ prompt: localeSelectorPrompt }, {});
+
+    // Generate report
+    const report = agent.generateReport();
+    const reportSummary = `# Summary of locadex setup changes
+${report}`;
+    const summaryFilePath = path.join(
+      manager.getWorkingDir(),
+      'locadex-report.md'
+    );
+    appendFileSync(summaryFilePath, reportSummary);
   } catch (error) {
     logger.debugMessage(`[setup] Adding locale selector failed: ${error}`);
     outro(chalk.red('❌ Locadex setup failed!'));
@@ -194,12 +206,12 @@ function MyComponent() {
 - Scan across files to find the best place to add the locale selector.
 
 ## Final output
-When you are done, please return a brief summary of the files you modified, following this format
+- When you are done, please return a brief summary of the files you modified, following this format.
+- **DO NOT** include any other text in your response. 
+- If there were issues with some files, please include the issues in the list of changes for that file.
 
-[path to file 1]
+[file 1 path]
 - List of changes to file 1
-[path to file 2]
-- List of changes to file 2
 `;
   return prompt;
 }

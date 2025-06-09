@@ -16,12 +16,12 @@ import {
 } from '../utils/getFiles.js';
 import { outro } from '@clack/prompts';
 import chalk from 'chalk';
-import { readdirSync, statSync } from 'node:fs';
+import { appendFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { EXCLUDED_DIRS } from '../utils/shared.js';
 import { validateInitialConfig } from '../utils/validateConfig.js';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { generateSettings } from 'gtx-cli/config/generateSettings';
-import { createReportFile } from '../utils/createFiles.js';
+import path from 'node:path';
 
 function getCurrentDirectories(): string[] {
   try {
@@ -268,16 +268,19 @@ export async function i18nTask(batchSize: number) {
   }
   logger.spinner.stop('Fixed errors');
 
-  const reportFilePath = createReportFile(
-    reports.join('\n'),
-    manager.getWorkingDir()
+  // Generate report
+  const reportSummary = `# Summary of locadex i18n changes
+${reports.join('\n')}`;
+  const summaryFilePath = path.join(
+    manager.getWorkingDir(),
+    'locadex-report.md'
   );
-  logger.step(`Saved summary of changes to: ${reportFilePath}`);
+  appendFileSync(summaryFilePath, reportSummary);
+  logger.step(`Saved summary of changes to: ${summaryFilePath}`);
 
   // cleanup
 
   const formatter = await detectFormatter();
-
   if (formatter) {
     await formatFiles(allFiles, formatter);
   }
@@ -367,13 +370,12 @@ ${dependentFiles[file].length > 0 ? ` ${dependentFiles[file].join(', ')}` : 'non
 ${allMcpPrompt}
 
 ## Final output
-When you are done, please return a brief summary of the files you modified, following this format.
-Do not include any other text in your response. If there were issues with some files, please include them in the summary.
+- When you are done, please return a brief summary of the files you modified, following this format.
+- **DO NOT** include any other text in your response. 
+- If there were issues with some files, please include the issues in the list of changes for that file.
 
 [file 1 path]
 - List of changes to file 1
-[file 2 path]
-- List of changes to file 2
 `;
 
   return prompt;
