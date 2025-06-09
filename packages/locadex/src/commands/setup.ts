@@ -5,7 +5,10 @@ import {
 } from '../logging/console.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 import { getPackageManager } from 'gtx-cli/utils/packageManager';
-import { installPackage } from 'gtx-cli/utils/installPackage';
+import {
+  installPackage,
+  installPackageGlobal,
+} from 'gtx-cli/utils/installPackage';
 import chalk from 'chalk';
 import { logger } from '../logging/logger.js';
 import { findFilepaths } from '../utils/fs/findConfigs.js';
@@ -18,6 +21,8 @@ import { validateInitialConfig } from '../utils/validateConfig.js';
 import { getNextDirectories } from '../utils/fs/getFiles.js';
 import { LocadexManager } from '../utils/agentManager.js';
 import { outro } from '@clack/prompts';
+import { getPackageInfo } from 'gtx-cli/utils/packageInfo';
+import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 
 export async function setupCommand(batchSize: number) {
   validateInitialConfig();
@@ -99,6 +104,24 @@ export async function setupCommand(batchSize: number) {
       'gt.config.json'
     )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
   );
+
+  // Install claude-code if not installed
+  const claudeCodeInfo = await getPackageInfo('@anthropic-ai/claude-code');
+  if (!claudeCodeInfo) {
+    const spinner = createSpinner();
+    spinner.start('Installing claude-code...');
+    await installPackageGlobal(
+      '@anthropic-ai/claude-code',
+      CLAUDE_CODE_VERSION
+    );
+    spinner.stop(chalk.green('Installed claude-code.'));
+  } else {
+    logger.success(
+      chalk.green(
+        `claude-code is already installed: v${claudeCodeInfo.version}`
+      )
+    );
+  }
 
   // Install locadex if not installed
   const isLocadexInstalled = packageJson

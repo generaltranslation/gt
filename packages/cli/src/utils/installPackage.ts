@@ -51,3 +51,47 @@ export async function installPackage(
     });
   });
 }
+
+export async function installPackageGlobal(
+  packageName: string,
+  version?: string
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const command = 'npm';
+    const args = ['install', '-g', packageName, version ? `@${version}` : ''];
+
+    const childProcess = spawn(command, args, {
+      stdio: ['pipe', 'ignore', 'pipe'],
+    });
+
+    let errorOutput = '';
+    if (childProcess.stderr) {
+      childProcess.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+      });
+    }
+
+    childProcess.on('error', (error) => {
+      logError(chalk.red(`Installation error: ${error.message}`));
+      logInfo(
+        `Please manually install ${packageName} with: npm install -g ${packageName}`
+      );
+      reject(error);
+    });
+
+    childProcess.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        logError(chalk.red(`Installation failed with exit code ${code}`));
+        if (errorOutput) {
+          logError(chalk.red(`Error details: ${errorOutput}`));
+        }
+        logInfo(
+          `Please manually install ${packageName} with: npm install -g ${packageName}`
+        );
+        reject(new Error(`Process exited with code ${code}`));
+      }
+    });
+  });
+}

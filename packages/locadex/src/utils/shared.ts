@@ -22,3 +22,5 @@ export const DAG_IGNORED_FILES = [
 ];
 
 export const DAG_IGNORED_EXTENSIONS = ['.css', '.scss', '.sass', '.less'];
+
+export const CLAUDE_CODE_VERSION = '1.0.16';
