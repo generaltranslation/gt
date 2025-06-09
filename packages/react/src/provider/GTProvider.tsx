@@ -18,13 +18,11 @@ import {
   APIKeyMissingWarn,
   createUnsupportedLocalesWarning,
   customLoadTranslationsError,
-  devApiKeyProductionError,
   projectIdMissingWarning,
 } from '../errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import { defaultRenderSettings } from '../rendering/defaultRenderSettings';
-import { useDetermineLocale } from './hooks/useDetermineLocale';
 import { readAuthFromEnv } from '../utils/utils';
 import fetchTranslations from '../utils/fetchTranslations';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
@@ -35,6 +33,7 @@ import loadDictionaryHelper from '../dictionaries/loadDictionaryHelper';
 import mergeDictionaries from '../dictionaries/mergeDictionaries';
 import { GTProviderProps } from '../types/config';
 import { useLocaleData } from './hooks/useLocaleData';
+import { useErrorChecks } from './hooks/useErrorChecks';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -104,16 +103,6 @@ export default function GTProvider({
     baseUrl: runtimeUrl
   }), [devApiKey, defaultLocale, projectId, runtimeUrl]);
 
-  // Translation at runtime during development is enabled
-  // TODO: deprecate and reassign to plugin
-  const runtimeTranslationEnabled = !!(
-    projectId &&
-    runtimeUrl &&
-    devApiKey &&
-    process.env.NODE_ENV === 'development'
-  );
-  
-  // Loaders
   const loadTranslationsType = (
     (loadTranslations && 'custom') ||
     (cacheUrl && projectId && 'default') ||
@@ -160,60 +149,16 @@ export default function GTProvider({
     };
   }, [loadDictionary, locale, defaultLocale]);
 
-  // ---------- MEMOIZED CHECKS ---------- //
+  // ---------- ERROR AND WARNING CHECKS ---------- //
 
-  useMemo(() => {
-    // Check: no devApiKey in production
-    if (process.env.NODE_ENV === 'production' && devApiKey) {
-      // When SSR is disabled, throw an error
-      if (!ssr) throw new Error(apiKeyInProductionError);
-      // When SSR is enabled, only error when detecting a dev api key
-      if (devApiKey.startsWith('gtx-dev-'))
-        throw new Error(devApiKeyProductionError);
-    }
-
-    // Check: projectId missing while using cache/runtime in dev
-    if (
-      loadTranslationsType !== 'custom' &&
-      (cacheUrl || runtimeUrl) &&
-      !projectId &&
-      process.env.NODE_ENV === 'development'
-    ) {
-      console.warn(projectIdMissingWarning);
-    }
-
-    // Check: An API key is required for runtime translation
-    if (
-      projectId && // must have projectId for this check to matter anyways
-      runtimeUrl &&
-      loadTranslationsType !== 'custom' && // this usually conincides with not using runtime tx
-      !devApiKey &&
-      process.env.NODE_ENV === 'development'
-    ) {
-      console.warn(APIKeyMissingWarn);
-    }
-
-    // Check: if using GT infrastructure, warn about unsupported locales
-    if (
-      runtimeUrl === defaultRuntimeApiUrl ||
-      (cacheUrl === defaultCacheUrl && loadTranslationsType === 'default')
-    ) {
-      const warningLocales = (locales || locales).filter(
-        (locale) => !getSupportedLocale(locale)
-      );
-      if (warningLocales.length) {
-        console.warn(createUnsupportedLocalesWarning(warningLocales));
-      }
-    }
-  }, [
-    process.env.NODE_ENV,
+  useErrorChecks({
     devApiKey,
+    projectId,
+    runtimeUrl,
     loadTranslationsType,
     cacheUrl,
-    runtimeUrl,
-    projectId,
-    locales,
-  ]);
+    locales
+  });
 
   // ---------- TRANSLATION STATE ---------- //
 
@@ -250,13 +195,18 @@ export default function GTProvider({
     [locale, loadTranslationsType]
   );
 
-  // Setup runtime translation
-  const { registerContentForTranslation, registerJsxForTranslation } =
+  // ------- RUNTIME TRANSLATION ----- //
+  // TODO: do this in a plugin
+
+  const { 
+    registerContentForTranslation, 
+    registerJsxForTranslation, 
+    runtimeTranslationEnabled 
+  } =
     useRuntimeTranslation({
       locale,
       versionId: _versionId,
       projectId,
-      runtimeTranslationEnabled,
       defaultLocale,
       devApiKey,
       runtimeUrl,

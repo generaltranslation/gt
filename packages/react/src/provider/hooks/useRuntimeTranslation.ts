@@ -53,7 +53,6 @@ export default function useRuntimeTranslation({
   runtimeUrl,
   renderSettings,
   setTranslations,
-  runtimeTranslationEnabled,
   ...globalMetadata
 }: {
   projectId?: string;
@@ -62,7 +61,6 @@ export default function useRuntimeTranslation({
   versionId?: string;
   defaultLocale?: string;
   runtimeUrl?: string | null;
-  runtimeTranslationEnabled: boolean;
   renderSettings: {
     method: RenderMethod;
     timeout?: number;
@@ -72,11 +70,22 @@ export default function useRuntimeTranslation({
 }): {
   registerContentForTranslation: TranslateContentCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
+  runtimeTranslationEnabled: boolean;
 } {
   // ------ EARLY RETURN IF DISABLED ----- //
 
+  // Translation at runtime during development is enabled
+  // TODO: deprecate and reassign to plugin
+  const runtimeTranslationEnabled = !!(
+    projectId &&
+    runtimeUrl &&
+    devApiKey &&
+    process.env.NODE_ENV === 'development'
+  );
+
   if (!runtimeTranslationEnabled)
     return {
+      runtimeTranslationEnabled,
       registerContentForTranslation: () =>
         Promise.reject(
           new Error(
@@ -385,6 +394,7 @@ export default function useRuntimeTranslation({
   }, [locale]);
 
   return {
+    runtimeTranslationEnabled,
     registerContentForTranslation,
     registerJsxForTranslation,
   };
