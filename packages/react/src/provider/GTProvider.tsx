@@ -12,7 +12,6 @@ import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFuncti
 import useCreateInternalUseDictFunction from './hooks/useCreateInternalUseDictFunction';
 import { isSSREnabled } from './helpers/isSSREnabled';
 import { defaultLocaleCookieName } from '../utils/cookies';
-
 import { GTProviderProps } from '../types/config';
 import { useLocaleData } from './hooks/useLocaleData';
 import { useErrorChecks } from './hooks/useErrorChecks';
