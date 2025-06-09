@@ -1,6 +1,6 @@
 import { GTContext } from './provider/GTContext';
-import useRuntimeTranslation from './hooks/internal/useRuntimeTranslation';
-import renderVariable from './provider/rendering/renderVariable';
+import useRuntimeTranslation from './provider/hooks/useRuntimeTranslation';
+import renderVariable from './rendering/renderVariable';
 import ClientProvider from './provider/ClientProvider';
 import Branch from './branches/Branch';
 import Plural from './branches/plurals/Plural';

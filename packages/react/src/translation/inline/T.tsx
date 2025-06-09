@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
-import renderDefaultChildren from '../../provider/rendering/renderDefaultChildren';
+import renderDefaultChildren from '../../rendering/renderDefaultChildren';
 import { addGTIdentifier, writeChildrenAsObjects } from '../../internal';
 import useGTContext from '../../provider/GTContext';
-import renderTranslatedChildren from '../../provider/rendering/renderTranslatedChildren';
+import renderTranslatedChildren from '../../rendering/renderTranslatedChildren';
 import { useMemo } from 'react';
-import renderVariable from '../../provider/rendering/renderVariable';
+import renderVariable from '../../rendering/renderVariable';
 import { hashJsxChildren } from 'generaltranslation/id';
-import renderSkeleton from '../../provider/rendering/renderSkeleton';
+import renderSkeleton from '../../rendering/renderSkeleton';
 import { TranslatedChildren } from '../../types/types';
 
 /**

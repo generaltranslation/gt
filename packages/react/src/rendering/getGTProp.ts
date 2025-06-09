@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { TranslatedElement } from '../../types/types';
+import { TranslatedElement } from '../types/types';
 
 export default function getGTProp(
   child: ReactElement<any> | TranslatedElement

@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import {
+import GT, {
   isSameLanguage,
   requiresTranslation,
 } from 'generaltranslation';
@@ -22,18 +22,19 @@ import {
   projectIdMissingWarning,
 } from '../errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
-import { defaultRenderSettings } from './rendering/defaultRenderSettings';
-import { useDetermineLocale } from '../hooks/internal/useDetermineLocale';
+import useRuntimeTranslation from './hooks/useRuntimeTranslation';
+import { defaultRenderSettings } from '../rendering/defaultRenderSettings';
+import { useDetermineLocale } from './hooks/useDetermineLocale';
 import { readAuthFromEnv } from '../utils/utils';
 import fetchTranslations from '../utils/fetchTranslations';
-import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
-import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
+import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
+import useCreateInternalUseDictFunction from './hooks/useCreateInternalUseDictFunction';
 import { isSSREnabled } from './helpers/isSSREnabled';
 import { defaultLocaleCookieName } from '../utils/cookies';
-import loadDictionaryHelper from './helpers/loadDictionaryHelper';
-import mergeDictionaries from './helpers/mergeDictionaries';
+import loadDictionaryHelper from '../dictionaries/loadDictionaryHelper';
+import mergeDictionaries from '../dictionaries/mergeDictionaries';
 import { GTProviderProps } from '../types/config';
+import { useLocaleData } from './hooks/useLocaleData';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -78,44 +79,45 @@ export default function GTProvider({
   _versionId,
   ...metadata
 }: GTProviderProps) {
-  // ---------- SANITIZATION ---------- //
+
+  // ---------- PROPS ---------- //
 
   // Read env
   const { projectId, devApiKey } = readAuthFromEnv(_projectId, _devApiKey);
 
-  // Locale standardization
-  locales = useMemo(() => {
-    return Array.from(new Set([defaultLocale, ...locales]));
-  }, [defaultLocale, locales]);
-
-  // Get locale
-  const [locale, setLocale] = useDetermineLocale({
-    defaultLocale,
-    locales,
-    locale: _locale,
-    ssr,
-    localeCookieName,
+  const { 
+    locale, setLocale, locales: approvedLocales,
+    translationRequired, dialectTranslationRequired 
+  } =
+    useLocaleData({
+      _locale,
+      defaultLocale,
+      locales,
+      ssr,
+      localeCookieName,
   });
 
-  // Translation at runtime during development is enabled
-  const runtimeTranslationEnabled = useMemo(
-    () =>
-      !!(
-        projectId &&
-        runtimeUrl &&
-        devApiKey &&
-        process.env.NODE_ENV === 'development'
-      ),
-    [projectId, runtimeUrl, devApiKey]
-  );
+  const gt = useMemo(() => new GT({
+    devApiKey, 
+    sourceLocale: defaultLocale,
+    projectId,
+    baseUrl: runtimeUrl
+  }), [devApiKey, defaultLocale, projectId, runtimeUrl]);
 
+  // Translation at runtime during development is enabled
+  // TODO: deprecate and reassign to plugin
+  const runtimeTranslationEnabled = !!(
+    projectId &&
+    runtimeUrl &&
+    devApiKey &&
+    process.env.NODE_ENV === 'development'
+  );
+  
   // Loaders
-  const loadTranslationsType = useMemo(
-    () =>
-      (loadTranslations && 'custom') ||
-      (cacheUrl && projectId && 'default') ||
-      'disabled',
-    [loadTranslations]
+  const loadTranslationsType = (
+    (loadTranslations && 'custom') ||
+    (cacheUrl && projectId && 'default') ||
+    'disabled'
   );
 
   // ---------- SET UP DICTIONARY ---------- //
@@ -212,23 +214,6 @@ export default function GTProvider({
     projectId,
     locales,
   ]);
-
-  // ---------- FLAGS ---------- //
-
-  const [translationRequired, dialectTranslationRequired] = useMemo(() => {
-    // User locale is not default locale or equivalent
-    const translationRequired = requiresTranslation(
-      defaultLocale,
-      locale,
-      locales
-    );
-
-    // User locale is not default locale but is a dialect of the same language
-    const dialectTranslationRequired =
-      translationRequired && isSameLanguage(defaultLocale, locale);
-
-    return [translationRequired, dialectTranslationRequired];
-  }, [defaultLocale, locale, locales]);
 
   // ---------- TRANSLATION STATE ---------- //
 
@@ -402,7 +387,7 @@ export default function GTProvider({
         _internalUseDictFunction,
         runtimeTranslationEnabled,
         locale,
-        locales,
+        locales: approvedLocales,
         setLocale,
         defaultLocale,
         translations,

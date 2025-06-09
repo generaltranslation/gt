@@ -5,9 +5,9 @@ import { determineLocale } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/config';
 import { TranslationsObject } from '../types/types';
-import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
-import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
-import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
+import useRuntimeTranslation from './hooks/useRuntimeTranslation';
+import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
+import useCreateInternalUseDictFunction from './hooks/useCreateInternalUseDictFunction';
 import { defaultLocaleCookieName } from '../utils/cookies';
 
 // meant to be used inside the server-side <GTProvider>

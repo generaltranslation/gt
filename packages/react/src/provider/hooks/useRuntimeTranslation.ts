@@ -21,7 +21,7 @@ import {
   maxConcurrentRequests,
   maxBatchSize,
   batchInterval,
-} from '../../provider/config/defaultProps';
+} from '../config/defaultProps';
 
 // Queue to store requested keys between renders.
 type TranslationRequestMetadata = {

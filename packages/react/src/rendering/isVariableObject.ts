@@ -1,4 +1,4 @@
-import { Variable } from '../../types/types';
+import { Variable } from '../types/types';
 
 export default function isVariableObject(obj: unknown): obj is Variable {
   const variableObj = obj as Variable;

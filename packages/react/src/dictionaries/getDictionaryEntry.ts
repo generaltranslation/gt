@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dictionary, DictionaryEntry } from '../../types/types';
+import { Dictionary, DictionaryEntry } from '../types/types';
 
 export function isValidDictionaryEntry(
   value: unknown
@@ -19,7 +19,7 @@ export function isValidDictionaryEntry(
   return false;
 }
 
-export default function getDictionaryEntry<T extends Dictionary>(
+export function getDictionaryEntry<T extends Dictionary>(
   dictionary: T,
   id: string
 ): Dictionary | DictionaryEntry | undefined {

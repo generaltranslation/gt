@@ -1,16 +1,12 @@
-import * as React from 'react';
 import { useCallback } from 'react';
 import {
   Dictionary,
   DictionaryTranslationOptions,
-  DictionaryObject,
   RenderMethod,
   TranslationsObject,
 } from '../../types/types';
-import getDictionaryEntry, {
-  isValidDictionaryEntry,
-} from '../../provider/helpers/getDictionaryEntry';
-import getEntryAndMetadata from '../../provider/helpers/getEntryAndMetadata';
+import { getDictionaryEntry, isValidDictionaryEntry } from '../../dictionaries/getDictionaryEntry';
+import getEntryAndMetadata from '../../dictionaries/getEntryAndMetadata';
 import {
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
