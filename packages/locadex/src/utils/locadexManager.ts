@@ -178,19 +178,20 @@ export class LocadexManager {
     }
   }
 
-  createAgent(): ClaudeCodeRunner {
+  createAgent(id: string): ClaudeCodeRunner {
     return new ClaudeCodeRunner(this, {
       apiKey: this.apiKey,
       mcpConfig: this.mcpConfigPath,
+      id,
     });
   }
 
   createAgentPool(): void {
     if (this.agentPool.size === 0) {
       for (let i = 0; i < this.maxConcurrency; i++) {
-        const agentId = `agent-${i}`;
+        const agentId = `claude_task_agent_${i + 1}`;
         this.agentPool.set(agentId, {
-          agent: this.createAgent(),
+          agent: this.createAgent(agentId),
           sessionId: undefined,
           busy: false,
         });

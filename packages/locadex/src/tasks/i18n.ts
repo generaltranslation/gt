@@ -244,7 +244,7 @@ export async function i18nTask(batchSize: number) {
   }
 
   // Create a clean agent for cleanup
-  const cleanupAgent = manager.createAgent();
+  const cleanupAgent = manager.createAgent('claude_cleanup_agent');
   logger.initializeSpinner();
   logger.spinner.start('Fixing errors...');
   const fixPrompt = getFixPrompt();

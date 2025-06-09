@@ -52,6 +52,7 @@ const setupProcessHandlers = () => {
 };
 
 export class ClaudeCodeRunner {
+  private id: string;
   private sessionId: string = '';
   private mcpConfig: string | undefined;
   private manager: LocadexManager;
@@ -59,11 +60,13 @@ export class ClaudeCodeRunner {
   constructor(
     manager: LocadexManager,
     private options: {
+      id: string;
       apiKey?: string;
       mcpConfig?: string;
-    } = {}
+    }
   ) {
     this.manager = manager;
+    this.id = options.id;
     this.mcpConfig = options.mcpConfig;
 
     // Ensure API key is set
@@ -142,12 +145,12 @@ export class ClaudeCodeRunner {
         for (const line of lines) {
           if (line.trim()) {
             try {
-              logger.debugMessage(`[Claude Code SDK] ${line}`);
+              logger.debugMessage(`[${this.id}] ${line}`);
               const outputData: ClaudeSDKMessage = JSON.parse(line);
               this.handleSDKOutput(outputData, obs);
             } catch (error) {
               logger.debugMessage(
-                `[Claude Code SDK] Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
+                `[${this.id}] Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
               );
             }
           }
@@ -155,7 +158,7 @@ export class ClaudeCodeRunner {
       });
 
       claude.stderr?.on('data', (data) => {
-        logger.debugMessage(`[Claude Code SDK] ${data.toString().trim()}`);
+        logger.debugMessage(`[${this.id}] ${data.toString().trim()}`);
       });
 
       claude.on('close', (code) => {
@@ -164,18 +167,24 @@ export class ClaudeCodeRunner {
           resolve(output.trim());
         } else {
           logger.debugMessage(
-            `Claude Code exited with code ${code}: ${errorOutput}`
+            `[${this.id}] Claude Code exited with code ${code}: ${errorOutput}`
           );
           reject(
-            new Error(`Claude Code exited with code ${code}: ${errorOutput}`)
+            new Error(
+              `[${this.id}] Claude Code exited with code ${code}: ${errorOutput}`
+            )
           );
         }
       });
 
       claude.on('error', (error) => {
         activeClaudeProcesses.delete(claude);
-        logger.debugMessage(`Failed to run Claude Code: ${error.message}`);
-        reject(new Error(`Failed to run Claude Code: ${error.message}`));
+        logger.debugMessage(
+          `[${this.id}] failed to run Claude Code: ${error.message}`
+        );
+        reject(
+          new Error(`[${this.id}] failed to run Claude Code: ${error.message}`)
+        );
       });
     });
   }
@@ -210,12 +219,10 @@ export class ClaudeCodeRunner {
         }
       });
       if (text.length > 0) {
-        logger.verboseMessage(text.join('').trim());
+        logger.verboseMessage(`[${this.id}] ${text.join('').trim()}`);
       }
       if (toolUses.length > 0) {
-        logger.debugMessage(
-          `[Claude Code SDK] Used tools: ${toolUses.join(', ')}`
-        );
+        logger.debugMessage(`[${this.id}] used tools: ${toolUses.join(', ')}`);
       }
       this.manager.stats.updateStats({
         newToolCalls: toolUses.length,
@@ -223,13 +230,13 @@ export class ClaudeCodeRunner {
     } else if (outputData.type === 'result') {
       if (!outputData.is_error) {
         logger.verboseMessage(
-          `[Claude Code SDK] Finished\nCost: $${Number(outputData.cost_usd).toFixed(2)}\nDuration: ${
+          `[${this.id}] finished task.\nCost: $${Number(outputData.cost_usd).toFixed(2)}\nDuration: ${
             Number(outputData.duration_ms) / 1000
           }s`
         );
       } else {
         logger.verboseMessage(
-          `[Claude Code SDK] Finished with error: ${outputData.subtype}\nCost: $${outputData.cost_usd}\nDuration: ${
+          `[${this.id}] finished task with error: ${outputData.subtype}\nCost: $${outputData.cost_usd}\nDuration: ${
             Number(outputData.duration_ms) / 1000
           }s`
         );
