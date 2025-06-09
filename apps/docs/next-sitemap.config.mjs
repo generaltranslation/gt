@@ -5,7 +5,7 @@ const config = {
   generateIndexSitemap: false,
   outDir: './public',
   sitemapBaseFileName: 'docs-sitemap',
-  exclude: ['/api/*', '*/404', '*/500'],
+  exclude: ['/api/*', '*/404', '*/500', '*/llms.mdx/*'],
   
   // Only include English pages in the sitemap
   transform: async (config, path) => {
