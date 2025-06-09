@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
-import { useEffect, useState } from 'react';
-import { determineLocale } from 'generaltranslation';
+import { useEffect, useState, useMemo } from 'react';
+import GT, { determineLocale } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/config';
 import { TranslationsObject } from '../types/types';
@@ -30,6 +30,15 @@ export default function ClientProvider({
   localeCookieName = defaultLocaleCookieName,
 }: ClientProviderProps): React.JSX.Element {
   // ---------- SET UP ---------- //
+ 
+  // Define the GT instance
+  // Used for custom mapping and as a driver for the runtime translation
+  const gt = useMemo(() => new GT({
+    devApiKey, 
+    sourceLocale: defaultLocale,
+    projectId,
+    baseUrl: runtimeUrl || undefined
+  }), [devApiKey, defaultLocale, projectId, runtimeUrl]);
 
   // ----- TRANSLATIONS STATE ----- //
 
@@ -136,6 +145,7 @@ export default function ClientProvider({
   return (
     <GTContext.Provider
       value={{
+        gt,
         registerContentForTranslation,
         registerJsxForTranslation,
         setLocale,
