@@ -19,7 +19,7 @@ import { createOrUpdateConfig } from 'gtx-cli/fs/config/setupConfig';
 import { i18nTask } from '../tasks/i18n.js';
 import { validateInitialConfig } from '../utils/validateConfig.js';
 import { getNextDirectories } from '../utils/fs/getFiles.js';
-import { LocadexManager } from '../utils/agentManager.js';
+import { LocadexManager } from '../utils/locadexManager.js';
 import { outro } from '@clack/prompts';
 import { getPackageInfo } from 'gtx-cli/utils/packageInfo';
 import { CLAUDE_CODE_VERSION } from '../utils/shared.js';

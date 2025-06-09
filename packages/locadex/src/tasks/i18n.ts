@@ -8,7 +8,7 @@ import {
   findWebpackConfig,
   findRequireConfig,
 } from '../utils/fs/findConfigs.js';
-import { LocadexManager } from '../utils/agentManager.js';
+import { LocadexManager } from '../utils/locadexManager.js';
 import {
   addFilesToManager,
   markFileAsEdited,
@@ -313,7 +313,7 @@ function getPrompt({
 
 ## RULES:
 - ALWAYS use the <T> component to internationalize HTML/JSX content.
-- ALWAYS use getGT() or useGT() and getDict() or useDict() to internationalize string content.
+- ALWAYS use getGT() or useGT() and getDict() or useDict() to internationalize string content (strings created with '', "", or \`\`).
   - When possible, avoid using getDict() or useDict(); getGT() and useGT() are preferred.
 - DO NOT internationalize non-user facing content or content that is functional, such as ids, class names, error strings, logical strings, etc.
 - Do not add i18n middleware to the app.

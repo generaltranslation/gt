@@ -35,13 +35,14 @@ async function findAvailablePort(startPort: number): Promise<number> {
 
 export async function start() {
   const stateFile = process.env.LOCADEX_FILES_STATE_FILE_PATH;
+  const logFile = process.env.LOCADEX_LOG_FILE_PATH;
   const requestedPort = process.env.PORT ? parseInt(process.env.PORT) : 8888;
   const port = await findAvailablePort(requestedPort);
 
   const verbose = process.env.LOCADEX_VERBOSE === 'true';
   const debug = process.env.LOCADEX_DEBUG === 'true';
 
-  logger.initialize({ verbose, debug });
+  logger.initialize({ verbose, debug }, logFile);
 
   if (stateFile && existsSync(stateFile)) {
     const state = JSON.parse(readFileSync(stateFile, 'utf8'));

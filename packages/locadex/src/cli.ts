@@ -12,11 +12,10 @@ import { fromPackageRoot } from './utils/getPaths.js';
 import { setupCommand } from './commands/setup.js';
 import { CliOptions } from './types/cli.js';
 import { withTelemetry } from './telemetry.js';
-import { logger } from './logging/logger.js';
 import { i18nCommand } from './commands/i18n.js';
 import { displayHeader } from './logging/console.js';
 import { main } from 'gtx-cli/index';
-import { LocadexManager } from './utils/agentManager.js';
+import { LocadexManager } from './utils/locadexManager.js';
 
 const packageJson = JSON.parse(
   readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -43,7 +42,6 @@ program
     withTelemetry(
       { enabled: !allOptions.noTelemetry, options: allOptions },
       () => {
-        logger.initialize(allOptions);
         displayHeader();
         LocadexManager.initialize({
           mcpTransport: 'sse',
@@ -51,6 +49,7 @@ program
           metadata: {
             batchSize: Number(allOptions.batchSize) || 1,
           },
+          cliOptions: allOptions,
         });
         setupCommand(Number(allOptions.batchSize) || 1);
       }
@@ -71,7 +70,6 @@ program
     withTelemetry(
       { enabled: !allOptions.noTelemetry, options: allOptions },
       () => {
-        logger.initialize(allOptions);
         displayHeader();
         LocadexManager.initialize({
           mcpTransport: 'sse',
@@ -79,6 +77,7 @@ program
           metadata: {
             batchSize: Number(allOptions.batchSize) || 1,
           },
+          cliOptions: allOptions,
         });
         i18nCommand(Number(allOptions.batchSize) || 1);
       }

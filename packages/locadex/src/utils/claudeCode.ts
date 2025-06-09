@@ -5,7 +5,7 @@ import { guides } from '../mcp/tools/guides.js';
 import { SpinnerResult } from '@clack/prompts';
 import { logger } from '../logging/logger.js';
 import { posthog } from '../telemetry.js';
-import { LocadexManager } from './agentManager.js';
+import { LocadexManager } from './locadexManager.js';
 
 export interface ClaudeCodeOptions {
   additionalSystemPrompt?: string;

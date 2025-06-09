@@ -9,6 +9,7 @@ import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { setTimeout } from 'node:timers';
 import { AgentStats } from './stats.js';
+import { CliOptions } from '../types/cli.js';
 
 export interface LocadexMetadata {
   createdAt: string;
@@ -20,6 +21,7 @@ export interface LocadexMetadata {
   nodeVersion: string;
   platform: string;
   arch: string;
+  logFile: string;
   batchSize?: number;
   [key: string]: any;
 }
@@ -49,6 +51,7 @@ export class LocadexManager {
   >;
   private agentsCleanedUp: boolean = false;
   stats: AgentStats;
+  logFile: string;
 
   private constructor(options: {
     mcpTransport: 'sse' | 'stdio';
@@ -65,15 +68,12 @@ export class LocadexManager {
     this.tempDir = path.resolve(cwd, '.locadex', Date.now().toString());
     fs.mkdirSync(this.tempDir, { recursive: true });
 
-    logger.debugMessage(`Temp directory created at: ${this.tempDir}`);
-
     addToGitIgnore(cwd, '.locadex');
-
-    logger.debugMessage(`Added .locadex to .gitignore`);
 
     this.mcpConfigPath = path.resolve(this.tempDir, 'mcp.json');
     this.filesStateFilePath = path.resolve(this.tempDir, 'files-state.json');
     this.metadataFilePath = path.resolve(this.tempDir, 'metadata.json');
+    this.logFile = path.resolve(this.tempDir, 'log.txt');
 
     // Create files-state.json
     const filesState: FileEntry[] = [];
@@ -95,15 +95,15 @@ export class LocadexManager {
       nodeVersion: process.version,
       platform: process.platform,
       arch: process.arch,
+      logFile: this.logFile,
       ...options.metadata,
     };
     fs.writeFileSync(this.metadataFilePath, JSON.stringify(metadata, null, 2));
 
-    logger.debugMessage(`Created metadata.json at: ${this.metadataFilePath}`);
-
     if (options.mcpTransport === 'stdio') {
       mcpStdioConfig.mcpServers.locadex.env = {
         LOCADEX_FILES_STATE_FILE_PATH: this.filesStateFilePath,
+        LOCADEX_LOG_FILE_PATH: this.logFile,
       };
       try {
         fs.writeFileSync(
@@ -120,6 +120,7 @@ export class LocadexManager {
           LOCADEX_FILES_STATE_FILE_PATH: this.filesStateFilePath,
           LOCADEX_VERBOSE: logger.verbose ? 'true' : 'false',
           LOCADEX_DEBUG: logger.debug ? 'true' : 'false',
+          LOCADEX_LOG_FILE_PATH: this.logFile,
         },
         stdio: 'inherit',
       });
@@ -159,9 +160,13 @@ export class LocadexManager {
     apiKey?: string;
     metadata?: Partial<LocadexMetadata>;
     maxConcurrency?: number;
+    cliOptions?: CliOptions;
   }): void {
     if (!LocadexManager.instance) {
       LocadexManager.instance = new LocadexManager(options);
+      if (options.cliOptions) {
+        logger.initialize(options.cliOptions, LocadexManager.instance.logFile);
+      }
     }
   }
 

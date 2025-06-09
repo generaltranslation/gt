@@ -11,6 +11,7 @@ import {
   createProgressBar,
   createSpinner,
 } from './console.js';
+import { appendFileSync } from 'node:fs';
 
 class ProgressBar {
   private progressBar: ProgressResult | undefined;
@@ -84,6 +85,7 @@ class Logger {
   private static instance: Logger;
   private _verbose: boolean = false;
   private _debug: boolean = false;
+  private logFile: string | undefined;
   progressBar: ProgressBar = new ProgressBar();
   spinner: Spinner = new Spinner();
   private constructor() {}
@@ -95,13 +97,16 @@ class Logger {
     return Logger.instance;
   }
 
-  initialize(options: CliOptions): void {
+  initialize(options: CliOptions, logFile?: string): void {
     if (options.debug) {
       this._debug = true;
       this._verbose = true;
     }
     if (options.verbose) {
       this._verbose = true;
+    }
+    if (logFile) {
+      this.logFile = logFile;
     }
   }
 
@@ -121,30 +126,51 @@ class Logger {
   // Basic logging methods using existing console functions
   info(message: string): void {
     logInfo(message);
+    if (this.logFile) {
+      appendFileSync(this.logFile, `${message}\n`);
+    }
   }
 
   warning(message: string): void {
     logWarning(message);
+    if (this.logFile) {
+      appendFileSync(this.logFile, `${message}\n`);
+    }
   }
 
   error(message: string): void {
     logError(message);
+    if (this.logFile) {
+      appendFileSync(this.logFile, `${message}\n`);
+    }
   }
 
   success(message: string): void {
     logSuccess(message);
+    if (this.logFile) {
+      appendFileSync(this.logFile, `${message}\n`);
+    }
   }
 
   step(message: string): void {
     logStep(message);
+    if (this.logFile) {
+      appendFileSync(this.logFile, `${message}\n`);
+    }
   }
 
   message(message: string): void {
     logMessage(message);
+    if (this.logFile) {
+      appendFileSync(this.logFile, `${message}\n`);
+    }
   }
 
   errorAndExit(message: string): void {
     logErrorAndExit(message);
+    if (this.logFile) {
+      appendFileSync(this.logFile, `${message}\n`);
+    }
   }
 
   // Conditional logging methods
@@ -152,11 +178,17 @@ class Logger {
     if (this._verbose) {
       this.message(message);
     }
+    if (this.logFile) {
+      appendFileSync(this.logFile, `${message}\n`);
+    }
   }
 
   debugMessage(message: string): void {
     if (this._debug) {
       this.message(message);
+    }
+    if (this.logFile) {
+      appendFileSync(this.logFile, `${message}\n`);
     }
   }
 
@@ -164,10 +196,19 @@ class Logger {
     if (!this._verbose && !this._debug) {
       this.progressBar.init(total);
     }
+    if (this.logFile) {
+      appendFileSync(
+        this.logFile,
+        `Initializing progress bar with total: ${total}\n`
+      );
+    }
   }
   initializeSpinner(): void {
     if (!this._verbose && !this._debug) {
       this.spinner.init();
+    }
+    if (this.logFile) {
+      appendFileSync(this.logFile, `Initializing spinner\n`);
     }
   }
 }
