@@ -171,7 +171,7 @@ export async function i18nTask(batchSize: number) {
       tasks.forEach((task) => markFileAsEdited(task, filesStateFilePath));
       processedCount += tasks.length;
       logger.progressBar.advance(
-        processedCount,
+        tasks.length,
         `Processed ${Number((processedCount / allFiles.length) * 100).toFixed(2)}% of files`
       );
       manager.stats.updateStats({
