@@ -21,6 +21,7 @@ import { EXCLUDED_DIRS } from '../utils/shared.js';
 import { validateInitialConfig } from '../utils/validateConfig.js';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { generateSettings } from 'gtx-cli/config/generateSettings';
+import { createReportFile } from '../utils/createFiles.js';
 
 function getCurrentDirectories(): string[] {
   try {
@@ -81,6 +82,7 @@ export async function i18nTask(batchSize: number) {
   logger.debugMessage(`Track progress here: ${stateFilePath}`);
 
   logger.initializeProgressBar(taskQueue.length);
+
   const fileProcessingStartTime = Date.now();
   logger.progressBar.start(`Processing ${taskQueue.length} files...`);
 
@@ -91,6 +93,9 @@ export async function i18nTask(batchSize: number) {
 
   // Mutex for task queue access
   let taskQueueMutex = Promise.resolve();
+
+  // Shared across all agents
+  let reports: string[] = [];
 
   // Helper function to safely get tasks from queue
   const getNextTasks = async (batchSize: number): Promise<string[]> => {
@@ -171,8 +176,8 @@ export async function i18nTask(batchSize: number) {
           },
           {}
         );
-        const newSessionId = agent.getSessionId();
-        manager.markAgentFree(agentId, newSessionId);
+        reports.push(agent.generateReport());
+        manager.markAgentFree(agentId, agent.getSessionId());
       } catch (error) {
         // Capture the first error and signal all other agents to abort
         if (!firstError) {
@@ -261,24 +266,8 @@ export async function i18nTask(batchSize: number) {
   }
   logger.spinner.stop('Fixed errors');
 
-  // Generate report
-  logger.initializeSpinner();
-  logger.spinner.start('Generating report...');
-  const reportPrompt = getReportPrompt();
-  try {
-    await cleanupAgent.run(
-      {
-        prompt: reportPrompt,
-        sessionId: cleanupAgent.getSessionId(),
-      },
-      {}
-    );
-  } catch (error) {
-    logger.debugMessage(`[i18n] Error in claude report generation: ${error}`);
-    outro(chalk.red('❌ Locadex i18n failed!'));
-    process.exit(1);
-  }
-  logger.spinner.stop('Report generated');
+  const reportFilePath = createReportFile(reports.join('\n'));
+  logger.step(`Saved summary of changes to: ${reportFilePath}`);
 
   // cleanup
 
@@ -371,6 +360,15 @@ ${dependentFiles[file].length > 0 ? ` ${dependentFiles[file].join(', ')}` : 'non
 ## MCP TOOLS
 
 ${allMcpPrompt}
+
+## Final output
+When you are done, please return a brief summary of the files you modified, following this format.
+Do not include any other text in your response. If there were issues with some files, please include them in the summary.
+
+[file 1 path]
+- List of changes to file 1
+[file 2 path]
+- List of changes to file 2
 `;
 
   return prompt;
@@ -404,18 +402,6 @@ To run the gt-next validator, run the following command:
 
 ## MCP TOOLS
 ${allMcpPrompt}`;
-
-  return prompt;
-}
-
-function getReportPrompt() {
-  const prompt = `# Task: Generate a report of the changes you made to the project.
-
-## INSTRUCTIONS
-
-1. Add a markdown file called 'locadex-report.md' to the root of the project.
-2. The report should include a summary of the changes you made to the project.
-3. Include a list of items the user needs to complete to finish the internationalization process (adding env vars, etc.).`;
 
   return prompt;
 }

@@ -16,6 +16,7 @@ import { i18nCommand } from './commands/i18n.js';
 import { displayHeader } from './logging/console.js';
 import { main } from 'gtx-cli/index';
 import { LocadexManager } from './utils/locadexManager.js';
+import { logger } from './logging/logger.js';
 
 const packageJson = JSON.parse(
   readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -42,12 +43,20 @@ program
     withTelemetry(
       { enabled: !allOptions.noTelemetry, options: allOptions },
       () => {
+        const batchSize = Number(allOptions.batchSize) || 1;
+        const concurrency = Number(allOptions.concurrency) || 1;
+
+        if (concurrency < 1 || batchSize < 1) {
+          logger.error('Batch size and concurrency must be greater than 0');
+          process.exit(1);
+        }
+
         displayHeader();
         LocadexManager.initialize({
           mcpTransport: 'sse',
-          maxConcurrency: Number(allOptions.concurrency) || 1,
+          maxConcurrency: concurrency,
           metadata: {
-            batchSize: Number(allOptions.batchSize) || 1,
+            batchSize,
           },
           cliOptions: allOptions,
         });
@@ -70,12 +79,20 @@ program
     withTelemetry(
       { enabled: !allOptions.noTelemetry, options: allOptions },
       () => {
+        const batchSize = Number(allOptions.batchSize) || 1;
+        const concurrency = Number(allOptions.concurrency) || 1;
+
+        if (concurrency < 1 || batchSize < 1) {
+          logger.error('Batch size and concurrency must be greater than 0');
+          process.exit(1);
+        }
+
         displayHeader();
         LocadexManager.initialize({
           mcpTransport: 'sse',
-          maxConcurrency: Number(allOptions.concurrency) || 1,
+          maxConcurrency: concurrency,
           metadata: {
-            batchSize: Number(allOptions.batchSize) || 1,
+            batchSize,
           },
           cliOptions: allOptions,
         });

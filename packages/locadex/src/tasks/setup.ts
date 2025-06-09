@@ -168,11 +168,12 @@ async function setupLocaleSelector() {
 }
 
 function getLocaleSelectorPrompt() {
-  const prompt = `Here is your task:
-- Please add a locale selector to the project.
+  const prompt = `# Task: Add a locale selector to the project
+
+## Instructions
 - The locale selector should be a dropdown that allows the user to select the locale.
 
---- LOCALE SELECTOR USAGE ---
+## LOCALE SELECTOR USAGE
 (1) Import the locale selector component from 'gt-next/client'
 (2) Add the locale selector to the project
 
@@ -188,9 +189,17 @@ function MyComponent() {
   );
 }
 
---- ADVICE ---
+## ADVICE
 - The locale selector should be added to a header or footer or some other very obvious place in the project.
 - Scan across files to find the best place to add the locale selector.
+
+## Final output
+When you are done, please return a brief summary of the files you modified, following this format
+
+[path to file 1]
+- List of changes to file 1
+[path to file 2]
+- List of changes to file 2
 `;
   return prompt;
 }

@@ -56,6 +56,7 @@ export class ClaudeCodeRunner {
   private sessionId: string = '';
   private mcpConfig: string | undefined;
   private manager: LocadexManager;
+  private changes: string[] = [];
 
   constructor(
     manager: LocadexManager,
@@ -241,6 +242,9 @@ export class ClaudeCodeRunner {
           }s`
         );
       }
+      if (outputData.subtype === 'success') {
+        this.changes.push(outputData.result);
+      }
       this.manager.stats.updateStats({
         newCost: Number(outputData.cost_usd),
         newWallDuration: Number(outputData.duration_ms),
@@ -251,5 +255,9 @@ export class ClaudeCodeRunner {
         this.sessionId = outputData.session_id;
       }
     }
+  }
+
+  generateReport(): string {
+    return this.changes.join('\n');
   }
 }
