@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import useLocale from '../hooks/useLocale';
 import useLocales from '../hooks/useLocales';
 import useSetLocale from '../hooks/useSetLocale';
-import { getLocaleProperties } from 'generaltranslation';
+import { useGTFunctions } from './useFunctions';
 
 /**
  * Gets the list of properties for using a locale selector.
@@ -14,6 +14,7 @@ export default function useLocaleSelector(locales?: string[]) {
   const locale = useLocale();
   const contextLocales = useLocales();
   const setLocale = useSetLocale();
+  const { getLocaleProperties } = useGTFunctions();
 
   // sort
   const sortedLocales = useMemo(() => {
