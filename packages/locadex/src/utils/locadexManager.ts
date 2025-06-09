@@ -42,7 +42,7 @@ export class LocadexManager {
   private mcpConfigPath: string;
   private filesStateFilePath: string;
   private metadataFilePath: string;
-  private tempDir: string;
+  private workingDir: string;
   private apiKey?: string;
   private maxConcurrency: number;
   private agentPool: Map<
@@ -66,15 +66,15 @@ export class LocadexManager {
     this.stats = new AgentStats();
 
     const cwd = process.cwd();
-    this.tempDir = path.resolve(cwd, '.locadex', Date.now().toString());
-    fs.mkdirSync(this.tempDir, { recursive: true });
+    this.workingDir = path.resolve(cwd, '.locadex', Date.now().toString());
+    fs.mkdirSync(this.workingDir, { recursive: true });
 
     addToGitIgnore(cwd, '.locadex');
 
-    this.mcpConfigPath = path.resolve(this.tempDir, 'mcp.json');
-    this.filesStateFilePath = path.resolve(this.tempDir, 'files-state.json');
-    this.metadataFilePath = path.resolve(this.tempDir, 'metadata.json');
-    this.logFile = path.resolve(this.tempDir, 'log.txt');
+    this.mcpConfigPath = path.resolve(this.workingDir, 'mcp.json');
+    this.filesStateFilePath = path.resolve(this.workingDir, 'files-state.json');
+    this.metadataFilePath = path.resolve(this.workingDir, 'metadata.json');
+    this.logFile = path.resolve(this.workingDir, 'log.txt');
 
     // Create files-state.json
     const filesState: FileEntry[] = [];
@@ -92,7 +92,7 @@ export class LocadexManager {
       workingDirectory: cwd,
       projectName: path.basename(cwd),
       transport: options.mcpTransport,
-      tempDirectory: this.tempDir,
+      tempDirectory: this.workingDir,
       nodeVersion: process.version,
       platform: process.platform,
       arch: process.arch,
@@ -292,5 +292,9 @@ export class LocadexManager {
         }
       }, 1000);
     }
+  }
+
+  getWorkingDir(): string {
+    return this.workingDir;
   }
 }

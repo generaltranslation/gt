@@ -260,13 +260,18 @@ export async function i18nTask(batchSize: number) {
     );
   } catch (error) {
     manager.cleanupAgents();
-    logger.debugMessage(`[i18n] Fixing errors failed: ${error}`);
+    logger.debugMessage(
+      `[claude_cleanup_agent] Fixing errors failed: ${error}`
+    );
     outro(chalk.red('❌ Locadex i18n failed!'));
     process.exit(1);
   }
   logger.spinner.stop('Fixed errors');
 
-  const reportFilePath = createReportFile(reports.join('\n'));
+  const reportFilePath = createReportFile(
+    reports.join('\n'),
+    manager.getWorkingDir()
+  );
   logger.step(`Saved summary of changes to: ${reportFilePath}`);
 
   // cleanup

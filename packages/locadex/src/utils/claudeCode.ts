@@ -89,6 +89,7 @@ export class ClaudeCodeRunner {
     options: ClaudeCodeOptions,
     obs: ClaudeCodeObservation
   ): Promise<string> {
+    this.changes = [];
     return new Promise((resolve, reject) => {
       const args = ['-p', options.prompt];
 
