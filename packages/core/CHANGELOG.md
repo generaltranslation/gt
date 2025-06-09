@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 6.3.1
+
+### Patch Changes
+
+- [#340](https://github.com/generaltranslation/gt/pull/340) [`df5d5db`](https://github.com/generaltranslation/gt/commit/df5d5dbb25e2031891fc425e1e04f9022e935f00) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Exported LocaleProperties type in generaltranslation/types
+
 ## 6.3.0
 
 ### Minor Changes
