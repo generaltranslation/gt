@@ -139,9 +139,6 @@ export default function ClientProvider({
 
   // ---------- RENDER LOGIC ---------- //
 
-  // Block rendering until all translations are resolved
-  const display = !!(!translationRequired || translations) && locale;
-
   return (
     <GTContext.Provider
       value={{
@@ -161,7 +158,7 @@ export default function ClientProvider({
         runtimeTranslationEnabled,
       }}
     >
-      {display && children}
+      {children}
     </GTContext.Provider>
   );
 }
