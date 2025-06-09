@@ -10,6 +10,9 @@ import { join, relative, dirname } from 'node:path';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { logger } from '../logging/logger.js';
 
+// Mutex for thread-safe file operations
+const fileMutexes = new Map<string, Promise<void>>();
+
 export interface FileEntry {
   path: string;
   addedAt: string;
@@ -31,6 +34,23 @@ function getFileList(filePath: string): FileEntry[] {
 
 function saveFileList(files: FileEntry[], filePath: string): void {
   writeFileSync(filePath, JSON.stringify(files, null, 2));
+}
+
+async function withFileMutex<T>(
+  filePath: string,
+  operation: () => T
+): Promise<T> {
+  const existingMutex = fileMutexes.get(filePath) || Promise.resolve();
+  const newMutex = existingMutex
+    .then(() => operation())
+    .catch((error) => {
+      throw error;
+    });
+  fileMutexes.set(
+    filePath,
+    newMutex.then(() => {}).catch(() => {})
+  ); // Store the promise but ignore errors for the next operation
+  return newMutex;
 }
 
 function addFileToList(
@@ -128,27 +148,23 @@ export function addFilesToManager(
 }
 
 // Used by dag command
-export function cleanUp(stateFilePath: string): void {
-  const locadexDir = '.locadex';
-  if (existsSync(locadexDir)) {
-    rmSync(locadexDir, { recursive: true, force: true });
-  }
+export async function markFileAsInProgress(
+  filePath: string,
+  stateFilePath: string
+): Promise<void> {
+  return withFileMutex(stateFilePath, () => {
+    addFileToList(filePath, stateFilePath, 'in_progress');
+  });
 }
 
 // Used by dag command
-export function markFileAsInProgress(
+export async function markFileAsEdited(
   filePath: string,
   stateFilePath: string
-): void {
-  addFileToList(filePath, stateFilePath, 'in_progress');
-}
-
-// Used by dag command
-export function markFileAsEdited(
-  filePath: string,
-  stateFilePath: string
-): void {
-  addFileToList(filePath, stateFilePath, 'edited');
+): Promise<void> {
+  return withFileMutex(stateFilePath, () => {
+    addFileToList(filePath, stateFilePath, 'edited');
+  });
 }
 
 export function addNextJsFilesToManager(

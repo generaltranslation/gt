@@ -121,7 +121,7 @@ export class ClaudeCodeRunner {
         env.ANTHROPIC_API_KEY = this.options.apiKey;
       }
 
-      const claude = spawn('npx', ['claude', ...args], {
+      const claude = spawn('claude', args, {
         stdio: ['inherit', 'pipe', 'pipe'],
         env,
       });
@@ -154,8 +154,8 @@ export class ClaudeCodeRunner {
         }
       });
 
-      claude.stderr?.on('data', () => {
-        logger.warning('An error occurred while running Claude Code');
+      claude.stderr?.on('data', (data) => {
+        logger.debugMessage(`[Claude Code SDK] ${data.toString().trim()}`);
       });
 
       claude.on('close', (code) => {
@@ -163,6 +163,9 @@ export class ClaudeCodeRunner {
         if (code === 0) {
           resolve(output.trim());
         } else {
+          logger.debugMessage(
+            `Claude Code exited with code ${code}: ${errorOutput}`
+          );
           reject(
             new Error(`Claude Code exited with code ${code}: ${errorOutput}`)
           );
@@ -171,6 +174,7 @@ export class ClaudeCodeRunner {
 
       claude.on('error', (error) => {
         activeClaudeProcesses.delete(claude);
+        logger.debugMessage(`Failed to run Claude Code: ${error.message}`);
         reject(new Error(`Failed to run Claude Code: ${error.message}`));
       });
     });

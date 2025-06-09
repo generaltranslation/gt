@@ -89,6 +89,19 @@ export async function i18nTask(batchSize: number) {
   const abortController = new AbortController();
   let firstError: Error | null = null;
 
+  // Mutex for task queue access
+  let taskQueueMutex = Promise.resolve();
+
+  // Helper function to safely get tasks from queue
+  const getNextTasks = async (batchSize: number): Promise<string[]> => {
+    return new Promise((resolve) => {
+      taskQueueMutex = taskQueueMutex.then(() => {
+        const tasks = taskQueue.splice(0, batchSize);
+        resolve(tasks);
+      });
+    });
+  };
+
   const processTask = async (): Promise<void> => {
     while (taskQueue.length > 0 && !abortController.signal.aborted) {
       // Check if we should abort early
@@ -96,8 +109,8 @@ export async function i18nTask(batchSize: number) {
         return;
       }
 
-      // Get an available agent
-      const agentInfo = manager.getAvailableAgent();
+      // Get an available agent atomically
+      const agentInfo = await manager.getAvailableAgent();
       if (!agentInfo) {
         // No available agents, wait a bit (but check for abort)
         await new Promise((resolve) => {
@@ -111,17 +124,24 @@ export async function i18nTask(batchSize: number) {
       }
 
       const { id: agentId, agent, sessionId } = agentInfo;
-      manager.markAgentBusy(agentId);
 
-      // Get the next batch of tasks
-      const tasks = taskQueue.splice(0, batchSize);
+      // Get the next batch of tasks (thread-safe)
+      const tasks = await getNextTasks(batchSize);
       if (tasks.length === 0) {
         manager.markAgentFree(agentId, sessionId);
         break;
       }
 
+      logger.verboseMessage(
+        `Using agent ${agentId} for ${batchSize} files. Files: ${tasks.join(
+          ', '
+        )}`
+      );
+
       // Mark tasks as in progress
-      tasks.forEach((task) => markFileAsInProgress(task, filesStateFilePath));
+      await Promise.all(
+        tasks.map((task) => markFileAsInProgress(task, filesStateFilePath))
+      );
 
       // Construct prompt
       const dependencies = Object.fromEntries(
@@ -168,7 +188,9 @@ export async function i18nTask(batchSize: number) {
       }
 
       // Mark tasks as complete
-      tasks.forEach((task) => markFileAsEdited(task, filesStateFilePath));
+      await Promise.all(
+        tasks.map((task) => markFileAsEdited(task, filesStateFilePath))
+      );
       processedCount += tasks.length;
       logger.progressBar.advance(
         tasks.length,
@@ -179,6 +201,9 @@ export async function i18nTask(batchSize: number) {
       });
     }
   };
+
+  // Create agent pool
+  manager.createAgentPool();
 
   // Start parallel processing
   const processingPromises = Array.from({ length: concurrency }, () =>

@@ -176,7 +176,7 @@ class Logger {
   // Conditional logging methods
   verboseMessage(message: string): void {
     if (this._verbose) {
-      this.message(message);
+      logMessage(message);
     }
     if (this.logFile) {
       appendFileSync(this.logFile, `${message}\n`);
@@ -185,7 +185,7 @@ class Logger {
 
   debugMessage(message: string): void {
     if (this._debug) {
-      this.message(message);
+      logMessage(message);
     }
     if (this.logFile) {
       appendFileSync(this.logFile, `${message}\n`);

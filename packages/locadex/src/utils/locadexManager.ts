@@ -49,6 +49,7 @@ export class LocadexManager {
     string,
     { agent: ClaudeCodeRunner; sessionId?: string; busy: boolean }
   >;
+  private agentMutex = Promise.resolve();
   private agentsCleanedUp: boolean = false;
   stats: AgentStats;
   logFile: string;
@@ -184,10 +185,7 @@ export class LocadexManager {
     });
   }
 
-  createAgentPool(): Map<
-    string,
-    { agent: ClaudeCodeRunner; sessionId?: string; busy: boolean }
-  > {
+  createAgentPool(): void {
     if (this.agentPool.size === 0) {
       for (let i = 0; i < this.maxConcurrency; i++) {
         const agentId = `agent-${i}`;
@@ -198,21 +196,29 @@ export class LocadexManager {
         });
       }
     }
-    return this.agentPool;
   }
 
-  getAvailableAgent(): {
+  async getAvailableAgent(): Promise<{
     id: string;
     agent: ClaudeCodeRunner;
     sessionId?: string;
-  } | null {
-    this.createAgentPool();
-    for (const [id, agentData] of this.agentPool) {
-      if (!agentData.busy) {
-        return { id, agent: agentData.agent, sessionId: agentData.sessionId };
-      }
-    }
-    return null;
+  } | null> {
+    return new Promise((resolve) => {
+      this.agentMutex = this.agentMutex.then(() => {
+        for (const [id, agentData] of this.agentPool) {
+          if (!agentData.busy) {
+            agentData.busy = true;
+            resolve({
+              id,
+              agent: agentData.agent,
+              sessionId: agentData.sessionId,
+            });
+            return;
+          }
+        }
+        resolve(null);
+      });
+    });
   }
 
   markAgentBusy(agentId: string): void {
@@ -236,7 +242,7 @@ export class LocadexManager {
     string,
     { agent: ClaudeCodeRunner; sessionId?: string; busy: boolean }
   > {
-    return this.createAgentPool();
+    return this.agentPool;
   }
 
   getMaxConcurrency(): number {
