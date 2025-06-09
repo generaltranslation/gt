@@ -41,7 +41,7 @@ import {
   VariableProps,
 } from './types/types';
 
-import { GTContextType, ClientProviderProps } from './types/providers';
+import { GTContextType, ClientProviderProps } from './types/context';
 import { defaultLocaleCookieName } from './utils/cookies';
 import mergeDictionaries from './provider/helpers/mergeDictionaries';
 

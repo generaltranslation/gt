@@ -5,9 +5,7 @@ import {
 } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import {
-  CustomLoader,
   Dictionary,
-  RenderMethod,
   TranslationsObject,
 } from '../types/types';
 import {
@@ -35,7 +33,7 @@ import { isSSREnabled } from './helpers/isSSREnabled';
 import { defaultLocaleCookieName } from '../utils/cookies';
 import loadDictionaryHelper from './helpers/loadDictionaryHelper';
 import mergeDictionaries from './helpers/mergeDictionaries';
-import { GTConfig } from '../types/config';
+import { GTProviderProps } from '../types/config';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -79,30 +77,7 @@ export default function GTProvider({
   translations: _translations = null,
   _versionId,
   ...metadata
-}: {
-  children?: React.ReactNode;
-  projectId?: string;
-  devApiKey?: string;
-  dictionary?: any;
-  locales?: string[];
-  defaultLocale?: string;
-  locale?: string;
-  cacheUrl?: string;
-  runtimeUrl?: string;
-  renderSettings?: {
-    method: RenderMethod;
-    timeout?: number;
-  };
-  _versionId?: string;
-  ssr?: boolean;
-  localeCookieName?: string;
-  translations?: TranslationsObject | null;
-  loadDictionary?: CustomLoader;
-  loadTranslations?: CustomLoader;
-  config?: GTConfig;
-  fallback?: React.ReactNode;
-  [key: string]: any;
-}): React.JSX.Element {
+}: GTProviderProps) {
   // ---------- SANITIZATION ---------- //
 
   // Read env
