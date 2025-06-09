@@ -7,6 +7,7 @@ import { logger } from '../logging/logger.js';
 import { addToGitIgnore } from './fs/writeFiles.js';
 import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
+import { setTimeout } from 'node:timers';
 import { AgentStats } from './stats.js';
 
 export interface LocadexMetadata {
@@ -34,6 +35,7 @@ const mcpStdioConfig = {
 };
 
 export class LocadexManager {
+  private static instance: LocadexManager | undefined;
   private mcpProcess: ChildProcess | undefined;
   private mcpConfigPath: string;
   private filesStateFilePath: string;
@@ -42,7 +44,7 @@ export class LocadexManager {
   private apiKey?: string;
   stats: AgentStats;
 
-  constructor(options: {
+  private constructor(options: {
     mcpTransport: 'sse' | 'stdio';
     apiKey?: string;
     metadata?: Partial<LocadexMetadata>;
@@ -129,11 +131,34 @@ export class LocadexManager {
         }
       });
 
-      process.on('exit', () => {
-        this.cleanup();
-      });
-
       this.mcpConfigPath = fromPackageRoot('.locadex-mcp.json');
+    }
+    process.on('beforeExit', () => {
+      this.cleanup();
+    });
+  }
+
+  static getInstance(): LocadexManager {
+    if (!LocadexManager.instance) {
+      throw new Error('LocadexManager not initialized');
+    }
+    return LocadexManager.instance;
+  }
+
+  static initialize(options: {
+    mcpTransport: 'sse' | 'stdio';
+    apiKey?: string;
+    metadata?: Partial<LocadexMetadata>;
+  }): void {
+    if (!LocadexManager.instance) {
+      LocadexManager.instance = new LocadexManager(options);
+    }
+  }
+
+  static reset(): void {
+    if (LocadexManager.instance) {
+      LocadexManager.instance.cleanup();
+      LocadexManager.instance = undefined;
     }
   }
 
