@@ -35,6 +35,7 @@ program
   .option('-v, --verbose', 'Verbose output')
   .option('-d, --debug', 'Debug output')
   .option('-b, --batch-size <number>', 'File batch size', '10')
+  .option('-c, --concurrency <number>', 'Max number of concurrent agents', '1')
   .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
@@ -46,6 +47,7 @@ program
         displayHeader();
         LocadexManager.initialize({
           mcpTransport: 'sse',
+          maxConcurrency: Number(allOptions.concurrency) || 1,
           metadata: {
             batchSize: Number(allOptions.batchSize) || 1,
           },
@@ -61,6 +63,7 @@ program
   .option('-v, --verbose', 'Verbose output')
   .option('-d, --debug', 'Debug output')
   .option('-b, --batch-size <number>', 'File batch size', '10')
+  .option('-c, --concurrency <number>', 'Max number of concurrent agents', '1')
   .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
@@ -72,6 +75,7 @@ program
         displayHeader();
         LocadexManager.initialize({
           mcpTransport: 'sse',
+          maxConcurrency: Number(allOptions.concurrency) || 1,
           metadata: {
             batchSize: Number(allOptions.batchSize) || 1,
           },

@@ -47,7 +47,7 @@ export async function setupTask(batchSize: number) {
 
   await installPackage('gt-next', packageManager);
 
-  spinner.stop(chalk.green('Automatically installed gt-next.'));
+  spinner.stop('Automatically installed gt-next.');
 
   const nextConfigPath = findFilepaths([
     './next.config.js',
@@ -67,7 +67,7 @@ export async function setupTask(batchSize: number) {
 
   const babel = createSpinner();
 
-  babel.start('Wrapping JSX content with <T> tags...');
+  babel.start('Wrapping <GTProvider> tags...');
 
   // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
   const { filesUpdated: filesUpdatedNext } = await wrapContentNext(
@@ -85,12 +85,11 @@ export async function setupTask(batchSize: number) {
   );
   filesUpdated = [...filesUpdated, ...filesUpdatedNext];
 
-  babel.stop(chalk.green(`Modified ${filesUpdated.length} files.`));
+  babel.stop(`Modified ${filesUpdated.length} files.`);
+
   // Add the withGTConfig() function to the next.config.js file
   await handleInitGT(nextConfigPath, errors, warnings, filesUpdated);
-  logger.step(
-    chalk.green(`Added withGTConfig() to your ${nextConfigPath} file.`)
-  );
+  logger.step(`Added withGTConfig() to your ${nextConfigPath} file.`);
 
   // Create gt.config.json
   await createOrUpdateConfig('gt.config.json', {
@@ -116,11 +115,7 @@ export async function setupTask(batchSize: number) {
     );
     spinner.stop(chalk.green('Installed claude-code.'));
   } else {
-    logger.success(
-      chalk.green(
-        `claude-code is already installed: v${claudeCodeInfo.version}`
-      )
-    );
+    logger.step(`claude-code is already installed: v${claudeCodeInfo.version}`);
   }
 
   // Install locadex if not installed

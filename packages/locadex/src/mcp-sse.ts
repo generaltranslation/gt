@@ -46,10 +46,10 @@ export async function start() {
   if (stateFile && existsSync(stateFile)) {
     const state = JSON.parse(readFileSync(stateFile, 'utf8'));
     logger.debugMessage(
-      `[locadex-mcp] state: ${JSON.stringify(state, null, 2)}`
+      `[locadex-mcp-sse] state: ${JSON.stringify(state, null, 2)}`
     );
   } else {
-    throw new Error(`[locadex-mcp] state file not found: ${stateFile}`);
+    throw new Error(`[locadex-mcp-sse] state file not found: ${stateFile}`);
   }
 
   const mcpServer = new McpServer({

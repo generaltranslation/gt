@@ -31,20 +31,21 @@ const DISALLOWED_TOOLS = ['NotebookEdit', 'WebFetch', 'WebSearch'];
 // Global tracking of all Claude processes
 const activeClaudeProcesses = new Set<any>();
 
+// Function to kill all active Claude processes
+export const killAllClaudeProcesses = () => {
+  activeClaudeProcesses.forEach((proc) => {
+    if (!proc.killed) {
+      proc.kill('SIGTERM');
+    }
+  });
+  activeClaudeProcesses.clear();
+};
+
 // Setup global process termination handlers once
 let handlersSetup = false;
 const setupProcessHandlers = () => {
   if (handlersSetup) return;
   handlersSetup = true;
-
-  const killAllClaudeProcesses = () => {
-    activeClaudeProcesses.forEach((proc) => {
-      if (!proc.killed) {
-        proc.kill('SIGTERM');
-      }
-    });
-    activeClaudeProcesses.clear();
-  };
 
   process.on('SIGINT', killAllClaudeProcesses);
   process.on('SIGTERM', killAllClaudeProcesses);

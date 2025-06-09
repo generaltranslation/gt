@@ -3,4 +3,5 @@ export type CliOptions = {
   debug?: boolean;
   noTelemetry?: boolean;
   batchSize?: string;
+  concurrency?: string;
 };

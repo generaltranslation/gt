@@ -1,4 +1,4 @@
-import { ClaudeCodeRunner } from './claudeCode.js';
+import { ClaudeCodeRunner, killAllClaudeProcesses } from './claudeCode.js';
 import { fromPackageRoot } from './getPaths.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -42,14 +42,23 @@ export class LocadexManager {
   private metadataFilePath: string;
   private tempDir: string;
   private apiKey?: string;
+  private maxConcurrency: number;
+  private agentPool: Map<
+    string,
+    { agent: ClaudeCodeRunner; sessionId?: string; busy: boolean }
+  >;
+  private agentsCleanedUp: boolean = false;
   stats: AgentStats;
 
   private constructor(options: {
     mcpTransport: 'sse' | 'stdio';
     apiKey?: string;
     metadata?: Partial<LocadexMetadata>;
+    maxConcurrency?: number;
   }) {
     this.apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY;
+    this.maxConcurrency = options.maxConcurrency || 1;
+    this.agentPool = new Map();
     this.stats = new AgentStats();
 
     const cwd = process.cwd();
@@ -107,10 +116,10 @@ export class LocadexManager {
     } else {
       this.mcpProcess = spawn('node', [fromPackageRoot('dist/mcp-sse.js')], {
         env: {
+          ...process.env,
           LOCADEX_FILES_STATE_FILE_PATH: this.filesStateFilePath,
           LOCADEX_VERBOSE: logger.verbose ? 'true' : 'false',
           LOCADEX_DEBUG: logger.debug ? 'true' : 'false',
-          ...process.env,
         },
         stdio: 'inherit',
       });
@@ -149,6 +158,7 @@ export class LocadexManager {
     mcpTransport: 'sse' | 'stdio';
     apiKey?: string;
     metadata?: Partial<LocadexMetadata>;
+    maxConcurrency?: number;
   }): void {
     if (!LocadexManager.instance) {
       LocadexManager.instance = new LocadexManager(options);
@@ -169,6 +179,86 @@ export class LocadexManager {
     });
   }
 
+  createAgentPool(): Map<
+    string,
+    { agent: ClaudeCodeRunner; sessionId?: string; busy: boolean }
+  > {
+    if (this.agentPool.size === 0) {
+      for (let i = 0; i < this.maxConcurrency; i++) {
+        const agentId = `agent-${i}`;
+        this.agentPool.set(agentId, {
+          agent: this.createAgent(),
+          sessionId: undefined,
+          busy: false,
+        });
+      }
+    }
+    return this.agentPool;
+  }
+
+  getAvailableAgent(): {
+    id: string;
+    agent: ClaudeCodeRunner;
+    sessionId?: string;
+  } | null {
+    this.createAgentPool();
+    for (const [id, agentData] of this.agentPool) {
+      if (!agentData.busy) {
+        return { id, agent: agentData.agent, sessionId: agentData.sessionId };
+      }
+    }
+    return null;
+  }
+
+  markAgentBusy(agentId: string): void {
+    const agentData = this.agentPool.get(agentId);
+    if (agentData) {
+      agentData.busy = true;
+    }
+  }
+
+  markAgentFree(agentId: string, sessionId?: string): void {
+    const agentData = this.agentPool.get(agentId);
+    if (agentData) {
+      agentData.busy = false;
+      if (sessionId) {
+        agentData.sessionId = sessionId;
+      }
+    }
+  }
+
+  getAgentPool(): Map<
+    string,
+    { agent: ClaudeCodeRunner; sessionId?: string; busy: boolean }
+  > {
+    return this.createAgentPool();
+  }
+
+  getMaxConcurrency(): number {
+    return this.maxConcurrency;
+  }
+
+  cleanupAgents(): void {
+    if (this.agentsCleanedUp) {
+      return; // Already cleaned up
+    }
+
+    logger.debugMessage('Cleaning up all Claude Code agents and processes');
+
+    // Mark all agents as free
+    for (const agentData of this.agentPool.values()) {
+      agentData.busy = false;
+    }
+
+    // Kill all active Claude Code processes
+    killAllClaudeProcesses();
+
+    // Clear the agent pool
+    this.agentPool.clear();
+
+    this.agentsCleanedUp = true;
+  }
+
   getFilesStateFilePath(): string {
     return this.filesStateFilePath;
   }
@@ -178,6 +268,10 @@ export class LocadexManager {
   }
 
   cleanup(): void {
+    // Clean up agents first (if not already done)
+    this.cleanupAgents();
+
+    // Clean up MCP process
     if (this.mcpProcess && !this.mcpProcess.killed) {
       this.mcpProcess.kill('SIGTERM');
       setTimeout(() => {
