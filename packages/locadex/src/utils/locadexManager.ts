@@ -115,6 +115,16 @@ export class LocadexManager {
     process.on('beforeExit', () => {
       this.cleanup();
     });
+
+    process.on('SIGINT', () => {
+      this.cleanup();
+      process.exit(0);
+    });
+
+    process.on('SIGTERM', () => {
+      this.cleanup();
+      process.exit(0);
+    });
   }
 
   async startMcpServer() {
@@ -303,6 +313,7 @@ export class LocadexManager {
 
     // Clean up MCP process
     if (this.mcpProcess && !this.mcpProcess.killed) {
+      logger.debugMessage('Killing MCP process');
       this.mcpProcess.kill('SIGTERM');
       setTimeout(() => {
         if (this.mcpProcess && !this.mcpProcess.killed) {
