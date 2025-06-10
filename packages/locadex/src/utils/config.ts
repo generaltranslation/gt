@@ -42,7 +42,7 @@ export function createConfig(
 const DEFAULT_CONFIG: LocadexConfig = {
   batchSize: 10,
   maxConcurrency: 1,
-  matchingFiles: ['*'],
+  matchingFiles: ['**/*.{ts,tsx,js,jsx}'],
   matchingExtensions: ['.ts', '.tsx', '.js', '.jsx'],
 };
 

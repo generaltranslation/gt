@@ -16,33 +16,12 @@ import {
 } from '../utils/getFiles.js';
 import { outro } from '@clack/prompts';
 import chalk from 'chalk';
-import { appendFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { EXCLUDED_DIRS } from '../utils/shared.js';
+import { appendFileSync } from 'node:fs';
 import { validateInitialConfig } from '../utils/config.js';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { generateSettings } from 'gtx-cli/config/generateSettings';
 import path from 'node:path';
-import { findSourceFiles } from '../utils/dag/createDag.js';
-
-function getCurrentDirectories(): string[] {
-  try {
-    return readdirSync(process.cwd())
-      .filter((item) => {
-        try {
-          return statSync(item).isDirectory();
-        } catch {
-          return false;
-        }
-      })
-      .map((dir) => `./${dir}`)
-      .filter((dir) => {
-        return !EXCLUDED_DIRS.includes(dir);
-      });
-  } catch {
-    return [];
-  }
-}
-
+import { findSourceFiles } from '../utils/dag/matchFiles.js';
 export async function i18nTask() {
   validateInitialConfig();
 
@@ -59,7 +38,12 @@ export async function i18nTask() {
   spinner.start('Initializing Locadex...');
   const manager = LocadexManager.getInstance();
 
-  const allFiles = findSourceFiles(getCurrentDirectories());
+  const config = manager.getConfig();
+
+  const allFiles = findSourceFiles(
+    config.matchingFiles,
+    config.matchingExtensions
+  );
   const dag = createDag(allFiles, {
     tsConfig: findTsConfig(),
     webpackConfig: findWebpackConfig(),
@@ -99,7 +83,7 @@ export async function i18nTask() {
   let taskQueueMutex = Promise.resolve();
 
   // Shared across all agents
-  let reports: string[] = [];
+  const reports: string[] = [];
 
   // Helper function to safely get tasks from queue
   const getNextTasks = async (batchSize: number): Promise<string[]> => {

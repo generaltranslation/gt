@@ -1,8 +1,6 @@
 import { logger } from '../../logging/logger.js';
 import dependencyTree, { Tree } from 'dependency-tree';
-import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { DAG_IGNORED_EXTENSIONS, DAG_IGNORED_FILES } from '../shared.js';
 
 export type DagOptions = {
   tsConfig?: string;
@@ -180,52 +178,4 @@ function mergeTrees(trees: Tree[]): DagNode {
   });
 
   return result;
-}
-
-export function findSourceFiles(
-  directories: string[],
-  fileExtensions: string[] = ['.ts', '.tsx', '.js', '.jsx']
-): string[] {
-  const files: string[] = [];
-  const extensions = fileExtensions;
-
-  function walkDirectory(dir: string) {
-    if (!fs.existsSync(dir)) return;
-
-    const items = fs.readdirSync(dir);
-
-    for (const item of items) {
-      const fullPath = path.join(dir, item);
-      const stat = fs.statSync(fullPath);
-
-      if (stat.isDirectory()) {
-        // Skip node_modules and common build/cache directories
-        if (
-          !['node_modules', '.next', 'dist', 'build', '.git'].includes(item)
-        ) {
-          walkDirectory(fullPath);
-        }
-      } else if (stat.isFile()) {
-        const ext = path.extname(item);
-
-        // Skip blacklisted extensions and files
-        if (
-          DAG_IGNORED_EXTENSIONS.includes(ext) ||
-          DAG_IGNORED_FILES.includes(item)
-        ) {
-          continue;
-        }
-
-        if (extensions.includes(ext)) {
-          files.push(fullPath);
-        }
-      }
-    }
-  }
-
-  for (const directory of directories) {
-    walkDirectory(directory);
-  }
-
-  return files;
 }

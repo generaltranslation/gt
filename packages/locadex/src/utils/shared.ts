@@ -21,6 +21,19 @@ export const DAG_IGNORED_FILES = [
   'webpack.config.js',
 ];
 
+export const DAG_IGNORED_PATTERNS = [
+  '**/node_modules/**',
+  '**/.next/**',
+  '**/dist/**',
+  '**/build/**',
+  '**/.git/**',
+  '**/.cache/**',
+  '**/.nuxt/**',
+  '**/.vite/**',
+  '**/.turbo/**',
+  '**/.locadex/**',
+];
+
 export const DAG_IGNORED_EXTENSIONS = ['.css', '.scss', '.sass', '.less'];
 
 export const CLAUDE_CODE_VERSION = '1.0.16';
