@@ -1,5 +1,8 @@
 import { setupTask } from '../tasks/setup.js';
 
-export async function setupCommand() {
-  await setupTask();
+export async function setupCommand(
+  bypassPrompts: boolean,
+  specifiedPackageManager?: string
+) {
+  await setupTask(bypassPrompts, specifiedPackageManager);
 }

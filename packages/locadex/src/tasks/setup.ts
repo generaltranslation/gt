@@ -26,22 +26,28 @@ import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { appendFileSync } from 'node:fs';
 import path from 'node:path';
 
-export async function setupTask() {
+export async function setupTask(
+  bypassPrompts: boolean,
+  specifiedPackageManager?: string
+) {
   validateInitialConfig();
-  const answer = await promptConfirm({
-    message: chalk.yellow(
-      `Locadex will modify files! Make sure you have committed or stashed any changes. Do you want to continue?`
-    ),
-    defaultValue: true,
-    cancelMessage: 'Operation cancelled.',
-  });
-  if (!answer) {
-    logger.info('Operation cancelled.');
-    process.exit(0);
+
+  if (!bypassPrompts) {
+    const answer = await promptConfirm({
+      message: chalk.yellow(
+        `Locadex will modify files! Make sure you have committed or stashed any changes. Do you want to continue?`
+      ),
+      defaultValue: true,
+      cancelMessage: 'Operation cancelled.',
+    });
+    if (!answer) {
+      logger.info('Operation cancelled.');
+      process.exit(0);
+    }
   }
 
   const packageJson = await getPackageJson();
-  const packageManager = await getPackageManager();
+  const packageManager = await getPackageManager(specifiedPackageManager);
 
   const spinner = createSpinner('timer');
 

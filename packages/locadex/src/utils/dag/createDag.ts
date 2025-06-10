@@ -116,7 +116,9 @@ export function createDag(files: string[], options: DagOptions): Dag {
   const visited: dependencyTree.Tree = {};
   const nonExistent: string[] = [];
 
-  logger.debugMessage(`Creating combined tree for ${files.length} files`);
+  logger.debugMessage(
+    `Creating combined tree for ${files.length} source files`
+  );
 
   files.forEach((file) => {
     if (visited[file]) {

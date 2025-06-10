@@ -74,6 +74,7 @@ export class LocadexManager {
     metadata?: Partial<LocadexRunMetadata>;
     maxConcurrency?: number;
     batchSize?: number;
+    overrideOptions?: Partial<LocadexConfig>;
   }) {
     this.apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY;
     this.agentPool = new Map();
@@ -89,7 +90,7 @@ export class LocadexManager {
     );
     fs.mkdirSync(this.workingDir, { recursive: true });
 
-    this.config = getConfig(this.locadexDirectory);
+    this.config = getConfig(this.locadexDirectory, options.overrideOptions);
 
     createConfig(this.locadexDirectory, {
       batchSize: this.config.batchSize,
@@ -212,9 +213,13 @@ export class LocadexManager {
     maxConcurrency: number;
     batchSize: number;
     cliOptions?: CliOptions;
+    overrideOptions?: Partial<LocadexConfig>;
   }): void {
     if (!LocadexManager.instance) {
-      LocadexManager.instance = new LocadexManager(options);
+      LocadexManager.instance = new LocadexManager({
+        ...options,
+        overrideOptions: options.overrideOptions,
+      });
       if (options.cliOptions) {
         logger.initialize(options.cliOptions, LocadexManager.instance.logFile);
       }

@@ -5,6 +5,7 @@ import { getPackageJson, updatePackageJson } from './packageJson';
 import { promptSelect } from '../console';
 
 export interface PackageManager {
+  id: string;
   name: string;
   label: string;
   installCommand: string;
@@ -20,6 +21,7 @@ export interface PackageManager {
 }
 
 export const BUN: PackageManager = {
+  id: 'bun',
   name: 'bun',
   label: 'Bun',
   installCommand: 'add',
@@ -50,6 +52,7 @@ export const BUN: PackageManager = {
   },
 };
 export const DENO: PackageManager = {
+  id: 'deno',
   name: 'deno',
   label: 'Deno',
   installCommand: 'install',
@@ -80,6 +83,7 @@ export const DENO: PackageManager = {
   },
 };
 export const YARN_V1: PackageManager = {
+  id: 'yarn_v1',
   name: 'yarn',
   label: 'Yarn V1',
   installCommand: 'add',
@@ -113,6 +117,7 @@ export const YARN_V1: PackageManager = {
 };
 /** YARN V2/3/4 */
 export const YARN_V2: PackageManager = {
+  id: 'yarn_v2',
   name: 'yarn',
   label: 'Yarn V2/3/4',
   installCommand: 'add',
@@ -145,6 +150,7 @@ export const YARN_V2: PackageManager = {
   },
 };
 export const PNPM: PackageManager = {
+  id: 'pnpm',
   name: 'pnpm',
   label: 'PNPM',
   installCommand: 'add',
@@ -178,6 +184,7 @@ export const PNPM: PackageManager = {
   },
 };
 export const NPM: PackageManager = {
+  id: 'npm',
   name: 'npm',
   label: 'NPM',
   installCommand: 'install',
@@ -227,13 +234,25 @@ export function _detectPackageManger(
 
 // Get the package manager for the current project
 // Uses a global cache to avoid prompting the user multiple times
-export async function getPackageManager(): Promise<PackageManager> {
+export async function getPackageManager(
+  specifiedPackageManager?: string
+): Promise<PackageManager> {
   const globalWizard: typeof global & {
     _gt_wizard_cached_package_manager?: PackageManager;
   } = global;
 
   if (globalWizard._gt_wizard_cached_package_manager) {
     return globalWizard._gt_wizard_cached_package_manager;
+  }
+
+  if (specifiedPackageManager) {
+    const packageManager = packageManagers.find(
+      (packageManager) => packageManager.id === specifiedPackageManager
+    );
+    if (packageManager) {
+      globalWizard._gt_wizard_cached_package_manager = packageManager;
+      return packageManager;
+    }
   }
 
   const detectedPackageManager = _detectPackageManger();

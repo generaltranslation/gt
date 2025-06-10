@@ -36,33 +36,69 @@ program
   .option('-d, --debug', 'Debug output')
   .option('-b, --batch-size <number>', 'File batch size', '10')
   .option('-c, --concurrency <number>', 'Max number of concurrent agents', '1')
+  .option(
+    '-f, --files <pattern>',
+    'Comma-separated list of glob patterns to match source files'
+  )
+  .option(
+    '-e, --extensions <extensions>',
+    'Comma-separated list of file extensions to match'
+  )
+  .option(
+    '--package-manager <manager>',
+    'Package manager to use. (npm, pnpm, yarn_v1, yarn_v2, bun, deno)'
+  )
+  .option('-y, --bypass-prompts', 'Bypass interactive prompts')
   .option('--no-telemetry', 'Disable telemetry')
-  .action((options: CliOptions, command: Command) => {
-    const parentOptions = command.parent?.opts() || {};
-    const allOptions = { ...parentOptions, ...options };
-    withTelemetry(
-      { enabled: !allOptions.noTelemetry, options: allOptions },
-      async () => {
-        const batchSize = Number(allOptions.batchSize) || 1;
-        const concurrency = Number(allOptions.concurrency) || 1;
+  .action(
+    (
+      options: CliOptions & {
+        packageManager?: string;
+        bypassPrompts?: boolean;
+      },
+      command: Command
+    ) => {
+      const parentOptions = command.parent?.opts() || {};
+      const allOptions = { ...parentOptions, ...options };
+      withTelemetry(
+        { enabled: !allOptions.noTelemetry, options: allOptions },
+        async () => {
+          const batchSize = Number(allOptions.batchSize) || 1;
+          const concurrency = Number(allOptions.concurrency) || 1;
 
-        if (concurrency < 1 || batchSize < 1) {
-          logger.error('Batch size and concurrency must be greater than 0');
-          process.exit(1);
+          if (concurrency < 1 || batchSize < 1) {
+            logger.error('Batch size and concurrency must be greater than 0');
+            process.exit(1);
+          }
+
+          displayHeader();
+          LocadexManager.initialize({
+            mcpTransport: 'sse',
+            maxConcurrency: concurrency,
+            batchSize,
+            metadata: {},
+            cliOptions: allOptions,
+            overrideOptions: {
+              ...(allOptions.matchingFiles && {
+                matchingFiles: allOptions.matchingFiles
+                  .split(',')
+                  .map((file) => file.trim()),
+              }),
+              ...(allOptions.matchingExtensions && {
+                matchingExtensions: allOptions.matchingExtensions
+                  .split(',')
+                  .map((ext) => ext.trim()),
+              }),
+            },
+          });
+          await setupCommand(
+            !!allOptions.bypassPrompts,
+            allOptions.packageManager
+          );
         }
-
-        displayHeader();
-        LocadexManager.initialize({
-          mcpTransport: 'sse',
-          maxConcurrency: concurrency,
-          batchSize,
-          metadata: {},
-          cliOptions: allOptions,
-        });
-        await setupCommand();
-      }
-    );
-  });
+      );
+    }
+  );
 
 program
   .command('i18n')
@@ -71,6 +107,14 @@ program
   .option('-d, --debug', 'Debug output')
   .option('-b, --batch-size <number>', 'File batch size', '10')
   .option('-c, --concurrency <number>', 'Max number of concurrent agents', '1')
+  .option(
+    '-m, --matching-files <pattern>',
+    'Comma-separated list of glob patterns to match source files'
+  )
+  .option(
+    '-e, --matching-extensions <extensions>',
+    'Comma-separated list of file extensions to match'
+  )
   .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
@@ -93,6 +137,18 @@ program
           batchSize,
           metadata: {},
           cliOptions: allOptions,
+          overrideOptions: {
+            ...(allOptions.matchingFiles && {
+              matchingFiles: allOptions.matchingFiles
+                .split(',')
+                .map((file) => file.trim()),
+            }),
+            ...(allOptions.matchingExtensions && {
+              matchingExtensions: allOptions.matchingExtensions
+                .split(',')
+                .map((ext) => ext.trim()),
+            }),
+          },
         });
         await i18nCommand();
       }

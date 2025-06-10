@@ -4,6 +4,8 @@ export type CliOptions = {
   noTelemetry?: boolean;
   batchSize?: string;
   concurrency?: string;
+  matchingFiles?: string;
+  matchingExtensions?: string;
 };
 
 export type LocadexConfig = {
