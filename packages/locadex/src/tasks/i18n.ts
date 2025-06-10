@@ -259,6 +259,7 @@ export async function i18nTask(batchSize: number) {
       { prompt: fixPrompt, sessionId: cleanupAgent.getSessionId() },
       {}
     );
+    reports.push(`## Fixed errors\n${cleanupAgent.generateReport()}`);
   } catch (error) {
     manager.cleanupAgents();
     logger.debugMessage(
@@ -384,7 +385,7 @@ ${allMcpPrompt}
 // check (dry run and ts check) should be at the end
 
 function getFixPrompt() {
-  const prompt = `# Task: Fix implementation errors in the project.
+  const prompt = `# Task: Fix internationalization errors in the project.
 
 ## INSTRUCTIONS
 
@@ -392,14 +393,14 @@ Previously, you helped me internationalize a set of files in this project.
 Your new task is as follows:
 
 1. Run the gt-next validator.
-2. Fix all errors relevant to the gt-next implementation code.
+2. Fix all errors output by the gt-next validator.
 3. Whenever you are finished with your changes, run the gt-next validator.
 4. Repeat steps 1-3 until there are no more errors, or until you believe that you have fixed all errors.
-5. If the project is setup with linting, lint the project and fix all errors.
+5. If the project is setup with linting, lint the project and fix all lint errors.
 
 ## RULES:
-- DO NOT modify any files that are not relevant to the gt-next implementation code.
-- ONLY fix errors that are relevant to the gt-next implementation code and your current or previous implementation.
+- ONLY modify files that are relevant to the internationalization of the project.
+- ONLY fix errors that result from your current or previous implementation.
 - Resolve unused imports from 'gt-next'. 
   - In particular, if a file contains user-facing content that should be internationalized and is not, you should internationalize it.
 - Resolve missing imports from 'gt-next'. If a file is missing an import from 'gt-next', add it.
@@ -408,7 +409,17 @@ To run the gt-next validator, run the following command:
 'npx locadex translate --dry-run'
 
 ## MCP TOOLS
-${allMcpPrompt}`;
+
+${allMcpPrompt}
+
+## Final output
+- When you are done, please return a brief summary of the files you modified, following this format.
+- **DO NOT** include any other text in your response. 
+- If there were issues with some files, please include the issues in the list of changes for that file.
+
+[file 1 path]
+- List of changes to file 1
+`;
 
   return prompt;
 }
