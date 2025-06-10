@@ -173,19 +173,19 @@ export class LocadexManager {
         stdio: 'inherit',
       });
 
-      this.mcpProcess.on('error', (error) => {
+      this.mcpProcess.on('error', async (error) => {
         logger.error(`MCP server failed to start: ${error.message}`);
-        exit(1);
+        await exit(1);
       });
 
-      this.mcpProcess.on('exit', (code, signal) => {
+      this.mcpProcess.on('exit', async (code, signal) => {
         if (code !== 0 && code !== null) {
           logger.error(`MCP server exited with code ${code}`);
-          exit(code as 0 | 1);
+          await exit(code as 0 | 1);
         }
         if (signal) {
           logger.error(`MCP server was killed with signal ${signal}`);
-          exit(1);
+          await exit(1);
         }
       });
     }

@@ -64,16 +64,6 @@ class GracefulShutdown {
       }
     }
 
-    // Flush Sentry and ensure telemetry is sent
-    try {
-      await Promise.race([
-        Sentry.flush(3000),
-        new Promise((resolve) => global.setTimeout(resolve, 3000)),
-      ]);
-    } catch (error) {
-      logger.debugMessage(`Error flushing Sentry: ${error}`);
-    }
-
     logger.debugMessage('Graceful shutdown complete');
 
     // Force exit after a timeout if process doesn't exit naturally

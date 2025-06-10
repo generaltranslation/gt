@@ -1,10 +1,9 @@
+import { exit, gracefulShutdown } from './utils/shutdown.js';
 import * as Sentry from '@sentry/node';
 import { PostHog } from 'posthog-node';
 import { getLocadexVersion } from './utils/getPaths.js';
 import { CliOptions } from './types/cli.js';
 import { getSessionId } from './utils/session.js';
-import { logger } from './logging/logger.js';
-import { gracefulShutdown } from './utils/shutdown.js';
 
 let _posthog: PostHog | null = null;
 let sentryInitialized = false;
@@ -106,10 +105,7 @@ export async function withTelemetry<F>(
     Sentry.captureException(e);
     throw e;
   } finally {
-    await Sentry.flush(3000).then(null, () => {});
-    if (_posthog) {
-      await _posthog.shutdown();
-    }
+    await exit(0);
   }
 }
 
@@ -120,6 +116,7 @@ gracefulShutdown.addHandler({
     if (_posthog) {
       await _posthog.shutdown();
     }
+    await Sentry.flush(3000).then(null, () => {});
   },
   timeout: 3000,
 });
