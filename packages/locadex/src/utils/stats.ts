@@ -1,5 +1,6 @@
-import { posthog, Sentry } from '../telemetry.js';
+import { posthog } from '../telemetry.js';
 import { getSessionId } from './session.js';
+import * as Sentry from '@sentry/node';
 
 export class AgentStats {
   private totalFiles: number = 0;

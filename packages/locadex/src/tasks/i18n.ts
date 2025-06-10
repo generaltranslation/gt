@@ -22,7 +22,8 @@ import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { generateSettings } from 'gtx-cli/config/generateSettings';
 import path from 'node:path';
 import { findSourceFiles } from '../utils/dag/matchFiles.js';
-import { posthog, Sentry } from '../telemetry.js';
+import * as Sentry from '@sentry/node';
+
 export async function i18nTask() {
   validateInitialConfig();
 

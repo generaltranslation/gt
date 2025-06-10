@@ -2,9 +2,10 @@ import { spawn } from 'node:child_process';
 import { ClaudeSDKMessage } from '../types/claude-sdk.js';
 import { guides } from '../mcp/tools/guides.js';
 import { logger } from '../logging/logger.js';
-import { posthog, Sentry } from '../telemetry.js';
+import { posthog } from '../telemetry.js';
 import { LocadexManager } from './locadexManager.js';
 import { getSessionId } from './session.js';
+import * as Sentry from '@sentry/node';
 
 export interface ClaudeCodeOptions {
   additionalSystemPrompt?: string;

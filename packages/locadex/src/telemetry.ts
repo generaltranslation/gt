@@ -3,6 +3,7 @@ import { PostHog } from 'posthog-node';
 import { getLocadexVersion } from './utils/getPaths.js';
 import { CliOptions } from './types/cli.js';
 import { getSessionId } from './utils/session.js';
+import { logger } from './logging/logger.js';
 
 let _posthog: PostHog | null = null;
 let sentryInitialized = false;
@@ -25,9 +26,6 @@ const posthog = new Proxy({} as PostHog, {
   },
 });
 
-export { posthog };
-export { Sentry };
-
 function initializeTelemetry(enabled: boolean) {
   telemetryEnabled = enabled;
 
@@ -41,6 +39,10 @@ function initializeTelemetry(enabled: boolean) {
         event.exception?.values?.forEach((exception) => {
           delete exception.stacktrace;
         });
+        delete event.server_name;
+        return event;
+      },
+      beforeSendTransaction: (event) => {
         delete event.server_name;
         return event;
       },
@@ -79,13 +81,18 @@ export async function withTelemetry<F>(
   }
 
   Sentry.setTag('args.verbose', !!options.verbose);
+  Sentry.setTag('args.debug', !!options.debug);
   Sentry.setTag('args.noTelemetry', !!options.noTelemetry);
+  Sentry.setTag('args.batchSize', options.batchSize);
+  Sentry.setTag('args.concurrency', options.concurrency);
+  Sentry.setTag('args.matchingFiles', options.matchingFiles);
+  Sentry.setTag('args.matchingExtensions', options.matchingExtensions);
 
   try {
     return await Sentry.startSpan(
       {
         name: 'locadex-execution',
-        op: 'locadex.flow',
+        op: 'locadex.exec',
       },
       async () => {
         updateProgress('start');
@@ -123,3 +130,5 @@ process.on('exit', () => {
     _posthog.shutdown();
   }
 });
+
+export { posthog };
