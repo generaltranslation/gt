@@ -138,7 +138,7 @@ export default function createNextMiddleware({
    * @param {NextRequest} req - The incoming request object, containing URL and headers.
    * @returns {NextResponse} - The Next.js response, either continuing the request or redirecting to the localized URL.
    */
-  async function middleware(req: NextRequest) {
+  function middleware(req: NextRequest) {
     // Ignore source maps
     if (
       ignoreSourceMaps &&
@@ -154,7 +154,7 @@ export default function createNextMiddleware({
       pathnameLocale,
       unstandardizedPathnameLocale,
       clearResetCookie,
-    } = await getLocaleFromRequest(
+    } = getLocaleFromRequest(
       req,
       defaultLocale,
       approvedLocales,

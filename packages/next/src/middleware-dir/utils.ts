@@ -261,7 +261,7 @@ function inDefaultLocalePaths(
 /**
  * Gets the locale from the request using various sources
  */
-export async function getLocaleFromRequest(
+export function getLocaleFromRequest(
   req: NextRequest,
   defaultLocale: string,
   approvedLocales: string[],
@@ -272,33 +272,33 @@ export async function getLocaleFromRequest(
   referrerLocaleCookieName: string,
   localeCookieName: string,
   resetLocaleCookieName: string
-): Promise<{
+): {
   userLocale: string;
   pathnameLocale: string | undefined;
   unstandardizedPathnameLocale: string | null | undefined;
   clearResetCookie: boolean;
-}> {
+} {
   const headerList = new Headers(req.headers);
   const candidates: string[] = [];
   let clearResetCookie = false;
   const { pathname } = req.nextUrl;
 
-  // Custom getLocale
-  let addedCustomLocale = false;
-  if (process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED === 'true') {
-    try {
-      const customRequestConfig = require('gt-next/_request');
-      const customGetLocale: () => Promise<string> =
-        customRequestConfig?.default || customRequestConfig.getLocale;
-      const customLocale = await customGetLocale();
-      if (customLocale) {
-        candidates.push(customLocale);
-        addedCustomLocale = true;
-      }
-    } catch {
-      /* empty */
-    }
-  }
+  // // Custom getLocale
+  // let addedCustomLocale = false;
+  // if (process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED === 'true') {
+  //   try {
+  //     const customRequestConfig = require('gt-next/_request');
+  //     const customGetLocale: () => Promise<string> =
+  //       customRequestConfig?.default || customRequestConfig.getLocale;
+  //     const customLocale = await customGetLocale();
+  //     if (customLocale) {
+  //       candidates.push(customLocale);
+  //       addedCustomLocale = true;
+  //     }
+  //   } catch {
+  //     /* empty */
+  //   }
+  // }
 
   // Check pathname locales
   let pathnameLocale, unstandardizedPathnameLocale;
@@ -339,9 +339,11 @@ export async function getLocaleFromRequest(
   if (cookieLocale?.value && isValidLocale(cookieLocale?.value)) {
     const resetCookie = req.cookies.get(resetLocaleCookieName);
     if (resetCookie?.value) {
-      addedCustomLocale
-        ? candidates.splice(1, 0, cookieLocale.value)
-        : candidates.unshift(cookieLocale.value);
+      // Add this back in when we support custom getLocale
+      // addedCustomLocale
+      //   ? candidates.splice(1, 0, cookieLocale.value)
+      //   : candidates.unshift(cookieLocale.value);
+      candidates.unshift(cookieLocale.value);
       clearResetCookie = true;
     } else {
       candidates.push(cookieLocale.value);
