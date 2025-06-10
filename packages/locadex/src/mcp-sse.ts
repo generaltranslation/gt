@@ -9,29 +9,7 @@ import express from 'express';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { logger } from './logging/logger.js';
-import { createServer } from 'node:http';
-
-async function findAvailablePort(startPort: number): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const server = createServer();
-
-    server.listen(startPort, () => {
-      const port = (server.address() as any)?.port;
-      server.close(() => resolve(port));
-    });
-
-    server.on('error', (err: any) => {
-      if (err.code === 'EADDRINUSE') {
-        // Port is in use, try the next one
-        findAvailablePort(startPort + 1)
-          .then(resolve)
-          .catch(reject);
-      } else {
-        reject(err);
-      }
-    });
-  });
-}
+import { findAvailablePort } from './mcp/getPort.js';
 
 export async function start() {
   const stateFile = process.env.LOCADEX_FILES_STATE_FILE_PATH;

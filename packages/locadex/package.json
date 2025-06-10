@@ -12,8 +12,6 @@
   "files": [
     "dist",
     "CHANGELOG.md",
-    ".locadex-mcp.json",
-    ".locadex-mcp-stdio.json",
     "guides"
   ],
   "dependencies": {

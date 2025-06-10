@@ -10,6 +10,7 @@ import type { ChildProcess } from 'node:child_process';
 import { setTimeout } from 'node:timers';
 import { AgentStats } from './stats.js';
 import { CliOptions } from '../types/cli.js';
+import { findAvailablePort } from '../mcp/getPort.js';
 
 export interface LocadexMetadata {
   createdAt: string;
@@ -35,10 +36,19 @@ const mcpStdioConfig = {
     },
   },
 };
+const mcpSseConfig = {
+  mcpServers: {
+    locadex: {
+      type: 'sse',
+      url: 'http://localhost:8888/sse',
+    },
+  },
+};
 
 export class LocadexManager {
   private static instance: LocadexManager | undefined;
   private mcpProcess: ChildProcess | undefined;
+  private mcpTransport: 'sse' | 'stdio';
   private mcpConfigPath: string;
   private filesStateFilePath: string;
   private metadataFilePath: string;
@@ -64,6 +74,7 @@ export class LocadexManager {
     this.maxConcurrency = options.maxConcurrency || 1;
     this.agentPool = new Map();
     this.stats = new AgentStats();
+    this.mcpTransport = options.mcpTransport;
 
     const cwd = process.cwd();
     this.workingDir = path.resolve(cwd, '.locadex', Date.now().toString());
@@ -101,20 +112,30 @@ export class LocadexManager {
     };
     fs.writeFileSync(this.metadataFilePath, JSON.stringify(metadata, null, 2));
 
-    if (options.mcpTransport === 'stdio') {
+    process.on('beforeExit', () => {
+      this.cleanup();
+    });
+  }
+
+  async startMcpServer() {
+    if (this.mcpTransport === 'stdio') {
       mcpStdioConfig.mcpServers.locadex.env = {
         LOCADEX_FILES_STATE_FILE_PATH: this.filesStateFilePath,
         LOCADEX_LOG_FILE_PATH: this.logFile,
       };
-      try {
-        fs.writeFileSync(
-          this.mcpConfigPath,
-          JSON.stringify(mcpStdioConfig, null, 2)
-        );
-      } catch {
-        this.mcpConfigPath = fromPackageRoot('.locadex-mcp-stdio.json');
-      }
+      fs.writeFileSync(
+        this.mcpConfigPath,
+        JSON.stringify(mcpStdioConfig, null, 2)
+      );
     } else {
+      // First, search for an available port
+      const port = await findAvailablePort(8888);
+      mcpSseConfig.mcpServers.locadex.url = `http://localhost:${port}/sse`;
+      fs.writeFileSync(
+        this.mcpConfigPath,
+        JSON.stringify(mcpSseConfig, null, 2)
+      );
+
       this.mcpProcess = spawn('node', [fromPackageRoot('dist/mcp-sse.js')], {
         env: {
           ...process.env,
@@ -122,6 +143,7 @@ export class LocadexManager {
           LOCADEX_VERBOSE: logger.verbose ? 'true' : 'false',
           LOCADEX_DEBUG: logger.debug ? 'true' : 'false',
           LOCADEX_LOG_FILE_PATH: this.logFile,
+          PORT: port.toString(),
         },
         stdio: 'inherit',
       });
@@ -141,12 +163,7 @@ export class LocadexManager {
           process.exit(1);
         }
       });
-
-      this.mcpConfigPath = fromPackageRoot('.locadex-mcp.json');
     }
-    process.on('beforeExit', () => {
-      this.cleanup();
-    });
   }
 
   static getInstance(): LocadexManager {
@@ -168,6 +185,7 @@ export class LocadexManager {
       if (options.cliOptions) {
         logger.initialize(options.cliOptions, LocadexManager.instance.logFile);
       }
+      LocadexManager.instance.startMcpServer();
     }
   }
 

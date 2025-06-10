@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "locadex": {
-      "type": "sse",
-      "url": "http://localhost:8888/sse"
-    }
-  }
-}

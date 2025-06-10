@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "locadex": {
-      "command": "npx",
-      "args": ["locadex-mcp"],
-      "env": {}
-    }
-  }
-}
