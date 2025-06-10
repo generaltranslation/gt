@@ -134,11 +134,11 @@ export async function i18nTask(batchSize: number) {
       // Get the next batch of tasks (thread-safe)
       const tasks = await getNextTasks(batchSize);
       if (tasks.length === 0) {
-        manager.markAgentFree(agentId, sessionId);
+        manager.markAgentFree(agentId);
         break;
       }
 
-      logger.verboseMessage(
+      logger.debugMessage(
         `Using agent ${agentId} for ${batchSize} files. Files: ${tasks.join(
           ', '
         )}`
@@ -178,7 +178,7 @@ export async function i18nTask(batchSize: number) {
           {}
         );
         reports.push(agent.generateReport());
-        manager.markAgentFree(agentId, agent.getSessionId());
+        manager.markAgentFree(agentId);
       } catch (error) {
         // Capture the first error and signal all other agents to abort
         if (!firstError) {
@@ -189,7 +189,7 @@ export async function i18nTask(batchSize: number) {
           abortController.abort();
           manager.cleanupAgents();
         }
-        manager.markAgentFree(agentId, sessionId);
+        manager.markAgentFree(agentId);
         return; // Exit this agent's processing immediately
       }
 
@@ -250,7 +250,7 @@ export async function i18nTask(batchSize: number) {
   }
 
   // Create a clean agent for cleanup
-  const cleanupAgent = manager.createAgent('claude_cleanup_agent');
+  const cleanupAgent = manager.createSingleAgent('claude_cleanup_agent');
   logger.initializeSpinner();
   logger.spinner.start('Fixing errors...');
   const fixPrompt = getFixPrompt();

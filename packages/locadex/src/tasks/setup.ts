@@ -154,7 +154,7 @@ async function setupLocaleSelector() {
   // Create agent
   const manager = LocadexManager.getInstance();
 
-  const agent = manager.createAgent('claude_setup_agent');
+  const agent = manager.createSingleAgent('claude_setup_agent');
 
   // Fix prompt
   const localeSelectorPrompt = getLocaleSelectorPrompt();

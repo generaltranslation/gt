@@ -5,7 +5,6 @@ export const DOCS_URL = 'https://docs.generaltranslation.app';
 
 export const getDocs = async (path: string) => {
   const url = `${GITHUB_URL}/${path}`;
-  console.error(`Fetching document from: ${url}`);
 
   try {
     const response = await fetch(url);

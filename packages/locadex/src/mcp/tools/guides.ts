@@ -1,5 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import getGuide from '../getGuide.js';
+import { logger } from '../../logging/logger.js';
 
 type Guide = {
   id: string;
@@ -114,8 +115,8 @@ export function addGuidesTools(server: McpServer) {
     server.tool(guide.id, guide.description, {}, async () => {
       const path = guide.path;
       const { content, error } = await getGuide(path);
-
       if (error) {
+        logger.log(`[locadex-mcp: ${guide.id}] Error fetching guide: ${path}`);
         return {
           content: [
             {
@@ -126,6 +127,9 @@ export function addGuidesTools(server: McpServer) {
           isError: true,
         };
       }
+      logger.log(
+        `[locadex-mcp: ${guide.id}] Guide fetched successfully: ${path}`
+      );
       return {
         content: [
           {

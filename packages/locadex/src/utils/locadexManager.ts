@@ -205,7 +205,7 @@ export class LocadexManager {
     }
   }
 
-  createAgent(id: string): ClaudeCodeRunner {
+  createSingleAgent(id: string): ClaudeCodeRunner {
     return new ClaudeCodeRunner(this, {
       apiKey: this.apiKey,
       mcpConfig: this.mcpConfigPath,
@@ -218,7 +218,7 @@ export class LocadexManager {
       for (let i = 0; i < this.maxConcurrency; i++) {
         const agentId = `claude_task_agent_${i + 1}`;
         this.agentPool.set(agentId, {
-          agent: this.createAgent(agentId),
+          agent: this.createSingleAgent(agentId),
           sessionId: undefined,
           busy: false,
         });
@@ -249,20 +249,10 @@ export class LocadexManager {
     });
   }
 
-  markAgentBusy(agentId: string): void {
-    const agentData = this.agentPool.get(agentId);
-    if (agentData) {
-      agentData.busy = true;
-    }
-  }
-
-  markAgentFree(agentId: string, sessionId?: string): void {
+  markAgentFree(agentId: string): void {
     const agentData = this.agentPool.get(agentId);
     if (agentData) {
       agentData.busy = false;
-      if (sessionId) {
-        agentData.sessionId = sessionId;
-      }
     }
   }
 

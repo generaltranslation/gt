@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { fetchDocContent, getDocs } from '../getDocs.js';
+import { logger } from '../../logging/logger.js';
 
 export const docsTools: { [id: string]: string } = {
   'fetch-docs':
@@ -25,6 +26,7 @@ export function addDocsTools(server: McpServer) {
         const content = await getDocs(path);
 
         if (!content) {
+          logger.log(`[locadex-mcp: fetch-docs] Document not found: ${path}`);
           return {
             content: [
               {
@@ -35,6 +37,9 @@ export function addDocsTools(server: McpServer) {
             isError: true,
           };
         }
+        logger.log(
+          `[locadex-mcp: fetch-docs] Document fetched successfully: ${path}`
+        );
 
         return {
           content: [
@@ -45,6 +50,9 @@ export function addDocsTools(server: McpServer) {
           ],
         };
       } catch (error) {
+        logger.log(
+          `[locadex-mcp: fetch-docs] Error fetching documentation: ${error instanceof Error ? error.message : String(error)}`
+        );
         return {
           content: [
             {
@@ -63,6 +71,9 @@ export function addDocsTools(server: McpServer) {
       const content = await fetchDocContent('llms.txt');
 
       if (!content) {
+        logger.log(
+          `[locadex-mcp: list-docs] Failed to fetch documentation index`
+        );
         return {
           content: [
             {
@@ -74,6 +85,10 @@ export function addDocsTools(server: McpServer) {
         };
       }
 
+      logger.log(
+        `[locadex-mcp: list-docs] Documentation index fetched successfully`
+      );
+
       return {
         content: [
           {
@@ -83,6 +98,9 @@ export function addDocsTools(server: McpServer) {
         ],
       };
     } catch (error) {
+      logger.log(
+        `[locadex-mcp: list-docs] Error listing documentation: ${error instanceof Error ? error.message : String(error)}`
+      );
       return {
         content: [
           {

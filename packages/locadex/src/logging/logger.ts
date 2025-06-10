@@ -192,6 +192,12 @@ class Logger {
     }
   }
 
+  log(message: string): void {
+    if (this.logFile) {
+      appendFileSync(this.logFile, `${message}\n`);
+    }
+  }
+
   initializeProgressBar(total: number): void {
     if (!this._verbose && !this._debug) {
       this.progressBar.init(total);
