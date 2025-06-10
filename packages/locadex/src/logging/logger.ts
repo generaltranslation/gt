@@ -125,76 +125,59 @@ class Logger {
 
   // Basic logging methods using existing console functions
   info(message: string): void {
+    this.log(message);
     logInfo(message);
-    if (this.logFile) {
-      appendFileSync(this.logFile, `${message}\n`);
-    }
   }
 
   warning(message: string): void {
+    this.log(message);
     logWarning(message);
-    if (this.logFile) {
-      appendFileSync(this.logFile, `${message}\n`);
-    }
   }
 
   error(message: string): void {
+    this.log(message);
     logError(message);
-    if (this.logFile) {
-      appendFileSync(this.logFile, `${message}\n`);
-    }
   }
 
   success(message: string): void {
+    this.log(message);
     logSuccess(message);
-    if (this.logFile) {
-      appendFileSync(this.logFile, `${message}\n`);
-    }
   }
 
   step(message: string): void {
+    this.log(message);
     logStep(message);
-    if (this.logFile) {
-      appendFileSync(this.logFile, `${message}\n`);
-    }
   }
 
   message(message: string): void {
+    this.log(message);
     logMessage(message);
-    if (this.logFile) {
-      appendFileSync(this.logFile, `${message}\n`);
-    }
   }
 
   errorAndExit(message: string): void {
+    this.log(message);
     logErrorAndExit(message);
-    if (this.logFile) {
-      appendFileSync(this.logFile, `${message}\n`);
-    }
   }
 
   // Conditional logging methods
   verboseMessage(message: string): void {
+    this.log(message);
     if (this._verbose) {
       logMessage(message);
-    }
-    if (this.logFile) {
-      appendFileSync(this.logFile, `${message}\n`);
     }
   }
 
   debugMessage(message: string): void {
+    this.log(message);
     if (this._debug) {
       logMessage(message);
-    }
-    if (this.logFile) {
-      appendFileSync(this.logFile, `${message}\n`);
     }
   }
 
   log(message: string): void {
     if (this.logFile) {
-      appendFileSync(this.logFile, `${message}\n`);
+      const timestamp = new Date().toISOString();
+      appendFileSync(this.logFile, `[${timestamp}] ${message}\n`);
     }
   }
 
