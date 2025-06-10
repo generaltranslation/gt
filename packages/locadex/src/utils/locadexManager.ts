@@ -68,18 +68,16 @@ export class LocadexManager {
   stats: AgentStats;
   logFile: string;
 
-  private constructor(options: {
+  private constructor(params: {
     mcpTransport: 'sse' | 'stdio';
     apiKey?: string;
-    metadata?: Partial<LocadexRunMetadata>;
-    maxConcurrency?: number;
-    batchSize?: number;
-    overrideOptions?: Partial<LocadexConfig>;
+    metadata: Partial<LocadexRunMetadata>;
+    options: Partial<LocadexConfig>;
   }) {
-    this.apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY;
+    this.apiKey = params.apiKey || process.env.ANTHROPIC_API_KEY;
     this.agentPool = new Map();
     this.stats = new AgentStats();
-    this.mcpTransport = options.mcpTransport;
+    this.mcpTransport = params.mcpTransport;
 
     const cwd = process.cwd();
     this.locadexDirectory = path.resolve(cwd, '.locadex');
@@ -90,7 +88,7 @@ export class LocadexManager {
     );
     fs.mkdirSync(this.workingDir, { recursive: true });
 
-    this.config = getConfig(this.locadexDirectory, options.overrideOptions);
+    this.config = getConfig(this.locadexDirectory, params.options);
 
     createConfig(this.locadexDirectory, {
       batchSize: this.config.batchSize,
@@ -123,7 +121,7 @@ export class LocadexManager {
       ).version,
       workingDirectory: cwd,
       projectName: path.basename(cwd),
-      transport: options.mcpTransport,
+      transport: params.mcpTransport,
       tempDirectory: this.workingDir,
       nodeVersion: process.version,
       platform: process.platform,
@@ -131,7 +129,7 @@ export class LocadexManager {
       logFile: this.logFile,
       batchSize: this.config.batchSize,
       maxConcurrency: this.config.maxConcurrency,
-      ...options.metadata,
+      ...params.metadata,
     };
     fs.writeFileSync(this.metadataFilePath, JSON.stringify(metadata, null, 2));
 
@@ -206,23 +204,24 @@ export class LocadexManager {
     return LocadexManager.instance;
   }
 
-  static initialize(options: {
+  static initialize(params: {
     mcpTransport: 'sse' | 'stdio';
     apiKey?: string;
-    metadata?: Partial<LocadexRunMetadata>;
-    maxConcurrency: number;
-    batchSize: number;
-    cliOptions?: CliOptions;
-    overrideOptions?: Partial<LocadexConfig>;
+    metadata: Partial<LocadexRunMetadata>;
+    cliOptions: CliOptions;
+    options: Partial<LocadexConfig>;
   }): void {
     if (!LocadexManager.instance) {
-      LocadexManager.instance = new LocadexManager({
-        ...options,
-        overrideOptions: options.overrideOptions,
-      });
-      if (options.cliOptions) {
-        logger.initialize(options.cliOptions, LocadexManager.instance.logFile);
-      }
+      LocadexManager.instance = new LocadexManager(params);
+      logger.initialize(params.cliOptions, LocadexManager.instance.logFile);
+
+      logger.debugMessage(
+        `Locadex loaded with config: ${JSON.stringify(
+          LocadexManager.instance.config,
+          null,
+          2
+        )}`
+      );
       LocadexManager.instance.startMcpServer();
     }
   }

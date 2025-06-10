@@ -74,11 +74,9 @@ program
           displayHeader();
           LocadexManager.initialize({
             mcpTransport: 'sse',
-            maxConcurrency: concurrency,
-            batchSize,
             metadata: {},
             cliOptions: allOptions,
-            overrideOptions: {
+            options: {
               ...(allOptions.matchingFiles && {
                 matchingFiles: allOptions.matchingFiles
                   .split(',')
@@ -89,6 +87,8 @@ program
                   .split(',')
                   .map((ext) => ext.trim()),
               }),
+              maxConcurrency: concurrency,
+              batchSize,
             },
           });
           await setupCommand(
@@ -133,11 +133,9 @@ program
         displayHeader();
         LocadexManager.initialize({
           mcpTransport: 'sse',
-          maxConcurrency: concurrency,
-          batchSize,
           metadata: {},
           cliOptions: allOptions,
-          overrideOptions: {
+          options: {
             ...(allOptions.matchingFiles && {
               matchingFiles: allOptions.matchingFiles
                 .split(',')
@@ -148,6 +146,8 @@ program
                 .split(',')
                 .map((ext) => ext.trim()),
             }),
+            maxConcurrency: concurrency,
+            batchSize,
           },
         });
         await i18nCommand();
