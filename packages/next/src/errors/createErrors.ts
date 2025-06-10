@@ -53,6 +53,9 @@ export const conflictingConfigurationBuildError = (conflicts: string[]) =>
     '\n'
   )}`;
 
+export const unsupportedGetLocalePathBuildError =
+  'gt-next Error: custom getLocale() function is not currently supported.';
+
 // ---- WARNINGS ---- //
 
 export const usingDefaultsWarning =

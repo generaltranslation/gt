@@ -7,7 +7,7 @@ import {
   customLoadDictionaryWarning,
   dictionaryNotFoundWarning,
 } from '../errors/createErrors';
-import resolveDictionaryLoader from '../loaders/resolveDictionaryDictionary';
+import resolveDictionaryLoader from '../loaders/resolveDictionary';
 import defaultWithGTConfigProps from '../config-dir/props/defaultWithGTConfigProps';
 import { getLocaleProperties } from 'generaltranslation';
 
