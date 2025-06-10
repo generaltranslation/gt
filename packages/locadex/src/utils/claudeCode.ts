@@ -1,11 +1,10 @@
 import { spawn } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { ClaudeSDKMessage } from '../types/claude-sdk.js';
 import { guides } from '../mcp/tools/guides.js';
-import { SpinnerResult } from '@clack/prompts';
 import { logger } from '../logging/logger.js';
 import { posthog, Sentry } from '../telemetry.js';
 import { LocadexManager } from './locadexManager.js';
+import { getSessionId } from './session.js';
 
 export interface ClaudeCodeOptions {
   additionalSystemPrompt?: string;
@@ -90,115 +89,117 @@ export class ClaudeCodeRunner {
     obs: ClaudeCodeObservation
   ): Promise<string> {
     this.changes = [];
-    return new Promise((resolve, reject) => {
-      const args = ['-p', options.prompt];
-
-      if (options.additionalSystemPrompt) {
-        args.push('--append-system-prompt', options.additionalSystemPrompt);
-      }
-
-      args.push('--output-format', 'stream-json');
-      args.push('--verbose');
-      if (options.sessionId) {
-        args.push('--resume', options.sessionId);
-      }
-
-      if (this.mcpConfig) {
-        args.push('--mcp-config', this.mcpConfig);
-      }
-
-      args.push(
-        '--allowedTools',
-        [
-          ...DEFAULT_ALLOWED_TOOLS,
-          ...(options?.additionalAllowedTools || []),
-        ].join(',')
-      );
-
-      args.push('--disallowedTools', DISALLOWED_TOOLS.join(','));
-
-      if (options.maxTurns) {
-        args.push('--max-turns', options.maxTurns.toString());
-      }
-
-      const env = { ...process.env };
-      if (this.options.apiKey) {
-        env.ANTHROPIC_API_KEY = this.options.apiKey;
-      }
-
-      const claude = Sentry.startSpan(
-        {
-          name: 'claude-code-exec',
-          op: 'claude-code.exec',
-          attributes: {
-            'process.command': 'claude',
-          },
+    return Sentry.startSpan(
+      {
+        name: 'claude-code-exec',
+        op: 'claude-code.exec',
+        attributes: {
+          'process.command': 'claude',
         },
-        () =>
-          spawn('claude', args, {
+      },
+      () =>
+        new Promise((resolve, reject) => {
+          const args = ['-p', options.prompt];
+
+          if (options.additionalSystemPrompt) {
+            args.push('--append-system-prompt', options.additionalSystemPrompt);
+          }
+
+          args.push('--output-format', 'stream-json');
+          args.push('--verbose');
+          if (options.sessionId) {
+            args.push('--resume', options.sessionId);
+          }
+
+          if (this.mcpConfig) {
+            args.push('--mcp-config', this.mcpConfig);
+          }
+
+          args.push(
+            '--allowedTools',
+            [
+              ...DEFAULT_ALLOWED_TOOLS,
+              ...(options?.additionalAllowedTools || []),
+            ].join(',')
+          );
+
+          args.push('--disallowedTools', DISALLOWED_TOOLS.join(','));
+
+          if (options.maxTurns) {
+            args.push('--max-turns', options.maxTurns.toString());
+          }
+
+          const env = { ...process.env };
+          if (this.options.apiKey) {
+            env.ANTHROPIC_API_KEY = this.options.apiKey;
+          }
+
+          const claude = spawn('claude', args, {
             stdio: ['inherit', 'pipe', 'pipe'],
             env,
-          })
-      );
+          });
 
-      activeClaudeProcesses.add(claude);
+          activeClaudeProcesses.add(claude);
 
-      const output = '';
-      const errorOutput = '';
+          const output = '';
+          const errorOutput = '';
 
-      let buffer = '';
-      claude.stdout?.on('data', (data) => {
-        buffer += data.toString();
-        const lines = buffer.split('\n');
+          let buffer = '';
+          claude.stdout?.on('data', (data) => {
+            buffer += data.toString();
+            const lines = buffer.split('\n');
 
-        // Keep the last incomplete line in buffer
-        buffer = lines.pop() || '';
+            // Keep the last incomplete line in buffer
+            buffer = lines.pop() || '';
 
-        for (const line of lines) {
-          if (line.trim()) {
-            try {
-              logger.debugMessage(`[${this.id}] ${line}`);
-              const outputData: ClaudeSDKMessage = JSON.parse(line);
-              this.handleSDKOutput(outputData, obs);
-            } catch (error) {
+            for (const line of lines) {
+              if (line.trim()) {
+                try {
+                  logger.debugMessage(`[${this.id}] ${line}`);
+                  const outputData: ClaudeSDKMessage = JSON.parse(line);
+                  this.handleSDKOutput(outputData, obs);
+                } catch (error) {
+                  logger.debugMessage(
+                    `[${this.id}] Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
+                  );
+                }
+              }
+            }
+          });
+
+          claude.stderr?.on('data', (data) => {
+            logger.debugMessage(`[${this.id}] ${data.toString().trim()}`);
+          });
+
+          claude.on('close', (code) => {
+            activeClaudeProcesses.delete(claude);
+            if (code === 0) {
+              resolve(output.trim());
+            } else {
               logger.debugMessage(
-                `[${this.id}] Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
+                `[${this.id}] Claude Code exited with code ${code}: ${errorOutput}`
+              );
+              reject(
+                new Error(
+                  `[${this.id}] Claude Code exited with code ${code}: ${errorOutput}`
+                )
               );
             }
-          }
-        }
-      });
+          });
 
-      claude.stderr?.on('data', (data) => {
-        logger.debugMessage(`[${this.id}] ${data.toString().trim()}`);
-      });
-
-      claude.on('close', (code) => {
-        activeClaudeProcesses.delete(claude);
-        if (code === 0) {
-          resolve(output.trim());
-        } else {
-          logger.debugMessage(
-            `[${this.id}] Claude Code exited with code ${code}: ${errorOutput}`
-          );
-          reject(
-            new Error(
-              `[${this.id}] Claude Code exited with code ${code}: ${errorOutput}`
-            )
-          );
-        }
-      });
-
-      claude.on('error', (error) => {
-        activeClaudeProcesses.delete(claude);
-        logger.debugMessage(
-          `[${this.id}] failed to run Claude Code: ${error.message}`
-        );
-        reject(
-          new Error(`[${this.id}] failed to run Claude Code: ${error.message}`)
-        );
-      });
-    });
+          claude.on('error', (error) => {
+            activeClaudeProcesses.delete(claude);
+            logger.debugMessage(
+              `[${this.id}] failed to run Claude Code: ${error.message}`
+            );
+            reject(
+              new Error(
+                `[${this.id}] failed to run Claude Code: ${error.message}`
+              )
+            );
+          });
+        })
+    );
   }
 
   private handleSDKOutput(
@@ -216,12 +217,7 @@ export class ClaudeCodeRunner {
           toolUses.push(c.name);
           if (c.name.startsWith('mcp__locadex__')) {
             posthog.capture({
-              distinctId: this.sessionId
-                ? createHash('sha256')
-                    .update(this.sessionId)
-                    .digest('base64url')
-                    .slice(0, 8)
-                : 'anonymous',
+              distinctId: getSessionId(),
               event: 'tool_used',
               properties: {
                 tool: c.name,
@@ -238,6 +234,10 @@ export class ClaudeCodeRunner {
       }
       this.manager.stats.updateStats({
         newToolCalls: toolUses.length,
+        newInputTokens: outputData.message.usage.input_tokens,
+        newOutputTokens: outputData.message.usage.output_tokens,
+        newCachedInputTokens:
+          outputData.message.usage.cache_read_input_tokens ?? 0,
       });
     } else if (outputData.type === 'result') {
       if (!outputData.is_error) {
@@ -260,6 +260,7 @@ export class ClaudeCodeRunner {
         newCost: Number(outputData.cost_usd),
         newWallDuration: Number(outputData.duration_ms),
         newApiDuration: Number(outputData.duration_api_ms),
+        newTurns: Number(outputData.num_turns),
       });
     } else if (outputData.type === 'system') {
       if (outputData.subtype === 'init') {

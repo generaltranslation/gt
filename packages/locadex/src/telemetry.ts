@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/node';
 import { PostHog } from 'posthog-node';
 import { getLocadexVersion } from './utils/getPaths.js';
 import { CliOptions } from './types/cli.js';
+import { getSessionId } from './utils/session.js';
 
 let _posthog: PostHog | null = null;
 let sentryInitialized = false;
@@ -57,7 +58,7 @@ function initializeTelemetry(enabled: boolean) {
 
 function updateProgress(status: string) {
   posthog.capture({
-    distinctId: 'anonymous',
+    distinctId: getSessionId(),
     event: 'locadex_progress',
     properties: { status },
   });

@@ -22,6 +22,7 @@ import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { generateSettings } from 'gtx-cli/config/generateSettings';
 import path from 'node:path';
 import { findSourceFiles } from '../utils/dag/matchFiles.js';
+import { posthog, Sentry } from '../telemetry.js';
 export async function i18nTask() {
   validateInitialConfig();
 
@@ -252,6 +253,7 @@ export async function i18nTask() {
     logger.debugMessage(
       `[claude_cleanup_agent] Fixing errors failed: ${error}`
     );
+    manager.stats.recordTelemetry(false);
     outro(chalk.red('❌ Locadex i18n failed!'));
     process.exit(1);
   }
@@ -285,6 +287,18 @@ Total wall time: ${Math.round(
       )}s
 Total files processed: ${manager.stats.getStats().processedFiles}`
     )
+  );
+
+  const finalStats = manager.stats.getStats();
+
+  // Record telemetry for final stats
+  manager.stats.recordTelemetry(true);
+
+  logger.verboseMessage(
+    `Total input tokens: ${finalStats.inputTokens}
+Total cached input tokens: ${finalStats.cachedInputTokens}
+Total output tokens: ${finalStats.outputTokens}
+Total turns: ${finalStats.turns}`
   );
 
   outro(chalk.green('✅ Locadex i18n complete!'));
