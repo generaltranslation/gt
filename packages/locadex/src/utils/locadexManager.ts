@@ -60,7 +60,6 @@ export class LocadexManager {
     { agent: ClaudeCodeRunner; sessionId?: string; busy: boolean }
   >;
   private agentMutex = Promise.resolve();
-  private agentsCleanedUp: boolean = false;
   stats: AgentStats;
   logFile: string;
 
@@ -279,10 +278,6 @@ export class LocadexManager {
   }
 
   cleanupAgents(): void {
-    if (this.agentsCleanedUp) {
-      return; // Already cleaned up
-    }
-
     logger.debugMessage('Cleaning up all Claude Code agents and processes');
 
     // Mark all agents as free
@@ -295,8 +290,6 @@ export class LocadexManager {
 
     // Clear the agent pool
     this.agentPool.clear();
-
-    this.agentsCleanedUp = true;
   }
 
   getFilesStateFilePath(): string {

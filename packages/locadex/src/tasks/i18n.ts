@@ -285,13 +285,12 @@ ${reports.join('\n')}`;
     await formatFiles(allFiles, formatter);
   }
 
-  // Clean up all agents after successful completion
-  manager.cleanupAgents();
+  // Clean up after successful completion
+  manager.cleanup();
 
   logger.info(
     chalk.dim(
       `Total Cost: $${manager.stats.getStats().totalCost.toFixed(2)}
-Total API duration: ${Math.round(manager.stats.getStats().totalApiDuration / 1000)}s
 Total wall time: ${Math.round(
         (Date.now() - manager.stats.getStats().startTime) / 1000
       )}s
