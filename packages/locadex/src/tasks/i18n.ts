@@ -1,5 +1,6 @@
 import { createSpinner } from '../logging/console.js';
 import { allMcpPrompt } from '../prompts/system.js';
+import { exit } from '../utils/shutdown.js';
 
 import { logger } from '../logging/logger.js';
 import { createDag } from '../utils/dag/createDag.js';
@@ -22,17 +23,16 @@ import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { generateSettings } from 'gtx-cli/config/generateSettings';
 import path from 'node:path';
 import { findSourceFiles } from '../utils/dag/matchFiles.js';
-import * as Sentry from '@sentry/node';
 
 export async function i18nTask() {
-  validateInitialConfig();
+  await validateInitialConfig();
 
   const gtSettings = await generateSettings({});
   if (gtSettings.framework !== 'next-app') {
     logger.error(
       'Currently, locadex only supports Next.js App Router. Please use Next.js App Router.'
     );
-    process.exit(1);
+    await exit(1);
   }
 
   // Init message
@@ -235,7 +235,7 @@ export async function i18nTask() {
     manager.cleanupAgents();
     logger.error(firstError.message);
     outro(chalk.red('❌ Locadex i18n failed!'));
-    process.exit(1);
+    await exit(1);
   }
 
   // Create a clean agent for cleanup
@@ -256,7 +256,7 @@ export async function i18nTask() {
     );
     manager.stats.recordTelemetry(false);
     outro(chalk.red('❌ Locadex i18n failed!'));
-    process.exit(1);
+    await exit(1);
   }
   logger.spinner.stop('Fixed errors');
 
@@ -303,7 +303,7 @@ Total turns: ${finalStats.turns}`
   );
 
   outro(chalk.green('✅ Locadex i18n complete!'));
-  process.exit(0);
+  await exit(0);
 }
 
 function getPrompt({

@@ -17,6 +17,7 @@ import { displayHeader } from './logging/console.js';
 import { main } from 'gtx-cli/index';
 import { LocadexManager } from './utils/locadexManager.js';
 import { logger } from './logging/logger.js';
+import { exit } from './utils/shutdown.js';
 
 const packageJson = JSON.parse(
   readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -68,7 +69,7 @@ program
 
           if (concurrency < 1 || batchSize < 1) {
             logger.error('Batch size and concurrency must be greater than 0');
-            process.exit(1);
+            await exit(1);
           }
 
           displayHeader();
@@ -127,7 +128,7 @@ program
 
         if (concurrency < 1 || batchSize < 1) {
           logger.error('Batch size and concurrency must be greater than 0');
-          process.exit(1);
+          await exit(1);
         }
 
         displayHeader();

@@ -92,7 +92,7 @@ export function displayResolvedPaths(resolvedPaths: [string, string][]) {
 }
 
 export function displayCreatedConfigFile(configFilepath: string) {
-  log.success(`Created config file ${chalk.cyan(configFilepath)}`);
+  log.step(`Created config file ${chalk.cyan(configFilepath)}`);
 }
 
 export function displayUpdatedConfigFile(configFilepath: string) {

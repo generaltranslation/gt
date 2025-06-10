@@ -10,6 +10,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { logger } from './logging/logger.js';
 import { findAvailablePort } from './mcp/getPort.js';
+import { exit } from './utils/shutdown.js';
 
 export async function start() {
   const stateFile = process.env.LOCADEX_FILES_STATE_FILE_PATH;
@@ -85,9 +86,9 @@ export async function start() {
 }
 
 // Start the SSE server
-start().catch((error) => {
+start().catch(async (error) => {
   logger.error(
     `[locadex-mcp-sse] Failed to start: ${error instanceof Error ? error.message : String(error)}`
   );
-  process.exit(1);
+  await exit(1);
 });

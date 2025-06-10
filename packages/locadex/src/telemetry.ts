@@ -4,6 +4,7 @@ import { getLocadexVersion } from './utils/getPaths.js';
 import { CliOptions } from './types/cli.js';
 import { getSessionId } from './utils/session.js';
 import { logger } from './logging/logger.js';
+import { gracefulShutdown } from './utils/shutdown.js';
 
 let _posthog: PostHog | null = null;
 let sentryInitialized = false;
@@ -112,23 +113,15 @@ export async function withTelemetry<F>(
   }
 }
 
-const shutdown = async () => {
-  if (_posthog) {
-    await _posthog.shutdown();
-  }
-  process.exit(0);
-};
-
-process.on('SIGINT', () => {
-  shutdown();
-});
-process.on('SIGTERM', () => {
-  shutdown();
-});
-process.on('exit', () => {
-  if (_posthog) {
-    _posthog.shutdown();
-  }
+// Register telemetry cleanup with graceful shutdown
+gracefulShutdown.addHandler({
+  name: 'telemetry-cleanup',
+  handler: async () => {
+    if (_posthog) {
+      await _posthog.shutdown();
+    }
+  },
+  timeout: 3000,
 });
 
 export { posthog };

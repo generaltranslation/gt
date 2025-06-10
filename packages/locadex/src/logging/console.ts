@@ -14,6 +14,7 @@ import {
 } from '@clack/prompts';
 import chalk from 'chalk';
 import { getLocadexVersion } from '../utils/getPaths.js';
+import { exit } from '../utils/shutdown.js';
 
 // Basic logging functions
 export function logInfo(message: string) {
@@ -35,9 +36,9 @@ export function logMessage(message: string) {
   log.message(message, { symbol: chalk.cyan('~') });
 }
 
-export function logErrorAndExit(message: string) {
+export async function logErrorAndExit(message: string) {
   log.error(message);
-  process.exit(1);
+  await exit(1);
 }
 
 // Clack prompts
@@ -114,7 +115,7 @@ export async function promptText({
 
   if (isCancel(result)) {
     cancel('Operation cancelled');
-    process.exit(0);
+    await exit(0);
   }
 
   return result;
@@ -144,7 +145,7 @@ export async function promptSelect<T>({
 
   if (isCancel(result)) {
     cancel('Operation cancelled');
-    process.exit(0);
+    await exit(0);
   }
 
   return result as T;
@@ -174,7 +175,7 @@ export async function promptMultiSelect<T extends string>({
 
   if (isCancel(result)) {
     cancel('Operation cancelled');
-    process.exit(0);
+    await exit(0);
   }
 
   return result as Array<T>;
@@ -196,7 +197,7 @@ export async function promptConfirm({
 
   if (isCancel(result)) {
     cancel(cancelMessage);
-    process.exit(0);
+    await exit(0);
   }
 
   return result;

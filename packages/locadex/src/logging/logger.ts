@@ -154,9 +154,9 @@ class Logger {
     logMessage(message);
   }
 
-  errorAndExit(message: string): void {
+  async errorAndExit(message: string) {
     this.log(message);
-    logErrorAndExit(message);
+    await logErrorAndExit(message);
   }
 
   // Conditional logging methods

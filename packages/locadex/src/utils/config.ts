@@ -2,14 +2,15 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { logger } from '../logging/logger.js';
 import path from 'node:path';
 import { LocadexConfig } from '../types/cli.js';
+import { exit } from './shutdown.js';
 
-export function validateInitialConfig() {
+export async function validateInitialConfig() {
   // Validate ANTHROPIC_API_KEY
   if (!process.env.ANTHROPIC_API_KEY) {
     logger.error(
       'ANTHROPIC_API_KEY is not set! Please set it as an environment variable or in a .env | .env.local file.'
     );
-    process.exit(1);
+    await exit(1);
   }
 }
 

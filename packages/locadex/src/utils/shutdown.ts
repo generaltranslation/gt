@@ -1,0 +1,100 @@
+import * as Sentry from '@sentry/node';
+import { logger } from '../logging/logger.js';
+
+export type ExitCode = 0 | 1;
+
+interface ShutdownHandler {
+  name: string;
+  handler: () => Promise<void> | void;
+  timeout?: number;
+}
+
+class GracefulShutdown {
+  private shutdownHandlers: ShutdownHandler[] = [];
+  private isShuttingDown = false;
+  private exitCode: ExitCode = 0;
+
+  constructor() {
+    // Handle termination signals
+    process.on('SIGINT', () => this.handleSignal('SIGINT'));
+    process.on('SIGTERM', () => this.handleSignal('SIGTERM'));
+    process.on('SIGUSR2', () => this.handleSignal('SIGUSR2')); // nodemon restart
+  }
+
+  private async handleSignal(signal: string) {
+    logger.debugMessage(`Received ${signal}, initiating graceful shutdown...`);
+    await this.shutdown(0);
+  }
+
+  addHandler(handler: ShutdownHandler) {
+    this.shutdownHandlers.push(handler);
+  }
+
+  async shutdown(exitCode: ExitCode = 0) {
+    if (this.isShuttingDown) {
+      return;
+    }
+
+    this.isShuttingDown = true;
+    this.exitCode = exitCode;
+
+    logger.debugMessage(
+      `Starting graceful shutdown with exit code ${exitCode}`
+    );
+
+    // Execute shutdown handlers in reverse order (LIFO)
+    const handlers = [...this.shutdownHandlers].reverse();
+
+    for (const { name, handler, timeout = 5000 } of handlers) {
+      try {
+        logger.debugMessage(`Executing shutdown handler: ${name}`);
+
+        const timeoutPromise = new Promise<void>((_, reject) => {
+          global.setTimeout(
+            () => reject(new Error(`Timeout: ${name}`)),
+            timeout
+          );
+        });
+
+        await Promise.race([Promise.resolve(handler()), timeoutPromise]);
+
+        logger.debugMessage(`Completed shutdown handler: ${name}`);
+      } catch (error) {
+        logger.error(`Error in shutdown handler ${name}: ${error}`);
+      }
+    }
+
+    // Flush Sentry and ensure telemetry is sent
+    try {
+      await Promise.race([
+        Sentry.flush(3000),
+        new Promise((resolve) => global.setTimeout(resolve, 3000)),
+      ]);
+    } catch (error) {
+      logger.debugMessage(`Error flushing Sentry: ${error}`);
+    }
+
+    logger.debugMessage('Graceful shutdown complete');
+
+    // Force exit after a timeout if process doesn't exit naturally
+    global.setTimeout(() => {
+      logger.error('Force exiting after timeout');
+      process.exit(this.exitCode);
+    }, 1000);
+
+    process.exit(this.exitCode);
+  }
+
+  // For backward compatibility and convenience
+  exit(code: ExitCode = 0) {
+    return this.shutdown(code);
+  }
+}
+
+// Export singleton instance
+export const gracefulShutdown = new GracefulShutdown();
+
+// Export convenience function for backward compatibility
+export function exit(code: ExitCode = 0): Promise<never> {
+  return gracefulShutdown.shutdown(code) as Promise<never>;
+}

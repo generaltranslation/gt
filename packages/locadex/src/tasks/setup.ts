@@ -25,12 +25,13 @@ import { getPackageInfo } from 'gtx-cli/utils/packageInfo';
 import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { appendFileSync } from 'node:fs';
 import path from 'node:path';
+import { exit } from '../utils/shutdown.js';
 
 export async function setupTask(
   bypassPrompts: boolean,
   specifiedPackageManager?: string
 ) {
-  validateInitialConfig();
+  await validateInitialConfig();
 
   if (!bypassPrompts) {
     const answer = await promptConfirm({
@@ -42,7 +43,7 @@ export async function setupTask(
     });
     if (!answer) {
       logger.info('Operation cancelled.');
-      process.exit(0);
+      await exit(0);
     }
   }
 
@@ -66,7 +67,7 @@ export async function setupTask(
 
   if (!nextConfigPath) {
     logger.error('No next.config.[js|ts|mjs|mts] file found.');
-    process.exit(1);
+    await exit(1);
   }
 
   const errors: string[] = [];
@@ -179,7 +180,7 @@ ${report}`;
   } catch (error) {
     logger.debugMessage(`[setup] Adding locale selector failed: ${error}`);
     outro(chalk.red('❌ Locadex setup failed!'));
-    process.exit(1);
+    await exit(1);
   }
 
   logger.spinner.stop('Locale selector setup complete');

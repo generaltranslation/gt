@@ -12,6 +12,7 @@ import { AgentStats } from './stats.js';
 import { CliOptions, LocadexConfig } from '../types/cli.js';
 import { findAvailablePort } from '../mcp/getPort.js';
 import { createConfig, getConfig } from './config.js';
+import { gracefulShutdown, exit } from './shutdown.js';
 
 export interface LocadexRunMetadata {
   createdAt: string;
@@ -133,18 +134,11 @@ export class LocadexManager {
     };
     fs.writeFileSync(this.metadataFilePath, JSON.stringify(metadata, null, 2));
 
-    process.on('beforeExit', () => {
-      this.cleanup();
-    });
-
-    process.on('SIGINT', () => {
-      this.cleanup();
-      process.exit(0);
-    });
-
-    process.on('SIGTERM', () => {
-      this.cleanup();
-      process.exit(0);
+    // Register cleanup with graceful shutdown
+    gracefulShutdown.addHandler({
+      name: 'locadex-manager-cleanup',
+      handler: () => this.cleanup(),
+      timeout: 5000,
     });
   }
 
@@ -181,17 +175,17 @@ export class LocadexManager {
 
       this.mcpProcess.on('error', (error) => {
         logger.error(`MCP server failed to start: ${error.message}`);
-        process.exit(1);
+        exit(1);
       });
 
       this.mcpProcess.on('exit', (code, signal) => {
         if (code !== 0 && code !== null) {
           logger.error(`MCP server exited with code ${code}`);
-          process.exit(code);
+          exit(code as 0 | 1);
         }
         if (signal) {
           logger.error(`MCP server was killed with signal ${signal}`);
-          process.exit(1);
+          exit(1);
         }
       });
     }
