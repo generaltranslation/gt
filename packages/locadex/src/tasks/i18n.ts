@@ -80,6 +80,7 @@ export async function i18nTask(batchSize: number) {
   );
   logger.message(`Using ${concurrency} concurrent agents`);
   logger.debugMessage(`Track progress here: ${stateFilePath}`);
+  logger.debugMessage(`Order:\n${taskQueue.join('\n')}`);
 
   logger.initializeProgressBar(taskQueue.length);
 
