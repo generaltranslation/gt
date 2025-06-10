@@ -261,7 +261,7 @@ function inDefaultLocalePaths(
 /**
  * Gets the locale from the request using various sources
  */
-export function getLocaleFromRequest(
+export async function getLocaleFromRequest(
   req: NextRequest,
   defaultLocale: string,
   approvedLocales: string[],
@@ -272,17 +272,29 @@ export function getLocaleFromRequest(
   referrerLocaleCookieName: string,
   localeCookieName: string,
   resetLocaleCookieName: string
-): {
+): Promise<{
   userLocale: string;
   pathnameLocale: string | undefined;
   unstandardizedPathnameLocale: string | null | undefined;
   clearResetCookie: boolean;
-} {
+}> {
   const headerList = new Headers(req.headers);
   const candidates: string[] = [];
   let clearResetCookie = false;
   const { pathname } = req.nextUrl;
 
+  // Custom getLocale
+  if (process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED === 'true') {
+    try {
+      const customRequestConfig = require('gt-next/_request');
+      const customGetLocale: () => Promise<string> =
+        customRequestConfig?.default || customRequestConfig.getLocale;
+      const customLocale = await customGetLocale();
+      if (customLocale) candidates.push(customLocale);
+    } catch {
+      /* empty */
+    }
+  }
   // Check pathname locales
   let pathnameLocale, unstandardizedPathnameLocale;
   if (localeRouting) {

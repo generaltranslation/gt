@@ -8,6 +8,7 @@ import {
   conflictingConfigurationBuildError,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
+  unresolvedGetLocaleBuildError,
   projectIdMissingWarn,
   standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
@@ -221,6 +222,12 @@ export function withGTConfig(
       ? mergedConfig.routerPath
       : resolveConfigFilepath('routing', ['.ts', '.js']);
 
+  // Resolve getLocale path
+  const resolvedGetLocalePath =
+    typeof mergedConfig.getLocalePath === 'string'
+      ? mergedConfig.getLocalePath
+      : resolveConfigFilepath('getLocale', ['.ts', '.js']);
+
   // ----------- LOCALE STANDARDIZATION ----------- //
 
   // Check if using Services
@@ -283,6 +290,16 @@ export function withGTConfig(
     }
   } else {
     mergedConfig.loadTranslationsType = 'remote';
+  }
+
+  // Resolve getLocale path
+  let customLocaleEnabled = false;
+  if (resolvedGetLocalePath) {
+    if (!fs.existsSync(path.resolve(resolvedGetLocalePath))) {
+      throw new Error(unresolvedGetLocaleBuildError(resolvedGetLocalePath));
+    }
+    console.log('resolvedGetLocalePath', resolvedGetLocalePath);
+    customLocaleEnabled = true;
   }
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
@@ -351,6 +368,8 @@ export function withGTConfig(
       _GENERALTRANSLATION_IGNORE_BROWSER_LOCALES:
         mergedConfig.ignoreBrowserLocales?.toString() ||
         defaultWithGTConfigProps.ignoreBrowserLocales.toString(),
+      _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED:
+        !!customLocaleEnabled.toString(),
     },
     experimental: {
       ...nextConfig.experimental,
@@ -365,6 +384,7 @@ export function withGTConfig(
                 'gt-next/_load-translations': customLoadTranslationsPath || '',
                 'gt-next/_load-dictionary': customLoadDictionaryPath || '',
                 'gt-next/_routing': customRouterPath || '',
+                'gt-next/_request': resolvedGetLocalePath || '',
               },
             },
           }
@@ -402,6 +422,12 @@ export function withGTConfig(
           webpackConfig.resolve.alias[`gt-next/_routing`] = path.resolve(
             webpackConfig.context,
             customLoadDictionaryPath
+          );
+        }
+        if (resolvedGetLocalePath) {
+          webpackConfig.resolve.alias[`gt-next/_request`] = path.resolve(
+            webpackConfig.context,
+            resolvedGetLocalePath
           );
         }
       }

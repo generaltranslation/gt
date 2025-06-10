@@ -43,6 +43,9 @@ export const unresolvedLoadDictionaryBuildError = (path: string) =>
 export const unresolvedLoadTranslationsBuildError = (path: string) =>
   `gt-next Error: File defining loadTranslations() function could not be resolved at ${path}`;
 
+export const unresolvedGetLocaleBuildError = (path: string) =>
+  `gt-next Error: File defining custom getLocale() function could not be resolved at ${path}`;
+
 export const conflictingConfigurationBuildError = (conflicts: string[]) =>
   `gt-next Error: Conflicting configuration${
     conflicts.length > 1 ? 's' : ''
