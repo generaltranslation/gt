@@ -35,6 +35,7 @@ function initializeTelemetry(enabled: boolean) {
       dsn: 'https://f542d2155ab069c9de0fcd913ed3ce3b@o4508407294853120.ingest.us.sentry.io/4509441836843008',
       release: getLocadexVersion(),
       enabled,
+      tracesSampleRate: 1.0,
       beforeSend: (event) => {
         event.exception?.values?.forEach((exception) => {
           delete exception.stacktrace;

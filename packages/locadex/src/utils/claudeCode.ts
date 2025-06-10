@@ -4,7 +4,7 @@ import { ClaudeSDKMessage } from '../types/claude-sdk.js';
 import { guides } from '../mcp/tools/guides.js';
 import { SpinnerResult } from '@clack/prompts';
 import { logger } from '../logging/logger.js';
-import { posthog } from '../telemetry.js';
+import { posthog, Sentry } from '../telemetry.js';
 import { LocadexManager } from './locadexManager.js';
 
 export interface ClaudeCodeOptions {
@@ -126,10 +126,20 @@ export class ClaudeCodeRunner {
         env.ANTHROPIC_API_KEY = this.options.apiKey;
       }
 
-      const claude = spawn('claude', args, {
-        stdio: ['inherit', 'pipe', 'pipe'],
-        env,
-      });
+      const claude = Sentry.startSpan(
+        {
+          name: 'claude-code-exec',
+          op: 'claude-code.exec',
+          attributes: {
+            'process.command': 'claude',
+          },
+        },
+        () =>
+          spawn('claude', args, {
+            stdio: ['inherit', 'pipe', 'pipe'],
+            env,
+          })
+      );
 
       activeClaudeProcesses.add(claude);
 
