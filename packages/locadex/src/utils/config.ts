@@ -14,7 +14,7 @@ export async function validateInitialConfig() {
   }
 }
 
-const CONFIG_FILE_NAME = 'config.json';
+const CONFIG_FILE_NAME = 'locadex.config.json';
 
 export function createConfig(
   directory: string,

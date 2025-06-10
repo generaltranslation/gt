@@ -14,7 +14,7 @@ import {
   addFilesToManager,
   markFileAsEdited,
   markFileAsInProgress,
-} from '../utils/getFiles.js';
+} from '../utils/dag/getFiles.js';
 import { outro } from '@clack/prompts';
 import chalk from 'chalk';
 import { appendFileSync } from 'node:fs';
@@ -23,6 +23,11 @@ import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { generateSettings } from 'gtx-cli/config/generateSettings';
 import path from 'node:path';
 import { findSourceFiles } from '../utils/dag/matchFiles.js';
+import {
+  getChangedFiles,
+  updateLockfile,
+  cleanupLockfile,
+} from '../utils/lockfile.js';
 
 export async function i18nTask() {
   await validateInitialConfig();
@@ -46,7 +51,24 @@ export async function i18nTask() {
     config.matchingFiles,
     config.matchingExtensions
   );
-  const dag = createDag(allFiles, {
+
+  // Get lockfile path from manager
+  const lockfilePath = manager.getLockFilePath();
+
+  // Filter files to only include those with changed content hashes
+  const changedFiles = getChangedFiles(allFiles, lockfilePath);
+
+  if (changedFiles.length === 0) {
+    spinner.stop('No files have changed since last run');
+    outro(chalk.green('✅ Locadex i18n complete - no changes detected!'));
+    await exit(0);
+  }
+
+  logger.verboseMessage(
+    `Processing ${changedFiles.length} changed files out of ${allFiles.length} total files`
+  );
+
+  const dag = createDag(changedFiles, {
     tsConfig: findTsConfig(),
     webpackConfig: findWebpackConfig(),
     requireConfig: findRequireConfig(),
@@ -276,6 +298,14 @@ ${reports.join('\n')}`;
   if (formatter) {
     await formatFiles(topologicalOrder, formatter);
   }
+
+  // Update lockfile with processed files
+  updateLockfile(changedFiles, lockfilePath);
+
+  // Clean up stale entries from lockfile
+  cleanupLockfile(allFiles, lockfilePath);
+
+  logger.message(`Updated lockfile with ${changedFiles.length} files`);
 
   // Clean up after successful completion
   manager.cleanup();

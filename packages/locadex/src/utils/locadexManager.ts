@@ -2,7 +2,7 @@ import { ClaudeCodeRunner, killAllClaudeProcesses } from './claudeCode.js';
 import { fromPackageRoot } from './getPaths.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { FileEntry } from './getFiles.js';
+import { FileEntry } from './dag/getFiles.js';
 import { logger } from '../logging/logger.js';
 import { addToGitIgnore } from './fs/writeFiles.js';
 import { spawn } from 'node:child_process';
@@ -13,6 +13,7 @@ import { CliOptions, LocadexConfig } from '../types/cli.js';
 import { findAvailablePort } from '../mcp/getPort.js';
 import { createConfig, getConfig } from './config.js';
 import { gracefulShutdown, exit } from './shutdown.js';
+import { LOCKFILE_NAME } from './lockfile.js';
 
 export interface LocadexRunMetadata {
   createdAt: string;
@@ -55,6 +56,7 @@ export class LocadexManager {
   private mcpConfigPath: string;
   private filesStateFilePath: string;
   private metadataFilePath: string;
+  private lockFilePath: string;
   private workingDir: string;
   private locadexDirectory: string;
   private apiKey?: string;
@@ -106,6 +108,7 @@ export class LocadexManager {
     this.filesStateFilePath = path.resolve(this.workingDir, 'files-state.json');
     this.metadataFilePath = path.resolve(this.workingDir, 'metadata.json');
     this.logFile = path.resolve(this.workingDir, 'log.txt');
+    this.lockFilePath = path.resolve(this.locadexDirectory, LOCKFILE_NAME);
 
     // Create files-state.json
     const filesState: FileEntry[] = [];
@@ -314,6 +317,10 @@ export class LocadexManager {
   }
   getConfig(): LocadexConfig {
     return this.config;
+  }
+
+  getLockFilePath(): string {
+    return this.lockFilePath;
   }
 
   cleanup(): void {

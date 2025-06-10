@@ -8,7 +8,7 @@ import {
 } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { logger } from '../logging/logger.js';
+import { logger } from '../../logging/logger.js';
 
 // Mutex for thread-safe file operations
 const fileMutexes = new Map<string, Promise<void>>();
