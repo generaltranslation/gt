@@ -39,11 +39,12 @@ export function findSourceFiles(
     const filename = path.basename(file);
     const ext = path.extname(file);
 
+    const hasBlacklistedExtension = DAG_IGNORED_EXTENSIONS.some(
+      (blacklistedExt) => filename.endsWith(blacklistedExt)
+    );
+
     // Skip blacklisted extensions and files
-    if (
-      DAG_IGNORED_EXTENSIONS.includes(ext) ||
-      DAG_IGNORED_FILES.includes(filename)
-    ) {
+    if (hasBlacklistedExtension || DAG_IGNORED_FILES.includes(filename)) {
       return false;
     }
 

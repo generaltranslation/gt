@@ -91,7 +91,7 @@ export class LocadexManager {
 
     this.config = getConfig(this.locadexDirectory);
 
-    createConfig(this.workingDir, {
+    createConfig(this.locadexDirectory, {
       batchSize: this.config.batchSize,
       maxConcurrency: this.config.maxConcurrency,
       matchingFiles: this.config.matchingFiles,
