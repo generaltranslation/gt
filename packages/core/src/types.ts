@@ -1,4 +1,4 @@
-import { LocaleProperties } from "./locales/getLocaleProperties";
+import { LocaleProperties } from './locales/getLocaleProperties';
 
 export { LocaleProperties };
 
