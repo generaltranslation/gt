@@ -42,7 +42,7 @@ program
     const allOptions = { ...parentOptions, ...options };
     withTelemetry(
       { enabled: !allOptions.noTelemetry, options: allOptions },
-      () => {
+      async () => {
         const batchSize = Number(allOptions.batchSize) || 1;
         const concurrency = Number(allOptions.concurrency) || 1;
 
@@ -55,12 +55,11 @@ program
         LocadexManager.initialize({
           mcpTransport: 'sse',
           maxConcurrency: concurrency,
-          metadata: {
-            batchSize,
-          },
+          batchSize,
+          metadata: {},
           cliOptions: allOptions,
         });
-        setupCommand(Number(allOptions.batchSize) || 1);
+        await setupCommand();
       }
     );
   });
@@ -78,7 +77,7 @@ program
     const allOptions = { ...parentOptions, ...options };
     withTelemetry(
       { enabled: !allOptions.noTelemetry, options: allOptions },
-      () => {
+      async () => {
         const batchSize = Number(allOptions.batchSize) || 1;
         const concurrency = Number(allOptions.concurrency) || 1;
 
@@ -91,12 +90,11 @@ program
         LocadexManager.initialize({
           mcpTransport: 'sse',
           maxConcurrency: concurrency,
-          metadata: {
-            batchSize,
-          },
+          batchSize,
+          metadata: {},
           cliOptions: allOptions,
         });
-        i18nCommand(Number(allOptions.batchSize) || 1);
+        await i18nCommand();
       }
     );
   });

@@ -18,10 +18,11 @@ import { outro } from '@clack/prompts';
 import chalk from 'chalk';
 import { appendFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { EXCLUDED_DIRS } from '../utils/shared.js';
-import { validateInitialConfig } from '../utils/validateConfig.js';
+import { validateInitialConfig } from '../utils/config.js';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { generateSettings } from 'gtx-cli/config/generateSettings';
 import path from 'node:path';
+import { findSourceFiles } from '../utils/dag/createDag.js';
 
 function getCurrentDirectories(): string[] {
   try {
@@ -42,11 +43,11 @@ function getCurrentDirectories(): string[] {
   }
 }
 
-export async function i18nTask(batchSize: number) {
+export async function i18nTask() {
   validateInitialConfig();
 
-  const settings = await generateSettings({});
-  if (settings.framework !== 'next-app') {
+  const gtSettings = await generateSettings({});
+  if (gtSettings.framework !== 'next-app') {
     logger.error(
       'Currently, locadex only supports Next.js App Router. Please use Next.js App Router.'
     );
@@ -56,20 +57,22 @@ export async function i18nTask(batchSize: number) {
   // Init message
   const spinner = createSpinner();
   spinner.start('Initializing Locadex...');
+  const manager = LocadexManager.getInstance();
 
-  const dag = createDag(getCurrentDirectories(), {
+  const allFiles = findSourceFiles(getCurrentDirectories());
+  const dag = createDag(allFiles, {
     tsConfig: findTsConfig(),
     webpackConfig: findWebpackConfig(),
     requireConfig: findRequireConfig(),
   });
 
-  const manager = LocadexManager.getInstance();
   const filesStateFilePath = manager.getFilesStateFilePath();
   const concurrency = manager.getMaxConcurrency();
+  const batchSize = manager.getBatchSize();
 
   // Create the list of files (aka tasks) to process
   const taskQueue = [...dag.getTopologicalOrder()];
-  const allFiles = [...dag.getTopologicalOrder()];
+  const topologicalOrder = [...dag.getTopologicalOrder()];
 
   // Add files to manager
   const stateFilePath = addFilesToManager(filesStateFilePath, taskQueue);
@@ -200,7 +203,7 @@ export async function i18nTask(batchSize: number) {
       processedCount += tasks.length;
       logger.progressBar.advance(
         tasks.length,
-        `Processed ${Number((processedCount / allFiles.length) * 100).toFixed(2)}% of files`
+        `Processed ${Number((processedCount / topologicalOrder.length) * 100).toFixed(2)}% of files`
       );
       manager.stats.updateStats({
         newProcessedFiles: tasks.length,
@@ -231,7 +234,7 @@ export async function i18nTask(batchSize: number) {
   }
 
   logger.progressBar.stop(
-    `Processed ${allFiles.length} files [${Math.round(
+    `Processed ${topologicalOrder.length} files [${Math.round(
       (Date.now() - fileProcessingStartTime) / 1000
     )}s]`
   );
@@ -284,7 +287,7 @@ ${reports.join('\n')}`;
 
   const formatter = await detectFormatter();
   if (formatter) {
-    await formatFiles(allFiles, formatter);
+    await formatFiles(topologicalOrder, formatter);
   }
 
   // Clean up after successful completion

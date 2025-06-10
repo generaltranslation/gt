@@ -17,7 +17,7 @@ import { handleInitGT } from 'gtx-cli/next/parse/handleInitGT';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { createOrUpdateConfig } from 'gtx-cli/fs/config/setupConfig';
 import { i18nTask } from '../tasks/i18n.js';
-import { validateInitialConfig } from '../utils/validateConfig.js';
+import { validateInitialConfig } from '../utils/config.js';
 import { getNextDirectories } from '../utils/fs/getFiles.js';
 import { LocadexManager } from '../utils/locadexManager.js';
 import { outro } from '@clack/prompts';
@@ -26,7 +26,7 @@ import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { appendFileSync } from 'node:fs';
 import path from 'node:path';
 
-export async function setupTask(batchSize: number) {
+export async function setupTask() {
   validateInitialConfig();
   const answer = await promptConfirm({
     message: chalk.yellow(
@@ -144,7 +144,7 @@ export async function setupTask(batchSize: number) {
   }
 
   // Run i18n command
-  await i18nTask(batchSize);
+  await i18nTask();
 }
 
 async function setupLocaleSelector() {

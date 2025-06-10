@@ -113,16 +113,12 @@ export class Dag {
   }
 }
 
-export function createDag(directories: string[], options: DagOptions): Dag {
+export function createDag(files: string[], options: DagOptions): Dag {
   const allTrees: Tree[] = [];
   const visited: dependencyTree.Tree = {};
   const nonExistent: string[] = [];
 
-  const files = discoverSourceFiles(directories);
-
-  logger.debugMessage(
-    `Creating combined tree for ${files.length} files and ${directories.length} directories`
-  );
+  logger.debugMessage(`Creating combined tree for ${files.length} files`);
 
   files.forEach((file) => {
     if (visited[file]) {
@@ -186,9 +182,12 @@ function mergeTrees(trees: Tree[]): DagNode {
   return result;
 }
 
-function discoverSourceFiles(directories: string[]): string[] {
+export function findSourceFiles(
+  directories: string[],
+  fileExtensions: string[] = ['.ts', '.tsx', '.js', '.jsx']
+): string[] {
   const files: string[] = [];
-  const extensions = ['.ts', '.tsx', '.js', '.jsx'];
+  const extensions = fileExtensions;
 
   function walkDirectory(dir: string) {
     if (!fs.existsSync(dir)) return;

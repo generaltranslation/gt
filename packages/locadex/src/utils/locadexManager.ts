@@ -9,10 +9,11 @@ import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { setTimeout } from 'node:timers';
 import { AgentStats } from './stats.js';
-import { CliOptions } from '../types/cli.js';
+import { CliOptions, LocadexConfig } from '../types/cli.js';
 import { findAvailablePort } from '../mcp/getPort.js';
+import { createConfig, getConfig } from './config.js';
 
-export interface LocadexMetadata {
+export interface LocadexRunMetadata {
   createdAt: string;
   locadexVersion: string;
   workingDirectory: string;
@@ -23,7 +24,8 @@ export interface LocadexMetadata {
   platform: string;
   arch: string;
   logFile: string;
-  batchSize?: number;
+  batchSize: number;
+  maxConcurrency: number;
   [key: string]: any;
 }
 
@@ -53,34 +55,53 @@ export class LocadexManager {
   private filesStateFilePath: string;
   private metadataFilePath: string;
   private workingDir: string;
+  private locadexDirectory: string;
   private apiKey?: string;
   private maxConcurrency: number;
+  private batchSize: number;
   private agentPool: Map<
     string,
     { agent: ClaudeCodeRunner; sessionId?: string; busy: boolean }
   >;
   private agentMutex = Promise.resolve();
+  private config: LocadexConfig;
   stats: AgentStats;
   logFile: string;
 
   private constructor(options: {
     mcpTransport: 'sse' | 'stdio';
     apiKey?: string;
-    metadata?: Partial<LocadexMetadata>;
+    metadata?: Partial<LocadexRunMetadata>;
     maxConcurrency?: number;
+    batchSize?: number;
   }) {
     this.apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY;
-    this.maxConcurrency = options.maxConcurrency || 1;
     this.agentPool = new Map();
     this.stats = new AgentStats();
     this.mcpTransport = options.mcpTransport;
 
     const cwd = process.cwd();
-    this.workingDir = path.resolve(cwd, '.locadex', Date.now().toString());
+    this.locadexDirectory = path.resolve(cwd, '.locadex');
+    this.workingDir = path.resolve(
+      this.locadexDirectory,
+      'runs',
+      Date.now().toString()
+    );
     fs.mkdirSync(this.workingDir, { recursive: true });
 
-    addToGitIgnore(cwd, '.locadex');
+    this.config = getConfig(this.locadexDirectory);
 
+    createConfig(this.workingDir, {
+      batchSize: this.config.batchSize,
+      maxConcurrency: this.config.maxConcurrency,
+      matchingFiles: this.config.matchingFiles,
+      matchingExtensions: this.config.matchingExtensions,
+    });
+
+    addToGitIgnore(cwd, '.locadex/runs');
+
+    this.maxConcurrency = this.config.maxConcurrency;
+    this.batchSize = this.config.batchSize;
     this.mcpConfigPath = path.resolve(this.workingDir, 'mcp.json');
     this.filesStateFilePath = path.resolve(this.workingDir, 'files-state.json');
     this.metadataFilePath = path.resolve(this.workingDir, 'metadata.json');
@@ -94,7 +115,7 @@ export class LocadexManager {
     );
 
     // Create metadata.json
-    const metadata: LocadexMetadata = {
+    const metadata: LocadexRunMetadata = {
       createdAt: new Date().toISOString(),
       locadexVersion: JSON.parse(
         fs.readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -107,6 +128,8 @@ export class LocadexManager {
       platform: process.platform,
       arch: process.arch,
       logFile: this.logFile,
+      batchSize: this.config.batchSize,
+      maxConcurrency: this.config.maxConcurrency,
       ...options.metadata,
     };
     fs.writeFileSync(this.metadataFilePath, JSON.stringify(metadata, null, 2));
@@ -185,8 +208,9 @@ export class LocadexManager {
   static initialize(options: {
     mcpTransport: 'sse' | 'stdio';
     apiKey?: string;
-    metadata?: Partial<LocadexMetadata>;
-    maxConcurrency?: number;
+    metadata?: Partial<LocadexRunMetadata>;
+    maxConcurrency: number;
+    batchSize: number;
     cliOptions?: CliOptions;
   }): void {
     if (!LocadexManager.instance) {
@@ -263,10 +287,6 @@ export class LocadexManager {
     return this.agentPool;
   }
 
-  getMaxConcurrency(): number {
-    return this.maxConcurrency;
-  }
-
   cleanupAgents(): void {
     logger.debugMessage('Cleaning up all Claude Code agents and processes');
 
@@ -285,9 +305,17 @@ export class LocadexManager {
   getFilesStateFilePath(): string {
     return this.filesStateFilePath;
   }
-
   getMetadataFilePath(): string {
     return this.metadataFilePath;
+  }
+  getMaxConcurrency(): number {
+    return this.maxConcurrency;
+  }
+  getBatchSize(): number {
+    return this.batchSize;
+  }
+  getConfig(): LocadexConfig {
+    return this.config;
   }
 
   cleanup(): void {
