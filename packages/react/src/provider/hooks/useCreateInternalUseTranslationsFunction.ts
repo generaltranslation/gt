@@ -22,7 +22,7 @@ import { hashJsxChildren } from 'generaltranslation/id';
 import { Content } from 'generaltranslation/internal';
 import { TranslateContentCallback } from '../../types/runtime';
 
-export default function useCreateInternalUseDictFunction(
+export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
   translations: TranslationsObject | null,
   locale: string,

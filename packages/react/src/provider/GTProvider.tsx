@@ -9,7 +9,7 @@ import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import { defaultRenderSettings } from '../rendering/defaultRenderSettings';
 import { readAuthFromEnv } from '../utils/utils';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
-import useCreateInternalUseDictFunction from './hooks/useCreateInternalUseDictFunction';
+import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
 import { isSSREnabled } from './helpers/isSSREnabled';
 import { defaultLocaleCookieName } from '../utils/cookies';
 import { GTProviderProps } from '../types/config';
@@ -176,17 +176,18 @@ export default function GTProvider({
 
   // ---------- USE DICT ---------- //
 
-  const _internalUseDictFunction = useCreateInternalUseDictFunction(
-    dictionary,
-    translations,
-    locale,
-    defaultLocale,
-    translationRequired,
-    dialectTranslationRequired,
-    runtimeTranslationEnabled,
-    registerContentForTranslation,
-    renderSettings
-  );
+  const _internaluseTranslationsFunction =
+    useCreateInternalUseTranslationsFunction(
+      dictionary,
+      translations,
+      locale,
+      defaultLocale,
+      translationRequired,
+      dialectTranslationRequired,
+      runtimeTranslationEnabled,
+      registerContentForTranslation,
+      renderSettings
+    );
 
   // ----- RETURN ----- //
 
@@ -200,7 +201,7 @@ export default function GTProvider({
         registerContentForTranslation,
         registerJsxForTranslation,
         _internalUseGTFunction,
-        _internalUseDictFunction,
+        _internaluseTranslationsFunction,
         runtimeTranslationEnabled,
         locale,
         locales: approvedLocales,

@@ -6,7 +6,7 @@ import Branch from './branches/Branch';
 import Plural from './branches/plurals/Plural';
 import useGT from './translation/hooks/useGT';
 import useDefaultLocale from './hooks/useDefaultLocale';
-import useDict from './translation/hooks/useDict';
+import useTranslations from './translation/hooks/useTranslations';
 import useLocale from './hooks/useLocale';
 import T from './translation/inline/T';
 import Currency from './variables/Currency';
@@ -27,7 +27,8 @@ export {
   renderVariable,
   ClientProvider,
   useGT,
-  useDict,
+  useTranslations,
+  useTranslations as useDict,
   useDefaultLocale,
   useLocale,
   useLocales,

@@ -15,7 +15,7 @@ export type GTContextType = {
     string: string,
     options?: InlineTranslationOptions
   ) => string;
-  _internalUseDictFunction: (
+  _internaluseTranslationsFunction: (
     id: string,
     options?: DictionaryTranslationOptions
   ) => string;
