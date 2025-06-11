@@ -32,6 +32,9 @@ export {
   Branch,
   useGT,
   useTranslations,
+  /**
+   * @deprecated Use useTranslations instead
+   */
   useTranslations as useDict,
   useDefaultLocale,
   useLocale,

@@ -29,6 +29,9 @@ export {
   useSetLocale,
   useDefaultLocale,
   useTranslations,
+  /**
+   * @deprecated Use useTranslations instead
+   */
   useTranslations as useDict,
   LocaleSelector,
   useLocaleSelector,
