@@ -1,6 +1,6 @@
 import { getPackageInfo } from 'gtx-cli/utils/packageInfo';
 import { createSpinner } from '../../logging/console.js';
-import chalk from 'chalk/index.js';
+import chalk from 'chalk';
 import { installPackageGlobal } from 'gtx-cli/utils/installPackage';
 import { logger } from '../../logging/logger.js';
 import { CLAUDE_CODE_VERSION } from '../shared.js';
