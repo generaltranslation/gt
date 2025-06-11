@@ -22,7 +22,6 @@ export function createConfig(
     batchSize: number;
     maxConcurrency: number;
     matchingFiles: string[];
-    matchingExtensions: string[];
   }
 ) {
   const configPath = path.resolve(directory, CONFIG_FILE_NAME);
@@ -34,7 +33,6 @@ export function createConfig(
     batchSize: options.batchSize,
     maxConcurrency: options.maxConcurrency,
     matchingFiles: options.matchingFiles,
-    matchingExtensions: options.matchingExtensions,
   };
 
   writeFileSync(configPath, JSON.stringify(config, null, 2));
@@ -44,7 +42,6 @@ const DEFAULT_CONFIG: LocadexConfig = {
   batchSize: 10,
   maxConcurrency: 1,
   matchingFiles: ['**/*.{ts,tsx,js,jsx}'],
-  matchingExtensions: ['.ts', '.tsx', '.js', '.jsx'],
 };
 
 export function getConfig(
@@ -76,14 +73,6 @@ export function getConfig(
       : fileConfig.matchingFiles && fileConfig.matchingFiles.length > 0
         ? fileConfig.matchingFiles
         : DEFAULT_CONFIG.matchingFiles;
-
-  mergedConfig.matchingExtensions =
-    options.matchingExtensions && options.matchingExtensions.length > 0
-      ? options.matchingExtensions
-      : fileConfig.matchingExtensions &&
-          fileConfig.matchingExtensions.length > 0
-        ? fileConfig.matchingExtensions
-        : DEFAULT_CONFIG.matchingExtensions;
 
   return mergedConfig;
 }

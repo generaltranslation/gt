@@ -1,4 +1,4 @@
-import { ClaudeCodeRunner, killAllClaudeProcesses } from './claudeCode.js';
+import { ClaudeCodeRunner } from './claudeCode.js';
 import { fromPackageRoot } from './getPaths.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -101,7 +101,6 @@ export class LocadexManager {
       batchSize: this.config.batchSize,
       maxConcurrency: this.config.maxConcurrency,
       matchingFiles: this.config.matchingFiles,
-      matchingExtensions: this.config.matchingExtensions,
     });
 
     addToGitIgnore(cwd, '.locadex/runs');
@@ -145,7 +144,7 @@ export class LocadexManager {
     gracefulShutdown.addHandler({
       name: 'locadex-manager-cleanup',
       handler: () => this.cleanup(),
-      timeout: 5000,
+      timeout: 3000,
     });
   }
 
@@ -240,7 +239,7 @@ export class LocadexManager {
   }
 
   createSingleAgent(id: string): ClaudeCodeRunner {
-    return new ClaudeCodeRunner(this, {
+    return new ClaudeCodeRunner(this, this.agentAbortController, {
       apiKey: this.apiKey,
       mcpConfig: this.mcpConfigPath,
       id,
@@ -307,9 +306,6 @@ export class LocadexManager {
     for (const agentData of this.agentPool.values()) {
       agentData.busy = false;
     }
-
-    // Kill all active Claude Code processes (fallback)
-    killAllClaudeProcesses();
 
     // Clear the agent pool
     this.agentPool.clear();

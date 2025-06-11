@@ -1,6 +1,8 @@
 import { logger } from '../../logging/logger.js';
 import * as path from 'node:path';
 import fg from 'fast-glob';
+import micromatch from 'micromatch';
+const { isMatch } = micromatch;
 import {
   DAG_IGNORED_EXTENSIONS,
   DAG_IGNORED_FILES,
@@ -9,7 +11,6 @@ import {
 
 export function findSourceFiles(
   globPatterns: string[],
-  allowedExtensions: string[],
   cwd: string = process.cwd()
 ): string[] {
   const allFiles: string[] = [];
@@ -37,7 +38,6 @@ export function findSourceFiles(
   // Filter by extensions and apply blacklists
   const filteredFiles = uniqueFiles.filter((file) => {
     const filename = path.basename(file);
-    const ext = path.extname(file);
 
     const hasBlacklistedExtension = DAG_IGNORED_EXTENSIONS.some(
       (blacklistedExt) => filename.endsWith(blacklistedExt)
@@ -48,9 +48,37 @@ export function findSourceFiles(
       return false;
     }
 
-    // Apply extension filter
-    return allowedExtensions.includes(ext);
+    return true;
   });
 
   return filteredFiles;
+}
+
+export function filterFiles(
+  globPatterns: string[],
+  filePaths: string[],
+  cwd: string = process.cwd()
+): string[] {
+  if (globPatterns.length === 0) {
+    return filePaths;
+  }
+
+  return filePaths.filter((filePath) => {
+    // Convert to relative path if absolute
+    const relativePath = path.isAbsolute(filePath)
+      ? path.relative(cwd, filePath)
+      : filePath;
+
+    // Check if file matches any of the glob patterns
+    return globPatterns.some((pattern) => {
+      try {
+        return isMatch(relativePath, pattern);
+      } catch (error) {
+        logger.debugMessage(
+          `Failed to match file "${filePath}" against pattern "${pattern}": ${error}`
+        );
+        return false;
+      }
+    });
+  });
 }

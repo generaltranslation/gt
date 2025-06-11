@@ -1,14 +1,7 @@
 import { createSpinner } from '../logging/console.js';
 import { allMcpPrompt } from '../prompts/system.js';
 import { exit } from '../utils/shutdown.js';
-
 import { logger } from '../logging/logger.js';
-import { createDag } from '../utils/dag/createDag.js';
-import {
-  findTsConfig,
-  findWebpackConfig,
-  findRequireConfig,
-} from '../utils/fs/findConfigs.js';
 import { LocadexManager } from '../utils/locadexManager.js';
 import {
   addFilesToManager,
@@ -22,13 +15,9 @@ import { validateInitialConfig } from '../utils/config.js';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { generateSettings } from 'gtx-cli/config/generateSettings';
 import path from 'node:path';
-import { findSourceFiles } from '../utils/dag/matchFiles.js';
-import {
-  getChangedFiles,
-  updateLockfile,
-  cleanupLockfile,
-} from '../utils/lockfile.js';
+import { updateLockfile, cleanupLockfile } from '../utils/lockfile.js';
 import { installClaudeCode } from '../utils/packages/installPackage.js';
+import { extractFiles } from '../utils/dag/extractFiles.js';
 
 export async function i18nTask() {
   await validateInitialConfig();
@@ -47,56 +36,33 @@ export async function i18nTask() {
   // Init message
   const spinner = createSpinner();
   spinner.start('Initializing Locadex...');
+
   const manager = LocadexManager.getInstance();
 
-  const config = manager.getConfig();
+  const { files, dag } = extractFiles(manager);
 
-  const allFiles = findSourceFiles(
-    config.matchingFiles,
-    config.matchingExtensions
-  );
-
-  // Get lockfile path from manager
-  const lockfilePath = manager.getLockFilePath();
-
-  // Filter files to only include those with changed content hashes
-  const changedFiles = getChangedFiles(allFiles, lockfilePath);
-
-  if (changedFiles.length === 0) {
+  if (files.length === 0) {
     spinner.stop('No files have changed since last run');
     outro(chalk.green('✅ Locadex i18n complete - no changes detected!'));
     await exit(0);
   }
-
-  logger.verboseMessage(
-    `Processing ${changedFiles.length} changed files out of ${allFiles.length} total files`
-  );
-
-  const dag = createDag(changedFiles, {
-    tsConfig: findTsConfig(),
-    webpackConfig: findWebpackConfig(),
-    requireConfig: findRequireConfig(),
-  });
 
   const filesStateFilePath = manager.getFilesStateFilePath();
   const concurrency = manager.getMaxConcurrency();
   const batchSize = manager.getBatchSize();
 
   // Create the list of files (aka tasks) to process
-  const taskQueue = [...dag.getTopologicalOrder()];
-  const topologicalOrder = [...dag.getTopologicalOrder()];
+  const taskQueue = Array.from(files);
 
   // Add files to manager
   const stateFilePath = addFilesToManager(filesStateFilePath, taskQueue);
   spinner.stop('Locadex initialized');
 
-  logger.verboseMessage(
-    `Number of files to process: ${dag.getTopologicalOrder().length}`
-  );
-  logger.message(`Using ${concurrency} concurrent agents`);
+  logger.verboseMessage(`Processing ${files.length} modified files`);
   logger.debugMessage(`Track progress here: ${stateFilePath}`);
   logger.debugMessage(`Order:\n${taskQueue.join('\n')}`);
 
+  logger.message(`Using ${concurrency} concurrent agents`);
   logger.initializeProgressBar(taskQueue.length);
 
   const fileProcessingStartTime = Date.now();
@@ -190,23 +156,25 @@ export async function i18nTask() {
             prompt,
             sessionId,
           },
-          {},
-          agentAbortController
+          {}
         );
         reports.push(agent.generateReport());
         manager.markAgentFree(agentId);
       } catch (error) {
+        // Check if this is an abort
+        if (agentAbortController.signal.aborted) {
+          return;
+        }
+
         // Capture the first error and signal all other agents to abort
         if (!firstError) {
           firstError = new Error(
-            `[i18n] Error in claude i18n process (agent ${agentId}): ${error}`
+            `Error in claude i18n process (${agentId}): ${error}`
           );
           logger.debugMessage(firstError.message);
-          agentAbortController.abort();
-          manager.cleanupAgents();
         }
-        manager.markAgentFree(agentId);
-        return; // Exit this agent's processing immediately
+        await exit(1); // Exit this agent's processing immediately
+        return;
       }
 
       // Mark tasks as complete
@@ -216,7 +184,7 @@ export async function i18nTask() {
       processedCount += tasks.length;
       logger.progressBar.advance(
         tasks.length,
-        `Processed ${Number((processedCount / topologicalOrder.length) * 100).toFixed(2)}% of files`
+        `Processed ${Number((processedCount / files.length) * 100).toFixed(2)}% of files`
       );
       manager.stats.updateStats({
         newProcessedFiles: tasks.length,
@@ -235,10 +203,13 @@ export async function i18nTask() {
   try {
     await Promise.all(processingPromises);
   } catch (error) {
+    // Check if this is an abort
+    if (agentAbortController.signal.aborted) {
+      return;
+    }
+
     // This shouldn't happen since we handle errors within processTask
-    logger.debugMessage(
-      `[i18n] Unexpected error in parallel processing: ${error}`
-    );
+    logger.debugMessage(`Unexpected error in parallel processing: ${error}`);
     if (!firstError) {
       firstError = new Error(
         `Unexpected error in parallel processing: ${error}`
@@ -247,7 +218,7 @@ export async function i18nTask() {
   }
 
   logger.progressBar.stop(
-    `Processed ${topologicalOrder.length} files [${Math.round(
+    `Processed ${files.length} files [${Math.round(
       (Date.now() - fileProcessingStartTime) / 1000
     )}s]`
   );
@@ -259,7 +230,6 @@ export async function i18nTask() {
 
   // If there was an error, clean up and exit with code 1
   if (firstError) {
-    manager.cleanupAgents();
     logger.error(firstError.message);
     outro(chalk.red('❌ Locadex i18n failed!'));
     await exit(1);
@@ -273,12 +243,14 @@ export async function i18nTask() {
   try {
     await cleanupAgent.run(
       { prompt: fixPrompt, sessionId: cleanupAgent.getSessionId() },
-      {},
-      manager.getAgentAbortController()
+      {}
     );
     reports.push(`## Fixed errors\n${cleanupAgent.generateReport()}`);
   } catch (error) {
-    manager.cleanupAgents();
+    // Check if this is an abort
+    if (agentAbortController.signal.aborted) {
+      return;
+    }
     logger.debugMessage(
       `[claude_cleanup_agent] Fixing errors failed: ${error}`
     );
@@ -299,22 +271,20 @@ ${reports.join('\n')}`;
   logger.step(`Saved summary of changes to: ${summaryFilePath}`);
 
   // cleanup
-
   const formatter = await detectFormatter();
   if (formatter) {
-    await formatFiles(topologicalOrder, formatter);
+    await formatFiles(files, formatter);
   }
 
+  const lockfilePath = manager.getLockFilePath();
+
   // Update lockfile with processed files
-  updateLockfile(changedFiles, lockfilePath);
+  updateLockfile(files, lockfilePath);
 
   // Clean up stale entries from lockfile
-  cleanupLockfile(allFiles, lockfilePath);
+  cleanupLockfile(files, lockfilePath);
 
-  logger.message(`Updated lockfile with ${changedFiles.length} files`);
-
-  // Clean up after successful completion
-  manager.cleanup();
+  logger.message(chalk.dim(`Updated lockfile with ${files.length} files`));
 
   logger.info(
     chalk.dim(

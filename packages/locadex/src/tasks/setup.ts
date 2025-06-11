@@ -147,11 +147,7 @@ async function setupLocaleSelector() {
   // Fix prompt
   const localeSelectorPrompt = getLocaleSelectorPrompt();
   try {
-    await agent.run(
-      { prompt: localeSelectorPrompt },
-      {},
-      manager.getAgentAbortController()
-    );
+    await agent.run({ prompt: localeSelectorPrompt }, {});
 
     // Generate report
     const report = agent.generateReport();
@@ -163,6 +159,10 @@ ${report}`;
     );
     appendFileSync(summaryFilePath, reportSummary);
   } catch (error) {
+    // Check if this is an abort
+    if (manager.getAgentAbortController().signal.aborted) {
+      return;
+    }
     logger.debugMessage(`[setup] Adding locale selector failed: ${error}`);
     outro(chalk.red('❌ Locadex setup failed!'));
     await exit(1);

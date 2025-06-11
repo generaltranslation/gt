@@ -24,6 +24,7 @@ export const DAG_IGNORED_PATTERNS = [
 
 export const DAG_IGNORED_EXTENSIONS = [
   '.map', // Source maps
+  '.map.js', // Source maps
   '.min.js', // Minified JavaScript
   '.min.ts', // Minified TypeScript
   '.spec.js', // Test files

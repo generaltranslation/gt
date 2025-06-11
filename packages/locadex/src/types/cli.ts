@@ -5,12 +5,10 @@ export type CliOptions = {
   batchSize?: string;
   concurrency?: string;
   matchingFiles?: string;
-  matchingExtensions?: string;
 };
 
 export type LocadexConfig = {
   batchSize: number;
   maxConcurrency: number;
   matchingFiles: string[];
-  matchingExtensions: string[];
 };

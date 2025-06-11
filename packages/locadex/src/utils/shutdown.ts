@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/node';
 import { logger } from '../logging/logger.js';
 
 export type ExitCode = 0 | 1;
@@ -22,7 +21,9 @@ class GracefulShutdown {
   }
 
   private async handleSignal(signal: string) {
-    logger.debugMessage(`Received ${signal}, initiating graceful shutdown...`);
+    logger.debugMessage(
+      `Received ${signal}, initiating graceful shutdown with exit code 0...`
+    );
     await this.shutdown(0);
   }
 
@@ -37,10 +38,6 @@ class GracefulShutdown {
 
     this.isShuttingDown = true;
     this.exitCode = exitCode;
-
-    logger.debugMessage(
-      `Starting graceful shutdown with exit code ${exitCode}`
-    );
 
     // Execute shutdown handlers in reverse order (LIFO)
     const handlers = [...this.shutdownHandlers].reverse();

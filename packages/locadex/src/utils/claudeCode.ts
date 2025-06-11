@@ -39,9 +39,11 @@ export class ClaudeCodeRunner {
   private mcpConfig: string | undefined;
   private manager: LocadexManager;
   private changes: string[] = [];
+  private controller: AbortController;
 
   constructor(
     manager: LocadexManager,
+    controller: AbortController,
     private options: {
       id: string;
       apiKey: string;
@@ -51,6 +53,7 @@ export class ClaudeCodeRunner {
     this.manager = manager;
     this.id = options.id;
     this.mcpConfig = options.mcpConfig;
+    this.controller = controller;
 
     // Ensure API key is set
     if (!process.env.ANTHROPIC_API_KEY && !this.options.apiKey) {
@@ -58,8 +61,6 @@ export class ClaudeCodeRunner {
         'ANTHROPIC_API_KEY environment variable or apiKey option is required'
       );
     }
-
-    // AbortController handles cleanup automatically
   }
 
   getSessionId(): string {
@@ -68,8 +69,7 @@ export class ClaudeCodeRunner {
 
   async run(
     options: ClaudeCodeOptions,
-    obs: ClaudeCodeObservation,
-    controller: AbortController
+    obs: ClaudeCodeObservation
   ): Promise<string> {
     this.changes = [];
     return Sentry.startSpan(
@@ -130,7 +130,7 @@ export class ClaudeCodeRunner {
           const claude = spawn('claude', args, {
             stdio: ['ignore', 'pipe', 'pipe'],
             env,
-            signal: controller.signal,
+            signal: this.controller.signal,
           });
 
           logger.debugMessage(`[${this.id}] Spawned claude code process`);

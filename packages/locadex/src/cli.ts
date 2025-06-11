@@ -33,12 +33,8 @@ program
   .option('-b, --batch-size <number>', 'File batch size', '10')
   .option('-c, --concurrency <number>', 'Max number of concurrent agents', '1')
   .option(
-    '-f, --match-files <pattern>',
+    '-m, --match-files <pattern>',
     'Comma-separated list of glob patterns to match source files'
-  )
-  .option(
-    '-e, --extensions <extensions>',
-    'Comma-separated list of file extensions to match'
   )
   .option(
     '--package-manager <manager>',
@@ -56,12 +52,8 @@ program
   .option('-b, --batch-size <number>', 'File batch size', '10')
   .option('-c, --concurrency <number>', 'Max number of concurrent agents', '1')
   .option(
-    '-f, --match-files <pattern>',
+    '-m, --match-files <pattern>',
     'Comma-separated list of glob patterns to match source files'
-  )
-  .option(
-    '-e, --extensions <extensions>',
-    'Comma-separated list of file extensions to match'
   )
   .option('--no-telemetry', 'Disable telemetry')
   .action(i18nCommand);

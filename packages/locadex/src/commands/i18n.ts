@@ -34,11 +34,6 @@ export async function i18nCommand(options: CliOptions, command: Command) {
               .split(',')
               .map((file) => file.trim()),
           }),
-          ...(allOptions.matchingExtensions && {
-            matchingExtensions: allOptions.matchingExtensions
-              .split(',')
-              .map((ext) => ext.trim()),
-          }),
           maxConcurrency: concurrency,
           batchSize,
         },

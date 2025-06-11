@@ -1,6 +1,6 @@
 {
   "name": "locadex",
-  "version": "0.1.0-alpha.8",
+  "version": "0.1.0-alpha.9",
   "description": "An AI agent for internationalization",
   "main": "dist/index.js",
   "type": "module",
@@ -26,12 +26,14 @@
     "dotenv": "^16.4.5",
     "express": "^5.1.0",
     "gtx-cli": "^1.2.24-alpha.5",
+    "micromatch": "^4.0.8",
     "posthog-node": "^4.18.0"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.13.0",
     "@types/express": "^5.0.2",
     "@types/jest": "^29.5.14",
+    "@types/micromatch": "^4.0.9",
     "@types/node": ">=20.0.0",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
     "@typescript-eslint/parser": "^8.19.1",

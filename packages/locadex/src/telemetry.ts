@@ -86,7 +86,6 @@ export async function withTelemetry<F>(
   Sentry.setTag('args.batchSize', options.batchSize);
   Sentry.setTag('args.concurrency', options.concurrency);
   Sentry.setTag('args.matchingFiles', options.matchingFiles);
-  Sentry.setTag('args.matchingExtensions', options.matchingExtensions);
 
   try {
     return await Sentry.startSpan(
