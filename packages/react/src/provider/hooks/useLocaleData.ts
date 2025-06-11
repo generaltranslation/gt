@@ -5,7 +5,7 @@ import { isSameLanguage, requiresTranslation } from 'generaltranslation';
 export function useLocaleData({
   _locale,
   defaultLocale,
-  locales,
+  locales: _locales,
   ssr,
   localeCookieName,
 }: {
@@ -16,9 +16,9 @@ export function useLocaleData({
   localeCookieName: string;
 }) {
   // Locale standardization
-  locales = useMemo(() => {
-    return Array.from(new Set([defaultLocale, ...locales]));
-  }, [defaultLocale, locales]);
+  const locales = useMemo(() => {
+    return Array.from(new Set([defaultLocale, ..._locales]));
+  }, [defaultLocale, _locales]);
 
   const [locale, setLocale] = useDetermineLocale({
     locale: _locale,

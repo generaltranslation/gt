@@ -378,7 +378,6 @@ export function withGTConfig(
       // Only apply webpack aliases if we're using webpack (not Turbopack)
       const isTurbopack =
         (options as any)?.turbo || process.env.TURBOPACK === '1';
-
       if (!isTurbopack) {
         // Disable cache in dev bc people might move around loadTranslations() and loadDictionary() files
         if (process.env.NODE_ENV === 'development') {

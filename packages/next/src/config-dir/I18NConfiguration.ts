@@ -1,4 +1,5 @@
 import { GT, isSameLanguage, requiresTranslation } from 'generaltranslation';
+// const GT = require('generaltranslation').GT;
 import translationManager, { TranslationManager } from './TranslationManager';
 import {
   RenderMethod,
@@ -205,6 +206,7 @@ export default class I18NConfiguration {
     // Custom mapping
     this.customMapping = customMapping;
     this.gt = new GT({
+      apiKey,
       devApiKey,
       sourceLocale: defaultLocale,
       projectId,

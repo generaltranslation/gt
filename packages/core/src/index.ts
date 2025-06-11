@@ -3,13 +3,10 @@
 
 // ----- IMPORTS ----- //
 
-import _translateBatch from './api/batch/translateBatch';
 import _requiresTranslation from './locales/requiresTranslation';
 import _translate from './api/translate/translate';
 import _translateJsx from './api/jsx/translateJsx';
 import { _translateIcu } from './api/icu/translate';
-import _updateProjectTranslations from './projects/updateProjectTranslations';
-import _getProjectLocales from './projects/getProjectLocales';
 import _determineLocale from './locales/determineLocale';
 import {
   _formatNum,
@@ -44,9 +41,7 @@ import { defaultBaseUrl, libraryDefaultLocale } from './internal';
 import _isSameDialect from './locales/isSameDialect';
 import _isSupersetLocale from 'src/locales/isSupersetLocale';
 import { FullCustomMapping } from './locales/customLocaleMapping';
-
 // ----- CORE CLASS ----- //
-
 /**
  * Type representing the constructor parameters for the GT class.
  */
@@ -62,7 +57,7 @@ type GTConstructorParams = {
 /**
  * GT is the core driver for the General Translation library.
  */
-class GT {
+export class GT {
   apiKey: string;
   devApiKey: string;
   sourceLocale: string;
@@ -89,11 +84,11 @@ class GT {
   }: GTConstructorParams = {}) {
     const processUndefined = typeof process !== 'undefined';
     this.apiKey =
-      apiKey || (processUndefined ? process.env.GT_API_KEY || '' : '');
+      apiKey || (processUndefined ? process?.env?.GT_API_KEY || '' : '');
     this.devApiKey =
-      devApiKey || (processUndefined ? process.env.GT_DEV_API_KEY || '' : '');
+      devApiKey || (processUndefined ? process?.env?.GT_DEV_API_KEY || '' : '');
     this.projectId =
-      projectId || (processUndefined ? process.env.GT_PROJECT_ID || '' : '');
+      projectId || (processUndefined ? process?.env?.GT_PROJECT_ID || '' : '');
     this.sourceLocale = _standardizeLocale(sourceLocale) || '';
     this.baseUrl = baseUrl;
     this.customMapping = customMapping;
@@ -570,6 +565,3 @@ export function requiresTranslation(
 ): boolean {
   return _requiresTranslation(sourceLocale, targetLocale, approvedLocales);
 }
-
-// DEFAULT EXPORT
-export { GT };

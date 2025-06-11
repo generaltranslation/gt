@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import renderDefaultChildren from '../../rendering/renderDefaultChildren';
 import { addGTIdentifier, writeChildrenAsObjects } from '../../internal';
 import useGTContext from '../../provider/GTContext';

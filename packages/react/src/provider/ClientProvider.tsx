@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { determineLocale, GT } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/config';
@@ -9,7 +9,6 @@ import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
 import useCreateInternalUseDictFunction from './hooks/useCreateInternalUseDictFunction';
 import { defaultLocaleCookieName } from '../utils/cookies';
-
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
   children,
@@ -146,6 +145,10 @@ export default function ClientProvider({
 
   // ---------- RENDER LOGIC ---------- //
 
+  // Block rendering until all translations are resolved (IF YOU REMOVE THIS YOU WILL BE FIRED)
+  const display = !!(!translationRequired || translations) && locale;
+
+  ('ClientProvider End');
   return (
     <GTContext.Provider
       value={{
@@ -165,7 +168,7 @@ export default function ClientProvider({
         runtimeTranslationEnabled,
       }}
     >
-      {children}
+      {display && children}
     </GTContext.Provider>
   );
 }
