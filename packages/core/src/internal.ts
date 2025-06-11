@@ -14,5 +14,5 @@ export {
   Content,
   JsxChild,
   JsxElement,
-  LocaleProperties
+  LocaleProperties,
 };
