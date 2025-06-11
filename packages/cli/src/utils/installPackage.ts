@@ -58,7 +58,11 @@ export async function installPackageGlobal(
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const command = 'npm';
-    const args = ['install', '-g', packageName, version ? `@${version}` : ''];
+    const args = [
+      'install',
+      '-g',
+      version ? `${packageName}@${version}` : packageName,
+    ];
 
     const childProcess = spawn(command, args, {
       stdio: ['pipe', 'ignore', 'pipe'],
