@@ -1,6 +1,6 @@
 {
   "name": "generaltranslation",
-  "version": "6.3.2-alpha.2",
+  "version": "6.3.1",
   "description": "A language toolkit for AI developers",
   "main": "dist/index.cjs.min.cjs",
   "module": "dist/index.esm.min.mjs",
