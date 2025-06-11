@@ -5,7 +5,10 @@ import {
   RenderMethod,
   TranslationsObject,
 } from '../../types/types';
-import { getDictionaryEntry, isValidDictionaryEntry } from '../../dictionaries/getDictionaryEntry';
+import {
+  getDictionaryEntry,
+  isValidDictionaryEntry,
+} from '../../dictionaries/getDictionaryEntry';
 import getEntryAndMetadata from '../../dictionaries/getEntryAndMetadata';
 import {
   createInvalidDictionaryEntryWarning,

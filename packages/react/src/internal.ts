@@ -2,7 +2,10 @@ import flattenDictionary from './internal/flattenDictionary';
 import addGTIdentifier from './internal/addGTIdentifier';
 import writeChildrenAsObjects from './internal/writeChildrenAsObjects';
 import getPluralBranch from './branches/plurals/getPluralBranch';
-import { getDictionaryEntry, isValidDictionaryEntry } from './dictionaries/getDictionaryEntry';
+import {
+  getDictionaryEntry,
+  isValidDictionaryEntry,
+} from './dictionaries/getDictionaryEntry';
 import getEntryAndMetadata from './dictionaries/getEntryAndMetadata';
 import getVariableProps from './variables/_getVariableProps';
 import isVariableObject from './rendering/isVariableObject';

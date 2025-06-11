@@ -1,4 +1,5 @@
 import { isSameLanguage, requiresTranslation } from 'generaltranslation';
+import GT from 'generaltranslation';
 import translationManager, { TranslationManager } from './TranslationManager';
 import {
   RenderMethod,
@@ -24,6 +25,7 @@ import {
   defaultResetLocaleCookieName,
 } from '../utils/cookies';
 import { defaultLocaleHeaderName } from '../utils/headers';
+import { CustomMapping } from 'generaltranslation/types';
 type I18NConfigurationParams = {
   apiKey?: string;
   devApiKey?: string;
@@ -44,6 +46,7 @@ type I18NConfigurationParams = {
   batchInterval: number;
   headersAndCookies: HeadersAndCookies;
   _usingPlugin: boolean;
+  customMapping?: CustomMapping | undefined;
   [key: string]: any;
 };
 
@@ -110,6 +113,9 @@ export default class I18NConfiguration {
   private referrerLocaleCookieName: string;
   private localeRoutingEnabledCookieName: string;
   private resetLocaleCookieName: string;
+  // Custom mapping
+  private customMapping: CustomMapping | undefined;
+  private gt: GT;
   constructor({
     // Cloud integration
     apiKey,
@@ -136,6 +142,7 @@ export default class I18NConfiguration {
     _usingPlugin,
     // Other metadata
     headersAndCookies,
+    customMapping,
     ...metadata
   }: I18NConfigurationParams) {
     // ----- CLOUD INTEGRATION ----- //
@@ -196,6 +203,15 @@ export default class I18NConfiguration {
       fast: true,
       ...metadata,
     };
+    // Custom mapping
+    this.customMapping = customMapping;
+    this.gt = new GT({
+      devApiKey,
+      sourceLocale: defaultLocale,
+      projectId,
+      baseUrl: runtimeUrl,
+      customMapping,
+    });
     // Dictionary managers
     this._translationManager = translationManager;
     this._dictionaryManager = dictionaryManager;
@@ -261,6 +277,7 @@ export default class I18NConfiguration {
       referrerLocaleCookieName,
       localeCookieName,
       resetLocaleCookieName,
+      customMapping,
     } = this;
     return {
       projectId,
@@ -274,7 +291,16 @@ export default class I18NConfiguration {
       referrerLocaleCookieName,
       localeCookieName,
       resetLocaleCookieName,
+      customMapping,
     };
+  }
+
+  /**
+   * Gets the GT class instance
+   * @returns {GT} The GT class instance
+   */
+  getGTClass(): GT {
+    return this.gt;
   }
 
   // ----- LOCALES ----- //

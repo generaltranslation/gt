@@ -16,6 +16,8 @@ import {
   Num,
   Plural,
   Branch,
+  useLocaleProperties,
+  useGTClass,
 } from 'gt-react/client';
 
 export {
@@ -35,4 +37,6 @@ export {
   Num,
   Plural,
   Branch,
+  useGTClass,
+  useLocaleProperties,
 };

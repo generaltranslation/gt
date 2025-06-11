@@ -30,6 +30,7 @@ import {
   TranslationError,
   IcuTranslationResult,
   Metadata,
+  CustomMapping,
 } from './types';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
@@ -42,7 +43,7 @@ import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { defaultBaseUrl, libraryDefaultLocale } from './internal';
 import _isSameDialect from './locales/isSameDialect';
 import _isSupersetLocale from 'src/locales/isSupersetLocale';
-import { CustomMapping } from './locales/customLocaleMapping';
+import { FullCustomMapping } from './locales/customLocaleMapping';
 
 // ----- CORE CLASS ----- //
 
@@ -55,7 +56,7 @@ type GTConstructorParams = {
   sourceLocale?: string;
   projectId?: string;
   baseUrl?: string;
-  customMapping?: Record<string, LocaleProperties | string>;
+  customMapping?: CustomMapping;
 };
 
 /**
@@ -67,7 +68,7 @@ class GT {
   sourceLocale: string;
   projectId: string;
   baseUrl: string;
-  customMapping: Record<string, LocaleProperties | string>;
+  customMapping: CustomMapping;
 
   /**
    * Constructs an instance of the GT class.
@@ -235,13 +236,13 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
  *
  * @param {string} locale - A BCP-47 locale code.
  * @param {string} [defaultLocale = 'en'] - The locale for display names.
- * @param {CustomMapping} [customMapping] - Optional custom mapping of locale codes to names.
+ * @param {FullCustomMapping} [customMapping] - Optional custom mapping of locale codes to names.
  * @returns {string} The display name corresponding to the code.
  */
 export function getLocaleName(
   locale: string,
   defaultLocale: string = libraryDefaultLocale,
-  customMapping?: CustomMapping
+  customMapping?: FullCustomMapping
 ): string {
   return _getLocaleName(locale, defaultLocale, customMapping);
 }
@@ -255,7 +256,7 @@ export function getLocaleName(
  *
  * @param {string} locale - The locale code to get properties for (e.g., "de-AT").
  * @param {string} [defaultLocale=libraryDefaultLocale] - The default locale code for display names.
- * @param {CustomMapping} [customMapping] - Optional custom mapping of locale codes to properties.
+ * @param {FullCustomMapping} [customMapping] - Optional custom mapping of locale codes to properties.
  * @returns {LocaleProperties} - An object containing detailed information about the locale.
  *
  * @property {string} code - The full locale code, e.g., "de-AT".
@@ -283,7 +284,7 @@ export function getLocaleName(
 export function getLocaleProperties(
   locale: string,
   defaultLocale?: string,
-  customMapping?: CustomMapping
+  customMapping?: FullCustomMapping
 ): {
   // assume code = "de-AT", defaultLocale = "en-US"
   code: string; // "de-AT"
@@ -323,7 +324,10 @@ export function getLocaleProperties(
  * @param customMapping - An optional custom mapping of locale codes to emojis.
  * @returns The emoji representing the locale or its region, or a default emoji if no specific match is found.
  */
-export function getLocaleEmoji(locale: string, customMapping?: CustomMapping) {
+export function getLocaleEmoji(
+  locale: string,
+  customMapping?: FullCustomMapping
+) {
   return _getLocaleEmoji(locale, customMapping);
 }
 
@@ -568,5 +572,4 @@ export function requiresTranslation(
 }
 
 // DEFAULT EXPORT
-
 export default GT;

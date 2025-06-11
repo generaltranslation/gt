@@ -3,7 +3,7 @@ import { defaultEmoji } from './getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 import _getLocaleEmoji from './getLocaleEmoji';
 import { intlCache } from 'src/cache/IntlCache';
-import { CustomMapping } from './customLocaleMapping';
+import { CustomMapping, FullCustomMapping } from './customLocaleMapping';
 
 export type LocaleProperties = {
   // assume code = "de-AT", defaultLocale = "en-US"

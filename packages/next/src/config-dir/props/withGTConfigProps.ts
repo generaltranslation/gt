@@ -1,3 +1,4 @@
+import { CustomMapping } from 'generaltranslation/types';
 import { RenderMethod } from 'gt-react/internal';
 
 export type HeadersAndCookies = {
@@ -25,6 +26,8 @@ type withGTConfigProps = {
   defaultLocale?: string;
   ignoreBrowserLocales?: boolean;
   getLocale?: () => Promise<string>;
+  // Custom mapping
+  customMapping?: CustomMapping;
   // Rendering
   renderSettings?: {
     method: RenderMethod;
