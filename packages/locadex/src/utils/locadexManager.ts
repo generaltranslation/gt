@@ -182,8 +182,12 @@ export class LocadexManager {
       });
 
       this.mcpProcess.on('error', async (error) => {
-        logger.error(`MCP server failed to start: ${error.message}`);
-        await exit(1);
+        if (error.name === 'AbortError') {
+          logger.debugMessage('MCP server was closed');
+        } else {
+          logger.error(`MCP server failed to start: ${error.message}`);
+          await exit(1);
+        }
       });
 
       this.mcpProcess.on('exit', async (code, signal) => {
@@ -193,7 +197,7 @@ export class LocadexManager {
         }
         if (signal) {
           logger.error(`MCP server was killed with signal ${signal}`);
-          await exit(1);
+          await exit(0);
         }
       });
     }

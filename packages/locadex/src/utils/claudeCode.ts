@@ -117,7 +117,12 @@ export class ClaudeCodeRunner {
             env.ANTHROPIC_API_KEY = this.options.apiKey;
           }
           logger.debugMessage(
-            `[${this.id}] Spawning Claude Code with args: ${args.join(' ')}`
+            `[${this.id}] Spawning Claude Code with additional args: ${{
+              maxTurns: options.maxTurns,
+              sessionId: options.sessionId,
+              mcpConfig: this.mcpConfig,
+              additionalAllowedTools: options.additionalAllowedTools,
+            }}`
           );
 
           const claude = spawn('claude', args, {
