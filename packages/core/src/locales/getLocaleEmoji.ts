@@ -1,5 +1,9 @@
 import { intlCache } from '../cache/IntlCache';
-import { CustomMapping, getCustomProperty } from './customLocaleMapping';
+import {
+  CustomMapping,
+  FullCustomMapping,
+  getCustomProperty,
+} from './customLocaleMapping';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 
 /**

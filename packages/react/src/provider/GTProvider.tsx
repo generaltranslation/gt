@@ -1,39 +1,23 @@
-import React, { useMemo, useEffect, useState } from 'react';
-import { isSameLanguage, requiresTranslation } from 'generaltranslation';
+import { useMemo } from 'react';
 import { GTContext } from './GTContext';
-import {
-  CustomLoader,
-  Dictionary,
-  RenderMethod,
-  TranslationsObject,
-} from '../types/types';
 import {
   defaultCacheUrl,
   defaultRuntimeApiUrl,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
-import {
-  apiKeyInProductionError,
-  APIKeyMissingWarn,
-  createUnsupportedLocalesWarning,
-  customLoadTranslationsError,
-  devApiKeyProductionError,
-  projectIdMissingWarning,
-} from '../errors/createErrors';
-import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
-import { defaultRenderSettings } from './rendering/defaultRenderSettings';
-import { useDetermineLocale } from '../hooks/internal/useDetermineLocale';
+import useRuntimeTranslation from './hooks/useRuntimeTranslation';
+import { defaultRenderSettings } from '../rendering/defaultRenderSettings';
 import { readAuthFromEnv } from '../utils/utils';
-import fetchTranslations from '../utils/fetchTranslations';
-import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
-import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
+import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
+import useCreateInternalUseDictFunction from './hooks/useCreateInternalUseDictFunction';
 import { isSSREnabled } from './helpers/isSSREnabled';
 import { defaultLocaleCookieName } from '../utils/cookies';
-import loadDictionaryHelper from './helpers/loadDictionaryHelper';
-import mergeDictionaries from './helpers/mergeDictionaries';
-import { GTConfig } from '../types/config';
-
+import { GTProviderProps } from '../types/config';
+import { useLocaleData } from './hooks/useLocaleData';
+import { useErrorChecks } from './hooks/useErrorChecks';
+import { GT } from 'generaltranslation';
+import { useLoadDictionary } from './hooks/useLoadDictionary';
+import { useLoadTranslations } from './hooks/useLoadTranslations';
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -75,313 +59,107 @@ export default function GTProvider({
   fallback = undefined,
   translations: _translations = null,
   _versionId,
+  customMapping = config?.customMapping,
   ...metadata
-}: {
-  children?: React.ReactNode;
-  projectId?: string;
-  devApiKey?: string;
-  dictionary?: any;
-  locales?: string[];
-  defaultLocale?: string;
-  locale?: string;
-  cacheUrl?: string;
-  runtimeUrl?: string;
-  renderSettings?: {
-    method: RenderMethod;
-    timeout?: number;
-  };
-  _versionId?: string;
-  ssr?: boolean;
-  localeCookieName?: string;
-  translations?: TranslationsObject | null;
-  loadDictionary?: CustomLoader;
-  loadTranslations?: CustomLoader;
-  config?: GTConfig;
-  fallback?: React.ReactNode;
-  [key: string]: any;
-}): React.JSX.Element {
-  // ---------- SANITIZATION ---------- //
+}: GTProviderProps) {
+  // ---------- PROPS ---------- //
 
-  // Read env
+  // Read env to get projectId and API key
   const { projectId, devApiKey } = readAuthFromEnv(_projectId, _devApiKey);
 
-  // Locale standardization
-  locales = useMemo(() => {
-    return Array.from(new Set([defaultLocale, ...locales]));
-  }, [defaultLocale, locales]);
-
-  // Get locale
-  const [locale, setLocale] = useDetermineLocale({
+  // Get locale data including
+  // locale - the user's locale
+  // setLocale - function to set the user's locale
+  // locales - approved locales for the project
+  // translationRequired - whether translation is required
+  // dialectTranslationRequired - whether dialect translation (e.g. en-US -> en-GB) is required
+  const {
+    locale,
+    setLocale,
+    locales: approvedLocales,
+    translationRequired,
+    dialectTranslationRequired,
+  } = useLocaleData({
+    _locale,
     defaultLocale,
     locales,
-    locale: _locale,
     ssr,
     localeCookieName,
   });
 
-  // Translation at runtime during development is enabled
-  const runtimeTranslationEnabled = useMemo(
+  // Define the GT instance
+  // Used for custom mapping and as a driver for the runtime translation
+  const gt = useMemo(
     () =>
-      !!(
-        projectId &&
-        runtimeUrl &&
-        devApiKey &&
-        process.env.NODE_ENV === 'development'
-      ),
-    [projectId, runtimeUrl, devApiKey]
+      new GT({
+        devApiKey,
+        sourceLocale: defaultLocale,
+        projectId,
+        baseUrl: runtimeUrl,
+        customMapping,
+      }),
+    [devApiKey, defaultLocale, projectId, runtimeUrl, customMapping]
   );
 
-  // Loaders
-  const loadTranslationsType = useMemo(
-    () =>
-      (loadTranslations && 'custom') ||
-      (cacheUrl && projectId && 'default') ||
-      'disabled',
-    [loadTranslations]
-  );
+  // Determine the type of translation loading
+  // custom - custom loading function provided
+  // default - using GT provided cache
+  // disabled - no translation loading
+  const loadTranslationsType =
+    (loadTranslations && 'custom') ||
+    (cacheUrl && projectId && 'default') ||
+    'disabled';
 
-  // ---------- SET UP DICTIONARY ---------- //
+  // ---------- LOAD DICTIONARY ---------- //
 
-  const [dictionary, setDictionary] = useState<Dictionary | undefined>(
-    _dictionary
-  );
+  const dictionary = useLoadDictionary({
+    _dictionary,
+    loadDictionary,
+    locale,
+    defaultLocale,
+  });
 
-  // Resolve dictionary when not provided, but using custom dictionary loader
-  useEffect(() => {
-    // Early return if dictionary is provided or not loading translation dictionary
-    if (!loadDictionary) return;
+  // ---------- ERROR AND WARNING CHECKS ---------- //
 
-    let storeResults = true;
-
-    (async () => {
-      // Load dictionary for default locale
-      const defaultLocaleDictionary =
-        (await loadDictionaryHelper(defaultLocale, loadDictionary)) || {};
-
-      // Load dictionary for locale
-      const localeDictionary =
-        (await loadDictionaryHelper(locale, loadDictionary)) || {};
-
-      // Merge dictionaries
-      const mergedDictionary = mergeDictionaries(
-        defaultLocaleDictionary,
-        localeDictionary
-      );
-
-      // Update dictionary
-      if (storeResults) {
-        setDictionary(mergedDictionary || {});
-      }
-    })();
-
-    // cancel load if a dep changes
-    return () => {
-      storeResults = false;
-    };
-  }, [loadDictionary, locale, defaultLocale]);
-
-  // ---------- MEMOIZED CHECKS ---------- //
-
-  useMemo(() => {
-    // Check: no devApiKey in production
-    if (process.env.NODE_ENV === 'production' && devApiKey) {
-      // When SSR is disabled, throw an error
-      if (!ssr) throw new Error(apiKeyInProductionError);
-      // When SSR is enabled, only error when detecting a dev api key
-      if (devApiKey.startsWith('gtx-dev-'))
-        throw new Error(devApiKeyProductionError);
-    }
-
-    // Check: projectId missing while using cache/runtime in dev
-    if (
-      loadTranslationsType !== 'custom' &&
-      (cacheUrl || runtimeUrl) &&
-      !projectId &&
-      process.env.NODE_ENV === 'development'
-    ) {
-      console.warn(projectIdMissingWarning);
-    }
-
-    // Check: An API key is required for runtime translation
-    if (
-      projectId && // must have projectId for this check to matter anyways
-      runtimeUrl &&
-      loadTranslationsType !== 'custom' && // this usually conincides with not using runtime tx
-      !devApiKey &&
-      process.env.NODE_ENV === 'development'
-    ) {
-      console.warn(APIKeyMissingWarn);
-    }
-
-    // Check: if using GT infrastructure, warn about unsupported locales
-    if (
-      runtimeUrl === defaultRuntimeApiUrl ||
-      (cacheUrl === defaultCacheUrl && loadTranslationsType === 'default')
-    ) {
-      const warningLocales = (locales || locales).filter(
-        (locale) => !getSupportedLocale(locale)
-      );
-      if (warningLocales.length) {
-        console.warn(createUnsupportedLocalesWarning(warningLocales));
-      }
-    }
-  }, [
-    process.env.NODE_ENV,
+  useErrorChecks({
     devApiKey,
+    projectId,
+    runtimeUrl,
     loadTranslationsType,
     cacheUrl,
-    runtimeUrl,
-    projectId,
     locales,
-  ]);
-
-  // ---------- FLAGS ---------- //
-
-  const [translationRequired, dialectTranslationRequired] = useMemo(() => {
-    // User locale is not default locale or equivalent
-    const translationRequired = requiresTranslation(
-      defaultLocale,
-      locale,
-      locales
-    );
-
-    // User locale is not default locale but is a dialect of the same language
-    const dialectTranslationRequired =
-      translationRequired && isSameLanguage(defaultLocale, locale);
-
-    return [translationRequired, dialectTranslationRequired];
-  }, [defaultLocale, locale, locales]);
+  });
 
   // ---------- TRANSLATION STATE ---------- //
 
-  /** Key for translation tracking:
-   * Cache Loading            -> translations = null
-   * Cache Fail (for locale)  -> translations = {}
-   * Cache Fail (for hash)    -> translations[hash] = undefined
-   *
-   * API Loading              -> translations[hash] = TranslationLoading
-   * API Fail (for batch)     -> translations[hash] = TranslationError
-   * API Fail (for hash)      -> translations[hash] = TranslationError
-   *
-   * Success (Cache/API)      -> translations[hash] = TranslationSuccess
-   *
-   * Possible scenarios:
-   * Cache Loading -> Success
-   * Cache Loading -> Cache Fail -> API Loading -> Success
-   * Cache Loading -> Cache Fail -> API Loading -> API Fail
-   */
-
-  const [translations, setTranslations] = useState<TranslationsObject | null>(
-    _translations ||
-      (translationRequired && loadTranslationsType !== 'disabled')
-      ? null
-      : {}
-  );
-
-  // Reset translations if locale changes (null to trigger a new cache fetch)
-  useEffect(
-    () =>
-      setTranslations(
-        translationRequired && loadTranslationsType !== 'disabled' ? null : {}
-      ),
-    [locale, loadTranslationsType]
-  );
-
-  // Setup runtime translation
-  const { registerContentForTranslation, registerJsxForTranslation } =
-    useRuntimeTranslation({
-      locale,
-      versionId: _versionId,
-      projectId,
-      runtimeTranslationEnabled,
-      defaultLocale,
-      devApiKey,
-      runtimeUrl,
-      renderSettings,
-      setTranslations,
-      ...metadata,
-    });
-
-  // ---------- ATTEMPT TO LOAD TRANSLATIONS ---------- //
-
-  useEffect(() => {
-    // Early return if no need to translate
-    if (
-      translations ||
-      !translationRequired ||
-      loadTranslationsType === 'disabled'
-    )
-      return;
-
-    // Fetch translations
-    let storeResults = true;
-    (async () => {
-      let result;
-      switch (loadTranslationsType) {
-        case 'custom':
-          // check is redundant, but makes ts happy
-          if (loadTranslations) {
-            try {
-              result = await loadTranslations(locale);
-            } catch (error) {
-              console.error(customLoadTranslationsError(locale), error);
-            }
-          }
-          break;
-        case 'default':
-          try {
-            result = await fetchTranslations({
-              cacheUrl,
-              projectId,
-              locale,
-              versionId: _versionId,
-            });
-          } catch (error) {
-            console.error(error);
-          }
-          break;
-      }
-
-      // fallback to empty object if failed or disabled
-      if (!result) {
-        result = {};
-      }
-
-      // Parse
-      try {
-        result = Object.entries(result).reduce(
-          (
-            translationsAcc: Record<string, any>,
-            [hash, target]: [string, any]
-          ) => {
-            translationsAcc[hash] = { state: 'success', target };
-            return translationsAcc;
-          },
-          {}
-        );
-      } catch (error) {
-        console.error(error);
-      }
-
-      // Record results
-      if (storeResults) {
-        setTranslations(result); // not classified as a translation error, because we can still fetch from API
-      }
-    })();
-
-    // Cancel fetch if a dep changes
-    return () => {
-      storeResults = false;
-    };
-  }, [
-    translations,
+  const { translations, setTranslations } = useLoadTranslations({
+    _translations,
     translationRequired,
     loadTranslationsType,
+    loadTranslations,
+    locale,
     cacheUrl,
     projectId,
-    locale,
     _versionId,
-  ]);
+  });
+
+  // ------- RUNTIME TRANSLATION ----- //
+
+  const {
+    registerContentForTranslation,
+    registerJsxForTranslation,
+    runtimeTranslationEnabled,
+  } = useRuntimeTranslation({
+    locale,
+    versionId: _versionId,
+    projectId,
+    defaultLocale,
+    devApiKey,
+    runtimeUrl,
+    renderSettings,
+    setTranslations,
+    ...metadata,
+  });
 
   // ---------- USE GT ---------- //
 
@@ -418,13 +196,14 @@ export default function GTProvider({
   return (
     <GTContext.Provider
       value={{
+        gt,
         registerContentForTranslation,
         registerJsxForTranslation,
         _internalUseGTFunction,
         _internalUseDictFunction,
         runtimeTranslationEnabled,
         locale,
-        locales,
+        locales: approvedLocales,
         setLocale,
         defaultLocale,
         translations,

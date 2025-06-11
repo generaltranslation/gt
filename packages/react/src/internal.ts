@@ -2,17 +2,18 @@ import flattenDictionary from './internal/flattenDictionary';
 import addGTIdentifier from './internal/addGTIdentifier';
 import writeChildrenAsObjects from './internal/writeChildrenAsObjects';
 import getPluralBranch from './branches/plurals/getPluralBranch';
-import getDictionaryEntry, {
+import {
+  getDictionaryEntry,
   isValidDictionaryEntry,
-} from './provider/helpers/getDictionaryEntry';
-import getEntryAndMetadata from './provider/helpers/getEntryAndMetadata';
+} from './dictionaries/getDictionaryEntry';
+import getEntryAndMetadata from './dictionaries/getEntryAndMetadata';
 import getVariableProps from './variables/_getVariableProps';
-import isVariableObject from './provider/helpers/isVariableObject';
+import isVariableObject from './rendering/isVariableObject';
 import getVariableName from './variables/getVariableName';
-import renderDefaultChildren from './provider/rendering/renderDefaultChildren';
-import renderTranslatedChildren from './provider/rendering/renderTranslatedChildren';
-import { defaultRenderSettings } from './provider/rendering/defaultRenderSettings';
-import renderSkeleton from './provider/rendering/renderSkeleton';
+import renderDefaultChildren from './rendering/renderDefaultChildren';
+import renderTranslatedChildren from './rendering/renderTranslatedChildren';
+import { defaultRenderSettings } from './rendering/defaultRenderSettings';
+import renderSkeleton from './rendering/renderSkeleton';
 import {
   Dictionary,
   RenderMethod,
@@ -41,9 +42,10 @@ import {
   VariableProps,
 } from './types/types';
 
-import { GTContextType, ClientProviderProps } from './types/providers';
+import { GTContextType } from './types/context';
+import { ClientProviderProps } from './types/config';
 import { defaultLocaleCookieName } from './utils/cookies';
-import mergeDictionaries from './provider/helpers/mergeDictionaries';
+import mergeDictionaries from './dictionaries/mergeDictionaries';
 
 export {
   addGTIdentifier,

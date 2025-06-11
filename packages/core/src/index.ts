@@ -3,13 +3,10 @@
 
 // ----- IMPORTS ----- //
 
-import _translateBatch from './api/batch/translateBatch';
 import _requiresTranslation from './locales/requiresTranslation';
 import _translate from './api/translate/translate';
 import _translateJsx from './api/jsx/translateJsx';
 import { _translateIcu } from './api/icu/translate';
-import _updateProjectTranslations from './projects/updateProjectTranslations';
-import _getProjectLocales from './projects/getProjectLocales';
 import _determineLocale from './locales/determineLocale';
 import {
   _formatNum,
@@ -30,6 +27,7 @@ import {
   TranslationError,
   IcuTranslationResult,
   Metadata,
+  CustomMapping,
 } from './types';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
@@ -41,11 +39,9 @@ import { _getLocaleName } from './locales/getLocaleName';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { defaultBaseUrl, libraryDefaultLocale } from './internal';
 import _isSameDialect from './locales/isSameDialect';
-import _isSupersetLocale from 'src/locales/isSupersetLocale';
-import { CustomMapping } from './locales/customLocaleMapping';
-
+import _isSupersetLocale from './locales/isSupersetLocale';
+import { FullCustomMapping } from './locales/customLocaleMapping';
 // ----- CORE CLASS ----- //
-
 /**
  * Type representing the constructor parameters for the GT class.
  */
@@ -55,19 +51,19 @@ type GTConstructorParams = {
   sourceLocale?: string;
   projectId?: string;
   baseUrl?: string;
-  customMapping?: Record<string, LocaleProperties | string>;
+  customMapping?: CustomMapping;
 };
 
 /**
  * GT is the core driver for the General Translation library.
  */
-class GT {
+export class GT {
   apiKey: string;
   devApiKey: string;
   sourceLocale: string;
   projectId: string;
   baseUrl: string;
-  customMapping: Record<string, LocaleProperties | string>;
+  customMapping: CustomMapping;
 
   /**
    * Constructs an instance of the GT class.
@@ -86,9 +82,13 @@ class GT {
     baseUrl = defaultBaseUrl,
     customMapping = {},
   }: GTConstructorParams = {}) {
-    this.apiKey = apiKey || process.env.GT_API_KEY || '';
-    this.devApiKey = devApiKey || process.env.GT_DEV_API_KEY || '';
-    this.projectId = projectId || process.env.GT_PROJECT_ID || '';
+    const processUndefined = typeof process !== 'undefined';
+    this.apiKey =
+      apiKey || (processUndefined ? process.env?.GT_API_KEY || '' : '');
+    this.devApiKey =
+      devApiKey || (processUndefined ? process.env?.GT_DEV_API_KEY || '' : '');
+    this.projectId =
+      projectId || (processUndefined ? process.env?.GT_PROJECT_ID || '' : '');
     this.sourceLocale = _standardizeLocale(sourceLocale) || '';
     this.baseUrl = baseUrl;
     this.customMapping = customMapping;
@@ -231,13 +231,13 @@ export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
  *
  * @param {string} locale - A BCP-47 locale code.
  * @param {string} [defaultLocale = 'en'] - The locale for display names.
- * @param {CustomMapping} [customMapping] - Optional custom mapping of locale codes to names.
+ * @param {FullCustomMapping} [customMapping] - Optional custom mapping of locale codes to names.
  * @returns {string} The display name corresponding to the code.
  */
 export function getLocaleName(
   locale: string,
   defaultLocale: string = libraryDefaultLocale,
-  customMapping?: CustomMapping
+  customMapping?: FullCustomMapping
 ): string {
   return _getLocaleName(locale, defaultLocale, customMapping);
 }
@@ -251,7 +251,7 @@ export function getLocaleName(
  *
  * @param {string} locale - The locale code to get properties for (e.g., "de-AT").
  * @param {string} [defaultLocale=libraryDefaultLocale] - The default locale code for display names.
- * @param {CustomMapping} [customMapping] - Optional custom mapping of locale codes to properties.
+ * @param {FullCustomMapping} [customMapping] - Optional custom mapping of locale codes to properties.
  * @returns {LocaleProperties} - An object containing detailed information about the locale.
  *
  * @property {string} code - The full locale code, e.g., "de-AT".
@@ -279,7 +279,7 @@ export function getLocaleName(
 export function getLocaleProperties(
   locale: string,
   defaultLocale?: string,
-  customMapping?: CustomMapping
+  customMapping?: FullCustomMapping
 ): {
   // assume code = "de-AT", defaultLocale = "en-US"
   code: string; // "de-AT"
@@ -319,7 +319,10 @@ export function getLocaleProperties(
  * @param customMapping - An optional custom mapping of locale codes to emojis.
  * @returns The emoji representing the locale or its region, or a default emoji if no specific match is found.
  */
-export function getLocaleEmoji(locale: string, customMapping?: CustomMapping) {
+export function getLocaleEmoji(
+  locale: string,
+  customMapping?: FullCustomMapping
+) {
   return _getLocaleEmoji(locale, customMapping);
 }
 
@@ -562,7 +565,3 @@ export function requiresTranslation(
 ): boolean {
   return _requiresTranslation(sourceLocale, targetLocale, approvedLocales);
 }
-
-// DEFAULT EXPORT
-
-export default GT;

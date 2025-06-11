@@ -1,9 +1,9 @@
 import { libraryDefaultLocale } from '../internal';
-import _getLocale, { defaultEmoji } from './getLocaleEmoji';
+import { defaultEmoji } from './getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 import _getLocaleEmoji from './getLocaleEmoji';
 import { intlCache } from 'src/cache/IntlCache';
-import { CustomMapping } from './customLocaleMapping';
+import { CustomMapping, FullCustomMapping } from './customLocaleMapping';
 
 export type LocaleProperties = {
   // assume code = "de-AT", defaultLocale = "en-US"
@@ -56,13 +56,15 @@ function createCustomLocaleProperties(
   customMapping?: CustomMapping
 ): Partial<LocaleProperties> | undefined {
   if (customMapping) {
-    const merged: Partial<LocaleProperties> = {};
+    let merged: Partial<LocaleProperties> = {};
     for (const l of lArray) {
       const value = customMapping[l];
-      if (typeof value === 'string') {
-        merged.name = value;
-      } else if (value) {
-        Object.assign(merged, value);
+      if (value) {
+        if (typeof value === 'string') {
+          merged.name ||= value;
+        } else if (value) {
+          merged = { ...value, ...merged };
+        }
       }
     }
     return merged;
@@ -164,13 +166,16 @@ export default function _getLocaleProperties(
       nativeLanguageNames.of(languageCode) ||
       locale; // "Deutsch"
 
-    const nameWithRegionCode = baseRegion
-      ? `${languageName} (${baseRegion})`
-      : languageName; // German (AT)
+    const nameWithRegionCode =
+      customLocaleProperties?.nameWithRegionCode || baseRegion
+        ? `${languageName} (${baseRegion})`
+        : languageName; // German (AT)
     const nativeNameWithRegionCode =
+      customLocaleProperties?.nativeNameWithRegionCode ||
       (baseRegion
         ? `${nativeLanguageName} (${baseRegion})`
-        : nativeLanguageName) || nameWithRegionCode; // "Deutsch (AT)"
+        : nativeLanguageName) ||
+      nameWithRegionCode; // "Deutsch (AT)"
 
     // Region names (default and native)
 
@@ -241,7 +246,7 @@ export default function _getLocaleProperties(
       nativeScriptName,
       emoji,
     };
-  } catch (error) {
+  } catch {
     let code = _isValidLocale(locale) ? _standardizeLocale(locale) : locale;
     const codeParts = code?.split('-');
     let languageCode = codeParts?.[0] || code || '';

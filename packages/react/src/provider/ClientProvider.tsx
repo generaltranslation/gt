@@ -1,15 +1,14 @@
 'use client';
 import * as React from 'react';
-import { useEffect, useState } from 'react';
-import { determineLocale } from 'generaltranslation';
+import { useEffect, useMemo, useState } from 'react';
+import { determineLocale, GT } from 'generaltranslation';
 import { GTContext } from './GTContext';
-import { ClientProviderProps } from '../types/providers';
+import { ClientProviderProps } from '../types/config';
 import { TranslationsObject } from '../types/types';
-import useRuntimeTranslation from '../hooks/internal/useRuntimeTranslation';
-import useCreateInternalUseGTFunction from '../hooks/internal/useCreateInternalUseGTFunction';
-import useCreateInternalUseDictFunction from '../hooks/internal/useCreateInternalUseDictFunction';
+import useRuntimeTranslation from './hooks/useRuntimeTranslation';
+import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
+import useCreateInternalUseDictFunction from './hooks/useCreateInternalUseDictFunction';
 import { defaultLocaleCookieName } from '../utils/cookies';
-
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
   children,
@@ -28,8 +27,23 @@ export default function ClientProvider({
   runtimeTranslationEnabled,
   resetLocaleCookieName,
   localeCookieName = defaultLocaleCookieName,
+  customMapping,
 }: ClientProviderProps): React.JSX.Element {
   // ---------- SET UP ---------- //
+
+  // Define the GT instance
+  // Used for custom mapping and as a driver for the runtime translation
+  const gt = useMemo(
+    () =>
+      new GT({
+        devApiKey,
+        sourceLocale: defaultLocale,
+        projectId,
+        baseUrl: runtimeUrl || undefined,
+        customMapping,
+      }),
+    [devApiKey, defaultLocale, projectId, runtimeUrl, customMapping]
+  );
 
   // ----- TRANSLATIONS STATE ----- //
 
@@ -87,6 +101,7 @@ export default function ClientProvider({
   }, [initialTranslations]);
 
   // ---------- TRANSLATION METHODS ---------- //
+  // TODO: do this in a plugin
 
   const { registerContentForTranslation, registerJsxForTranslation } =
     useRuntimeTranslation({
@@ -130,12 +145,14 @@ export default function ClientProvider({
 
   // ---------- RENDER LOGIC ---------- //
 
-  // Block rendering until all translations are resolved
+  // Block rendering until all translations are resolved (IF YOU REMOVE THIS YOU WILL BE FIRED)
   const display = !!(!translationRequired || translations) && locale;
 
+  ('ClientProvider End');
   return (
     <GTContext.Provider
       value={{
+        gt,
         registerContentForTranslation,
         registerJsxForTranslation,
         setLocale,

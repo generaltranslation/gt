@@ -1,4 +1,4 @@
-import { Dictionary } from '../../types/types';
+import { Dictionary } from '../types/types';
 
 const isPrimitiveOrArray = (value: unknown): boolean =>
   typeof value === 'string' || Array.isArray(value);

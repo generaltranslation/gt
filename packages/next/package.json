@@ -14,7 +14,7 @@
   ],
   "dependencies": {
     "@generaltranslation/supported-locales": "^2.0.10",
-    "generaltranslation": "^6.2.10",
+    "generaltranslation": "^6.3.1",
     "gt-react": "^9.2.24"
   },
   "scripts": {

@@ -102,3 +102,5 @@ export type TranslationError = {
     key: string;
   };
 };
+
+export type { CustomMapping } from './locales/customLocaleMapping';

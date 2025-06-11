@@ -1,6 +1,6 @@
 import { GTContext } from './provider/GTContext';
-import useRuntimeTranslation from './hooks/internal/useRuntimeTranslation';
-import renderVariable from './provider/rendering/renderVariable';
+import useRuntimeTranslation from './provider/hooks/useRuntimeTranslation';
+import renderVariable from './rendering/renderVariable';
 import ClientProvider from './provider/ClientProvider';
 import Branch from './branches/Branch';
 import Plural from './branches/plurals/Plural';
@@ -18,6 +18,8 @@ import GTProvider from './provider/GTProvider';
 import useSetLocale from './hooks/useSetLocale';
 import useLocales from './hooks/useLocales';
 import useLocaleSelector from './hooks/useLocaleSelector';
+import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
+
 export {
   GTContext,
   GTProvider,
@@ -31,6 +33,8 @@ export {
   useLocales,
   useSetLocale,
   useLocaleSelector,
+  useGTClass,
+  useLocaleProperties,
   T,
   Var,
   Num,

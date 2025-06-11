@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import useLocale from '../hooks/useLocale';
 import useLocales from '../hooks/useLocales';
 import useSetLocale from '../hooks/useSetLocale';
-import { getLocaleProperties } from 'generaltranslation';
+import { useGTClass } from './useGTClass';
 
 /**
  * Gets the list of properties for using a locale selector.
@@ -11,9 +11,10 @@ import { getLocaleProperties } from 'generaltranslation';
  */
 export default function useLocaleSelector(locales?: string[]) {
   // Retrieve the locale, locales, and setLocale function
-  const locale = useLocale();
   const contextLocales = useLocales();
+  const locale = useLocale();
   const setLocale = useSetLocale();
+  const gt = useGTClass();
 
   // sort
   const sortedLocales = useMemo(() => {
@@ -22,8 +23,8 @@ export default function useLocaleSelector(locales?: string[]) {
     }
     const res = contextLocales.sort((a, b) =>
       new Intl.Collator().compare(
-        getLocaleProperties(a).nativeNameWithRegionCode,
-        getLocaleProperties(b).nativeNameWithRegionCode
+        gt.getLocaleProperties(a).nativeNameWithRegionCode,
+        gt.getLocaleProperties(b).nativeNameWithRegionCode
       )
     );
     return res;

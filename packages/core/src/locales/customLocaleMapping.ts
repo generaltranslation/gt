@@ -1,6 +1,7 @@
 import { LocaleProperties } from './getLocaleProperties';
 
-export type CustomMapping = Record<string, string | LocaleProperties>;
+export type FullCustomMapping = Record<string, LocaleProperties>;
+export type CustomMapping = Record<string, string | Partial<LocaleProperties>>;
 
 export const getCustomProperty = (
   customMapping: CustomMapping,

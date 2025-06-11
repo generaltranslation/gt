@@ -1,6 +1,6 @@
 import { getLocaleProperties } from 'generaltranslation';
-import { dictionaryMissingWarning } from '../../errors/createErrors';
-import { CustomLoader, Dictionary } from '../../types/types';
+import { dictionaryMissingWarning } from '../errors/createErrors';
+import { CustomLoader, Dictionary } from '../types/types';
 
 export default async function loadDictionaryHelper(
   locale: string,

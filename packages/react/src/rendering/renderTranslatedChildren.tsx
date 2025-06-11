@@ -3,13 +3,13 @@ import {
   RenderVariable,
   TranslatedChildren,
   TranslatedElement,
-} from '../../types/types';
-import isVariableObject from '../helpers/isVariableObject';
-import getGTProp from '../helpers/getGTProp';
-import getVariableProps from '../../variables/_getVariableProps';
+} from '../types/types';
+import isVariableObject from './isVariableObject';
+import getGTProp from './getGTProp';
+import getVariableProps from '../variables/_getVariableProps';
 import renderDefaultChildren from './renderDefaultChildren';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import getPluralBranch from '../../branches/plurals/getPluralBranch';
+import getPluralBranch from '../branches/plurals/getPluralBranch';
 
 function renderTranslatedElement({
   sourceElement,

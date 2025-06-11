@@ -3,13 +3,12 @@ import {
   RenderMethod,
   InlineTranslationOptions,
   DictionaryTranslationOptions,
-  Dictionary,
-  DictionaryObject,
 } from './types';
-
 import { TranslateContentCallback, TranslateChildrenCallback } from './runtime';
+import { GT } from 'generaltranslation';
 
 export type GTContextType = {
+  gt: GT;
   registerContentForTranslation: TranslateContentCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
   _internalUseGTFunction: (
@@ -30,28 +29,4 @@ export type GTContextType = {
   dialectTranslationRequired: boolean;
   renderSettings: { method: RenderMethod; timeout?: number };
   projectId?: string;
-};
-
-export type ClientProviderProps = {
-  children: any;
-  dictionary: Dictionary;
-  initialTranslations: TranslationsObject;
-  locale: string;
-  locales: string[];
-  _versionId?: string;
-  dictionaryEnabled?: boolean;
-  defaultLocale: string;
-  translationRequired: boolean;
-  dialectTranslationRequired: boolean;
-  renderSettings: {
-    method: RenderMethod;
-    timeout?: number;
-  };
-  runtimeTranslationEnabled: boolean;
-  projectId?: string;
-  devApiKey?: string;
-  runtimeUrl?: string | null;
-  gtServicesEnabled?: boolean;
-  localeCookieName?: string;
-  resetLocaleCookieName: string;
 };
