@@ -2,7 +2,7 @@ import T from './server-dir/buildtime/T';
 import tx from './server-dir/runtime/tx';
 import getLocale from './request/getLocale';
 import getI18NConfig from './config-dir/getI18NConfig';
-import getDict from './server-dir/buildtime/getDict';
+import getTranslations from './server-dir/buildtime/getTranslations';
 import GTProvider from './provider/GTProvider';
 import Tx from './server-dir/runtime/_Tx';
 import getGT from './server-dir/buildtime/getGT';
@@ -27,5 +27,6 @@ export {
   tx,
   Tx,
   getLocale, // getDefaultLocale
-  getDict,
+  getTranslations,
+  getTranslations as getDict,
 };

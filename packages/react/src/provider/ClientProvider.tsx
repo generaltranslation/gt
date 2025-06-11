@@ -7,7 +7,7 @@ import { ClientProviderProps } from '../types/config';
 import { TranslationsObject } from '../types/types';
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
-import useCreateInternalUseDictFunction from './hooks/useCreateInternalUseDictFunction';
+import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
 import { defaultLocaleCookieName } from '../utils/cookies';
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -131,17 +131,18 @@ export default function ClientProvider({
 
   // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
 
-  const _internalUseDictFunction = useCreateInternalUseDictFunction(
-    dictionary,
-    translations,
-    locale,
-    defaultLocale,
-    translationRequired,
-    dialectTranslationRequired,
-    runtimeTranslationEnabled,
-    registerContentForTranslation,
-    renderSettings
-  );
+  const _internaluseTranslationsFunction =
+    useCreateInternalUseTranslationsFunction(
+      dictionary,
+      translations,
+      locale,
+      defaultLocale,
+      translationRequired,
+      dialectTranslationRequired,
+      runtimeTranslationEnabled,
+      registerContentForTranslation,
+      renderSettings
+    );
 
   // ---------- RENDER LOGIC ---------- //
 
@@ -157,7 +158,7 @@ export default function ClientProvider({
         registerJsxForTranslation,
         setLocale,
         _internalUseGTFunction,
-        _internalUseDictFunction,
+        _internaluseTranslationsFunction,
         locale,
         locales,
         defaultLocale,

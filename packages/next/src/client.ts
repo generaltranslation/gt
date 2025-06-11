@@ -2,7 +2,6 @@
 import {
   T,
   useGT,
-  useDict,
   useLocale,
   useDefaultLocale,
   LocaleSelector,
@@ -18,6 +17,7 @@ import {
   Branch,
   useLocaleProperties,
   useGTClass,
+  useTranslations,
 } from 'gt-react/client';
 
 export {
@@ -28,7 +28,8 @@ export {
   useLocales,
   useSetLocale,
   useDefaultLocale,
-  useDict,
+  useTranslations,
+  useTranslations as useDict,
   LocaleSelector,
   useLocaleSelector,
   Var,
