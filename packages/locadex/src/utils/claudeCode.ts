@@ -117,12 +117,16 @@ export class ClaudeCodeRunner {
             env.ANTHROPIC_API_KEY = this.options.apiKey;
           }
           logger.debugMessage(
-            `[${this.id}] Spawning Claude Code with additional args: ${{
-              maxTurns: options.maxTurns,
-              sessionId: options.sessionId,
-              mcpConfig: this.mcpConfig,
-              additionalAllowedTools: options.additionalAllowedTools,
-            }}`
+            `[${this.id}] Spawning Claude Code with additional args: ${JSON.stringify(
+              {
+                maxTurns: options.maxTurns,
+                sessionId: options.sessionId,
+                mcpConfig: this.mcpConfig,
+                additionalAllowedTools: options.additionalAllowedTools,
+              },
+              null,
+              2
+            )}`
           );
 
           const claude = spawn('claude', args, {
@@ -130,6 +134,8 @@ export class ClaudeCodeRunner {
             env,
             signal: controller.signal,
           });
+
+          logger.debugMessage(`[${this.id}] Spawned claude code process`);
 
           const output = '';
           const errorOutput = '';
