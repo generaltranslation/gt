@@ -143,10 +143,6 @@ See the [gt.config.json](/docs/next/api/config/gt-config-json) reference for mor
             optional: true,
             default: 25,
         },
-        "i18n?": {
-            type: 'string',
-            optional: true,
-        },
         "dictionary?": {
             type: 'string',
             optional: true,
@@ -168,8 +164,7 @@ See the [gt.config.json](/docs/next/api/config/gt-config-json) reference for mor
 | `maxConcurrentRequests` | Maximum number of concurrent translation requests allowed to the GT API.                                                                                                                                    |
 | `maxBatchSize`           | Maximum number of translations to batch together before sending a request.                                                                                                                                   |
 | `batchInterval`         | Interval in milliseconds between batched translation requests. Helps control the rate at which requests are sent.                                                                                           |
-| `i18n`                   | Optional configuration filepath for custom `getLocale()` functions. If provided as a string, it will be resolved as a path. Otherwise, defaults are used (recommended).                                      |
-| `dictionary`             | Optional configuration filepath for the dictionary. Similar to `i18n`, it accepts a string to specify a custom path. Dictionaries called `dictionary.js` (or `.jsx`, `.ts`, `.tsx` etc.) and placed at the root or in the `src` folder are supported by default. |
+| `dictionary`             | Optional configuration filepath for the dictionary. Accepts a string to specify a custom path. Dictionaries called `dictionary.js` (or `.jsx`, `.ts`, `.tsx` etc.) and placed at the root or in the `src` folder are supported by default. |
 
 
 
@@ -251,32 +246,6 @@ export default withGTConfig(nextConfig, {
 });
 ```
 
-
-### Configuring `getLocale()`
-
-`i18n` is a string that specifies a custom path to a file that defines a `getLocale()` function.
-You can specify custom behavior for determining the user's locale by creating a file that exports a function called `getLocale()`.
-
-```js title="myapp/next.config.mjs" copy
-import { withGTConfig } from 'gt-next/config'
-
-const nextConfig = {};
-
-export default withGTConfig(nextConfig, {
-  defaultLocale: "en-US", // the default language of your app, usually "en" or "en-US"
-  i18n: "./i18n.js"
-});
-```
-
-
-```js title="myapp/i18n.js" copy
-import { cookies } from "next/headers";
-
-export async function getLocale() {
-  const cookieStore = await cookies();
-  return cookieStore.get('myCustomLocaleCookie') || 'en';
-}
-```
 
 ---
 

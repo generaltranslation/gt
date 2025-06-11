@@ -283,6 +283,23 @@ export function getLocaleFromRequest(
   let clearResetCookie = false;
   const { pathname } = req.nextUrl;
 
+  // // Custom getLocale
+  // let addedCustomLocale = false;
+  // if (process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED === 'true') {
+  //   try {
+  //     const customRequestConfig = require('gt-next/_request');
+  //     const customGetLocale: () => Promise<string> =
+  //       customRequestConfig?.default || customRequestConfig.getLocale;
+  //     const customLocale = await customGetLocale();
+  //     if (customLocale) {
+  //       candidates.push(customLocale);
+  //       addedCustomLocale = true;
+  //     }
+  //   } catch {
+  //     /* empty */
+  //   }
+  // }
+
   // Check pathname locales
   let pathnameLocale, unstandardizedPathnameLocale;
   if (localeRouting) {
@@ -322,6 +339,10 @@ export function getLocaleFromRequest(
   if (cookieLocale?.value && isValidLocale(cookieLocale?.value)) {
     const resetCookie = req.cookies.get(resetLocaleCookieName);
     if (resetCookie?.value) {
+      // Add this back in when we support custom getLocale
+      // addedCustomLocale
+      //   ? candidates.splice(1, 0, cookieLocale.value)
+      //   : candidates.unshift(cookieLocale.value);
       candidates.unshift(cookieLocale.value);
       clearResetCookie = true;
     } else {

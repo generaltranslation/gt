@@ -1,8 +1,5 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import {
-  isSameLanguage,
-  requiresTranslation,
-} from 'generaltranslation';
+import { isSameLanguage, requiresTranslation } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import {
   CustomLoader,
