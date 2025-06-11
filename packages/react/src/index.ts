@@ -37,7 +37,7 @@ export {
   useLocales,
   useSetLocale,
   useLocaleSelector,
-  useGTClass as useGTFunctions,
+  useGTClass,
   useLocaleProperties,
   LocaleSelector,
   DictionaryTranslationOptions,

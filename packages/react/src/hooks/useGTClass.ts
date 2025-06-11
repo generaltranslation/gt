@@ -2,7 +2,7 @@ import useGTContext from '../provider/GTContext';
 
 export function useGTClass() {
   return useGTContext(
-    'useGTFunctions(): Unable to access configured GT class instance outside of a <GTProvider>'
+    'useGTClass(): Unable to access configured GT class instance outside of a <GTProvider>'
   ).gt;
 }
 

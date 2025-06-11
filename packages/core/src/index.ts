@@ -39,7 +39,7 @@ import { _getLocaleName } from './locales/getLocaleName';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { defaultBaseUrl, libraryDefaultLocale } from './internal';
 import _isSameDialect from './locales/isSameDialect';
-import _isSupersetLocale from 'src/locales/isSupersetLocale';
+import _isSupersetLocale from './locales/isSupersetLocale';
 import { FullCustomMapping } from './locales/customLocaleMapping';
 // ----- CORE CLASS ----- //
 /**
@@ -84,11 +84,11 @@ export class GT {
   }: GTConstructorParams = {}) {
     const processUndefined = typeof process !== 'undefined';
     this.apiKey =
-      apiKey || (processUndefined ? process?.env?.GT_API_KEY || '' : '');
+      apiKey || (processUndefined ? process.env?.GT_API_KEY || '' : '');
     this.devApiKey =
-      devApiKey || (processUndefined ? process?.env?.GT_DEV_API_KEY || '' : '');
+      devApiKey || (processUndefined ? process.env?.GT_DEV_API_KEY || '' : '');
     this.projectId =
-      projectId || (processUndefined ? process?.env?.GT_PROJECT_ID || '' : '');
+      projectId || (processUndefined ? process.env?.GT_PROJECT_ID || '' : '');
     this.sourceLocale = _standardizeLocale(sourceLocale) || '';
     this.baseUrl = baseUrl;
     this.customMapping = customMapping;
