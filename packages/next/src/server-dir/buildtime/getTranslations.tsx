@@ -21,19 +21,19 @@ import {
 import { hashJsxChildren } from 'generaltranslation/id';
 
 /**
- * Returns the dictionary access function `d()`, which is used to translate an item from the dictionary.
+ * Returns the dictionary access function `t()`, which is used to translate an item from the dictionary.
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
  *
  * @example
- * const d = await getDict('user');
- * console.log(d('name')); // Translates item 'user.name'
+ * const t = await getTranslations('user');
+ * console.log(t('name')); // Translates item 'user.name'
  *
- * const d = await getDict();
- * console.log(d('hello')); // Translates item 'hello'
+ * const t = await getTranslations();
+ * console.log(t('hello')); // Translates item 'hello'
  */
-export default async function getDict(
+export default async function getTranslations(
   id?: string
 ): Promise<(id: string, options?: DictionaryTranslationOptions) => string> {
   // ---------- SET UP ---------- //
@@ -58,7 +58,7 @@ export default async function getDict(
 
   const renderSettings = I18NConfig.getRenderSettings();
 
-  // ---------- THE d() METHOD ---------- //
+  // ---------- THE t() METHOD ---------- //
 
   /**
    * @description A function that translates a dictionary entry based on its `id` and options.
@@ -67,7 +67,7 @@ export default async function getDict(
    * @returns The translated version of the dictionary entry.
    *
    * @example
-   * d('greetings.greeting1'); // Translates item in dictionary under greetings.greeting1
+   * t('greetings.greeting1'); // Translates item in dictionary under greetings.greeting1
    *
    * @example
    * // dictionary entry
@@ -78,9 +78,9 @@ export default async function getDict(
    * }
    *
    * // Translates item in dictionary under greetings.greeting2 and replaces {name} with 'John'
-   * d('greetings.greeting2', { variables: { name: 'John' } });
+   * t('greetings.greeting2', { variables: { name: 'John' } });
    */
-  const d = (
+  const t = (
     id: string,
     options: DictionaryTranslationOptions = {}
   ): string => {
@@ -190,5 +190,5 @@ export default async function getDict(
     return renderContent(source, [defaultLocale]);
   };
 
-  return d;
+  return t;
 }
