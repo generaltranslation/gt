@@ -1,3 +1,7 @@
+import { LocaleProperties } from './locales/getLocaleProperties';
+
+export { LocaleProperties };
+
 export type Variable = {
   variable?: string;
   id?: string | number;

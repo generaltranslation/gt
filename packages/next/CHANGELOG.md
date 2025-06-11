@@ -1,5 +1,11 @@
 # gt-next
 
+## 5.2.34
+
+### Patch Changes
+
+- [#342](https://github.com/generaltranslation/gt/pull/342) [`5e360c8`](https://github.com/generaltranslation/gt/commit/5e360c838ff831659dc2c9da800ec8f3271afb24) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: enforce no support for custom getLocale function
+
 ## 5.2.33
 
 ### Patch Changes
