@@ -25,6 +25,8 @@ export async function setupTask(
 ) {
   await validateInitialConfig();
 
+  logger.debugMessage('Current working directory: ' + process.cwd());
+
   if (!bypassPrompts) {
     const answer = await promptConfirm({
       message: chalk.yellow(

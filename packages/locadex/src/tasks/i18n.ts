@@ -22,6 +22,7 @@ import { extractFiles } from '../utils/dag/extractFiles.js';
 export async function i18nTask() {
   await validateInitialConfig();
 
+  logger.debugMessage('Current working directory: ' + process.cwd());
   const gtSettings = await generateSettings({});
   if (gtSettings.framework !== 'next-app') {
     logger.error(
