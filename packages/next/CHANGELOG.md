@@ -1,5 +1,14 @@
 # gt-next
 
+## 5.2.36
+
+### Patch Changes
+
+- [#348](https://github.com/generaltranslation/gt/pull/348) [`c43bd6d`](https://github.com/generaltranslation/gt/commit/c43bd6df7dd106723e8dc173b6c0d65009be461e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: rename useDict to useTranslations
+
+- Updated dependencies [[`c43bd6d`](https://github.com/generaltranslation/gt/commit/c43bd6df7dd106723e8dc173b6c0d65009be461e)]:
+  - gt-react@9.2.26
+
 ## 5.2.35
 
 ### Patch Changes
