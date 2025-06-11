@@ -1,7 +1,7 @@
-import { BaseCLI } from './cli/base';
-import { NextCLI } from './cli/next';
-import { ReactCLI } from './cli/react';
-import { determineLibrary } from './fs/determineFramework';
+import { BaseCLI } from './cli/base.js';
+import { NextCLI } from './cli/next.js';
+import { ReactCLI } from './cli/react.js';
+import { determineLibrary } from './fs/determineFramework.js';
 import { Command } from 'commander';
 
 export function main(program: Command) {

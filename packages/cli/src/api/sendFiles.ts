@@ -1,7 +1,7 @@
 import chalk from 'chalk';
-import { createSpinner, logInfo, logMessage, logSuccess } from '../console';
-import { Settings } from '../types';
-import { FileFormats, DataFormat } from '../types/data';
+import { createSpinner, logMessage, logSuccess } from '../console/logging.js';
+import { Settings } from '../types/index.js';
+import { FileFormats, DataFormat } from '../types/data.js';
 
 // Define a file object structure
 export interface FileToTranslate {

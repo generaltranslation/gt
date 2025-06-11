@@ -1,19 +1,25 @@
-import { detectFormatter } from '../hooks/postProcess';
-import { createSpinner, logMessage, promptSelect } from '../console';
-import { logInfo, logError, logSuccess, logStep, logWarning } from '../console';
+import { detectFormatter } from '../hooks/postProcess.js';
+import { createSpinner, logMessage, promptSelect } from '../console/logging.js';
+import {
+  logInfo,
+  logError,
+  logSuccess,
+  logStep,
+  logWarning,
+} from '../console/logging.js';
 import chalk from 'chalk';
-import { promptConfirm } from '../console';
-import { SetupOptions, SupportedFrameworks } from '../types';
-import findFilepath from '../fs/findFilepath';
-import { generateSettings } from '../config/generateSettings';
-import { formatFiles } from '../hooks/postProcess';
-import { handleInitGT } from '../next/parse/handleInitGT';
-import { getPackageJson, isPackageInstalled } from '../utils/packageJson';
-import { wrapContentReact } from '../react/parse/wrapContent';
-import { wrapContentNext } from '../next/parse/wrapContent';
-import { getPackageManager } from '../utils/packageManager';
-import { installPackage } from '../utils/installPackage';
-import { createOrUpdateConfig } from '../fs/config/setupConfig';
+import { promptConfirm } from '../console/logging.js';
+import { SetupOptions, SupportedFrameworks } from '../types/index.js';
+import findFilepath from '../fs/findFilepath.js';
+import { generateSettings } from '../config/generateSettings.js';
+import { formatFiles } from '../hooks/postProcess.js';
+import { handleInitGT } from '../next/parse/handleInitGT.js';
+import { getPackageJson, isPackageInstalled } from '../utils/packageJson.js';
+import { wrapContentReact } from '../react/parse/wrapContent.js';
+import { wrapContentNext } from '../next/parse/wrapContent.js';
+import { getPackageManager } from '../utils/packageManager.js';
+import { installPackage } from '../utils/installPackage.js';
+import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 
 export async function handleSetupReactCommand(
   options: SetupOptions

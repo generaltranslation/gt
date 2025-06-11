@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { logError } from '../console/console';
+import { logError } from '../console/logging.js';
 
 // Helper function to download a file
 export async function downloadFile(

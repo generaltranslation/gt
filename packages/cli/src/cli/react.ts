@@ -5,7 +5,7 @@ import {
   WrapOptions,
   GenerateSourceOptions,
   SupportedLibraries,
-} from '../types';
+} from '../types/index.js';
 import {
   displayHeader,
   endCommand,
@@ -15,21 +15,21 @@ import {
   logSuccess,
   logWarning,
   promptConfirm,
-} from '../console/console';
-import loadJSON from '../fs/loadJSON';
-import findFilepath, { findFilepaths } from '../fs/findFilepath';
+} from '../console/logging.js';
+import loadJSON from '../fs/loadJSON.js';
+import findFilepath, { findFilepaths } from '../fs/findFilepath.js';
 import chalk from 'chalk';
-import { formatFiles } from '../hooks/postProcess';
-import { BaseCLI } from './base';
-import { wrapContentReact } from '../react/parse/wrapContent';
-import { generateSettings } from '../config/generateSettings';
-import { saveJSON } from '../fs/saveJSON';
-import { resolveLocaleFiles } from '../fs/config/parseFilesConfig';
-import { noFilesError, noVersionIdError } from '../console/errors';
-import { stageProject } from '../translation/stage';
-import { createUpdates } from '../translation/parse';
-import { translate } from '../translation/translate';
-import updateConfig from '../fs/config/updateConfig';
+import { formatFiles } from '../hooks/postProcess.js';
+import { BaseCLI } from './base.js';
+import { wrapContentReact } from '../react/parse/wrapContent.js';
+import { generateSettings } from '../config/generateSettings.js';
+import { saveJSON } from '../fs/saveJSON.js';
+import { resolveLocaleFiles } from '../fs/config/parseFilesConfig.js';
+import { noFilesError, noVersionIdError } from '../console/index.js';
+import { stageProject } from '../translation/stage.js';
+import { createUpdates } from '../translation/parse.js';
+import { translate } from '../translation/translate.js';
+import updateConfig from '../fs/config/updateConfig.js';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';

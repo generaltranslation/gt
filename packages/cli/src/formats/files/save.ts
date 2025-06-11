@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'node:path';
-import { DataFormat } from '../../types/data';
-import { logSuccess } from '../../console';
+import { DataFormat } from '../../types/data.js';
+import { logSuccess } from '../../console/logging.js';
 
 /**
  * Saves translated MDX/MD file content to the appropriate location

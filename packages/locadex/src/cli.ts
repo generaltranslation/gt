@@ -11,14 +11,8 @@ import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
 import { setupCommand } from './commands/setup.js';
-import { CliOptions } from './types/cli.js';
-import { withTelemetry } from './telemetry.js';
 import { i18nCommand } from './commands/i18n.js';
-import { displayHeader } from './logging/console.js';
 import { main } from 'gtx-cli/index';
-import { LocadexManager } from './utils/locadexManager.js';
-import { logger } from './logging/logger.js';
-import { exit } from './utils/shutdown.js';
 
 const packageJson = JSON.parse(
   readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -52,56 +46,7 @@ program
   )
   .option('-y, --bypass-prompts', 'Bypass interactive prompts')
   .option('--no-telemetry', 'Disable telemetry')
-  .action(
-    (
-      options: CliOptions & {
-        packageManager?: string;
-        bypassPrompts?: boolean;
-      },
-      command: Command
-    ) => {
-      const parentOptions = command.parent?.opts() || {};
-      const allOptions = { ...parentOptions, ...options };
-      const telemetryEnabled = !allOptions.noTelemetry;
-      withTelemetry(
-        { enabled: telemetryEnabled, options: allOptions },
-        async () => {
-          const batchSize = Number(allOptions.batchSize) || 1;
-          const concurrency = Number(allOptions.concurrency) || 1;
-
-          if (concurrency < 1 || batchSize < 1) {
-            logger.error('Batch size and concurrency must be greater than 0');
-            await exit(1);
-          }
-
-          displayHeader(telemetryEnabled);
-          LocadexManager.initialize({
-            mcpTransport: 'sse',
-            metadata: {},
-            cliOptions: allOptions,
-            options: {
-              ...(allOptions.matchingFiles && {
-                matchingFiles: allOptions.matchingFiles
-                  .split(',')
-                  .map((file) => file.trim()),
-              }),
-              ...(allOptions.matchingExtensions && {
-                matchingExtensions: allOptions.matchingExtensions
-                  .split(',')
-                  .map((ext) => ext.trim()),
-              }),
-              maxConcurrency: concurrency,
-              batchSize,
-            },
-          });
-          await setupCommand(
-            !!allOptions.bypassPrompts,
-            allOptions.packageManager
-          );
-        }
-      );
-    }
-  );
+  .action(setupCommand);
 
 program
   .command('i18n')
@@ -119,45 +64,7 @@ program
     'Comma-separated list of file extensions to match'
   )
   .option('--no-telemetry', 'Disable telemetry')
-  .action((options: CliOptions, command: Command) => {
-    const parentOptions = command.parent?.opts() || {};
-    const allOptions = { ...parentOptions, ...options };
-    const telemetryEnabled = !allOptions.noTelemetry;
-    withTelemetry(
-      { enabled: telemetryEnabled, options: allOptions },
-      async () => {
-        const batchSize = Number(allOptions.batchSize) || 1;
-        const concurrency = Number(allOptions.concurrency) || 1;
-
-        if (concurrency < 1 || batchSize < 1) {
-          logger.error('Batch size and concurrency must be greater than 0');
-          await exit(1);
-        }
-
-        displayHeader(telemetryEnabled);
-        LocadexManager.initialize({
-          mcpTransport: 'sse',
-          metadata: {},
-          cliOptions: allOptions,
-          options: {
-            ...(allOptions.matchingFiles && {
-              matchingFiles: allOptions.matchingFiles
-                .split(',')
-                .map((file) => file.trim()),
-            }),
-            ...(allOptions.matchingExtensions && {
-              matchingExtensions: allOptions.matchingExtensions
-                .split(',')
-                .map((ext) => ext.trim()),
-            }),
-            maxConcurrency: concurrency,
-            batchSize,
-          },
-        });
-        await i18nCommand();
-      }
-    );
-  });
+  .action(i18nCommand);
 
 main(program);
 

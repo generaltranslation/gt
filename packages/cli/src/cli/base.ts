@@ -1,6 +1,6 @@
 import { Command } from 'commander';
-import { createOrUpdateConfig } from '../fs/config/setupConfig';
-import findFilepath, { findFilepaths, readFile } from '../fs/findFilepath';
+import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
+import findFilepath, { findFilepaths } from '../fs/findFilepath.js';
 import {
   displayHeader,
   promptText,
@@ -13,7 +13,7 @@ import {
   startCommand,
   createSpinner,
   logMessage,
-} from '../console';
+} from '../console/logging.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import {
@@ -21,19 +21,22 @@ import {
   Settings,
   SupportedLibraries,
   SetupOptions,
-} from '../types';
-import { DataFormat } from '../types/data';
-import { generateSettings } from '../config/generateSettings';
+} from '../types/index.js';
+import { DataFormat } from '../types/data.js';
+import { generateSettings } from '../config/generateSettings.js';
 import chalk from 'chalk';
-import { translateFiles } from '../formats/files/translate';
-import { FILE_EXT_TO_FORMAT } from '../formats/files/supportedFiles';
-import { handleSetupReactCommand } from '../setup/wizard';
-import { isPackageInstalled, searchForPackageJson } from '../utils/packageJson';
-import { getDesiredLocales } from '../setup/userInput';
-import { installPackage } from '../utils/installPackage';
-import { getPackageManager } from '../utils/packageManager';
-import { retrieveCredentials, setCredentials } from '../utils/credentials';
-import { areCredentialsSet } from '../utils/credentials';
+import { translateFiles } from '../formats/files/translate.js';
+import { FILE_EXT_TO_FORMAT } from '../formats/files/supportedFiles.js';
+import { handleSetupReactCommand } from '../setup/wizard.js';
+import {
+  isPackageInstalled,
+  searchForPackageJson,
+} from '../utils/packageJson.js';
+import { getDesiredLocales } from '../setup/userInput.js';
+import { installPackage } from '../utils/installPackage.js';
+import { getPackageManager } from '../utils/packageManager.js';
+import { retrieveCredentials, setCredentials } from '../utils/credentials.js';
+import { areCredentialsSet } from '../utils/credentials.js';
 
 export type TranslateOptions = {
   config?: string;

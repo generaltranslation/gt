@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { spawn } from 'child_process';
-import { logError, logInfo } from '../console';
-import { PackageManager } from './packageManager';
+import { logError, logInfo } from '../console/logging.js';
+import { PackageManager } from './packageManager.js';
 
 export async function installPackage(
   packageName: string,

@@ -1,15 +1,18 @@
-import { Updates } from '../../../types';
+import { Updates } from '../../../types/index.js';
 
-import generate from '@babel/generator';
+import generateModule from '@babel/generator';
+// Handle CommonJS/ESM interop
+const generate = generateModule.default || generateModule;
+
 import * as t from '@babel/types';
-import addGTIdentifierToSyntaxTree from '../../data-_gt/addGTIdentifierToSyntaxTree';
+import addGTIdentifierToSyntaxTree from '../../data-_gt/addGTIdentifierToSyntaxTree.js';
 import {
   warnHasUnwrappedExpressionSync,
   warnVariablePropSync,
-} from '../../../console';
+} from '../../../console/index.js';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
-import { handleChildrenWhitespace } from '../trimJsxStringChildren';
-import { isStaticExpression } from '../evaluateJsx';
+import { handleChildrenWhitespace } from '../trimJsxStringChildren.js';
+import { isStaticExpression } from '../evaluateJsx.js';
 
 // Valid variable components
 const VARIABLE_COMPONENTS = ['Var', 'DateTime', 'Currency', 'Num'];

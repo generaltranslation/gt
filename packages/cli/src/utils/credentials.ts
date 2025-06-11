@@ -1,7 +1,11 @@
-import { createSpinner, logErrorAndExit, logMessage } from '../console';
+import {
+  createSpinner,
+  logErrorAndExit,
+  logMessage,
+} from '../console/logging.js';
 import path from 'node:path';
 import fs from 'node:fs';
-import { Settings, SupportedFrameworks } from '../types';
+import { Settings, SupportedFrameworks } from '../types/index.js';
 import chalk from 'chalk';
 // Type for credentials returned from the dashboard
 type Credentials = {

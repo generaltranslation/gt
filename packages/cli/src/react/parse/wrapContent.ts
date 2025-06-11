@@ -1,19 +1,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { SupportedFrameworks, WrapOptions } from '../../types';
+import { SupportedFrameworks, WrapOptions } from '../../types/index.js';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
-import traverse, { NodePath } from '@babel/traverse';
-import generate from '@babel/generator';
-import { getFiles } from '../../fs/findJsxFilepath';
-import { isMeaningful } from '../jsx/evaluateJsx';
-import { handleJsxElement } from '../jsx/wrapJsx';
-import { getRelativePath } from '../../fs/findFilepath';
+import traverseModule from '@babel/traverse';
+import generateModule from '@babel/generator';
+import { NodePath } from '@babel/traverse';
+
+// Handle CommonJS/ESM interop
+const traverse = traverseModule.default || traverseModule;
+const generate = generateModule.default || generateModule;
+import { getFiles } from '../../fs/findJsxFilepath.js';
+import { isMeaningful } from '../jsx/evaluateJsx.js';
+import { handleJsxElement } from '../jsx/wrapJsx.js';
+import { getRelativePath } from '../../fs/findFilepath.js';
 import {
   generateImportMap,
   createImports,
   ImportItem,
-} from '../jsx/utils/parseAst';
+} from '../jsx/utils/parseAst.js';
 
 const IMPORT_MAP = {
   T: { name: 'T', source: 'gt-react' },

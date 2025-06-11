@@ -7,6 +7,7 @@
     "dist",
     "CHANGELOG.md"
   ],
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "build:clean": "rm -rf dist; npm run build",
@@ -79,7 +80,7 @@
     "@babel/plugin-transform-react-jsx": "^7.25.9",
     "@babel/traverse": "^7.25.7",
     "@clack/prompts": "^1.0.0-alpha.1",
-    "chalk": "^4.1.2",
+    "chalk": "^5.4.1",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "esbuild": "^0.25.4",
@@ -93,7 +94,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@types/babel__generator": "^7.6.8",
+    "@types/babel__generator": "^7.27.0",
     "@types/babel__traverse": "^7.20.6",
     "@types/figlet": "^1.7.0",
     "@types/mock-require": "^2.0.3",

@@ -1,5 +1,5 @@
 import { JsxChildren } from 'generaltranslation/internal';
-import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles';
+import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 
 export type Updates = ({ metadata: Record<string, any> } & (
   | {

@@ -1,8 +1,8 @@
-import { fetchTranslations } from '../api/fetchTranslations';
-import { Options, Settings } from '../types';
-import { waitForUpdates } from '../api/waitForUpdates';
-import { saveTranslations } from '../formats/gt/save';
-import { isUsingLocalTranslations } from '../config/utils';
+import { fetchTranslations } from '../api/fetchTranslations.js';
+import { Options, Settings } from '../types/index.js';
+import { waitForUpdates } from '../api/waitForUpdates.js';
+import { saveTranslations } from '../formats/gt/save.js';
+import { isUsingLocalTranslations } from '../config/utils.js';
 
 export async function translate(
   settings: Options & Settings,

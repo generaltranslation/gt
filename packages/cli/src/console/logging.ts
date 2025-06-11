@@ -8,10 +8,10 @@ import {
   confirm,
   isCancel,
   cancel,
-  multiselect, // @ts-expect-error
+  multiselect,
 } from '@clack/prompts';
 import chalk from 'chalk';
-import { getCLIVersion } from '../utils/packageJson';
+import { getCLIVersion } from '../utils/packageJson.js';
 
 // Basic logging functions
 export function logInfo(message: string) {

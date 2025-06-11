@@ -1,5 +1,5 @@
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { promptText } from '../console';
+import { promptText } from '../console/logging.js';
 import chalk from 'chalk';
 import { isValidLocale } from 'generaltranslation';
 

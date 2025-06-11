@@ -1,8 +1,8 @@
 // This file is MIT licensed and was adapted from https://github.com/getsentry/sentry-wizard/blob/master/src/utils/package-manager.ts and https://github.com/getsentry/sentry-wizard/blob/master/src/utils/clack/index.ts
 import * as fs from 'fs';
 import * as path from 'path';
-import { getPackageJson, updatePackageJson } from './packageJson';
-import { promptSelect } from '../console';
+import { getPackageJson, updatePackageJson } from './packageJson.js';
+import { promptSelect } from '../console/logging.js';
 
 export interface PackageManager {
   id: string;

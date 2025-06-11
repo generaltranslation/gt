@@ -1,10 +1,10 @@
-import { Options, GenerateSourceOptions, Updates } from '../types';
+import { Options, GenerateSourceOptions, Updates } from '../types/index.js';
 import fs from 'fs';
-import { logError } from '../console/logging';
-import loadJSON from '../fs/loadJSON';
-import createDictionaryUpdates from '../react/parse/createDictionaryUpdates';
-import createInlineUpdates from '../react/parse/createInlineUpdates';
-import createESBuildConfig from '../react/config/createESBuildConfig';
+import { logError } from '../console/logging.js';
+import loadJSON from '../fs/loadJSON.js';
+import createDictionaryUpdates from '../react/parse/createDictionaryUpdates.js';
+import createInlineUpdates from '../react/parse/createInlineUpdates.js';
+import createESBuildConfig from '../react/config/createESBuildConfig.js';
 import chalk from 'chalk';
 
 /**

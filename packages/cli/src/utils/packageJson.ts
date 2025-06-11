@@ -1,10 +1,10 @@
-import { logError } from '../console';
+import { logError } from '../console/logging.js';
 
 import chalk from 'chalk';
 import path from 'node:path';
 import fs from 'node:fs';
-import { logErrorAndExit } from '../console';
-import { fromPackageRoot } from '../fs/getPackageResource';
+import { logErrorAndExit } from '../console/logging.js';
+import { fromPackageRoot } from '../fs/getPackageResource.js';
 
 // search for package.json such that we can run init in non-js projects
 export async function searchForPackageJson(): Promise<Record<

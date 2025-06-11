@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 import chalk from 'chalk';
-import { logInfo, logMessage, logStep, logWarning } from '../console';
+import {
+  logInfo,
+  logMessage,
+  logStep,
+  logWarning,
+} from '../console/logging.js';
 
 type Formatter = 'prettier' | 'biome' | 'eslint';
 

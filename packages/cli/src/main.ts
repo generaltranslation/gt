@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { main } from './index';
+import { main } from './index.js';
 import dotenv from 'dotenv';
 import { program } from 'commander';
 

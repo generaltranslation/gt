@@ -1,8 +1,8 @@
 import chalk from 'chalk';
 import path from 'node:path';
 import fs from 'node:fs';
-import { SupportedLibraries } from '../types';
-import { logError } from '../console';
+import { SupportedLibraries } from '../types/index.js';
+import { logError } from '../console/logging.js';
 
 export function determineLibrary(): {
   library: SupportedLibraries;

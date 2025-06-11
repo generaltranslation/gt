@@ -1,6 +1,7 @@
 import fs from 'node:fs';
-import { displayCreatedConfigFile, logError } from '../../console';
-import { FilesOptions, SupportedFrameworks } from '../../types';
+import { displayCreatedConfigFile } from '../../console/logging.js';
+import { FilesOptions, SupportedFrameworks } from '../../types/index.js';
+import { logError } from '../../console/logging.js';
 
 /**
  * Checks if the config file exists.

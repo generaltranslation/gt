@@ -1,12 +1,10 @@
-// Export all logging functions
-export * from './logging';
 import {
   colorizeFilepath,
   colorizeComponent,
   colorizeIdString,
   colorizeContent,
   colorizeLine,
-} from './colors';
+} from './colors.js';
 
 // Synchronous wrappers for backward compatibility
 export const warnApiKeyInConfigSync = (optionsFilepath: string): string =>

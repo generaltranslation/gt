@@ -1,6 +1,6 @@
 import { isValidLocale, isSupersetLocale } from 'generaltranslation';
-import { Settings } from '../types';
-import { logErrorAndExit } from '../console';
+import { Settings } from '../types/index.js';
+import { logErrorAndExit } from '../console/logging.js';
 
 export function validateSettings(settings: Settings) {
   // Validate locales

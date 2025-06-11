@@ -1,10 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { RetrievedTranslations } from '../../types/api';
-import { ResolvedFiles } from '../../types';
-import { DataFormat } from '../../types/data';
-import { logError, noFilesError } from '../../console/errors';
-import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
+import { RetrievedTranslations } from '../../types/api.js';
+import { ResolvedFiles } from '../../types/index.js';
+import { DataFormat } from '../../types/data.js';
+import { logError } from '../../console/logging.js';
+import { noFilesError } from '../../console/index.js';
+import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 /**
  * Saves translations to a local directory
  * @param translations - The translations to save
