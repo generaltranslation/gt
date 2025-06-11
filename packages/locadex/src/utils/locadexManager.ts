@@ -177,7 +177,7 @@ export class LocadexManager {
           LOCADEX_LOG_FILE_PATH: this.logFile,
           PORT: port.toString(),
         },
-        stdio: 'inherit',
+        stdio: ['ignore', 'inherit', 'inherit'],
         signal: this.mcpAbortController.signal,
       });
 

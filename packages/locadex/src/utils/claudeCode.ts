@@ -128,7 +128,7 @@ export class ClaudeCodeRunner {
           );
 
           const claude = spawn('claude', args, {
-            stdio: ['inherit', 'pipe', 'pipe'],
+            stdio: ['ignore', 'pipe', 'pipe'],
             env,
             signal: controller.signal,
           });
