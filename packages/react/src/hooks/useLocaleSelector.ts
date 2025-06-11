@@ -11,8 +11,8 @@ import { useGTClass } from './useGTClass';
  */
 export default function useLocaleSelector(locales?: string[]) {
   // Retrieve the locale, locales, and setLocale function
-  const locale = useLocale();
   const contextLocales = useLocales();
+  const locale = useLocale();
   const setLocale = useSetLocale();
   const gt = useGTClass();
 

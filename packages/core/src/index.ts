@@ -572,4 +572,4 @@ export function requiresTranslation(
 }
 
 // DEFAULT EXPORT
-export default GT;
+export { GT };

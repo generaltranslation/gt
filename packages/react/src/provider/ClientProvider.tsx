@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 import { useEffect, useState, useMemo } from 'react';
-import { determineLocale } from 'generaltranslation';
+import { determineLocale, GT } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/config';
 import { TranslationsObject } from '../types/types';
@@ -9,7 +9,6 @@ import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
 import useCreateInternalUseDictFunction from './hooks/useCreateInternalUseDictFunction';
 import { defaultLocaleCookieName } from '../utils/cookies';
-const GT = require('generaltranslation').default;
 
 // meant to be used inside the server-side <GTProvider>
 export default function ClientProvider({
@@ -103,6 +102,7 @@ export default function ClientProvider({
   }, [initialTranslations]);
 
   // ---------- TRANSLATION METHODS ---------- //
+  // TODO: do this in a plugin
 
   const { registerContentForTranslation, registerJsxForTranslation } =
     useRuntimeTranslation({

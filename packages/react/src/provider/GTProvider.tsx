@@ -15,7 +15,7 @@ import { defaultLocaleCookieName } from '../utils/cookies';
 import { GTProviderProps } from '../types/config';
 import { useLocaleData } from './hooks/useLocaleData';
 import { useErrorChecks } from './hooks/useErrorChecks';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
 /**
@@ -144,7 +144,6 @@ export default function GTProvider({
   });
 
   // ------- RUNTIME TRANSLATION ----- //
-  // TODO: do this in a plugin
 
   const {
     registerContentForTranslation,
