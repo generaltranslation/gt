@@ -104,7 +104,7 @@ export async function i18nTask() {
 
   // Main parallel processing loop
   let processedCount = 0;
-  const abortController = new AbortController();
+  const agentAbortController = manager.getAgentAbortController();
   let firstError: Error | null = null;
 
   // Mutex for task queue access
@@ -124,9 +124,9 @@ export async function i18nTask() {
   };
 
   const processTask = async (): Promise<void> => {
-    while (taskQueue.length > 0 && !abortController.signal.aborted) {
+    while (taskQueue.length > 0 && !agentAbortController.signal.aborted) {
       // Check if we should abort early
-      if (abortController.signal.aborted) {
+      if (agentAbortController.signal.aborted) {
         return;
       }
 
@@ -136,7 +136,7 @@ export async function i18nTask() {
         // No available agents, wait a bit (but check for abort)
         await new Promise((resolve) => {
           const timeout = global.setTimeout(resolve, 100);
-          abortController.signal.addEventListener('abort', () => {
+          agentAbortController.signal.addEventListener('abort', () => {
             global.clearTimeout(timeout);
             resolve(undefined);
           });
@@ -190,7 +190,8 @@ export async function i18nTask() {
             prompt,
             sessionId,
           },
-          {}
+          {},
+          agentAbortController
         );
         reports.push(agent.generateReport());
         manager.markAgentFree(agentId);
@@ -201,7 +202,7 @@ export async function i18nTask() {
             `[i18n] Error in claude i18n process (agent ${agentId}): ${error}`
           );
           logger.debugMessage(firstError.message);
-          abortController.abort();
+          agentAbortController.abort();
           manager.cleanupAgents();
         }
         manager.markAgentFree(agentId);
@@ -272,7 +273,8 @@ export async function i18nTask() {
   try {
     await cleanupAgent.run(
       { prompt: fixPrompt, sessionId: cleanupAgent.getSessionId() },
-      {}
+      {},
+      manager.getAgentAbortController()
     );
     reports.push(`## Fixed errors\n${cleanupAgent.generateReport()}`);
   } catch (error) {

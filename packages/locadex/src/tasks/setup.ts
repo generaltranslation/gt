@@ -1,10 +1,7 @@
 import { createSpinner, promptConfirm } from '../logging/console.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 import { getPackageManager } from 'gtx-cli/utils/packageManager';
-import {
-  installPackage,
-  installPackageGlobal,
-} from 'gtx-cli/utils/installPackage';
+import { installPackage } from 'gtx-cli/utils/installPackage';
 import chalk from 'chalk';
 import { logger } from '../logging/logger.js';
 import { findFilepaths } from '../utils/fs/findConfigs.js';
@@ -150,7 +147,11 @@ async function setupLocaleSelector() {
   // Fix prompt
   const localeSelectorPrompt = getLocaleSelectorPrompt();
   try {
-    await agent.run({ prompt: localeSelectorPrompt }, {});
+    await agent.run(
+      { prompt: localeSelectorPrompt },
+      {},
+      manager.getAgentAbortController()
+    );
 
     // Generate report
     const report = agent.generateReport();

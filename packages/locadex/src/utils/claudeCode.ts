@@ -28,27 +28,9 @@ const DEFAULT_ALLOWED_TOOLS = [
 
 const DISALLOWED_TOOLS = ['NotebookEdit', 'WebFetch', 'WebSearch'];
 
-// Global tracking of all Claude processes
-const activeClaudeProcesses = new Set<any>();
-
-// Function to kill all active Claude processes
+// Legacy function for backward compatibility
 export const killAllClaudeProcesses = () => {
-  activeClaudeProcesses.forEach((proc) => {
-    if (!proc.killed) {
-      proc.kill('SIGTERM');
-    }
-  });
-  activeClaudeProcesses.clear();
-};
-
-// Setup global process termination handlers once
-let handlersSetup = false;
-const setupProcessHandlers = () => {
-  if (handlersSetup) return;
-  handlersSetup = true;
-
-  process.on('SIGINT', killAllClaudeProcesses);
-  process.on('SIGTERM', killAllClaudeProcesses);
+  // No-op since we now use AbortController
 };
 
 export class ClaudeCodeRunner {
@@ -77,8 +59,7 @@ export class ClaudeCodeRunner {
       );
     }
 
-    // Setup global process handlers
-    setupProcessHandlers();
+    // AbortController handles cleanup automatically
   }
 
   getSessionId(): string {
@@ -87,7 +68,8 @@ export class ClaudeCodeRunner {
 
   async run(
     options: ClaudeCodeOptions,
-    obs: ClaudeCodeObservation
+    obs: ClaudeCodeObservation,
+    controller: AbortController
   ): Promise<string> {
     this.changes = [];
     return Sentry.startSpan(
@@ -134,13 +116,15 @@ export class ClaudeCodeRunner {
           if (this.options.apiKey) {
             env.ANTHROPIC_API_KEY = this.options.apiKey;
           }
+          logger.debugMessage(
+            `[${this.id}] Spawning Claude Code with args: ${args.join(' ')}`
+          );
 
           const claude = spawn('claude', args, {
             stdio: ['inherit', 'pipe', 'pipe'],
             env,
+            signal: controller.signal,
           });
-
-          activeClaudeProcesses.add(claude);
 
           const output = '';
           const errorOutput = '';
@@ -173,7 +157,6 @@ export class ClaudeCodeRunner {
           });
 
           claude.on('close', (code) => {
-            activeClaudeProcesses.delete(claude);
             if (code === 0) {
               resolve(output.trim());
             } else {
@@ -189,15 +172,22 @@ export class ClaudeCodeRunner {
           });
 
           claude.on('error', (error) => {
-            activeClaudeProcesses.delete(claude);
-            logger.debugMessage(
-              `[${this.id}] failed to run Claude Code: ${error.message}`
-            );
-            reject(
-              new Error(
+            // Check if this is an AbortError
+            if (error.name === 'AbortError') {
+              logger.debugMessage(
+                `[${this.id}] Claude Code process was aborted`
+              );
+              reject(new Error(`[${this.id}] Claude Code process was aborted`));
+            } else {
+              logger.debugMessage(
                 `[${this.id}] failed to run Claude Code: ${error.message}`
-              )
-            );
+              );
+              reject(
+                new Error(
+                  `[${this.id}] failed to run Claude Code: ${error.message}`
+                )
+              );
+            }
           });
         })
     );

@@ -66,6 +66,8 @@ export class LocadexManager {
     string,
     { agent: ClaudeCodeRunner; sessionId?: string; busy: boolean }
   >;
+  private agentAbortController: AbortController;
+  private mcpAbortController: AbortController;
   private agentMutex = Promise.resolve();
   private config: LocadexConfig;
   stats: AgentStats;
@@ -81,6 +83,8 @@ export class LocadexManager {
     this.agentPool = new Map();
     this.stats = new AgentStats();
     this.mcpTransport = params.mcpTransport;
+    this.agentAbortController = new AbortController();
+    this.mcpAbortController = new AbortController();
 
     const cwd = process.cwd();
     this.locadexDirectory = path.resolve(cwd, '.locadex');
@@ -174,6 +178,7 @@ export class LocadexManager {
           PORT: port.toString(),
         },
         stdio: 'inherit',
+        signal: this.mcpAbortController.signal,
       });
 
       this.mcpProcess.on('error', async (error) => {
@@ -291,12 +296,15 @@ export class LocadexManager {
   cleanupAgents(): void {
     logger.debugMessage('Cleaning up all Claude Code agents and processes');
 
-    // Mark all agents as free
+    // Abort all active processes
+    this.agentAbortController.abort();
+
+    // Mark agents as free
     for (const agentData of this.agentPool.values()) {
       agentData.busy = false;
     }
 
-    // Kill all active Claude Code processes
+    // Kill all active Claude Code processes (fallback)
     killAllClaudeProcesses();
 
     // Clear the agent pool
@@ -327,13 +335,16 @@ export class LocadexManager {
     // Clean up agents first (if not already done)
     this.cleanupAgents();
 
-    // Clean up MCP process
+    // Clean up MCP process using abort controller
     if (this.mcpProcess && !this.mcpProcess.killed) {
-      logger.debugMessage('Killing MCP process');
-      this.mcpProcess.kill('SIGTERM');
+      logger.debugMessage('Terminating MCP process via abort controller');
+      this.mcpAbortController.abort();
+
+      // Give the process a moment to handle the abort signal gracefully
       setTimeout(() => {
         if (this.mcpProcess && !this.mcpProcess.killed) {
-          this.mcpProcess.kill('SIGKILL');
+          logger.debugMessage('Force killing MCP process as fallback');
+          this.mcpProcess.kill('SIGTERM');
         }
       }, 1000);
     }
@@ -341,5 +352,9 @@ export class LocadexManager {
 
   getWorkingDir(): string {
     return this.workingDir;
+  }
+
+  getAgentAbortController(): AbortController {
+    return this.agentAbortController;
   }
 }

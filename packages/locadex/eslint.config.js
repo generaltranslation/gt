@@ -8,6 +8,11 @@ export default [
     plugins: {
       import: importPlugin,
     },
+    languageOptions: {
+      globals: {
+        AbortController: 'readonly',
+      },
+    },
     rules: {
       'no-console': ['error', { allow: ['error'] }],
       'import/extensions': ['error', 'ignorePackages', { js: 'always' }],
