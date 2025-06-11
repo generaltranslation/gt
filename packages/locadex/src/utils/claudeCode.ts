@@ -44,8 +44,8 @@ export class ClaudeCodeRunner {
     manager: LocadexManager,
     private options: {
       id: string;
-      apiKey?: string;
-      mcpConfig?: string;
+      apiKey: string;
+      mcpConfig: string;
     }
   ) {
     this.manager = manager;
@@ -113,9 +113,7 @@ export class ClaudeCodeRunner {
           }
 
           const env = { ...process.env };
-          if (this.options.apiKey) {
-            env.ANTHROPIC_API_KEY = this.options.apiKey;
-          }
+          env.ANTHROPIC_API_KEY = this.options.apiKey;
           logger.debugMessage(
             `[${this.id}] Spawning Claude Code with additional args: ${JSON.stringify(
               {
@@ -126,7 +124,7 @@ export class ClaudeCodeRunner {
               },
               null,
               2
-            )}`
+            )}. API key is ${this.options.apiKey ? 'set' : 'not set'}`
           );
 
           const claude = spawn('claude', args, {

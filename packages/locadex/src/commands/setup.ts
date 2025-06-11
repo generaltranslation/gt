@@ -31,6 +31,7 @@ export async function setupCommand(
       displayHeader(telemetryEnabled);
       LocadexManager.initialize({
         mcpTransport: 'sse',
+        apiKey: process.env.ANTHROPIC_API_KEY || '',
         metadata: {},
         cliOptions: allOptions,
         options: {

@@ -25,6 +25,7 @@ export async function i18nCommand(options: CliOptions, command: Command) {
       displayHeader(telemetryEnabled);
       LocadexManager.initialize({
         mcpTransport: 'sse',
+        apiKey: process.env.ANTHROPIC_API_KEY || '',
         metadata: {},
         cliOptions: allOptions,
         options: {

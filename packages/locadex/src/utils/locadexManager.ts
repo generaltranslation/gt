@@ -59,7 +59,7 @@ export class LocadexManager {
   private lockFilePath: string;
   private workingDir: string;
   private locadexDirectory: string;
-  private apiKey?: string;
+  private apiKey: string;
   private maxConcurrency: number;
   private batchSize: number;
   private agentPool: Map<
@@ -75,11 +75,11 @@ export class LocadexManager {
 
   private constructor(params: {
     mcpTransport: 'sse' | 'stdio';
-    apiKey?: string;
+    apiKey: string;
     metadata: Partial<LocadexRunMetadata>;
     options: Partial<LocadexConfig>;
   }) {
-    this.apiKey = params.apiKey || process.env.ANTHROPIC_API_KEY;
+    this.apiKey = params.apiKey;
     this.agentPool = new Map();
     this.stats = new AgentStats();
     this.mcpTransport = params.mcpTransport;
@@ -212,7 +212,7 @@ export class LocadexManager {
 
   static initialize(params: {
     mcpTransport: 'sse' | 'stdio';
-    apiKey?: string;
+    apiKey: string;
     metadata: Partial<LocadexRunMetadata>;
     cliOptions: CliOptions;
     options: Partial<LocadexConfig>;
