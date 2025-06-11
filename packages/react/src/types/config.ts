@@ -2,6 +2,7 @@
 
 import { RenderMethod } from '../internal';
 import { Dictionary, TranslationsObject, CustomLoader } from './types';
+import { CustomMapping } from 'generaltranslation/types';
 
 export type GTConfig = {
   projectId?: string;
@@ -18,6 +19,7 @@ export type GTConfig = {
   _versionId?: string;
   ssr?: boolean;
   localeCookieName?: string;
+  customMapping?: CustomMapping;
 };
 
 export type GTProviderProps = {
@@ -42,8 +44,9 @@ export type GTProviderProps = {
   loadTranslations?: CustomLoader;
   config?: GTConfig;
   fallback?: React.ReactNode;
+  customMapping?: CustomMapping;
   [key: string]: any;
-}
+};
 
 export type ClientProviderProps = {
   children: any;
@@ -67,4 +70,5 @@ export type ClientProviderProps = {
   gtServicesEnabled?: boolean;
   localeCookieName?: string;
   resetLocaleCookieName: string;
+  customMapping?: CustomMapping;
 };

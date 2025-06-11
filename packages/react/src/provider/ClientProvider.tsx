@@ -28,17 +28,23 @@ export default function ClientProvider({
   runtimeTranslationEnabled,
   resetLocaleCookieName,
   localeCookieName = defaultLocaleCookieName,
+  customMapping,
 }: ClientProviderProps): React.JSX.Element {
   // ---------- SET UP ---------- //
- 
+
   // Define the GT instance
   // Used for custom mapping and as a driver for the runtime translation
-  const gt = useMemo(() => new GT({
-    devApiKey, 
-    sourceLocale: defaultLocale,
-    projectId,
-    baseUrl: runtimeUrl || undefined
-  }), [devApiKey, defaultLocale, projectId, runtimeUrl]);
+  const gt = useMemo(
+    () =>
+      new GT({
+        devApiKey,
+        sourceLocale: defaultLocale,
+        projectId,
+        baseUrl: runtimeUrl || undefined,
+        customMapping,
+      }),
+    [devApiKey, defaultLocale, projectId, runtimeUrl, customMapping]
+  );
 
   // ----- TRANSLATIONS STATE ----- //
 

@@ -18,7 +18,7 @@ import GTProvider from './provider/GTProvider';
 import useSetLocale from './hooks/useSetLocale';
 import useLocales from './hooks/useLocales';
 import useLocaleSelector from './hooks/useLocaleSelector';
-import { useGTFunctions, useLocaleProperties } from './hooks/useFunctions';
+import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
 
 export {
   GTContext,
@@ -33,7 +33,7 @@ export {
   useLocales,
   useSetLocale,
   useLocaleSelector,
-  useGTFunctions,
+  useGTClass as useGTFunctions,
   useLocaleProperties,
   T,
   Var,

@@ -86,9 +86,13 @@ class GT {
     baseUrl = defaultBaseUrl,
     customMapping = {},
   }: GTConstructorParams = {}) {
-    this.apiKey = apiKey || process.env.GT_API_KEY || '';
-    this.devApiKey = devApiKey || process.env.GT_DEV_API_KEY || '';
-    this.projectId = projectId || process.env.GT_PROJECT_ID || '';
+    const processUndefined = typeof process !== 'undefined';
+    this.apiKey =
+      apiKey || (processUndefined ? process.env.GT_API_KEY || '' : '');
+    this.devApiKey =
+      devApiKey || (processUndefined ? process.env.GT_DEV_API_KEY || '' : '');
+    this.projectId =
+      projectId || (processUndefined ? process.env.GT_PROJECT_ID || '' : '');
     this.sourceLocale = _standardizeLocale(sourceLocale) || '';
     this.baseUrl = baseUrl;
     this.customMapping = customMapping;

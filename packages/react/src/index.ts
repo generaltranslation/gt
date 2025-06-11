@@ -19,7 +19,7 @@ import {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from './types/types';
-import { useGTFunctions, useLocaleProperties } from './hooks/useFunctions';
+import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
 
 export {
   Var,
@@ -37,7 +37,7 @@ export {
   useLocales,
   useSetLocale,
   useLocaleSelector,
-  useGTFunctions,
+  useGTClass as useGTFunctions,
   useLocaleProperties,
   LocaleSelector,
   DictionaryTranslationOptions,

@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { GTContext } from './GTContext';
 import {
   defaultCacheUrl,
@@ -18,7 +18,6 @@ import { useErrorChecks } from './hooks/useErrorChecks';
 import GT from 'generaltranslation';
 import { useLoadDictionary } from './hooks/useLoadDictionary';
 import { useLoadTranslations } from './hooks/useLoadTranslations';
-
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
  *
@@ -60,9 +59,9 @@ export default function GTProvider({
   fallback = undefined,
   translations: _translations = null,
   _versionId,
+  customMapping = config?.customMapping,
   ...metadata
 }: GTProviderProps) {
-
   // ---------- PROPS ---------- //
 
   // Read env to get projectId and API key
@@ -74,36 +73,42 @@ export default function GTProvider({
   // locales - approved locales for the project
   // translationRequired - whether translation is required
   // dialectTranslationRequired - whether dialect translation (e.g. en-US -> en-GB) is required
-  const { 
-    locale, setLocale, locales: approvedLocales,
-    translationRequired, dialectTranslationRequired 
-  } =
-    useLocaleData({
-      _locale,
-      defaultLocale,
-      locales,
-      ssr,
-      localeCookieName,
+  const {
+    locale,
+    setLocale,
+    locales: approvedLocales,
+    translationRequired,
+    dialectTranslationRequired,
+  } = useLocaleData({
+    _locale,
+    defaultLocale,
+    locales,
+    ssr,
+    localeCookieName,
   });
 
   // Define the GT instance
   // Used for custom mapping and as a driver for the runtime translation
-  const gt = useMemo(() => new GT({
-    devApiKey, 
-    sourceLocale: defaultLocale,
-    projectId,
-    baseUrl: runtimeUrl
-  }), [devApiKey, defaultLocale, projectId, runtimeUrl]);
+  const gt = useMemo(
+    () =>
+      new GT({
+        devApiKey,
+        sourceLocale: defaultLocale,
+        projectId,
+        baseUrl: runtimeUrl,
+        customMapping,
+      }),
+    [devApiKey, defaultLocale, projectId, runtimeUrl, customMapping]
+  );
 
   // Determine the type of translation loading
   // custom - custom loading function provided
   // default - using GT provided cache
   // disabled - no translation loading
-  const loadTranslationsType = (
+  const loadTranslationsType =
     (loadTranslations && 'custom') ||
     (cacheUrl && projectId && 'default') ||
-    'disabled'
-  );
+    'disabled';
 
   // ---------- LOAD DICTIONARY ---------- //
 
@@ -111,7 +116,7 @@ export default function GTProvider({
     _dictionary,
     loadDictionary,
     locale,
-    defaultLocale
+    defaultLocale,
   });
 
   // ---------- ERROR AND WARNING CHECKS ---------- //
@@ -122,7 +127,7 @@ export default function GTProvider({
     runtimeUrl,
     loadTranslationsType,
     cacheUrl,
-    locales
+    locales,
   });
 
   // ---------- TRANSLATION STATE ---------- //
@@ -135,28 +140,27 @@ export default function GTProvider({
     locale,
     cacheUrl,
     projectId,
-    _versionId
+    _versionId,
   });
 
   // ------- RUNTIME TRANSLATION ----- //
   // TODO: do this in a plugin
 
-  const { 
-    registerContentForTranslation, 
-    registerJsxForTranslation, 
-    runtimeTranslationEnabled 
-  } =
-    useRuntimeTranslation({
-      locale,
-      versionId: _versionId,
-      projectId,
-      defaultLocale,
-      devApiKey,
-      runtimeUrl,
-      renderSettings,
-      setTranslations,
-      ...metadata,
-    });
+  const {
+    registerContentForTranslation,
+    registerJsxForTranslation,
+    runtimeTranslationEnabled,
+  } = useRuntimeTranslation({
+    locale,
+    versionId: _versionId,
+    projectId,
+    defaultLocale,
+    devApiKey,
+    runtimeUrl,
+    renderSettings,
+    setTranslations,
+    ...metadata,
+  });
 
   // ---------- USE GT ---------- //
 
@@ -207,7 +211,7 @@ export default function GTProvider({
         translationRequired,
         dialectTranslationRequired,
         projectId,
-        renderSettings
+        renderSettings,
       }}
     >
       {display ? children : fallback}

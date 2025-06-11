@@ -1,4 +1,4 @@
-import { LocaleProperties } from "./locales/getLocaleProperties";
+import { LocaleProperties } from './locales/getLocaleProperties';
 
 export { LocaleProperties };
 
@@ -102,3 +102,5 @@ export type TranslationError = {
     key: string;
   };
 };
+
+export type { CustomMapping } from './locales/customLocaleMapping';
