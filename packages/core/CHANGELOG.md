@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 6.3.2
+
+### Patch Changes
+
+- [#346](https://github.com/generaltranslation/gt/pull/346) [`28b78a6`](https://github.com/generaltranslation/gt/commit/28b78a62de117cc8e4370cab79280495de37f28f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: switch to GT object
+
 ## 6.3.1
 
 ### Patch Changes
