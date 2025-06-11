@@ -25,7 +25,7 @@ type withGTConfigProps = {
   locales?: string[];
   defaultLocale?: string;
   ignoreBrowserLocales?: boolean;
-  getLocale?: () => Promise<string>;
+  getLocalePath?: string;
   // Custom mapping
   customMapping?: CustomMapping;
   // Rendering

@@ -2,10 +2,6 @@ import { cookies, headers } from 'next/headers';
 import { determineLocale } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
 
-// locale header name and cookie name
-const localeHeaderName = '';
-const localeCookieName = '';
-
 /**
  * Retrieves the 'accept-language' header from the headers list.
  * If the 'next/headers' module is not available, it attempts to load it. If the

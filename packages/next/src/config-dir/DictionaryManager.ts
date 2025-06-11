@@ -1,6 +1,6 @@
 import { standardizeLocale } from 'generaltranslation';
 import { DictionaryObject } from 'gt-react/internal';
-import resolveDictionaryLoader from '../loaders/resolveDictionaryDictionary';
+import resolveDictionaryLoader from '../loaders/resolveDictionary';
 import { customLoadDictionaryWarning } from '../errors/createErrors';
 
 /**

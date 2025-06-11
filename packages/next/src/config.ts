@@ -8,10 +8,12 @@ import {
   conflictingConfigurationBuildError,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
+  unresolvedGetLocaleBuildError,
   projectIdMissingWarn,
   standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
+  unsupportedGetLocalePathBuildError,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import { getLocaleProperties, standardizeLocale } from 'generaltranslation';
@@ -148,6 +150,11 @@ export function withGTConfig(
     throw new Error(conflictingConfigurationBuildError(conflicts));
   }
 
+  // Validate getLocalePath
+  if (props.getLocalePath) {
+    throw new Error(unsupportedGetLocalePathBuildError);
+  }
+
   // ---------- MERGE CONFIGS ---------- //
 
   // Merge cookie and header names
@@ -215,11 +222,11 @@ export function withGTConfig(
       ? mergedConfig.loadTranslationsPath
       : resolveConfigFilepath('loadTranslations');
 
-  // Resolve router
-  const customRouterPath =
-    typeof mergedConfig.routerPath === 'string'
-      ? mergedConfig.routerPath
-      : resolveConfigFilepath('routing', ['.ts', '.js']);
+  // // Resolve getLocale path
+  // const resolvedGetLocalePath =
+  //   typeof mergedConfig.getLocalePath === 'string'
+  //     ? mergedConfig.getLocalePath
+  //     : resolveConfigFilepath('getLocale', ['.ts', '.js']);
 
   // ----------- LOCALE STANDARDIZATION ----------- //
 
@@ -284,6 +291,15 @@ export function withGTConfig(
   } else {
     mergedConfig.loadTranslationsType = 'remote';
   }
+
+  // Resolve getLocale path
+  const customLocaleEnabled = false;
+  // if (resolvedGetLocalePath) {
+  //   if (!fs.existsSync(path.resolve(resolvedGetLocalePath))) {
+  //     throw new Error(unresolvedGetLocaleBuildError(resolvedGetLocalePath));
+  //   }
+  //   customLocaleEnabled = true;
+  // }
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
   if (
@@ -351,6 +367,8 @@ export function withGTConfig(
       _GENERALTRANSLATION_IGNORE_BROWSER_LOCALES:
         mergedConfig.ignoreBrowserLocales?.toString() ||
         defaultWithGTConfigProps.ignoreBrowserLocales.toString(),
+      _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED:
+        customLocaleEnabled.toString(),
     },
     experimental: {
       ...nextConfig.experimental,
@@ -364,7 +382,7 @@ export function withGTConfig(
                 'gt-next/_dictionary': resolvedDictionaryFilePath || '',
                 'gt-next/_load-translations': customLoadTranslationsPath || '',
                 'gt-next/_load-dictionary': customLoadDictionaryPath || '',
-                'gt-next/_routing': customRouterPath || '',
+                // 'gt-next/_request': resolvedGetLocalePath || '',
               },
             },
           }
@@ -397,12 +415,12 @@ export function withGTConfig(
           webpackConfig.resolve.alias[`gt-next/_load-dictionary`] =
             path.resolve(webpackConfig.context, customLoadDictionaryPath);
         }
-        if (customLoadDictionaryPath) {
-          webpackConfig.resolve.alias[`gt-next/_routing`] = path.resolve(
-            webpackConfig.context,
-            customLoadDictionaryPath
-          );
-        }
+        // if (resolvedGetLocalePath) {
+        //   webpackConfig.resolve.alias[`gt-next/_request`] = path.resolve(
+        //     webpackConfig.context,
+        //     resolvedGetLocalePath
+        //   );
+        // }
       }
       if (typeof nextConfig?.webpack === 'function') {
         return nextConfig.webpack(webpackConfig, options);
