@@ -39,7 +39,7 @@ program
   .option('-b, --batch-size <number>', 'File batch size', '10')
   .option('-c, --concurrency <number>', 'Max number of concurrent agents', '1')
   .option(
-    '-f, --files <pattern>',
+    '-f, --match-files <pattern>',
     'Comma-separated list of glob patterns to match source files'
   )
   .option(
@@ -62,8 +62,9 @@ program
     ) => {
       const parentOptions = command.parent?.opts() || {};
       const allOptions = { ...parentOptions, ...options };
+      const telemetryEnabled = !allOptions.noTelemetry;
       withTelemetry(
-        { enabled: !allOptions.noTelemetry, options: allOptions },
+        { enabled: telemetryEnabled, options: allOptions },
         async () => {
           const batchSize = Number(allOptions.batchSize) || 1;
           const concurrency = Number(allOptions.concurrency) || 1;
@@ -73,7 +74,7 @@ program
             await exit(1);
           }
 
-          displayHeader();
+          displayHeader(telemetryEnabled);
           LocadexManager.initialize({
             mcpTransport: 'sse',
             metadata: {},
@@ -110,19 +111,20 @@ program
   .option('-b, --batch-size <number>', 'File batch size', '10')
   .option('-c, --concurrency <number>', 'Max number of concurrent agents', '1')
   .option(
-    '-m, --matching-files <pattern>',
+    '-f, --match-files <pattern>',
     'Comma-separated list of glob patterns to match source files'
   )
   .option(
-    '-e, --matching-extensions <extensions>',
+    '-e, --extensions <extensions>',
     'Comma-separated list of file extensions to match'
   )
   .option('--no-telemetry', 'Disable telemetry')
   .action((options: CliOptions, command: Command) => {
     const parentOptions = command.parent?.opts() || {};
     const allOptions = { ...parentOptions, ...options };
+    const telemetryEnabled = !allOptions.noTelemetry;
     withTelemetry(
-      { enabled: !allOptions.noTelemetry, options: allOptions },
+      { enabled: telemetryEnabled, options: allOptions },
       async () => {
         const batchSize = Number(allOptions.batchSize) || 1;
         const concurrency = Number(allOptions.concurrency) || 1;
@@ -132,7 +134,7 @@ program
           await exit(1);
         }
 
-        displayHeader();
+        displayHeader(telemetryEnabled);
         LocadexManager.initialize({
           mcpTransport: 'sse',
           metadata: {},

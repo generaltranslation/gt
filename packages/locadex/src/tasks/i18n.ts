@@ -28,6 +28,7 @@ import {
   updateLockfile,
   cleanupLockfile,
 } from '../utils/lockfile.js';
+import { installClaudeCode } from '../utils/packages/installPackage.js';
 
 export async function i18nTask() {
   await validateInitialConfig();
@@ -39,6 +40,9 @@ export async function i18nTask() {
     );
     await exit(1);
   }
+
+  // Install claude-code if not installed
+  await installClaudeCode();
 
   // Init message
   const spinner = createSpinner();

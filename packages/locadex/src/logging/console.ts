@@ -50,9 +50,9 @@ export function endCommand(message: string) {
 }
 
 // GT specific logging
-export function displayHeader() {
+export function displayHeader(telemetryEnabled: boolean) {
   displayAsciiTitle();
-  displayInitializingText();
+  displayInitializingText(telemetryEnabled);
   startCommand(chalk.cyan(`Locadex v${getLocadexVersion()}`));
 }
 
@@ -72,13 +72,12 @@ Y8,        88      88
   );
 }
 
-function displayInitializingText() {
+function displayInitializingText(telemetryEnabled: boolean) {
   // eslint-disable-next-line no-console
   console.log(
     `\n${chalk.bold.blue('General Translation, Inc.')}
 ${chalk.dim('https://generaltranslation.com/docs')}
-
-${chalk.dim('Locadex uses Sentry and PostHog to collect anonymous telemetry data. You can opt out by running with the --no-telemetry flag.')}
+${telemetryEnabled ? chalk.dim('\nLocadex uses Sentry and PostHog to collect anonymous telemetry data. You can opt out by running with the --no-telemetry flag.') : ''}
 `
   );
 }

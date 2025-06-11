@@ -1,8 +1,4 @@
-import {
-  createSpinner,
-  displayHeader,
-  promptConfirm,
-} from '../logging/console.js';
+import { createSpinner, promptConfirm } from '../logging/console.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 import { getPackageManager } from 'gtx-cli/utils/packageManager';
 import {
@@ -21,11 +17,10 @@ import { validateInitialConfig } from '../utils/config.js';
 import { getNextDirectories } from '../utils/fs/getFiles.js';
 import { LocadexManager } from '../utils/locadexManager.js';
 import { outro } from '@clack/prompts';
-import { getPackageInfo } from 'gtx-cli/utils/packageInfo';
-import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { appendFileSync } from 'node:fs';
 import path from 'node:path';
 import { exit } from '../utils/shutdown.js';
+import { installClaudeCode } from '../utils/packages/installPackage.js';
 
 export async function setupTask(
   bypassPrompts: boolean,
@@ -114,18 +109,7 @@ export async function setupTask(
   );
 
   // Install claude-code if not installed
-  const claudeCodeInfo = await getPackageInfo('@anthropic-ai/claude-code');
-  if (!claudeCodeInfo) {
-    const spinner = createSpinner();
-    spinner.start('Installing claude-code...');
-    await installPackageGlobal(
-      '@anthropic-ai/claude-code',
-      CLAUDE_CODE_VERSION
-    );
-    spinner.stop(chalk.green('Installed claude-code.'));
-  } else {
-    logger.step(`claude-code is already installed: v${claudeCodeInfo.version}`);
-  }
+  await installClaudeCode();
 
   // Install locadex if not installed
   const isLocadexInstalled = packageJson
