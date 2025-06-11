@@ -28,5 +28,8 @@ export {
   Tx,
   getLocale, // getDefaultLocale
   getTranslations,
+  /**
+   * @deprecated Use getTranslations instead
+   */
   getTranslations as getDict,
 };

@@ -176,7 +176,7 @@ export default function GTProvider({
 
   // ---------- USE DICT ---------- //
 
-  const _internaluseTranslationsFunction =
+  const _internalUseTranslationsFunction =
     useCreateInternalUseTranslationsFunction(
       dictionary,
       translations,
@@ -201,7 +201,7 @@ export default function GTProvider({
         registerContentForTranslation,
         registerJsxForTranslation,
         _internalUseGTFunction,
-        _internaluseTranslationsFunction,
+        _internalUseTranslationsFunction,
         runtimeTranslationEnabled,
         locale,
         locales: approvedLocales,

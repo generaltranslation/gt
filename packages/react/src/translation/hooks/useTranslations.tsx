@@ -24,7 +24,7 @@ export default function useTranslations(
   };
 
   // Get the translation context
-  const { _internaluseTranslationsFunction } = useGTContext(
+  const { _internalUseTranslationsFunction } = useGTContext(
     `useTranslations('${id}'): No context provided. You're trying to get the t() function on the client, which can only be done inside a <GTProvider>.`
   );
 
@@ -50,7 +50,7 @@ export default function useTranslations(
    */
   function t(id: string, options: DictionaryTranslationOptions = {}): string {
     const prefixedId = getId(id);
-    return _internaluseTranslationsFunction(prefixedId, options);
+    return _internalUseTranslationsFunction(prefixedId, options);
   }
 
   return t;

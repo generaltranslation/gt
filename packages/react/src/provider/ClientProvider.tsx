@@ -131,7 +131,7 @@ export default function ClientProvider({
 
   // ---------- DICTIONARY ENTRY TRANSLATION ---------- //
 
-  const _internaluseTranslationsFunction =
+  const _internalUseTranslationsFunction =
     useCreateInternalUseTranslationsFunction(
       dictionary,
       translations,
@@ -158,7 +158,7 @@ export default function ClientProvider({
         registerJsxForTranslation,
         setLocale,
         _internalUseGTFunction,
-        _internaluseTranslationsFunction,
+        _internalUseTranslationsFunction,
         locale,
         locales,
         defaultLocale,
