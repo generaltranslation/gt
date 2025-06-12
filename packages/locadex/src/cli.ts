@@ -30,8 +30,8 @@ program
   .description('Run Locadex on your project')
   .option('-v, --verbose', 'Verbose output')
   .option('-d, --debug', 'Debug output')
-  .option('-b, --batch-size <number>', 'File batch size', '10')
-  .option('-c, --concurrency <number>', 'Max number of concurrent agents', '1')
+  .option('-b, --batch-size <number>', 'File batch size')
+  .option('-c, --concurrency <number>', 'Max number of concurrent agents')
   .option(
     '-m, --match-files <pattern>',
     'Comma-separated list of glob patterns to match source files'
@@ -42,6 +42,7 @@ program
   )
   .option('-y, --bypass-prompts', 'Bypass interactive prompts')
   .option('--no-telemetry', 'Disable telemetry')
+  .option('--app-dir <dir>', 'Path to the application root', '.')
   .action(setupCommand);
 
 program
@@ -49,13 +50,14 @@ program
   .description('Run Locadex i18n on your project')
   .option('-v, --verbose', 'Verbose output')
   .option('-d, --debug', 'Debug output')
-  .option('-b, --batch-size <number>', 'File batch size', '10')
-  .option('-c, --concurrency <number>', 'Max number of concurrent agents', '1')
+  .option('-b, --batch-size <number>', 'File batch size')
+  .option('-c, --concurrency <number>', 'Max number of concurrent agents')
   .option(
     '-m, --match-files <pattern>',
     'Comma-separated list of glob patterns to match source files'
   )
   .option('--no-telemetry', 'Disable telemetry')
+  .option('--app-dir <dir>', 'Path to the application root', '.')
   .action(i18nCommand);
 
 main(program);

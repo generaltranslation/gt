@@ -97,7 +97,10 @@ class Logger {
     return Logger.instance;
   }
 
-  initialize(options: CliOptions, logFile?: string): void {
+  initialize(
+    options: { verbose?: boolean; debug?: boolean },
+    logFile?: string
+  ): void {
     if (options.debug) {
       this._debug = true;
       this._verbose = true;
