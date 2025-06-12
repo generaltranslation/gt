@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { formatDateTime } from 'generaltranslation';
+import GT from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 
@@ -23,49 +23,21 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 function DateTime({
   children,
   locales,
-  name,
   options = {},
 }: {
-  children?: any;
+  children: Date;
   locales?: string[];
   name?: string;
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
 }): React.JSX.Element {
   const context = useContext(GTContext);
-  if (context) {
-    locales ||= [
-      ...(context.locale && [context.locale]),
-      context.defaultLocale,
-    ];
-  } else {
-    locales ||= [libraryDefaultLocale];
-  }
+  const gt = context?.gt || new GT();
 
-  let final;
+  const result = gt
+    .formatDateTime(children, { locales, ...options })
+    .replace(/[\u200F\u202B\u202E]/g, '');
 
-  let dateValue: Date | undefined;
-  const defaultValue = children;
-  if (typeof defaultValue === 'number') {
-    dateValue = new Date(defaultValue);
-  } else if (typeof defaultValue === 'string') {
-    dateValue = new Date(defaultValue);
-  } else if (defaultValue instanceof Date) {
-    dateValue = defaultValue;
-  }
-
-  if (typeof dateValue !== 'undefined' && isNaN(dateValue.getTime())) {
-    throw new Error(
-      `DateTime Error -- Invalid date format: "${defaultValue}". Please use a Date object, valid date string, or number.`
-    );
-  }
-
-  if (typeof dateValue !== 'undefined') {
-    final = formatDateTime(dateValue, { locales, ...options }).replace(
-      /[\u200F\u202B\u202E]/g,
-      ''
-    );
-  }
-  return <>{final}</>;
+  return <>{result}</>;
 }
 
 // Static property for transformation type

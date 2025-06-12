@@ -1,7 +1,7 @@
 'use client';
 import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { determineLocale, GT } from 'generaltranslation';
+import GT from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/config';
 import { TranslationsObject } from '../types/types';
@@ -55,12 +55,12 @@ export default function ClientProvider({
 
   // Maintain the locale state
   const [locale, _setLocale] = useState<string>(
-    _locale ? determineLocale(_locale, locales) || '' : ''
+    _locale ? GT.determineLocale(_locale, locales) || '' : ''
   );
 
   // Monitor for changes in _locale parameter
   useEffect(() => {
-    const newLocale = _locale ? determineLocale(_locale, locales) || '' : '';
+    const newLocale = _locale ? GT.determineLocale(_locale, locales) || '' : '';
     if (newLocale !== locale) {
       _setLocale(newLocale);
     }
@@ -80,7 +80,8 @@ export default function ClientProvider({
   // Set the locale via cookies and refresh the page to reload server-side. Make sure the language is supported.
   const setLocale = (newLocale: string): void => {
     // validate locale
-    newLocale = determineLocale(newLocale, locales) || locale || defaultLocale;
+    newLocale =
+      GT.determineLocale(newLocale, locales) || locale || defaultLocale;
 
     // persist locale
     document.cookie = `${localeCookieName}=${newLocale};path=/`;
@@ -105,6 +106,7 @@ export default function ClientProvider({
 
   const { registerContentForTranslation, registerJsxForTranslation } =
     useRuntimeTranslation({
+      gt,
       locale: locale,
       versionId: _versionId,
       projectId,
@@ -149,7 +151,6 @@ export default function ClientProvider({
   // Block rendering until all translations are resolved (IF YOU REMOVE THIS YOU WILL BE FIRED)
   const display = !!(!translationRequired || translations) && locale;
 
-  ('ClientProvider End');
   return (
     <GTContext.Provider
       value={{

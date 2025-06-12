@@ -1,6 +1,6 @@
-// ---- ERRORS ---- //
+import GT from 'generaltranslation';
 
-import { getLocaleProperties } from 'generaltranslation';
+// ---- ERRORS ---- //
 
 export const projectIdMissingError =
   'gt-react Error: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
@@ -83,7 +83,7 @@ export const APIKeyMissingWarn =
 export const createUnsupportedLocalesWarning = (locales: string[]) =>
   `gt-react: The following locales are currently unsupported by our service: ${locales
     .map((locale) => {
-      const { name } = getLocaleProperties(locale);
+      const { name } = GT.getLocaleProperties(locale);
       return `${locale} (${name})`;
     })
     .join(', ')}`;

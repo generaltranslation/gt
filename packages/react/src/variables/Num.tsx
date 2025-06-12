@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { formatNum } from 'generaltranslation';
+import GT from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 
@@ -23,30 +23,22 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  */
 function Num({
   children,
-  name,
   locales,
   options = {},
 }: {
-  children?: any;
+  children: number | string;
   locales?: string[];
   options?: Intl.NumberFormatOptions; // Optional options for the number formatting
   name?: string;
 }): React.JSX.Element {
   const context = useContext(GTContext);
-  if (context) {
-    locales ||= [
-      ...(context.locale && [context.locale]),
-      context.defaultLocale,
-    ];
-  } else {
-    locales ||= [libraryDefaultLocale];
-  }
+  const gt = context?.gt || new GT();
 
-  let renderedValue =
+  let renderedValue: string | number =
     typeof children === 'string' ? parseFloat(children) : children;
   if (typeof renderedValue === 'number') {
     // Using Intl.NumberFormat for consistent number formatting
-    renderedValue = formatNum(renderedValue, { locales, ...options });
+    renderedValue = gt.formatNum(renderedValue, { locales, ...options });
   }
   return <>{renderedValue}</>;
 }

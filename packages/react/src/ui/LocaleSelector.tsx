@@ -1,6 +1,5 @@
 import React from 'react';
 import useLocaleSelector from '../hooks/useLocaleSelector';
-import { getLocaleProperties } from 'generaltranslation';
 import { useGTClass } from '../hooks/useGTClass';
 
 /**

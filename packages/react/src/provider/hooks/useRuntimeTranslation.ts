@@ -22,6 +22,7 @@ import {
   maxBatchSize,
   batchInterval,
 } from '../config/defaultProps';
+import GT from 'generaltranslation';
 
 // Queue to store requested keys between renders.
 type TranslationRequestMetadata = {

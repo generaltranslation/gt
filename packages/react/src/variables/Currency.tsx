@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { formatCurrency } from 'generaltranslation';
+import GT from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 
@@ -23,30 +23,22 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 function Currency({
   children,
   currency = 'USD',
-  name,
   locales,
   options = {},
 }: {
-  children?: any;
+  children: number | string;
   currency?: string;
   name?: string;
   locales?: string[];
   options?: Intl.NumberFormatOptions;
 }): React.JSX.Element {
   const context = useContext(GTContext);
-  if (context) {
-    locales ||= [
-      ...(context.locale && [context.locale]),
-      context.defaultLocale,
-    ];
-  } else {
-    locales ||= [libraryDefaultLocale];
-  }
-  let renderedValue =
+  const gt = context?.gt || new GT();
+  let renderedValue: string | number =
     typeof children === 'string' ? parseFloat(children) : children;
   if (typeof renderedValue === 'number') {
     // Format the value using Intl.NumberFormat
-    renderedValue = formatCurrency(renderedValue, currency, {
+    renderedValue = gt.formatCurrency(renderedValue, currency, {
       locales,
       ...options,
     });
