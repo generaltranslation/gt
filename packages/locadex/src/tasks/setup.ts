@@ -1,6 +1,9 @@
 import { createSpinner, promptConfirm } from '../logging/console.js';
-import { isCancel } from '@clack/prompts';
-import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
+import {
+  getPackageJson,
+  isPackageInstalled,
+  updatePackageJson,
+} from 'gtx-cli/utils/packageJson';
 import { getPackageManager } from 'gtx-cli/utils/packageManager';
 import { installPackage } from 'gtx-cli/utils/installPackage';
 import chalk from 'chalk';
@@ -39,14 +42,21 @@ export async function setupTask(
     manager.rootDirectory,
     specifiedPackageManager
   );
+  const packageJson = await getPackageJson(manager.appDirectory);
 
-  const spinner = createSpinner('timer');
-
-  spinner.start(`Installing gt-next with ${packageManager.name}...`);
-
-  await installPackage('gt-next', packageManager, false, manager.appDirectory);
-
-  spinner.stop('Automatically installed gt-next.');
+  if (packageJson) {
+    if (!isPackageInstalled('gt-next', packageJson)) {
+      const spinner = createSpinner('timer');
+      spinner.start(`Installing gt-next with ${packageManager.name}...`);
+      await installPackage(
+        'gt-next',
+        packageManager,
+        false,
+        manager.appDirectory
+      );
+      spinner.stop('Automatically installed gt-next.');
+    }
+  }
 
   const nextConfigPath = findFilepaths(
     [
@@ -108,6 +118,46 @@ export async function setupTask(
       'gt.config.json'
     )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
   );
+
+  // Add translate to scripts
+  if (packageJson) {
+    if (!packageJson.scripts) {
+      packageJson.scripts = {};
+    }
+    const translateCommand = `locadex translate`;
+    let translateScript = 'translate';
+    if (!packageJson.scripts?.translate) {
+      packageJson.scripts.translate = translateCommand;
+      translateScript = 'translate';
+    } else {
+      if (
+        packageJson.scripts.translate &&
+        packageJson.scripts.translate.includes(translateCommand)
+      ) {
+        translateScript = 'translate';
+      } else {
+        packageJson.scripts['translate:gt'] = translateCommand;
+        translateScript = 'translate:gt';
+      }
+    }
+    // prefix translate to build command
+    const runTranslate = `${packageManager.runScriptCommand} ${translateScript}`;
+    if (
+      packageJson.scripts.build &&
+      !packageJson.scripts.build.includes(runTranslate)
+    ) {
+      packageJson.scripts.build = `${runTranslate} && ${packageJson.scripts.build}`;
+    }
+    await updatePackageJson(packageJson, manager.appDirectory);
+    logger.success(
+      `Added ${chalk.cyan(translateScript)} script to your ${chalk.cyan(
+        path.relative(
+          manager.rootDirectory,
+          path.resolve(manager.appDirectory, 'package.json')
+        )
+      )} file and build command. Run ${chalk.cyan(translateScript)} to translate your project.`
+    );
+  }
 
   // Install claude-code if not installed
   await installClaudeCode();

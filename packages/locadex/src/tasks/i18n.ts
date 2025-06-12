@@ -330,7 +330,6 @@ Your new task is as follows:
 2. Fix all errors output by the gt-next validator.
 3. Whenever you are finished with your changes, run the gt-next validator.
 4. Repeat steps 1-3 until there are no more errors, or until you believe that you have fixed all errors.
-5. If the project is setup with linting, lint the project and fix all lint errors.
 
 ## RULES:
 - ONLY modify files that are relevant to the internationalization of the project.
