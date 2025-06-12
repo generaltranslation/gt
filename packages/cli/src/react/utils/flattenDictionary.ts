@@ -3,8 +3,8 @@ import {
   FlattenedDictionary,
   FlattenedJSONDictionary,
   JSONDictionary,
-} from '../../types/data';
-import { logErrorAndExit } from '../../console';
+} from '../../types/data.js';
+import { logErrorAndExit } from '../../console/logging.js';
 
 const createDuplicateKeyError = (key: string) =>
   `Duplicate key found in dictionary: "${key}"`;

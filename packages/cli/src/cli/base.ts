@@ -1,15 +1,10 @@
-import { program } from 'commander';
-import createOrUpdateConfig from '../fs/config/setupConfig';
-import findFilepath, { findFilepaths, readFile } from '../fs/findFilepath';
+import { Command } from 'commander';
+import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
+import findFilepath, { findFilepaths } from '../fs/findFilepath.js';
 import {
   displayHeader,
   promptText,
   logErrorAndExit,
-  noDefaultLocaleError,
-  noLocalesError,
-  noApiKeyError,
-  noProjectIdError,
-  noFilesError,
   endCommand,
   promptConfirm,
   promptMultiSelect,
@@ -18,7 +13,7 @@ import {
   startCommand,
   createSpinner,
   logMessage,
-} from '../console';
+} from '../console/logging.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import {
@@ -26,19 +21,23 @@ import {
   Settings,
   SupportedLibraries,
   SetupOptions,
-} from '../types';
-import { DataFormat } from '../types/data';
-import { generateSettings } from '../config/generateSettings';
+} from '../types/index.js';
+import { DataFormat } from '../types/data.js';
+import { generateSettings } from '../config/generateSettings.js';
 import chalk from 'chalk';
-import { translateFiles } from '../formats/files/translate';
-import { FILE_EXT_TO_FORMAT } from '../formats/files/supportedFiles';
-import { handleSetupReactCommand } from '../setup/wizard';
-import { isPackageInstalled, searchForPackageJson } from '../utils/packageJson';
-import { getDesiredLocales } from '../setup/userInput';
-import { installPackage } from '../utils/installPackage';
-import { getPackageManager } from '../utils/packageManager';
-import { retrieveCredentials, setCredentials } from '../utils/credentials';
-import { areCredentialsSet } from '../utils/credentials';
+import { translateFiles } from '../formats/files/translate.js';
+import { FILE_EXT_TO_FORMAT } from '../formats/files/supportedFiles.js';
+import { handleSetupReactCommand } from '../setup/wizard.js';
+import {
+  isPackageInstalled,
+  searchForPackageJson,
+} from '../utils/packageJson.js';
+import { getDesiredLocales } from '../setup/userInput.js';
+import { installPackage } from '../utils/installPackage.js';
+import { getPackageManager } from '../utils/packageManager.js';
+import { retrieveCredentials, setCredentials } from '../utils/credentials.js';
+import { areCredentialsSet } from '../utils/credentials.js';
+import { validateConfigExists } from '../config/validateSettings.js';
 
 export type TranslateOptions = {
   config?: string;
@@ -56,11 +55,14 @@ export type LoginOptions = {
 export class BaseCLI {
   protected library: SupportedLibraries;
   protected additionalModules: SupportedLibraries[];
+  protected program: Command;
   // Constructor is shared amongst all CLI class types
   public constructor(
+    program: Command,
     library: SupportedLibraries,
     additionalModules?: SupportedLibraries[]
   ) {
+    this.program = program;
     this.library = library;
     this.additionalModules = additionalModules || [];
     this.setupInitCommand();
@@ -78,11 +80,10 @@ export class BaseCLI {
     if (process.argv.length <= 2) {
       process.argv.push('init');
     }
-    program.parse();
   }
 
   protected setupGTCommand(): void {
-    program
+    this.program
       .command('translate')
       .description('Translate your project using General Translation')
       .option(
@@ -110,6 +111,7 @@ export class BaseCLI {
       )
       .action(async (initOptions: TranslateOptions) => {
         displayHeader('Starting translation...');
+        validateConfigExists();
         const settings = await generateSettings(initOptions);
 
         const options = { ...initOptions, ...settings };
@@ -120,7 +122,7 @@ export class BaseCLI {
   }
 
   protected setupLoginCommand(): void {
-    program
+    this.program
       .command('auth')
       .description('Generate a General Translation API key and project ID')
       .option(
@@ -165,7 +167,7 @@ export class BaseCLI {
   }
 
   protected setupInitCommand(): void {
-    program
+    this.program
       .command('init')
       .description(
         'Run the setup wizard to configure your project for General Translation'
@@ -219,7 +221,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
   }
 
   protected setupConfigureCommand(): void {
-    program
+    this.program
       .command('configure')
       .description(
         'Configure your project for General Translation. This will create a gt.config.json file in your codebase.'
@@ -241,7 +243,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
   }
 
   protected setupSetupCommand(): void {
-    program
+    this.program
       .command('setup')
       .description(
         'Run the setup to configure your Next.js or React project for General Translation'
@@ -356,7 +358,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
 
     const message = !isUsingGT
       ? 'What is the format of your language resource files? Select as many as applicable.\nAdditionally, you can translate any other files you have in your project.'
-      : `${chalk.gray(
+      : `${chalk.dim(
           '(Optional)'
         )} Do you have any separate files you would like to translate? For example, extra Markdown files for docs.`;
     const dataFormats = await promptMultiSelect({

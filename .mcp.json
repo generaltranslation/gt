@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "generaltranslation": {
+      "command": "npx",
+      "args": ["-y", "@generaltranslation/mcp@latest"]
+    }
+  }
+}

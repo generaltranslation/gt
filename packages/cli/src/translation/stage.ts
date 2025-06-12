@@ -1,18 +1,19 @@
-import { devApiKeyError, logErrorAndExit } from '../console/errors';
+import { devApiKeyError } from '../console/index.js';
+import { logErrorAndExit } from '../console/logging.js';
 import chalk from 'chalk';
 
-import findFilepath from '../fs/findFilepath';
-import { Options, Settings, SupportedLibraries } from '../types';
-import { logSuccess, logWarning, logError } from '../console/logging';
+import findFilepath from '../fs/findFilepath.js';
+import { Options, Settings } from '../types/index.js';
+import { logSuccess, logWarning, logError } from '../console/logging.js';
 
-import { createUpdates } from './parse';
+import { createUpdates } from './parse.js';
 import {
   noLocalesError,
   noDefaultLocaleError,
   noProjectIdError,
   noApiKeyError,
-} from '../console/errors';
-import { sendUpdates } from '../api/sendUpdates';
+} from '../console/index.js';
+import { sendUpdates } from '../api/sendUpdates.js';
 
 export async function stageProject(
   settings: Options & Settings,
@@ -63,7 +64,7 @@ export async function stageProject(
     } else {
       logErrorAndExit(
         chalk.red(
-          `Error: CLI tool encountered syntax errors while scanning for translatable content. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
+          `Error: CLI tool encountered syntax errors while scanning for translatable content. ${chalk.dim('To ignore these errors, re-run with --ignore-errors')}\n` +
             errors
               .map((error) => chalk.red('• ') + chalk.white(error) + '\n')
               .join('')

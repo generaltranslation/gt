@@ -1,12 +1,11 @@
-// packages/gt-cli-core/src/BaseCLI.ts
-import { program } from 'commander';
+import { Command } from 'commander';
 import {
   Options,
   SupportedFrameworks,
   WrapOptions,
   GenerateSourceOptions,
   SupportedLibraries,
-} from '../types';
+} from '../types/index.js';
 import {
   displayHeader,
   endCommand,
@@ -16,31 +15,33 @@ import {
   logSuccess,
   logWarning,
   promptConfirm,
-} from '../console/console';
-import loadJSON from '../fs/loadJSON';
-import findFilepath, { findFilepaths } from '../fs/findFilepath';
+} from '../console/logging.js';
+import loadJSON from '../fs/loadJSON.js';
+import findFilepath, { findFilepaths } from '../fs/findFilepath.js';
 import chalk from 'chalk';
-import { formatFiles } from '../hooks/postProcess';
-import { BaseCLI } from './base';
-import wrapContentReact from '../react/parse/wrapContent';
-import { generateSettings } from '../config/generateSettings';
-import { saveJSON } from '../fs/saveJSON';
-import { resolveLocaleFiles } from '../fs/config/parseFilesConfig';
-import { noFilesError, noVersionIdError } from '../console/errors';
-import { stageProject } from '../translation/stage';
-import { createUpdates } from '../translation/parse';
-import { translate } from '../translation/translate';
-import updateConfig from '../fs/config/updateConfig';
+import { formatFiles } from '../hooks/postProcess.js';
+import { BaseCLI } from './base.js';
+import { wrapContentReact } from '../react/parse/wrapContent.js';
+import { generateSettings } from '../config/generateSettings.js';
+import { saveJSON } from '../fs/saveJSON.js';
+import { resolveLocaleFiles } from '../fs/config/parseFilesConfig.js';
+import { noFilesError, noVersionIdError } from '../console/index.js';
+import { stageProject } from '../translation/stage.js';
+import { createUpdates } from '../translation/parse.js';
+import { translate } from '../translation/translate.js';
+import updateConfig from '../fs/config/updateConfig.js';
+import { validateConfigExists } from '../config/validateSettings.js';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
 
 export class ReactCLI extends BaseCLI {
   constructor(
+    command: Command,
     library: 'gt-react' | 'gt-next',
     additionalModules?: SupportedLibraries[]
   ) {
-    super(library, additionalModules);
+    super(command, library, additionalModules);
   }
   public init() {
     this.setupStageCommand();
@@ -62,7 +63,7 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected setupStageCommand(): void {
-    program
+    this.program
       .command('stage')
       .description(
         'Submits the project to the General Translation API for translation. Translations created using this command will require human approval.'
@@ -124,7 +125,7 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected setupTranslateCommand(): void {
-    program
+    this.program
       .command('translate')
       .description(
         'Scans the project for a dictionary and/or <T> tags, and sends the updates to the General Translation API for translation.'
@@ -186,7 +187,7 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected setupGenerateSourceCommand(): void {
-    program
+    this.program
       .command('generate')
       .description(
         'Generate a translation file for the source locale. The -t flag must be provided. This command should be used if you are handling your own translations.'
@@ -227,7 +228,7 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected setupScanCommand(): void {
-    program
+    this.program
       .command('scan')
       .description(
         'Scans the project and wraps all JSX elements in the src directory with a <T> tag, with unique ids'
@@ -248,6 +249,7 @@ export class ReactCLI extends BaseCLI {
         'Disable formatting of edited files',
         false
       )
+      .option('--skip-ts', 'Skip wrapping <T> tags in TypeScript files', false)
       .action(async (options: WrapOptions) => {
         displayHeader('Scanning project...');
         await this.handleScanCommand(options);
@@ -296,7 +298,7 @@ export class ReactCLI extends BaseCLI {
       } else {
         logErrorAndExit(
           chalk.red(
-            `CLI tool encountered errors while scanning for translatable content. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
+            `CLI tool encountered errors while scanning for translatable content. ${chalk.dim('To ignore these errors, re-run with --ignore-errors')}\n` +
               errors
                 .map((error) => chalk.red('• Error: ') + chalk.white(error))
                 .join('\n')
@@ -433,6 +435,7 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected async handleTranslate(initOptions: Options): Promise<void> {
+    validateConfigExists();
     const settings = await generateSettings(initOptions);
 
     // First run the base class's handleTranslate method

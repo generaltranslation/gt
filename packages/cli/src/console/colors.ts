@@ -16,5 +16,5 @@ export function colorizeContent(content: string) {
 }
 
 export function colorizeLine(line: string) {
-  return chalk.gray(line);
+  return chalk.dim(line);
 }

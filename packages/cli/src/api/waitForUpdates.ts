@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { createOraSpinner, createSpinner } from '../console';
+import { createOraSpinner, createSpinner } from '../console/logging.js';
 import { getLocaleProperties } from 'generaltranslation';
 
 /**

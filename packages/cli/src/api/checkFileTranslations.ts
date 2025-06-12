@@ -1,8 +1,8 @@
 import chalk from 'chalk';
-import { createOraSpinner, createSpinner, logError } from '../console';
+import { createOraSpinner, logError } from '../console/logging.js';
 import { getLocaleProperties } from 'generaltranslation';
-import { downloadFile } from './downloadFile';
-import { downloadFileBatch } from './downloadFileBatch';
+import { downloadFile } from './downloadFile.js';
+import { downloadFileBatch } from './downloadFileBatch.js';
 /**
  * Checks the status of translations for a given version ID
  * @param apiKey - The API key for the General Translation API

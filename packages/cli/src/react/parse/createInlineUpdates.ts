@@ -1,15 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { Options, Updates } from '../../types';
+import { Options, Updates } from '../../types/index.js';
 
 import { parse } from '@babel/parser';
-import traverse, { NodePath } from '@babel/traverse';
+import traverseModule from '@babel/traverse';
+import { NodePath } from '@babel/traverse';
+
+// Handle CommonJS/ESM interop
+const traverse = traverseModule.default || traverseModule;
 
 import { hashJsxChildren } from 'generaltranslation/id';
-import { parseJSXElement } from '../jsx/utils/parseJsx';
-import { parseStrings } from '../jsx/utils/parseStringFunction';
-import { extractImportName } from '../jsx/utils/parseAst';
-import { logError } from '../../console';
+import { parseJSXElement } from '../jsx/utils/parseJsx.js';
+import { parseStrings } from '../jsx/utils/parseStringFunction.js';
+import { extractImportName } from '../jsx/utils/parseAst.js';
+import { logError } from '../../console/logging.js';
 
 export default async function createInlineUpdates(
   options: Options,

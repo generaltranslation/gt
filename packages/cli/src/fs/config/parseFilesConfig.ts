@@ -1,8 +1,12 @@
 import path from 'node:path';
-import { FilesOptions, ResolvedFiles, TransformFiles } from '../../types';
+import {
+  FilesOptions,
+  ResolvedFiles,
+  TransformFiles,
+} from '../../types/index.js';
 import fg from 'fast-glob';
-import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles';
-import { logWarning } from '../../console';
+import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
+import { logWarning } from '../../console/logging.js';
 import chalk from 'chalk';
 
 /**

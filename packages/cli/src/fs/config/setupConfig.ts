@@ -1,6 +1,7 @@
 import fs from 'node:fs';
-import { displayCreatedConfigFile, logError } from '../../console';
-import { FilesOptions, SupportedFrameworks } from '../../types';
+import { displayCreatedConfigFile } from '../../console/logging.js';
+import { FilesOptions, SupportedFrameworks } from '../../types/index.js';
+import { logError } from '../../console/logging.js';
 
 /**
  * Checks if the config file exists.
@@ -9,7 +10,7 @@ import { FilesOptions, SupportedFrameworks } from '../../types';
  * @param {string} configFilepath - The path to the config file.
  * @param {Record<string, any>} configObject - The config object to write if the file does not exist.
  */
-export default async function createOrUpdateConfig(
+export async function createOrUpdateConfig(
   configFilepath: string,
   options: {
     projectId?: string;

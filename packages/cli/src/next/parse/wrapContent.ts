@@ -1,24 +1,29 @@
 import fs from 'node:fs';
-import { SupportedFrameworks, WrapOptions } from '../../types';
+import { WrapOptions } from '../../types/index.js';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
-import traverse, { NodePath } from '@babel/traverse';
-import generate from '@babel/generator';
-import { getFiles } from '../../fs/findJsxFilepath';
-import { isMeaningful } from '../../react/jsx/evaluateJsx';
-import { handleJsxElement } from '../../react/jsx/wrapJsx';
-import { getRelativePath } from '../../fs/findFilepath';
+import traverseModule from '@babel/traverse';
+import generateModule from '@babel/generator';
+
+// Handle CommonJS/ESM interop
+const traverse = traverseModule.default || traverseModule;
+const generate = generateModule.default || generateModule;
+
+import { getFiles } from '../../fs/findJsxFilepath.js';
+import { isMeaningful } from '../../react/jsx/evaluateJsx.js';
+import { handleJsxElement } from '../../react/jsx/wrapJsx.js';
+import { getRelativePath } from '../../fs/findFilepath.js';
 import {
   isHtmlElement,
   isBodyElement,
   hasGTProviderChild,
   addDynamicLangAttribute,
   makeParentFunctionAsync,
-} from '../jsx/utils';
+} from '../jsx/utils.js';
 import {
   generateImportMap,
   createImports,
-} from '../../react/jsx/utils/parseAst';
+} from '../../react/jsx/utils/parseAst.js';
 
 const IMPORT_MAP = {
   T: { name: 'T', source: 'gt-next' },
@@ -36,7 +41,7 @@ const IMPORT_MAP = {
  * @param options - The options object
  * @returns An object containing the updates and errors
  */
-export default async function wrapContentNext(
+export async function wrapContentNext(
   options: WrapOptions,
   pkg: 'gt-next',
   errors: string[],
@@ -129,6 +134,10 @@ export default async function wrapContentNext(
           usedImports.push('GTProvider');
           modified = true;
           path.skip();
+          return;
+        }
+        // If skip wrapping Ts, skip processing this node
+        if (options.skipTs) {
           return;
         }
         // Check if this JSX element has any JSX element ancestors

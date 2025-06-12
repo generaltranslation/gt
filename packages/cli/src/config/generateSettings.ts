@@ -1,19 +1,17 @@
-import { isValidLocale } from 'generaltranslation';
-import { displayProjectId } from '../console/console';
-import { warnApiKeyInConfig } from '../console/warnings';
-import loadConfig from '../fs/config/loadConfig';
-import { Settings, SupportedFrameworks } from '../types';
+import { displayProjectId, warnApiKeyInConfig } from '../console/logging.js';
+import loadConfig from '../fs/config/loadConfig.js';
+import { Settings, SupportedFrameworks } from '../types/index.js';
 import {
   defaultBaseUrl,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
 import fs from 'node:fs';
-import createOrUpdateConfig from '../fs/config/setupConfig';
-import { resolveFiles } from '../fs/config/parseFilesConfig';
-import { findFilepaths } from '../fs/findFilepath';
-import { validateSettings } from './validateSettings';
-import { GT_DASHBOARD_URL } from '../utils/constants';
-import { resolveProjectId } from '../fs/utils';
+import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
+import { resolveFiles } from '../fs/config/parseFilesConfig.js';
+import { findFilepaths } from '../fs/findFilepath.js';
+import { validateSettings } from './validateSettings.js';
+import { GT_DASHBOARD_URL } from '../utils/constants.js';
+import { resolveProjectId } from '../fs/utils.js';
 /**
  * Generates settings from any
  * @param options - The options to generate settings from

@@ -1,13 +1,15 @@
 import { NodePath } from '@babel/traverse';
-import { Updates } from '../../../types';
+import { Updates } from '../../../types/index.js';
 import { splitStringToContent } from 'generaltranslation';
 import * as t from '@babel/types';
-import { isStaticExpression } from '../evaluateJsx';
+import { isStaticExpression } from '../evaluateJsx.js';
 import {
   warnNonStaticExpressionSync,
   warnTemplateLiteralSync,
-} from '../../../console';
-import generate from '@babel/generator';
+} from '../../../console/index.js';
+import generateModule from '@babel/generator';
+// Handle CommonJS/ESM interop
+const generate = generateModule.default || generateModule;
 
 export const attributes = ['id', 'context'];
 

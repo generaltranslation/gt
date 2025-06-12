@@ -2,13 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'os';
 import { build, BuildOptions } from 'esbuild';
-import { Options, Updates } from '../../types';
-import flattenDictionary from '../utils/flattenDictionary';
+import { Options, Updates } from '../../types/index.js';
+import flattenDictionary from '../utils/flattenDictionary.js';
 import { splitStringToContent } from 'generaltranslation';
-import loadJSON from '../../fs/loadJSON';
+import loadJSON from '../../fs/loadJSON.js';
 import { hashJsxChildren } from 'generaltranslation/id';
-import getEntryAndMetadata from '../utils/getEntryAndMetadata';
-import { logError, logErrorAndExit } from '../../console';
+import getEntryAndMetadata from '../utils/getEntryAndMetadata.js';
+import { logError, logErrorAndExit } from '../../console/logging.js';
 
 export default async function createDictionaryUpdates(
   options: Options,

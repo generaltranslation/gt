@@ -8,10 +8,10 @@ import {
   confirm,
   isCancel,
   cancel,
-  multiselect, // @ts-expect-error
+  multiselect,
 } from '@clack/prompts';
 import chalk from 'chalk';
-import { getCLIVersion } from '../utils/packageJson';
+import { getCLIVersion } from '../utils/packageJson.js';
 
 // Basic logging functions
 export function logInfo(message: string) {
@@ -75,24 +75,24 @@ function displayInitializingText() {
   const version = getCLIVersion();
   console.log(
     `\n${chalk.bold.blue('General Translation, Inc.')}
-${chalk.gray('https://generaltranslation.com/docs')}
-${chalk.gray(`CLI Version: ${version}\n`)}`
+${chalk.dim('https://generaltranslation.com/docs')}
+${chalk.dim(`CLI Version: ${version}\n`)}`
   );
 }
 
 export function displayProjectId(projectId: string) {
-  logMessage(chalk.gray(`Project ID: ${chalk.bold(projectId)}`));
+  logMessage(chalk.dim(`Project ID: ${chalk.bold(projectId)}`));
 }
 
 export function displayResolvedPaths(resolvedPaths: [string, string][]) {
   const paths = resolvedPaths.map(([key, resolvedPath]) => {
-    return chalk.gray(`'${chalk.white(key)}' → '${chalk.green(resolvedPath)}'`);
+    return chalk.dim(`'${chalk.white(key)}' → '${chalk.green(resolvedPath)}'`);
   });
   log.step(`Resolved path aliases:\n${paths.join('\n')}`);
 }
 
 export function displayCreatedConfigFile(configFilepath: string) {
-  log.success(`Created config file ${chalk.cyan(configFilepath)}`);
+  log.step(`Created config file ${chalk.cyan(configFilepath)}`);
 }
 
 export function displayUpdatedConfigFile(configFilepath: string) {
@@ -126,7 +126,7 @@ export async function promptText({
     placeholder: defaultValue,
     validate: validate
       ? (value) => {
-          const validation = validate(value);
+          const validation = validate(value || '');
           return validation === true ? undefined : validation.toString();
         }
       : undefined,

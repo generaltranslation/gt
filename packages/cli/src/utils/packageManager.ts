@@ -1,10 +1,11 @@
 // This file is MIT licensed and was adapted from https://github.com/getsentry/sentry-wizard/blob/master/src/utils/package-manager.ts and https://github.com/getsentry/sentry-wizard/blob/master/src/utils/clack/index.ts
 import * as fs from 'fs';
 import * as path from 'path';
-import { getPackageJson, updatePackageJson } from './packageJson';
-import { promptSelect } from '../console';
+import { getPackageJson, updatePackageJson } from './packageJson.js';
+import { promptSelect } from '../console/logging.js';
 
 export interface PackageManager {
+  id: string;
   name: string;
   label: string;
   installCommand: string;
@@ -15,11 +16,12 @@ export interface PackageManager {
   forceInstallFlag: string;
   devDependencyFlag: string;
   registry?: string;
-  detect: () => boolean;
+  detect: (cwd: string) => boolean;
   addOverride: (pkgName: string, pkgVersion: string) => Promise<void>;
 }
 
 export const BUN: PackageManager = {
+  id: 'bun',
   name: 'bun',
   label: 'Bun',
   installCommand: 'add',
@@ -28,16 +30,19 @@ export const BUN: PackageManager = {
   flags: '',
   forceInstallFlag: '--force',
   devDependencyFlag: '--dev',
-  detect: () =>
+  detect: (cwd: string) =>
     ['bun.lockb', 'bun.lock'].some((lockFile) => {
       try {
-        return fs.existsSync(path.join(process.cwd(), lockFile));
+        return fs.existsSync(path.join(cwd, lockFile));
       } catch (e) {
         return false;
       }
     }),
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
     const packageDotJson = await getPackageJson();
+    if (!packageDotJson) {
+      return;
+    }
     const overrides = packageDotJson.overrides || {};
 
     await updatePackageJson({
@@ -50,6 +55,7 @@ export const BUN: PackageManager = {
   },
 };
 export const DENO: PackageManager = {
+  id: 'deno',
   name: 'deno',
   label: 'Deno',
   installCommand: 'install',
@@ -59,15 +65,18 @@ export const DENO: PackageManager = {
   forceInstallFlag: '--force',
   devDependencyFlag: '--dev',
   registry: 'npm',
-  detect: () => {
+  detect: (cwd: string) => {
     try {
-      return fs.existsSync(path.join(process.cwd(), 'deno.lock'));
+      return fs.existsSync(path.join(cwd, 'deno.lock'));
     } catch (e) {
       return false;
     }
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
     const packageDotJson = await getPackageJson();
+    if (!packageDotJson) {
+      return;
+    }
     const overrides = packageDotJson.overrides || {};
 
     await updatePackageJson({
@@ -80,6 +89,7 @@ export const DENO: PackageManager = {
   },
 };
 export const YARN_V1: PackageManager = {
+  id: 'yarn_v1',
   name: 'yarn',
   label: 'Yarn V1',
   installCommand: 'add',
@@ -88,10 +98,10 @@ export const YARN_V1: PackageManager = {
   flags: '--ignore-workspace-root-check',
   forceInstallFlag: '--force',
   devDependencyFlag: '--dev',
-  detect: () => {
+  detect: (cwd: string) => {
     try {
       return fs
-        .readFileSync(path.join(process.cwd(), 'yarn.lock'), 'utf-8')
+        .readFileSync(path.join(cwd, 'yarn.lock'), 'utf-8')
         .slice(0, 500)
         .includes('yarn lockfile v1');
     } catch (e) {
@@ -100,6 +110,9 @@ export const YARN_V1: PackageManager = {
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
     const packageDotJson = await getPackageJson();
+    if (!packageDotJson) {
+      return;
+    }
     const resolutions = packageDotJson.resolutions || {};
 
     await updatePackageJson({
@@ -113,6 +126,7 @@ export const YARN_V1: PackageManager = {
 };
 /** YARN V2/3/4 */
 export const YARN_V2: PackageManager = {
+  id: 'yarn_v2',
   name: 'yarn',
   label: 'Yarn V2/3/4',
   installCommand: 'add',
@@ -121,10 +135,10 @@ export const YARN_V2: PackageManager = {
   flags: '',
   forceInstallFlag: '--force',
   devDependencyFlag: '--dev',
-  detect: () => {
+  detect: (cwd: string) => {
     try {
       return fs
-        .readFileSync(path.join(process.cwd(), 'yarn.lock'), 'utf-8')
+        .readFileSync(path.join(cwd, 'yarn.lock'), 'utf-8')
         .slice(0, 500)
         .includes('__metadata');
     } catch (e) {
@@ -133,6 +147,9 @@ export const YARN_V2: PackageManager = {
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
     const packageDotJson = await getPackageJson();
+    if (!packageDotJson) {
+      return;
+    }
     const resolutions = packageDotJson.resolutions || {};
 
     await updatePackageJson({
@@ -145,6 +162,7 @@ export const YARN_V2: PackageManager = {
   },
 };
 export const PNPM: PackageManager = {
+  id: 'pnpm',
   name: 'pnpm',
   label: 'PNPM',
   installCommand: 'add',
@@ -153,15 +171,18 @@ export const PNPM: PackageManager = {
   flags: '--ignore-workspace-root-check',
   forceInstallFlag: '--force',
   devDependencyFlag: '--save-dev',
-  detect: () => {
+  detect: (cwd: string) => {
     try {
-      return fs.existsSync(path.join(process.cwd(), 'pnpm-lock.yaml'));
+      return fs.existsSync(path.join(cwd, 'pnpm-lock.yaml'));
     } catch (e) {
       return false;
     }
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
     const packageDotJson = await getPackageJson();
+    if (!packageDotJson) {
+      return;
+    }
     const pnpm = packageDotJson.pnpm || {};
     const overrides = pnpm.overrides || {};
 
@@ -178,6 +199,7 @@ export const PNPM: PackageManager = {
   },
 };
 export const NPM: PackageManager = {
+  id: 'npm',
   name: 'npm',
   label: 'NPM',
   installCommand: 'install',
@@ -186,15 +208,18 @@ export const NPM: PackageManager = {
   flags: '',
   forceInstallFlag: '--force',
   devDependencyFlag: '--save-dev',
-  detect: () => {
+  detect: (cwd: string) => {
     try {
-      return fs.existsSync(path.join(process.cwd(), 'package-lock.json'));
+      return fs.existsSync(path.join(cwd, 'package-lock.json'));
     } catch (e) {
       return false;
     }
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
     const packageDotJson = await getPackageJson();
+    if (!packageDotJson) {
+      return;
+    }
     const overrides = packageDotJson.overrides || {};
 
     await updatePackageJson({
@@ -209,11 +234,9 @@ export const NPM: PackageManager = {
 
 export const packageManagers = [NPM, YARN_V1, YARN_V2, PNPM, BUN, DENO];
 
-export function _detectPackageManger(
-  managers?: PackageManager[]
-): PackageManager | null {
-  const foundPackageMangers = (managers ?? packageManagers).filter(
-    (packageManager) => packageManager.detect()
+export function _detectPackageManger(cwd: string): PackageManager | null {
+  const foundPackageMangers = packageManagers.filter((packageManager) =>
+    packageManager.detect(cwd)
   );
 
   // Only consider a package manager detected if we found exactly one.
@@ -227,7 +250,10 @@ export function _detectPackageManger(
 
 // Get the package manager for the current project
 // Uses a global cache to avoid prompting the user multiple times
-export async function getPackageManager(): Promise<PackageManager> {
+export async function getPackageManager(
+  cwd: string = process.cwd(),
+  specifiedPackageManager?: string
+): Promise<PackageManager> {
   const globalWizard: typeof global & {
     _gt_wizard_cached_package_manager?: PackageManager;
   } = global;
@@ -236,7 +262,17 @@ export async function getPackageManager(): Promise<PackageManager> {
     return globalWizard._gt_wizard_cached_package_manager;
   }
 
-  const detectedPackageManager = _detectPackageManger();
+  if (specifiedPackageManager) {
+    const packageManager = packageManagers.find(
+      (packageManager) => packageManager.id === specifiedPackageManager
+    );
+    if (packageManager) {
+      globalWizard._gt_wizard_cached_package_manager = packageManager;
+      return packageManager;
+    }
+  }
+
+  const detectedPackageManager = _detectPackageManger(cwd);
 
   if (detectedPackageManager) {
     globalWizard._gt_wizard_cached_package_manager = detectedPackageManager;

@@ -1,18 +1,22 @@
 import { NodePath } from '@babel/traverse';
-import { Updates } from '../../../types';
+import { Updates } from '../../../types/index.js';
 import { splitStringToContent } from 'generaltranslation';
 import * as t from '@babel/types';
-import { isStaticExpression } from '../evaluateJsx';
+import { isStaticExpression } from '../evaluateJsx.js';
 import {
   warnNonStaticExpressionSync,
   warnNonStringSync,
   warnTemplateLiteralSync,
-} from '../../../console';
-import generate from '@babel/generator';
+} from '../../../console/index.js';
+import generateModule from '@babel/generator';
+import traverseModule from '@babel/traverse';
+// Handle CommonJS/ESM interop
+const generate = generateModule.default || generateModule;
+const traverse = traverseModule.default || traverseModule;
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from '@babel/parser';
-import traverse from '@babel/traverse';
 import { createMatchPath, loadConfig } from 'tsconfig-paths';
 import * as resolve from 'resolve';
 

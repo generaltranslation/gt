@@ -1,12 +1,21 @@
-import { WrapOptions, SupportedFrameworks, SupportedLibraries } from '../types';
-import { ReactCLI } from './react';
-import wrapContentNext from '../next/parse/wrapContent';
+import {
+  WrapOptions,
+  SupportedFrameworks,
+  SupportedLibraries,
+} from '../types/index.js';
+import { ReactCLI } from './react.js';
+import { wrapContentNext } from '../next/parse/wrapContent.js';
+import { Command } from 'commander';
 
 const pkg = 'gt-next';
 
 export class NextCLI extends ReactCLI {
-  constructor(library: 'gt-next', additionalModules?: SupportedLibraries[]) {
-    super(library, additionalModules);
+  constructor(
+    command: Command,
+    library: 'gt-next',
+    additionalModules?: SupportedLibraries[]
+  ) {
+    super(command, library, additionalModules);
   }
   public init() {
     this.setupStageCommand();
