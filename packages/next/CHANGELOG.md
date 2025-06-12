@@ -1,5 +1,14 @@
 # gt-next
 
+## 5.2.38
+
+### Patch Changes
+
+- [#355](https://github.com/generaltranslation/gt/pull/355) [`740a3d1`](https://github.com/generaltranslation/gt/commit/740a3d1ee565016375d05e5dbb6b7d81fe9294ec) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - feat: add custom gt use hooks on server side components
+
+- Updated dependencies [[`740a3d1`](https://github.com/generaltranslation/gt/commit/740a3d1ee565016375d05e5dbb6b7d81fe9294ec)]:
+  - gt-react@9.2.28
+
 ## 5.2.37
 
 ### Patch Changes
