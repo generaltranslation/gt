@@ -145,7 +145,9 @@ export async function i18nTask() {
     {
       concurrency,
       batchSize,
-    }
+    },
+    60,
+    1
   );
 
   if (manager.isAborted()) {
