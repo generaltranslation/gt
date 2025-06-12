@@ -13,15 +13,16 @@ import {
   translationLoadingWarning,
 } from '../../errors/createErrors';
 import getI18NConfig from '../../config-dir/getI18NConfig';
-import getLocale from '../../request/getLocale';
+import { getLocale } from '../../request/getLocale';
 import {
   renderContentToString,
   splitStringToContent,
 } from 'generaltranslation';
 import { hashJsxChildren } from 'generaltranslation/id';
+import use from '../../utils/use';
 
 /**
- * Returns the dictionary access function `t()`, which is used to translate an item from the dictionary.
+ * Returns the dictionary access function t(), which is used to translate an item from the dictionary.
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
@@ -33,7 +34,7 @@ import { hashJsxChildren } from 'generaltranslation/id';
  * const t = await getTranslations();
  * console.log(t('hello')); // Translates item 'hello'
  */
-export default async function getTranslations(
+export async function getTranslations(
   id?: string
 ): Promise<(id: string, options?: DictionaryTranslationOptions) => string> {
   // ---------- SET UP ---------- //
@@ -61,7 +62,7 @@ export default async function getTranslations(
   // ---------- THE t() METHOD ---------- //
 
   /**
-   * @description A function that translates a dictionary entry based on its `id` and options.
+   * @description A function that translates a dictionary entry based on its id and options.
    * @param {string} id The identifier of the dictionary entry to translate.
    * @param {DictionaryTranslationOptions} options
    * @returns The translated version of the dictionary entry.
@@ -191,4 +192,21 @@ export default async function getTranslations(
   };
 
   return t;
+}
+
+/**
+ * Returns the dictionary access function t(), which is used to translate an item from the dictionary.
+ *
+ * @param {string} [id] - Optional prefix to prepend to the translation keys.
+ * @returns {Function} A translation function that accepts a key string and returns the translated value.
+ *
+ * @example
+ * const t = useTranslations('user');
+ * console.log(t('name')); // Translates item 'user.name'
+ *
+ * const t = useTranslations();
+ * console.log(t('hello')); // Translates item 'hello'
+ */
+export function useTranslations(id?: string) {
+  return use(getTranslations(id));
 }

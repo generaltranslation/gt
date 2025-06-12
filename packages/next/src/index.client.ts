@@ -13,9 +13,7 @@ import {
   useTranslations,
   useLocale,
   useLocales,
-  useSetLocale,
   useDefaultLocale,
-  useLocaleSelector,
   useGTClass,
   useLocaleProperties,
 } from 'gt-react/client';
@@ -51,9 +49,7 @@ export {
   useTranslations as useDict,
   useLocale,
   useLocales,
-  useSetLocale,
   useDefaultLocale,
-  useLocaleSelector,
   useGTClass,
   useLocaleProperties,
 };

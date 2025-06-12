@@ -10,6 +10,7 @@ import {
   translationLoadingWarning,
 } from '../../errors/createErrors';
 import { InlineTranslationOptions } from 'gt-react/internal';
+import use from '../../utils/use';
 
 /**
  * getGT() returns a function that translates a string, being marked as translated at build time.
@@ -20,7 +21,7 @@ import { InlineTranslationOptions } from 'gt-react/internal';
  * const t = await getGT();
  * console.log(t('Hello, world!')); // Translates 'Hello, world!'
  */
-export default async function getGT(): Promise<
+export async function getGT(): Promise<
   (string: string, options?: InlineTranslationOptions) => string
 > {
   // ---------- SET UP ---------- //
@@ -126,21 +127,27 @@ export default async function getGT(): Promise<
         ...(options?.id && { id: options?.id }),
         hash,
       },
-    }).catch(() => {}); // Error logged in I18NConfig
+    }).catch(() => {}); // No need for error logging, error logged in I18NConfig
 
     // Loading translation warning
     console.warn(translationLoadingWarning);
-
-    // Loading behavior
-    if (renderSettings.method === 'replace') {
-      return renderContent(source, [defaultLocale]);
-    } else if (renderSettings.method === 'skeleton') {
-      return '';
-    }
 
     // Default is returning source, rather than returning a loading state
     return renderContent(source, [defaultLocale]);
   };
 
   return t;
+}
+
+/**
+ * useGT() returns a function that translates a string, being marked as translated at build time.
+ *
+ * @returns A promise of the t() function used for translating strings
+ *
+ * @example
+ * const t = useGT();
+ * console.log(t('Hello, world!')); // Translates 'Hello, world!'
+ */
+export function useGT() {
+  return use(getGT());
 }

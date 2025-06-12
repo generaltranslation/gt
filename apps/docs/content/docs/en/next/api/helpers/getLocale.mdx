@@ -48,7 +48,7 @@ See [`gt.config.json`](/docs/next/api/config/gt-config-json) docs for informatio
 Retrieve the user's locale during server-side rendering.
 
 ```javascript title="GetUserLocale.jsx" copy
-import getLocale from 'gt-next/server';
+import { getLocale } from 'gt-next/server';
 
 export default async function GetUserLocale() {
     const locale = await getLocale(); // [!code highlight]

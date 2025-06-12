@@ -1,22 +1,21 @@
 import { formatCurrency } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
-import getLocale from '../request/getLocale';
+import { useLocale } from '../request/getLocale';
 
-async function Currency({
+function Currency({
   children,
   currency = 'USD',
-  name,
   locales,
   options = {},
 }: {
-  children?: any;
+  children?: React.ReactNode;
   currency?: string;
   name?: string;
   options?: Intl.NumberFormatOptions;
   locales?: string[];
-}): Promise<React.JSX.Element> {
+}): React.JSX.Element {
   if (!locales) {
-    locales = [await getLocale(), getI18NConfig().getDefaultLocale()];
+    locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }
 
   // Determine the value to be formatted
