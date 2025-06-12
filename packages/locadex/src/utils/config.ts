@@ -44,6 +44,7 @@ export function createConfig(
     batchSize: number;
     maxConcurrency: number;
     matchingFiles: string[];
+    timeout: number;
   }
 ) {
   const configPath = path.resolve(directory, CONFIG_FILE_NAME);
@@ -55,23 +56,25 @@ export function createConfig(
     batchSize: options.batchSize,
     maxConcurrency: options.maxConcurrency,
     matchingFiles: options.matchingFiles,
+    timeout: options.timeout,
   };
 
   writeFileSync(configPath, JSON.stringify(config, null, 2));
 }
 
-const DEFAULT_CONFIG: LocadexConfig = {
-  batchSize: 10,
-  maxConcurrency: 1,
-  matchingFiles: ['**/*.{ts,tsx,js,jsx}'],
-  timeout: 60,
-};
-
 export function getConfig(
-  directory: string,
+  locadexDir: string,
+  rootDir: string,
+  appDir: string,
   options: Partial<LocadexConfig> = {}
 ): LocadexConfig {
-  const configPath = path.resolve(directory, CONFIG_FILE_NAME);
+  const DEFAULT_CONFIG: LocadexConfig = {
+    batchSize: 10,
+    maxConcurrency: 1,
+    matchingFiles: [`${path.relative(rootDir, appDir)}/**/*.{ts,tsx,js,jsx}`],
+    timeout: 60,
+  };
+  const configPath = path.resolve(locadexDir, CONFIG_FILE_NAME);
   let fileConfig: Partial<LocadexConfig> = {};
 
   // Load config file if it exists
@@ -88,14 +91,6 @@ export function getConfig(
 
   // Merge configurations: defaults < file config < passed options
   const mergedConfig = { ...DEFAULT_CONFIG, ...fileConfig, ...options };
-
-  // Use hierarchy for arrays: options > file config > defaults
-  mergedConfig.matchingFiles =
-    options.matchingFiles && options.matchingFiles.length > 0
-      ? options.matchingFiles
-      : fileConfig.matchingFiles && fileConfig.matchingFiles.length > 0
-        ? fileConfig.matchingFiles
-        : DEFAULT_CONFIG.matchingFiles;
 
   return mergedConfig;
 }

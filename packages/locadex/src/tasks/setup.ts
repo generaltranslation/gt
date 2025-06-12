@@ -1,4 +1,5 @@
 import { createSpinner, promptConfirm } from '../logging/console.js';
+import { isCancel } from '@clack/prompts';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 import { getPackageManager } from 'gtx-cli/utils/packageManager';
 import { installPackage } from 'gtx-cli/utils/installPackage';
@@ -23,17 +24,13 @@ export async function setupTask(
   specifiedPackageManager?: string
 ) {
   if (!bypassPrompts) {
-    const answer = await promptConfirm({
+    await promptConfirm({
       message: chalk.yellow(
         `Locadex will modify files! Make sure you have committed or stashed any changes. Do you want to continue?`
       ),
       defaultValue: true,
       cancelMessage: 'Operation cancelled.',
     });
-    if (!answer) {
-      logger.info('Operation cancelled.');
-      await exit(0);
-    }
   }
 
   const manager = LocadexManager.getInstance();
@@ -158,7 +155,7 @@ async function setupLocaleSelector() {
   const agent = manager.createSingleAgent('claude_setup_agent');
 
   // Fix prompt
-  const localeSelectorPrompt = getLocaleSelectorPrompt();
+  const localeSelectorPrompt = getLocaleSelectorPrompt(manager.appDirectory);
   try {
     await agent.run({ prompt: localeSelectorPrompt }, {});
 
@@ -184,11 +181,12 @@ ${report}`;
   logger.spinner.stop('Locale selector setup complete');
 }
 
-function getLocaleSelectorPrompt() {
+function getLocaleSelectorPrompt(appDirectory: string) {
   const prompt = `# Task: Add a locale selector to the project
 
 ## Instructions
 - The locale selector should be a dropdown that allows the user to select the locale.
+- The project root is: "${appDirectory}"
 
 ## LOCALE SELECTOR USAGE
 (1) Import the locale selector component from 'gt-next/client'

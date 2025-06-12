@@ -102,6 +102,7 @@ export class LocadexManager {
     this.agentAbortController = new AbortController();
     this.mcpAbortController = new AbortController();
 
+    // appDirectory is the absolute path to the app directory
     this.appDirectory = params.appDirectory;
     this.rootDirectory = params.rootDirectory;
 
@@ -113,12 +114,21 @@ export class LocadexManager {
     );
     fs.mkdirSync(this.currentRunDir, { recursive: true });
 
-    this.config = getConfig(this.locadexDirectory, params.options);
+    this.config = getConfig(
+      this.locadexDirectory,
+      this.rootDirectory,
+      this.appDirectory,
+      params.options
+    );
+    logger.debugMessage(
+      `Locadex loaded with config: ${JSON.stringify(this.config, null, 2)}`
+    );
 
     createConfig(this.locadexDirectory, {
       batchSize: this.config.batchSize,
       maxConcurrency: this.config.maxConcurrency,
       matchingFiles: this.config.matchingFiles,
+      timeout: this.config.timeout,
     });
 
     addToGitIgnore(this.rootDirectory, '.locadex/runs');

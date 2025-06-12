@@ -1,11 +1,9 @@
 import { Command } from 'commander';
-import { logger } from '../logging/logger.js';
 import { i18nTask } from '../tasks/i18n.js';
 import { CliOptions } from '../types/cli.js';
 import { withTelemetry } from '../telemetry.js';
 import { LocadexManager } from '../utils/locadexManager.js';
 import { displayHeader } from '../logging/console.js';
-import { exit } from '../utils/shutdown.js';
 import path from 'node:path';
 import { validateConfig } from '../utils/config.js';
 
