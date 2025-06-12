@@ -9,7 +9,6 @@ import * as Sentry from '@sentry/node';
 
 export interface ClaudeCodeOptions {
   additionalSystemPrompt?: string;
-  prompt: string;
   additionalAllowedTools?: string[];
   maxTurns?: number;
 }
@@ -77,14 +76,9 @@ async function withRetry<T>(
   throw lastError!;
 }
 
-// Legacy function for backward compatibility
-export const killAllClaudeProcesses = () => {
-  // No-op since we now use AbortController
-};
-
 export class ClaudeCodeRunner {
   private id: string;
-  private sessionId: string = '';
+  private sessionId: string | undefined;
   private mcpConfig: string | undefined;
   private manager: LocadexManager;
   private changes: string[] = [];
@@ -116,11 +110,16 @@ export class ClaudeCodeRunner {
     }
   }
 
-  getSessionId(): string {
+  getSessionId(): string | undefined {
     return this.sessionId;
+  }
+  reset() {
+    this.sessionId = undefined;
+    this.turns = 0;
   }
 
   async run(
+    prompt: string,
     options: ClaudeCodeOptions,
     obs: ClaudeCodeObservation,
     timeoutSec: number = 300,
@@ -140,7 +139,7 @@ export class ClaudeCodeRunner {
           () =>
             withTimeout(
               new Promise((resolve, reject) => {
-                const args = ['-p', options.prompt];
+                const args = ['-p', prompt];
 
                 if (options.additionalSystemPrompt) {
                   args.push(

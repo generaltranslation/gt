@@ -259,7 +259,10 @@ export class LocadexManager {
     }
   }
 
-  createSingleAgent(id: string): ClaudeCodeRunner {
+  createSingleAgent(
+    id: string,
+    options: { maxTurns?: number } = {}
+  ): ClaudeCodeRunner {
     return new ClaudeCodeRunner(this, this.agentAbortController, {
       apiKey: this.apiKey,
       mcpConfig: this.mcpConfigPath,

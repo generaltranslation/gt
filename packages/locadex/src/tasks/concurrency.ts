@@ -146,14 +146,7 @@ export async function runParallelProcessing<TTask, TContext>(
         const dynamicTimeoutSec = manager.getTimeoutFactor() * tasks.length;
 
         // Claude call with timeout and retry (handled inside agent.run)
-        await agent.run(
-          {
-            prompt,
-          },
-          {},
-          dynamicTimeoutSec,
-          maxRetries
-        );
+        await agent.run(prompt, {}, dynamicTimeoutSec, maxRetries);
 
         const agentReport = agent.generateReport();
         manager.markAgentFree(agentId);

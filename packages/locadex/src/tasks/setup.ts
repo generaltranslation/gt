@@ -164,7 +164,7 @@ async function setupLocaleSelector() {
   // Fix prompt
   const localeSelectorPrompt = getLocaleSelectorPrompt(manager.appDirectory);
   try {
-    await agent.run({ prompt: localeSelectorPrompt }, {});
+    await agent.run(localeSelectorPrompt, { maxTurns: 50 }, 1000, 3);
 
     // Generate report
     const report = agent.generateReport();

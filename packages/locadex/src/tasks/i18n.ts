@@ -171,7 +171,7 @@ export async function i18nTask() {
   logger.spinner.start('Fixing errors...');
   const fixPrompt = getFixPrompt(manager.appDirectory);
   try {
-    await cleanupAgent.run({ prompt: fixPrompt }, {});
+    await cleanupAgent.run(fixPrompt, { maxTurns: 200 }, 1000, 3);
     reports.push(`## Fixed errors\n${cleanupAgent.generateReport()}`);
   } catch (error) {
     logger.debugMessage(
