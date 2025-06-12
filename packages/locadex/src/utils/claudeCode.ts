@@ -12,7 +12,6 @@ export interface ClaudeCodeOptions {
   prompt: string;
   additionalAllowedTools?: string[];
   maxTurns?: number;
-  sessionId?: string;
 }
 
 export interface ClaudeCodeObservation {}
@@ -90,6 +89,8 @@ export class ClaudeCodeRunner {
   private manager: LocadexManager;
   private changes: string[] = [];
   private controller: AbortController;
+  private maxTurns: number;
+  private turns: number = 0;
 
   constructor(
     manager: LocadexManager,
@@ -98,12 +99,14 @@ export class ClaudeCodeRunner {
       id: string;
       apiKey: string;
       mcpConfig: string;
+      maxTurns: number;
     }
   ) {
     this.manager = manager;
     this.id = options.id;
     this.mcpConfig = options.mcpConfig;
     this.controller = controller;
+    this.maxTurns = options.maxTurns;
 
     // Ensure API key is set
     if (!process.env.ANTHROPIC_API_KEY && !this.options.apiKey) {
@@ -148,8 +151,9 @@ export class ClaudeCodeRunner {
 
                 args.push('--output-format', 'stream-json');
                 args.push('--verbose');
-                if (options.sessionId) {
-                  args.push('--resume', options.sessionId);
+
+                if (this.sessionId && this.turns < this.maxTurns) {
+                  args.push('--resume', this.sessionId);
                 }
 
                 if (this.mcpConfig) {
@@ -176,7 +180,7 @@ export class ClaudeCodeRunner {
                   `[${this.id}] Spawning Claude Code with additional args: ${JSON.stringify(
                     {
                       maxTurns: options.maxTurns,
-                      sessionId: options.sessionId,
+                      sessionId: this.sessionId,
                       mcpConfig: this.mcpConfig,
                       additionalAllowedTools: options.additionalAllowedTools,
                     },
@@ -327,6 +331,7 @@ export class ClaudeCodeRunner {
         newApiDuration: Number(outputData.duration_api_ms),
         newTurns: Number(outputData.num_turns),
       });
+      this.turns = Number(outputData.num_turns);
     } else if (outputData.type === 'system') {
       if (outputData.subtype === 'init') {
         this.sessionId = outputData.session_id;

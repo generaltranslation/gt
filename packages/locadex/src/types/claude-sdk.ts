@@ -1,4 +1,4 @@
-import { Message, MessageParam } from '@anthropic-ai/sdk/resources';
+import { type Message, type MessageParam } from '@anthropic-ai/sdk/resources';
 
 export type ClaudeSDKMessage =
   // An assistant message

@@ -126,7 +126,7 @@ export async function runParallelProcessing<TTask, TContext>(
         continue;
       }
 
-      const { id: agentId, agent, sessionId } = agentInfo;
+      const { id: agentId, agent } = agentInfo;
 
       // Get the next batch of tasks (thread-safe)
       const tasks = await getNextTasks(batchSize);
@@ -149,7 +149,6 @@ export async function runParallelProcessing<TTask, TContext>(
         await agent.run(
           {
             prompt,
-            sessionId,
           },
           {},
           dynamicTimeoutSec,
