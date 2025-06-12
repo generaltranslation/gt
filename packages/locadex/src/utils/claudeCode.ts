@@ -10,7 +10,9 @@ import * as Sentry from '@sentry/node';
 export interface ClaudeCodeOptions {
   additionalSystemPrompt?: string;
   additionalAllowedTools?: string[];
-  maxTurns?: number;
+  maxTurns?: number; // Max number of turns per Claude Code session before it's reset
+  timeoutSec: number; // Timeout per .run() call
+  maxRetries: number; // Max number of retries per .run() call
 }
 
 export interface ClaudeCodeObservation {}
@@ -121,9 +123,7 @@ export class ClaudeCodeRunner {
   async run(
     prompt: string,
     options: ClaudeCodeOptions,
-    obs: ClaudeCodeObservation,
-    timeoutSec: number = 300,
-    maxRetries: number = 1
+    obs: ClaudeCodeObservation
   ): Promise<string> {
     this.changes = [];
     return withRetry(
@@ -262,11 +262,11 @@ export class ClaudeCodeRunner {
                   }
                 });
               }),
-              timeoutSec,
-              `Claude Code operation timed out after ${timeoutSec}s`
+              options.timeoutSec,
+              `Claude Code operation timed out after ${options.timeoutSec}s`
             )
         ),
-      maxRetries
+      options.maxRetries
     );
   }
 
