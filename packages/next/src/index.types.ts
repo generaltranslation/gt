@@ -198,9 +198,7 @@ Branch.gtTransformation = 'branch-type';
  *
  * @param {any} [children] - Fallback content to render if no matching plural branch is found.
  * @param {number} [n] - The number used to determine the plural form. This is required for pluralization to work.
- * @param {string} [locale] - Optional parameter, the locale to use for pluralization format. If not provided and wrapped
- *  in <GTProvider> will automatically populate this value as user's current locale. If not provided and not wrapped in
- *  <GTProvider>, will use the library default locale (en-US).
+ * @param {string} [locale] - Optional parameter, the locale to use for pluralization format.
  * @param {...{[key: string]: any}} [branches] - A spread object containing possible plural branches, typically including `one` for singular
  * and `other` for plural forms, but it may vary depending on the locale.
  * @returns {React.JSX.Element} The rendered content corresponding to the plural form of `n`, or the fallback content.
@@ -222,9 +220,9 @@ export const LocaleSelector: typeof _LocaleSelector = () => {
 };
 
 /**
- * Gets the translation function `t` provided by `<GTProvider>`.
+ * Returns the string translation function `t`.
  *
- * @returns {Function} A translation function that accepts a key string and returns the translated value.
+ * @returns {Function} A translation function that accepts an ICU format string and returns that ICU format string translated.
  *
  * @example
  * const t = useGT();
@@ -243,7 +241,7 @@ export const useGT: typeof _useGT = () => {
 };
 
 /**
- * Gets the dictionary access function `t` provided by `<GTProvider>`.
+ * Returns the dictionary access function `t`.
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
@@ -260,27 +258,27 @@ export const useTranslations: typeof _useTranslations = () => {
 };
 
 /**
- * Gets the dictionary access function `d` provided by `<GTProvider>`.
- * @deprecated Use useTranslations instead
+ * Returns the dictionary access function `d`.
+ * @deprecated Use the equivalent `useTranslations` function instead. `useDict` is supported as an alias.
  *
  * @param {string} [id] - Optional prefix to prepend to the translation keys.
  * @returns {Function} A translation function that accepts a key string and returns the translated value.
  *
  * @example
  * const d = useDict('user');
- * console.log(t('name')); // Translates item 'user.name'
+ * console.log(d('name')); // Translates item 'user.name'
  *
  * const d = useDict();
- * console.log(t('hello')); // Translates item 'hello'
+ * console.log(d('hello')); // Translates item 'hello'
  */
 export const useDict: typeof _useTranslations = () => {
   throw new Error(typesFileError);
 };
 
 /**
- * Retrieves the user's locale from the `<GTProvider>` context.
+ * Returns the user's current locale.
  *
- * @returns {string} The user's locale, e.g., 'en-US'.
+ * @returns {string} BCP 47 locale tag, e.g., 'en-US'.
  *
  * @example
  * const locale = useLocale();
@@ -291,9 +289,9 @@ export const useLocale: typeof _useLocale = () => {
 };
 
 /**
- * Retrieves the user's list of supported locales from the `<GTProvider>` context.
+ * Returns the user's list of supported locales.
  *
- * @returns {string[]} The user's locales, e.g., ['en-US', 'fr', 'jp'].
+ * @returns {string[]} List of BCP 47 locale tags, e.g., ['en-US', 'fr', 'jp'].
  *
  * @example
  * const locales = useLocales();
@@ -318,11 +316,11 @@ export const useSetLocale: typeof _useSetLocale = () => {
 };
 
 /**
- * Retrieves the application's default locale from the `<GTProvider>` context.
+ * Returns the application's default locale.
  *
- * If no default locale is passed to the `<GTProvider>`, it defaults to providing 'en'.
+ * If no default locale is provided, it defaults to 'en'.
  *
- * @returns {string} The application's default locale, e.g., 'en-US'.
+ * @returns {string} A BCP 47 locale tag, e.g., 'en-US'.
  *
  * @example
  * const locale = useDefaultLocale();
@@ -333,7 +331,7 @@ export const useDefaultLocale: typeof _useDefaultLocale = () => {
 };
 
 /**
- * Gets the list of properties for using a locale selector.
+ * Returns the list of properties for using a locale selector.
  * @param locales an optional list of locales to use for the drop down. These locales must be a subset of the locales provided by the `<GTProvider>` context. When not provided, the list of locales from the `<GTProvider>` context is used.
  * @returns {object} The locale, locales, and setLocale function.
  */

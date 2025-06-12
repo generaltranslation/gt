@@ -23,7 +23,7 @@ import { GTContext } from '../../provider/GTContext';
  *
  * @param {any} [children] - Fallback content to render if no matching plural branch is found.
  * @param {number} [n] - The number used to determine the plural form. This is required for pluralization to work.
- * @param {string} [locale] - Optional parameter, the locale to use for pluralization format. If not provided and wrapped
+ * @param {string} [locales] - Optional parameter, the locale to use for pluralization format. If not provided and wrapped
  *  in <GTProvider> will automatically populate this value as user's current locale. If not provided and not wrapped in
  *  <GTProvider>, will use the library default locale (en-US).
  * @param {...{[key: string]: any}} [branches] - A spread object containing possible plural branches, typically including `one` for singular
@@ -34,28 +34,27 @@ import { GTContext } from '../../provider/GTContext';
 function Plural({
   children,
   n,
-  locale,
+  locales,
   ...branches
 }: {
-  children?: any;
+  children?: React.ReactNode;
   n?: number;
-  locale?: string;
+  locales?: string;
   [key: string]: any;
 }): React.JSX.Element {
   const context = useContext(GTContext);
   let defaultLocale;
   if (context) {
-    locale ||= context.locale;
+    locales ||= context.locale;
     defaultLocale ||= context.defaultLocale;
   }
   const providerLocales = [
-    ...(locale ? [locale] : []),
+    ...(locales ? [locales] : []),
     defaultLocale || libraryDefaultLocale,
   ];
   if (typeof n !== 'number')
     throw new Error(createPluralMissingError(children));
-  const branch = getPluralBranch(n, providerLocales, branches) || children;
-  return <>{branch}</>;
+  return <>{getPluralBranch(n, providerLocales, branches) || children}</>;
 }
 
 Plural.gtTransformation = 'plural';

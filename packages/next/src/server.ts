@@ -1,11 +1,11 @@
 import T from './server-dir/buildtime/T';
 import tx from './server-dir/runtime/tx';
-import getLocale from './request/getLocale';
+import { getLocale } from './request/getLocale';
 import getI18NConfig from './config-dir/getI18NConfig';
-import getTranslations from './server-dir/buildtime/getTranslations';
+import { getTranslations } from './server-dir/buildtime/getTranslations';
 import GTProvider from './provider/GTProvider';
 import Tx from './server-dir/runtime/_Tx';
-import getGT from './server-dir/buildtime/getGT';
+import { getGT } from './server-dir/buildtime/getGT';
 import { LocaleProperties } from 'generaltranslation/types';
 
 export function getDefaultLocale(): string {

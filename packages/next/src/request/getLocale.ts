@@ -1,5 +1,6 @@
 import getI18NConfig from '../config-dir/getI18NConfig';
 import { getNextLocale } from '../next/getNextLocale';
+import use from '../utils/use';
 
 let getLocaleFunction: () => Promise<string>;
 
@@ -12,7 +13,7 @@ let getLocaleFunction: () => Promise<string>;
  * const locale = await getLocale();
  * console.log(locale); // 'en-US'
  */
-export default async function getLocale(): Promise<string> {
+export async function getLocale(): Promise<string> {
   if (getLocaleFunction) return await getLocaleFunction();
   // Try catch is for dynamic imports from gt-next/_request for custom getLocale functions
   if (process.env._GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED === 'true') {
@@ -36,4 +37,8 @@ export default async function getLocale(): Promise<string> {
     return res;
   };
   return await getLocaleFunction();
+}
+
+export function useLocale() {
+  return use(getLocale());
 }

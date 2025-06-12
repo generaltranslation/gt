@@ -1,7 +1,7 @@
 import { DictionaryEntry, mergeDictionaries } from 'gt-react/internal';
 import { isValidElement, ReactNode } from 'react';
 import getI18NConfig from '../config-dir/getI18NConfig';
-import getLocale from '../request/getLocale';
+import { getLocale } from '../request/getLocale';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
 import { Dictionary, TranslationsObject } from 'gt-react/internal';
 import { createDictionarySubsetError } from '../errors/createErrors';

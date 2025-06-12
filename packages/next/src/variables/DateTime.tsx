@@ -1,20 +1,19 @@
 import { formatDateTime } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
-import getLocale from '../request/getLocale';
+import { getLocale, useLocale } from '../request/getLocale';
 
-async function DateTime({
+function DateTime({
   children,
-  name,
   locales,
   options = {},
 }: {
-  children?: any;
+  children?: React.ReactNode;
   name?: string;
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
   locales?: string[];
-}): Promise<React.JSX.Element> {
+}): React.JSX.Element {
   if (!locales) {
-    locales = [await getLocale(), getI18NConfig().getDefaultLocale()];
+    locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }
 
   let final;
