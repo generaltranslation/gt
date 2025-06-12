@@ -56,14 +56,6 @@ export const conflictingConfigurationBuildError = (conflicts: string[]) =>
 export const unsupportedGetLocalePathBuildError =
   'gt-next Error: custom getLocale() function is not currently supported.';
 
-export const createCustomHookWithoutUseClientError = (hookName: string) =>
-  `gt-next Error: You're importing a component that needs \`${hookName}\`. This React hook only works in a client component. To fix, mark the file (or its parent) with the \`"use client"\` directive. `;
-
-export const createCustomComponentWithoutUseClientError = (
-  componentName: string
-) =>
-  `gt-next Error: You're importing a component that needs \`${componentName}\`. This React component only works in a client component. To fix, mark the file (or its parent) with the \`"use client"\` directive. `;
-
 export const typesFileError = `gt-next Error: There is no scenario in which you should be seeing this error.`;
 
 export const gtProviderUseClientError =
