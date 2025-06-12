@@ -77,7 +77,7 @@ function displayInitializingText(telemetryEnabled: boolean) {
   console.log(
     `\n${chalk.bold.blue('General Translation, Inc.')}
 ${chalk.dim('https://generaltranslation.com/docs')}
-${telemetryEnabled ? chalk.dim('\nLocadex uses Sentry and PostHog to collect anonymous telemetry data. You can opt out by running with the --no-telemetry flag.') : ''}
+${telemetryEnabled ? chalk.dim('\nLocadex is configured to collect anonymous telemetry data. You can opt out by running with the --no-telemetry flag.') : ''}
 `
   );
 }
