@@ -46,7 +46,7 @@ export async function setupTask(
     manager.rootDirectory,
     specifiedPackageManager
   );
-  const appPackageJson = await getPackageJson(manager.appDirectory);
+  let appPackageJson = await getPackageJson(manager.appDirectory);
 
   if (appPackageJson) {
     if (!isPackageInstalled('gt-next', appPackageJson)) {
@@ -124,6 +124,8 @@ export async function setupTask(
   );
 
   // Add translate to scripts
+  // Re-get the package.json to make sure it's updated
+  appPackageJson = await getPackageJson(manager.appDirectory);
   if (appPackageJson) {
     await addTranslateScript(manager, appPackageJson, packageManager);
   }
