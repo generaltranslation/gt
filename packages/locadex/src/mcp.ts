@@ -26,10 +26,10 @@ export async function start() {
   if (stateFile && existsSync(stateFile)) {
     const state = JSON.parse(readFileSync(stateFile, 'utf8'));
     logger.debugMessage(
-      `[locadex-mcp-sse] state: ${JSON.stringify(state, null, 2)}`
+      `[locadex-mcp] state: ${JSON.stringify(state, null, 2)}`
     );
   } else {
-    throw new Error(`[locadex-mcp-sse] state file not found: ${stateFile}`);
+    throw new Error(`[locadex-mcp] state file not found: ${stateFile}`);
   }
 
   const mcpServer = new McpServer({
@@ -88,7 +88,7 @@ export async function start() {
 // Start the SSE server
 start().catch(async (error) => {
   logger.error(
-    `[locadex-mcp-sse] Failed to start: ${error instanceof Error ? error.message : String(error)}`
+    `[locadex-mcp] Failed to start: ${error instanceof Error ? error.message : String(error)}`
   );
   await exit(1);
 });
