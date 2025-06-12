@@ -165,7 +165,7 @@ export async function i18nTask() {
   // cleanUp(stateFilePath);
 
   // Create a clean agent for cleanup
-  const cleanupAgent = manager.createSingleAgent('claude_cleanup_agent');
+  const cleanupAgent = manager.createSingleAgent('claude_cleanup_agent', {});
 
   logger.initializeSpinner();
   logger.spinner.start('Fixing errors...');

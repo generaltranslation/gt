@@ -7,13 +7,19 @@ import { LocadexManager } from './locadexManager.js';
 import { getSessionId } from './session.js';
 import * as Sentry from '@sentry/node';
 
-export interface ClaudeCodeOptions {
+export type ClaudeRunOptions = {
   additionalSystemPrompt?: string;
   additionalAllowedTools?: string[];
-  maxTurns?: number; // Max number of turns per Claude Code session before it's reset
+  maxTurns?: number; // Hard limit on the number of turns per Claude Code call
+
+  // required
   timeoutSec: number; // Timeout per .run() call
   maxRetries: number; // Max number of retries per .run() call
-}
+};
+
+export type ClaudeRunnerOptions = {
+  softTurnLimit?: number; // Soft limit on the number of turns per Claude runner
+};
 
 export interface ClaudeCodeObservation {}
 
@@ -85,7 +91,7 @@ export class ClaudeCodeRunner {
   private manager: LocadexManager;
   private changes: string[] = [];
   private controller: AbortController;
-  private maxTurns: number;
+  private softTurnLimit: number;
   private turns: number = 0;
 
   constructor(
@@ -95,14 +101,14 @@ export class ClaudeCodeRunner {
       id: string;
       apiKey: string;
       mcpConfig: string;
-      maxTurns: number;
+      softTurnLimit: number;
     }
   ) {
     this.manager = manager;
     this.id = options.id;
     this.mcpConfig = options.mcpConfig;
     this.controller = controller;
-    this.maxTurns = options.maxTurns;
+    this.softTurnLimit = options.softTurnLimit;
 
     // Ensure API key is set
     if (!process.env.ANTHROPIC_API_KEY && !this.options.apiKey) {
@@ -122,7 +128,7 @@ export class ClaudeCodeRunner {
 
   async run(
     prompt: string,
-    options: ClaudeCodeOptions,
+    options: ClaudeRunOptions,
     obs: ClaudeCodeObservation
   ): Promise<string> {
     this.changes = [];
@@ -151,7 +157,7 @@ export class ClaudeCodeRunner {
                 args.push('--output-format', 'stream-json');
                 args.push('--verbose');
 
-                if (this.sessionId && this.turns < this.maxTurns) {
+                if (this.sessionId && this.turns < this.softTurnLimit) {
                   args.push('--resume', this.sessionId);
                 }
 
@@ -179,6 +185,9 @@ export class ClaudeCodeRunner {
                   `[${this.id}] Spawning Claude Code with additional args: ${JSON.stringify(
                     {
                       maxTurns: options.maxTurns,
+                      softTurnLimit: this.softTurnLimit,
+                      timeoutSec: options.timeoutSec,
+                      maxRetries: options.maxRetries,
                       sessionId: this.sessionId,
                       mcpConfig: this.mcpConfig,
                       additionalAllowedTools: options.additionalAllowedTools,

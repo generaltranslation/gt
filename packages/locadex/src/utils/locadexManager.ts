@@ -1,4 +1,4 @@
-import { ClaudeCodeRunner } from './claudeCode.js';
+import { ClaudeCodeRunner, ClaudeRunnerOptions } from './claudeCode.js';
 import { fromPackageRoot } from './getPaths.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -60,7 +60,7 @@ export class LocadexManager {
   private maxConcurrency: number;
   private batchSize: number;
   private timeout: number;
-  private maxTurns: number = 100;
+  private defaultSoftTurnLimit: number = 100;
 
   // Agent pool
   private agentPool: Map<string, { agent: ClaudeCodeRunner; busy: boolean }>;
@@ -261,22 +261,22 @@ export class LocadexManager {
 
   createSingleAgent(
     id: string,
-    options: { maxTurns?: number } = {}
+    options: ClaudeRunnerOptions
   ): ClaudeCodeRunner {
     return new ClaudeCodeRunner(this, this.agentAbortController, {
       apiKey: this.apiKey,
       mcpConfig: this.mcpConfigPath,
-      maxTurns: this.maxTurns,
+      softTurnLimit: options.softTurnLimit ?? this.defaultSoftTurnLimit,
       id,
     });
   }
 
-  createAgentPool(): void {
+  createAgentPool(options: ClaudeRunnerOptions): void {
     if (this.agentPool.size === 0) {
       for (let i = 0; i < this.maxConcurrency; i++) {
         const agentId = `claude_task_agent_${i + 1}`;
         this.agentPool.set(agentId, {
-          agent: this.createSingleAgent(agentId),
+          agent: this.createSingleAgent(agentId, options),
           busy: false,
         });
       }
