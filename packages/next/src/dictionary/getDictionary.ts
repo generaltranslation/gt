@@ -3,13 +3,10 @@ import {
   DictionaryEntry,
   getDictionaryEntry as getEntry,
 } from 'gt-react/internal';
-import {
-  customLoadDictionaryWarning,
-  dictionaryNotFoundWarning,
-} from '../errors/createErrors';
+import { customLoadDictionaryWarning } from '../errors/createErrors';
 import resolveDictionaryLoader from '../loaders/resolveDictionary';
 import defaultWithGTConfigProps from '../config-dir/props/defaultWithGTConfigProps';
-import { getLocaleProperties } from 'generaltranslation';
+import GT from 'generaltranslation';
 
 let dictionary: Dictionary | undefined = undefined;
 
@@ -44,7 +41,7 @@ export default async function getDictionary(): Promise<Dictionary | undefined> {
     } catch {}
 
     // Check the simplified locale name ('en' instead of 'en-US')
-    const languageCode = getLocaleProperties(defaultLocale)?.languageCode;
+    const languageCode = GT.getLocaleProperties(defaultLocale)?.languageCode;
     if (!dictionary && languageCode && languageCode !== defaultLocale) {
       try {
         dictionary = await customLoadDictionary(languageCode);

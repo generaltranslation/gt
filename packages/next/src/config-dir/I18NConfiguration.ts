@@ -1,5 +1,4 @@
-import { GT, isSameLanguage, requiresTranslation } from 'generaltranslation';
-// const GT = require('generaltranslation').GT;
+import GT from 'generaltranslation';
 import translationManager, { TranslationManager } from './TranslationManager';
 import {
   RenderMethod,
@@ -371,13 +370,13 @@ export default class I18NConfiguration {
    */
   requiresTranslation(locale: string): [boolean, boolean] {
     if (!this.translationEnabled) return [false, false];
-    const translationRequired = requiresTranslation(
+    const translationRequired = GT.requiresTranslation(
       this.defaultLocale,
       locale,
       this.locales
     );
     const dialectTranslationRequired =
-      translationRequired && isSameLanguage(locale, this.defaultLocale);
+      translationRequired && GT.isSameLanguage(locale, this.defaultLocale);
     return [translationRequired, dialectTranslationRequired];
   }
 

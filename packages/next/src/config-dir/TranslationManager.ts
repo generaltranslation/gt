@@ -1,4 +1,4 @@
-import { standardizeLocale } from 'generaltranslation';
+import GT from 'generaltranslation';
 import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import {
@@ -60,7 +60,7 @@ export class TranslationManager {
    * @returns {string} The standardized locale.
    */
   _standardizeLocale(locale: string): string {
-    return this.gtServicesEnabled ? standardizeLocale(locale) : locale;
+    return this.gtServicesEnabled ? GT.standardizeLocale(locale) : locale;
   }
 
   /**
@@ -176,7 +176,7 @@ export class TranslationManager {
    * @returns {boolean} True if requested, false otherwise.
    */
   getTranslationRequested(locale: string): boolean {
-    const reference = standardizeLocale(locale);
+    const reference = GT.standardizeLocale(locale);
     return this.requestedTranslations.get(reference) ? true : false;
   }
 }
