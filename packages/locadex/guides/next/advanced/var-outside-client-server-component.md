@@ -8,7 +8,7 @@ Apply this pattern when variables declared outside function scope contain string
 
 1. **Minimal footprint**: Minimize code changes by keeping internationalized content in the same file where it originated
 2. **No file movement**: Avoid moving content between files unless absolutely necessary
-3. **Always add client directives**: Do not add "use client" or "use server" directives
+3. **Only add the "use client" directive when ABSOLUTELY necessary**: Do not add "use server" directives
 4. **Scope**: Only use this implementation for string translation (for HTML translation use ALWAYS `<T>`)
 
 Rule of thumb for implementation:
