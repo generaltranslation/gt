@@ -6,17 +6,15 @@
 
 # Locadex
 
-Locadex is an AI Agent for internationalization.
-
-Start it with
+Locadex is an AI agent to automate i18n in complex codebases.
 
 ```bash
-npx locadex@latest
+npx locadex@latest start
 ```
 
 ## Documentation
 
-Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](generaltranslation.com/docs).
+Full documentation, including guides, examples, and API references, can be found at [General Translation Docs](https://generaltranslation.com/docs).
 
 ## Contributing
 
