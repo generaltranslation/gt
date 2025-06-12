@@ -68,6 +68,7 @@ export class LocadexManager {
   >;
   private agentAbortController: AbortController;
   private mcpAbortController: AbortController;
+  private aborted: boolean = false;
   private agentMutex = Promise.resolve();
   private config: LocadexConfig;
   stats: AgentStats;
@@ -165,6 +166,14 @@ export class LocadexManager {
       fs.writeFileSync(
         this.mcpConfigPath,
         JSON.stringify(mcpSseConfig, null, 2)
+      );
+
+      logger.debugMessage(
+        `Starting MCP server on port ${port} with config: ${JSON.stringify(
+          mcpSseConfig,
+          null,
+          2
+        )}`
       );
 
       this.mcpProcess = spawn('node', [fromPackageRoot('dist/mcp-sse.js')], {
@@ -332,6 +341,10 @@ export class LocadexManager {
   }
 
   cleanup(): void {
+    if (this.aborted) {
+      return;
+    }
+    this.aborted = true;
     // Clean up agents first (if not already done)
     this.cleanupAgents();
 
@@ -356,5 +369,9 @@ export class LocadexManager {
 
   getAgentAbortController(): AbortController {
     return this.agentAbortController;
+  }
+
+  isAborted(): boolean {
+    return this.aborted;
   }
 }

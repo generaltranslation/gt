@@ -8,6 +8,7 @@ import {
   markFileAsEdited,
   markFileAsInProgress,
 } from '../utils/dag/getFiles.js';
+import { runParallelProcessing, TaskProcessor } from './concurrency.js';
 import { outro } from '@clack/prompts';
 import chalk from 'chalk';
 import { appendFileSync } from 'node:fs';
@@ -18,6 +19,7 @@ import path from 'node:path';
 import { updateLockfile, cleanupLockfile } from '../utils/lockfile.js';
 import { installClaudeCode } from '../utils/packages/installPackage.js';
 import { extractFiles } from '../utils/dag/extractFiles.js';
+import { Dag } from '../utils/dag/createDag.js';
 
 export async function i18nTask() {
   await validateInitialConfig();
@@ -69,153 +71,84 @@ export async function i18nTask() {
   const fileProcessingStartTime = Date.now();
   logger.progressBar.start(`Processing ${taskQueue.length} files...`);
 
-  // Main parallel processing loop
-  let processedCount = 0;
-  const agentAbortController = manager.getAgentAbortController();
-  let firstError: Error | null = null;
-
-  // Mutex for task queue access
-  let taskQueueMutex = Promise.resolve();
-
-  // Shared across all agents
+  // Shared reports array for collecting results
   const reports: string[] = [];
 
-  // Helper function to safely get tasks from queue
-  const getNextTasks = async (batchSize: number): Promise<string[]> => {
-    return new Promise((resolve) => {
-      taskQueueMutex = taskQueueMutex.then(() => {
-        const tasks = taskQueue.splice(0, batchSize);
-        resolve(tasks);
-      });
-    });
-  };
-
-  const processTask = async (): Promise<void> => {
-    while (taskQueue.length > 0 && !agentAbortController.signal.aborted) {
-      // Check if we should abort early
-      if (agentAbortController.signal.aborted) {
-        return;
-      }
-
-      // Get an available agent atomically
-      const agentInfo = await manager.getAvailableAgent();
-      if (!agentInfo) {
-        // No available agents, wait a bit (but check for abort)
-        await new Promise((resolve) => {
-          const timeout = global.setTimeout(resolve, 100);
-          agentAbortController.signal.addEventListener('abort', () => {
-            global.clearTimeout(timeout);
-            resolve(undefined);
-          });
-        });
-        continue;
-      }
-
-      const { id: agentId, agent, sessionId } = agentInfo;
-
-      // Get the next batch of tasks (thread-safe)
-      const tasks = await getNextTasks(batchSize);
-      if (tasks.length === 0) {
-        manager.markAgentFree(agentId);
-        break;
-      }
-
-      logger.debugMessage(
-        `Using agent ${agentId} for ${batchSize} files. Files: ${tasks.join(
-          ', '
-        )}`
-      );
-
+  // Create i18n task processor
+  const i18nProcessor: TaskProcessor<
+    string,
+    {
+      dag: Dag;
+      files: string[];
+      filesStateFilePath: string;
+    }
+  > = {
+    preProcess: async (files, context) => {
+      const { dag, filesStateFilePath } = context;
+      logger.debugMessage(`Files: ${files.join(', ')}`);
       // Mark tasks as in progress
       await Promise.all(
-        tasks.map((task) => markFileAsInProgress(task, filesStateFilePath))
+        files.map((file) => markFileAsInProgress(file, filesStateFilePath))
       );
 
       // Construct prompt
       const dependencies = Object.fromEntries(
-        tasks.map((task) => [
-          task,
-          Array.from(new Set(dag.getDependencies(task))),
+        files.map((file) => [
+          file,
+          Array.from(new Set(dag.getDependencies(file))).map(String),
         ])
       );
       const dependents = Object.fromEntries(
-        tasks.map((task) => [
-          task,
-          Array.from(new Set(dag.getDependents(task))),
+        files.map((file) => [
+          file,
+          Array.from(new Set(dag.getDependents(file))).map(String),
         ])
       );
-      const prompt = getPrompt({
-        targetFile: tasks,
+
+      return getPrompt({
+        targetFile: files,
         dependencyFiles: dependencies,
         dependentFiles: dependents,
       });
-
-      // Claude call
-      try {
-        await agent.run(
-          {
-            prompt,
-            sessionId,
-          },
-          {}
-        );
-        reports.push(agent.generateReport());
-        manager.markAgentFree(agentId);
-      } catch (error) {
-        // Check if this is an abort
-        if (agentAbortController.signal.aborted) {
-          return;
-        }
-
-        // Capture the first error and signal all other agents to abort
-        if (!firstError) {
-          firstError = new Error(
-            `Error in claude i18n process (${agentId}): ${error}`
-          );
-          logger.debugMessage(firstError.message);
-        }
-        await exit(1); // Exit this agent's processing immediately
-        return;
-      }
+    },
+    postProcess: async (files, context, agentReport) => {
+      const { filesStateFilePath } = context;
 
       // Mark tasks as complete
       await Promise.all(
-        tasks.map((task) => markFileAsEdited(task, filesStateFilePath))
+        files.map((task) => markFileAsEdited(task, filesStateFilePath))
       );
-      processedCount += tasks.length;
+
+      // Add agent report
+      reports.push(agentReport);
+
+      // Update progress bar
       logger.progressBar.advance(
-        tasks.length,
-        `Processed ${Number((processedCount / files.length) * 100).toFixed(2)}% of files`
+        files.length,
+        `Processed ${Number(((reports.length * files.length) / files.length) * 100).toFixed(2)}% of files`
       );
+
+      // Update stats
       manager.stats.updateStats({
-        newProcessedFiles: tasks.length,
+        newProcessedFiles: files.length,
       });
-    }
+    },
   };
 
-  // Create agent pool
-  manager.createAgentPool();
-
-  // Start parallel processing
-  const processingPromises = Array.from({ length: concurrency }, () =>
-    processTask()
+  // Run parallel processing
+  await runParallelProcessing(
+    Array.from(taskQueue),
+    i18nProcessor,
+    { dag, files, filesStateFilePath },
+    {
+      concurrency,
+      batchSize,
+    }
   );
 
-  try {
-    await Promise.all(processingPromises);
-  } catch (error) {
-    // Check if this is an abort
-    if (agentAbortController.signal.aborted) {
-      return;
-    }
-
-    // This shouldn't happen since we handle errors within processTask
-    logger.debugMessage(`Unexpected error in parallel processing: ${error}`);
-    if (!firstError) {
-      firstError = new Error(
-        `Unexpected error in parallel processing: ${error}`
-      );
-    }
+  if (manager.isAborted()) {
+    logger.error('Processing aborted');
+    await exit(1);
   }
 
   logger.progressBar.stop(
@@ -226,15 +159,7 @@ export async function i18nTask() {
 
   // TODO: uncomment
   // // Always clean up the file list when done, regardless of success or failure
-  // logger.info(`Cleaning up file list: ${stateFilePath}`);
   // cleanUp(stateFilePath);
-
-  // If there was an error, clean up and exit with code 1
-  if (firstError) {
-    logger.error(firstError.message);
-    outro(chalk.red('❌ Locadex i18n failed!'));
-    await exit(1);
-  }
 
   // Create a clean agent for cleanup
   const cleanupAgent = manager.createSingleAgent('claude_cleanup_agent');
@@ -248,10 +173,6 @@ export async function i18nTask() {
     );
     reports.push(`## Fixed errors\n${cleanupAgent.generateReport()}`);
   } catch (error) {
-    // Check if this is an abort
-    if (agentAbortController.signal.aborted) {
-      return;
-    }
     logger.debugMessage(
       `[claude_cleanup_agent] Fixing errors failed: ${error}`
     );
