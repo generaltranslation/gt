@@ -12,11 +12,7 @@ import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
 import getI18NConfig from './config-dir/getI18NConfig';
 
-export {
-  useSetLocale,
-  useLocaleSelector,
-  LocaleSelector,
-} from './index.client';
+export { LocaleSelector } from './index.client';
 
 export function useGTClass() {
   return getI18NConfig().getGTClass();

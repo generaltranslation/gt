@@ -302,20 +302,6 @@ export const useLocales: typeof _useLocales = () => {
 };
 
 /**
- * Sets the user's locale in the `<GTProvider>` context.
- * If the locale passed is not supported, will fallback on current locale and then defaultLocale if necessary.
- * @note Unless a locale has explicitly been passed to the `<GTProvider>`, this will override the user's browser preferences. The locale passed to `<GTProvider>` will always take priority.
- *
- * @returns {(locale: string) => void} A function that sets the user's locale.
- *
- * @example
- * setLocale('en-US');
- */
-export const useSetLocale: typeof _useSetLocale = () => {
-  throw new Error(typesFileError);
-};
-
-/**
  * Returns the application's default locale.
  *
  * If no default locale is provided, it defaults to 'en'.
@@ -330,14 +316,6 @@ export const useDefaultLocale: typeof _useDefaultLocale = () => {
   throw new Error(typesFileError);
 };
 
-/**
- * Returns the list of properties for using a locale selector.
- * @param locales an optional list of locales to use for the drop down. These locales must be a subset of the locales provided by the `<GTProvider>` context. When not provided, the list of locales from the `<GTProvider>` context is used.
- * @returns {object} The locale, locales, and setLocale function.
- */
-export const useLocaleSelector: typeof _useLocaleSelector = () => {
-  throw new Error(typesFileError);
-};
 /**
  * Returns the configured GT class instance.
  *
