@@ -149,7 +149,6 @@ export async function runParallelProcessing<TTask, TContext>(
         await agent.run(
           prompt,
           {
-            maxTurns: 100,
             timeoutSec: dynamicTimeoutSec,
             maxRetries: 1,
           },
@@ -180,8 +179,8 @@ export async function runParallelProcessing<TTask, TContext>(
     }
   };
 
-  // Create agent pool
-  manager.createAgentPool();
+  // Create agent pool with 100 (soft) turns cutoff
+  manager.createAgentPool({ softTurnLimit: 100 });
 
   // Start parallel processing
   const processingPromises = Array.from({ length: concurrency }, () =>
