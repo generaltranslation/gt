@@ -147,8 +147,7 @@ export async function i18nTask() {
   );
 
   if (manager.isAborted()) {
-    logger.error('Processing aborted');
-    await exit(1);
+    return;
   }
 
   logger.progressBar.stop(
@@ -163,6 +162,7 @@ export async function i18nTask() {
 
   // Create a clean agent for cleanup
   const cleanupAgent = manager.createSingleAgent('claude_cleanup_agent');
+
   logger.initializeSpinner();
   logger.spinner.start('Fixing errors...');
   const fixPrompt = getFixPrompt();
@@ -179,6 +179,7 @@ export async function i18nTask() {
     manager.stats.recordTelemetry(false);
     outro(chalk.red('❌ Locadex i18n failed!'));
     await exit(1);
+    return;
   }
   logger.spinner.stop('Fixed errors');
 

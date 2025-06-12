@@ -62,13 +62,6 @@ class GracefulShutdown {
     }
 
     logger.debugMessage('Graceful shutdown complete');
-
-    // Force exit after a timeout if process doesn't exit naturally
-    global.setTimeout(() => {
-      logger.error('Force exiting after timeout');
-      process.exit(this.exitCode);
-    }, 1000);
-
     process.exit(this.exitCode);
   }
 
