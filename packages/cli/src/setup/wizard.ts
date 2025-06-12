@@ -11,7 +11,6 @@ import chalk from 'chalk';
 import { promptConfirm } from '../console/logging.js';
 import { SetupOptions, SupportedFrameworks } from '../types/index.js';
 import findFilepath from '../fs/findFilepath.js';
-import { generateSettings } from '../config/generateSettings.js';
 import { formatFiles } from '../hooks/postProcess.js';
 import { handleInitGT } from '../next/parse/handleInitGT.js';
 import { getPackageJson, isPackageInstalled } from '../utils/packageJson.js';

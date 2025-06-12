@@ -53,28 +53,42 @@ export class LocadexManager {
   private static instance: LocadexManager | undefined;
   private mcpProcess: ChildProcess | undefined;
   private mcpTransport: 'sse' | 'stdio';
+
+  // Paths
   private mcpConfigPath: string;
   private filesStateFilePath: string;
   private metadataFilePath: string;
   private lockFilePath: string;
-  private workingDir: string;
+  private currentRunDir: string;
   private locadexDirectory: string;
+  public appDirectory: string;
+  public rootDirectory: string;
+
+  // Config
   private apiKey: string;
   private maxConcurrency: number;
   private batchSize: number;
+
+  // Agent pool
   private agentPool: Map<
     string,
     { agent: ClaudeCodeRunner; sessionId?: string; busy: boolean }
   >;
+
+  // Abort controllers
   private agentAbortController: AbortController;
   private mcpAbortController: AbortController;
   private aborted: boolean = false;
+
+  // State
   private agentMutex = Promise.resolve();
   private config: LocadexConfig;
-  stats: AgentStats;
-  logFile: string;
+  public stats: AgentStats;
+  public logFile: string;
 
   private constructor(params: {
+    rootDirectory: string;
+    appDirectory: string;
     mcpTransport: 'sse' | 'stdio';
     apiKey: string;
     metadata: Partial<LocadexRunMetadata>;
@@ -87,14 +101,16 @@ export class LocadexManager {
     this.agentAbortController = new AbortController();
     this.mcpAbortController = new AbortController();
 
-    const cwd = process.cwd();
-    this.locadexDirectory = path.resolve(cwd, '.locadex');
-    this.workingDir = path.resolve(
+    this.appDirectory = params.appDirectory;
+    this.rootDirectory = params.rootDirectory;
+
+    this.locadexDirectory = path.resolve(this.rootDirectory, '.locadex');
+    this.currentRunDir = path.resolve(
       this.locadexDirectory,
       'runs',
       Date.now().toString()
     );
-    fs.mkdirSync(this.workingDir, { recursive: true });
+    fs.mkdirSync(this.currentRunDir, { recursive: true });
 
     this.config = getConfig(this.locadexDirectory, params.options);
 
@@ -104,14 +120,17 @@ export class LocadexManager {
       matchingFiles: this.config.matchingFiles,
     });
 
-    addToGitIgnore(cwd, '.locadex/runs');
+    addToGitIgnore(this.rootDirectory, '.locadex/runs');
 
     this.maxConcurrency = this.config.maxConcurrency;
     this.batchSize = this.config.batchSize;
-    this.mcpConfigPath = path.resolve(this.workingDir, 'mcp.json');
-    this.filesStateFilePath = path.resolve(this.workingDir, 'files-state.json');
-    this.metadataFilePath = path.resolve(this.workingDir, 'metadata.json');
-    this.logFile = path.resolve(this.workingDir, 'log.txt');
+    this.mcpConfigPath = path.resolve(this.currentRunDir, 'mcp.json');
+    this.filesStateFilePath = path.resolve(
+      this.currentRunDir,
+      'files-state.json'
+    );
+    this.metadataFilePath = path.resolve(this.currentRunDir, 'metadata.json');
+    this.logFile = path.resolve(this.currentRunDir, 'log.txt');
     this.lockFilePath = path.resolve(this.locadexDirectory, LOCKFILE_NAME);
 
     // Create files-state.json
@@ -127,10 +146,10 @@ export class LocadexManager {
       locadexVersion: JSON.parse(
         fs.readFileSync(fromPackageRoot('package.json'), 'utf8')
       ).version,
-      workingDirectory: cwd,
-      projectName: path.basename(cwd),
+      workingDirectory: this.appDirectory,
+      projectName: path.basename(this.appDirectory),
       transport: params.mcpTransport,
-      tempDirectory: this.workingDir,
+      tempDirectory: this.currentRunDir,
       nodeVersion: process.version,
       platform: process.platform,
       arch: process.arch,
@@ -219,6 +238,8 @@ export class LocadexManager {
   }
 
   static initialize(params: {
+    rootDirectory: string;
+    appDirectory: string;
     mcpTransport: 'sse' | 'stdio';
     apiKey: string;
     metadata: Partial<LocadexRunMetadata>;
@@ -363,8 +384,8 @@ export class LocadexManager {
     }
   }
 
-  getWorkingDir(): string {
-    return this.workingDir;
+  getLogDirectory(): string {
+    return this.currentRunDir;
   }
 
   getAgentAbortController(): AbortController {

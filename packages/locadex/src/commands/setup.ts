@@ -6,6 +6,7 @@ import { withTelemetry } from '../telemetry.js';
 import { LocadexManager } from '../utils/locadexManager.js';
 import { displayHeader } from '../logging/console.js';
 import { exit } from '../utils/shutdown.js';
+import path from 'node:path';
 
 export async function setupCommand(
   options: CliOptions & {
@@ -30,6 +31,8 @@ export async function setupCommand(
 
       displayHeader(telemetryEnabled);
       LocadexManager.initialize({
+        rootDirectory: process.cwd(),
+        appDirectory: path.resolve(process.cwd(), allOptions.appDir),
         mcpTransport: 'sse',
         apiKey: process.env.ANTHROPIC_API_KEY || '',
         metadata: {},

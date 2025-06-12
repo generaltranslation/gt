@@ -90,11 +90,15 @@ export function getChangedFiles(
   return changedFiles;
 }
 
-export function updateLockfile(files: string[], lockfilePath: string): void {
+export function updateLockfile(
+  files: string[],
+  lockfilePath: string,
+  rootDirectory: string
+): void {
   const lockfile = loadLockfile(lockfilePath);
 
   for (const filePath of files) {
-    const relativePath = path.relative(process.cwd(), filePath);
+    const relativePath = path.relative(rootDirectory, filePath);
     const currentHash = calculateFileHash(filePath);
 
     if (!currentHash) {
@@ -114,24 +118,18 @@ export function updateLockfile(files: string[], lockfilePath: string): void {
 }
 
 export function cleanupLockfile(
-  allCurrentFiles: string[],
-  lockfilePath: string
+  lockfilePath: string,
+  rootDirectory: string
 ): void {
   const lockfile = loadLockfile(lockfilePath);
-  const currentHashes = new Set<string>();
 
-  // Calculate hashes for all current files
-  for (const filePath of allCurrentFiles) {
-    const hash = calculateFileHash(filePath);
-    if (hash) {
-      currentHashes.add(hash);
-    }
-  }
-
-  // Remove entries for content that no longer exists
+  // Remove entries for files that no longer exist
   let removedCount = 0;
   for (const hash in lockfile.checksums) {
-    if (!currentHashes.has(hash)) {
+    const entry = lockfile.checksums[hash];
+    const absolutePath = path.resolve(rootDirectory, entry.path);
+
+    if (!fs.existsSync(absolutePath)) {
       delete lockfile.checksums[hash];
       removedCount++;
     }

@@ -16,7 +16,7 @@ export interface PackageManager {
   forceInstallFlag: string;
   devDependencyFlag: string;
   registry?: string;
-  detect: () => boolean;
+  detect: (cwd: string) => boolean;
   addOverride: (pkgName: string, pkgVersion: string) => Promise<void>;
 }
 
@@ -30,10 +30,10 @@ export const BUN: PackageManager = {
   flags: '',
   forceInstallFlag: '--force',
   devDependencyFlag: '--dev',
-  detect: () =>
+  detect: (cwd: string) =>
     ['bun.lockb', 'bun.lock'].some((lockFile) => {
       try {
-        return fs.existsSync(path.join(process.cwd(), lockFile));
+        return fs.existsSync(path.join(cwd, lockFile));
       } catch (e) {
         return false;
       }
@@ -62,9 +62,9 @@ export const DENO: PackageManager = {
   forceInstallFlag: '--force',
   devDependencyFlag: '--dev',
   registry: 'npm',
-  detect: () => {
+  detect: (cwd: string) => {
     try {
-      return fs.existsSync(path.join(process.cwd(), 'deno.lock'));
+      return fs.existsSync(path.join(cwd, 'deno.lock'));
     } catch (e) {
       return false;
     }
@@ -92,10 +92,10 @@ export const YARN_V1: PackageManager = {
   flags: '--ignore-workspace-root-check',
   forceInstallFlag: '--force',
   devDependencyFlag: '--dev',
-  detect: () => {
+  detect: (cwd: string) => {
     try {
       return fs
-        .readFileSync(path.join(process.cwd(), 'yarn.lock'), 'utf-8')
+        .readFileSync(path.join(cwd, 'yarn.lock'), 'utf-8')
         .slice(0, 500)
         .includes('yarn lockfile v1');
     } catch (e) {
@@ -126,10 +126,10 @@ export const YARN_V2: PackageManager = {
   flags: '',
   forceInstallFlag: '--force',
   devDependencyFlag: '--dev',
-  detect: () => {
+  detect: (cwd: string) => {
     try {
       return fs
-        .readFileSync(path.join(process.cwd(), 'yarn.lock'), 'utf-8')
+        .readFileSync(path.join(cwd, 'yarn.lock'), 'utf-8')
         .slice(0, 500)
         .includes('__metadata');
     } catch (e) {
@@ -159,9 +159,9 @@ export const PNPM: PackageManager = {
   flags: '--ignore-workspace-root-check',
   forceInstallFlag: '--force',
   devDependencyFlag: '--save-dev',
-  detect: () => {
+  detect: (cwd: string) => {
     try {
-      return fs.existsSync(path.join(process.cwd(), 'pnpm-lock.yaml'));
+      return fs.existsSync(path.join(cwd, 'pnpm-lock.yaml'));
     } catch (e) {
       return false;
     }
@@ -193,9 +193,9 @@ export const NPM: PackageManager = {
   flags: '',
   forceInstallFlag: '--force',
   devDependencyFlag: '--save-dev',
-  detect: () => {
+  detect: (cwd: string) => {
     try {
-      return fs.existsSync(path.join(process.cwd(), 'package-lock.json'));
+      return fs.existsSync(path.join(cwd, 'package-lock.json'));
     } catch (e) {
       return false;
     }
@@ -216,11 +216,9 @@ export const NPM: PackageManager = {
 
 export const packageManagers = [NPM, YARN_V1, YARN_V2, PNPM, BUN, DENO];
 
-export function _detectPackageManger(
-  managers?: PackageManager[]
-): PackageManager | null {
-  const foundPackageMangers = (managers ?? packageManagers).filter(
-    (packageManager) => packageManager.detect()
+export function _detectPackageManger(cwd: string): PackageManager | null {
+  const foundPackageMangers = packageManagers.filter((packageManager) =>
+    packageManager.detect(cwd)
   );
 
   // Only consider a package manager detected if we found exactly one.
@@ -235,6 +233,7 @@ export function _detectPackageManger(
 // Get the package manager for the current project
 // Uses a global cache to avoid prompting the user multiple times
 export async function getPackageManager(
+  cwd: string = process.cwd(),
   specifiedPackageManager?: string
 ): Promise<PackageManager> {
   const globalWizard: typeof global & {
@@ -255,7 +254,7 @@ export async function getPackageManager(
     }
   }
 
-  const detectedPackageManager = _detectPackageManger();
+  const detectedPackageManager = _detectPackageManger(cwd);
 
   if (detectedPackageManager) {
     globalWizard._gt_wizard_cached_package_manager = detectedPackageManager;

@@ -6,7 +6,8 @@ import { PackageManager } from './packageManager.js';
 export async function installPackage(
   packageName: string,
   packageManager: PackageManager,
-  asDevDependency?: boolean
+  asDevDependency?: boolean,
+  cwd: string = process.cwd()
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const command = packageManager.name;
@@ -18,6 +19,7 @@ export async function installPackage(
 
     const childProcess = spawn(command, args, {
       stdio: ['pipe', 'ignore', 'pipe'],
+      cwd,
     });
 
     let errorOutput = '';

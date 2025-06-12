@@ -9,10 +9,7 @@ import {
   DAG_IGNORED_PATTERNS,
 } from '../shared.js';
 
-export function findSourceFiles(
-  globPatterns: string[],
-  cwd: string = process.cwd()
-): string[] {
+export function findSourceFiles(globPatterns: string[], cwd: string): string[] {
   const allFiles: string[] = [];
 
   for (const pattern of globPatterns) {
@@ -57,7 +54,7 @@ export function findSourceFiles(
 export function filterFiles(
   globPatterns: string[],
   filePaths: string[],
-  cwd: string = process.cwd()
+  cwd: string
 ): string[] {
   if (globPatterns.length === 0) {
     return filePaths;

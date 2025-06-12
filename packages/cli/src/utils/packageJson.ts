@@ -7,12 +7,10 @@ import { logErrorAndExit } from '../console/logging.js';
 import { fromPackageRoot } from '../fs/getPackageResource.js';
 
 // search for package.json such that we can run init in non-js projects
-export async function searchForPackageJson(): Promise<Record<
-  string,
-  any
-> | null> {
+export async function searchForPackageJson(
+  cwd: string = process.cwd()
+): Promise<Record<string, any> | null> {
   // Get the current working directory (where the CLI is being run)
-  const cwd = process.cwd();
   const packageJsonPath = path.join(cwd, 'package.json');
 
   // Check if package.json exists
@@ -26,9 +24,9 @@ export async function searchForPackageJson(): Promise<Record<
   }
 }
 
-export async function getPackageJson(): Promise<Record<string, any>> {
-  // Get the current working directory (where the CLI is being run)
-  const cwd = process.cwd();
+export async function getPackageJson(
+  cwd: string = process.cwd()
+): Promise<Record<string, any>> {
   const packageJsonPath = path.join(cwd, 'package.json');
 
   // Check if package.json exists
@@ -59,10 +57,13 @@ export function getCLIVersion(): string {
     return 'unknown';
   }
 }
-export async function updatePackageJson(packageJson: Record<string, any>) {
+export async function updatePackageJson(
+  packageJson: Record<string, any>,
+  cwd: string = process.cwd()
+) {
   try {
     await fs.promises.writeFile(
-      path.join(process.cwd(), 'package.json'),
+      path.join(cwd, 'package.json'),
       JSON.stringify(packageJson, null, 2)
     );
   } catch (error) {

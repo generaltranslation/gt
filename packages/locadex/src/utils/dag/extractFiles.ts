@@ -17,21 +17,25 @@ export function extractFiles(manager: LocadexManager): {
   const config = manager.getConfig();
 
   // files with absolute paths
-  const allFiles = findSourceFiles(config.matchingFiles);
+  const allFiles = findSourceFiles(config.matchingFiles, manager.rootDirectory);
 
   logger.debugMessage(`Found ${allFiles.length} matching files`);
 
   const dag = createDag(allFiles, {
-    tsConfig: findTsConfig(),
-    webpackConfig: findWebpackConfig(),
-    requireConfig: findRequireConfig(),
+    tsConfig: findTsConfig(manager.appDirectory),
+    webpackConfig: findWebpackConfig(manager.appDirectory),
+    requireConfig: findRequireConfig(manager.appDirectory),
   });
 
   // Create deep copy of topological order
   const topologicalOrder = Array.from(dag.getTopologicalOrder());
 
   // 2nd filter pass
-  const filteredFiles = filterFiles(config.matchingFiles, topologicalOrder);
+  const filteredFiles = filterFiles(
+    config.matchingFiles,
+    topologicalOrder,
+    manager.rootDirectory
+  );
 
   logger.debugMessage(`Post-filter: ${filteredFiles.length} files`);
 

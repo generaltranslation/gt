@@ -25,8 +25,6 @@ export async function setupTask(
 ) {
   await validateInitialConfig();
 
-  logger.debugMessage('Current working directory: ' + process.cwd());
-
   if (!bypassPrompts) {
     const answer = await promptConfirm({
       message: chalk.yellow(
@@ -41,23 +39,32 @@ export async function setupTask(
     }
   }
 
-  const packageJson = await getPackageJson();
-  const packageManager = await getPackageManager(specifiedPackageManager);
+  const manager = LocadexManager.getInstance();
+
+  // have to use the package.json from the appDir
+  const packageJson = await getPackageJson(manager.appDirectory);
+  const packageManager = await getPackageManager(
+    manager.rootDirectory,
+    specifiedPackageManager
+  );
 
   const spinner = createSpinner('timer');
 
   spinner.start(`Installing gt-next with ${packageManager.name}...`);
 
-  await installPackage('gt-next', packageManager);
+  await installPackage('gt-next', packageManager, false, manager.appDirectory);
 
   spinner.stop('Automatically installed gt-next.');
 
-  const nextConfigPath = findFilepaths([
-    './next.config.js',
-    './next.config.ts',
-    './next.config.mjs',
-    './next.config.mts',
-  ])[0];
+  const nextConfigPath = findFilepaths(
+    [
+      './next.config.js',
+      './next.config.ts',
+      './next.config.mjs',
+      './next.config.mts',
+    ],
+    manager.appDirectory
+  )[0];
 
   if (!nextConfigPath) {
     logger.error('No next.config.[js|ts|mjs|mts] file found.');
@@ -75,7 +82,7 @@ export async function setupTask(
   // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
   const { filesUpdated: filesUpdatedNext } = await wrapContentNext(
     {
-      src: getNextDirectories(),
+      src: getNextDirectories(manager.appDirectory),
       config: nextConfigPath,
       disableIds: true,
       disableFormatting: true,
@@ -95,11 +102,14 @@ export async function setupTask(
   logger.step(`Added withGTConfig() to your ${nextConfigPath} file.`);
 
   // Create gt.config.json
-  await createOrUpdateConfig('gt.config.json', {
-    defaultLocale: 'en',
-    locales: ['es', 'fr', 'de', 'ja', 'zh'],
-    framework: 'next-app',
-  });
+  await createOrUpdateConfig(
+    path.resolve(manager.appDirectory, 'gt.config.json'),
+    {
+      defaultLocale: 'en',
+      locales: ['es', 'fr', 'de', 'ja', 'zh'],
+      framework: 'next-app',
+    }
+  );
 
   logger.success(
     `Feel free to edit ${chalk.cyan(
@@ -111,17 +121,23 @@ export async function setupTask(
   await installClaudeCode();
 
   // Install locadex if not installed
-  const isLocadexInstalled = packageJson
-    ? isPackageInstalled('locadex', packageJson, true, true)
+  const rootPackageJson = await getPackageJson(manager.rootDirectory);
+  const isLocadexInstalled = rootPackageJson
+    ? isPackageInstalled('locadex', rootPackageJson, true, true)
     : true; // if no package.json, we can't install it
 
   if (!isLocadexInstalled) {
-    const packageManager = await getPackageManager();
+    const packageManager = await getPackageManager(manager.rootDirectory);
     const spinner = createSpinner();
     spinner.start(
       `Installing locadex as a dev dependency with ${packageManager.name}...`
     );
-    await installPackage('locadex', packageManager, true);
+    await installPackage(
+      'locadex',
+      packageManager,
+      true,
+      manager.rootDirectory
+    );
     spinner.stop(chalk.green('Installed locadex.'));
   }
 
@@ -156,7 +172,7 @@ async function setupLocaleSelector() {
     const reportSummary = `# Summary of locadex setup changes
 ${report}`;
     const summaryFilePath = path.join(
-      manager.getWorkingDir(),
+      manager.getLogDirectory(),
       'locadex-report.md'
     );
     appendFileSync(summaryFilePath, reportSummary);

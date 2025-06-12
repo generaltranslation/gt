@@ -34,7 +34,7 @@ program
   .option('-c, --concurrency <number>', 'Max number of concurrent agents')
   .option(
     '-m, --match-files <pattern>',
-    'Comma-separated list of glob patterns to match source files'
+    'Comma-separated list of glob patterns to match source files. Should be relative to root directory.'
   )
   .option(
     '--package-manager <manager>',
@@ -42,7 +42,7 @@ program
   )
   .option('-y, --bypass-prompts', 'Bypass interactive prompts')
   .option('--no-telemetry', 'Disable telemetry')
-  .option('--app-dir <dir>', 'Path to the application root', '.')
+  .option('--app-dir <dir>', 'Relative path to the application directory', '.')
   .action(setupCommand);
 
 program
@@ -54,10 +54,10 @@ program
   .option('-c, --concurrency <number>', 'Max number of concurrent agents')
   .option(
     '-m, --match-files <pattern>',
-    'Comma-separated list of glob patterns to match source files'
+    'Comma-separated list of glob patterns to match source files. Should be relative to root directory.'
   )
   .option('--no-telemetry', 'Disable telemetry')
-  .option('--app-dir <dir>', 'Path to the application root', '.')
+  .option('--app-dir <dir>', 'Relative path to the application directory', '.')
   .action(i18nCommand);
 
 main(program);

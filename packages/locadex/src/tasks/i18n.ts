@@ -24,7 +24,6 @@ import { Dag } from '../utils/dag/createDag.js';
 export async function i18nTask() {
   await validateInitialConfig();
 
-  logger.debugMessage('Current working directory: ' + process.cwd());
   const gtSettings = await generateSettings({});
   if (gtSettings.framework !== 'next-app') {
     logger.error(
@@ -36,11 +35,14 @@ export async function i18nTask() {
   // Install claude-code if not installed
   await installClaudeCode();
 
+  const manager = LocadexManager.getInstance();
+
+  logger.debugMessage('App directory: ' + manager.appDirectory);
+  logger.debugMessage('Root directory: ' + manager.rootDirectory);
+
   // Init message
   const spinner = createSpinner();
   spinner.start('Initializing Locadex...');
-
-  const manager = LocadexManager.getInstance();
 
   const { files, dag } = extractFiles(manager);
 
@@ -187,7 +189,7 @@ export async function i18nTask() {
   const reportSummary = `# Summary of locadex i18n changes
 ${reports.join('\n')}`;
   const summaryFilePath = path.join(
-    manager.getWorkingDir(),
+    manager.getLogDirectory(),
     'locadex-report.md'
   );
   appendFileSync(summaryFilePath, reportSummary);
@@ -202,10 +204,10 @@ ${reports.join('\n')}`;
   const lockfilePath = manager.getLockFilePath();
 
   // Update lockfile with processed files
-  updateLockfile(files, lockfilePath);
+  updateLockfile(files, lockfilePath, manager.rootDirectory);
 
   // Clean up stale entries from lockfile
-  cleanupLockfile(files, lockfilePath);
+  cleanupLockfile(lockfilePath, manager.rootDirectory);
 
   logger.message(chalk.dim(`Updated lockfile with ${files.length} files`));
 
@@ -277,7 +279,7 @@ function getPrompt({
 - Minimize the footprint of your changes.
 - Focus on internationalizing the content of the target files.
 - NEVER move internationalized content to a different file. All content MUST remain in the same file where it came from.
-- NEVER CREATE OR REMOVE ANY FILES (especially .bak files)
+- NEVER CREATE OR DELETE ANY FILES (especially .bak files)
 - Internationalize all user facing content in the target files. 
 - NEVER EDIT FILES THAT ARE NOT GIVEN TO YOU.
 

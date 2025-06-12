@@ -127,24 +127,20 @@ function scanDirectory(dirPath: string, basePath: string): string[] {
   return files;
 }
 
-export function scanNextJsAppFiles(
-  projectPath: string = process.cwd()
-): string[] {
-  return scanDirectory(projectPath, projectPath);
-}
-
 // Used by dag command
 export function addFilesToManager(
-  projectPath: string = process.cwd(),
-  files: string[] = []
+  filesStateFilePath: string,
+  files: string[]
 ): string {
-  const existingFiles = getFileList(projectPath);
+  const existingFiles = getFileList(filesStateFilePath);
   const existingPaths = new Set(existingFiles.map((f) => f.path));
   files = files.filter((f) => !existingPaths.has(f));
 
-  files.forEach((filePath) => addFileToList(filePath, projectPath, 'pending'));
+  files.forEach((filePath) =>
+    addFileToList(filePath, filesStateFilePath, 'pending')
+  );
 
-  return projectPath;
+  return filesStateFilePath;
 }
 
 // Used by dag command
@@ -167,32 +163,6 @@ export async function markFileAsEdited(
   });
 }
 
-export function addNextJsFilesToManager(
-  stateFilePath: string,
-  projectPath: string = process.cwd()
-): {
-  added: string[];
-  existing: string[];
-} {
-  const discoveredFiles = scanNextJsAppFiles(projectPath);
-  const existingFiles = getFileList(stateFilePath);
-  const existingPaths = new Set(existingFiles.map((f) => f.path));
-
-  const added: string[] = [];
-  const existing: string[] = [];
-
-  for (const filePath of discoveredFiles) {
-    if (existingPaths.has(filePath)) {
-      existing.push(filePath);
-    } else {
-      addFileToList(filePath, stateFilePath, 'pending');
-      added.push(filePath);
-    }
-  }
-
-  return { added, existing };
-}
-
 export function getCurrentFileList(stateFilePath: string): {
   path: string;
   addedAt: string;
@@ -201,39 +171,4 @@ export function getCurrentFileList(stateFilePath: string): {
   status: 'pending' | 'in_progress' | 'edited';
 }[] {
   return getFileList(stateFilePath);
-}
-
-export function getNextJsAppRouterStats(projectPath: string = process.cwd()): {
-  totalFiles: number;
-  tsFiles: number;
-  tsxFiles: number;
-  directories: Set<string>;
-} {
-  const files = scanNextJsAppFiles(projectPath);
-
-  let tsFiles = 0;
-  let tsxFiles = 0;
-  const directories = new Set<string>();
-
-  for (const filePath of files) {
-    const fileName = filePath.split('/').pop() || '';
-    const dirPath = filePath.split('/').slice(0, -1).join('/');
-
-    if (dirPath) {
-      directories.add(dirPath);
-    }
-
-    if (fileName.endsWith('.ts')) {
-      tsFiles++;
-    } else if (fileName.endsWith('.tsx')) {
-      tsxFiles++;
-    }
-  }
-
-  return {
-    totalFiles: files.length,
-    tsFiles,
-    tsxFiles,
-    directories,
-  };
 }

@@ -1,6 +1,7 @@
 import { logger } from '../../logging/logger.js';
 import dependencyTree, { Tree } from 'dependency-tree';
 import * as path from 'node:path';
+import { LocadexManager } from '../locadexManager.js';
 
 export type DagOptions = {
   tsConfig?: string;
@@ -34,7 +35,10 @@ export class Dag {
     const dependenciesMap: Record<string, string[]> = {};
 
     // Clean the file paths recursively
-    const cleanedDag = cleanFilePaths(dag);
+    const cleanedDag = cleanFilePaths(
+      dag,
+      LocadexManager.getInstance().rootDirectory
+    );
 
     function traverse(node: DagNode, parent?: string): void {
       for (const [filename, subtree] of Object.entries(node)) {
@@ -120,6 +124,8 @@ export function createDag(files: string[], options: DagOptions): Dag {
     `Creating combined tree for ${files.length} source files`
   );
 
+  const appDir = LocadexManager.getInstance().appDirectory;
+
   files.forEach((file) => {
     if (visited[file]) {
       return;
@@ -127,7 +133,7 @@ export function createDag(files: string[], options: DagOptions): Dag {
 
     try {
       const tree = dependencyTree({
-        directory: process.cwd(),
+        directory: appDir,
         filename: file,
         filter: (path: string) => !path.includes('node_modules'),
         visited: visited,
@@ -145,16 +151,16 @@ export function createDag(files: string[], options: DagOptions): Dag {
   return new Dag(mergeTrees(allTrees));
 }
 
-function cleanFilePath(filePath: string): string {
-  return path.relative(process.cwd(), filePath);
+function cleanFilePath(filePath: string, dir: string): string {
+  return path.relative(dir, filePath);
 }
 
-function cleanFilePaths(dag: DagNode): DagNode {
+function cleanFilePaths(dag: DagNode, dir: string): DagNode {
   const result: DagNode = {};
 
   for (const [filename, subtree] of Object.entries(dag)) {
-    const cleanedFilename = cleanFilePath(filename);
-    result[cleanedFilename] = cleanFilePaths(subtree);
+    const cleanedFilename = cleanFilePath(filename, dir);
+    result[cleanedFilename] = cleanFilePaths(subtree, dir);
   }
 
   return result;
