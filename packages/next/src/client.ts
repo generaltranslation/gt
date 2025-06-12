@@ -21,26 +21,29 @@ import {
 } from 'gt-react/client';
 
 export {
-  GTProvider as GTClientProvider,
-  T,
+  // Hooks
   useGT,
-  useLocale,
-  useLocales,
-  useSetLocale,
-  useDefaultLocale,
   useTranslations,
   /**
    * @deprecated Use useTranslations instead
    */
   useTranslations as useDict,
-  LocaleSelector,
+  useLocale,
+  useLocales,
+  useSetLocale,
+  useDefaultLocale,
   useLocaleSelector,
+  useGTClass,
+  useLocaleProperties,
+
+  // Components
+  GTProvider as GTClientProvider,
+  T,
   Var,
   Currency,
   DateTime,
   Num,
   Plural,
   Branch,
-  useGTClass,
-  useLocaleProperties,
+  LocaleSelector,
 };

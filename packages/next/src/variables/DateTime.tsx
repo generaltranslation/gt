@@ -2,21 +2,6 @@ import { formatDateTime } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
 import getLocale from '../request/getLocale';
 
-/**
- * The `<DateTime>` component renders a formatted date or time string, allowing customization of the name, default value, and formatting options.
- * It utilizes the current locale and optional format settings to display the date.
- *
- * @example
- * ```jsx
- * <DateTime>
- *    {new Date()}
- * </DateTime>
- * ```
- *
- * @param {any} [children] - Optional content (typically a date) to render inside the component.
- * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
- * @returns {Promise<React.JSX.Element>} The formatted date or time component.
- */
 async function DateTime({
   children,
   name,

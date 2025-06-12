@@ -56,6 +56,18 @@ export const conflictingConfigurationBuildError = (conflicts: string[]) =>
 export const unsupportedGetLocalePathBuildError =
   'gt-next Error: custom getLocale() function is not currently supported.';
 
+export const typesFileError = `gt-next Error: There is no scenario in which you should be seeing this error.`;
+
+export const gtProviderUseClientError =
+  `You're attempting to import the Next.js <GTProvider> in a client component. ` +
+  `Are you sure you want to do this? It's better to import <GTProvider> in a file not marked 'use client' so that it can fetch translations on the server. ` +
+  `If you really need to put <GTProvider> on the client, import <GTClientProvider> from 'gt-next/client' instead (discouraged when using the Next.js App Router).`;
+
+export const txUseClientError =
+  `You're attempting to use the <Tx> runtime translation component in a client component. ` +
+  `This is currently unsupported. Please use <T> with variables, ` +
+  `or make sure <Tx> rendered on the server only. `;
+
 // ---- WARNINGS ---- //
 
 export const usingDefaultsWarning =
