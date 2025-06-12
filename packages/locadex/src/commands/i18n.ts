@@ -7,6 +7,7 @@ import { LocadexManager } from '../utils/locadexManager.js';
 import { displayHeader } from '../logging/console.js';
 import { exit } from '../utils/shutdown.js';
 import path from 'node:path';
+import { validateConfig } from '../utils/config.js';
 
 export async function i18nCommand(options: CliOptions, command: Command) {
   const parentOptions = command.parent?.opts() || {};
@@ -15,13 +16,7 @@ export async function i18nCommand(options: CliOptions, command: Command) {
   withTelemetry(
     { enabled: telemetryEnabled, options: allOptions },
     async () => {
-      if (
-        (allOptions.batchSize && Number(allOptions.batchSize) < 1) ||
-        (allOptions.concurrency && Number(allOptions.concurrency) < 1)
-      ) {
-        logger.error('Batch size and concurrency must be greater than 0');
-        await exit(1);
-      }
+      await validateConfig(allOptions);
 
       displayHeader(telemetryEnabled);
       LocadexManager.initialize({
@@ -42,6 +37,9 @@ export async function i18nCommand(options: CliOptions, command: Command) {
           }),
           ...(allOptions.batchSize && {
             batchSize: Number(allOptions.batchSize),
+          }),
+          ...(allOptions.timeout && {
+            timeout: Number(allOptions.timeout),
           }),
         },
       });

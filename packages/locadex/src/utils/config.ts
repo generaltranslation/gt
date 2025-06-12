@@ -1,16 +1,38 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { logger } from '../logging/logger.js';
 import path from 'node:path';
-import { LocadexConfig } from '../types/cli.js';
+import { CliOptions, LocadexConfig } from '../types/cli.js';
 import { exit } from './shutdown.js';
 
-export async function validateInitialConfig() {
+export async function validateConfig(options: CliOptions) {
   // Validate ANTHROPIC_API_KEY
   if (!process.env.ANTHROPIC_API_KEY) {
-    logger.error(
+    console.error(
       'ANTHROPIC_API_KEY is not set! Please set it as an environment variable or in a .env | .env.local file.'
     );
     await exit(1);
+  }
+
+  if (options.timeout) {
+    const timeout = Number(options.timeout);
+    if (isNaN(timeout) || timeout <= 0) {
+      console.error('Invalid timeout value. Please provide a positive number.');
+      await exit(1);
+    }
+  }
+  if (options.batchSize) {
+    const batchSize = Number(options.batchSize);
+    if (isNaN(batchSize) || batchSize < 1) {
+      console.error('Invalid batch size. Please provide a positive number.');
+      await exit(1);
+    }
+  }
+  if (options.concurrency) {
+    const concurrency = Number(options.concurrency);
+    if (isNaN(concurrency) || concurrency < 1) {
+      console.error('Invalid concurrency. Please provide a positive number.');
+      await exit(1);
+    }
   }
 }
 
@@ -42,6 +64,7 @@ const DEFAULT_CONFIG: LocadexConfig = {
   batchSize: 10,
   maxConcurrency: 1,
   matchingFiles: ['**/*.{ts,tsx,js,jsx}'],
+  timeout: 60,
 };
 
 export function getConfig(

@@ -68,6 +68,7 @@ export class LocadexManager {
   private apiKey: string;
   private maxConcurrency: number;
   private batchSize: number;
+  private timeout: number;
 
   // Agent pool
   private agentPool: Map<
@@ -124,6 +125,7 @@ export class LocadexManager {
 
     this.maxConcurrency = this.config.maxConcurrency;
     this.batchSize = this.config.batchSize;
+    this.timeout = this.config.timeout;
     this.mcpConfigPath = path.resolve(this.currentRunDir, 'mcp.json');
     this.filesStateFilePath = path.resolve(
       this.currentRunDir,
@@ -352,6 +354,9 @@ export class LocadexManager {
   }
   getBatchSize(): number {
     return this.batchSize;
+  }
+  getTimeoutFactor(): number {
+    return this.timeout;
   }
   getConfig(): LocadexConfig {
     return this.config;

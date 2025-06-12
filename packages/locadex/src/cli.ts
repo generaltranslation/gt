@@ -31,6 +31,7 @@ program
   .option('-v, --verbose', 'Verbose output')
   .option('-d, --debug', 'Debug output')
   .option('-b, --batch-size <number>', 'File batch size')
+  .option('-t, --timeout <number>', 'Timeout for each file in a batch')
   .option('-c, --concurrency <number>', 'Max number of concurrent agents')
   .option(
     '-m, --match-files <pattern>',
@@ -51,6 +52,7 @@ program
   .option('-v, --verbose', 'Verbose output')
   .option('-d, --debug', 'Debug output')
   .option('-b, --batch-size <number>', 'File batch size')
+  .option('-t, --timeout <number>', 'Timeout for each file in a batch')
   .option('-c, --concurrency <number>', 'Max number of concurrent agents')
   .option(
     '-m, --match-files <pattern>',

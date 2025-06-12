@@ -12,7 +12,6 @@ import { runParallelProcessing, TaskProcessor } from './concurrency.js';
 import { outro } from '@clack/prompts';
 import chalk from 'chalk';
 import { appendFileSync } from 'node:fs';
-import { validateInitialConfig } from '../utils/config.js';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { generateSettings } from 'gtx-cli/config/generateSettings';
 import path from 'node:path';
@@ -22,8 +21,6 @@ import { extractFiles } from '../utils/dag/extractFiles.js';
 import { Dag } from '../utils/dag/createDag.js';
 
 export async function i18nTask() {
-  await validateInitialConfig();
-
   const gtSettings = await generateSettings({});
   if (gtSettings.framework !== 'next-app') {
     logger.error(
@@ -146,7 +143,6 @@ export async function i18nTask() {
       concurrency,
       batchSize,
     },
-    60,
     1
   );
 

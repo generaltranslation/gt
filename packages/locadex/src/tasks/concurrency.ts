@@ -3,56 +3,6 @@ import { logger } from '../logging/logger.js';
 import { exit } from '../utils/shutdown.js';
 
 /**
- * Wraps a promise with a timeout mechanism
- */
-async function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutSec: number,
-  timeoutMessage?: string
-): Promise<T> {
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    global.setTimeout(() => {
-      reject(
-        new Error(timeoutMessage || `Operation timed out after ${timeoutSec}s`)
-      );
-    }, timeoutSec * 1000);
-  });
-
-  return Promise.race([promise, timeoutPromise]);
-}
-
-/**
- * Retries an async operation with exponential backoff
- */
-async function withRetry<T>(
-  operation: () => Promise<T>,
-  maxRetries: number = 1,
-  baseDelayMs: number = 1000
-): Promise<T> {
-  let lastError: Error;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error as Error;
-
-      if (attempt === maxRetries) {
-        throw lastError;
-      }
-
-      const delay = baseDelayMs * Math.pow(2, attempt);
-      logger.debugMessage(
-        `Agent operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms: ${error}`
-      );
-      await new Promise((resolve) => global.setTimeout(resolve, delay));
-    }
-  }
-
-  throw lastError!;
-}
-
-/**
  * Interface for defining how to process tasks in parallel.
  * Separates task preparation (preProcess) from result handling (postProcess).
  *
@@ -134,7 +84,6 @@ export async function runParallelProcessing<TTask, TContext>(
   processor: TaskProcessor<TTask, TContext>,
   context: TContext,
   options: ParallelProcessingOptions,
-  timeoutSecPerTask: number = 60,
   maxRetries: number = 1
 ): Promise<void> {
   const { concurrency, batchSize } = options;
@@ -194,22 +143,16 @@ export async function runParallelProcessing<TTask, TContext>(
         const prompt = await processor.preProcess(tasks, context);
 
         // dynamic timeout based on the number of tasks
-        const dynamicTimeoutSec = timeoutSecPerTask * tasks.length;
+        const dynamicTimeoutSec = manager.getTimeoutFactor() * tasks.length;
 
-        // Claude call with timeout and retry
-        await withRetry(
-          () =>
-            withTimeout(
-              agent.run(
-                {
-                  prompt,
-                  sessionId,
-                },
-                {}
-              ),
-              dynamicTimeoutSec,
-              `Agent operation timed out after ${dynamicTimeoutSec}s`
-            ),
+        // Claude call with timeout and retry (handled inside agent.run)
+        await agent.run(
+          {
+            prompt,
+            sessionId,
+          },
+          {},
+          dynamicTimeoutSec,
           maxRetries
         );
 

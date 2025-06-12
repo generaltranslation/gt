@@ -28,6 +28,56 @@ const DEFAULT_ALLOWED_TOOLS = [
 
 const DISALLOWED_TOOLS = ['NotebookEdit', 'WebFetch', 'WebSearch'];
 
+/**
+ * Wraps a promise with a timeout mechanism
+ */
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutSec: number,
+  timeoutMessage?: string
+): Promise<T> {
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    global.setTimeout(() => {
+      reject(
+        new Error(timeoutMessage || `Operation timed out after ${timeoutSec}s`)
+      );
+    }, timeoutSec * 1000);
+  });
+
+  return Promise.race([promise, timeoutPromise]);
+}
+
+/**
+ * Retries an async operation with exponential backoff
+ */
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 1,
+  baseDelayMs: number = 1000
+): Promise<T> {
+  let lastError: Error;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error as Error;
+
+      if (attempt === maxRetries) {
+        throw lastError;
+      }
+
+      const delay = baseDelayMs * Math.pow(2, attempt);
+      logger.debugMessage(
+        `Agent operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms: ${error}`
+      );
+      await new Promise((resolve) => global.setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError!;
+}
+
 // Legacy function for backward compatibility
 export const killAllClaudeProcesses = () => {
   // No-op since we now use AbortController
@@ -69,136 +119,151 @@ export class ClaudeCodeRunner {
 
   async run(
     options: ClaudeCodeOptions,
-    obs: ClaudeCodeObservation
+    obs: ClaudeCodeObservation,
+    timeoutSec: number = 300,
+    maxRetries: number = 1
   ): Promise<string> {
     this.changes = [];
-    return Sentry.startSpan(
-      {
-        name: 'claude-code-exec',
-        op: 'claude-code.exec',
-        attributes: {
-          'process.command': 'claude',
-        },
-      },
+    return withRetry(
       () =>
-        new Promise((resolve, reject) => {
-          const args = ['-p', options.prompt];
+        Sentry.startSpan(
+          {
+            name: 'claude-code-exec',
+            op: 'claude-code.exec',
+            attributes: {
+              'process.command': 'claude',
+            },
+          },
+          () =>
+            withTimeout(
+              new Promise((resolve, reject) => {
+                const args = ['-p', options.prompt];
 
-          if (options.additionalSystemPrompt) {
-            args.push('--append-system-prompt', options.additionalSystemPrompt);
-          }
-
-          args.push('--output-format', 'stream-json');
-          args.push('--verbose');
-          if (options.sessionId) {
-            args.push('--resume', options.sessionId);
-          }
-
-          if (this.mcpConfig) {
-            args.push('--mcp-config', this.mcpConfig);
-          }
-
-          args.push(
-            '--allowedTools',
-            [
-              ...DEFAULT_ALLOWED_TOOLS,
-              ...(options?.additionalAllowedTools || []),
-            ].join(',')
-          );
-
-          args.push('--disallowedTools', DISALLOWED_TOOLS.join(','));
-
-          if (options.maxTurns) {
-            args.push('--max-turns', options.maxTurns.toString());
-          }
-
-          const env = { ...process.env };
-          env.ANTHROPIC_API_KEY = this.options.apiKey;
-          logger.debugMessage(
-            `[${this.id}] Spawning Claude Code with additional args: ${JSON.stringify(
-              {
-                maxTurns: options.maxTurns,
-                sessionId: options.sessionId,
-                mcpConfig: this.mcpConfig,
-                additionalAllowedTools: options.additionalAllowedTools,
-              },
-              null,
-              2
-            )}. API key is ${this.options.apiKey ? 'set' : 'not set'}`
-          );
-
-          const claude = spawn('claude', args, {
-            stdio: ['ignore', 'pipe', 'pipe'],
-            env,
-            signal: this.controller.signal,
-          });
-
-          logger.debugMessage(`[${this.id}] Spawned claude code process`);
-
-          const output = '';
-          const errorOutput = '';
-
-          let buffer = '';
-          claude.stdout?.on('data', (data) => {
-            buffer += data.toString();
-            const lines = buffer.split('\n');
-
-            // Keep the last incomplete line in buffer
-            buffer = lines.pop() || '';
-
-            for (const line of lines) {
-              if (line.trim()) {
-                try {
-                  logger.debugMessage(`[${this.id}] ${line}`);
-                  const outputData: ClaudeSDKMessage = JSON.parse(line);
-                  this.handleSDKOutput(outputData, obs);
-                } catch (error) {
-                  logger.debugMessage(
-                    `[${this.id}] Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
+                if (options.additionalSystemPrompt) {
+                  args.push(
+                    '--append-system-prompt',
+                    options.additionalSystemPrompt
                   );
                 }
-              }
-            }
-          });
 
-          claude.stderr?.on('data', (data) => {
-            logger.debugMessage(`[${this.id}] ${data.toString().trim()}`);
-          });
+                args.push('--output-format', 'stream-json');
+                args.push('--verbose');
+                if (options.sessionId) {
+                  args.push('--resume', options.sessionId);
+                }
 
-          claude.on('close', (code) => {
-            if (code === 0) {
-              resolve(output.trim());
-            } else {
-              logger.debugMessage(
-                `[${this.id}] Claude Code exited with code ${code}: ${errorOutput}`
-              );
-              reject(
-                new Error(
-                  `[${this.id}] Claude Code exited with code ${code}: ${errorOutput}`
-                )
-              );
-            }
-          });
+                if (this.mcpConfig) {
+                  args.push('--mcp-config', this.mcpConfig);
+                }
 
-          claude.on('error', (error) => {
-            // Check if this is an AbortError
-            if (error.name === 'AbortError') {
-              logger.debugMessage(
-                `[${this.id}] Claude Code process was aborted`
-              );
-              reject(new Error(`[${this.id}] Claude Code process was aborted`));
-            } else {
-              logger.debugMessage(
-                `[${this.id}] failed to run Claude Code: ${error.message}`
-              );
-              reject(
-                new Error(
-                  `[${this.id}] failed to run Claude Code: ${error.message}`
-                )
-              );
-            }
-          });
-        })
+                args.push(
+                  '--allowedTools',
+                  [
+                    ...DEFAULT_ALLOWED_TOOLS,
+                    ...(options?.additionalAllowedTools || []),
+                  ].join(',')
+                );
+
+                args.push('--disallowedTools', DISALLOWED_TOOLS.join(','));
+
+                if (options.maxTurns) {
+                  args.push('--max-turns', options.maxTurns.toString());
+                }
+
+                const env = { ...process.env };
+                env.ANTHROPIC_API_KEY = this.options.apiKey;
+                logger.debugMessage(
+                  `[${this.id}] Spawning Claude Code with additional args: ${JSON.stringify(
+                    {
+                      maxTurns: options.maxTurns,
+                      sessionId: options.sessionId,
+                      mcpConfig: this.mcpConfig,
+                      additionalAllowedTools: options.additionalAllowedTools,
+                    },
+                    null,
+                    2
+                  )}. API key is ${this.options.apiKey ? 'set' : 'not set'}`
+                );
+
+                const claude = spawn('claude', args, {
+                  stdio: ['ignore', 'pipe', 'pipe'],
+                  env,
+                  signal: this.controller.signal,
+                });
+
+                logger.debugMessage(`[${this.id}] Spawned claude code process`);
+
+                const output = '';
+                const errorOutput = '';
+
+                let buffer = '';
+                claude.stdout?.on('data', (data) => {
+                  buffer += data.toString();
+                  const lines = buffer.split('\n');
+
+                  // Keep the last incomplete line in buffer
+                  buffer = lines.pop() || '';
+
+                  for (const line of lines) {
+                    if (line.trim()) {
+                      try {
+                        logger.debugMessage(`[${this.id}] ${line}`);
+                        const outputData: ClaudeSDKMessage = JSON.parse(line);
+                        this.handleSDKOutput(outputData, obs);
+                      } catch (error) {
+                        logger.debugMessage(
+                          `[${this.id}] Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
+                        );
+                      }
+                    }
+                  }
+                });
+
+                claude.stderr?.on('data', (data) => {
+                  logger.debugMessage(`[${this.id}] ${data.toString().trim()}`);
+                });
+
+                claude.on('close', (code) => {
+                  if (code === 0) {
+                    resolve(output.trim());
+                  } else {
+                    logger.debugMessage(
+                      `[${this.id}] Claude Code exited with code ${code}: ${errorOutput}`
+                    );
+                    reject(
+                      new Error(
+                        `[${this.id}] Claude Code exited with code ${code}: ${errorOutput}`
+                      )
+                    );
+                  }
+                });
+
+                claude.on('error', (error) => {
+                  // Check if this is an AbortError
+                  if (error.name === 'AbortError') {
+                    logger.debugMessage(
+                      `[${this.id}] Claude Code process was aborted`
+                    );
+                    reject(
+                      new Error(`[${this.id}] Claude Code process was aborted`)
+                    );
+                  } else {
+                    logger.debugMessage(
+                      `[${this.id}] failed to run Claude Code: ${error.message}`
+                    );
+                    reject(
+                      new Error(
+                        `[${this.id}] failed to run Claude Code: ${error.message}`
+                      )
+                    );
+                  }
+                });
+              }),
+              timeoutSec,
+              `Claude Code operation timed out after ${timeoutSec}s`
+            )
+        ),
+      maxRetries
     );
   }
 
