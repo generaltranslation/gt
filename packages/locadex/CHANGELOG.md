@@ -1,5 +1,13 @@
 # locadex
 
+## 0.1.2
+
+### Patch Changes
+
+- [#363](https://github.com/generaltranslation/gt/pull/363) [`ed05e88`](https://github.com/generaltranslation/gt/commit/ed05e889a5c126dec0967854e9d51c0eb4b58ed7) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix max timeout for locadex
+
+- [#365](https://github.com/generaltranslation/gt/pull/365) [`8c72867`](https://github.com/generaltranslation/gt/commit/8c72867a1a1157769738a0f52bb6dd45dc1d7822) Thanks [@brian-lou](https://github.com/brian-lou)! - Separate hard and soft timeouts
+
 ## 0.1.1
 
 ### Patch Changes
