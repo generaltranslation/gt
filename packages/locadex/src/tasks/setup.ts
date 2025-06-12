@@ -20,7 +20,11 @@ import { outro } from '@clack/prompts';
 import { appendFileSync } from 'node:fs';
 import path from 'node:path';
 import { exit } from '../utils/shutdown.js';
-import { installClaudeCode } from '../utils/packages/installPackage.js';
+import {
+  addTranslateScript,
+  installClaudeCode,
+  installLocadex,
+} from '../utils/packages/installPackage.js';
 
 export async function setupTask(
   bypassPrompts: boolean,
@@ -42,10 +46,10 @@ export async function setupTask(
     manager.rootDirectory,
     specifiedPackageManager
   );
-  const packageJson = await getPackageJson(manager.appDirectory);
+  const appPackageJson = await getPackageJson(manager.appDirectory);
 
-  if (packageJson) {
-    if (!isPackageInstalled('gt-next', packageJson)) {
+  if (appPackageJson) {
+    if (!isPackageInstalled('gt-next', appPackageJson)) {
       const spinner = createSpinner('timer');
       spinner.start(`Installing gt-next with ${packageManager.name}...`);
       await installPackage(
@@ -120,43 +124,8 @@ export async function setupTask(
   );
 
   // Add translate to scripts
-  if (packageJson) {
-    if (!packageJson.scripts) {
-      packageJson.scripts = {};
-    }
-    const translateCommand = `locadex translate`;
-    let translateScript = 'translate';
-    if (!packageJson.scripts?.translate) {
-      packageJson.scripts.translate = translateCommand;
-      translateScript = 'translate';
-    } else {
-      if (
-        packageJson.scripts.translate &&
-        packageJson.scripts.translate.includes(translateCommand)
-      ) {
-        translateScript = 'translate';
-      } else {
-        packageJson.scripts['translate:gt'] = translateCommand;
-        translateScript = 'translate:gt';
-      }
-    }
-    // prefix translate to build command
-    const runTranslate = `${packageManager.runScriptCommand} ${translateScript}`;
-    if (
-      packageJson.scripts.build &&
-      !packageJson.scripts.build.includes(runTranslate)
-    ) {
-      packageJson.scripts.build = `${runTranslate} && ${packageJson.scripts.build}`;
-    }
-    await updatePackageJson(packageJson, manager.appDirectory);
-    logger.success(
-      `Added ${chalk.cyan(translateScript)} script to your ${chalk.cyan(
-        path.relative(
-          manager.rootDirectory,
-          path.resolve(manager.appDirectory, 'package.json')
-        )
-      )} file and build command. Run ${chalk.cyan(translateScript)} to translate your project.`
-    );
+  if (appPackageJson) {
+    await addTranslateScript(manager, appPackageJson, packageManager);
   }
 
   // Install claude-code if not installed
@@ -164,23 +133,11 @@ export async function setupTask(
 
   // Install locadex if not installed
   const rootPackageJson = await getPackageJson(manager.rootDirectory);
-  const isLocadexInstalled = rootPackageJson
-    ? isPackageInstalled('locadex', rootPackageJson, true, true)
-    : true; // if no package.json, we can't install it
-
-  if (!isLocadexInstalled) {
-    const packageManager = await getPackageManager(manager.rootDirectory);
-    const spinner = createSpinner();
-    spinner.start(
-      `Installing locadex as a dev dependency with ${packageManager.name}...`
-    );
-    await installPackage(
-      'locadex',
-      packageManager,
-      true,
-      manager.rootDirectory
-    );
-    spinner.stop(chalk.green('Installed locadex.'));
+  if (
+    rootPackageJson &&
+    !isPackageInstalled('locadex', rootPackageJson, true, true)
+  ) {
+    await installLocadex(manager);
   }
 
   // Set up locale selector
@@ -232,15 +189,15 @@ ${report}`;
 }
 
 function getLocaleSelectorPrompt(appDirectory: string) {
-  const prompt = `# Task: Add a locale selector to the project
+  const prompt = `# Task: Add a locale selector to the app
 
 ## Instructions
 - The locale selector should be a dropdown that allows the user to select the locale.
-- The project root is: "${appDirectory}"
+- The app root is: "${appDirectory}"
 
 ## LOCALE SELECTOR USAGE
 (1) Import the locale selector component from 'gt-next/client'
-(2) Add the locale selector to the project
+(2) Add the locale selector to the app
 
 For example:
 import { LocaleSelector } from 'gt-next/client';
@@ -254,17 +211,15 @@ function MyComponent() {
   );
 }
 
-## ADVICE
-- The locale selector should be added to a header or footer or some other very obvious place in the project.
+## RULES
+- The locale selector should be added to a header or footer or some other very obvious place in the app.
 - Scan across files to find the best place to add the locale selector.
+- **DO NOT** create new files. You may only modify existing files.
+- You do not need to mark the component containing the LocaleSelector with 'use client'. The LocaleSelector component is already internally marked with 'use client'.
 
 ## Final output
-- When you are done, please return a brief summary of the files you modified, following this format.
-- **DO NOT** include any other text in your response. 
-- If there were issues with some files, please include the issues in the list of changes for that file.
-
-[file 1 path]
-- List of changes to file 1
+- When you are done, please return a **brief summary** of the files you modified.
+- **DO NOT** include any other text in your response.
 `;
   return prompt;
 }

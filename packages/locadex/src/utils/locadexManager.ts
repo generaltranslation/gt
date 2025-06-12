@@ -60,7 +60,7 @@ export class LocadexManager {
   private metadataFilePath: string;
   private lockFilePath: string;
   private currentRunDir: string;
-  private locadexDirectory: string;
+  public locadexDirectory: string;
   public appDirectory: string;
   public rootDirectory: string;
 

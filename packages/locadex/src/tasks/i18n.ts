@@ -19,6 +19,7 @@ import { installClaudeCode } from '../utils/packages/installPackage.js';
 import { extractFiles } from '../utils/dag/extractFiles.js';
 import { Dag } from '../utils/dag/createDag.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
+import { deleteAddedFiles } from '../utils/fs/git.js';
 
 export async function i18nTask() {
   const manager = LocadexManager.getInstance();
@@ -211,6 +212,10 @@ ${reports.join('\n')}`;
   cleanupLockfile(lockfilePath, manager.rootDirectory);
 
   logger.message(chalk.dim(`Updated lockfile with ${files.length} files`));
+
+  deleteAddedFiles([
+    path.relative(manager.rootDirectory, manager.locadexDirectory),
+  ]);
 
   logger.info(
     chalk.dim(
