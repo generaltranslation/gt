@@ -1,39 +1,21 @@
 import { formatCurrency } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
-import getLocale from '../request/getLocale';
+import { useLocale } from '../request/getLocale';
 
-/**
- * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
- *
- * @example
- * ```jsx
- * <Currency
- *    currency="USD"
- * >
- *    1000
- * </Currency>
- * ```
- *
- * @param {any} [children] - Optional content to render inside the currency component.
- * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
- * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
- * @returns {Promise<React.JSX.Element>} The formatted currency component.
- */
-async function Currency({
+function Currency({
   children,
   currency = 'USD',
-  name,
   locales,
   options = {},
 }: {
-  children?: any;
+  children?: React.ReactNode;
   currency?: string;
   name?: string;
   options?: Intl.NumberFormatOptions;
   locales?: string[];
-}): Promise<React.JSX.Element> {
+}): React.JSX.Element {
   if (!locales) {
-    locales = [await getLocale(), getI18NConfig().getDefaultLocale()];
+    locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }
 
   // Determine the value to be formatted

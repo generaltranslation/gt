@@ -1,14 +1,27 @@
 import T from './server-dir/buildtime/T';
 import tx from './server-dir/runtime/tx';
-import getLocale from './request/getLocale';
+import { getLocale } from './request/getLocale';
 import getI18NConfig from './config-dir/getI18NConfig';
-import getDict from './server-dir/buildtime/getDict';
+import { getTranslations } from './server-dir/buildtime/getTranslations';
 import GTProvider from './provider/GTProvider';
 import Tx from './server-dir/runtime/_Tx';
-import getGT from './server-dir/buildtime/getGT';
+import { getGT } from './server-dir/buildtime/getGT';
+import { LocaleProperties } from 'generaltranslation/types';
 
 export function getDefaultLocale(): string {
   return getI18NConfig().getDefaultLocale();
+}
+
+export function getGTClass() {
+  return getI18NConfig().getGTClass();
+}
+
+export function getLocaleProperties(locale: string): LocaleProperties {
+  return getGTClass().getLocaleProperties(locale);
+}
+
+export function getLocales(): string[] {
+  return getI18NConfig().getLocales();
 }
 
 export {
@@ -18,5 +31,9 @@ export {
   tx,
   Tx,
   getLocale, // getDefaultLocale
-  getDict,
+  getTranslations,
+  /**
+   * @deprecated Use getTranslations instead
+   */
+  getTranslations as getDict,
 };

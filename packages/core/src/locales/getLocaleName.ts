@@ -1,6 +1,6 @@
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
-import { getCustomProperty } from './customLocaleMapping';
+import { CustomMapping, getCustomProperty } from './customLocaleMapping';
 import { LocaleProperties } from './getLocaleProperties';
 import { _standardizeLocale } from './isValidLocale';
 
@@ -15,7 +15,7 @@ import { _standardizeLocale } from './isValidLocale';
 export function _getLocaleName(
   locale: string,
   defaultLanguage: string = libraryDefaultLocale,
-  customMapping?: Record<string, string | LocaleProperties>
+  customMapping?: CustomMapping
 ): string {
   defaultLanguage ||= libraryDefaultLocale;
   try {

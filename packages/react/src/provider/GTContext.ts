@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { GTContextType } from '../types/providers';
+import { GTContextType } from '../types/context';
 
 export const GTContext = createContext<GTContextType | undefined>(undefined);
 

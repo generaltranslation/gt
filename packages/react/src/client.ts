@@ -1,12 +1,12 @@
 import { GTContext } from './provider/GTContext';
-import useRuntimeTranslation from './hooks/internal/useRuntimeTranslation';
-import renderVariable from './provider/rendering/renderVariable';
+import useRuntimeTranslation from './provider/hooks/useRuntimeTranslation';
+import renderVariable from './rendering/renderVariable';
 import ClientProvider from './provider/ClientProvider';
 import Branch from './branches/Branch';
 import Plural from './branches/plurals/Plural';
 import useGT from './translation/hooks/useGT';
 import useDefaultLocale from './hooks/useDefaultLocale';
-import useDict from './translation/hooks/useDict';
+import useTranslations from './translation/hooks/useTranslations';
 import useLocale from './hooks/useLocale';
 import T from './translation/inline/T';
 import Currency from './variables/Currency';
@@ -18,6 +18,8 @@ import GTProvider from './provider/GTProvider';
 import useSetLocale from './hooks/useSetLocale';
 import useLocales from './hooks/useLocales';
 import useLocaleSelector from './hooks/useLocaleSelector';
+import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
+
 export {
   GTContext,
   GTProvider,
@@ -25,12 +27,18 @@ export {
   renderVariable,
   ClientProvider,
   useGT,
-  useDict,
+  useTranslations,
+  /**
+   * @deprecated Use useTranslations instead
+   */
+  useTranslations as useDict,
   useDefaultLocale,
   useLocale,
   useLocales,
   useSetLocale,
   useLocaleSelector,
+  useGTClass,
+  useLocaleProperties,
   T,
   Var,
   Num,

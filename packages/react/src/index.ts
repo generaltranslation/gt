@@ -1,6 +1,6 @@
 import T from './translation/inline/T';
 import useGT from './translation/hooks/useGT';
-import useDict from './translation/hooks/useDict';
+import useTranslations from './translation/hooks/useTranslations';
 import useDefaultLocale from './hooks/useDefaultLocale';
 import useLocale from './hooks/useLocale';
 import GTProvider from './provider/GTProvider';
@@ -19,6 +19,7 @@ import {
   InlineTranslationOptions,
   RuntimeTranslationOptions,
 } from './types/types';
+import { useGTClass, useLocaleProperties } from './hooks/useGTClass';
 
 export {
   Var,
@@ -30,12 +31,18 @@ export {
   Plural,
   Branch,
   useGT,
-  useDict,
+  useTranslations,
+  /**
+   * @deprecated Use useTranslations instead
+   */
+  useTranslations as useDict,
   useDefaultLocale,
   useLocale,
   useLocales,
   useSetLocale,
   useLocaleSelector,
+  useGTClass,
+  useLocaleProperties,
   LocaleSelector,
   DictionaryTranslationOptions,
   InlineTranslationOptions,

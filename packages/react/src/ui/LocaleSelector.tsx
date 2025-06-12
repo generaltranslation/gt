@@ -1,6 +1,7 @@
 import React from 'react';
-import { getLocaleProperties } from 'generaltranslation';
 import useLocaleSelector from '../hooks/useLocaleSelector';
+import { getLocaleProperties } from 'generaltranslation';
+import { useGTClass } from '../hooks/useGTClass';
 
 /**
  * Capitalizes the first letter of a language name if applicable.
@@ -35,6 +36,7 @@ export default function LocaleSelector({
   const { locale, locales, setLocale } = useLocaleSelector(
     _locales ? _locales : undefined
   );
+  const gt = useGTClass();
 
   // Get display name
   const getDisplayName = (locale: string) => {
@@ -42,7 +44,7 @@ export default function LocaleSelector({
       return customNames[locale];
     }
     return capitalizeLanguageName(
-      getLocaleProperties(locale).nativeNameWithRegionCode
+      gt.getLocaleProperties(locale).nativeNameWithRegionCode
     );
   };
 

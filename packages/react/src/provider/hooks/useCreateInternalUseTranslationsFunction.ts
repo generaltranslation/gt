@@ -1,16 +1,15 @@
-import * as React from 'react';
 import { useCallback } from 'react';
 import {
   Dictionary,
   DictionaryTranslationOptions,
-  DictionaryObject,
   RenderMethod,
   TranslationsObject,
 } from '../../types/types';
-import getDictionaryEntry, {
+import {
+  getDictionaryEntry,
   isValidDictionaryEntry,
-} from '../../provider/helpers/getDictionaryEntry';
-import getEntryAndMetadata from '../../provider/helpers/getEntryAndMetadata';
+} from '../../dictionaries/getDictionaryEntry';
+import getEntryAndMetadata from '../../dictionaries/getEntryAndMetadata';
 import {
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
@@ -23,7 +22,7 @@ import { hashJsxChildren } from 'generaltranslation/id';
 import { Content } from 'generaltranslation/internal';
 import { TranslateContentCallback } from '../../types/runtime';
 
-export default function useCreateInternalUseDictFunction(
+export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
   translations: TranslationsObject | null,
   locale: string,

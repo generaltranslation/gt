@@ -2,7 +2,6 @@
 import {
   T,
   useGT,
-  useDict,
   useLocale,
   useDefaultLocale,
   LocaleSelector,
@@ -16,23 +15,35 @@ import {
   Num,
   Plural,
   Branch,
+  useLocaleProperties,
+  useGTClass,
+  useTranslations,
 } from 'gt-react/client';
 
 export {
-  GTProvider as GTClientProvider,
-  T,
+  // Hooks
   useGT,
+  useTranslations,
+  /**
+   * @deprecated Use useTranslations instead
+   */
+  useTranslations as useDict,
   useLocale,
   useLocales,
   useSetLocale,
   useDefaultLocale,
-  useDict,
-  LocaleSelector,
   useLocaleSelector,
+  useGTClass,
+  useLocaleProperties,
+
+  // Components
+  GTProvider as GTClientProvider,
+  T,
   Var,
   Currency,
   DateTime,
   Num,
   Plural,
   Branch,
+  LocaleSelector,
 };

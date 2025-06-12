@@ -1,6 +1,6 @@
 import { formatNum } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
-import getLocale from '../request/getLocale';
+import { useLocale } from '../request/getLocale';
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
@@ -19,19 +19,19 @@ import getLocale from '../request/getLocale';
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {Promise<React.JSX.Element>} The formatted number component.
  */
-async function Num({
+function Num({
   children,
   name,
   locales,
   options = {},
 }: {
-  children?: any;
+  children?: React.ReactNode;
   name?: string;
   options?: Intl.NumberFormatOptions;
   locales?: string[];
-}): Promise<React.JSX.Element> {
+}): React.JSX.Element {
   if (!locales) {
-    locales = [await getLocale(), getI18NConfig().getDefaultLocale()];
+    locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }
 
   // Determine the value to be used

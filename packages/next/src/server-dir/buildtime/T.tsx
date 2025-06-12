@@ -1,5 +1,5 @@
 import getI18NConfig from '../../config-dir/getI18NConfig';
-import getLocale from '../../request/getLocale';
+import { getLocale } from '../../request/getLocale';
 import { Suspense } from 'react';
 import {
   addGTIdentifier,

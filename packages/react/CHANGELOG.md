@@ -1,5 +1,32 @@
 # gt-react
 
+## 9.2.28
+
+### Patch Changes
+
+- [#355](https://github.com/generaltranslation/gt/pull/355) [`740a3d1`](https://github.com/generaltranslation/gt/commit/740a3d1ee565016375d05e5dbb6b7d81fe9294ec) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - feat: add custom gt use hooks on server side components
+
+## 9.2.27
+
+### Patch Changes
+
+- [#353](https://github.com/generaltranslation/gt/pull/353) [`de17003`](https://github.com/generaltranslation/gt/commit/de170039e51383c8c8f3f59d5d94e93e6ccedeb9) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: bump versions
+
+## 9.2.26
+
+### Patch Changes
+
+- [#348](https://github.com/generaltranslation/gt/pull/348) [`c43bd6d`](https://github.com/generaltranslation/gt/commit/c43bd6df7dd106723e8dc173b6c0d65009be461e) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: rename useDict to useTranslations
+
+## 9.2.25
+
+### Patch Changes
+
+- [#346](https://github.com/generaltranslation/gt/pull/346) [`28b78a6`](https://github.com/generaltranslation/gt/commit/28b78a62de117cc8e4370cab79280495de37f28f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: switch to GT object
+
+- Updated dependencies [[`28b78a6`](https://github.com/generaltranslation/gt/commit/28b78a62de117cc8e4370cab79280495de37f28f)]:
+  - generaltranslation@6.3.2
+
 ## 9.2.24
 
 ### Patch Changes

@@ -1,9 +1,9 @@
 import React, { ReactElement, ReactNode } from 'react';
-import getGTProp from '../helpers/getGTProp';
-import getVariableProps from '../../variables/_getVariableProps';
+import getGTProp from './getGTProp';
+import getVariableProps from '../variables/_getVariableProps';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import getPluralBranch from '../../branches/plurals/getPluralBranch';
-import { RenderVariable } from '../../types/types';
+import getPluralBranch from '../branches/plurals/getPluralBranch';
+import { RenderVariable } from '../types/types';
 
 export default function renderDefaultChildren({
   children,
