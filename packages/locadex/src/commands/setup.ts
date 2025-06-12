@@ -20,10 +20,10 @@ export async function setupCommand(
   withTelemetry(
     { enabled: telemetryEnabled, options: allOptions },
     async () => {
-      const batchSize = Number(allOptions.batchSize) || 1;
-      const concurrency = Number(allOptions.concurrency) || 1;
-
-      if (concurrency < 1 || batchSize < 1) {
+      if (
+        (allOptions.batchSize && Number(allOptions.batchSize) < 1) ||
+        (allOptions.concurrency && Number(allOptions.concurrency) < 1)
+      ) {
         logger.error('Batch size and concurrency must be greater than 0');
         await exit(1);
       }
@@ -40,8 +40,12 @@ export async function setupCommand(
               .split(',')
               .map((file) => file.trim()),
           }),
-          maxConcurrency: concurrency,
-          batchSize,
+          ...(allOptions.concurrency && {
+            maxConcurrency: Number(allOptions.concurrency),
+          }),
+          ...(allOptions.batchSize && {
+            batchSize: Number(allOptions.batchSize),
+          }),
         },
       });
       await setupTask(!!allOptions.bypassPrompts, allOptions.packageManager);

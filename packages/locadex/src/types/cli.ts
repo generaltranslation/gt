@@ -5,6 +5,7 @@ export type CliOptions = {
   batchSize?: string;
   concurrency?: string;
   matchingFiles?: string;
+  appDir: string;
 };
 
 export type LocadexConfig = {
