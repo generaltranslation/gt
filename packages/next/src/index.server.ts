@@ -6,7 +6,7 @@ import T from './server-dir/buildtime/T';
 import Branch from './branches/Branch';
 import Plural from './branches/Plural';
 import GTProvider from './provider/GTProvider';
-import { getDefaultLocale, Tx } from './server';
+import { Tx } from './server';
 import { useGT } from './server-dir/buildtime/getGT';
 import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
@@ -27,7 +27,7 @@ export function useLocales() {
 }
 
 export function useDefaultLocale() {
-  return getDefaultLocale();
+  return getI18NConfig().getDefaultLocale();
 }
 
 export {

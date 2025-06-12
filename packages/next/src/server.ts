@@ -20,6 +20,10 @@ export function getLocaleProperties(locale: string): LocaleProperties {
   return getGTClass().getLocaleProperties(locale);
 }
 
+export function getLocales(): string[] {
+  return getI18NConfig().getLocales();
+}
+
 export {
   GTProvider,
   T,
