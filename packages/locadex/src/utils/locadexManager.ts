@@ -187,7 +187,7 @@ export class LocadexManager {
       )}`
     );
 
-    this.mcpProcess = spawn('node', [fromPackageRoot('dist/mcp-sse.js')], {
+    this.mcpProcess = spawn('node', [fromPackageRoot('dist/mcp.js')], {
       env: {
         ...process.env,
         LOCADEX_FILES_STATE_FILE_PATH: this.filesStateFilePath,
