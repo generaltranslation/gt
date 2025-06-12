@@ -13,26 +13,29 @@ import { outro } from '@clack/prompts';
 import chalk from 'chalk';
 import { appendFileSync } from 'node:fs';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
-import { generateSettings } from 'gtx-cli/config/generateSettings';
 import path from 'node:path';
 import { updateLockfile, cleanupLockfile } from '../utils/lockfile.js';
 import { installClaudeCode } from '../utils/packages/installPackage.js';
 import { extractFiles } from '../utils/dag/extractFiles.js';
 import { Dag } from '../utils/dag/createDag.js';
+import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 
 export async function i18nTask() {
-  const gtSettings = await generateSettings({});
-  if (gtSettings.framework !== 'next-app') {
+  const manager = LocadexManager.getInstance();
+  // have to use the package.json from the appDir
+  const packageJson = await getPackageJson(manager.appDirectory);
+  const isUsingGTNext = packageJson
+    ? isPackageInstalled('gt-next', packageJson)
+    : false;
+  if (!isUsingGTNext) {
     logger.error(
-      'Currently, locadex only supports Next.js App Router. Please use Next.js App Router.'
+      `gt-next not detected in ${manager.appDirectory}. Please specify the correct app directory with the --app-dir flag, or ensure that gt-next is correctly installed in the project.`
     );
     await exit(1);
   }
 
   // Install claude-code if not installed
   await installClaudeCode();
-
-  const manager = LocadexManager.getInstance();
 
   logger.debugMessage('App directory: ' + manager.appDirectory);
   logger.debugMessage('Root directory: ' + manager.rootDirectory);
@@ -165,7 +168,7 @@ export async function i18nTask() {
 
   logger.initializeSpinner();
   logger.spinner.start('Fixing errors...');
-  const fixPrompt = getFixPrompt();
+  const fixPrompt = getFixPrompt(manager.appDirectory);
   try {
     await cleanupAgent.run(
       { prompt: fixPrompt, sessionId: cleanupAgent.getSessionId() },
@@ -315,7 +318,7 @@ ${allMcpPrompt}
 
 // check (dry run and ts check) should be at the end
 
-function getFixPrompt() {
+function getFixPrompt(appDirectory: string) {
   const prompt = `# Task: Fix internationalization errors in the project.
 
 ## INSTRUCTIONS
@@ -336,8 +339,9 @@ Your new task is as follows:
   - In particular, if a file contains user-facing content that should be internationalized and is not, you should internationalize it.
 - Resolve missing imports from 'gt-next'. If a file is missing an import from 'gt-next', add it.
 
-To run the gt-next validator, run the following command:
+To run the gt-next validator, run the following command from the app root:
 'npx locadex translate --dry-run'
+The app root is: "${appDirectory}"
 
 ## MCP TOOLS
 

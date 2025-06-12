@@ -26,22 +26,17 @@ export async function searchForPackageJson(
 
 export async function getPackageJson(
   cwd: string = process.cwd()
-): Promise<Record<string, any>> {
+): Promise<Record<string, any> | null> {
   const packageJsonPath = path.join(cwd, 'package.json');
 
   // Check if package.json exists
   if (!fs.existsSync(packageJsonPath)) {
-    logErrorAndExit(
-      chalk.red(
-        'No package.json found in the current directory. Please run this command from the root of your project.'
-      )
-    );
+    return null;
   }
   try {
     return JSON.parse(await fs.promises.readFile(packageJsonPath, 'utf8'));
   } catch (error) {
-    logError(chalk.red('Error parsing package.json: ' + String(error)));
-    process.exit(1);
+    return null;
   }
 }
 

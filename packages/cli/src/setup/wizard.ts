@@ -69,6 +69,14 @@ Please let us know what you would like to see supported at https://github.com/ge
   });
 
   const packageJson = await getPackageJson();
+  if (!packageJson) {
+    logError(
+      chalk.red(
+        'No package.json found in the current directory. Please run this command from the root of your project.'
+      )
+    );
+    process.exit(1);
+  }
   // Check if gt-next or gt-react is installed
   if (
     frameworkType === 'next-app' &&

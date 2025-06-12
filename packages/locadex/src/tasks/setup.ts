@@ -10,7 +10,6 @@ import { handleInitGT } from 'gtx-cli/next/parse/handleInitGT';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { createOrUpdateConfig } from 'gtx-cli/fs/config/setupConfig';
 import { i18nTask } from '../tasks/i18n.js';
-import { validateConfig } from '../utils/config.js';
 import { getNextDirectories } from '../utils/fs/getFiles.js';
 import { LocadexManager } from '../utils/locadexManager.js';
 import { outro } from '@clack/prompts';
@@ -39,8 +38,6 @@ export async function setupTask(
 
   const manager = LocadexManager.getInstance();
 
-  // have to use the package.json from the appDir
-  const packageJson = await getPackageJson(manager.appDirectory);
   const packageManager = await getPackageManager(
     manager.rootDirectory,
     specifiedPackageManager

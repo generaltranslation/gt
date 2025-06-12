@@ -30,6 +30,7 @@ import { stageProject } from '../translation/stage.js';
 import { createUpdates } from '../translation/parse.js';
 import { translate } from '../translation/translate.js';
 import updateConfig from '../fs/config/updateConfig.js';
+import { validateConfigExists } from '../config/validateSettings.js';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
@@ -434,6 +435,7 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected async handleTranslate(initOptions: Options): Promise<void> {
+    validateConfigExists();
     const settings = await generateSettings(initOptions);
 
     // First run the base class's handleTranslate method

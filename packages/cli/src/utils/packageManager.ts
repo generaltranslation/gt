@@ -40,6 +40,9 @@ export const BUN: PackageManager = {
     }),
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
     const packageDotJson = await getPackageJson();
+    if (!packageDotJson) {
+      return;
+    }
     const overrides = packageDotJson.overrides || {};
 
     await updatePackageJson({
@@ -71,6 +74,9 @@ export const DENO: PackageManager = {
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
     const packageDotJson = await getPackageJson();
+    if (!packageDotJson) {
+      return;
+    }
     const overrides = packageDotJson.overrides || {};
 
     await updatePackageJson({
@@ -104,6 +110,9 @@ export const YARN_V1: PackageManager = {
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
     const packageDotJson = await getPackageJson();
+    if (!packageDotJson) {
+      return;
+    }
     const resolutions = packageDotJson.resolutions || {};
 
     await updatePackageJson({
@@ -138,6 +147,9 @@ export const YARN_V2: PackageManager = {
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
     const packageDotJson = await getPackageJson();
+    if (!packageDotJson) {
+      return;
+    }
     const resolutions = packageDotJson.resolutions || {};
 
     await updatePackageJson({
@@ -168,6 +180,9 @@ export const PNPM: PackageManager = {
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
     const packageDotJson = await getPackageJson();
+    if (!packageDotJson) {
+      return;
+    }
     const pnpm = packageDotJson.pnpm || {};
     const overrides = pnpm.overrides || {};
 
@@ -202,6 +217,9 @@ export const NPM: PackageManager = {
   },
   addOverride: async (pkgName, pkgVersion): Promise<void> => {
     const packageDotJson = await getPackageJson();
+    if (!packageDotJson) {
+      return;
+    }
     const overrides = packageDotJson.overrides || {};
 
     await updatePackageJson({
