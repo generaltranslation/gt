@@ -1,7 +1,6 @@
 import React, { useContext } from 'react';
 import GT from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
@@ -17,7 +16,8 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * </Num>
  * ```
  *
- * @param {any} [children] - Optional content (typically a number) to render inside the component.
+ * @param {number | string} children - Content to render inside the number component.
+ * @param {string[]} [locales] - Optional locales to use for number formatting. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
  * @returns {JSX.Element} The formatted number component.
  */

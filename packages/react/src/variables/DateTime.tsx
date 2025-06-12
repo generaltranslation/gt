@@ -1,7 +1,6 @@
 import React, { useContext } from 'react';
 import GT from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 /**
  * The `<DateTime>` component renders a formatted date or time string, allowing customization of the name, default value, and formatting options.
@@ -15,8 +14,8 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * </DateTime>
  * ```
  *
- * @param {any} [children] - Optional content (typically a date) to render inside the component.
- * @param {string[]} [locales] - Optional locales to use for date formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
+ * @param {Date} children - Content to render inside the date component.
+ * @param {string[]} [locales] - Optional locales to use for date formatting. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {JSX.Element} The formatted date or time component.
  */

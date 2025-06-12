@@ -1,7 +1,6 @@
 import React, { useContext } from 'react';
 import GT from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
@@ -14,10 +13,10 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * </Currency>
  * ```
  *
- * @param {any} [children] - Optional content to render inside the currency component.
- * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
- * @param {string[]} [locales] - Optional locales to use for currency formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
- * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
+ * @param {number | string} children - Content to render inside the currency component.
+ * @param {string} [currency="USD"] - The currency type (e.g., USD, EUR, etc.).
+ * @param {string[]} [locales] - Optional locales to use for currency formatting. If wrapped in a `<GTProvider>`, the user's locale is used.
+ * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options to customize how the currency is displayed.
  * @returns {JSX.Element} The formatted currency component.
  */
 function Currency({
