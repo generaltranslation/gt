@@ -1,5 +1,14 @@
 # gt-next
 
+## 5.2.37
+
+### Patch Changes
+
+- [#353](https://github.com/generaltranslation/gt/pull/353) [`de17003`](https://github.com/generaltranslation/gt/commit/de170039e51383c8c8f3f59d5d94e93e6ccedeb9) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - chore: bump versions
+
+- Updated dependencies [[`de17003`](https://github.com/generaltranslation/gt/commit/de170039e51383c8c8f3f59d5d94e93e6ccedeb9)]:
+  - gt-react@9.2.27
+
 ## 5.2.36
 
 ### Patch Changes
