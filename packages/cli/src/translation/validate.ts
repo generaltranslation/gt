@@ -38,7 +38,7 @@ export async function validateProject(
     );
   }
 
-  if (updates.length == 0) {
+  if (updates.length === 0) {
     logError(
       chalk.red(
         `No in-line content or dictionaries were found for ${chalk.green(
