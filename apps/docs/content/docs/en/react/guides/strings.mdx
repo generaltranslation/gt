@@ -230,10 +230,8 @@ export default function MyComponent() {
 <Tabs items={['Result', 'Original']}>
   <Tab value="Result">
 ```jsx copy title="src/llms.ts"
-import { useGT } from 'gt-react';
-// Custom hook to get LLM data with translations
-export function useLLMData() {
-  const t = useGT();
+// Custom function to get LLM data with translations
+export function getLLMData(t: (content: string) => string) {
   return [
     {
       name: 'GPT-4.1',
@@ -250,10 +248,12 @@ export function useLLMData() {
 ```
 
 ```jsx
-import { useLLMData } from './llms';
+import { getLLMData } from './llms';
+import { useGT } from 'gt-react';
 
 export default function MyComponent() {
-  const llms = useLLMData();
+  const t = useGT();
+  const llms = getLLMData(t);
   return (
     <div>
       {llms.map((llm) => (
@@ -303,14 +303,13 @@ export default function MyComponent() {
 </Tab>
 </Tabs>
 
-<Callout type="warn">
-  **Be careful!**
-  In this last example, you have to be very careful about how you use the `useGT()` hook.
-  Make sure that it doesn't violate the [rules of React](https://react.dev/reference/rules/rules-of-hooks).
+<Callout type="info">
+  In this last example, we turned the `llms` array into a function that returns the data with translations.
+  We passed the `t` function to the function that returns the data.
 
-  Additionally, make sure that the `useGT()` hook is called within the React context.
-  If your constants are defined outside of a React component, you will likely need to create a custom
-  hook to access your data with translations. 
+  Alternatively, you could also turn the `llms` array into a custom hook.
+  However, this is not recommended, as you will need to be very careful about how you use the `useGT()` hook,
+  so as to not violate the [rules of React](https://react.dev/reference/rules/rules-of-hooks).
 
   <Accordions>
     <Accordion title="Why can't I directly import the `llms` array?">

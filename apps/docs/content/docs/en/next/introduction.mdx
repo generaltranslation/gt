@@ -39,7 +39,7 @@ There are 5 main concepts to understand about the SDK.
     The `useGT` hook
   </Step>
   <Step>
-    (Optional) The `useDict` hook
+    (Optional) The `useTranslations` hook
   </Step>
 </Steps>
 
@@ -155,9 +155,9 @@ See the [strings](/docs/next/guides/strings) guide to learn more about the `useG
 
 See the [useGT API Reference](/docs/next/api/strings/useGT) for more information.
 
-## The `useDict` hook
+## The `useTranslations` hook
 
-The `useDict` hook is a React hook that returns a function that can be used to retrieve translations for a given key.
+The `useTranslations` hook is a React hook that returns a function that can be used to retrieve translations for a given key.
 
 ```tsx title="dictionary.ts"
 const dictionary = {
@@ -168,24 +168,24 @@ const dictionary = {
 ```
 
 ```tsx title="App.tsx"
-const translate = useDict();
+const translate = useTranslations();
 translate('hello.world');
 ```
 
 This behavior is similar to other translation libraries, such as `react-i18next` and `next-intl`.
 
 <Callout type="warn">
-We do not recommend using the `useDict` hook in your application. Frequent use of the `useDict` hook will make your codebase more difficult to maintain, 
+We do not recommend using the `useTranslations` hook in your application. Frequent use of the `useTranslations` hook will make your codebase more difficult to maintain, 
 and will lead to large tech debt.
 
 Instead, we recommend using the `<T>` component or the `useGT` hook.
 
-If you are migrating from another i18n library, the `useDict` hook is a drop-in replacement and can useful for incrementally migrating your codebase.
+If you are migrating from another i18n library, the `useTranslations` hook is a drop-in replacement and can useful for incrementally migrating your codebase.
 </Callout>
 
-See the [dictionaries](/docs/next/guides/dictionaries) guide to learn more about the `useDict` hook.
+See the [dictionaries](/docs/next/guides/dictionaries) guide to learn more about the `useTranslations` hook.
 
-See the [useDict API Reference](/docs/next/api/dictionary/useDict) for more information.
+See the [useTranslations API Reference](/docs/next/api/dictionary/useTranslations) for more information.
 
 ---
 

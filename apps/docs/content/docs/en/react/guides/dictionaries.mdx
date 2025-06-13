@@ -132,14 +132,14 @@ createRoot(document.getElementById("root")!).render(
 
 ### Step 2: Reference the dictionary
 
-You can access dictionary entries with the [`useDict()`](/docs/react/api/dictionary/useDict) hook.
+You can access dictionary entries with the [`useTranslations()`](/docs/react/api/dictionary/useTranslations) hook.
 Just use the function returned by the hook to access the dictionary entries by key.
 
 ```tsx title="src/components/MyComponent.tsx" copy
-import { useDict } from 'gt-react';
+import { useTranslations } from 'gt-react';
 
 export default function MyComponent() {
-  const d = useDict();
+  const d = useTranslations();
   return (
     <div>
       {d('greetings.hello')}
@@ -158,7 +158,7 @@ General Translation automatically generates dictionaries for other languages and
 
 However, if you are migrating from another i18n library or already have dictionaries for other languages, you can pass them to the [`loadDictionary`](/docs/react/api/config/load-dictionary) function.
 
-`gt-react` will automatically load the corresponding dictionary for the requested locale when using the `useDict()` hook or `getDict()` function.
+`gt-react` will automatically load the corresponding dictionary for the requested locale when using the `useTranslations()` hook or `getDict()` function.
 
 See the [API Reference](/docs/react/api/config/load-dictionary) for more information.
 
@@ -180,10 +180,10 @@ const dictionary = {
 export default dictionary;
 ```
 ```tsx title="src/components/MyComponent.tsx" copy
-import { useDict } from 'gt-react';
+import { useTranslations } from 'gt-react';
 
 export default async function MyComponent() {
-  const d = useDict();
+  const d = useTranslations();
   return (
     <div>
       {d('greetings.hello', { variables: { name: 'Alice' }})}
@@ -198,7 +198,7 @@ Read more about adding variables to your dictionary in the [`DictionaryTranslati
 
 ### Prefixes
 
-Additionally, with [`useDict()`](/docs/react/api/dictionary/useDict), you can pass in a prefix to the function to specify a shared path in the dictionary.
+Additionally, with [`useTranslations()`](/docs/react/api/dictionary/useTranslations), you can pass in a prefix to the function to specify a shared path in the dictionary.
 This is useful if you have a shared path in your dictionary that you want to use in multiple components.
 
 ```jsx title="src/dictionary.js" copy
@@ -214,11 +214,11 @@ export default dictionary;
 ```
 
 ```jsx title="src/components/MyComponent.js" copy
-import { useDict } from 'gt-react';
+import { useTranslations } from 'gt-react';
 
 export default async function MyComponent() {
   // All translation paths such as 'hello' will be prefixed with 'greetings.common.'
-  const d = useDict('greetings.common'); // [!code highlight]
+  const d = useTranslations('greetings.common'); // [!code highlight]
 
   return (
     <div>
@@ -250,7 +250,7 @@ For more information on the command, please refer to the [CLI Tool](/docs/cli/tr
 
 ### Behavior: Development vs Production
 
-In development, the function returned by the `useDict()` hook will translate dictionary entries on-demand.
+In development, the function returned by the `useTranslations()` hook will translate dictionary entries on-demand.
 This means that when the component is rendered, it will perform a translation immediately.
 We do this for convenience to make development with other languages easier.
 

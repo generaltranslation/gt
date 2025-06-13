@@ -6,12 +6,12 @@ description: API Reference for the DictionaryTranslationOptions type
 ## Overview
 
 The `DictionaryTranslationOptions` type is used to pass variables to dictionary entries and specify their render behavior.
-It is used with [`useDict()`](/docs/next/api/dictionary/useDict) and [`getDict()`](/docs/next/api/dictionary/getDict) to pass variables to dictionary entries.
+It is used with [`useTranslations()`](/docs/next/api/dictionary/useTranslations) and [`getTranslations()`](/docs/next/api/dictionary/getTranslations) to pass variables to dictionary entries.
 
 
 <Callout>
 **Buildtime Translation:**
-Variables are not translated with [`useDict()`](/docs/next/api/dictionary/useDict) and [`getDict()`](/docs/next/api/dictionary/getDict), only the original string.
+Variables are not translated with [`useTranslations()`](/docs/next/api/dictionary/useTranslations) and [`getTranslations()`](/docs/next/api/dictionary/getTranslations), only the original string.
 See [`tx()`](/docs/next/api/strings/tx) for translating strings with dyanmic content.
 </Callout>
 
@@ -68,10 +68,10 @@ export default dictionary;
 Next, we reference the variable:
 ```jsx title="Component.tsx"
 // [!code word:username]
-import { useDict } from 'gt-next/client';
+import { useTranslations } from 'gt-next/client';
 
 const Component = () => {
-  const d = useDict();
+  const d = useTranslations();
   return <div>{d('greeting.hello', { variables: { username : 'Brian123' } })}</div>;
 };
 ```
@@ -95,10 +95,10 @@ export default dictionary;
 Next, we reference the variable:
 ```jsx title="Component.tsx"
 // [!code word:account-balance]
-import { useDict } from 'gt-next/client';
+import { useTranslations } from 'gt-next/client';
 
 const Component = () => {
-  const d = useDict();
+  const d = useTranslations();
   return <div>
     { d(
       'account.balance',
@@ -121,5 +121,5 @@ const Component = () => {
 
 ### Next steps
  * See [dictionaries](/docs/next/guides/dictionaries) for more information on dictionaries and common practices.
- * See [`useDict()`](/docs/next/api/dictionary/useDict) or [`getDict()`](/docs/next/api/dictionary/getDict) for more information on dictionaries interface.
+ * See [`useTranslations()`](/docs/next/api/dictionary/useTranslations) or [`getTranslations()`](/docs/next/api/dictionary/getTranslations) for more information on dictionaries interface.
  * See [`Intl.NumberFormatOptions`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) and [`Intl.DateTimeFormatOptions`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat) for more information on formatting options.

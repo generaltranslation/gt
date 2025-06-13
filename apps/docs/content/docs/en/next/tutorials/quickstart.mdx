@@ -113,7 +113,7 @@ This context includes:
 - Managing the user's current locale
 - The relevant translations for that locale
 - Context for the `useGT` hook
-- Context for the `useDict` hook
+- Context for the `useTranslations` hook
 
 
 <Steps>
@@ -237,8 +237,8 @@ const translate = useGT();
 translate('Hello, world!');
 ```
 
-The `useGT` hook is a client-side hook, and should only be used in client-side components.
-For server-side components, use the async `getGT()` function instead.
+The `useGT` hook can be used in both client-side and server-side components.
+For async components, use the async `getGT()` function instead.
 
 
 See the [Translating Strings](/docs/next/guides/strings) guide for more information.

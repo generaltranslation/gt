@@ -1,26 +1,26 @@
 ---
-title: getDict()
-description: API Reference for the getDict server-side translation function
+title: getTranslations()
+description: API Reference for the getTranslations server-side translation function
 ---
 
 ## Overview
 
-`getDict()` is used to get string translations from the [translation dictionary](/docs/next/guides/dictionaries) for server-side components.
+`getTranslations()` is used to get string translations from the [translation dictionary](/docs/next/guides/dictionaries) for server-side components.
 
 ```jsx
-const d = await getDict(); // Get the translation function
+const d = await getTranslations(); // Get the translation function
 d('greeting.hello'); // pass the id to get a translation
 ```
 
-`getDict()` supports:
+`getTranslations()` supports:
   * Translation of string and jsx content.
   * Variable insertion and conditional logic within translations.
   * Optional id prefixing.
 
-For client-side translations, see [`useDict()`](/docs/next/api/dictionary/useDict).
+For client-side translations, see [`useTranslations()`](/docs/next/api/dictionary/useTranslations).
 
 <Callout>
-  `getDict()` and `useDict()` use a [dictionary](/docs/next/guides/dictionaries) to store all content for translation.
+  `getTranslations()` and `useTranslations()` use a [dictionary](/docs/next/guides/dictionaries) to store all content for translation.
   This is different from using the [`<T>` component](/docs/next/guides/jsx) for translation.
   If you are interested in only using `<T>` components for translation, then this document is not relevant.
 </Callout>
@@ -73,15 +73,15 @@ const dictionary = {
 export default dictionary;
 ```
 
-When we want to access these entries (on the server side), we call `getDict()`.
+When we want to access these entries (on the server side), we call `getTranslations()`.
 This returns a function that accepts the key of a translation from the dictionary.
 
 ```jsx title="TranslateGreeting.jsx" copy
-import { getDict } from 'gt-next/server';
+import { getTranslations } from 'gt-next/server';
 
 export default async function TranslateGreeting() {
   
-  const d = await getDict(); // [!code highlight]
+  const d = await getTranslations(); // [!code highlight]
 
   return (
     <p>
@@ -108,10 +108,10 @@ export default dictionary;
 
 ```jsx title="TranslateGreeting.jsx" copy
 // [!code word:userName]
-import { getDict } from 'gt-next/server';
+import { getTranslations } from 'gt-next/server';
 
 export default async function TranslateGreeting() {
-  const d = await getDict();
+  const d = await getTranslations();
   
   // Hello Alice!
   const greetingAlice = d('greeting', { userName: "Alice" }); // [!code highlight]
@@ -136,12 +136,12 @@ const dictionary = {
 };
 export default dictionary;
 ```
-Because we added the value `'prefix1.prefix2'` to the `getDict` method, all of the keys are prefixed with `prefix1.prefix2`:
+Because we added the value `'prefix1.prefix2'` to the `getTranslations` method, all of the keys are prefixed with `prefix1.prefix2`:
 ```jsx title="UserDetails.jsx" copy
-import { getDict } from 'gt-next/server';
+import { getTranslations } from 'gt-next/server';
 
 export default function UserDetails() {
-  const d = await getDict('prefix1.prefix2'); // [!code highlight]
+  const d = await getTranslations('prefix1.prefix2'); // [!code highlight]
   return (
     <div>
       <p>{d('greeting')}</p> // greeting => prefix1.prefix2.greeting // [!code highlight]
@@ -152,8 +152,8 @@ export default function UserDetails() {
 ---
 
 ## Notes
- * The `getDict()` function allows you to access dictionary translations on the server side.
+ * The `getTranslations()` function allows you to access dictionary translations on the server side.
 
 ## Next Steps
- * See [`useDict()`](/docs/next/api/dictionary/useDict) for the client-side equivalent of `getDict()`.
+ * See [`useTranslations()`](/docs/next/api/dictionary/useTranslations) for the client-side equivalent of `getTranslations()`.
  * Learn more about using dictionaries in the [dictionaries reference](/docs/next/guides/dictionaries).
