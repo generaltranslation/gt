@@ -13,7 +13,7 @@ import {
   _formatDateTime,
   _formatMessage,
 } from './formatting/format';
-import { CustomMapping } from './types';
+import { CustomMapping, FormatVariables } from './types';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
   LocaleProperties,
@@ -202,7 +202,7 @@ export default class GT {
    *
    * @param {string} message - The message to format.
    * @param {string | string[]} [locales='en'] - The locales to use for formatting.
-   * @param {Record<string, any>} [variables={}] - The variables to use for formatting.
+   * @param {FormatVariables} [variables={}] - The variables to use for formatting.
    * @returns {string} The formatted message.
    *
    * @example
@@ -216,8 +216,7 @@ export default class GT {
     message: string,
     options?: {
       locales?: string[];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      variables?: Record<string, any>;
+      variables?: FormatVariables;
     }
   ): string {
     return GT.formatMessage(message, {
@@ -597,8 +596,7 @@ export default class GT {
     message: string,
     options?: {
       locales?: string[];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      variables?: Record<string, any>;
+      variables?: FormatVariables;
     }
   ): string {
     return _formatMessage(message, options?.locales, options?.variables);

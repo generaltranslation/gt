@@ -33,6 +33,11 @@ export type Metadata = {
   [key: string]: any;
 };
 
+export type FormatVariables = Record<
+  string,
+  string | number | boolean | null | undefined | Date
+>;
+
 export type Update =
   | {
       type: 'content';

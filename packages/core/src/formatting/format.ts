@@ -1,3 +1,4 @@
+import { FormatVariables } from 'src/types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
 import IntlMessageFormat from 'intl-messageformat';
@@ -10,15 +11,16 @@ import IntlMessageFormat from 'intl-messageformat';
  * @param {Record<string, any>} [variables={}] - The variables to use for formatting.
  * @returns {string} The formatted message.
  * @internal
+ *
+ * Will fallback to an empty string
  */
 export function _formatMessage(
   message: string,
   locales: string | string[] = libraryDefaultLocale,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  variables: Record<string, any> = {}
+  variables: FormatVariables = {}
 ): string {
   const messageFormat = new IntlMessageFormat(message, locales);
-  return messageFormat.format(variables);
+  return messageFormat.format(variables)?.toString() ?? '';
 }
 
 /**
