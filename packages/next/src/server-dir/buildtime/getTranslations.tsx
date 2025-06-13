@@ -15,7 +15,7 @@ import {
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import GT from 'generaltranslation';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import use from '../../utils/use';
 
 /**
@@ -130,11 +130,11 @@ export async function getTranslations(
 
     // ---------- TRANSLATION ---------- //
 
-    const hash = hashJsxChildren({
+    const hash = hashSource({
       source: entry,
       ...(metadata?.context && { context: metadata?.context }),
       id,
-      dataFormat: 'JSX',
+      format: 'ICU',
     });
     const translationEntry = translations?.[hash];
 

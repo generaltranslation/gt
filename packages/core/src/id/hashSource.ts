@@ -24,27 +24,38 @@ export function hashString(string: string): string {
  * @param {function} hashFunction custom hash function
  * @returns {string} - The unique has of the children.
  */
-export function hashJsxChildren(
+export function hashSource(
   {
     source,
     context,
     id,
-    dataFormat,
+    format,
   }: {
     source: JsxChildren;
     context?: string;
     id?: string;
-    dataFormat: string;
+    format: 'JSX' | 'ICU';
   },
   hashFunction: (string: string) => string = hashString
 ): string {
-  const unhashedKey = stringify({
-    source: sanitizeJsxChildren(source),
+  let sanitizedData: {
+    source?: SanitizedChildren;
+    id?: string;
+    context?: string;
+    format?: string;
+  } = {};
+  if (format === 'JSX') {
+    sanitizedData.source = sanitizeJsxChildren(source);
+  } else {
+    sanitizedData.source = source as string;
+  }
+  sanitizedData = {
+    ...sanitizedData,
     ...(id && { id }),
     ...(context && { context }),
-    ...(dataFormat && { dataFormat }),
-  });
-  return hashFunction(unhashedKey);
+    ...(format && { format }),
+  };
+  return hashFunction(stringify(sanitizedData));
 }
 
 type SanitizedVariable = Omit<Variable, 'id'>;
@@ -59,6 +70,12 @@ type SanitizedElement = {
 type SanitizedChild = SanitizedElement | SanitizedVariable | string;
 type SanitizedChildren = SanitizedChild | SanitizedChild[];
 
+/**
+ * Sanitizes a child object by removing the data-_gt attribute and its branches.
+ *
+ * @param child - The child object to sanitize.
+ * @returns The sanitized child object.
+ */
 const sanitizeChild = (child: JsxChild): SanitizedChild => {
   if (child && typeof child === 'object') {
     if ('props' in child) {

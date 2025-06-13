@@ -11,7 +11,7 @@ import {
 } from 'gt-react/internal';
 import renderVariable from '../variables/renderVariable';
 import React from 'react';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import { TxProps } from '../../utils/types';
 
 async function Resolver({ children }: { children: React.ReactNode }) {
@@ -56,11 +56,11 @@ async function Tx({ children, id, context, locale }: TxProps): Promise<any> {
   // Turns tagged children into objects
   // The hash is used to identify the translation
   const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-  const hash = hashJsxChildren({
+  const hash = hashSource({
     source: childrenAsObjects,
     ...(context && { context }),
     ...(id && { id }),
-    dataFormat: 'JSX',
+    format: 'JSX',
   });
 
   // Get the translation entry object

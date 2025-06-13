@@ -1,4 +1,4 @@
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import { useCallback } from 'react';
 import {
   InlineTranslationOptions,
@@ -59,11 +59,11 @@ export default function useCreateInternalUseGTFunction(
         !translationWithIdExists // Translation doesn't exist under the id
       ) {
         // Calculate hash
-        hash = hashJsxChildren({
+        hash = hashSource({
           source: contentString,
           ...(options?.context && { context: options.context }),
           ...(id && { id }),
-          dataFormat: 'JSX',
+          format: 'ICU',
         });
       }
 

@@ -1,11 +1,11 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import renderDefaultChildren from '../../rendering/renderDefaultChildren';
 import { addGTIdentifier, writeChildrenAsObjects } from '../../internal';
 import useGTContext from '../../provider/GTContext';
 import renderTranslatedChildren from '../../rendering/renderTranslatedChildren';
 import { useMemo } from 'react';
 import renderVariable from '../../rendering/renderVariable';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import renderSkeleton from '../../rendering/renderSkeleton';
 import { TranslatedChildren } from '../../types/types';
 
@@ -80,11 +80,11 @@ function T({
 
     // calculate hash
     const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    const hash: string = hashJsxChildren({
+    const hash: string = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(id && { id }),
-      dataFormat: 'JSX',
+      format: 'JSX',
     });
 
     return [childrenAsObjects, hash];

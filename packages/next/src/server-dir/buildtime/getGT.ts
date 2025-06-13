@@ -1,7 +1,7 @@
 import GT from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../server';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import {
   createStringTranslationError,
   translationLoadingWarning,
@@ -73,11 +73,11 @@ export async function getGT(): Promise<
     // Calculate hash
     let hash = '';
     const calcHash = () =>
-      hashJsxChildren({
+      hashSource({
         source: message,
         ...(options?.context && { context: options?.context }),
         ...(options?.id && { id: options?.id }),
-        dataFormat: 'JSX',
+        format: 'ICU',
       });
 
     // Use hash to index

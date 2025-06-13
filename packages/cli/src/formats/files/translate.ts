@@ -1,7 +1,7 @@
 import { checkFileTranslations } from '../../api/checkFileTranslations';
 import { sendFiles } from '../../api/sendFiles';
 import {
-  noSupportedDataFormatError,
+  noSupportedFormatError,
   logErrorAndExit,
   createSpinner,
   logError,
@@ -16,22 +16,21 @@ import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
 import { getRelative, readFile } from '../../fs/findFilepath';
 import { flattenJsonDictionary } from '../../react/utils/flattenDictionary';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types';
-import { FileFormats, DataFormat } from '../../types/data';
+import { FileExtension, Format } from '../../types/data';
 import path from 'node:path';
 import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile';
 import { downloadFileBatch } from '../../api/downloadFileBatch';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles';
 import { TranslateOptions } from '../../cli/base';
-const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
+const SUPPORTED_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 /**
  * Sends multiple files to the API for translation
  * @param filePaths - Resolved file paths for different file types
  * @param placeholderPaths - Placeholder paths for translated files
  * @param transformPaths - Transform paths for file naming
- * @param fileFormat - Format of the files
- * @param dataFormat - Format of the data within the files
+ * @param format - Format of the data within the files
  * @param options - Translation options including API settings
  * @returns Promise that resolves when translation is complete
  */
@@ -39,7 +38,7 @@ export async function translateFiles(
   filePaths: ResolvedFiles,
   placeholderPaths: ResolvedFiles,
   transformPaths: TransformFiles,
-  dataFormat: DataFormat = 'JSX',
+  format: Format = 'JSX',
   options: Settings & TranslateOptions
 ): Promise<void> {
   // Collect all files to translate
@@ -47,8 +46,8 @@ export async function translateFiles(
 
   // Process JSON files
   if (filePaths.json) {
-    if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
-      logErrorAndExit(noSupportedDataFormatError);
+    if (!SUPPORTED_FORMATS.includes(format)) {
+      logErrorAndExit(noSupportedFormatError);
     }
 
     const jsonFiles = filePaths.json.map((filePath) => {
@@ -62,8 +61,8 @@ export async function translateFiles(
       return {
         content,
         fileName: relativePath,
-        fileFormat: 'JSON' as FileFormats,
-        dataFormat,
+        fileExtension: 'JSON' as FileExtension,
+        format,
       };
     });
     allFiles.push(...jsonFiles);
@@ -78,8 +77,8 @@ export async function translateFiles(
         return {
           content,
           fileName: relativePath,
-          fileFormat: fileType.toUpperCase() as FileFormats,
-          dataFormat,
+          fileExtension: fileType.toUpperCase() as FileExtension,
+          format,
         };
       });
       allFiles.push(...files);

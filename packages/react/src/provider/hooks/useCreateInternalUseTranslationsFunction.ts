@@ -14,7 +14,7 @@ import {
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
 } from '../../errors/createErrors';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import GT from 'generaltranslation';
 import { TranslateContentCallback } from '../../types/runtime';
 
@@ -73,11 +73,11 @@ export default function useCreateInternalUseTranslationsFunction(
       // ----- CHECK TRANSLATIONS ----- //
 
       // Get hash
-      const hash = hashJsxChildren({
+      const hash = hashSource({
         source: entry,
         ...(metadata?.context && { context: metadata.context }),
         id,
-        dataFormat: 'JSX',
+        format: 'ICU',
       });
 
       // Check id first

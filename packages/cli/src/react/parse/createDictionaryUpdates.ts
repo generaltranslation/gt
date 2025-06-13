@@ -5,7 +5,7 @@ import { build, BuildOptions } from 'esbuild';
 import { Options, Updates } from '../../types';
 import flattenDictionary from '../utils/flattenDictionary';
 import loadJSON from '../../fs/loadJSON';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata';
 import { logError, logErrorAndExit } from '../../console';
 
@@ -72,15 +72,15 @@ export default async function createDictionaryUpdates(
       id,
       ...(context && { context }),
       // This hash isn't actually used by the GT API, just for consistency sake
-      hash: hashJsxChildren({
+      hash: hashSource({
         source: entry,
         ...(context && { context }),
         ...(id && { id }),
-        dataFormat: 'JSX',
+        format: 'ICU',
       }),
     };
     updates.push({
-      dataFormat: 'JSX',
+      format: 'ICU',
       source: entry,
       metadata,
     });

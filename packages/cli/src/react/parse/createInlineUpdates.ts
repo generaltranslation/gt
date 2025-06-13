@@ -5,7 +5,7 @@ import { Options, Updates } from '../../types';
 import { parse } from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import { parseJSXElement } from '../jsx/utils/parseJsx';
 import { parseStrings } from '../jsx/utils/parseStringFunction';
 import { extractImportName } from '../jsx/utils/parseAst';
@@ -153,11 +153,11 @@ export default async function createInlineUpdates(
   await Promise.all(
     updates.map(async (update) => {
       const context = update.metadata.context;
-      const hash = hashJsxChildren({
+      const hash = hashSource({
         source: update.source,
         ...(context && { context }),
         ...(update.metadata.id && { id: update.metadata.id }),
-        dataFormat: 'JSX',
+        format: update.format,
       });
       update.metadata.hash = hash;
     })

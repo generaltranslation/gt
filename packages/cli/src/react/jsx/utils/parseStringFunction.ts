@@ -76,7 +76,7 @@ function processTranslationCall(
       }
 
       updates.push({
-        dataFormat: 'JSX',
+        format: 'ICU',
         source,
         metadata,
       });

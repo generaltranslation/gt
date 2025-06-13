@@ -2,7 +2,7 @@ import GT from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import { RuntimeTranslationOptions } from 'gt-react/internal';
 
 /**
@@ -65,11 +65,11 @@ export default async function tx(
 
   // ----- CALCULATE HASH ----- //
 
-  const hash = hashJsxChildren({
+  const hash = hashSource({
     source: message,
     ...(options?.context && { context: options.context }),
     ...(options?.id && { id: options.id }),
-    dataFormat: 'JSX',
+    format: 'ICU',
   });
 
   // ----- CHECK LOCAL CACHE ----- //

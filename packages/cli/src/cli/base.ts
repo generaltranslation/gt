@@ -27,11 +27,11 @@ import {
   SupportedLibraries,
   SetupOptions,
 } from '../types';
-import { DataFormat } from '../types/data';
+import { Format } from '../types/data';
 import { generateSettings } from '../config/generateSettings';
 import chalk from 'chalk';
 import { translateFiles } from '../formats/files/translate';
-import { FILE_EXT_TO_FORMAT } from '../formats/files/supportedFiles';
+import { FILE_EXT_TO_EXT_LABEL } from '../formats/files/supportedFiles';
 import { handleSetupReactCommand } from '../setup/wizard';
 import { isPackageInstalled, searchForPackageJson } from '../utils/packageJson';
 import { getDesiredLocales } from '../setup/userInput';
@@ -268,18 +268,18 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
   protected async handleGenericTranslate(
     settings: Settings & TranslateOptions
   ): Promise<void> {
-    // dataFormat for JSONs
-    let dataFormat: DataFormat;
+    // format for JSONs
+    let format: Format;
     if (this.library === 'next-intl') {
-      dataFormat = 'ICU';
+      format = 'ICU';
     } else if (this.library === 'i18next') {
       if (this.additionalModules.includes('i18next-icu')) {
-        dataFormat = 'ICU';
+        format = 'ICU';
       } else {
-        dataFormat = 'I18NEXT';
+        format = 'I18NEXT';
       }
     } else {
-      dataFormat = 'JSX';
+      format = 'JSX';
     }
 
     if (
@@ -300,7 +300,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       sourceFiles,
       placeholderPaths,
       transformPaths,
-      dataFormat,
+      format,
       settings
     );
   }
@@ -359,26 +359,26 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       : `${chalk.gray(
           '(Optional)'
         )} Do you have any separate files you would like to translate? For example, extra Markdown files for docs.`;
-    const dataFormats = await promptMultiSelect({
+    const fileExtensions = await promptMultiSelect({
       message,
       options: [
-        { value: 'json', label: 'JSON' },
-        { value: 'md', label: 'Markdown' },
-        { value: 'mdx', label: 'MDX' },
-        { value: 'ts', label: 'TypeScript' },
-        { value: 'js', label: 'JavaScript' },
+        { value: 'json', label: FILE_EXT_TO_EXT_LABEL.json },
+        { value: 'md', label: FILE_EXT_TO_EXT_LABEL.md },
+        { value: 'mdx', label: FILE_EXT_TO_EXT_LABEL.mdx },
+        { value: 'ts', label: FILE_EXT_TO_EXT_LABEL.ts },
+        { value: 'js', label: FILE_EXT_TO_EXT_LABEL.js },
       ],
       required: !isUsingGT,
     });
 
     const files: FilesOptions = {};
-    for (const dataFormat of dataFormats) {
+    for (const fileExtension of fileExtensions) {
       const paths = await promptText({
-        message: `${chalk.cyan(FILE_EXT_TO_FORMAT[dataFormat])}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_FORMAT[dataFormat]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
-        defaultValue: `./**/[locale]/*.${dataFormat}`,
+        message: `${chalk.cyan(FILE_EXT_TO_EXT_LABEL[fileExtension])}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_EXT_LABEL[fileExtension]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
+        defaultValue: `./**/[locale]/*.${fileExtension}`,
       });
 
-      files[dataFormat] = {
+      files[fileExtension] = {
         include: paths.split(' '),
       };
     }

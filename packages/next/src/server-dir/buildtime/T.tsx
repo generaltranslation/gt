@@ -11,7 +11,7 @@ import {
 } from 'gt-react/internal';
 import renderVariable from '../variables/renderVariable';
 import React from 'react';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 
 async function Resolver({ children }: { children: React.ReactNode }) {
   return await children;
@@ -103,11 +103,11 @@ async function T({
     // Turns tagged children into objects
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    hash = hashJsxChildren({
+    hash = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(id && { id }),
-      dataFormat: 'JSX',
+      format: 'JSX',
     });
     translationEntry = translations?.[hash];
   }
@@ -148,11 +148,11 @@ async function T({
   const translationPromise = (async () => {
     try {
       childrenAsObjects ||= writeChildrenAsObjects(taggedChildren);
-      hash ||= hashJsxChildren({
+      hash ||= hashSource({
         source: childrenAsObjects,
         ...(context && { context }),
         ...(id && { id }),
-        dataFormat: 'JSX',
+        format: 'JSX',
       });
       const target = await I18NConfig.translateJsx({
         // do on demand translation
