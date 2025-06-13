@@ -144,7 +144,7 @@ export default function Example2() {
   return (
     <>
       {navMap
-        .filter(() => navItem.type === 'page')
+        .filter((navItem) => navItem.type === 'page')
         .map((navItem) => (
           <NavItem item={navItem} />
         ))}
