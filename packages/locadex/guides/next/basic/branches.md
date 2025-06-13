@@ -110,7 +110,7 @@ import { Plural } from 'gt-next';
 For example, if isActive is a boolean, convert it to a string first.
 
 **Replacing Conditional Rendering:** Convert `?` operator patterns to branch syntax.
-This is should only be done if the content is being used in a `<T>` component.
+This should only be done if the content is being used in a `<T>` component.
 
 **Invalid Syntax**:
 
