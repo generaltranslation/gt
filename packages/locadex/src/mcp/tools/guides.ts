@@ -80,7 +80,9 @@ export function addGuidesTools(server: McpServer) {
       const path = guide.path;
       const { content, error } = await getGuide(path);
       if (error) {
-        logger.log(`[locadex-mcp: ${guide.id}] Error fetching guide: ${path}`);
+        logger.log(
+          `[locadex-mcp: ${guide.id}] Error fetching guide: ${guide.id} at path ${path}`
+        );
         return {
           content: [
             {
@@ -91,7 +93,7 @@ export function addGuidesTools(server: McpServer) {
           isError: true,
         };
       }
-      logger.log(`[locadex-mcp: ${guide.id}] Returning guide: ${path}`);
+      logger.log(`[locadex-mcp: ${guide.id}] Returning guide: ${guide.id}`);
       return {
         content: [
           {

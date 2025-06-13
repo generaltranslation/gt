@@ -49,9 +49,10 @@ async function withTimeout<T>(
   timeoutMessage?: string
 ): Promise<T> {
   const timeoutController = new AbortController();
+  let timeoutId: ReturnType<typeof global.setTimeout>;
 
   const timeoutPromise = new Promise<never>((_, reject) => {
-    const timeoutId = global.setTimeout(() => {
+    timeoutId = global.setTimeout(() => {
       timeoutController.abort();
       reject(
         new TimeoutError(
@@ -60,15 +61,13 @@ async function withTimeout<T>(
         )
       );
     }, timeoutSec * 1000);
-
-    // Clear timeout if the operation completes or is aborted
-    timeoutController.signal.addEventListener('abort', () => {
-      global.clearTimeout(timeoutId);
-    });
   });
 
   const promise = promiseFactory(timeoutController);
-  return Promise.race([promise, timeoutPromise]);
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    // Clear the timeout regardless of how the promise resolves
+    global.clearTimeout(timeoutId);
+  });
 }
 
 /**
