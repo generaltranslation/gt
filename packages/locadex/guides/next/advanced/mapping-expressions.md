@@ -104,7 +104,6 @@ const MyComponent = () => {
 ### Notes
 
 - Strings, when used with `useTranslations()`, are always accessed dynamically as dictionary keys.
-- The `t()` function does not accept any other parameters besides the dictionary key. To add additional options, modify the dictionary entry.
 - When a function or component is marked as `async`, you should use the `getTranslations()` hook to get the translation callback function. `getTranslations()` must be awaited. Other than this, the usage of `getTranslations()` and `useTranslations()` is the same.
 
 ## Complex Nested Object Translation
