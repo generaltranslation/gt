@@ -154,13 +154,13 @@ Here are some examples of what the scan will convert:
 
 
   ```jsx
-  <div>Hello, World!</div>
+  <div>Hello, world!</div>
   ```
 
   Will be converted to:
 
   ```jsx
-  <T id="">Hello, World!</T>
+  <T id="">Hello, world!</T>
   ```
 
   </Tab>
@@ -182,13 +182,13 @@ Here are some examples of what the scan will convert:
 
 
   ```jsx
-  <p>{true && "Hello, World!"}</p>;
+  <p>{true && "Hello, world!"}</p>;
   ```
 
   Will be converted to:
 
   ```jsx
-  <T id=""><p><Var>{true && <T id="">{"Hello, World!"}</T>}</Var></p></T>;
+  <T id=""><p><Var>{true && <T id="">{"Hello, world!"}</T>}</Var></p></T>;
   ```
 
   </Tab>

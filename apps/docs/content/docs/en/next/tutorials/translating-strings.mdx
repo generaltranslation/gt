@@ -19,7 +19,7 @@ For any client side strings, use [`useGT()`](/docs/next/api/strings/useGT).
 Remember that `useGT()` must be called within a child component of [`<GTProvider>`](/docs/next/api/components/gtprovider).
 
 ```jsx title="src/components/MyComponent.jsx" copy
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 export default function MyComponent() {
   const t = useGT(); // [!code highlight]
@@ -57,7 +57,7 @@ Variables are values that may change, but do not get translated.
 To add variables to your strings, use the following pattern:
 
 ```jsx title="MyComponent.jsx" copy
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 export default function MyComponent() {
   const t = useGT();
