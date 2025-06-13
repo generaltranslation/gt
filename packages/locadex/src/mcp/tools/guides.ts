@@ -52,31 +52,17 @@ export const guides: Guide[] = [
     type: 'advanced',
   },
   {
-    id: 'next_advanced_outside-client-component',
-    description:
-      'Advanced guide for wherever you see a `const` or `let` or a function outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are ONLY used or imported by client side components.',
-    path: 'guides/next/advanced/var-outside-client-component.md',
-    type: 'advanced',
-  },
-  {
-    id: 'next_advanced_outside-server-component',
-    description:
-      'Advanced guide for wherever you see a `const` or `let` or a function outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are ONLY used or imported by server side components.',
-    path: 'guides/next/advanced/var-outside-server-component.md',
-    type: 'advanced',
-  },
-  {
-    id: 'next_advanced_outside-client-server-component',
-    description:
-      'Advanced guide for wherever you see a `const` or `let` or a function outside of a function scope that needs to be internationalized. This guide is specifically for when these variables are used or imported by both client side and server side components.',
-    path: 'guides/next/advanced/var-outside-client-server-component.md',
-    type: 'advanced',
-  },
-  {
     id: 'next_advanced_conditional-rendering',
     description:
-      'Advanced guide for complex scenarios with ternary operators or conditional statements that needs to be internationalized.',
+      'Call this tool when you see a conditional statement or a pluralization statement that needs to be internationalized.',
     path: 'guides/next/advanced/conditional-rendering.md',
+    type: 'advanced',
+  },
+  {
+    id: 'next_advanced_external-strings',
+    description:
+      'Call this tool when you see a `const` or `let` or a function containing strings outside of a function scope that needs to be internationalized.',
+    path: 'guides/next/advanced/external-strings.md',
     type: 'advanced',
   },
   {

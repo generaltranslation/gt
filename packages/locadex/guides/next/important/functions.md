@@ -33,4 +33,7 @@ import {
   getLocale,
   getTranslations,
 } from 'gt-next/server';
+
+// Typing
+import { InlineTranslationOptions } from 'gt-next/types';
 ```
