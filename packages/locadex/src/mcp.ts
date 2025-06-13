@@ -3,7 +3,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { addDocsTools } from './mcp/tools/docs.js';
 import { existsSync, readFileSync } from 'node:fs';
-import { fromPackageRoot } from './utils/getPaths.js';
+import { fromPackageRoot, getLocadexVersion } from './utils/getPaths.js';
 import { addGuidesTools } from './mcp/tools/guides.js';
 import express from 'express';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -57,6 +57,9 @@ export async function start() {
     transports.sse[transport.sessionId] = transport;
 
     res.on('close', () => {
+      logger.log(
+        `[locadex-mcp] SSE transport closed for sessionId: ${transport.sessionId}`
+      );
       delete transports.sse[transport.sessionId];
     });
 
@@ -70,6 +73,9 @@ export async function start() {
     if (transport) {
       await transport.handlePostMessage(req, res, req.body);
     } else {
+      logger.log(
+        `[locadex-mcp] No transport found for sessionId: ${sessionId}`
+      );
       res.status(400).send('No transport found for sessionId');
     }
   });
@@ -80,7 +86,7 @@ export async function start() {
         ? `${port} (requested ${requestedPort} was in use)`
         : `${port}`;
     logger.debugMessage(
-      `[locadex-mcp] started on port ${portMessage} with state file ${stateFile}`
+      `[locadex-mcp v${getLocadexVersion()}] started on port ${portMessage} with state file ${stateFile}`
     );
   });
 }
