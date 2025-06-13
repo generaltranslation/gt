@@ -1,11 +1,13 @@
 ---
 title: Locadex
-description: How to use General Translation's Locadex tool
+description: Overview of Locadex
 ---
 
 ## Overview
 
-**Locadex** is an AI agent that helps you implement internationalization in your projects.
+**Locadex** is an AI agent that automates the process of internationalizing your project.
+
+It can be installed as a CLI tool or configured as a Github Action.
 
 ---
 
@@ -29,7 +31,7 @@ GT_API_KEY="<your-gt-api-key>"
 GT_PROJECT_ID="<your-gt-project-id>"
 ```
 
-### 2. Run Locadex
+### 2. Run Locadex CLI Tool
 
 The easiest way to get started is to run the following command in your project's root directory:
 
@@ -38,28 +40,49 @@ npx locadex start
 ```
 
 This single command will handle everything for you:
+
 - Automatically install `locadex` if it's not already in your project.
-- Run the `setup` command to initialize internationalization.
-- Run the `i18n` command to launch the AI-powered assistant.
+- Automatically configure your project to use `gt-next`.
+- Automatically add the [`translate`](/docs/cli/translate) command to your build script.
+- Automatically internationalize your project.
 
----
+### 3. Run Locadex as a Github Action
 
-## Individual Commands
+Locadex can also be configured as a Github Action.
 
-For more granular control, you can also run the `setup` and `i18n` commands separately.
+This is useful for continuous i18n of your project.
 
-### Initialize Project
+```yaml title=".github/workflows/locadex.yml" copy
+name: Run Locadex
 
-This command initializes internationalization in your project, setting up required configuration files.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
 
-```bash
-npx locadex setup
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  locadex:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Run Locadex
+        uses: generaltranslation/locadex@v0.1.1
+        with:
+          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-### Get AI Assistance
+Feel free to customize the workflow to your needs.
 
-This command launches the AI-powered assistant for internationalization tasks.
 
-```bash
-npx locadex i18n
-```
+Every time this workflow triggers, Locadex will automatically internationalize any changes you've made to your project
+and create a pull request with the changes.
+
+<Callout type="info">
+  The Github Action assumes you have already ran `npx locadex start` in your project or have manually configured your project to use `gt-next`.
+</Callout>

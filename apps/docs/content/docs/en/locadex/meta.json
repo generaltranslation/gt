@@ -1,7 +1,7 @@
 {
   "title": "Locadex",
-  "description": "generaltranslation",
-  "icon": "Network",
+  "description": "AI Agent for i18n",
+  "icon": "Brain",
   "root": true,
-  "pages": ["index"]
+  "pages": ["index", "gha"]
 }
