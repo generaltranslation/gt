@@ -14,7 +14,7 @@ export async function i18nCommand(options: CliOptions, command: Command) {
   withTelemetry(
     { enabled: telemetryEnabled, options: allOptions },
     async () => {
-      await validateConfig(allOptions);
+      await validateConfig(allOptions, { requireGtCredentials: false });
 
       displayHeader(telemetryEnabled);
       LocadexManager.initialize({

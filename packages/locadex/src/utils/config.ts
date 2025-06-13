@@ -4,7 +4,10 @@ import path from 'node:path';
 import { CliOptions, LocadexConfig } from '../types/cli.js';
 import { exit } from './shutdown.js';
 
-export async function validateConfig(options: CliOptions) {
+export async function validateConfig(
+  options: CliOptions,
+  { requireGtCredentials = true }: { requireGtCredentials?: boolean } = {}
+) {
   // Validate ANTHROPIC_API_KEY
   if (!process.env.ANTHROPIC_API_KEY) {
     console.error(
@@ -13,8 +16,8 @@ export async function validateConfig(options: CliOptions) {
     await exit(1);
   }
 
-  // Validate GT credentials unless --no-credentials is set
-  if (!options.noCredentials) {
+  // Validate GT credentials if required and --no-credentials is not set
+  if (requireGtCredentials && !options.noCredentials) {
     if (!process.env.GT_API_KEY) {
       console.error(
         'GT_API_KEY is not set! Please set it as an environment variable or in a .env | .env.local file, or use --no-credentials to skip this validation.'
