@@ -13,6 +13,23 @@ export async function validateConfig(options: CliOptions) {
     await exit(1);
   }
 
+  // Validate GT credentials unless --no-credentials is set
+  if (!options.noCredentials) {
+    if (!process.env.GT_API_KEY) {
+      console.error(
+        'GT_API_KEY is not set! Please set it as an environment variable or in a .env | .env.local file, or use --no-credentials to skip this validation.'
+      );
+      await exit(1);
+    }
+
+    if (!process.env.GT_PROJECT_ID) {
+      console.error(
+        'GT_PROJECT_ID is not set! Please set it as an environment variable or in a .env | .env.local file, or use --no-credentials to skip this validation.'
+      );
+      await exit(1);
+    }
+  }
+
   if (options.timeout) {
     const timeout = Number(options.timeout);
     if (isNaN(timeout) || timeout <= 0) {

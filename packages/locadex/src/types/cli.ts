@@ -2,6 +2,7 @@ export type CliOptions = {
   verbose?: boolean;
   debug?: boolean;
   noTelemetry?: boolean;
+  noCredentials?: boolean;
   batchSize?: string;
   concurrency?: string;
   matchingFiles?: string;
