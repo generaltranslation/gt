@@ -86,7 +86,7 @@ jobs:
         timeout-minutes: 30
         run: | 
           cd locadex-tests
-          npm run grader:parallel -- min min-multiple min-strings
+          npm run grader:parallel
           echo "Grader tests completed"
 
       # Step 11: Wait for evaluation summary and comment
