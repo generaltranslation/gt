@@ -114,27 +114,27 @@ export async function i18nTask() {
         dependentFiles: dependents,
       });
     },
-    postProcess: async (files, context, agentReport) => {
+    postProcess: async (processedFiles, context, agentReport) => {
       const { filesStateFilePath } = context;
 
       // Mark tasks as complete
       await Promise.all(
-        files.map((task) => markFileAsEdited(task, filesStateFilePath))
+        processedFiles.map((file) => markFileAsEdited(file, filesStateFilePath))
       );
 
       // Add agent report
       reports.push(agentReport);
 
-      // Update progress bar
-      logger.progressBar.advance(
-        files.length,
-        `Processed ${Number(((reports.length * files.length) / files.length) * 100).toFixed(2)}% of files`
-      );
-
       // Update stats
       manager.stats.updateStats({
-        newProcessedFiles: files.length,
+        newProcessedFiles: processedFiles.length,
       });
+
+      // Update progress bar
+      logger.progressBar.advance(
+        processedFiles.length,
+        `Processed ${Number((manager.stats.getStats().processedFiles / files.length) * 100).toFixed(2)}% of files`
+      );
     },
   };
 
