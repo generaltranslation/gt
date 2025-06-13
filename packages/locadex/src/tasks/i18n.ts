@@ -182,6 +182,7 @@ export async function i18nTask() {
     );
     reports.push(`## Fixed errors\n${cleanupAgent.generateReport()}`);
   } catch (error) {
+    cleanupAgent.aggregateStats();
     logger.debugMessage(
       `[claude_cleanup_agent] Fixing errors failed: ${error}`
     );
@@ -190,6 +191,7 @@ export async function i18nTask() {
     await exit(1);
     return;
   }
+  cleanupAgent.aggregateStats();
   logger.spinner.stop('Fixed errors');
 
   // Generate report

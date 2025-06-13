@@ -1,6 +1,9 @@
 import { LocadexManager } from '../utils/locadexManager.js';
 import { logger } from '../logging/logger.js';
 import { exit } from '../utils/shutdown.js';
+import { AgentError } from 'src/utils/errors.js';
+import chalk from 'chalk';
+import { outro } from '@clack/prompts';
 
 /**
  * Interface for defining how to process tasks in parallel.
@@ -88,9 +91,7 @@ export async function runParallelProcessing<TTask, TContext>(
 ): Promise<void> {
   const { concurrency, batchSize } = options;
   const manager = LocadexManager.getInstance();
-
   const agentAbortController = manager.getAgentAbortController();
-  let firstError: Error | null = null;
 
   // Mutex for task queue access
   let taskQueueMutex = Promise.resolve();
@@ -161,20 +162,8 @@ export async function runParallelProcessing<TTask, TContext>(
         // Post-process: handle reports, progress, etc.
         await processor.postProcess(tasks, context, agentReport);
       } catch (error) {
-        // Check if this is an abort
-        if (agentAbortController.signal.aborted) {
-          return;
-        }
-
-        // Capture the first error and signal all other agents to abort
-        if (!firstError) {
-          firstError = new Error(
-            `Error in claude parallel process (${agentId}): ${error}`
-          );
-          logger.debugMessage(firstError.message);
-        }
-        await exit(1); // Exit this agent's processing immediately
-        return;
+        logger.debugMessage(`[${agentId}] error: ${error}`);
+        throw error;
       }
     }
   };
@@ -190,22 +179,19 @@ export async function runParallelProcessing<TTask, TContext>(
   try {
     await Promise.all(processingPromises);
   } catch (error) {
-    // Check if this is an abort
+    manager.getAgentPool().forEach((agentInfo) => {
+      agentInfo.agent.aggregateStats();
+    });
+    manager.stats.recordTelemetry(false); // do this after aggregateStats()
+
+    // Check if this is a manual abort
     if (agentAbortController.signal.aborted) {
-      throw new Error('Processing aborted');
+      return;
     }
 
-    // This shouldn't happen since we handle errors within processTask
-    logger.debugMessage(`Unexpected error in parallel processing: ${error}`);
-    if (!firstError) {
-      firstError = new Error(
-        `Unexpected error in parallel processing: ${error}`
-      );
-    }
-    throw firstError;
-  }
-
-  if (firstError) {
-    throw firstError;
+    outro(
+      chalk.red('❌ Locadex failed with error: ' + (error as Error).message)
+    );
+    await exit(1); // Exit the process
   }
 }

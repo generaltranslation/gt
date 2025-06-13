@@ -91,9 +91,7 @@ export function addGuidesTools(server: McpServer) {
           isError: true,
         };
       }
-      logger.log(
-        `[locadex-mcp: ${guide.id}] Guide fetched successfully: ${path}`
-      );
+      logger.log(`[locadex-mcp: ${guide.id}] Returning guide: ${path}`);
       return {
         content: [
           {

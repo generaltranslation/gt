@@ -200,6 +200,7 @@ ${report}`;
     );
     appendFileSync(summaryFilePath, reportSummary);
   } catch (error) {
+    agent.aggregateStats();
     // Check if this is an abort
     if (manager.getAgentAbortController().signal.aborted) {
       return;
@@ -208,6 +209,7 @@ ${report}`;
     outro(chalk.red('❌ Locadex setup failed!'));
     await exit(1);
   }
+  agent.aggregateStats();
 
   logger.spinner.stop('Locale selector setup complete');
 }
