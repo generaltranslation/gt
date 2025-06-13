@@ -32,7 +32,7 @@ Depending on whether you are using the `app` or `pages` directory, the requireme
     **Step 1:**
     First, make sure your app has a `<GTProvider>` component at the root layout.
 
-    ```tsx title="app/[locale]/layout.tsx"
+    ```tsx title="app/[locale]/layout.tsx" copy
     import { GTProvider } from 'gt-next';
     ```
     Since the app is using i18n routing, the provider should be placed in the `[locale]/layout.tsx` file.
@@ -91,7 +91,7 @@ That's it! Your app should now support static site generation for multiple langu
 
 <Accordions>
   <Accordion title="My pages aren't being statically generated!">
-    If you've followed the steps above and your pages are still not being statically generated, double check that all of your hooks and components are importing from `gt-next/client`.
+    If you've followed the steps above and your pages are still not being statically generated, double check that all of your hooks and components are importing from `gt-next`.
 
     As a rule of thumb, anything that reads headers or cookies will prevent SSG. This means you can't use any of the following:
     - `await getGT()`

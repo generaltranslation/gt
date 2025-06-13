@@ -63,7 +63,7 @@ In order to add context to the string, we use the `context` prop.
 
 ```jsx title="Component.tsx"
 // [!code word:context]
-import { useGT } from 'gt-next/client';
+import { useGT } from '';
 
 const Component = () => {
   const t = useGT();
@@ -77,7 +77,7 @@ In order to add a variable to the string, we use the `{variable-name}` syntax, w
 
 ```jsx title="Component.tsx"
 // [!code word:username]
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 const Component = () => {
   const t = useGT();
@@ -90,7 +90,7 @@ const Component = () => {
 You can also customize how your variables render with the `variablesOptions` prop.
 ```jsx title="Component.tsx"
 // [!code word:account-balance]
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 const Component = () => {
   const t = useGT();
