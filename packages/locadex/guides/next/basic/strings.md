@@ -1,12 +1,13 @@
-# How to internationalize strings with `gt-next`
+# Guide: How to internationalize strings with `gt-next`
 
 Use `useGT()` and `getGT()` to internationalize strings.
 
 **RULES:**
 
 - For JSX and HTML content, ALWAYS use the `<T>` component instead of `useGT()` and `getGT()`.
-- If you see strings present in HTML that you think need pluralization, do not use strings. Instead use the `<T>` component and the `<Plural>` component. See the "basic_next-branches" guide for instructions.
-- NEVER internationalize functional strings (error strings, logical strings, etc.) that could jeopardize the functionality of the application.
+- If you see strings present in HTML that you think need pluralization, do not use strings. Instead use the `<T>` component and the `<Plural>` component. See the `mcp__locadex__next_basic_branches` guide for instructions.
+- NEVER internationalize **functional strings** (error strings, logical strings, etc.) that could jeopardize the functionality of the application.
+- **IMPORTANT:** Functional strings can also include strings returned from server actions and API endpoints.
 
 **Import:** The `useGT()` and `getGT()` functions are exported from `gt-next` and `gt-next/server` respectively.
 

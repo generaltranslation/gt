@@ -19,21 +19,18 @@ import {
   DateTime,
   Branch,
   Plural,
-} from 'gt-next';
-
-import {
   useGT,
   useTranslations,
-  useLocale,
-  useLocales,
-  useSetLocale,
-  useDefaultLocale,
-  useLocaleSelector,
-  useLocaleProperties,
   LocaleSelector,
-} from 'gt-next/client';
+} from 'gt-next';
 
-import { getGT, tx, Tx, getLocale, getTranslations } from 'gt-next/server';
+import { useLocale } from 'gt-next/client';
 
-import { withGTConfig } from 'gt-next/config';
+import {
+  Tx, // Tx is different from tx
+  tx,
+  getGT,
+  getLocale,
+  getTranslations,
+} from 'gt-next/server';
 ```

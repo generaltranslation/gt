@@ -1,6 +1,11 @@
-# JSX Translation with `<T>` Component
+# Guide: JSX Translation with `<T>` Component
 
 Use the `<T>` component to internationalize HTML and JSX content.
+
+**Key Notes**:
+
+- `<T>` components can contain any valid JSX/HTML content, including other components, strings, and other JSX/HTML content.
+- `<T>` components can contain dynamic content, but it must be wrapped in Variable Components or Branching Components.
 
 **Import:** The `<T>` component is exported from `gt-next`.
 
@@ -250,7 +255,6 @@ const username = 'John Doe';
 The correct implementation is as follows:
 
 ```jsx
-// WILL ERROR - Improper syntax
 const username = 'John Doe';
 <T>
   Hello, <Var>{username}</Var>

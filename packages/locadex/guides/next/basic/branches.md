@@ -1,4 +1,4 @@
-# Branch Components Overview
+# Guide: Branch Components Overview
 
 Branch components dynamically render different content based on conditional values or numeric quantities. They handle locale-aware conditional logic and pluralization rules.
 
@@ -324,4 +324,4 @@ import { T, Plural, Num } from 'gt-next';
 - [`<Plural>`](/docs/next/api/components/plural) - Pluralization configuration
 - [Variable Components](/docs/next/guides/variables) - Integration patterns
 
-For more information on Variable Components, see the "basic_next-variables" guide.
+For more information on Variable Components, see the `mcp__locadex__next_basic_variables` guide.

@@ -1,4 +1,4 @@
-# Variable Components Overview
+# Guide: Variable Components Overview
 
 Variable components wrap dynamic content like user names, numerical values, dates, and currencies. They format and render dynamic values according to the user's locale without requiring external translations.
 
