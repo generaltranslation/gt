@@ -4,7 +4,7 @@ import { ClientProviderProps } from 'gt-react/internal';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { extractLocale } from '../middleware-dir/utils';
-import { determineLocale, standardizeLocale } from 'generaltranslation';
+import GT from 'generaltranslation';
 
 export default function ClientProvider(
   props: ClientProviderProps & {
@@ -41,10 +41,10 @@ export default function ClientProvider(
     if (middlewareEnabled) {
       // Extract locale from pathname
       const extractedLocale = extractLocale(pathname) || defaultLocale;
-      const pathLocale = determineLocale(
+      const pathLocale = GT.determineLocale(
         [
           gtServicesEnabled
-            ? standardizeLocale(extractedLocale)
+            ? GT.standardizeLocale(extractedLocale)
             : extractedLocale,
           defaultLocale,
         ],

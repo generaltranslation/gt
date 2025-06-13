@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  isValidLocale,
-  determineLocale,
-  standardizeLocale,
-} from 'generaltranslation';
+import GT from 'generaltranslation';
 import { NextURL } from 'next/dist/server/web/next-url';
 
 export type PathConfig = {
@@ -305,15 +301,15 @@ export function getLocaleFromRequest(
   if (localeRouting) {
     unstandardizedPathnameLocale = extractLocale(pathname);
     const extractedLocale = gtServicesEnabled
-      ? standardizeLocale(unstandardizedPathnameLocale || '')
+      ? GT.standardizeLocale(unstandardizedPathnameLocale || '')
       : unstandardizedPathnameLocale;
 
     if (
       extractedLocale &&
-      isValidLocale(extractedLocale) &&
-      determineLocale([extractedLocale], approvedLocales)
+      GT.isValidLocale(extractedLocale) &&
+      GT.determineLocale([extractedLocale], approvedLocales)
     ) {
-      const determinedLocale = determineLocale(
+      const determinedLocale = GT.determineLocale(
         [extractedLocale],
         approvedLocales
       );
@@ -336,7 +332,7 @@ export function getLocaleFromRequest(
 
   // Check cookie locale
   const cookieLocale = req.cookies.get(localeCookieName);
-  if (cookieLocale?.value && isValidLocale(cookieLocale?.value)) {
+  if (cookieLocale?.value && GT.isValidLocale(cookieLocale?.value)) {
     const resetCookie = req.cookies.get(resetLocaleCookieName);
     if (resetCookie?.value) {
       // Add this back in when we support custom getLocale
@@ -354,11 +350,11 @@ export function getLocaleFromRequest(
   const referrerLocaleCookie = req.cookies.get(referrerLocaleCookieName);
   if (
     referrerLocaleCookie?.value &&
-    isValidLocale(referrerLocaleCookie.value) &&
+    GT.isValidLocale(referrerLocaleCookie.value) &&
     !clearResetCookie
   ) {
     const referrerLocale = referrerLocaleCookie.value;
-    if (determineLocale([referrerLocale], approvedLocales)) {
+    if (GT.determineLocale([referrerLocale], approvedLocales)) {
       candidates.push(referrerLocale);
     }
   }
@@ -378,10 +374,10 @@ export function getLocaleFromRequest(
 
   // determine userLocale
   const unstandardizedUserLocale =
-    determineLocale(candidates.filter(isValidLocale), approvedLocales) ||
+    GT.determineLocale(candidates.filter(GT.isValidLocale), approvedLocales) ||
     defaultLocale;
   const userLocale = gtServicesEnabled
-    ? standardizeLocale(unstandardizedUserLocale)
+    ? GT.standardizeLocale(unstandardizedUserLocale)
     : unstandardizedUserLocale;
 
   return {

@@ -1,5 +1,5 @@
 import { cookies, headers } from 'next/headers';
-import { determineLocale } from 'generaltranslation';
+import GT from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
 
 /**
@@ -45,7 +45,7 @@ export async function getNextLocale(
     // add defaultLocale just in case there are no matches
     preferredLocales.push(defaultLocale);
 
-    return determineLocale(preferredLocales, locales) || defaultLocale;
+    return GT.determineLocale(preferredLocales, locales) || defaultLocale;
   })();
 
   return userLocale;

@@ -1,13 +1,29 @@
-import { formatDateTime } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
-import { getLocale, useLocale } from '../request/getLocale';
+import { useLocale } from '../request/getLocale';
+import React from 'react';
 
+/**
+ * The `<DateTime>` component renders a formatted date or time string, allowing customization of the name, default value, and formatting options.
+ * It utilizes the current locale and optional format settings to display the date.
+ *
+ * @example
+ * ```jsx
+ * <DateTime>
+ *    {new Date()}
+ * </DateTime>
+ * ```
+ *
+ * @param {Date} [children] - Optional content to render inside the component.
+ * @param {string[]} [locales] - Optional locales to use for date formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
+ * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
+ * @returns {JSX.Element} The formatted date or time component.
+ */
 function DateTime({
   children,
   locales,
   options = {},
 }: {
-  children?: React.ReactNode;
+  children: Date;
   name?: string;
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
   locales?: string[];
@@ -16,30 +32,12 @@ function DateTime({
     locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }
 
-  let final;
-  let dateValue: Date | undefined;
-  const defaultValue = children;
-  if (typeof defaultValue === 'number') {
-    dateValue = new Date(defaultValue);
-  } else if (typeof defaultValue === 'string') {
-    dateValue = new Date(defaultValue);
-  } else if (defaultValue instanceof Date) {
-    dateValue = defaultValue;
-  }
+  const gt = getI18NConfig().getGTClass();
 
-  if (typeof dateValue !== 'undefined' && isNaN(dateValue.getTime())) {
-    throw new Error(
-      `DateTime Error -- Invalid date format: "${defaultValue}". Please use a Date object, valid date string, or number.`
-    );
-  }
-
-  if (typeof dateValue !== 'undefined') {
-    final = formatDateTime(dateValue, { locales, ...options }).replace(
-      /[\u200F\u202B\u202E]/g,
-      ''
-    );
-  }
-  return <>{final}</>;
+  const result = gt
+    .formatDateTime(children, { locales, ...options })
+    .replace(/[\u200F\u202B\u202E]/g, '');
+  return <>{result}</>;
 }
 
 DateTime.gtTransformation = 'variable-datetime';

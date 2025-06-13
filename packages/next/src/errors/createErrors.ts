@@ -1,6 +1,6 @@
 // ---- ERRORS ---- //
 
-import { getLocaleProperties } from 'generaltranslation';
+import GT from 'generaltranslation';
 
 export const remoteTranslationsError =
   'gt-next Error: fetching remote translation.';
@@ -82,7 +82,7 @@ export const createInvalidDictionaryEntryWarning = (id: string) =>
 export const createUnsupportedLocalesWarning = (locales: string[]) =>
   `gt-next: The following locales are currently unsupported by our service: ${locales
     .map((locale) => {
-      const { name } = getLocaleProperties(locale);
+      const { name } = GT.getLocaleProperties(locale);
       return `${locale} (${name})`;
     })
     .join(', ')}`;

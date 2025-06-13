@@ -5,7 +5,7 @@ import {
   DictionaryTranslationOptions,
 } from './types';
 import { TranslateContentCallback, TranslateChildrenCallback } from './runtime';
-import { GT } from 'generaltranslation';
+import GT from 'generaltranslation';
 
 export type GTContextType = {
   gt: GT;

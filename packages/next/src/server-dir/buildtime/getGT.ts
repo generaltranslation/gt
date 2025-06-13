@@ -35,8 +35,6 @@ export async function getGT(): Promise<
     ? await I18NConfig.getCachedTranslations(locale)
     : undefined;
 
-  const renderSettings = I18NConfig.getRenderSettings();
-
   // ---------- THE t() METHOD ---------- //
 
   /**
