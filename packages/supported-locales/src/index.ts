@@ -1,9 +1,5 @@
 import supportedLocales from './supportedLocales';
-import {
-  getLocaleProperties,
-  isValidLocale,
-  standardizeLocale,
-} from 'generaltranslation';
+import GT from 'generaltranslation';
 
 /**
  * @function getSupportedLocale
@@ -20,11 +16,11 @@ import {
  */
 export function getSupportedLocale(locale: string): string | null {
   // Validate and standardize
-  if (!isValidLocale(locale)) return null;
-  locale = standardizeLocale(locale);
+  if (!GT.isValidLocale(locale)) return null;
+  locale = GT.standardizeLocale(locale);
 
   // Check if there's support for the general language code
-  const { languageCode, ...codes } = getLocaleProperties(locale);
+  const { languageCode, ...codes } = GT.getLocaleProperties(locale);
 
   if (supportedLocales[languageCode]?.length) {
     const exactSupportedLocales = supportedLocales[languageCode];
@@ -58,7 +54,7 @@ export function getSupportedLocale(locale: string): string | null {
       getMatchingCode({ locale, languageCode, ...codes }) ||
       getMatchingCode({
         locale: languageCode,
-        ...getLocaleProperties(languageCode),
+        ...GT.getLocaleProperties(languageCode),
       });
     return matchingCode;
   }

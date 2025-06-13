@@ -1,7 +1,3 @@
-import {
-  renderContentToString,
-  splitStringToContent,
-} from 'generaltranslation';
 import { hashJsxChildren } from 'generaltranslation/id';
 import { useCallback } from 'react';
 import {
@@ -10,7 +6,7 @@ import {
   RenderMethod,
 } from '../../types/types';
 import { TranslateContentCallback } from '../../types/runtime';
-import { Content } from 'generaltranslation/internal';
+import GT from 'generaltranslation';
 
 export default function useCreateInternalUseGTFunction(
   translations: TranslationsObject | null,
@@ -41,17 +37,12 @@ export default function useCreateInternalUseGTFunction(
       // Check: reject invalid content
       if (!contentString || typeof contentString !== 'string') return '';
 
-      // Parse content
-      const source = splitStringToContent(contentString);
-
       // Render method
-      const renderContent = (content: Content, locales: string[]) => {
-        return renderContentToString(
-          content,
+      const renderContent = (message: string, locales: string[]) => {
+        return GT.formatMessage(message, {
           locales,
-          options.variables,
-          options.variablesOptions
-        );
+          variables: options.variables,
+        });
       };
 
       // ----- CHECK TRANSLATIONS ----- //
@@ -69,7 +60,7 @@ export default function useCreateInternalUseGTFunction(
       ) {
         // Calculate hash
         hash = hashJsxChildren({
-          source,
+          source: contentString,
           ...(options?.context && { context: options.context }),
           ...(id && { id }),
           dataFormat: 'JSX',
@@ -85,12 +76,12 @@ export default function useCreateInternalUseGTFunction(
 
       // Render fallback when tx not required or error
       if (!translationRequired || translationEntry?.state === 'error') {
-        return renderContent(source, [defaultLocale]);
+        return renderContent(contentString, [defaultLocale]);
       }
 
       // Render success
       if (translationEntry?.state === 'success') {
-        return renderContent(translationEntry.target as Content, [
+        return renderContent(translationEntry.target as string, [
           locale,
           defaultLocale,
         ]);
@@ -101,12 +92,12 @@ export default function useCreateInternalUseGTFunction(
 
       // Check if runtime translation is enabled
       if (!runtimeTranslationEnabled) {
-        return renderContent(source, [defaultLocale]);
+        return renderContent(contentString, [defaultLocale]);
       }
 
       // Translate Content
       registerContentForTranslation({
-        source,
+        source: contentString,
         targetLocale: locale,
         metadata: {
           ...(options?.context && { context: options.context }),
@@ -117,12 +108,12 @@ export default function useCreateInternalUseGTFunction(
 
       // Loading behavior
       if (renderSettings.method === 'replace') {
-        return renderContent(source, [defaultLocale]);
+        return renderContent(contentString, [defaultLocale]);
       } else if (renderSettings.method === 'skeleton') {
         return '';
       }
       return dialectTranslationRequired // default behavior
-        ? renderContent(source, [defaultLocale])
+        ? renderContent(contentString, [defaultLocale])
         : '';
     },
     [

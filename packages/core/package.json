@@ -43,6 +43,7 @@
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.1",
     "@types/crypto-js": "^4.2.2",
@@ -57,7 +58,8 @@
   },
   "dependencies": {
     "crypto-js": "^4.2.0",
-    "fast-json-stable-stringify": "^2.1.0"
+    "fast-json-stable-stringify": "^2.1.0",
+    "intl-messageformat": "^10.7.16"
   },
   "exports": {
     ".": {

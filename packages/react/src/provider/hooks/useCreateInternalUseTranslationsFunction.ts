@@ -14,12 +14,8 @@ import {
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
 } from '../../errors/createErrors';
-import {
-  renderContentToString,
-  splitStringToContent,
-} from 'generaltranslation';
 import { hashJsxChildren } from 'generaltranslation/id';
-import { Content } from 'generaltranslation/internal';
+import GT from 'generaltranslation';
 import { TranslateContentCallback } from '../../types/runtime';
 
 export default function useCreateInternalUseTranslationsFunction(
@@ -63,27 +59,22 @@ export default function useCreateInternalUseTranslationsFunction(
       // Check: reject invalid content
       if (!entry || typeof entry !== 'string') return '';
 
-      // Parse content
-      const source = splitStringToContent(entry);
-
       // Render method
-      const renderContent = (content: Content, locales: string[]) => {
-        return renderContentToString(
-          content,
+      const renderMessage = (message: string, locales: string[]) => {
+        return GT.formatMessage(message, {
           locales,
-          options.variables,
-          options.variablesOptions
-        );
+          variables: options.variables,
+        });
       };
 
       // Check: translation not required
-      if (!translationRequired) return renderContent(source, [defaultLocale]);
+      if (!translationRequired) return renderMessage(entry, [defaultLocale]);
 
       // ----- CHECK TRANSLATIONS ----- //
 
       // Get hash
       const hash = hashJsxChildren({
-        source,
+        source: entry,
         ...(metadata?.context && { context: metadata.context }),
         id,
         dataFormat: 'JSX',
@@ -94,14 +85,14 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Check translation successful
       if (translationEntry?.state === 'success') {
-        return renderContent(translationEntry.target as Content, [
+        return renderMessage(translationEntry.target as string, [
           locale,
           defaultLocale,
         ]);
       }
 
       if (translationEntry?.state === 'error') {
-        return renderContent(source, [defaultLocale]);
+        return renderMessage(entry, [defaultLocale]);
       }
 
       // ----- TRANSLATE ON DEMAND ----- //
@@ -109,12 +100,12 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Check if runtime translation is enabled
       if (!runtimeTranslationEnabled) {
-        return renderContent(source, [defaultLocale]);
+        return renderMessage(entry, [defaultLocale]);
       }
 
       // Translate Content
       registerContentForTranslation({
-        source,
+        source: entry,
         targetLocale: locale,
         metadata: {
           ...(metadata?.context && { context: metadata.context }),
@@ -125,12 +116,12 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Loading behavior
       if (renderSettings.method === 'replace') {
-        return renderContent(source, [defaultLocale]);
+        return renderMessage(entry, [defaultLocale]);
       } else if (renderSettings.method === 'skeleton') {
         return '';
       }
       return dialectTranslationRequired // default behavior
-        ? renderContent(source, [defaultLocale])
+        ? renderMessage(entry, [defaultLocale])
         : '';
     },
     [

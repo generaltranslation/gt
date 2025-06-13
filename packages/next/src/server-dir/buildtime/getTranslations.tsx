@@ -14,10 +14,7 @@ import {
 } from '../../errors/createErrors';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
-import {
-  renderContentToString,
-  splitStringToContent,
-} from 'generaltranslation';
+import GT from 'generaltranslation';
 import { hashJsxChildren } from 'generaltranslation/id';
 import use from '../../utils/use';
 
@@ -107,21 +104,16 @@ export async function getTranslations(
     // Validate entry
     if (!entry || typeof entry !== 'string') return '';
 
-    // Parse content
-    const source = splitStringToContent(entry);
-
     // Render Method
-    const renderContent = (content: any, locales: string[]) => {
-      return renderContentToString(
-        content,
+    const renderContent = (message: string, locales: string[]) => {
+      return GT.formatMessage(message, {
         locales,
-        options.variables,
-        options.variablesOptions
-      );
+        variables: options.variables,
+      });
     };
 
     // Check: translation required
-    if (!translationRequired) return renderContent(source, [defaultLocale]);
+    if (!translationRequired) return renderContent(entry, [defaultLocale]);
 
     // ---------- DICTIONARY TRANSLATIONS ---------- //
 
@@ -130,18 +122,16 @@ export async function getTranslations(
 
     // Render dictionaryTranslation
     if (dictionaryTranslation) {
-      return renderContentToString(
-        splitStringToContent(dictionaryTranslation),
-        [locale, defaultLocale],
-        options.variables,
-        options.variablesOptions
-      );
+      return GT.formatMessage(dictionaryTranslation, {
+        locales: [locale, defaultLocale],
+        variables: options.variables,
+      });
     }
 
     // ---------- TRANSLATION ---------- //
 
     const hash = hashJsxChildren({
-      source,
+      source: entry,
       ...(metadata?.context && { context: metadata?.context }),
       id,
       dataFormat: 'JSX',
@@ -152,23 +142,26 @@ export async function getTranslations(
 
     // If a translation already exists
     if (translationEntry?.state === 'success')
-      return renderContent(translationEntry.target, [locale, defaultLocale]);
+      return renderContent(translationEntry.target as string, [
+        locale,
+        defaultLocale,
+      ]);
 
     // If a translation errored
     if (translationEntry?.state === 'error')
-      return renderContent(source, [defaultLocale]);
+      return renderContent(entry, [defaultLocale]);
 
     // ----- CREATE TRANSLATION ----- //
     // Since this is buildtime string translation, it's dev only
 
     if (!I18NConfig.isDevelopmentApiEnabled()) {
       console.warn(createDictionaryTranslationError(id));
-      return renderContent(source, [defaultLocale]);
+      return renderContent(entry, [defaultLocale]);
     }
 
     // Translate on demand
     I18NConfig.translateContent({
-      source,
+      source: entry,
       targetLocale: locale,
       options: {
         ...(metadata?.context && { context: metadata?.context }),
@@ -182,13 +175,13 @@ export async function getTranslations(
 
     // Loading behavior
     if (renderSettings.method === 'replace') {
-      return renderContent(source, [defaultLocale]);
+      return renderContent(entry, [defaultLocale]);
     } else if (renderSettings.method === 'skeleton') {
       return '';
     }
 
     // Default is returning source, rather than returning a loading state
-    return renderContent(source, [defaultLocale]);
+    return renderContent(entry, [defaultLocale]);
   };
 
   return t;

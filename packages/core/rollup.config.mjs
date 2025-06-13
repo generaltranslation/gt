@@ -1,6 +1,7 @@
 import typescript from '@rollup/plugin-typescript';
 import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
+import resolve from '@rollup/plugin-node-resolve';
 import { dts } from 'rollup-plugin-dts';
 
 export default [
@@ -22,6 +23,7 @@ export default [
       },
     ],
     plugins: [
+      resolve({ extensions: ['.js', '.mjs', '.ts'] }), // add intl-messageformat into the bundle
       typescript({ tsconfig: './tsconfig.json' }),
       commonjs(), // Handle CommonJS dependencies
       terser(), // Minification

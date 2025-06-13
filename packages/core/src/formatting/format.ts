@@ -1,5 +1,25 @@
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
+import IntlMessageFormat from 'intl-messageformat';
+
+/**
+ * Formats a message according to the specified locales and options.
+ *
+ * @param {string} message - The message to format.
+ * @param {string | string[]} [locales='en'] - The locales to use for formatting.
+ * @param {Record<string, any>} [variables={}] - The variables to use for formatting.
+ * @returns {string} The formatted message.
+ * @internal
+ */
+export function _formatMessage(
+  message: string,
+  locales: string | string[] = libraryDefaultLocale,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  variables: Record<string, any> = {}
+): string {
+  const messageFormat = new IntlMessageFormat(message, locales);
+  return messageFormat.format(variables);
+}
 
 /**
  * Formats a number according to the specified locales and options.
