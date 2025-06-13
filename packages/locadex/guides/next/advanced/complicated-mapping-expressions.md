@@ -1,6 +1,6 @@
 # Internationalization Patterns for Dynamic Content
 
-**Objective**: Implement internationalization for mapping expressions using `<T>`, `useGT()`/`getGT()`, and `useDict()`/`getDict()`.
+**Objective**: Implement internationalization for mapping expressions using `<T>`, `useGT()`, and `useDict()`/`getDict()`.
 
 ## Core Principles
 
@@ -44,18 +44,15 @@ const MyComponent = () => {
 
 ### String Translation Methods
 
-#### `useGT()` and `getGT()` Pattern
+#### `useGT()` Pattern
 
 **Implementation**: Translate individual strings within data structures before mapping:
 
 ```jsx
-import { useGT } from "gt-next/client";
-import { getGT } from "gt-next/server";
+import { useGT } from "gt-next";
 
 const MyComponent = () => {
-  // Client-side: const t = useGT();
-  // Server-side: const t = await getGT();
-  const t = useGT(); // or await getGT()
+  const t = useGT();
   
   const someList = [
     t('Hello Archie'),
@@ -154,7 +151,7 @@ const MyComponent = () => {
 
 **Implementation**:
 ```jsx
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 const MyComponent = () => {
   const t = useGT();

@@ -4,7 +4,6 @@ RULES:
 
 - NEVER INTERNATIONALIZE ERROR STRINGS OR OTHER FUNCTIONAL STRINGS
 - Always use `<T>` for HTML/JSX content
-- Always add `'use client'` when working with `useGT()` and `useDict()`
 
 ## Available Methods
 
@@ -14,10 +13,10 @@ Three methods exist for internationalizing client-side components:
 - `useGT()` hook (client-side specific) (For string content)
 - `useDict()` hook (client-side specific) (For string content)
 
-**Imports:** The `useGT()` and `useDict()` hooks are exported from `gt-next/client`.
+**Imports:** The `useGT()` and `useDict()` hooks are exported from `gt-next`.
 
 ```tsx
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 ```
 
 The `<T>` component is exported from `gt-next`.
@@ -30,13 +29,13 @@ import { T } from 'gt-next';
 
 - If a component is explicitly marked as async, this guide does NOT apply.
   - You should refer to the server-side guide instead.
-- If you decided to use `useGT()` or `useDict()`, the file MUST have the "use client" directive at the top of the file.
+- If you decided to use `useDict()`, the file MUST have the "use client" directive at the top of the file.
   - If it does not, you must add it.
 
 ## useGT() Hook
 
 **Purpose**: Client-side string translation (preferred method)
-**Scope**: Client components only
+**Scope**: Client and server components. (Not including async functions)
 
 ### Basic Pattern
 
@@ -52,8 +51,7 @@ export default function Example() {
 **After internationalization:**
 
 ```jsx
-'use client'; // Must always add this directive when adding the useGT hook
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 export default function Example() {
   const t = useGT();
   const greeting = t('Hello, World!');
@@ -83,8 +81,7 @@ export default function Example() {
 **After internationalization:**
 
 ```jsx
-'use client'; // Must always add this directive when adding the useGT hook
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 import { Dialog } from '@/primitives/Dialog';
 
 export default function Example() {
@@ -121,8 +118,7 @@ export const nestedContent = {
 **After internationalization:**
 
 ```jsx
-'use client'; // Must always add this directive when adding the useGT hook
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 // Example 1
 export const useContent = () => {
   const t = useGT();
@@ -150,8 +146,7 @@ export const useNestedContent = () => {
 **Example with ambiguous word:**
 
 ```jsx
-'use client'; // Must always add this directive when adding the useGT hook
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 export default function NotificationComponent() {
   const t = useGT();
   return;

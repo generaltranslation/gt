@@ -50,7 +50,7 @@ export default function serverComponent() {
 
 1. Convert the constant into a function that takes `t()` as a parameter and begins with the word "get" (`SOME_STRING` -> `getSomeString()`)
 2. Wrap all of the strings in the `t()` function.
-3. import `useGT()` and `getGT()` to their respective files and add the `'use client'` directive for the client side components.
+3. import `useGT()` to the respective files
 
 ```tsx title="content.ts"
 import { InlineTranslationOptions } from 'gt-next/types';
@@ -70,9 +70,8 @@ It cannot be called on a variable, such as `t(SOME_STRING)`
 **Updated Client component**:
 
 ```jsx title="client-component.tsx"
-'use client';
 import SOME_STRING from './content.ts';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 export default function clientComponent() {
   const [state, setState] = useState();
   const t = useGT();
@@ -84,19 +83,15 @@ export default function clientComponent() {
 
 ```jsx title="server-component.tsx"
 import SOME_STRING from './content.ts';
-import { getGT } from 'gt-next/server';
+import { useGT } from 'gt-next';
 export default async function serverComponent() {
-  const t = await getGT();
+  const t = await useGT();
   return <>{SOME_STRING(t)}</>;
 }
 ```
 
 **Common Pitfalls**
-
-- importing `useGT()` from `"gt-next"` instead of `"gt-next/client"`
-- importing `getGT()` from `"gt-next"` instead of `"gt-next/server"`
-- forgetting the `"use client"` directive in the client component file
-- adding a `"use server"` in the server component file
+To be added...
 
 ### Pattern 2: Complex Data Structure Shared Between Client and Server
 
@@ -164,7 +159,7 @@ export default function serverComponent() {
 
 1. Convert the constant into a function that takes `t()` as a parameter and begins with the word "get" (`navMap` -> `getNavMap()`)
 2. Wrap all of the strings in the `t()` function.
-3. import `useGT()` and `getGT()` to their respective files and add the `'use client'` directive for the client side components.
+3. import `useGT()`
 
 ```jsx title="navMap.ts"
 import { InlineTranslationOptions } from "gt-next/types";
@@ -204,10 +199,9 @@ export default getNavMap;
 **Client component**:
 
 ```jsx title="client-component.tsx"
-'use client';
 import getNavMap from './navMap';
 import NavItem from './NavItem';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 export default function clientComponent() {
   const t = useGT();
   const navMap = getNavMap(t);
@@ -226,9 +220,9 @@ export default function clientComponent() {
 ```jsx title="server-component.tsx"
 import getNavMap from "./navMap";
 import NavItem from "./NavItem";
-import { getGT } from "gt-next/server";
+import { useGT } from "gt-next";
 export default function serverComponent() {
-  const t = await getGT();
+  const t = await useGT();
   const navMap = getNavMap(t);
   return (
     <>
@@ -290,8 +284,7 @@ export function ServerExample() {
 5. Pass `t()` when calling the function in both components
 
 ```jsx
-import { useGT } from 'gt-next/client';
-import { getGT } from 'gt-next/server';
+import { useGT } from 'gt-next';
 
 function getErrorMessage(errorType, t: (string: string, options?: InlineTranslationOptions) => string) {
   switch (errorType) {
@@ -305,7 +298,6 @@ function getErrorMessage(errorType, t: (string: string, options?: InlineTranslat
 }
 
 // Client component usage
-'use client';
 export function ClientExample() {
   const [error, setError] = useState('network');
   const t = useGT();
@@ -316,7 +308,7 @@ export function ClientExample() {
 // Server component usage
 export async function ServerExample() {
   const error = 'network';
-  const t = await getGT();
+  const t = await useGT();
   const message = getErrorMessage(error, t);
   return <div>{message}</div>;
 }
@@ -365,7 +357,7 @@ export function ServerComponent() {
 
 1. Modify the function in the utils file to accept `t()` as a parameter
 2. Use `t()` for string translations within the function
-3. Add `'use client'` directive and import `useGT()` for client component
+3. import `useGT()` for client component
 4. Import `getGT()` and make server component async
 5. Pass `t()` when calling the imported function from both components
 
@@ -385,8 +377,7 @@ export function formatStatus(status, t: (string: string, options?: InlineTransla
 ```
 
 ```jsx title="ClientComponent.tsx"
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 import { formatStatus } from './utils';
 
 export function ClientComponent() {
@@ -508,8 +499,7 @@ export function validateUserData(userData, t: (string: string, options?: InlineT
 **Client Component Usage**:
 
 ```jsx title="ClientRegistration.tsx"
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 import { processUserRegistration } from './userActions';
 
 export function ClientRegistration() {
@@ -544,7 +534,6 @@ export async function ServerRegistration() {
 
 - Forgetting to add the `t` parameter to the function signature
 - Not passing `t()` when calling the function
-- **Client-specific pitfalls**: Importing `useGT()` from `'gt-next'` instead of `'gt-next/client'`, forgetting `'use client'` directive
 - **Server-specific pitfalls**: Importing `getGT()` from `'gt-next'` instead of `'gt-next/server'`, not making the component async when using `getGT()`
 - Making utility functions async when they shouldn't be (only server component functions should be made async)
 - Breaking the `t()` parameter chain when passing through multiple function calls

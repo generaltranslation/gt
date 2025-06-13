@@ -59,8 +59,7 @@ export default function MyComponent() {
 **Option B - Hook-based**:
 
 ```tsx
-'use client'; // Always add 'use client' when working with the useGT() hook
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 export default function MyComponent() {
   const t = useGT();
   return <div>{t('Hello, world!')}</div>;
@@ -73,7 +72,7 @@ export default function MyComponent() {
 
 ### Primary Pattern Preference
 
-**Rule**: Prioritize `useGT()` hook, `getGT()` function, and `<T>` component usage whenever possible.
+**Rule**: Prioritize `useGT()` hook and `<T>` component usage whenever possible.
 
 **Benefits**:
 

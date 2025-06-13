@@ -1,6 +1,6 @@
 # Conditional Content Internationalization Patterns
 
-**Objective**: Transform ternary operators and conditional rendering into translatable patterns using `<T>`, `<Branch>`, `<Plural>`, `<Var>`, `useGT()`/`getGT()`, and `useDict()`/`getDict()`.
+**Objective**: Transform ternary operators and conditional rendering into translatable patterns using `<T>`, `<Branch>`, `<Plural>`, `<Var>`, `useGT()`, and `useDict()`/`getDict()`.
 
 ## Core Constraint: Dynamic Content in `<T>` Components
 
@@ -9,7 +9,6 @@
 **Rules**:
 
 - `<T>` components cannot contain dynamic expressions. Use `<Branch>` for conditional JSX within `<T>`.
-- When working with `useGT()` always add a `"use client"` directive.
 
 **Non-internationalized conditional**:
 
@@ -86,8 +85,7 @@ const getCountMessage = ({ count }) => {
 **Internationalized implementation**:
 
 ```jsx
-'use client'; // TIP: always add the 'use client' directive when importing useGT()
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 const getCountMessage = ({ count }) => {
   const t = useGT();
   return count === 1
@@ -171,8 +169,7 @@ const getItemsFoundMessage = ({ items }) => {
 Internationalized
 
 ```jsx
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 const getItemsFoundMessage = ({ items }) => {
   const t = useGT();

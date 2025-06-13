@@ -1,10 +1,10 @@
 # String Interpolation Internationalization Patterns
 
-**Objective**: Transform template literal strings with dynamic variables into translatable strings using `useGT()`/`getGT()` and `useDict()`/`getDict()`.
+**Objective**: Transform template literal strings with dynamic variables into translatable strings using `useGT()` and `useDict()`/`getDict()`.
 
 ## Core Pattern: Variable Injection
 
-### `useGT()`/`getGT()` Method
+### `useGT()` Method
 
 **Transform**: Template literals → Translatable strings with variable placeholders
 
@@ -37,12 +37,10 @@ const MyComponent = ({ name, count }) => {
 **Option B** the `useGT()` hook:
 
 ```jsx
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 const MyComponent = ({ name, count }) => {
-  const t = useGT(); // Client-side
-  // const t = await getGT(); // Server-side
+  const t = useGT();
   return (
     <div>
       {t('Welcome {name}, you have {count} items', {
@@ -108,11 +106,10 @@ const MyComponent = ({ username, role }) => {
 **Implementation**:
 
 ```jsx
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 const MyComponent = ({ firstName, lastName, age, city }) => {
-  const t = useGT(); // Client-side
-  // const t = await getGT(); // Server-side
+  const t = useGT();
+
   return (
     <div>
       {t('{firstName} {lastName} is {age} years old and lives in {city}', {

@@ -8,10 +8,10 @@ Use `useGT()` and `getGT()` to internationalize strings.
 - If you see strings present in HTML that you think need pluralization, do not use strings. Instead use the `<T>` component and the `<Plural>` component. Read the "basic_next-branches" for instructions.
 - NEVER internationalize functional strings (error strings, logical strings, etc.) that could jeporadize the functionality of the application.
 
-**Import:** The `useGT()` and `getGT()` functions are exported from `gt-next/client` and `gt-next/server` respectively.
+**Import:** The `useGT()` and `getGT()` functions are exported from `gt-next` and `gt-next/server` respectively.
 
 ```tsx
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 import { getGT } from 'gt-next/server';
 ```
 
@@ -36,8 +36,7 @@ function Greeting() {
 After:
 
 ```jsx
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 function Greeting() {
   const t = useGT();
@@ -74,8 +73,7 @@ export async function Greeting() {
 Add `context` when content meaning is ambiguous:
 
 ```jsx
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 function Greeting() {
   const t = useGT();

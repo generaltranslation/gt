@@ -10,8 +10,7 @@ Apply this pattern when you encounter variable declarations (`let`, `const`, or 
 2. **Minimal footprint**: Keep internationalized content in the same file as the original declaration
 3. **Simple cases**: Move variables into component functions and use `useGT()` hook
 4. **Complex cases**: Create custom hooks to access internationalized strings
-5. **Always add "use client"**: Always add the "use client" directive when working with `useGT()`
-6. **For functions, always pass t**: For function declarations, always pass `t()` as a parameter
+5. **For functions, always pass t**: For function declarations, always pass `t()` as a parameter
 
 Rule of thumb for implementation:
 
@@ -39,11 +38,9 @@ export function Example() {
 1. Move the variable inside the component
 2. Add the `useGT()` hook.
 3. Translate with the `t()` function
-4. Add the `"use client"` directive
 
 ```jsx
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 export function Example() {
   const [state, setState] = useState();
@@ -76,15 +73,13 @@ export function Example2() {
 
 **Solution**: Convert to custom hook for reusability
 
-1. Add the `"use client"` directive
-2. Import `useGT()` from `'gt-next/client'`
-3. Define a new hook with the old variable name (i.e., `OUTSIDE_CONST` becomes `useOutsideConst()`)
-4. Add the `useGT()` hook.
-5. Translate with the `t()` function
+1. Import `useGT()` from `'gt-next'`
+2. Define a new hook with the old variable name (i.e., `OUTSIDE_CONST` becomes `useOutsideConst()`)
+3. Add the `useGT()` hook.
+4. Translate with the `t()` function
 
 ```jsx
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 const useOutsideConst = () => {
   const t = useGT();
@@ -176,8 +171,7 @@ export default function Example2() {
 **Solution**: Convert data structure to custom hook with internationalization
 
 1. Turn the constant into a function that takes `t()` as a parameter, adding the word get infront (i.e., `navMap` becomes `getNavMap()`)
-2. Add the `"use client"` directive
-3. For each use, import `useGT()` from `gt-next/client` and import the new function you defined
+3. For each use, import `useGT()` from `gt-next` and import the new function you defined
 4. Call the `useGT()` hook
 5. Pass the `t()` function to the newly defined function
 
@@ -216,7 +210,6 @@ export default useNavMap;
 **Updated Components**: Components now call the hook to get internationalized data
 
 ```jsx title="Example1.tsx"
-'use client';
 import { useGT } from 'gt-next';
 
 import getNavMap from './navMap';
@@ -235,7 +228,6 @@ export default function Example1() {
 ```
 
 ```jsx title="Example2.tsx"
-'use client';
 import { useGT } from 'gt-next';
 
 import getNavMap from './navMap';
@@ -262,7 +254,6 @@ export default function Example2() {
 - Not passing the `t` function to the newly defined getter function
 - Forgetting to add the word `get` at the beginning of the function
 - Treating the function like an object instead of a function (syntax error)
-- Adding the `'use client'` hook in the file where the newly defined function lives (`"use client"` directive should only be for the components invoking the function).
 
 ### Pattern 4: Cross-File String Constants
 
@@ -284,11 +275,10 @@ export default function MyComponent() {
 
 **Solution**: Convert to function that uses `useGT()` in original file
 
-1. Add the `"use client"` directive
-2. Import `useGT()` from `'gt-next/client'`
-3. Define a new hook with the old variable name (i.e., `OUTSIDE_CONST` becomes `useOutsideConst()`)
-4. Add the `useGT()` hook.
-5. Translate with the `t()` function
+1. Import `useGT()` from `'gt-next'`
+2. Define a new hook with the old variable name (i.e., `OUTSIDE_CONST` becomes `useOutsideConst()`)
+3. Add the `useGT()` hook.
+4. Translate with the `t()` function
 
 ```jsx
 
@@ -301,7 +291,7 @@ export const getSomeString = (t: (string: string, options?: InlineTranslationOpt
 import { getSomeString } from './constants';
 
 export default function MyComponent() {
-  import { useGT } from 'gt-next/client';
+  import { useGT } from 'gt-next';
   const t = useGT();
   const some_string = getSomeString();
   return <>{some_string}</>;
@@ -340,15 +330,13 @@ export function Example() {
 
 **Solution**: Pass `t()` function as parameter to the function
 
-1. Add the `"use client"` directive
-2. Import `useGT()` from `'gt-next/client'`
-3. Modify the function to accept `t()` as a parameter
-4. Use `t()` for string translations within the function
-5. Pass `t()` when calling the function in the component
+1. Import `useGT()` from `'gt-next'`
+2. Modify the function to accept `t()` as a parameter
+3. Use `t()` for string translations within the function
+4. Pass `t()` when calling the function in the component
 
 ```jsx
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 function getErrorMessage(errorType, t: (string: string, options?: InlineTranslationOptions) => string) {
   switch (errorType) {
@@ -404,9 +392,8 @@ export function StatusComponent() {
 
 1. Modify the function in the utils file to accept `t()` as a parameter
 2. Use `t()` for string translations within the function
-3. Add the `"use client"` directive to the component file
-4. Import `useGT()` from `'gt-next/client'` in the component
-5. Pass `t()` when calling the imported function
+3. Import `useGT()` from `'gt-next'` in the component
+4. Pass `t()` when calling the imported function
 
 ```jsx title="utils.ts"
 export function formatStatus(status, t: (string: string, options?: InlineTranslationOptions) => string) {
@@ -424,8 +411,7 @@ export function formatStatus(status, t: (string: string, options?: InlineTransla
 ```
 
 ```jsx title="StatusComponent.tsx"
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 import { formatStatus } from './utils';
 
 export function StatusComponent() {
@@ -441,6 +427,5 @@ export function StatusComponent() {
 
 - Forgetting to add the `t` parameter to the function signature
 - Not passing `t()` when calling the function
-- Forgetting to add `"use client"` directive when using `useGT()`
 - Modifying functional strings that shouldn't be translated (e.g., API keys, IDs)
 - Adding `"use client"` to utility files that should remain server-side compatible
