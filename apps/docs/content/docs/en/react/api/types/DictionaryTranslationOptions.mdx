@@ -6,12 +6,12 @@ description: API Reference for the DictionaryTranslationOptions type
 ## Overview
 
 The `DictionaryTranslationOptions` type is used to pass variables to dictionary entries and specify their render behavior.
-It is used with [`useDict()`](/docs/react/api/dictionary/useDict) to pass variables to dictionary entries.
+It is used with [`useTranslations()`](/docs/react/api/dictionary/useTranslations) to pass variables to dictionary entries.
 
 
 <Callout>
   **Buildtime Translation:**
-  `useDict()` translations occur at buildtime; however, variables are never translated.
+  `useTranslations()` translations occur at buildtime; however, variables are never translated.
   Instead, they are inserted into the translation with formatting.
   Make sure to follow the [deployment guide here](/docs/next/tutorials/quickdeploy).
 </Callout>
@@ -69,10 +69,10 @@ export default dictionary;
 Next, we reference the variable:
 ```jsx title="Component.tsx"
 // [!code word:username]
-import { useDict } from 'gt-react';
+import { useTranslations } from 'gt-react';
 
 const Component = () => {
-  const d = useDict();
+  const d = useTranslations();
   return <div>{d('greeting.hello', { variables: { username : 'Brian123' } })}</div>;
 };
 ```
@@ -96,10 +96,10 @@ export default dictionary;
 Next, we reference the variable:
 ```jsx title="Component.tsx"
 // [!code word:account-balance]
-import { useDict } from 'gt-react';
+import { useTranslations } from 'gt-react';
 
 const Component = () => {
-  const d = useDict();
+  const d = useTranslations();
   return <div>
     { d(
       'account.balance',
@@ -122,5 +122,5 @@ const Component = () => {
 
 ### Next steps
  * See [dictionaries](/docs/react/guides/dictionaries) for more information on dictionaries and common practices.
- * See [`useDict()`](/docs/react/api/dictionary/useDict) for more information on dictionaries interface.
+ * See [`useTranslations()`](/docs/react/api/dictionary/useTranslations) for more information on dictionaries interface.
  * See [`Intl.NumberFormatOptions`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) and [`Intl.DateTimeFormatOptions`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat) for more information on formatting options.

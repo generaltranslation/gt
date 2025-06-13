@@ -47,7 +47,7 @@ This means that translation hot reloading will be disabled, and components witho
 In development, `gt-next` will first attempt to load translations in the same way as production.
 These translations are loaded into memory.
 
-When rendering a component (that uses `useGT()`, `<T>`, or `useDict()`) in a language different than the default, `gt-next` will do the following:
+When rendering a component (that uses `useGT()`, `<T>`, or `useTranslations()`) in a language different than the default, `gt-next` will do the following:
 
 1. If it detects a valid, stored translation for the given content, it will render the translation.
 2. If no translation is found, it will attempt to dynamically translate the content via the General Translation API.
@@ -61,7 +61,7 @@ When rendering a component (that uses `useGT()`, `<T>`, or `useDict()`) in a lan
   Additionally, the cache is unique to development sessions, so cached translations will not be used in production.
 </Callout>
 
-`gt-next` will detect changes to components that use `useGT()`, `<T>`, or `useDict()` and will dynamically translate the modified content via our API.
+`gt-next` will detect changes to components that use `useGT()`, `<T>`, or `useTranslations()` and will dynamically translate the modified content via our API.
 
 
 ## Production vs Development API Keys [#api-keys]
