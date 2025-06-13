@@ -13,7 +13,6 @@
 import {
   GTProvider,
   T,
-  Tx,
   Var,
   Num,
   Currency,
@@ -24,14 +23,17 @@ import {
 
 import {
   useGT,
+  useTranslations,
   useLocale,
   useLocales,
   useSetLocale,
   useDefaultLocale,
-  useDict,
-  LocaleSelector,
   useLocaleSelector,
+  useLocaleProperties,
+  LocaleSelector,
 } from 'gt-next/client';
+
+import { getGT, tx, Tx, getLocale, getTranslations } from 'gt-next/server';
 
 import { withGTConfig } from 'gt-next/config';
 ```

@@ -1,6 +1,9 @@
-## Variable Components Overview
+# Variable Components Overview
 
 Variable components wrap dynamic content like user names, numerical values, dates, and currencies. They format and render dynamic values according to the user's locale without requiring external translations.
+
+Variable components can be used as children of `<T>` components or as standalone components.
+When used as children of `<T>` components, the variable components are correctly formatted according to the user's locale.
 
 **Import:** The variable components are exported from `gt-next`.
 
@@ -67,7 +70,7 @@ The `<T>` component provides locale context and translates surrounding text whil
 
 ### `<Var>` - Dynamic Content Isolation
 
-**Basic Usage:** Always use with `<T>` for locale context.
+**Basic Usage:** Always use with `<T>` to isolate dynamic content from translation processing.
 
 ```jsx
 <T>
@@ -102,6 +105,8 @@ The `<T>` component provides locale context and translates surrounding text whil
 <Num>{quantity}</Num>
 ```
 
+**Rule:** Wrap all dynamic numbers in `<Num>` when using `<T>` components.
+
 ### `<Currency>` - Currency Formatting
 
 **Within `<T>`:** Requires `currency` prop for proper formatting.
@@ -117,6 +122,8 @@ The `<T>` component provides locale context and translates surrounding text whil
 ```jsx
 <Currency currency={'USD'}>{total}</Currency>
 ```
+
+**Rule:** Wrap all dynamic currency values in `<Currency>` when using `<T>` components.
 
 ### `<DateTime>` - Date/Time Formatting
 
@@ -134,23 +141,17 @@ The `<T>` component provides locale context and translates surrounding text whil
 <DateTime>{date}</DateTime>
 ```
 
+**Rule:** Wrap all dynamic date/time values in `<DateTime>` when using `<T>` components.
+
 ---
 
 ## Common Implementation Issues
 
-### Missing Required Props [#localization-options]
+### Missing Required Props
 
 **Critical:** `<Currency>` requires `currency` prop for proper symbol and formatting.
 
 **Optimization:** All formatting components accept optional props for custom locale behavior.
-
----
-
-## Key Principles
-
-- **Data Isolation:** Variable components isolate dynamic content from translation processing
-- **Privacy:** No data transmission to General Translation APIs
-- **Flexibility:** Use as child of `<T>` or standalone component
 
 ## API References
 
@@ -158,4 +159,3 @@ The `<T>` component provides locale context and translates surrounding text whil
 - [`<Num>`](/docs/next/api/components/num) - Number formatting options
 - [`<Currency>`](/docs/next/api/components/currency) - Currency formatting options
 - [`<DateTime>`](/docs/next/api/components/datetime) - Date/time formatting options
-- [Branching Components](/docs/next/guides/branches) - Conditional logic patterns

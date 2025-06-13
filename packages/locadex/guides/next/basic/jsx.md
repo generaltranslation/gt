@@ -30,22 +30,20 @@ function Greeting() {
 }
 ```
 
-# Context Prop
+## Context Prop
 
 Add `context` prop when content meaning is ambiguous:
 
 ```jsx
-<T context='toast, as in a pop-up notification'>
-  Click on the toast to dismiss it.
-</T>
+<T context='Crop, as in cropping an image'>Crop</T>
 ```
 
 RULES:
 
-- Provide context for words with multiple meanings (e.g., "toast" = bread vs notification).
-- Provide context when the additional context can help the translator understand the meaning of the content.
+- Provide context for words with multiple meanings (e.g., "crop" = cropping an image vs the food crop).
+- Provide context when the additional context can provide more information to the translator about the surrounding content, that is not obvious from the content itself.
 
-# Usage Rules
+## Usage Rules
 
 **USE `<T>` for:**
 
@@ -54,9 +52,11 @@ RULES:
 
 **DO NOT USE `<T>` for:** Raw dynamic content (unwrapped variables, expressions, conditionals)
 
+### Notes on Variable Components
+
 Variable components are safe for `<T>` because content is wrapped and sanitized. Variable component content is never translated directly by `<T>`.
 
-## Invalid Usage Examples (Raw Dynamic Content)
+### Invalid Usage Examples (Raw Dynamic Content)
 
 ```jsx
 <T>
@@ -82,35 +82,33 @@ Variable components are safe for `<T>` because content is wrapped and sanitized.
 </T>
 ```
 
-Solution: Wrap dynamic content in variable components or branching components, then use with `<T>`.
+**Solution: Wrap dynamic content in variable components or branching components, then use with `<T>`.**
 
-# Valid Usage Examples
+## Valid Usage Examples
 
-## HTML Content
+### HTML and JSX Content
 
 ```jsx
 // Before
 <p>Hello, world!</p>
+<Button>Click me!</Button>
 
 // After
 <T>
   <p>Hello, world!</p>
 </T>
-```
-
-## Simple JSX Content
-
-```jsx
-// Before
-<Button>Click me!</Button>
-
-// After
 <T>
+  <Button>Click me!</Button>
+</T>
+
+// Or, you can wrap both components with `<T>`
+<T>
+  <p>Hello, world!</p>
   <Button>Click me!</Button>
 </T>
 ```
 
-## Complex JSX Content
+### Complex JSX Content
 
 ```jsx
 // Before
@@ -148,11 +146,11 @@ Solution: Wrap dynamic content in variable components or branching components, t
 </T>
 ```
 
-NOTE: `<T>` handles any nested content within the same component.
+**NOTE: `<T>` handles any nested content within the same component.**
 
-# Common Pitfalls
+## Common Pitfalls and Solutions
 
-## Direct Descendants Only
+### Direct Descendants Only
 
 Rule: `<T>` only translates content directly between its tags. Content inside nested components is not translated.
 
@@ -174,7 +172,7 @@ export default function DisplayGreetings() {
 
 Only content literally between `<T>` tags is translated. The `<h1>` is translated, but `<UntranslatedContent>` is not.
 
-## Solution
+**Solution:**
 
 ```jsx
 // CORRECT - Each component wraps its own content
@@ -200,7 +198,7 @@ export default function DisplayGreetings() {
 }
 ```
 
-## Nested `<T>` Components
+### Nested `<T>` Components
 
 Rule: Never nest `<T>` components. This causes unexpected behavior and performance issues.
 
@@ -222,9 +220,9 @@ export default function NestedTranslation() {
 
 Solution: Remove the outer `<T>` component.
 
-## Raw Dynamic Content Error
+### Raw Dynamic Content Error
 
-CLI will error on raw dynamic content in `<T>`:
+Raw dynamic content in `<T>` will cause an error.
 
 ```jsx
 // WILL ERROR - Raw dynamic content
@@ -234,12 +232,12 @@ const username = 'John Doe';
 </T>;
 ```
 
-Solutions:
+**Solutions:**
 
 1. Wrap dynamic content in Variable Components or Branching Components, then use with `<T>`
-2. Use `<Tx>` component for on-demand translation
+2. Use `<Tx>` component for on-demand translation (**use only when necessary, and on server components**)
 
-## Implementing Variable contents incorrectly
+### Implementing Variable contents incorrectly
 
 The following syntax is wrong and was likely confused with the `useGT()` hook.
 
@@ -259,7 +257,7 @@ const username = 'John Doe';
 </T>;
 ```
 
-# Summary
+## Summary
 
 - Use `<T>` to internationalize static JSX content
 - Use `<T>` with dynamic content only when wrapped in Variable/Branching Components

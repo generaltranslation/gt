@@ -20,43 +20,28 @@ export const guides: Guide[] = [
   {
     id: 'basic_next-jsx',
     description:
-      'Basic guide for translating JSX and HTML content in a Next.js project.',
+      'Call this tool when you see content in JSX or HTML that needs to be internationalized.',
     path: 'guides/next/basic/jsx.md',
+    type: 'basic',
+  },
+  {
+    id: 'basic_next-strings',
+    description: `Call this tool when you see a string created by '', "", or \`\` that needs to be internationalized.`,
+    path: 'guides/next/basic/strings.md',
     type: 'basic',
   },
   {
     id: 'basic_next-branches',
     description:
-      'Basic guide for using branch components and dealing with conditional logic in or pluralization in JSX in a Next.js project.',
+      'Call this tool when you see a conditional statement or a pluralization statement that needs to be internationalized.',
     path: 'guides/next/basic/branches.md',
-    type: 'basic',
-  },
-  {
-    id: 'basic_next-strings',
-    description:
-      'Basic guide for how to use `useGT()` and `getGT()` to internationalize strings in a Next.js project.',
-    path: 'guides/next/basic/strings.md',
     type: 'basic',
   },
   {
     id: 'basic_next-variables',
     description:
-      'Basic guide for using internationalizing variable content (Currency, DateTime, Numbers, and other dynamic content) in a Next.js project.',
+      'Call this tool when you see variable content (Currency, DateTime, Numbers, and other dynamic content) that needs to be internationalized.',
     path: 'guides/next/basic/variables.md',
-    type: 'basic',
-  },
-  {
-    id: 'basic_next-client-side-components',
-    description:
-      'Basic guide on how to internationalize client-side components.',
-    path: 'guides/next/basic/client-side-components.md',
-    type: 'basic',
-  },
-  {
-    id: 'basic_next-server-side-components',
-    description:
-      'Basic guide on how to internationalize server-side components.',
-    path: 'guides/next/basic/server-side-components.md',
     type: 'basic',
   },
   {

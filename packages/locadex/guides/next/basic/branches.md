@@ -1,4 +1,4 @@
-## Branch Components Overview
+# Branch Components Overview
 
 Branch components dynamically render different content based on conditional values or numeric quantities. They handle locale-aware conditional logic and pluralization rules.
 
@@ -10,14 +10,8 @@ import { Branch, Plural } from 'gt-next';
 
 **Key Behavior:**
 
-- `<Branch>`: Renders content based on conditional branch values
-- `<Plural>`: Handles pluralization with locale-specific rules
-
-**Processing Model:**
-
-- JSX content → General Translation API for translation
-- Branch logic → Local conditional rendering
-- `<Plural>` → Uses Unicode CLDR pluralization rules
+- `<Branch>`: Renders content based on conditional branch values.
+- `<Plural>`: Handles pluralization with locale-specific rules. Uses Unicode CLDR pluralization rules.
 
 **Important:** When used within `<T>` components, branch content is translated. When used standalone, content renders without translation.
 
@@ -43,7 +37,7 @@ Branch components use condition-based prop patterns:
 
 ### Integration with `<T>` Components
 
-Branch components require translation context for localized content. Use within `<T>` components for automatic translation:
+Branch components require translation context for localized content. Use within `<T>` components to automatically translate content.
 
 ```tsx
 import { T, Branch } from 'gt-next';
@@ -51,10 +45,10 @@ import { T, Branch } from 'gt-next';
 <T>
   <Branch
     branch={status}
-    active={<p>User is active</p>}
-    inactive={<p>User is inactive</p>}
+    active={<p>User is active</p>} // This content is translated by the <T> component
+    inactive={<p>User is inactive</p>} // This content is translated by the <T> component
   >
-    Status unknown
+    Status unknown {/* This content is translated by the <T> component */}
   </Branch>
 </T>;
 ```
@@ -70,19 +64,24 @@ The `<T>` component provides translation context and localizes branch content.
 ```tsx
 import { Plural } from 'gt-next';
 
-<Plural
-  n={count}
-  zero={<>No items</>}
-  one={<>One item</>}
-  two={<>Two items</>}
-  few={<>Few items</>}
-  many={<>Many items</>}
-  other={<>Other items</>}
-  dual={<>Dual items</>}
-  // OR simplified
-  singular={<>One item</>}
-  plural={<>Multiple items</>}
-/>;
+// All content inside the <Plural> component is translated by the <T> component
+<T>
+  He has
+  <Plural
+    n={count}
+    zero={<>No items</>}
+    one={<>One item</>}
+    two={<>Two items</>}
+    few={<>Few items</>}
+    many={<>Many items</>}
+    other={<>Other items</>}
+    dual={<>Dual items</>}
+    // OR simplified
+    singular={<>One item</>}
+    plural={<>Multiple items</>}
+  />
+  .
+</T>;
 ```
 
 **Available Forms:** zero, one, two, few, many, other, dual (locale-dependent), plus simplified singular/plural.
@@ -96,29 +95,34 @@ import { Plural } from 'gt-next';
 **Replacing Ternary Operators:** Convert inline conditional logic to declarative branch syntax.
 
 ```tsx
-// Instead of: {isActive ? <p>Active</p> : <p>Inactive</p>}
+// Original:
+{
+  isActive ? <p>Active</p> : <p>Inactive</p>;
+}
+
+// After:
 <Branch branch={isActive} true={<p>Active</p>} false={<p>Inactive</p>}>
   Status unknown
-</Branch>
+</Branch>;
 ```
 
 **Important**: the `branch` prop only accepts string values.
 For example, if isActive is a boolean, convert it to a string first.
 
-**Replacing Conditional Rendering:** Convert `&&` operator patterns to branch syntax.
-This is only applicable if the content is being used in a `<T>` component.
+**Replacing Conditional Rendering:** Convert `?` operator patterns to branch syntax.
+This is should only be done if the content is being used in a `<T>` component.
 
 **Invalid Syntax**:
 
 ```tsx
-<T>{isActive && <p>Active</p>}</T>
+<T>{isActive ? <p>Active</p> : <p>Inactive</p>}</T>
 ```
 
 **Valid Syntax**:
 
 ```tsx
 <T>
-  <Branch branch={isActive} true={<p>Active</p>}>
+  <Branch branch={isActive} true={<p>Active</p>} false={<p>Inactive</p>}>
     <></>
   </Branch>
 </T>
@@ -128,26 +132,35 @@ This is only applicable if the content is being used in a `<T>` component.
 
 ```tsx
 {
-  isActive && (
+  isActive ? (
     <T>
       <p>Active</p>
+    </T>
+  ) : (
+    <T>
+      <p>Inactive</p>
     </T>
   );
 }
 ```
 
-In this case, the `<T>` component is not wrapping the conditional, so the branch component is not needed.
+In the previous example, the `<T>` component is not wrapping the conditional, so the branch component is not needed.
 
 ### `<Plural>` - Number-Based Rendering
 
 **Basic Pluralization:** Replace manual plural logic with locale-aware components.
 
 ```tsx
-// Instead of: {count === 1 ? <p>1 item</p> : <p>{count} items</p>}
-<Plural n={count} one={<p>1 item</p>} other={<p>{count} items</p>} />
+// Original:
+{
+  count === 1 ? <p>1 item</p> : <p>{count} items</p>;
+}
+
+// After:
+<Plural n={count} one={<p>1 item</p>} other={<p>{count} items</p>} />;
 ```
 
-Note: `n` only accepts numbers.
+**Note:** `n` only accepts numbers.
 
 **With Variable Integration:** Combine with `<Num>` for formatted numbers.
 
@@ -211,14 +224,16 @@ const status: string = 'active';
 **Subscription Tiers:** Standalone usage without translation.
 
 ```tsx
-<Branch
-  branch={plan}
-  free={<p>Free plan - upgrade to unlock features</p>}
-  premium={<p>Premium plan - full access</p>}
-  enterprise={<p>Enterprise plan - contact support</p>}
->
-  No subscription detected
-</Branch>
+<T>
+  <Branch
+    branch={plan}
+    free={<p>Free plan - upgrade to unlock features</p>}
+    premium={<p>Premium plan - full access</p>}
+    enterprise={<p>Enterprise plan - contact support</p>}
+  >
+    No subscription detected
+  </Branch>
+</T>
 ```
 
 ### `<Plural>` - Quantity-Based Content
@@ -308,3 +323,5 @@ import { T, Plural, Num } from 'gt-next';
 - [`<Branch>`](/docs/next/api/components/branch) - Conditional rendering options
 - [`<Plural>`](/docs/next/api/components/plural) - Pluralization configuration
 - [Variable Components](/docs/next/guides/variables) - Integration patterns
+
+For more information on Variable Components, see the "basic_next-variables" guide.
