@@ -4,7 +4,6 @@ import os from 'os';
 import { build, BuildOptions } from 'esbuild';
 import { Options, Updates } from '../../types';
 import flattenDictionary from '../utils/flattenDictionary';
-import { splitStringToContent } from 'generaltranslation';
 import loadJSON from '../../fs/loadJSON';
 import { hashJsxChildren } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata';
@@ -68,14 +67,13 @@ export default async function createDictionaryUpdates(
       metadata: props, // context, etc.
     } = getEntryAndMetadata(dictionary[id]);
 
-    const source = splitStringToContent(entry);
     const context = props?.context;
     const metadata: Record<string, any> = {
       id,
       ...(context && { context }),
       // This hash isn't actually used by the GT API, just for consistency sake
       hash: hashJsxChildren({
-        source,
+        source: entry,
         ...(context && { context }),
         ...(id && { id }),
         dataFormat: 'JSX',
@@ -83,7 +81,7 @@ export default async function createDictionaryUpdates(
     };
     updates.push({
       dataFormat: 'JSX',
-      source,
+      source: entry,
       metadata,
     });
   }

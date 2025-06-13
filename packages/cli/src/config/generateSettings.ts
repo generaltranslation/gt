@@ -1,4 +1,3 @@
-import { isValidLocale } from 'generaltranslation';
 import { displayProjectId } from '../console/console';
 import { warnApiKeyInConfig } from '../console/warnings';
 import loadConfig from '../fs/config/loadConfig';

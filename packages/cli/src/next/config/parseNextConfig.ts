@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { isValidLocale } from 'generaltranslation';
+import GT from 'generaltranslation';
 import path from 'node:path';
 
 /**
@@ -50,7 +50,7 @@ export async function parseNextConfig(filePath: string): Promise<{
 
   // Ensure approvedLocales is an array of strings
   const validLocales =
-    locales && locales.every((locale) => isValidLocale(locale))
+    locales && locales.every((locale) => GT.isValidLocale(locale))
       ? locales
       : undefined;
 

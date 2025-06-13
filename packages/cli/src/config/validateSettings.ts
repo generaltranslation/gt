@@ -1,17 +1,17 @@
-import { isValidLocale, isSupersetLocale } from 'generaltranslation';
+import GT from 'generaltranslation';
 import { Settings } from '../types';
 import { logErrorAndExit } from '../console';
 
 export function validateSettings(settings: Settings) {
   // Validate locales
   for (const locale of settings.locales) {
-    if (!isValidLocale(locale)) {
+    if (!GT.isValidLocale(locale)) {
       logErrorAndExit(
         `Provided locales: "${settings?.locales?.join()}", ${locale} is not a valid locale!`
       );
     }
   }
-  if (settings.defaultLocale && !isValidLocale(settings.defaultLocale)) {
+  if (settings.defaultLocale && !GT.isValidLocale(settings.defaultLocale)) {
     logErrorAndExit(
       `defaultLocale: ${settings.defaultLocale} is not a valid locale!`
     );
@@ -22,12 +22,12 @@ export function validateSettings(settings: Settings) {
     settings.defaultLocale &&
     settings.locales.some(
       (locale) =>
-        isSupersetLocale(settings.defaultLocale, locale) &&
-        !isSupersetLocale(locale, settings.defaultLocale)
+        GT.isSupersetLocale(settings.defaultLocale, locale) &&
+        !GT.isSupersetLocale(locale, settings.defaultLocale)
     )
   ) {
     const locale = settings.locales.find((locale) =>
-      isSupersetLocale(settings.defaultLocale, locale)
+      GT.isSupersetLocale(settings.defaultLocale, locale)
     );
     logErrorAndExit(
       `defaultLocale: ${settings.defaultLocale} is a superset of another locale (${locale})! Please change the defaultLocale to a more specific locale.`
