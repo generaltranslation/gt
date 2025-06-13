@@ -9,7 +9,7 @@ on:
         default: ''
 
 jobs: 
-  test-comment-permissions:
+  grade-and-comment:
     runs-on: ubuntu-latest
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
