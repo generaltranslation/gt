@@ -1,0 +1,65 @@
+---
+title: Locadex
+description: How to use General Translation's Locadex tool
+---
+
+## Overview
+
+**Locadex** is an AI agent that helps you implement internationalization in your projects.
+
+---
+
+## Getting Started
+
+### 1. Configure API Keys
+
+Before running Locadex, you need to configure your API keys. You can set them as environment variables in your terminal:
+
+```bash title="Terminal"
+export ANTHROPIC_API_KEY="<your-anthropic-api-key>"
+export GT_API_KEY="<your-gt-api-key>"
+export GT_PROJECT_ID="<your-gt-project-id>"
+```
+
+Alternatively, you can create a `.env` file in your project's root directory with the following content:
+
+```bash title=".env"
+ANTHROPIC_API_KEY="<your-anthropic-api-key>"
+GT_API_KEY="<your-gt-api-key>"
+GT_PROJECT_ID="<your-gt-project-id>"
+```
+
+### 2. Run Locadex
+
+The easiest way to get started is to run the following command in your project's root directory:
+
+```bash
+npx locadex start
+```
+
+This single command will handle everything for you:
+- Automatically install `locadex` if it's not already in your project.
+- Run the `setup` command to initialize internationalization.
+- Run the `i18n` command to launch the AI-powered assistant.
+
+---
+
+## Individual Commands
+
+For more granular control, you can also run the `setup` and `i18n` commands separately.
+
+### Initialize Project
+
+This command initializes internationalization in your project, setting up required configuration files.
+
+```bash
+npx locadex setup
+```
+
+### Get AI Assistance
+
+This command launches the AI-powered assistant for internationalization tasks.
+
+```bash
+npx locadex i18n
+```
