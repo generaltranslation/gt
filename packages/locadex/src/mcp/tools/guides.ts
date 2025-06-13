@@ -61,15 +61,15 @@ export const guides: Guide[] = [
   {
     id: 'next_advanced_external-strings',
     description:
-      'Call this tool when you see a `const` or `let` or a function containing strings outside of a function scope that needs to be internationalized.',
+      'Call this tool when you see a variable, constant, or function containing strings outside of a component scope that needs to be internationalized.',
     path: 'guides/next/advanced/external-strings.md',
     type: 'advanced',
   },
   {
-    id: 'next_advanced_complicated-mapping-expressions',
+    id: 'next_advanced_mapping-expressions',
     description:
-      'Advanced guide for wherever you see a mapping expression or mapping expression for a nested data structure that needs to be internationalized.',
-    path: 'guides/next/advanced/complicated-mapping-expressions.md',
+      'Call this tool when you see a mapping expression for a nested data structure that contains content that needs to be internationalized.',
+    path: 'guides/next/advanced/mapping-expressions.md',
     type: 'advanced',
   },
 ];

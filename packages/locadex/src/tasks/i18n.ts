@@ -270,28 +270,25 @@ function getPrompt({
   - If the target files have no relevant content, are already internationalized, or contain build-time code (e.g. nextjs plugins) they should never be internationalized.
 **IMPORTANT**: IF NONE OF THE TARGET FILES NEED TO BE INTERNATIONALIZED, YOUR TASK IS COMPLETE AND YOU MAY RETURN.
 3. **Identify the tools to use** Given the contents of the files, ask yourself which tools and guides you need to use to get the necessary knowledge to internationalize the target files. Here are some helpful questions to evaluate for tool selection:
-  - 3.a. Does this file contain a component? If so, is it a server-side component or a client-side component?
-  - 3.b. Is the content that needs to be i18ned being used in this same file, or is it being used in another file?
-  - 3.c. Is there any string interpolation that needs to be i18ned?
-  - 3.d. Is there any conditional logic or rendering that needs to be i18ned?
-  - 3.e. Is the content that needs to be i18ned HTML/JSX or a string?
+  - 3.a. Is the content that needs to be i18ned being used in this same file, or is it being used in another file?
+  - 3.b. Is there any string interpolation that needs to be i18ned?
+  - 3.c. Is there any conditional logic or rendering that needs to be i18ned?
+  - 3.d. Is the content that needs to be i18ned HTML/JSX or a string?
 4. **Internationalize** You now have the necessary knowledge. Internationalize the files using the information from the tools provided to you.
-  - 4.a. Do not worry about running tsc. We will do that later.
+  - 4.a. Do not run validation checks such as tsc. We will do that later.
 
 ## RULES:
 - ALWAYS use the <T> component to internationalize HTML/JSX content.
-- ALWAYS use getGT() or useGT() and getDict() or useDict() to internationalize string content (strings created with '', "", or \`\`).
-  - When possible, avoid using getDict() or useDict(); getGT() and useGT() are preferred.
+- ALWAYS use useGT() or useTranslations() to internationalize string content (strings created with '', "", or \`\`).
+  - When possible, avoid using useTranslations(); useGT() is always preferred.
 - DO NOT internationalize non-user facing content or content that is functional, such as ids, class names, error strings, logical strings, etc.
 - Do not add i18n middleware to the app.
-- When adding 'useGT()' or 'useDict()' to a client component, you must add 'use client' to the top of the file.
-- Always adhere to the guides provided via the 'mcp__locadex__' tools.
+- ALWAYS adhere to the guides provided via the 'mcp__locadex__' tools.
   - These guides provide additional knowledge about how to internationalize the content.
 - Minimize the footprint of your changes.
-- Focus on internationalizing the content of the target files.
-- NEVER move internationalized content to a different file. All content MUST remain in the same file where it came from.
+- Focus on internationalizing all user facing content in the target files. 
+- NEVER move content to a different file. All content MUST remain in the same file where it came from.
 - NEVER CREATE OR DELETE ANY FILES (especially .bak files)
-- Internationalize all user facing content in the target files. 
 - NEVER EDIT FILES THAT ARE NOT GIVEN TO YOU.
 
 ## TARGET FILE INFORMATION
@@ -334,12 +331,12 @@ function getFixPrompt(appDirectory: string) {
 ## INSTRUCTIONS
 
 Previously, you helped me internationalize a set of files in this project.
-Your new task is as follows:
+Your new task is to fix any errors that were introduced by your previous implementation.
 
+## Steps:
 1. Run the gt-next validator.
 2. Fix all errors output by the gt-next validator.
-3. Whenever you are finished with your changes, run the gt-next validator.
-4. Repeat steps 1-3 until there are no more errors, or until you believe that you have fixed all errors.
+3. Repeat steps 1-2 until there are no more errors, or until you believe that you have fixed all errors.
 
 ## RULES:
 - ONLY modify files that are relevant to the internationalization of the project.
@@ -347,6 +344,10 @@ Your new task is as follows:
 - Resolve unused imports from 'gt-next'. 
   - In particular, if a file contains user-facing content that should be internationalized and is not, you should internationalize it.
 - Resolve missing imports from 'gt-next'. If a file is missing an import from 'gt-next', add it.
+- ALWAYS adhere to the guides provided via the 'mcp__locadex__' tools.
+  - These guides provide additional knowledge about how to internationalize the content.
+- NEVER move content to a different file. All content MUST remain in the same file where it came from.
+- NEVER CREATE OR DELETE ANY FILES (especially .bak files)
 
 To run the gt-next validator, run the following command from the app root:
 'npx locadex translate --dry-run'

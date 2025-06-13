@@ -1,9 +1,5 @@
 import { createSpinner, promptConfirm } from '../logging/console.js';
-import {
-  getPackageJson,
-  isPackageInstalled,
-  updatePackageJson,
-} from 'gtx-cli/utils/packageJson';
+import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 import { getPackageManager } from 'gtx-cli/utils/packageManager';
 import { installPackage } from 'gtx-cli/utils/installPackage';
 import chalk from 'chalk';
@@ -17,7 +13,7 @@ import { i18nTask } from '../tasks/i18n.js';
 import { getNextDirectories } from '../utils/fs/getFiles.js';
 import { LocadexManager } from '../utils/locadexManager.js';
 import { outro } from '@clack/prompts';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { exit } from '../utils/shutdown.js';
 import {
@@ -145,6 +141,9 @@ export async function setupTask(
   // Set up locale selector
   await setupLocaleSelector();
 
+  // Create dictionary.json file if not exists
+  setupDictionary(manager);
+
   const formatter = await detectFormatter();
   if (formatter && filesUpdated.length > 0) {
     await formatFiles(filesUpdated, formatter);
@@ -152,6 +151,21 @@ export async function setupTask(
 
   // Run i18n command
   await i18nTask();
+}
+
+function setupDictionary(manager: LocadexManager) {
+  const usingSrcDirectory = existsSync(path.join(manager.appDirectory, 'src'));
+  const dictionaryPath = usingSrcDirectory
+    ? path.join(manager.appDirectory, 'src', 'dictionary.json')
+    : path.join(manager.appDirectory, 'dictionary.json');
+  if (!existsSync(dictionaryPath)) {
+    writeFileSync(dictionaryPath, '{}');
+    logger.step(
+      `Created ${chalk.cyan(
+        'dictionary.json'
+      )} file at ${chalk.cyan(dictionaryPath)}.`
+    );
+  }
 }
 
 async function setupLocaleSelector() {
