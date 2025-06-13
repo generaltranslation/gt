@@ -1,9 +1,6 @@
 name: "Locadex Grader" 
 
 on:
-  push:
-    branches: 
-      - s/locadex/grader
   workflow_dispatch:
     inputs:
       commit_sha:
