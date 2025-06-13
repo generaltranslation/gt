@@ -1,22 +1,22 @@
 ---
-title: useDict()
-description: API Reference for the useDict hook
+title: useTranslations()
+description: API Reference for the useTranslations hook
 ---
 
 ## Overview
 
-`useDict()` is used to access string translations from the [translation dictionary](/docs/next/guides/dictionaries) for client-side components.
+`useTranslations()` is used to access string translations from the [translation dictionary](/docs/next/guides/dictionaries).
 It must be used within a component wrapped by a [`<GTProvider>`](/docs/next/api/components/gtprovider).
 
 ```jsx
-const d = useDict(); // Get the translation function
+const d = useTranslations(); // Get the translation function
 d('greeting.hello'); // pass the id to get a translation
 ```
 
-For server-side translations, see [`getDict()`](/docs/next/api/dictionary/getDict).
+For async components, see [`getTranslations()`](/docs/next/api/dictionary/getTranslations).
 
 <Callout>
-  `getDict()` and `useDict()` use a [dictionary](/docs/next/guides/dictionaries) to store all content for translation.
+  `getTranslations()` and `useTranslations()` use a [dictionary](/docs/next/guides/dictionaries) to store all content for translation.
   This is different from using the [`<T>` component](/docs/next/guides/jsx) for translation.
   If you are interested in only using `<T>` components for translation, then this document is not relevant.
 </Callout>
@@ -68,15 +68,14 @@ const dictionary = {
 export default dictionary;
 ```
 
-When we want to access these entries (on the client side), we call `useDict()`.
+When we want to access these entries (on the client side), we call `useTranslations()`.
 This returns a function that accepts the key of a translation from the dictionary.
 
 ```jsx title="TranslateGreeting.jsx" copy
-"use client";
-import { useDict } from 'gt-next/client';
+import { useTranslations } from 'gt-next';
 
 export default async function TranslateGreeting() {
-  const d = useDict(); // [!code highlight]
+  const d = useTranslations(); // [!code highlight]
   return (
     <p>
       {d('greeting')} // Hello, Alice // [!code highlight]
@@ -101,11 +100,10 @@ export default dictionary;
 
 ```jsx title="src/server/TranslateGreeting.jsx" copy
 // [!code word:userName]
-"use client";
-import { useDict } from 'gt-next/client';
+import { useTranslations } from 'gt-next';
 
 export default async function TranslateGreeting() {
-  const d = useDict();
+  const d = useTranslations();
   
   // Hello Alice!
   const greetingAlice = d('greeting', { userName: "Alice" }); // [!code highlight]
@@ -131,13 +129,12 @@ const dictionary = {
 };
 export default dictionary;
 ```
-Because we added the value `'prefix1.prefix2'` to the `useDict` hook, all of the keys are prefixed with `prefix1.prefix2`:
+Because we added the value `'prefix1.prefix2'` to the `useTranslations` hook, all of the keys are prefixed with `prefix1.prefix2`:
 ```jsx title="UserDetails.jsx" copy
-"use client";
-import { useDict } from 'gt-next/client';
+import { useTranslations } from 'gt-next';
 
 export default function UserDetails() {
-  const d = useDict('prefix1.prefix2'); // [!code highlight]
+  const d = useTranslations('prefix1.prefix2'); // [!code highlight]
   return (
     <div>
       <p>{d('greeting')}</p> // greeting => prefix1.prefix2.greeting // [!code highlight]
@@ -147,10 +144,10 @@ export default function UserDetails() {
 ```
 --- 
 ## Notes
- * The `useDict()` function allows you to access dictionary translations on the client side.
- * The `useDict()` hook can only be used within a component wrapped by a [`<GTProvider>` component](/docs/next/api/components/gtprovider).
+ * The `useTranslations()` function allows you to access dictionary translations on the client side.
+ * The `useTranslations()` hook can only be used within a component wrapped by a [`<GTProvider>` component](/docs/next/api/components/gtprovider).
 
 ## Next Steps
- * For server-side translations, see [`getDict()`](/docs/next/api/dictionary/getDict).
+ * For server-side translations, see [`getTranslations()`](/docs/next/api/dictionary/getTranslations).
  * Learn more about using dictionaries in the [dictionaries reference](/docs/next/guides/dictionaries).
  * See [DictionaryTranslationOptions](/docs/next/api/types/DictionaryTranslationOptions) for more information on translation options.

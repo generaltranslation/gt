@@ -176,7 +176,7 @@ export default function Page() {
   return (
     <T>
       {/* [!code highlight] */}
-      <p>Hello, World!</p>  {/* translates <p>Hello, World!</p> */}
+      <p>Hello, world!</p>  {/* translates <p>Hello, world!</p> */}
     </T>
   )
 }
@@ -187,14 +187,14 @@ Alternatively, if you prefer using the historic dictionary approach, you can wri
   <Tab value=".json">
   ```json title="dictionary.json" copy
   {
-    "greeting": "Hello, World!"
+    "greeting": "Hello, world!"
   }
   ```
   </Tab>
   <Tab value=".js">
   ```js title="dictionary.js" copy
   const dictionary = {
-    greeting: "Hello, World!"
+    greeting: "Hello, world!"
   }
   export default dictionary;
   ```
@@ -202,18 +202,18 @@ Alternatively, if you prefer using the historic dictionary approach, you can wri
   <Tab value=".ts">
   ```ts title="dictionary.ts" copy
   const dictionary = {
-    greeting: "Hello, World!" 
+    greeting: "Hello, world!" 
   }
   export default dictionary;
   ```
   </Tab>
 </Tabs>
 ```jsx title="page.jsx" copy
-import { useDict } from "gt-next";
+import { useTranslations } from "gt-next";
 
 export default function Page() {
-  const d = useDict();
-  return d('greeting'); // translates "Hello, World!" // [!code highlight]
+  const t = useTranslations();
+  return t('greeting'); // translates "Hello, world!" // [!code highlight]
 }
 ```
 

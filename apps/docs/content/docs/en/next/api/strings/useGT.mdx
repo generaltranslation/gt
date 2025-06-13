@@ -5,7 +5,7 @@ description: API Reference for the useGT() string translation function
 
 ## Overview
 
-The `useGT()` function is a client-side hook for translating strings at build time.
+The `useGT()` function is a hook for translating strings at build time.
 
 ```jsx
 const t = useGT();
@@ -68,9 +68,8 @@ i.e., using [`tx()`](/docs/next/api/strings/tx) or [`<Tx>`](/docs/next/api/compo
 ### Basic Usage
 You can use `useGT()` to translate strings.
 
-```javascript copy
-"use client";
-import { useGT } from 'gt-next/client';
+```jsx copy
+import { useGT } from 'gt-next';
 
 export default function TranslateGreeting() {
   const t = useGT();
@@ -88,9 +87,8 @@ Note: "Alice" will be translated to the user's preferred language.
 ### Using variables [#variables]
 You can pass variables to dictionary translations.
 
-```javascript copy
-"use client";
-import { useGT } from 'gt-next/client';
+```jsx copy
+import { useGT } from 'gt-next';
 
 export default function TranslateGreeting() {
   const t = useGT();
@@ -107,10 +105,10 @@ Note: "Alice" will not translated to the user's preferred language because it is
 ---
 
 ## Notes
- * The `useGT()` function is a client-side hook that translates strings.
+ * The `useGT()` function is a hook that translates strings.
  * Translations strings with `useGT()` happen before runtime, during the build process (unless in development).
 
 ## Next steps
- * See [`getGT()`](/docs/next/api/strings/getGT) for server-side string translations at buildtime.
+ * See [`getGT()`](/docs/next/api/strings/getGT) for async string translations at buildtime.
  * For runtime translations, see [`tx()`](/docs/next/api/strings/tx) and [`<Tx>`](/docs/next/api/components/tx).
  * See [`InlineTranslationOptions`](/docs/next/api/types/InlineTranslationOptions) for more information on customizing translations.
