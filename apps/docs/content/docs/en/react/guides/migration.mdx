@@ -145,9 +145,9 @@ and only use GT in-line features for new content.
 
 In this case, you can do something similar to Option 1:
 
-Find all instances of your old i18n library, such as `useTranslation` hooks, and replace them with `useDict` hooks.
+Find all instances of your old i18n library, such as `useTranslation` hooks, and replace them with `useTranslations` hooks.
 
-The `useDict` hook behaves very similarly to `useTranslation` hooks, and you can use it in the same way.
+The `useTranslations` hook behaves very similarly to `useTranslation` hooks, and you can use it in the same way.
 
 <Tabs items={['Before', 'After']}>
   <Tab value="Before">
@@ -161,9 +161,9 @@ The `useDict` hook behaves very similarly to `useTranslation` hooks, and you can
   </Tab>
   <Tab value="After">
   ```tsx
-  import { useDict } from 'gt-react'
+  import { useTranslations } from 'gt-react'
   export default function MyComponent() {
-    const t = useDict()
+    const t = useTranslations()
     return <div>{t('hello.description')}</div>
   }
   ```
@@ -205,9 +205,9 @@ Wherever possible, we recommend using the `useGT` hook or `<T>` component.
 
 This will make editing your content much easier in the future, and make your codebase much more readable.
 
-### 2. Use the `useDict` hook for existing content
+### 2. Use the `useTranslations` hook for existing content
 
-The `useDict` hook is a great way to keep using your existing dictionaries.
+The `useTranslations` hook is a great way to keep using your existing dictionaries.
 
 We offer it as a way to make migration easier, but we don't recommend using it for new content.
 
