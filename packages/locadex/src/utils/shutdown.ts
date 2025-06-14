@@ -14,13 +14,13 @@ class GracefulShutdown {
   private exitCode: ExitCode = 0;
 
   constructor() {
-    // Handle termination signals
     process.on('SIGINT', () => this.handleSignal('SIGINT'));
     process.on('SIGTERM', () => this.handleSignal('SIGTERM'));
     process.on('SIGUSR2', () => this.handleSignal('SIGUSR2')); // nodemon restart
+    process.on('exit', () => this.handleSignal('exit')); // in case other libraries override the signal handlers such as @clack/prompts
   }
 
-  private async handleSignal(signal: string) {
+  async handleSignal(signal: string) {
     logger.debugMessage(
       `Received ${signal}, initiating graceful shutdown with exit code 0...`
     );
@@ -63,11 +63,6 @@ class GracefulShutdown {
 
     logger.debugMessage('Graceful shutdown complete');
     process.exit(this.exitCode);
-  }
-
-  // For backward compatibility and convenience
-  exit(code: ExitCode = 0) {
-    return this.shutdown(code);
   }
 }
 

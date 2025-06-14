@@ -15,11 +15,14 @@ import { appendFileSync } from 'node:fs';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import path from 'node:path';
 import { updateLockfile, cleanupLockfile } from '../utils/lockfile.js';
-import { installClaudeCode } from '../utils/packages/installPackage.js';
 import { extractFiles } from '../utils/dag/extractFiles.js';
 import { Dag } from '../utils/dag/createDag.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 import { deleteAddedFiles } from '../utils/fs/git.js';
+import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
+import { installGlobalPackage } from '../utils/packages/installPackage.js';
+import { fixErrorsTask } from './fixErrors.js';
+import { getLocadexVersion } from '../utils/getPaths.js';
 
 export async function i18nTask() {
   const manager = LocadexManager.getInstance();
@@ -36,7 +39,9 @@ export async function i18nTask() {
   }
 
   // Install claude-code if not installed
-  await installClaudeCode();
+  await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
+  // Install locadex if not installed
+  await installGlobalPackage('locadex', getLocadexVersion());
 
   logger.debugMessage('App directory: ' + manager.appDirectory);
   logger.debugMessage('Root directory: ' + manager.rootDirectory);
@@ -114,27 +119,27 @@ export async function i18nTask() {
         dependentFiles: dependents,
       });
     },
-    postProcess: async (files, context, agentReport) => {
+    postProcess: async (processedFiles, context, agentReport) => {
       const { filesStateFilePath } = context;
 
       // Mark tasks as complete
       await Promise.all(
-        files.map((task) => markFileAsEdited(task, filesStateFilePath))
+        processedFiles.map((file) => markFileAsEdited(file, filesStateFilePath))
       );
 
       // Add agent report
       reports.push(agentReport);
 
-      // Update progress bar
-      logger.progressBar.advance(
-        files.length,
-        `Processed ${Number(((reports.length * files.length) / files.length) * 100).toFixed(2)}% of files`
-      );
-
       // Update stats
       manager.stats.updateStats({
-        newProcessedFiles: files.length,
+        newProcessedFiles: processedFiles.length,
       });
+
+      // Update progress bar
+      logger.progressBar.advance(
+        processedFiles.length,
+        `Processed ${Number((manager.stats.getStats().processedFiles / files.length) * 100).toFixed(2)}% of files`
+      );
     },
   };
 
@@ -160,37 +165,10 @@ export async function i18nTask() {
     )}s]`
   );
 
-  // TODO: uncomment
-  // // Always clean up the file list when done, regardless of success or failure
-  // cleanUp(stateFilePath);
-
-  // Create a clean agent for cleanup
-  const cleanupAgent = manager.createSingleAgent('claude_cleanup_agent', {});
-
-  logger.initializeSpinner();
-  logger.spinner.start('Fixing errors...');
-  const fixPrompt = getFixPrompt(manager.appDirectory);
-  try {
-    await cleanupAgent.run(
-      fixPrompt,
-      {
-        maxTurns: 200,
-        timeoutSec: 300,
-        maxRetries: 1,
-      },
-      {}
-    );
-    reports.push(`## Fixed errors\n${cleanupAgent.generateReport()}`);
-  } catch (error) {
-    logger.debugMessage(
-      `[claude_cleanup_agent] Fixing errors failed: ${error}`
-    );
-    manager.stats.recordTelemetry(false);
-    outro(chalk.red('❌ Locadex i18n failed!'));
-    await exit(1);
-    return;
+  const cleanupReports = await fixErrorsTask();
+  if (cleanupReports) {
+    reports.push(...cleanupReports);
   }
-  logger.spinner.stop('Fixed errors');
 
   // Generate report
   const reportSummary = `# Summary of locadex i18n changes
@@ -270,28 +248,25 @@ function getPrompt({
   - If the target files have no relevant content, are already internationalized, or contain build-time code (e.g. nextjs plugins) they should never be internationalized.
 **IMPORTANT**: IF NONE OF THE TARGET FILES NEED TO BE INTERNATIONALIZED, YOUR TASK IS COMPLETE AND YOU MAY RETURN.
 3. **Identify the tools to use** Given the contents of the files, ask yourself which tools and guides you need to use to get the necessary knowledge to internationalize the target files. Here are some helpful questions to evaluate for tool selection:
-  - 3.a. Does this file contain a component? If so, is it a server-side component or a client-side component?
-  - 3.b. Is the content that needs to be i18ned being used in this same file, or is it being used in another file?
-  - 3.c. Is there any string interpolation that needs to be i18ned?
-  - 3.d. Is there any conditional logic or rendering that needs to be i18ned?
-  - 3.e. Is the content that needs to be i18ned HTML/JSX or a string?
+  - 3.a. Is the content that needs to be i18ned being used in this same file, or is it being used in another file?
+  - 3.b. Is there any string interpolation that needs to be i18ned?
+  - 3.c. Is there any conditional logic or rendering that needs to be i18ned?
+  - 3.d. Is the content that needs to be i18ned HTML/JSX or a string?
 4. **Internationalize** You now have the necessary knowledge. Internationalize the files using the information from the tools provided to you.
-  - 4.a. Do not worry about running tsc. We will do that later.
+  - 4.a. Do not run validation checks such as tsc. We will do that later.
 
 ## RULES:
 - ALWAYS use the <T> component to internationalize HTML/JSX content.
-- ALWAYS use getGT() or useGT() and getDict() or useDict() to internationalize string content (strings created with '', "", or \`\`).
-  - When possible, avoid using getDict() or useDict(); getGT() and useGT() are preferred.
+- ALWAYS use useGT() or useTranslations() to internationalize string content (strings created with '', "", or \`\`).
+  - When possible, avoid using useTranslations(); useGT() is always preferred.
 - DO NOT internationalize non-user facing content or content that is functional, such as ids, class names, error strings, logical strings, etc.
 - Do not add i18n middleware to the app.
-- When adding 'useGT()' or 'useDict()' to a client component, you must add 'use client' to the top of the file.
-- Always adhere to the guides provided via the 'mcp__locadex__' tools.
+- ALWAYS adhere to the guides provided via the 'mcp__locadex__' tools.
   - These guides provide additional knowledge about how to internationalize the content.
 - Minimize the footprint of your changes.
-- Focus on internationalizing the content of the target files.
-- NEVER move internationalized content to a different file. All content MUST remain in the same file where it came from.
+- Focus on internationalizing all user facing content in the target files. 
+- NEVER move content to a different file. All content MUST remain in the same file where it came from.
 - NEVER CREATE OR DELETE ANY FILES (especially .bak files)
-- Internationalize all user facing content in the target files. 
 - NEVER EDIT FILES THAT ARE NOT GIVEN TO YOU.
 
 ## TARGET FILE INFORMATION
@@ -309,48 +284,6 @@ ${dependentFiles[file].length > 0 ? ` ${dependentFiles[file].join(', ')}` : 'non
 )}
 
 ---
-
-## MCP TOOLS
-
-${allMcpPrompt}
-
-## Final output
-- When you are done, please return a brief summary of the files you modified, following this format.
-- **DO NOT** include any other text in your response. 
-- If there were issues with some files, please include the issues in the list of changes for that file.
-
-[file 1 path]
-- List of changes to file 1
-`;
-
-  return prompt;
-}
-
-// check (dry run and ts check) should be at the end
-
-function getFixPrompt(appDirectory: string) {
-  const prompt = `# Task: Fix internationalization errors in the project.
-
-## INSTRUCTIONS
-
-Previously, you helped me internationalize a set of files in this project.
-Your new task is as follows:
-
-1. Run the gt-next validator.
-2. Fix all errors output by the gt-next validator.
-3. Whenever you are finished with your changes, run the gt-next validator.
-4. Repeat steps 1-3 until there are no more errors, or until you believe that you have fixed all errors.
-
-## RULES:
-- ONLY modify files that are relevant to the internationalization of the project.
-- ONLY fix errors that result from your current or previous implementation.
-- Resolve unused imports from 'gt-next'. 
-  - In particular, if a file contains user-facing content that should be internationalized and is not, you should internationalize it.
-- Resolve missing imports from 'gt-next'. If a file is missing an import from 'gt-next', add it.
-
-To run the gt-next validator, run the following command from the app root:
-'npx locadex translate --dry-run'
-The app root is: "${appDirectory}"
 
 ## MCP TOOLS
 

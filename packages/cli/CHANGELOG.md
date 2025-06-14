@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 1.2.25
+
+### Patch Changes
+
+- [#368](https://github.com/generaltranslation/gt/pull/368) [`86f5a18`](https://github.com/generaltranslation/gt/commit/86f5a188439864244b74d590d07bfd6a52c193f9) Thanks [@brian-lou](https://github.com/brian-lou)! - Add new 'validate' command to gtx-cli
+
 ## 1.2.24
 
 ### Patch Changes

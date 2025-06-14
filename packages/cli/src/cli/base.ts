@@ -37,7 +37,6 @@ import { installPackage } from '../utils/installPackage.js';
 import { getPackageManager } from '../utils/packageManager.js';
 import { retrieveCredentials, setCredentials } from '../utils/credentials.js';
 import { areCredentialsSet } from '../utils/credentials.js';
-import { validateConfigExists } from '../config/validateSettings.js';
 
 export type TranslateOptions = {
   config?: string;
@@ -111,7 +110,6 @@ export class BaseCLI {
       )
       .action(async (initOptions: TranslateOptions) => {
         displayHeader('Starting translation...');
-        validateConfigExists();
         const settings = await generateSettings(initOptions);
 
         const options = { ...initOptions, ...settings };

@@ -1,5 +1,23 @@
 # locadex
 
+## 0.1.5
+
+### Patch Changes
+
+- [#384](https://github.com/generaltranslation/gt/pull/384) [`1690a7b`](https://github.com/generaltranslation/gt/commit/1690a7b0361cd00dbadb85d15182f6e97a46d877) Thanks [@brian-lou](https://github.com/brian-lou)! - Update default matchingFiles value
+
+## 0.1.4
+
+### Patch Changes
+
+- [#382](https://github.com/generaltranslation/gt/pull/382) [`f798109`](https://github.com/generaltranslation/gt/commit/f798109470e37c8fa2c849dd68c7656811f16a07) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix incorrect import
+
+## 0.1.3
+
+### Patch Changes
+
+- [#380](https://github.com/generaltranslation/gt/pull/380) [`92f8d33`](https://github.com/generaltranslation/gt/commit/92f8d33b7c833f5e7081209f864b93b5a2ba8aa7) Thanks [@brian-lou](https://github.com/brian-lou)! - Update prompts + fix bugs
+
 ## 0.1.2
 
 ### Patch Changes

@@ -1,5 +1,4 @@
 import { ProgressResult, SpinnerResult } from '@clack/prompts';
-import { CliOptions } from '../types/cli.js';
 import {
   logInfo,
   logWarning,
