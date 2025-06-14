@@ -1,5 +1,11 @@
 # locadex
 
+## 0.1.3
+
+### Patch Changes
+
+- [#380](https://github.com/generaltranslation/gt/pull/380) [`92f8d33`](https://github.com/generaltranslation/gt/commit/92f8d33b7c833f5e7081209f864b93b5a2ba8aa7) Thanks [@brian-lou](https://github.com/brian-lou)! - Update prompts + fix bugs
+
 ## 0.1.2
 
 ### Patch Changes
