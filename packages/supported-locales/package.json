@@ -46,7 +46,7 @@
     }
   },
   "dependencies": {
-    "generaltranslation": "*"
+    "generaltranslation": "workspace:*"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",
