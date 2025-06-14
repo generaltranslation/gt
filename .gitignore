@@ -12,4 +12,3 @@ _testing
 dist/
 .turbo
 .claude
-tsconfig.tsbuildinfo

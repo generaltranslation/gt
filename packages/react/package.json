@@ -14,8 +14,8 @@
     "react-dom": ">=16.8.0"
   },
   "dependencies": {
-    "@generaltranslation/supported-locales": "*",
-    "generaltranslation": "*"
+    "@generaltranslation/supported-locales": "^2.0.10",
+    "generaltranslation": "^6.3.2"
   },
   "scripts": {
     "patch": "npm version patch",

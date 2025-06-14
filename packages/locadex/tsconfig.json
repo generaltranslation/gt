@@ -23,16 +23,8 @@
     "sourceRoot": "/",
 
     // Enable source mapping for locadex
-    "baseUrl": ".",
-    "paths": {
-      "gtx-cli/*": ["../cli/src/*"]
-    }
+    "baseUrl": "."
   },
   "include": ["src/**/*", "src/.ts"],
-  "exclude": ["node_modules", "dist"],
-  "references": [
-    {
-      "path": "../cli"
-    }
-  ]
+  "exclude": ["node_modules", "dist"]
 }

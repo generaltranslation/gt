@@ -46,7 +46,7 @@
     }
   },
   "dependencies": {
-    "generaltranslation": "*"
+    "generaltranslation": "^6.2.10"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",
