@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
 import { setupCommand } from './commands/setup.js';
 import { i18nCommand } from './commands/i18n.js';
-import { main } from 'gtx-cli/index';
+import { main } from 'gtx-cli';
 import { fixErrorsCommand } from './commands/fixErrors.js';
 
 const packageJson = JSON.parse(

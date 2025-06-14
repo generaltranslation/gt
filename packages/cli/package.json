@@ -48,6 +48,12 @@
     "./setup/*": {
       "import": "./dist/setup/*.js"
     },
+    "./next/*": {
+      "import": "./dist/next/*.js"
+    },
+    "./hooks/*": {
+      "import": "./dist/hooks/*.js"
+    },
     "./*": {
       "import": "./dist/*.js"
     },
