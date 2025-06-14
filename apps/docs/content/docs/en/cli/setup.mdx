@@ -30,7 +30,7 @@ export default function Home({ user }) {
     <div>
       <T id="app.home.0">
         {/* [!code highlight] */}
-        Hello, World! My name is <Var>{ user.name }</Var>
+        Hello, world! My name is <Var>{ user.name }</Var>
       </T>
     </div>
   );
@@ -74,7 +74,7 @@ The CLI will wrap JSX elements at the highest possible level.
 This means that it will wrap the entire component in a `<T>` component if it is not already wrapped.
 
 ```jsx
-<div>Hello, World!</div> -> <T id="SOME_ID"><div>Hello, World!</div></T>
+<div>Hello, world!</div> -> <T id="SOME_ID"><div>Hello, world!</div></T>
 ```
 
 See the [reference](/docs/cli/reference/wrapping) for more details on how the `<T>` component is wrapped.
