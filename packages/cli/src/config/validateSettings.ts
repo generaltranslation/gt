@@ -2,7 +2,7 @@ import { isValidLocale, isSupersetLocale } from 'generaltranslation';
 import { Settings } from '../types/index.js';
 import { logErrorAndExit } from '../console/logging.js';
 import fs from 'node:fs';
-import { config } from 'dotenv';
+import path from 'node:path';
 
 export function validateSettings(settings: Settings) {
   // Validate locales
@@ -40,7 +40,11 @@ export function validateSettings(settings: Settings) {
 export function validateConfigExists() {
   const possibleConfigPaths = ['gt.config.json', 'src/gt.config.json'];
   for (const possibleConfigPath of possibleConfigPaths) {
-    if (fs.existsSync(possibleConfigPath)) {
+    if (
+      fs.existsSync(
+        path.resolve(path.relative(process.cwd(), possibleConfigPath))
+      )
+    ) {
       return possibleConfigPath;
     }
   }

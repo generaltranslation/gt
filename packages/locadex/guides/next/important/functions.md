@@ -13,25 +13,27 @@
 import {
   GTProvider,
   T,
-  Tx,
   Var,
   Num,
   Currency,
   DateTime,
   Branch,
   Plural,
+  useGT,
+  useTranslations,
+  LocaleSelector,
 } from 'gt-next';
 
-import {
-  useGT,
-  useLocale,
-  useLocales,
-  useSetLocale,
-  useDefaultLocale,
-  useDict,
-  LocaleSelector,
-  useLocaleSelector,
-} from 'gt-next/client';
+import { useLocale } from 'gt-next/client';
 
-import { withGTConfig } from 'gt-next/config';
+import {
+  Tx, // Tx is different from tx
+  tx,
+  getGT,
+  getLocale,
+  getTranslations,
+} from 'gt-next/server';
+
+// Typing
+import { InlineTranslationOptions } from 'gt-next/types';
 ```

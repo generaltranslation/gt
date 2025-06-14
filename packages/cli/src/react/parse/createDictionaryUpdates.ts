@@ -52,12 +52,6 @@ export default async function createDictionaryUpdates(
     );
   }
 
-  if (!Object.keys(dictionary).length) {
-    logErrorAndExit(
-      `Dictionary filepath provided: "${options.dictionary}", but no entries found.`
-    );
-  }
-
   // ----- CREATE PARTIAL UPDATES ----- //
 
   const updates: Updates = [];

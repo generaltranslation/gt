@@ -7,12 +7,14 @@ dotenv.config({ path: '.env.local', override: true });
 dotenv.config({ path: '.env.production', override: true });
 
 import './telemetry.js';
+import './utils/shutdown.js';
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
 import { setupCommand } from './commands/setup.js';
 import { i18nCommand } from './commands/i18n.js';
 import { main } from 'gtx-cli/index';
+import { fixErrorsCommand } from './commands/fixErrors.js';
 
 const packageJson = JSON.parse(
   readFileSync(fromPackageRoot('package.json'), 'utf8')
@@ -61,6 +63,22 @@ program
   .option('--no-telemetry', 'Disable telemetry')
   .option('--app-dir <dir>', 'Relative path to the application directory', '.')
   .action(i18nCommand);
+
+program
+  .command('fix')
+  .description('Run Locadex to validate your project and fix errors')
+  .option('-v, --verbose', 'Verbose output')
+  .option('-d, --debug', 'Debug output')
+  .option('-b, --batch-size <number>', 'File batch size')
+  .option('-t, --timeout <number>', 'Timeout for each file in a batch')
+  .option('-c, --concurrency <number>', 'Max number of concurrent agents')
+  .option(
+    '-m, --match-files <pattern>',
+    'Comma-separated list of glob patterns to match source files. Should be relative to root directory.'
+  )
+  .option('--no-telemetry', 'Disable telemetry')
+  .option('--app-dir <dir>', 'Relative path to the application directory', '.')
+  .action(fixErrorsCommand);
 
 main(program);
 

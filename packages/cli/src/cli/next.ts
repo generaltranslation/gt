@@ -22,6 +22,7 @@ export class NextCLI extends ReactCLI {
     this.setupTranslateCommand();
     this.setupScanCommand();
     this.setupGenerateSourceCommand();
+    this.setupValidateCommand();
   }
   public execute() {
     super.execute();

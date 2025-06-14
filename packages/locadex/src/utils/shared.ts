@@ -46,4 +46,4 @@ export const DAG_IGNORED_EXTENSIONS = [
   '.fixture.ts', // Test fixtures
 ];
 
-export const CLAUDE_CODE_VERSION = '1.0.16';
+export const CLAUDE_CODE_VERSION = '1.0.22';

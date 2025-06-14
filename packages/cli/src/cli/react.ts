@@ -31,6 +31,8 @@ import { createUpdates } from '../translation/parse.js';
 import { translate } from '../translation/translate.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { validateConfigExists } from '../config/validateSettings.js';
+import { validateProject } from '../translation/validate.js';
+import { intro } from '@clack/prompts';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
@@ -48,6 +50,7 @@ export class ReactCLI extends BaseCLI {
     this.setupTranslateCommand();
     this.setupScanCommand();
     this.setupGenerateSourceCommand();
+    this.setupValidateCommand();
   }
   public execute() {
     super.execute();
@@ -182,6 +185,39 @@ export class ReactCLI extends BaseCLI {
       .action(async (options: Options) => {
         displayHeader('Translating project...');
         await this.handleTranslate(options);
+        endCommand('Done!');
+      });
+  }
+  protected setupValidateCommand(): void {
+    this.program
+      .command('validate')
+      .description(
+        'Scans the project for a dictionary and/or <T> tags, and validates the project for errors.'
+      )
+      .option(
+        '-c, --config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
+      )
+      .option(
+        '--tsconfig, --jsconfig <path>',
+        'Path to jsconfig or tsconfig file',
+        findFilepath(['./tsconfig.json', './jsconfig.json'])
+      )
+      .option('--dictionary <path>', 'Path to dictionary file')
+      .option(
+        '--src <paths...>',
+        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components"
+      )
+      .option(
+        '--inline',
+        'Include inline <T> tags in addition to dictionary file',
+        true
+      )
+      .action(async (options: Options) => {
+        // intro here since we don't want to show the ascii title
+        intro(chalk.cyan('Validating project...'));
+        await this.handleValidate(options);
         endCommand('Done!');
       });
   }
@@ -435,7 +471,6 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected async handleTranslate(initOptions: Options): Promise<void> {
-    validateConfigExists();
     const settings = await generateSettings(initOptions);
 
     // First run the base class's handleTranslate method
@@ -462,5 +497,16 @@ export class ReactCLI extends BaseCLI {
       }
       await translate(options, settings._versionId);
     }
+  }
+
+  protected async handleValidate(initOptions: Options): Promise<void> {
+    validateConfigExists();
+    const settings = await generateSettings(initOptions);
+
+    // First run the base class's handleTranslate method
+    const options = { ...initOptions, ...settings };
+
+    const pkg = this.library === 'gt-next' ? 'gt-next' : 'gt-react';
+    await validateProject(options, pkg);
   }
 }

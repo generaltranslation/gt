@@ -1,15 +1,18 @@
-# Conditional Content Internationalization Patterns
+# Guide: Conditional Content Internationalization
 
-**Objective**: Transform ternary operators and conditional rendering into translatable patterns using `<T>`, `<Branch>`, `<Plural>`, `<Var>`, `useGT()`/`getGT()`, and `useDict()`/`getDict()`.
+This guide covers how to internationalize more complex conditional rendering patterns.
 
-## Core Constraint: Dynamic Content in `<T>` Components
+See the `mcp__locadex__next_basic_branches` guide for more information on the `<Branch>` and `<Plural>` components.
 
-### `<Branch>` Component Pattern
+**Objective**: Transform ternary operators and conditional rendering into translatable patterns using `<T>`, `<Branch>`, `<Plural>`, `<Var>`, and `useGT()`.
+
+## Dynamic Content in `<T>` Components
+
+### `<Branch>` Component
 
 **Rules**:
 
-- `<T>` components cannot contain dynamic expressions. Use `<Branch>` for conditional JSX within `<T>`.
-- When working with `useGT()` always add a `"use client"` directive.
+- `<T>` components cannot contain dynamic expressions. Use `<Branch>` for conditionally rendered JSX ternary operators within `<T>`.
 
 **Non-internationalized conditional**:
 
@@ -27,7 +30,7 @@ const MyComponent = ({ isLoggedIn }) => {
 };
 ```
 
-**Invalid approach** - Dynamic ternary inside `<T>`:
+**Invalid approach - Dynamic ternary inside `<T>`**
 
 ```jsx
 const MyComponent = ({ isLoggedIn }) => {
@@ -43,9 +46,10 @@ const MyComponent = ({ isLoggedIn }) => {
 };
 ```
 
-**Correct implementation** - `<Branch>` component:
+**Correct implementation - `<Branch>` component**
 
 ```jsx
+import { T, Branch } from 'gt-next';
 const MyComponent = ({ isLoggedIn }) => {
   return (
     <T>
@@ -61,19 +65,19 @@ const MyComponent = ({ isLoggedIn }) => {
 
 **Requirements**:
 
-- Convert boolean to string: `isLoggedIn.toString()`
+- `branch` prop only accepts strings: `isLoggedIn.toString()`
 - Define static JSX for `true` and `false` props
 - Wrap entire structure in `<T>` component
 
 **Recommendation**:
 
-- Whenever possible, use `<T>` component with Branches for internationalizing ternaries.
-- All ternaries used in JSX components can be converted to use Branches.
-- Use Variable components to wrap dynamic content.
+- Whenever possible, use `<T>` component with `<Branch>` for internationalizing ternaries.
+- All ternaries used in JSX components can be converted to use `<Branch>`.
+- Use Variable components to wrap dynamic content. See the `mcp__locadex__next_basic_variables` guide for more information on Variable Components.
 
-### String-Based Conditional Translation
+## String-Based Conditional Translation
 
-**Pattern**: Apply translation functions to each branch of ternary operators
+**Pattern**: Apply translation functions to each branch of ternary operators.
 
 **Non-internationalized ternary**:
 
@@ -86,8 +90,7 @@ const getCountMessage = ({ count }) => {
 **Internationalized implementation**:
 
 ```jsx
-'use client'; // TIP: always add the 'use client' directive when importing useGT()
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 const getCountMessage = ({ count }) => {
   const t = useGT();
   return count === 1
@@ -106,12 +109,32 @@ const getCountMessage = ({ count }) => {
 
 **Technique**:
 
-- For JSX: Use a `<Branch>` or `<Plural>` component.
+- For JSX: Use a `<Branch>` or `<Plural>` component. These can be nested.
 - For Strings: Each condition level receives separate translation call.
 
-### Numerical Condition Branching
-
-**Pattern**: Handle zero, singular, and plural cases with appropriate translations
+```jsx
+import { T, Branch } from 'gt-next';
+const MyComponent = ({ isLoggedIn, isAdmin }) => {
+  return (
+    <T>
+      <Branch
+        branch={isLoggedIn.toString()}
+        true={
+          <div>
+            Welcome back!
+            <Branch
+              branch={isAdmin.toString()}
+              true={<div>You are an admin!</div>}
+              false={<div>You are not an admin!</div>}
+            />
+          </div>
+        }
+        false={<div>Please log in to continue</div>}
+      />
+    </T>
+  );
+};
+```
 
 #### JSX Approach
 
@@ -171,8 +194,7 @@ const getItemsFoundMessage = ({ items }) => {
 Internationalized
 
 ```jsx
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 const getItemsFoundMessage = ({ items }) => {
   const t = useGT();
@@ -184,32 +206,68 @@ const getItemsFoundMessage = ({ items }) => {
 };
 ```
 
-**Key requirements**:
+## Example
 
-- Handle zero state explicitly
-- Use singular form for count === 1
-- Apply variable interpolation for plural cases
+Here is an example demonstrating how to internationalize a conditional rendering pattern.
 
-### Complex JSX Conditional Rendering
-
-**Pattern**: Wrap each conditional JSX branch in separate `<T>` components
+Original:
 
 ```jsx
-const MyComponent = ({ error, loading }) => {
+const MyComponent = ({ loading, items }) => {
   return (
     <div>
       {loading ? (
-        <T>
-          <div>Loading...</div>
-        </T>
-      ) : error ? (
-        <T>
-          <div>An error occurred</div>
-        </T>
+        <div>Loading...</div>
+      ) : items.length > 0 ? (
+        <div>{items.length} items found</div>
       ) : (
-        <T>
-          <div>Content loaded successfully</div>
-        </T>
+        <div>No items found</div>
+      )}
+    </div>
+  );
+};
+```
+
+Internationalized:
+
+```jsx
+import { T, Branch, Plural } from 'gt-next';
+const MyComponent = ({ loading, items }) => {
+  return (
+    <T>
+      <Branch
+        branch={loading.toString()} // Expects a string
+        true={<div>Loading...</div>}
+        false={
+          <Plural
+            branch={items.length} // Expects a number
+            one={<div>{items.length} item found</div>}
+            other={<div>{items.length} items found</div>}
+            zero={<div>No items found</div>}
+          />
+        }
+      />
+    </T>
+  );
+};
+```
+
+Alternatively, the same content can be internationalized using `useGT()`:
+
+```jsx
+import { useGT } from 'gt-next';
+const MyComponent = ({ loading, items }) => {
+  const t = useGT();
+  return (
+    <div>
+      {loading ? (
+        <div>{t('Loading...')}</div>
+      ) : items.length > 0 ? (
+        <div>
+          {t('{count} items found', { variables: { count: items.length } })}
+        </div>
+      ) : (
+        <div>{t('No items found')}</div>
       )}
     </div>
   );

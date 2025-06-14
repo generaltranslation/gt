@@ -1,17 +1,18 @@
-# How to internationalize strings with `gt-next`
+# Guide: How to internationalize strings with `gt-next`
 
 Use `useGT()` and `getGT()` to internationalize strings.
 
 **RULES:**
 
-- For JSX and HTML content, ALWAYS use the `<T>` component over `useGT()` and `getGT()`.
-- If you see strings present in HTML that you think need pluralization, do not use strings. Instead use the `<T>` component and the `<Plural>` component. Read the "basic_next-branches" for instructions.
-- NEVER internationalize functional strings (error strings, logical strings, etc.) that could jeporadize the functionality of the application.
+- For JSX and HTML content, ALWAYS use the `<T>` component instead of `useGT()` and `getGT()`.
+- If you see strings present in HTML that you think need pluralization, do not use strings. Instead use the `<T>` component and the `<Plural>` component. See the `mcp__locadex__next_basic_branches` guide for instructions.
+- NEVER internationalize **functional strings** (error strings, logical strings, etc.) that could jeopardize the functionality of the application.
+- **IMPORTANT:** Functional strings can also include strings returned from server actions and API endpoints.
 
-**Import:** The `useGT()` and `getGT()` functions are exported from `gt-next/client` and `gt-next/server` respectively.
+**Import:** The `useGT()` and `getGT()` functions are exported from `gt-next` and `gt-next/server` respectively.
 
 ```tsx
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 import { getGT } from 'gt-next/server';
 ```
 
@@ -23,6 +24,12 @@ Pass the string to the callback function to get the translated string.
 The usage of the callback is the same for both `useGT()` and `getGT()`.
 
 `getGT()` is asynchronous and returns a promise that resolves to the translation function callback.
+
+**IMPORTANT:**
+
+- You should use `useGT()` as much as possible. The ONLY time you should use `getGT()` is when the function scope is async.
+
+### Example of `useGT()`
 
 Before:
 
@@ -36,8 +43,7 @@ function Greeting() {
 After:
 
 ```jsx
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 function Greeting() {
   const t = useGT();
@@ -46,7 +52,9 @@ function Greeting() {
 }
 ```
 
-### Server Side
+### Example of `getGT()`
+
+**Important:** Only use `getGT()` in async functions. It must be awaited.
 
 Before:
 
@@ -69,36 +77,33 @@ export async function Greeting() {
 }
 ```
 
-# Context Prop
+## Context Prop
 
 Add `context` when content meaning is ambiguous:
 
 ```jsx
-'use client';
-import { useGT } from 'gt-next/client';
+import { useGT } from 'gt-next';
 
 function Greeting() {
   const t = useGT();
-  const toast = t('Click on the toast to dismiss it.', {
-    context: 'toast, as in a pop-up notification',
+  const crop = t('Crop', {
+    context: 'Crop, as in cropping an image',
   });
-  return toast;
+  return crop;
 }
 ```
 
-RULES:
+**Rules:**
 
-- Provide context for words with multiple meanings (e.g., "toast" = bread vs notification).
-- Provide context when the additional context can help the translator understand the meaning of the content.
+- Provide context for words with multiple meanings (e.g., "crop" = cropping an image vs the food crop).
+- Provide context when the additional context can provide more information to the translator about the surrounding content, that is not obvious from the content itself.
 
-# Usage Rules
+## Translation callback function usage rules
 
-**USE `useGT()` and `getGT()` for:**
+- Static strings can always be wrapped in the translation callback function.
+- Dynamic strings must be escaped with `{}` syntax (e.g., `t('Hello, {name}!', { variables: { name: 'John' } })`)
 
-- Static strings
-- Dynamic strings if escaped with `{}` syntax
-
-# Valid Usage Examples
+### Valid Usage Examples
 
 In the following examples, `t` is the translation function callback.
 
@@ -123,7 +128,7 @@ const message = t('You have {dollars} dollars!', {
 
 The options are the same as the options for the Intl.NumberFormat and Intl.DateTimeFormat APIs.
 
-# Invalid Usage Examples
+### Invalid Usage Examples
 
 Never use the `${}` syntax for dynamic strings inside the translation callback.
 
@@ -142,3 +147,16 @@ Always add the `variable` key in the options field of `t()` when specifying vari
 ```tsx
 const invalidUsage = t(`Hello, {name}!`, { name: 'Brian' });
 ```
+
+**Correct Usage:**
+
+```tsx
+const correctUsage = t(`Hello, {name}!`, { variables: { name: 'Brian' } });
+```
+
+## Summary
+
+- Use `useGT()` as much as possible. The ONLY time you should use `getGT()` is when the function scope is async.
+- Add `context` when content meaning is ambiguous.
+- Use the translation callback function to wrap static strings.
+- Use the translation callback function with dynamic strings if properly escaped with `{}` syntax.

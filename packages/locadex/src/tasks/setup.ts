@@ -1,9 +1,5 @@
 import { createSpinner, promptConfirm } from '../logging/console.js';
-import {
-  getPackageJson,
-  isPackageInstalled,
-  updatePackageJson,
-} from 'gtx-cli/utils/packageJson';
+import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 import { getPackageManager } from 'gtx-cli/utils/packageManager';
 import { installPackage } from 'gtx-cli/utils/installPackage';
 import chalk from 'chalk';
@@ -17,14 +13,15 @@ import { i18nTask } from '../tasks/i18n.js';
 import { getNextDirectories } from '../utils/fs/getFiles.js';
 import { LocadexManager } from '../utils/locadexManager.js';
 import { outro } from '@clack/prompts';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { exit } from '../utils/shutdown.js';
 import {
   addTranslateScript,
-  installClaudeCode,
-  installLocadex,
+  installGlobalPackage,
 } from '../utils/packages/installPackage.js';
+import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
+import { getLocadexVersion } from '../utils/getPaths.js';
 
 export async function setupTask(
   bypassPrompts: boolean,
@@ -131,19 +128,16 @@ export async function setupTask(
   }
 
   // Install claude-code if not installed
-  await installClaudeCode();
+  await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
 
   // Install locadex if not installed
-  const rootPackageJson = await getPackageJson(manager.rootDirectory);
-  if (
-    rootPackageJson &&
-    !isPackageInstalled('locadex', rootPackageJson, true, true)
-  ) {
-    await installLocadex(manager);
-  }
+  await installGlobalPackage('locadex', getLocadexVersion());
 
   // Set up locale selector
   await setupLocaleSelector();
+
+  // Create dictionary.json file if not exists
+  setupDictionary(manager);
 
   const formatter = await detectFormatter();
   if (formatter && filesUpdated.length > 0) {
@@ -152,6 +146,21 @@ export async function setupTask(
 
   // Run i18n command
   await i18nTask();
+}
+
+function setupDictionary(manager: LocadexManager) {
+  const usingSrcDirectory = existsSync(path.join(manager.appDirectory, 'src'));
+  const dictionaryPath = usingSrcDirectory
+    ? path.join(manager.appDirectory, 'src', 'dictionary.json')
+    : path.join(manager.appDirectory, 'dictionary.json');
+  if (!existsSync(dictionaryPath)) {
+    writeFileSync(dictionaryPath, '{}');
+    logger.step(
+      `Created ${chalk.cyan(
+        'dictionary.json'
+      )} file at ${chalk.cyan(dictionaryPath)}.`
+    );
+  }
 }
 
 async function setupLocaleSelector() {
@@ -186,6 +195,7 @@ ${report}`;
     );
     appendFileSync(summaryFilePath, reportSummary);
   } catch (error) {
+    agent.aggregateStats();
     // Check if this is an abort
     if (manager.getAgentAbortController().signal.aborted) {
       return;
@@ -194,6 +204,7 @@ ${report}`;
     outro(chalk.red('❌ Locadex setup failed!'));
     await exit(1);
   }
+  agent.aggregateStats();
 
   logger.spinner.stop('Locale selector setup complete');
 }
