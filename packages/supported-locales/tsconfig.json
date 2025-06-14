@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "module": "ESNext",
+    "noEmit": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -14,17 +15,8 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": "./",
-    "lib": ["ES2023"],
-    "composite": true,
-    "paths": {
-      "generaltranslation/*": ["../core/src/*"]
-    }
+    "lib": ["ES2023"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist"],
-  "references": [
-    {
-      "path": "../core"
-    }
-  ]
+  "exclude": ["node_modules", "dist"]
 }

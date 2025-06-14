@@ -22,7 +22,7 @@ import { deleteAddedFiles } from '../utils/fs/git.js';
 import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { installGlobalPackage } from '../utils/packages/installPackage.js';
 import { fixErrorsTask } from './fixErrors.js';
-import { getLocadexVersion } from '../utils/getPaths.js';
+import { getLocadexVersion } from 'src/utils/getPaths.js';
 
 export async function i18nTask() {
   const manager = LocadexManager.getInstance();

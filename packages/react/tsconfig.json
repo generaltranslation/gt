@@ -16,21 +16,8 @@
     "declarationMap": true,
     "removeComments": false,
     "allowSyntheticDefaultImports": true,
-    "jsx": "react-jsx",
-    "composite": true,
-    "paths": {
-      "generaltranslation/*": ["../core/src/*"],
-      "@generaltranslation/supported-locales/*": ["../supported-locales/src/*"]
-    }
+    "jsx": "react-jsx"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"],
-  "references": [
-    {
-      "path": "../core"
-    },
-    {
-      "path": "../supported-locales"
-    }
-  ]
+  "exclude": ["node_modules", "dist"]
 }

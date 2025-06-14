@@ -9,17 +9,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "jsx": "react-jsx",
-    "composite": true,
-    "paths": {
-      "generaltranslation/*": ["../core/src/*"]
-    }
+    "jsx": "react-jsx"
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist"],
-  "references": [
-    {
-      "path": "../core"
-    }
-  ]
+  "exclude": ["node_modules", "dist"]
 }
