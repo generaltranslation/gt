@@ -1,7 +1,7 @@
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { promptText } from '../console';
 import chalk from 'chalk';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 
 export async function getDesiredLocales(): Promise<{
   defaultLocale: string;

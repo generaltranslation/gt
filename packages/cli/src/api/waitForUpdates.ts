@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { createOraSpinner, createSpinner } from '../console';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 
 /**
  * Waits for translations to be deployed to the General Translation API

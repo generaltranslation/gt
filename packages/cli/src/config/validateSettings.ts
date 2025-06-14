@@ -1,4 +1,4 @@
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import { Settings } from '../types';
 import { logErrorAndExit } from '../console';
 

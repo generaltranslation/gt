@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import path from 'node:path';
 
 /**
