@@ -71,7 +71,9 @@ export function getConfig(
   const DEFAULT_CONFIG: LocadexConfig = {
     batchSize: 10,
     maxConcurrency: 1,
-    matchingFiles: [`${path.relative(rootDir, appDir)}/**/*.{ts,tsx,js,jsx}`],
+    matchingFiles: [
+      `${path.relative(rootDir, appDir) || '.'}/**/*.{ts,tsx,js,jsx}`,
+    ],
     timeout: 60,
   };
   const configPath = path.resolve(locadexDir, CONFIG_FILE_NAME);
