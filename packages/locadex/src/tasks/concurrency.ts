@@ -193,4 +193,7 @@ export async function runParallelProcessing<TTask, TContext>(
     );
     await exit(1); // Exit the process
   }
+  manager.getAgentPool().forEach((agentInfo) => {
+    agentInfo.agent.aggregateStats();
+  });
 }

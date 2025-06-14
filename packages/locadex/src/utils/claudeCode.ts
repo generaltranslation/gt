@@ -181,6 +181,7 @@ export class ClaudeCodeRunner {
           lastError instanceof UserAbortError ||
           lastError.name === 'AbortError'
         ) {
+          logger.debugMessage(`Claude Code operation aborted by user`);
           throw lastError;
         }
 

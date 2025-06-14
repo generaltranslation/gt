@@ -7,6 +7,7 @@ dotenv.config({ path: '.env.local', override: true });
 dotenv.config({ path: '.env.production', override: true });
 
 import './telemetry.js';
+import './utils/shutdown.js';
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';

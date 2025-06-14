@@ -72,7 +72,7 @@ Your new task is to fix any errors that were introduced by your previous impleme
 - NEVER CREATE OR DELETE ANY FILES (especially .bak files)
 
 To run the gt-next validator, run the following command from the app root:
-'npx locadex validate'
+'locadex validate' (global command)
 The app root is: "${appDirectory}"
 
 ## MCP TOOLS
