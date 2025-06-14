@@ -1,13 +1,22 @@
 ---
 title: Locadex
-description: Get started with an automated internationalization engineer
+description: Get started with Locadex, an automated internationalization engineer
 ---
 
-## Overview
+```bash
+npx locadex start
+```
 
-**Locadex** is an AI agent that automates the process of internationalizing your project.
+Translating your Next.js app into French, Spanish, or Japanese is painful and time-consuming.
 
-It can be installed as a CLI tool or configured as a Github Action.
+**Locadex is an open-source, Claude-powered agent** built to handle 100% of the internationalization (i18n) work for you.
+
+This includes:
+* Configuring your project to use the gt-next i18n library
+* Modifying your React components to support multilingual content
+* Translating your app into as many languages as you need
+
+It can be installed as a CLI tool or configured as a [Github Action](/docs/locadex/github-action).
 
 ---
 
@@ -39,18 +48,19 @@ The easiest way to get started is to run the following command in your project's
 npx locadex start
 ```
 
-This single command will handle everything for you:
+This single command:
 
-- Automatically install `locadex` if it's not already in your project.
-- Automatically configure your project to use `gt-next`.
-- Automatically add the [`translate`](/docs/cli/translate) command to your build script.
-- Automatically internationalize your project.
+- Installs `locadex` and `gt-next`
+- Internationalizes each file in your project
+- Adds the [`translate`](/docs/cli/translate) command to your build script
 
 ### 3. Run Locadex as a Github Action
 
-Locadex can also be configured as a Github Action.
+<Callout type="info">
+  Run `npx locadex start` in your project first!
+</Callout>
 
-This is useful for continuous i18n of your project.
+Locadex can also be configured as a Github Action, so that the gt-next i18n library is automatically added to new components in your app.
 
 ```yaml title=".github/workflows/locadex.yml" copy
 name: Run Locadex
@@ -77,12 +87,5 @@ jobs:
           api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-Feel free to customize the workflow to your needs.
-
-
 Every time this workflow triggers, Locadex will automatically internationalize any changes you've made to your project
 and create a pull request with the changes.
-
-<Callout type="info">
-  The Github Action assumes you have already ran `npx locadex start` in your project or have manually configured your project to use `gt-next`.
-</Callout>
