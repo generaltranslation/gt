@@ -1,5 +1,11 @@
 # locadex
 
+## 0.1.5
+
+### Patch Changes
+
+- [#384](https://github.com/generaltranslation/gt/pull/384) [`1690a7b`](https://github.com/generaltranslation/gt/commit/1690a7b0361cd00dbadb85d15182f6e97a46d877) Thanks [@brian-lou](https://github.com/brian-lou)! - Update default matchingFiles value
+
 ## 0.1.4
 
 ### Patch Changes
