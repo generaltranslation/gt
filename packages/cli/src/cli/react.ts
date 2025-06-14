@@ -32,6 +32,7 @@ import { translate } from '../translation/translate.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { validateConfigExists } from '../config/validateSettings.js';
 import { validateProject } from '../translation/validate.js';
+import { intro } from '@clack/prompts';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
@@ -214,7 +215,10 @@ export class ReactCLI extends BaseCLI {
         true
       )
       .action(async (options: Options) => {
+        // intro here since we don't want to show the ascii title
+        intro(chalk.cyan('Validating project...'));
         await this.handleValidate(options);
+        endCommand('Done!');
       });
   }
 
@@ -467,7 +471,6 @@ export class ReactCLI extends BaseCLI {
   }
 
   protected async handleTranslate(initOptions: Options): Promise<void> {
-    validateConfigExists();
     const settings = await generateSettings(initOptions);
 
     // First run the base class's handleTranslate method

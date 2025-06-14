@@ -160,7 +160,7 @@ Here are some examples of what the scan will convert:
   Will be converted to:
 
   ```jsx
-  <T id="">Hello, World!</T>
+  <T>Hello, World!</T>
   ```
 
   </Tab>
@@ -174,7 +174,7 @@ Here are some examples of what the scan will convert:
   Will be converted to:
 
   ```jsx
-  <T id="">Hello, <Var>{name}</Var></T>
+  <T>Hello, <Var>{name}</Var></T>
   ```
 
   </Tab>
@@ -188,7 +188,7 @@ Here are some examples of what the scan will convert:
   Will be converted to:
 
   ```jsx
-  <T id=""><p><Var>{true && <T id="">{"Hello, World!"}</T>}</Var></p></T>;
+  <T><p><Var>{true && <T>{"Hello, World!"}</T>}</Var></p></T>;
   ```
 
   </Tab>
@@ -202,7 +202,7 @@ Here are some examples of what the scan will convert:
   Will be converted to:
 
   ```jsx
-  <T id=""><p>{"Hello," + " World!"}</p></T>
+  <T><p>{"Hello," + " World!"}</p></T>
   ```
 
   </Tab>
@@ -216,7 +216,7 @@ Here are some examples of what the scan will convert:
   Will be converted to:
 
   ```jsx
-  <T id=""><p><Var>{`${temp}`}</Var></p></T>
+  <T><p><Var>{`${temp}`}</Var></p></T>
   ```
 
   </Tab>

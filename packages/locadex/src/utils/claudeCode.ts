@@ -40,86 +40,6 @@ const DEFAULT_ALLOWED_TOOLS = [
 
 const DISALLOWED_TOOLS = ['NotebookEdit', 'WebFetch', 'WebSearch'];
 
-/**
- * Wraps a promise with a timeout mechanism that can abort the underlying operation
- */
-async function withTimeout<T>(
-  promiseFactory: (abortController: AbortController) => Promise<T>,
-  timeoutSec: number,
-  timeoutMessage?: string
-): Promise<T> {
-  const timeoutController = new AbortController();
-  let timeoutId: ReturnType<typeof global.setTimeout>;
-
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutId = global.setTimeout(() => {
-      timeoutController.abort();
-      reject(
-        new TimeoutError(
-          timeoutMessage || `Operation timed out after ${timeoutSec}s`,
-          timeoutSec
-        )
-      );
-    }, timeoutSec * 1000);
-  });
-
-  const promise = promiseFactory(timeoutController);
-  return Promise.race([promise, timeoutPromise]).finally(() => {
-    // Clear the timeout regardless of how the promise resolves
-    global.clearTimeout(timeoutId);
-  });
-}
-
-/**
- * Retries an async operation with exponential backoff
- * Retries on TimeoutError but not on UserAbortError
- */
-async function withRetry<T>(
-  operation: () => Promise<T>,
-  maxRetries: number = 1,
-  baseDelayMs: number = 1000
-): Promise<T> {
-  let lastError: Error;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error as Error;
-
-      // Don't retry on user aborts - these are intentional
-      if (
-        lastError instanceof UserAbortError ||
-        lastError.name === 'AbortError'
-      ) {
-        throw lastError;
-      }
-
-      // Don't retry on the last attempt
-      if (attempt === maxRetries) {
-        throw lastError;
-      }
-
-      const delay = baseDelayMs * Math.pow(2, attempt);
-
-      // Log different messages for different error types
-      if (lastError instanceof TimeoutError) {
-        logger.debugMessage(
-          `Claude Code operation timed out (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms: ${lastError.message}`
-        );
-      } else {
-        logger.debugMessage(
-          `Claude Code operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms: ${lastError.message}`
-        );
-      }
-
-      await new Promise((resolve) => global.setTimeout(resolve, delay));
-    }
-  }
-
-  throw lastError!;
-}
-
 export class ClaudeCodeRunner {
   private id: string;
   private sessionId: string | undefined;
@@ -209,13 +129,95 @@ export class ClaudeCodeRunner {
     });
   }
 
+  /**
+   * Wraps a promise with a timeout mechanism that can abort the underlying operation
+   */
+  private async withTimeout<T>(
+    promiseFactory: (abortController: AbortController) => Promise<T>,
+    timeoutSec: number,
+    timeoutMessage?: string
+  ): Promise<T> {
+    const timeoutController = new AbortController();
+    let timeoutId: ReturnType<typeof global.setTimeout>;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = global.setTimeout(() => {
+        timeoutController.abort();
+        reject(
+          new TimeoutError(
+            timeoutMessage || `Operation timed out after ${timeoutSec}s`,
+            timeoutSec
+          )
+        );
+      }, timeoutSec * 1000);
+    });
+
+    const promise = promiseFactory(timeoutController);
+    return Promise.race([promise, timeoutPromise]).finally(() => {
+      // Clear the timeout regardless of how the promise resolves
+      global.clearTimeout(timeoutId);
+    });
+  }
+
+  /**
+   * Retries an async operation with exponential backoff
+   * Retries on TimeoutError but not on UserAbortError
+   */
+  private async withRetry<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 1,
+    baseDelayMs: number = 1000
+  ): Promise<T> {
+    let lastError: Error;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error as Error;
+
+        // Don't retry on user aborts - these are intentional
+        if (
+          lastError instanceof UserAbortError ||
+          lastError.name === 'AbortError'
+        ) {
+          throw lastError;
+        }
+
+        // Don't retry on the last attempt
+        if (attempt === maxRetries) {
+          throw lastError;
+        }
+
+        const delay = baseDelayMs * Math.pow(2, attempt);
+
+        // Log different messages for different error types
+        if (lastError instanceof TimeoutError) {
+          logger.debugMessage(
+            `Claude Code operation timed out (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms: ${lastError.message}`
+          );
+          // reset the session id
+          this.reset();
+        } else {
+          logger.debugMessage(
+            `Claude Code operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms: ${lastError.message}`
+          );
+        }
+
+        await new Promise((resolve) => global.setTimeout(resolve, delay));
+      }
+    }
+
+    throw lastError!;
+  }
+
   async run(
     prompt: string,
     options: ClaudeRunOptions,
     _obs: ClaudeCodeObservation
   ): Promise<string> {
     this.changes = [];
-    return withRetry(
+    return this.withRetry(
       () =>
         Sentry.startSpan(
           {
@@ -226,7 +228,7 @@ export class ClaudeCodeRunner {
             },
           },
           () =>
-            withTimeout(
+            this.withTimeout(
               (timeoutController: AbortController) =>
                 new Promise<string>((resolve, reject) => {
                   const args = ['-p', prompt];
@@ -241,8 +243,15 @@ export class ClaudeCodeRunner {
                   args.push('--output-format', 'stream-json');
                   args.push('--verbose');
 
-                  if (this.sessionId && this.turns < this.softTurnLimit) {
-                    args.push('--resume', this.sessionId);
+                  if (this.sessionId) {
+                    if (this.turns < this.softTurnLimit) {
+                      args.push('--resume', this.sessionId);
+                    } else {
+                      logger.debugMessage(
+                        `[${this.id}] Resetting session id because of soft turn limit reached: ${this.turns} >= ${this.softTurnLimit}`
+                      );
+                      this.reset();
+                    }
                   }
 
                   if (this.mcpConfig) {

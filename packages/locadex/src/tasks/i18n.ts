@@ -15,11 +15,13 @@ import { appendFileSync } from 'node:fs';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import path from 'node:path';
 import { updateLockfile, cleanupLockfile } from '../utils/lockfile.js';
-import { installClaudeCode } from '../utils/packages/installPackage.js';
 import { extractFiles } from '../utils/dag/extractFiles.js';
 import { Dag } from '../utils/dag/createDag.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 import { deleteAddedFiles } from '../utils/fs/git.js';
+import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
+import { installGlobalPackage } from '../utils/packages/installPackage.js';
+import { fixErrorsTask } from './fixErrors.js';
 
 export async function i18nTask() {
   const manager = LocadexManager.getInstance();
@@ -36,7 +38,7 @@ export async function i18nTask() {
   }
 
   // Install claude-code if not installed
-  await installClaudeCode();
+  await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
 
   logger.debugMessage('App directory: ' + manager.appDirectory);
   logger.debugMessage('Root directory: ' + manager.rootDirectory);
@@ -160,39 +162,10 @@ export async function i18nTask() {
     )}s]`
   );
 
-  // TODO: uncomment
-  // // Always clean up the file list when done, regardless of success or failure
-  // cleanUp(stateFilePath);
-
-  // Create a clean agent for cleanup
-  const cleanupAgent = manager.createSingleAgent('claude_cleanup_agent', {});
-
-  logger.initializeSpinner();
-  logger.spinner.start('Fixing errors...');
-  const fixPrompt = getFixPrompt(manager.appDirectory);
-  try {
-    await cleanupAgent.run(
-      fixPrompt,
-      {
-        maxTurns: 200,
-        timeoutSec: 300,
-        maxRetries: 1,
-      },
-      {}
-    );
-    reports.push(`## Fixed errors\n${cleanupAgent.generateReport()}`);
-  } catch (error) {
-    cleanupAgent.aggregateStats();
-    logger.debugMessage(
-      `[claude_cleanup_agent] Fixing errors failed: ${error}`
-    );
-    manager.stats.recordTelemetry(false);
-    outro(chalk.red('❌ Locadex i18n failed!'));
-    await exit(1);
-    return;
+  const cleanupReports = await fixErrorsTask();
+  if (cleanupReports) {
+    reports.push(...cleanupReports);
   }
-  cleanupAgent.aggregateStats();
-  logger.spinner.stop('Fixed errors');
 
   // Generate report
   const reportSummary = `# Summary of locadex i18n changes

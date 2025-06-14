@@ -18,9 +18,10 @@ import path from 'node:path';
 import { exit } from '../utils/shutdown.js';
 import {
   addTranslateScript,
-  installClaudeCode,
-  installLocadex,
+  installGlobalPackage,
 } from '../utils/packages/installPackage.js';
+import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
+import { getLocadexVersion } from '../utils/getPaths.js';
 
 export async function setupTask(
   bypassPrompts: boolean,
@@ -127,16 +128,10 @@ export async function setupTask(
   }
 
   // Install claude-code if not installed
-  await installClaudeCode();
+  await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
 
   // Install locadex if not installed
-  const rootPackageJson = await getPackageJson(manager.rootDirectory);
-  if (
-    rootPackageJson &&
-    !isPackageInstalled('locadex', rootPackageJson, true, true)
-  ) {
-    await installLocadex(manager);
-  }
+  await installGlobalPackage('locadex', getLocadexVersion());
 
   // Set up locale selector
   await setupLocaleSelector();

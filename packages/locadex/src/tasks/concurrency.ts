@@ -1,7 +1,6 @@
 import { LocadexManager } from '../utils/locadexManager.js';
 import { logger } from '../logging/logger.js';
 import { exit } from '../utils/shutdown.js';
-import { AgentError } from 'src/utils/errors.js';
 import chalk from 'chalk';
 import { outro } from '@clack/prompts';
 
