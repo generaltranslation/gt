@@ -1,5 +1,11 @@
 # locadex
 
+## 0.1.4
+
+### Patch Changes
+
+- [#382](https://github.com/generaltranslation/gt/pull/382) [`f798109`](https://github.com/generaltranslation/gt/commit/f798109470e37c8fa2c849dd68c7656811f16a07) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix incorrect import
+
 ## 0.1.3
 
 ### Patch Changes
