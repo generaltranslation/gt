@@ -33,7 +33,7 @@ export default function LocaleSelector({
   [key: string]: any;
 }): React.JSX.Element | null {
   // Get locale selector properties
-  const { locale, locales, setLocale } = useLocaleSelector(
+  const { locale, locales, setLocale, getLocaleProperties } = useLocaleSelector(
     _locales ? _locales : undefined
   );
 

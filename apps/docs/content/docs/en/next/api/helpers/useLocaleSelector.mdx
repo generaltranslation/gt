@@ -5,7 +5,7 @@ description: API Reference for the useLocaleSelector hook
 
 ## Overview
 
-This hook returns the current locale, the list of locales, and the [`useSetLocale()`](/docs/next/api/helpers/useSetLocale) hook.
+This hook returns the current locale, the list of locales, the [`useSetLocale()`](/docs/next/api/helpers/useSetLocale) hook, and a function to retrieve locale properties.
 This is meant for easy use when creating your own locale selector component.
 
 If you don't want to implement your own, you can use the [`<LocaleSelector>`](/docs/next/api/components/localeSelector) component instead.
@@ -14,7 +14,7 @@ If you don't want to implement your own, you can use the [`<LocaleSelector>`](/d
 
 ### Returns
 
-An object containing the current locale, the list of locales, and the [`useSetLocale()`](/docs/next/api/helpers/useSetLocale) hook.
+An object containing the current locale, the list of locales, the [`useSetLocale()`](/docs/next/api/helpers/useSetLocale) hook, and a function to retrieve locale properties.
 
 ---
 
@@ -33,7 +33,7 @@ export default function LocaleSelector({
   [key: string]: any;
 }): React.JSX.Element | null {
   // Get locale selector properties
-  const { locale, locales, setLocale } = useLocaleSelector(
+  const { locale, locales, setLocale, getLocaleProperties } = useLocaleSelector(
     _locales ? _locales : undefined
   );
 
