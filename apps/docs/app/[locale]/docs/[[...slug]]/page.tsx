@@ -31,6 +31,7 @@ import {
 import SupportedLocales from '@/components/SupportedLocales';
 import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
 import { Rate } from '@/components/rate';
+import { Metadata } from 'next';
 
 const customMdxComponents = {
   a: (props: React.ComponentProps<'a'>) => (
@@ -112,7 +113,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata(props: {
   params: Promise<{ slug?: string[]; locale: string }>;
-}) {
+}): Promise<Metadata> {
   const { slug, locale } = await props.params;
   const page = source.getPage(slug, locale);
   if (!page) notFound();
@@ -140,6 +141,7 @@ export async function generateMetadata(props: {
       title: page.data.title,
       description: page.data.description,
       url: `https://generaltranslation.com${cleanCanonicalPath}`,
+      images: ['https://generaltranslation.com/globe.png'],
     },
   };
 }
