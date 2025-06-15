@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
-    "@modelcontextprotocol/inspector": "^0.13.0",
+    "@modelcontextprotocol/inspector": "^0.14.2",
     "@types/express": "^5.0.2",
     "@types/jest": "^29.5.14",
     "@types/micromatch": "^4.0.9",
