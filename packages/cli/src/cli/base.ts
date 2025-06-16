@@ -268,7 +268,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
   protected async handleGenericTranslate(
     settings: Settings & TranslateOptions
   ): Promise<void> {
-    // format for JSONs
+    // dataFormat for JSONs
     let dataFormat: DataFormat;
     if (this.library === 'next-intl') {
       dataFormat = 'ICU';
