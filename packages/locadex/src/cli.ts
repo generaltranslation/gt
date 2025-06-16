@@ -46,7 +46,7 @@ program
   .option('-y, --bypass-prompts', 'Bypass interactive prompts')
   .option('--no-telemetry', 'Disable telemetry')
   .option('--app-dir <dir>', 'Relative path to the application directory', '.')
-  .option('--local-translations', 'Enable local translations with loadDictionary file and GT config')
+  .option('--local-translations', 'Enable local translations with loadTranslations.ts file and GT config')
   .action(setupCommand);
 
 program
