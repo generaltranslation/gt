@@ -26,6 +26,10 @@ import { getLocadexVersion } from '../utils/getPaths.js';
 import { execFunction } from '../utils/exec.js';
 import { isGTAuthConfigured } from '../utils/config.js';
 
+/**
+ * Run Locadex i18n on the project
+ * This task requires no human intervention and is safe to run in CI/CD pipelines.
+ */
 export async function i18nTask() {
   const manager = LocadexManager.getInstance();
   // have to use the package.json from the appDir
@@ -209,7 +213,7 @@ ${reports.join('\n')}`;
   cleanupOnExit();
 
   // Run translate cmd
-  if (isGTAuthConfigured()) {
+  if (isGTAuthConfigured(manager.appDirectory)) {
     try {
       await execFunction('locadex', ['translate'], false, manager.appDirectory);
       logger.step(`Translations generated!`);

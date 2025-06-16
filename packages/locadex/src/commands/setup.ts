@@ -47,7 +47,60 @@ export async function setupCommand(
           }),
         },
       });
-      await setupTask(!!allOptions.bypassPrompts, allOptions.packageManager);
+      await setupTask(
+        false,
+        !!allOptions.bypassPrompts,
+        allOptions.packageManager
+      );
+    }
+  );
+}
+
+export async function autoSetupCommand(
+  options: CliOptions & {
+    packageManager?: string;
+    bypassPrompts?: boolean;
+  },
+  command: Command
+) {
+  const parentOptions = command.parent?.opts() || {};
+  const allOptions = { ...parentOptions, ...options };
+  const telemetryEnabled = !allOptions.noTelemetry;
+  withTelemetry(
+    { enabled: telemetryEnabled, options: allOptions },
+    async () => {
+      await validateConfig(allOptions);
+
+      displayHeader(telemetryEnabled);
+      LocadexManager.initialize({
+        rootDirectory: process.cwd(),
+        appDirectory: path.resolve(process.cwd(), allOptions.appDir),
+        mcpTransport: 'stdio',
+        apiKey: process.env.ANTHROPIC_API_KEY || '',
+        metadata: {},
+        cliOptions: allOptions,
+        options: {
+          ...(allOptions.matchingFiles && {
+            matchingFiles: allOptions.matchingFiles
+              .split(',')
+              .map((file) => file.trim()),
+          }),
+          ...(allOptions.concurrency && {
+            maxConcurrency: Number(allOptions.concurrency),
+          }),
+          ...(allOptions.batchSize && {
+            batchSize: Number(allOptions.batchSize),
+          }),
+          ...(allOptions.timeout && {
+            timeout: Number(allOptions.timeout),
+          }),
+        },
+      });
+      await setupTask(
+        true,
+        !!allOptions.bypassPrompts,
+        allOptions.packageManager
+      );
     }
   );
 }
