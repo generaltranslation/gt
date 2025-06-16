@@ -1,5 +1,14 @@
 # locadex
 
+## 0.1.6
+
+### Patch Changes
+
+- [#391](https://github.com/generaltranslation/gt/pull/391) [`dd41343`](https://github.com/generaltranslation/gt/commit/dd413435742930d995c9fdb84368a91381da3d65) Thanks [@brian-lou](https://github.com/brian-lou)! - Improve logs for cli; Improve QOL setup for locadex
+
+- Updated dependencies [[`dd41343`](https://github.com/generaltranslation/gt/commit/dd413435742930d995c9fdb84368a91381da3d65)]:
+  - gtx-cli@1.2.26
+
 ## 0.1.5
 
 ### Patch Changes
