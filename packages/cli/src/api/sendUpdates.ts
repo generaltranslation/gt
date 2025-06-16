@@ -2,12 +2,12 @@ import chalk from 'chalk';
 import { createSpinner, logSuccess, logWarning } from '../console';
 import { Settings, SupportedLibraries, Updates } from '../types';
 import updateConfig from '../fs/config/updateConfig';
-import { Format } from '../types/data';
+import { DataFormat } from '../types/data';
 import { isUsingLocalTranslations } from '../config/utils';
 
 type ApiOptions = Settings & {
   timeout: string;
-  format: Format;
+  dataFormat: DataFormat;
   description?: string;
   requireApproval?: boolean;
 };
@@ -23,7 +23,7 @@ export async function sendUpdates(
   options: ApiOptions,
   library: SupportedLibraries
 ): Promise<{ versionId: string; locales: string[] }> {
-  const { apiKey, projectId, defaultLocale, format } = options;
+  const { apiKey, projectId, defaultLocale, dataFormat } = options;
 
   const globalMetadata = {
     ...(projectId && { projectId }),
@@ -37,7 +37,7 @@ export async function sendUpdates(
     updates,
     ...(options.locales && { locales: options.locales }),
     metadata: globalMetadata,
-    ...(format && { format }),
+    ...(dataFormat && { dataFormat }),
     ...(options.version && { versionId: options.version }),
     ...(options.description && { description: options.description }),
     ...(options.requireApproval && {

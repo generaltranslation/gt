@@ -3,15 +3,15 @@ import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles';
 
 export type Updates = ({ metadata: Record<string, any> } & (
   | {
-      format: 'JSX';
+      dataFormat: 'JSX';
       source: JsxChildren;
     }
   | {
-      format: 'ICU';
+      dataFormat: 'ICU';
       source: string;
     }
   | {
-      format: 'I18NEXT';
+      dataFormat: 'I18NEXT';
       source: string;
     }
 ))[];

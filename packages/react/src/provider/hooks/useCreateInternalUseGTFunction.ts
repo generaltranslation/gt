@@ -5,7 +5,7 @@ import {
   TranslationsObject,
   RenderMethod,
 } from '../../types/types';
-import { TranslateContentCallback } from '../../types/runtime';
+import { TranslateIcuCallback } from '../../types/runtime';
 import { formatMessage } from 'generaltranslation';
 
 export default function useCreateInternalUseGTFunction(
@@ -15,7 +15,7 @@ export default function useCreateInternalUseGTFunction(
   translationRequired: boolean,
   dialectTranslationRequired: boolean,
   runtimeTranslationEnabled: boolean,
-  registerContentForTranslation: TranslateContentCallback,
+  registerIcuForTranslation: TranslateIcuCallback,
   renderSettings: { method: RenderMethod }
 ): (string: string, options?: InlineTranslationOptions) => string {
   return useCallback(
@@ -63,7 +63,7 @@ export default function useCreateInternalUseGTFunction(
           source: contentString,
           ...(options?.context && { context: options.context }),
           ...(id && { id }),
-          format: 'ICU',
+          dataFormat: 'ICU',
         });
       }
 
@@ -96,7 +96,7 @@ export default function useCreateInternalUseGTFunction(
       }
 
       // Translate Content
-      registerContentForTranslation({
+      registerIcuForTranslation({
         source: contentString,
         targetLocale: locale,
         metadata: {
@@ -122,7 +122,7 @@ export default function useCreateInternalUseGTFunction(
       defaultLocale,
       translationRequired,
       runtimeTranslationEnabled,
-      registerContentForTranslation,
+      registerIcuForTranslation,
       dialectTranslationRequired,
     ]
   );

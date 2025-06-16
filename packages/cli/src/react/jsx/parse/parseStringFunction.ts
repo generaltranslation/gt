@@ -94,7 +94,7 @@ export function parseStrings(
               }
 
               updates.push({
-                format: 'ICU',
+                dataFormat: 'ICU',
                 source,
                 metadata,
               });

@@ -1,6 +1,6 @@
 // Functions provided to other GT libraries
 
-import { Format, JsxChild, JsxChildren, Variable } from '../types';
+import { DataFormat, JsxChild, JsxChildren, Variable } from '../types';
 import stringify from 'fast-json-stable-stringify';
 import CryptoJS from 'crypto-js';
 
@@ -21,6 +21,7 @@ export function hashString(string: string): string {
  * @param {any} childrenAsObjects - The children objects to be hashed.
  * @param {string} context - The context for the children
  * @param {string} id - The id for the JSX Children object
+ * @param {string} dataFormat - The data format of the sources
  * @param {function} hashFunction custom hash function
  * @returns {string} - The unique has of the children.
  */
@@ -29,12 +30,12 @@ export function hashSource(
     source,
     context,
     id,
-    format,
+    dataFormat,
   }: {
     source: JsxChildren;
     context?: string;
     id?: string;
-    format: Format;
+    dataFormat: DataFormat;
   },
   hashFunction: (string: string) => string = hashString
 ): string {
@@ -42,9 +43,9 @@ export function hashSource(
     source?: SanitizedChildren;
     id?: string;
     context?: string;
-    format?: string;
+    dataFormat?: string;
   } = {};
-  if (format === 'JSX') {
+  if (dataFormat === 'JSX') {
     sanitizedData.source = sanitizeJsxChildren(source);
   } else {
     sanitizedData.source = source as string;
@@ -53,7 +54,7 @@ export function hashSource(
     ...sanitizedData,
     ...(id && { id }),
     ...(context && { context }),
-    ...(format && { format }),
+    ...(dataFormat && { dataFormat }),
   };
   return hashFunction(stringify(sanitizedData));
 }

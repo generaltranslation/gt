@@ -16,7 +16,7 @@ import {
 } from '../../errors/createErrors';
 import { hashSource } from 'generaltranslation/id';
 import { formatMessage } from 'generaltranslation';
-import { TranslateContentCallback } from '../../types/runtime';
+import { TranslateIcuCallback } from '../../types/runtime';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
@@ -26,7 +26,7 @@ export default function useCreateInternalUseTranslationsFunction(
   translationRequired: boolean,
   dialectTranslationRequired: boolean,
   runtimeTranslationEnabled: boolean,
-  registerContentForTranslation: TranslateContentCallback,
+  registerIcuForTranslation: TranslateIcuCallback,
   renderSettings: { method: RenderMethod }
 ) {
   return useCallback(
@@ -77,7 +77,7 @@ export default function useCreateInternalUseTranslationsFunction(
         source: entry,
         ...(metadata?.context && { context: metadata.context }),
         id,
-        format: 'ICU',
+        dataFormat: 'ICU',
       });
 
       // Check id first
@@ -104,7 +104,7 @@ export default function useCreateInternalUseTranslationsFunction(
       }
 
       // Translate Content
-      registerContentForTranslation({
+      registerIcuForTranslation({
         source: entry,
         targetLocale: locale,
         metadata: {
@@ -131,7 +131,7 @@ export default function useCreateInternalUseTranslationsFunction(
       defaultLocale,
       translationRequired,
       runtimeTranslationEnabled,
-      registerContentForTranslation,
+      registerIcuForTranslation,
       dialectTranslationRequired,
     ]
   );

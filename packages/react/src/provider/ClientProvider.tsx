@@ -103,19 +103,22 @@ export default function ClientProvider({
   // ---------- TRANSLATION METHODS ---------- //
   // TODO: do this in a plugin
 
-  const { registerContentForTranslation, registerJsxForTranslation } =
-    useRuntimeTranslation({
-      gt,
-      locale: locale,
-      versionId: _versionId,
-      projectId,
-      devApiKey,
-      runtimeUrl,
-      setTranslations,
-      defaultLocale,
-      renderSettings,
-      runtimeTranslationEnabled,
-    });
+  const {
+    registerIcuForTranslation,
+    registerJsxForTranslation,
+    registerI18nextForTranslation,
+  } = useRuntimeTranslation({
+    gt,
+    locale: locale,
+    versionId: _versionId,
+    projectId,
+    devApiKey,
+    runtimeUrl,
+    setTranslations,
+    defaultLocale,
+    renderSettings,
+    runtimeTranslationEnabled,
+  });
 
   // ---------- USE GT() TRANSLATION ---------- //
 
@@ -126,7 +129,7 @@ export default function ClientProvider({
     translationRequired,
     dialectTranslationRequired,
     runtimeTranslationEnabled,
-    registerContentForTranslation,
+    registerIcuForTranslation,
     renderSettings
   );
 
@@ -141,7 +144,7 @@ export default function ClientProvider({
       translationRequired,
       dialectTranslationRequired,
       runtimeTranslationEnabled,
-      registerContentForTranslation,
+      registerIcuForTranslation,
       renderSettings
     );
 
@@ -154,7 +157,8 @@ export default function ClientProvider({
     <GTContext.Provider
       value={{
         gt,
-        registerContentForTranslation,
+        registerIcuForTranslation,
+        registerI18nextForTranslation,
         registerJsxForTranslation,
         setLocale,
         _internalUseGTFunction,

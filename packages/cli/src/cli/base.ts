@@ -27,7 +27,7 @@ import {
   SupportedLibraries,
   SetupOptions,
 } from '../types';
-import { Format } from '../types/data';
+import { DataFormat } from '../types/data';
 import { generateSettings } from '../config/generateSettings';
 import chalk from 'chalk';
 import { translateFiles } from '../formats/files/translate';
@@ -269,17 +269,17 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
     settings: Settings & TranslateOptions
   ): Promise<void> {
     // format for JSONs
-    let format: Format;
+    let dataFormat: DataFormat;
     if (this.library === 'next-intl') {
-      format = 'ICU';
+      dataFormat = 'ICU';
     } else if (this.library === 'i18next') {
       if (this.additionalModules.includes('i18next-icu')) {
-        format = 'ICU';
+        dataFormat = 'ICU';
       } else {
-        format = 'I18NEXT';
+        dataFormat = 'I18NEXT';
       }
     } else {
-      format = 'JSX';
+      dataFormat = 'JSX';
     }
 
     if (
@@ -300,7 +300,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       sourceFiles,
       placeholderPaths,
       transformPaths,
-      format,
+      dataFormat,
       settings
     );
   }

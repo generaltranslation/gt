@@ -157,7 +157,7 @@ export default async function createInlineUpdates(
         source: update.source,
         ...(context && { context }),
         ...(update.metadata.id && { id: update.metadata.id }),
-        format: update.format,
+        dataFormat: update.dataFormat,
       });
       update.metadata.hash = hash;
     })

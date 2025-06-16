@@ -84,7 +84,7 @@ function T({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(id && { id }),
-      format: 'JSX',
+      dataFormat: 'JSX',
     });
 
     return [childrenAsObjects, hash];

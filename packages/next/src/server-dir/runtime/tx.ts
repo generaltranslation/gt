@@ -69,7 +69,7 @@ export default async function tx(
     source: message,
     ...(options?.context && { context: options.context }),
     ...(options?.id && { id: options.id }),
-    format: 'ICU',
+    dataFormat: 'ICU',
   });
 
   // ----- CHECK LOCAL CACHE ----- //
@@ -86,7 +86,7 @@ export default async function tx(
 
   // New translation required
   try {
-    const target = (await I18NConfig.translateContent({
+    const target = (await I18NConfig.translateIcu({
       source: message,
       targetLocale: locale,
       options: { ...options, hash },

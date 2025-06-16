@@ -13,16 +13,17 @@ import {
 } from '../../types/types';
 
 import {
-  TranslateContentCallback,
+  TranslateIcuCallback,
   TranslateChildrenCallback,
+  TranslateI18nextCallback,
 } from '../../types/runtime';
-import { Content, JsxChildren } from 'generaltranslation/internal';
+import { JsxChildren } from 'generaltranslation/internal';
 import {
   maxConcurrentRequests,
   maxBatchSize,
   batchInterval,
 } from '../config/defaultProps';
-import { GT } from 'generaltranslation';
+import { DataFormat } from 'generaltranslation/types';
 
 // Queue to store requested keys between renders.
 type TranslationRequestMetadata = {
@@ -32,11 +33,11 @@ type TranslationRequestMetadata = {
 };
 type TranslationRequestQueueItem = (
   | {
-      type: 'content';
-      source: Content;
+      dataFormat: 'ICU' | 'I18NEXT';
+      source: string;
     }
   | {
-      type: 'jsx';
+      dataFormat: 'JSX';
       source: JsxChildren;
     }
 ) & {
@@ -69,7 +70,8 @@ export default function useRuntimeTranslation({
   setTranslations: React.Dispatch<React.SetStateAction<any>>;
   [key: string]: any;
 }): {
-  registerContentForTranslation: TranslateContentCallback;
+  registerI18nextForTranslation: TranslateI18nextCallback;
+  registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
   runtimeTranslationEnabled: boolean;
 } {
@@ -87,10 +89,16 @@ export default function useRuntimeTranslation({
   if (!runtimeTranslationEnabled)
     return {
       runtimeTranslationEnabled,
-      registerContentForTranslation: () =>
+      registerI18nextForTranslation: () =>
         Promise.reject(
           new Error(
-            'registerContentForTranslation() failed because translation is disabled'
+            'registerI18nextForTranslation() failed because translation is disabled'
+          )
+        ),
+      registerIcuForTranslation: () =>
+        Promise.reject(
+          new Error(
+            'registerIcuForTranslation() failed because translation is disabled'
           )
         ),
       registerJsxForTranslation: () =>
@@ -128,53 +136,63 @@ export default function useRuntimeTranslation({
 
   // ----- DEFINE FUNCTIONS ----- //
 
-  const [registerContentForTranslation, registerJsxForTranslation] =
-    useMemo(() => {
-      const createTranslationRegistrationFunction = (
-        type: 'jsx' | 'content'
-      ) => {
-        return (params: {
-          source: Content;
-          targetLocale: string;
-          metadata: TranslationRequestMetadata;
-        }): Promise<TranslationSuccess | TranslationError> => {
-          // Get the key, which is a combination of hash and locale
-          const key = `${params.metadata.hash}:${params.targetLocale}`;
+  const {
+    i18next: registerI18nextForTranslation,
+    icu: registerIcuForTranslation,
+    jsx: registerJsxForTranslation,
+  } = useMemo(() => {
+    const createTranslationRegistrationFunction = <T extends DataFormat>(
+      dataFormat: T
+    ) => {
+      return (params: {
+        source: T extends 'I18NEXT'
+          ? Parameters<TranslateI18nextCallback>[0]['source']
+          : T extends 'ICU'
+            ? Parameters<TranslateIcuCallback>[0]['source']
+            : T extends 'JSX'
+              ? Parameters<TranslateChildrenCallback>[0]['source']
+              : never;
+        targetLocale: string;
+        metadata: TranslationRequestMetadata;
+      }): Promise<TranslationSuccess | TranslationError> => {
+        // Get the key, which is a combination of hash and locale
+        const key = `${params.metadata.hash}:${params.targetLocale}`;
 
-          // Return a promise to current request if it exists
-          const pendingRequest = pendingRequestQueueRef.current.get(key);
-          if (pendingRequest) {
-            return pendingRequest;
-          }
+        // Return a promise to current request if it exists
+        const pendingRequest = pendingRequestQueueRef.current.get(key);
+        if (pendingRequest) {
+          return pendingRequest;
+        }
 
-          // Promise for hooking into the translation request to know when complete
-          const translationPromise = new Promise<
-            TranslationSuccess | TranslationError
-          >((resolve, reject) => {
-            requestQueueRef.current.set(key, {
-              type,
-              source: params.source,
-              metadata: params.metadata,
-              resolve,
-              reject,
-            });
+        // Promise for hooking into the translation request to know when complete
+        const translationPromise = new Promise<
+          TranslationSuccess | TranslationError
+        >((resolve, reject) => {
+          requestQueueRef.current.set(key, {
+            dataFormat: dataFormat,
+            source: params.source,
+            metadata: params.metadata,
+            resolve,
+            reject,
+          } as TranslationRequestQueueItem);
+        })
+          .catch((error) => {
+            throw error;
           })
-            .catch((error) => {
-              throw error;
-            })
-            .finally(() => {
-              pendingRequestQueueRef.current.delete(key);
-            });
+          .finally(() => {
+            pendingRequestQueueRef.current.delete(key);
+          });
 
-          pendingRequestQueueRef.current.set(key, translationPromise);
-          return translationPromise;
-        };
+        pendingRequestQueueRef.current.set(key, translationPromise);
+        return translationPromise;
       };
-      return [
-        createTranslationRegistrationFunction('content'),
-        createTranslationRegistrationFunction('jsx'),
-      ];
-    }, []); // refs are stable so don't need to be included in dep array
+    };
+    return {
+      i18next: createTranslationRegistrationFunction('I18NEXT'),
+      icu: createTranslationRegistrationFunction('ICU'),
+      jsx: createTranslationRegistrationFunction('JSX'),
+    };
+  }, []); // refs are stable so don't need to be included in dep array
 
   // ----- DEFINE FUNCTIONS ----- //
 
@@ -396,7 +414,8 @@ export default function useRuntimeTranslation({
 
   return {
     runtimeTranslationEnabled,
-    registerContentForTranslation,
+    registerI18nextForTranslation,
+    registerIcuForTranslation,
     registerJsxForTranslation,
   };
 }

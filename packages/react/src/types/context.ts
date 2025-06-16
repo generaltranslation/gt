@@ -4,12 +4,17 @@ import {
   InlineTranslationOptions,
   DictionaryTranslationOptions,
 } from './types';
-import { TranslateContentCallback, TranslateChildrenCallback } from './runtime';
+import {
+  TranslateIcuCallback,
+  TranslateChildrenCallback,
+  TranslateI18nextCallback,
+} from './runtime';
 import { GT } from 'generaltranslation';
 
 export type GTContextType = {
   gt: GT;
-  registerContentForTranslation: TranslateContentCallback;
+  registerI18nextForTranslation: TranslateI18nextCallback;
+  registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
   _internalUseGTFunction: (
     string: string,

@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { createSpinner, logMessage, logSuccess } from '../console';
 import { Settings } from '../types';
-import { FileExtension, Format } from '../types/data';
+import { FileExtension, DataFormat } from '../types/data';
 
 /**
  * File object structure
@@ -14,7 +14,7 @@ export interface FileToTranslate {
   content: string;
   fileName: string;
   fileExtension: FileExtension;
-  format: Format;
+  dataFormat: DataFormat;
 }
 
 type ApiOptions = Settings & {
@@ -49,7 +49,7 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
     files.forEach((file, index) => {
       formData.append(`file${index}`, new Blob([file.content]), file.fileName);
       formData.append(`fileExtension${index}`, file.fileExtension);
-      formData.append(`format${index}`, file.format); // Only used when translating JSON files
+      formData.append(`format${index}`, file.dataFormat); // Only used when translating JSON files
       formData.append(`fileName${index}`, file.fileName);
     });
 

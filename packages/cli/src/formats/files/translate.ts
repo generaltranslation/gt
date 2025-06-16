@@ -16,7 +16,7 @@ import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
 import { getRelative, readFile } from '../../fs/findFilepath';
 import { flattenJsonDictionary } from '../../react/utils/flattenDictionary';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types';
-import { FileExtension, Format } from '../../types/data';
+import { FileExtension, DataFormat } from '../../types/data';
 import path from 'node:path';
 import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile';
@@ -30,7 +30,7 @@ const SUPPORTED_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
  * @param filePaths - Resolved file paths for different file types
  * @param placeholderPaths - Placeholder paths for translated files
  * @param transformPaths - Transform paths for file naming
- * @param format - Format of the data within the files
+ * @param dataFormat - Format of the data within the files
  * @param options - Translation options including API settings
  * @returns Promise that resolves when translation is complete
  */
@@ -38,7 +38,7 @@ export async function translateFiles(
   filePaths: ResolvedFiles,
   placeholderPaths: ResolvedFiles,
   transformPaths: TransformFiles,
-  format: Format = 'JSX',
+  dataFormat: DataFormat = 'JSX',
   options: Settings & TranslateOptions
 ): Promise<void> {
   // Collect all files to translate
@@ -46,7 +46,7 @@ export async function translateFiles(
 
   // Process JSON files
   if (filePaths.json) {
-    if (!SUPPORTED_FORMATS.includes(format)) {
+    if (!SUPPORTED_FORMATS.includes(dataFormat)) {
       logErrorAndExit(noSupportedFormatError);
     }
 
@@ -62,7 +62,7 @@ export async function translateFiles(
         content,
         fileName: relativePath,
         fileExtension: 'JSON' as FileExtension,
-        format,
+        dataFormat,
       };
     });
     allFiles.push(...jsonFiles);
@@ -78,7 +78,7 @@ export async function translateFiles(
           content,
           fileName: relativePath,
           fileExtension: fileType.toUpperCase() as FileExtension,
-          format,
+          dataFormat,
         };
       });
       allFiles.push(...files);

@@ -134,7 +134,7 @@ export async function getTranslations(
       source: entry,
       ...(metadata?.context && { context: metadata?.context }),
       id,
-      format: 'ICU',
+      dataFormat: 'ICU',
     });
     const translationEntry = translations?.[hash];
 
@@ -160,7 +160,7 @@ export async function getTranslations(
     }
 
     // Translate on demand
-    I18NConfig.translateContent({
+    I18NConfig.translateIcu({
       source: entry,
       targetLocale: locale,
       options: {

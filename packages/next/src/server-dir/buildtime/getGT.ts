@@ -77,7 +77,7 @@ export async function getGT(): Promise<
         source: message,
         ...(options?.context && { context: options?.context }),
         ...(options?.id && { id: options?.id }),
-        format: 'ICU',
+        dataFormat: 'ICU',
       });
 
     // Use hash to index
@@ -111,7 +111,7 @@ export async function getGT(): Promise<
     if (!hash) hash = calcHash();
 
     // Translate on demand
-    I18NConfig.translateContent({
+    I18NConfig.translateIcu({
       source: message,
       targetLocale: locale,
       options: {

@@ -60,7 +60,7 @@ async function Tx({ children, id, context, locale }: TxProps): Promise<any> {
     source: childrenAsObjects,
     ...(context && { context }),
     ...(id && { id }),
-    format: 'JSX',
+    dataFormat: 'JSX',
   });
 
   // Get the translation entry object

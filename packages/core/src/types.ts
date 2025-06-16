@@ -33,7 +33,7 @@ export type Metadata = {
   [key: string]: any;
 };
 
-export type Format = 'JSX' | 'ICU' | 'I18NEXT';
+export type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
 
 export type FormatVariables = Record<
   string,

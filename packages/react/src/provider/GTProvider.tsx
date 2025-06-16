@@ -146,7 +146,8 @@ export default function GTProvider({
   // ------- RUNTIME TRANSLATION ----- //
 
   const {
-    registerContentForTranslation,
+    registerI18nextForTranslation,
+    registerIcuForTranslation,
     registerJsxForTranslation,
     runtimeTranslationEnabled,
   } = useRuntimeTranslation({
@@ -170,7 +171,7 @@ export default function GTProvider({
     translationRequired,
     dialectTranslationRequired,
     runtimeTranslationEnabled,
-    registerContentForTranslation,
+    registerIcuForTranslation,
     renderSettings
   );
 
@@ -185,7 +186,7 @@ export default function GTProvider({
       translationRequired,
       dialectTranslationRequired,
       runtimeTranslationEnabled,
-      registerContentForTranslation,
+      registerIcuForTranslation,
       renderSettings
     );
 
@@ -198,7 +199,8 @@ export default function GTProvider({
     <GTContext.Provider
       value={{
         gt,
-        registerContentForTranslation,
+        registerI18nextForTranslation,
+        registerIcuForTranslation,
         registerJsxForTranslation,
         _internalUseGTFunction,
         _internalUseTranslationsFunction,

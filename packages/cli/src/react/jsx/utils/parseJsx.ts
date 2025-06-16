@@ -293,7 +293,7 @@ export function parseJSXElement(
 
     // <T> is valid here
     updates.push({
-      format: 'JSX',
+      dataFormat: 'JSX',
       source: componentObj.tree,
       metadata: componentObj.props,
     });

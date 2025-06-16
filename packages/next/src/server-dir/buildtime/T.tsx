@@ -107,7 +107,7 @@ async function T({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(id && { id }),
-      format: 'JSX',
+      dataFormat: 'JSX',
     });
     translationEntry = translations?.[hash];
   }
@@ -152,7 +152,7 @@ async function T({
         source: childrenAsObjects,
         ...(context && { context }),
         ...(id && { id }),
-        format: 'JSX',
+        dataFormat: 'JSX',
       });
       const target = await I18NConfig.translateJsx({
         // do on demand translation

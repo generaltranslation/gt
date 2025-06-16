@@ -51,7 +51,7 @@ type I18NConfigurationParams = {
 
 type QueueEntry =
   | {
-      type: 'content';
+      dataFormat: 'I18NEXT' | 'ICU';
       source: Content;
       targetLocale: string;
       metadata: { hash: string } & Record<string, any>;
@@ -61,7 +61,7 @@ type QueueEntry =
       reject: (reason?: any) => void;
     }
   | {
-      type: 'jsx';
+      dataFormat: 'JSX';
       source: JsxChildren;
       targetLocale: string;
       metadata: { hash: string } & Record<string, any>;
@@ -419,16 +419,14 @@ export default class I18NConfiguration {
 
   // ----- RUNTIME TRANSLATION ----- //
 
-  /**
-   * Translate content into language associated with a given locale
-   * @param params - Parameters for translation
-   * @returns Translated string
-   */
-  async translateContent(params: {
-    source: Content;
-    targetLocale: string;
-    options: { hash: string } & Record<string, any>;
-  }): Promise<TranslatedContent> {
+  private async translateContent(
+    params: {
+      source: Content;
+      targetLocale: string;
+      options: { hash: string } & Record<string, any>;
+    },
+    dataFormat: 'I18NEXT' | 'ICU'
+  ): Promise<TranslatedContent> {
     // check internal cache
     const cacheKey = constructCacheKey(params.targetLocale, params.options);
     if (this._translationCache.has(cacheKey)) {
@@ -439,7 +437,7 @@ export default class I18NConfiguration {
     const translationPromise = new Promise<TranslatedContent>(
       (resolve, reject) => {
         this._queue.push({
-          type: 'content',
+          dataFormat,
           source,
           targetLocale,
           metadata: options,
@@ -453,6 +451,32 @@ export default class I18NConfiguration {
     });
     this._translationCache.set(cacheKey, translationPromise);
     return translationPromise;
+  }
+
+  /**
+   * Translate content into language associated with a given locale
+   * @param params - Parameters for translation
+   * @returns Translated string
+   */
+  async translateI18Next(params: {
+    source: Content;
+    targetLocale: string;
+    options: { hash: string } & Record<string, any>;
+  }): Promise<TranslatedContent> {
+    return this.translateContent(params, 'I18NEXT');
+  }
+
+  /**
+   * Translate content into language associated with a given locale
+   * @param params - Parameters for translation
+   * @returns Translated string
+   */
+  async translateIcu(params: {
+    source: Content;
+    targetLocale: string;
+    options: { hash: string } & Record<string, any>;
+  }): Promise<TranslatedContent> {
+    return this.translateContent(params, 'ICU');
   }
 
   /**
@@ -477,7 +501,7 @@ export default class I18NConfiguration {
       (resolve, reject) => {
         // In memory queue to batch requests
         this._queue.push({
-          type: 'jsx',
+          dataFormat: 'JSX',
           source,
           targetLocale,
           metadata: options,
@@ -529,7 +553,7 @@ export default class I18NConfiguration {
           },
           body: JSON.stringify({
             requests: batch.map((item) => {
-              const { source, metadata, type } = item;
+              const { source, metadata, dataFormat: type } = item;
               return { source, metadata, type };
             }),
             targetLocale: batch[0].targetLocale,
