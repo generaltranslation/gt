@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 1.2.27
+
+### Patch Changes
+
+- [#392](https://github.com/generaltranslation/gt/pull/392) [`cebc905`](https://github.com/generaltranslation/gt/commit/cebc905cb5364bdcc218d4e93a6aee606d804419) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix require not being present in ESM package
+
 ## 1.2.26
 
 ### Patch Changes
