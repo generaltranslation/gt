@@ -36,6 +36,10 @@ export async function validateConfig(options: CliOptions) {
   }
 }
 
+export function isGTAuthConfigured() {
+  return process.env.GT_API_KEY && process.env.GT_PROJECT_ID;
+}
+
 const CONFIG_FILE_NAME = 'locadex.config.json';
 
 export function createConfig(
