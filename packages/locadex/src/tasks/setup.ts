@@ -222,7 +222,7 @@ function setupGithubAction(
       logger.step(
         `Created ${chalk.cyan(
           'locadex.yml'
-        )} Github Action at ${chalk.cyan(githubActionPath)}.`
+        )} Github Action at ${chalk.cyan(githubActionPath)}. You can edit this file to customize the Github Action. Make sure to add the corresponding secrets to your repo settings!`
       );
     } else {
       logger.error(`Error reading resource ghaYaml.yml: ${resource.error}`);
