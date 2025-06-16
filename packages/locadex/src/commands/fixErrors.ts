@@ -20,7 +20,7 @@ export async function fixErrorsCommand(options: CliOptions, command: Command) {
       LocadexManager.initialize({
         rootDirectory: process.cwd(),
         appDirectory: path.resolve(process.cwd(), allOptions.appDir),
-        mcpTransport: 'sse',
+        mcpTransport: 'stdio',
         apiKey: process.env.ANTHROPIC_API_KEY || '',
         metadata: {},
         cliOptions: allOptions,

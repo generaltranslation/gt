@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "locadex": "dist/cli.js"
+    "locadex": "dist/cli.js",
+    "locadex-mcp": "dist/mcp-stdio.js"
   },
   "files": [
     "dist",
