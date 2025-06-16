@@ -1,0 +1,346 @@
+---
+title: GT JSX Data Format
+description: Reference for the minified General Translation JSX data format
+---
+
+The GT JSX data format is an minified data format used by the General Translation libraries to represent translated UI in your React application.
+
+## Introduction: JSX Trees
+
+React represents JSX trees as objects with the following structure:
+
+```ts
+type Element = {
+    type: string;
+    props: {
+        children: JSXTree[] | JSXTree;
+        // ...other props
+    };
+    // ...other attributes
+};
+type JSXTree = Element | string;
+```
+
+GT JSX is a compressed version of this JSX tree structure that is used by the General Translation libraries to represent translated UI in your React application.
+
+## Reference
+
+```ts
+type Element = {
+    c?: (Element | Variable | string)[]; // children
+    i?: number; // GT ID of the element
+    d?: {
+        b?: Record<string, Element | Variable | string>; // branches
+        pl?: string; // placeholder
+        ti?: string; // title
+        alt?: string; // alt
+        arl?: string; // aria-label
+        arb?: string; // aria-labelledby
+        ard?: string; // aria-describedby
+        s?: Record<string, string>; // style
+    };
+}
+type Variable = {
+    k: string; // key
+    v?: "v" | "n" | "c" | "d"; // type
+    i?: number; // GT ID
+}
+type GTJSXTree = Element | Variable | string | (Element | Variable | string)[];
+```
+
+## GT JSX: Strings
+
+The simplest form of GT JSX is a string, which represents a static string of text.
+
+For example:
+
+```jsx
+<T>Hello, world!</T>
+```
+
+Would be represented in GT JSX as:
+
+```ts
+"Hello, world!"
+```
+
+Arrays of strings are also valid GT JSX:
+
+```ts
+["Hello, ", "world!"]
+```
+
+## GT JSX: Elements
+
+GT represents JSX `Element` types in two possible ways.
+
+### Variables
+
+The first is a variable, a simple object that contains a key and an optional type. This is used for representing variables that can change at runtime.
+
+```ts
+type Variable = {
+    k: string; // `k` represents key, the name of the variable
+    v?: ( // represents the type of the variable, if left out is assumed as `v`
+        "v" | // `v`, a generic variable
+        "n" | // `n`, a number variable
+        "c" | // `c`, a currency variable
+        "d" // `d`, a datetime variable
+    );
+    i?: number; // GT ID of the variable
+}
+```
+
+#### Example 1: Var
+
+```jsx
+<T>Hello, <Var>{name}</Var>!</T>
+```
+
+Would be represented in GT JSX as:
+
+```ts
+["Hello, ", { k: "_gt_var_1", i: 1 }, "!"]
+```
+
+<Callout type="info">
+    Variables without a name prop are assigned unique internal names based on their GT ID
+</Callout>
+
+#### Example 2: Num
+
+```jsx
+<T>The count is <Num>{count}</Num></T>
+```
+
+Would be represented in GT JSX as:
+
+```ts
+["The count is ", { k: "count", v: "n", i: 1 }]
+```
+
+#### Example 3: With Name Prop
+
+```jsx
+<T>This product costs <Currency name="cost">{amount}</Currency></T>
+```
+
+Would be represented in GT JSX as:
+
+```ts
+["This product costs ", { k: "cost", v: "c", i: 1 }]
+```
+
+### Elements
+
+Elements which are not variable are represented using the following data structure:
+
+<Callout type="info">
+    Note that all of these attributes are optional.
+    An empty object would represent a translated element in the same position as its original counterpart, with no translatable content among its descendants.
+    **In practice, `i` is always included.**
+</Callout>
+```ts
+type Element = {
+    c?: GTJSXTree | GTJSXTree[]; // children
+    i?: number; // GT ID of the element
+    d?: { // data-_gt prop
+        b?: Record<string, GTJSXTree | GTJSXTree[]>; // branches
+        pl?: string; // placeholder
+        ti?: string; // title
+        alt?: string; // alt
+        arl?: string; // aria-label
+        arb?: string; // aria-labelledby
+        ard?: string; // aria-describedby
+        s?: Record<string, string>; // style
+    }
+}
+```
+
+#### Example 1: Simple Tags
+
+```jsx
+<T>Hello, <b>world</b>!</T>
+```
+
+Would be represented in GT JSX as:
+
+```ts
+["Hello, ", { c: "world", i: 1 }, "!"]
+```
+
+#### Example 2: Nested, with variables
+
+```jsx
+<T><b>Hello</b>, my name is <i><Var>{name}</Var></i></T>
+```
+
+Would be represented in GT JSX as:
+
+```ts
+[
+    { c: "Hello", i: 1 },
+    ", my name is ",
+    { 
+        c: { k: "_gt_var_3", i: 3 }, 
+        i: 2 
+    }
+]
+```
+
+#### Example 3: With Plural
+
+```jsx
+<T>
+    <Plural 
+        n={count} 
+        one={<>I have <Num>{count}</Num> item</>} 
+        other={<>I have <Num>{count}</Num> items</>}
+    />
+</T>
+```
+
+Would be represented in GT JSX as:
+
+```ts
+{ 
+    i: 1,
+    d: {
+        b: {
+            one: {
+                c: ["I have", { k: "_gt_num_4", v: "n", i: 3 }, "item"],
+                i: 2 
+            },
+            other: {
+                c: ["I have", { k: "_gt_num_4", v: "n", i: 3 }, "items"],
+                i: 2 // note the same ID is used for parallel branches
+            }
+        }
+    }
+}
+```
+
+### GTJSX Type
+
+```ts
+type GTJSXTree = Element | Variable | string | (Element | Variable | string)[];
+```
+
+## GT IDs
+
+GT IDs are assigned to elements and variables in a JSX tree depth-first and sequentially, starting from 1.
+
+When there are branch components like `<Branch>` or `<Plural>`, the same GT IDs are assigned to parallel branches. This is so that if there are more branches in one language than in another (e.g. languages where there more plural forms), elements with the right props and logic can still be created.
+
+## GT JSX JSON Files
+
+Each JSX Tree represents the children of a `<T>` component. 
+Components are stored together in translation JSON files. 
+The type of the JSON object stored in these files corresponds to:
+
+```ts
+type GTJSXFile = {
+    [key: string]: GTJSXTree;
+}
+```
+
+Where `key` is either user-defined or the hash of the original language `GTJSXTree`,
+and `GTJSXTree` is the type of the GT JSX tree described above.
+
+### Complete example
+
+The written JSX:
+
+```jsx
+<T>
+    <b>Alice's</b> happy <i>customer</i>
+</T>
+```
+
+Would be represented as the following JSX tree:
+
+```ts
+[
+    {
+        type: "b",
+        "props": {
+            "children": "Alice's"
+        }
+    },
+    " happy ",
+    {
+        type: "i",
+        "props": {
+            "children": "customer"
+        }
+    }
+]
+```
+
+This would be minified into GT JSX as:
+
+```ts
+[{ c: "Alice's", i: 1 }, " happy ", { c: "customer", i: 2 }]
+```
+
+When translated into Spanish, the GT JSX would be:
+
+```ts
+[{ c: "El cliente", i: 2 }, " feliz ", { c: "de Alice", i: 1 }]
+```
+
+It would be stored in a file which looks like:
+
+```json
+{ "abc123": [{ c: "El cliente", i: 2 }, " feliz ", { c: "de Alice", i: 1 }] }
+```
+
+<Callout type="info">`abc123` is the hash of the original English GT JSX tree, not the Spanish translation.</Callout>
+
+When the Spanish translation is reconciled with the original JSX tree, the following would be produced:
+
+```ts
+[
+    {
+        type: "i",
+        "props": {
+            "children": "El cliente"
+        }
+    },
+    " feliz ",
+    {
+        type: "b",
+        "props": {
+            "children": "de Alice"
+        }
+    }
+]
+```
+
+Which can then be displayed as the intended UI:
+
+```jsx
+<><i>El cliente</i> feliz <b>de Alice</b></>
+```
+
+### Hashes
+
+Hashing algorithm, hash length TBD
+
+### Avoiding hashes at runtime
+
+To avoid computing hashes at runtime, the libraries have an optional fallback mechanism where the user can specify an ID.
+
+```jsx
+<T id="example">
+    Hello, world
+</T>
+```
+
+If the ID is present in the translation JSON file, it will be used instead of the hash.
+
+```json
+{ "example": "Hello, world" }
+```
+
+
