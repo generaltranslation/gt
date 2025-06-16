@@ -116,7 +116,7 @@ Would be represented in GT JSX as:
 Would be represented in GT JSX as:
 
 ```ts
-["The count is ", { k: "count", v: "n", i: 1 }]
+["The count is ", { k: "_gt_num_1", v: "n", i: 1 }]
 ```
 
 #### Example 3: With Name Prop
@@ -329,7 +329,7 @@ Hashing algorithm, hash length TBD
 
 ### Avoiding hashes at runtime
 
-To avoid computing hashes at runtime, the libraries have an optional fallback mechanism where the user can specify an ID.
+To avoid computing hashes at runtime, the libraries allow the user to specify an ID to check before calculating the hash.
 
 ```jsx
 <T id="example">
@@ -337,7 +337,7 @@ To avoid computing hashes at runtime, the libraries have an optional fallback me
 </T>
 ```
 
-If the ID is present in the translation JSON file, it will be used instead of the hash.
+If the ID is present in the translation JSON file, the corresponding JSX tree will be used and the hash will never be computed.
 
 ```json
 { "example": "Hello, world" }
