@@ -419,7 +419,7 @@ export default class I18NConfiguration {
 
   // ----- RUNTIME TRANSLATION ----- //
 
-  private async translateContent(
+  private async _translateContent(
     params: {
       source: Content;
       targetLocale: string;
@@ -463,7 +463,7 @@ export default class I18NConfiguration {
     targetLocale: string;
     options: { hash: string } & Record<string, any>;
   }): Promise<TranslatedContent> {
-    return this.translateContent(params, 'I18NEXT');
+    return this._translateContent(params, 'I18NEXT');
   }
 
   /**
@@ -476,7 +476,7 @@ export default class I18NConfiguration {
     targetLocale: string;
     options: { hash: string } & Record<string, any>;
   }): Promise<TranslatedContent> {
-    return this.translateContent(params, 'ICU');
+    return this._translateContent(params, 'ICU');
   }
 
   /**
@@ -553,8 +553,8 @@ export default class I18NConfiguration {
           },
           body: JSON.stringify({
             requests: batch.map((item) => {
-              const { source, metadata, dataFormat: type } = item;
-              return { source, metadata, type };
+              const { source, metadata, dataFormat } = item;
+              return { source, metadata, dataFormat };
             }),
             targetLocale: batch[0].targetLocale,
             metadata: this.metadata,
