@@ -39,6 +39,15 @@ const mcpSseConfig = {
     },
   },
 };
+const mcpStdioConfig = {
+  mcpServers: {
+    locadex: {
+      command: 'locadex-mcp',
+      args: [],
+      env: {},
+    },
+  },
+};
 
 export class LocadexManager {
   private static instance: LocadexManager | undefined;
@@ -171,54 +180,73 @@ export class LocadexManager {
 
   async startMcpServer() {
     if (this.mcpTransport === 'stdio') {
-      return;
-    }
-
-    // First, search for an available port
-    const port = await findAvailablePort(8888);
-    mcpSseConfig.mcpServers.locadex.url = `http://localhost:${port}/sse`;
-    fs.writeFileSync(this.mcpConfigPath, JSON.stringify(mcpSseConfig, null, 2));
-
-    logger.debugMessage(
-      `Starting MCP server on port ${port} with config: ${JSON.stringify(
-        mcpSseConfig,
-        null,
-        2
-      )}`
-    );
-
-    this.mcpProcess = spawn('node', [fromPackageRoot('dist/mcp.js')], {
-      env: {
-        ...process.env,
+      mcpStdioConfig.mcpServers.locadex.env = {
         LOCADEX_FILES_STATE_FILE_PATH: this.filesStateFilePath,
+        LOCADEX_LOG_FILE_PATH: this.logFile,
         LOCADEX_VERBOSE: logger.verbose ? 'true' : 'false',
         LOCADEX_DEBUG: logger.debug ? 'true' : 'false',
-        LOCADEX_LOG_FILE_PATH: this.logFile,
-        PORT: port.toString(),
-      },
-      stdio: ['ignore', 'inherit', 'inherit'],
-      signal: this.mcpAbortController.signal,
-    });
+      };
+      fs.writeFileSync(
+        this.mcpConfigPath,
+        JSON.stringify(mcpStdioConfig, null, 2)
+      );
+      logger.debugMessage(
+        `Starting MCP server on stdio with config: ${JSON.stringify(
+          mcpStdioConfig,
+          null,
+          2
+        )}`
+      );
+    } else {
+      // First, search for an available port
+      const port = await findAvailablePort(8888);
+      mcpSseConfig.mcpServers.locadex.url = `http://localhost:${port}/sse`;
+      fs.writeFileSync(
+        this.mcpConfigPath,
+        JSON.stringify(mcpSseConfig, null, 2)
+      );
 
-    this.mcpProcess.on('error', async (error) => {
-      if (error.name === 'AbortError') {
-        logger.debugMessage('MCP server was closed');
-      } else {
-        logger.error(`MCP server failed to start: ${error.message}`);
-        await exit(1);
-      }
-    });
+      logger.debugMessage(
+        `Starting MCP server on port ${port} with config: ${JSON.stringify(
+          mcpSseConfig,
+          null,
+          2
+        )}`
+      );
 
-    this.mcpProcess.on('exit', async (code, signal) => {
-      if (code !== 0 && code !== null) {
-        logger.error(`MCP server exited with code ${code}`);
-        await exit(code as 0 | 1);
-      }
-      if (signal) {
-        logger.error(`MCP server was killed with signal ${signal}`);
-        await exit(0);
-      }
-    });
+      this.mcpProcess = spawn('node', [fromPackageRoot('dist/mcp.js')], {
+        env: {
+          ...process.env,
+          LOCADEX_FILES_STATE_FILE_PATH: this.filesStateFilePath,
+          LOCADEX_VERBOSE: logger.verbose ? 'true' : 'false',
+          LOCADEX_DEBUG: logger.debug ? 'true' : 'false',
+          LOCADEX_LOG_FILE_PATH: this.logFile,
+          PORT: port.toString(),
+        },
+        stdio: ['ignore', 'inherit', 'inherit'],
+        signal: this.mcpAbortController.signal,
+      });
+
+      this.mcpProcess.on('error', async (error) => {
+        if (error.name === 'AbortError') {
+          logger.debugMessage('MCP server was closed');
+        } else {
+          logger.error(`MCP server failed to start: ${error.message}`);
+          await exit(1);
+        }
+      });
+
+      this.mcpProcess.on('exit', async (code, signal) => {
+        if (code !== 0 && code !== null) {
+          logger.error(`MCP server exited with code ${code}`);
+          await exit(code as 0 | 1);
+        }
+        if (signal) {
+          logger.error(`MCP server was killed with signal ${signal}`);
+          await exit(0);
+        }
+      });
+    }
   }
 
   static getInstance(): LocadexManager {
