@@ -34,10 +34,10 @@ export default async function createDictionaryUpdates(
     const tempFilePath = path.join(os.tmpdir(), 'bundled-dictionary.js');
     await fs.promises.writeFile(tempFilePath, bundledCode);
 
-    // Load the module using require
+    // Load the module using dynamic import
     let dictionaryModule;
     try {
-      dictionaryModule = require(tempFilePath);
+      dictionaryModule = await import(tempFilePath);
     } catch (error) {
       logError(`Failed to load the bundled dictionary code: ${error}`);
       process.exit(1);

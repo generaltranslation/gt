@@ -25,7 +25,7 @@ export async function fixErrorsTask() {
       {
         maxTurns: 200,
         timeoutSec: 300,
-        maxRetries: 1,
+        maxRetries: 2,
       },
       {}
     );
