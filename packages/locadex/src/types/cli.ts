@@ -7,6 +7,7 @@ export type CliOptions = {
   matchingFiles?: string;
   appDir: string;
   timeout?: string;
+  localTranslations?: boolean;
 };
 
 export type LocadexConfig = {

@@ -106,13 +106,24 @@ export async function setupTask(
   logger.step(`Added withGTConfig() to your ${nextConfigPath} file.`);
 
   // Create gt.config.json
+  const gtConfig: any = {
+    defaultLocale: 'en',
+    locales: ['es', 'fr', 'de', 'ja', 'zh'],
+    framework: 'next-app',
+  };
+
+  // Add local translations config if flag is set
+  if (manager.getCliOptions().localTranslations) {
+    gtConfig.files = {
+      gt: {
+        output: 'public/_gt/[locale].json'
+      }
+    };
+  }
+
   await createOrUpdateConfig(
     path.resolve(manager.appDirectory, 'gt.config.json'),
-    {
-      defaultLocale: 'en',
-      locales: ['es', 'fr', 'de', 'ja', 'zh'],
-      framework: 'next-app',
-    }
+    gtConfig
   );
 
   logger.success(
@@ -120,6 +131,11 @@ export async function setupTask(
       'gt.config.json'
     )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
   );
+
+  // Create loadTranslations file if local translations flag is set
+  if (manager.getCliOptions().localTranslations) {
+    await createLoadTranslationsFile(manager.appDirectory);
+  }
 
   // Add translate to scripts
   // Re-get the package.json to make sure it's updated
@@ -247,6 +263,26 @@ ${report}`;
   agent.aggregateStats();
 
   logger.spinner.stop('Locale selector setup complete');
+}
+
+async function createLoadTranslationsFile(appDirectory: string) {
+  const loadTranslationsContent = `
+export default async function loadTranslations(locale: string) {
+  try {
+    // Load translations from public/_gt directory
+    // This matches the GT config files.gt.output path
+    const t = await import(\`../public/_gt/\${locale}.json\`);
+    return t.default;
+  } catch (error) {
+    console.warn(\`Failed to load translations for locale \${locale}:\`, error);
+    return {};
+  }
+}
+`;
+
+  const filePath = path.join(appDirectory, 'src', 'loadTranslations.ts');
+  writeFileSync(filePath, loadTranslationsContent);
+  logger.step(`Created ${chalk.cyan('src/loadTranslations.ts')} file`);
 }
 
 function getLocaleSelectorPrompt(appDirectory: string) {
