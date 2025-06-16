@@ -1,5 +1,5 @@
 import { cookies, headers } from 'next/headers';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
 
 /**

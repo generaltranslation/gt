@@ -69,7 +69,7 @@ type GTConstructorParams = {
  *   locales: ['en-US', 'es-ES', 'fr-FR']
  * });
  */
-export default class GT {
+export class GT {
   // ============================================================ //
   //                     Instance Properties                      //
   // ============================================================ //

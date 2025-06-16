@@ -23,11 +23,12 @@ function DateTime({
   locales,
   options = {},
 }: {
-  children: Date;
+  children: Date | null | undefined;
   name?: string;
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
   locales?: string[];
-}): React.JSX.Element {
+}): React.JSX.Element | null {
+  if (!children) return null;
   if (!locales) {
     locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }

@@ -6,7 +6,7 @@ import {
 import { customLoadDictionaryWarning } from '../errors/createErrors';
 import resolveDictionaryLoader from '../loaders/resolveDictionary';
 import defaultWithGTConfigProps from '../config-dir/props/defaultWithGTConfigProps';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 
 let dictionary: Dictionary | undefined = undefined;
 

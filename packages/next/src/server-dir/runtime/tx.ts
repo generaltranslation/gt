@@ -1,4 +1,4 @@
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';

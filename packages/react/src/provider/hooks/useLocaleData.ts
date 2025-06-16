@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useDetermineLocale } from './useDetermineLocale';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 
 export function useLocaleData({
   _locale,

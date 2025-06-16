@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
 
 /**
@@ -26,11 +26,12 @@ function Num({
   locales,
   options = {},
 }: {
-  children: number | string;
+  children: number | string | null | undefined;
   locales?: string[];
   options?: Intl.NumberFormatOptions; // Optional options for the number formatting
   name?: string;
-}): React.JSX.Element {
+}): React.JSX.Element | null {
+  if (!children) return null;
   const context = useContext(GTContext);
   const gt = context?.gt || new GT();
 

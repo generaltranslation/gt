@@ -1,6 +1,6 @@
 // ---- ERRORS ---- //
 
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 
 export const remoteTranslationsError =
   'gt-next Error: fetching remote translation.';

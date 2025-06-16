@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import { NextURL } from 'next/dist/server/web/next-url';
 
 export type PathConfig = {

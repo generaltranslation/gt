@@ -1,4 +1,4 @@
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import { dictionaryMissingWarning } from '../errors/createErrors';
 import { CustomLoader, Dictionary } from '../types/types';
 

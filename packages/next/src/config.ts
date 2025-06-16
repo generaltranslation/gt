@@ -16,7 +16,7 @@ import {
   unsupportedGetLocalePathBuildError,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 
 /**
  * Initializes General Translation settings for a Next.js application.

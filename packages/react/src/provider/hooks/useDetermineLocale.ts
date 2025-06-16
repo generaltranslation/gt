@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocaleWarning } from '../../errors/createErrors';
 import { defaultLocaleCookieName } from '../../utils/cookies';

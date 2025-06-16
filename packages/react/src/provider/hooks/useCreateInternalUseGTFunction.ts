@@ -6,7 +6,7 @@ import {
   RenderMethod,
 } from '../../types/types';
 import { TranslateContentCallback } from '../../types/runtime';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 
 export default function useCreateInternalUseGTFunction(
   translations: TranslationsObject | null,

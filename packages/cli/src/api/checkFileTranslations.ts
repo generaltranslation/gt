@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { createOraSpinner, createSpinner, logError } from '../console';
+import { createOraSpinner, logError } from '../console';
 import { GT } from 'generaltranslation';
 import { downloadFile } from './downloadFile';
 import { downloadFileBatch } from './downloadFileBatch';

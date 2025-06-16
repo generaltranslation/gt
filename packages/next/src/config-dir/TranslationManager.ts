@@ -1,4 +1,4 @@
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import {

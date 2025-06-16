@@ -24,12 +24,13 @@ function Currency({
   locales,
   options = {},
 }: {
-  children: number | string;
+  children: number | string | null | undefined;
   currency?: string;
   name?: string;
   options?: Intl.NumberFormatOptions;
   locales?: string[];
-}): React.JSX.Element {
+}): React.JSX.Element | null {
+  if (!children) return null;
   if (!locales) {
     locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }

@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
 
 /**
@@ -24,11 +24,12 @@ function DateTime({
   locales,
   options = {},
 }: {
-  children: Date;
+  children: Date | null | undefined;
   locales?: string[];
   name?: string;
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
-}): React.JSX.Element {
+}): React.JSX.Element | null {
+  if (!children) return null;
   const context = useContext(GTContext);
   const gt = context?.gt || new GT();
 

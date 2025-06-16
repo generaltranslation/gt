@@ -1,6 +1,6 @@
 // Functions provided to other GT libraries
 
-import { JsxChild, JsxChildren, Variable } from '../types';
+import { Format, JsxChild, JsxChildren, Variable } from '../types';
 import stringify from 'fast-json-stable-stringify';
 import CryptoJS from 'crypto-js';
 
@@ -34,7 +34,7 @@ export function hashSource(
     source: JsxChildren;
     context?: string;
     id?: string;
-    format: 'JSX' | 'ICU';
+    format: Format;
   },
   hashFunction: (string: string) => string = hashString
 ): string {

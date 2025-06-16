@@ -1,5 +1,5 @@
 import supportedLocales from './supportedLocales';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 
 /**
  * @function getSupportedLocale

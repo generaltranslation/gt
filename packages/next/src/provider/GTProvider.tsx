@@ -1,5 +1,5 @@
 import { DictionaryEntry, mergeDictionaries } from 'gt-react/internal';
-import { isValidElement, ReactNode } from 'react';
+import { isValidElement } from 'react';
 import getI18NConfig from '../config-dir/getI18NConfig';
 import { getLocale } from '../request/getLocale';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';

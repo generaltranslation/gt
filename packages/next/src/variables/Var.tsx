@@ -16,7 +16,6 @@ import React from 'react';
  */
 function Var({
   children,
-  name,
 }: {
   children?: any;
   name?: string;

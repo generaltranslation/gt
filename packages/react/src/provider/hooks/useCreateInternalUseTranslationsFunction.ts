@@ -15,7 +15,7 @@ import {
   createNoEntryFoundWarning,
 } from '../../errors/createErrors';
 import { hashSource } from 'generaltranslation/id';
-import GT from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import { TranslateContentCallback } from '../../types/runtime';
 
 export default function useCreateInternalUseTranslationsFunction(
