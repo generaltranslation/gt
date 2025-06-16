@@ -30,7 +30,7 @@ export async function validateProject(
   if (errors.length > 0) {
     logErrorAndExit(
       chalk.red(
-        `Error: CLI tool encountered syntax errors while scanning for translatable content.\n` +
+        `Error: CLI tool encountered ${errors.length} syntax errors while scanning for translatable content.\n` +
           errors
             .map((error) => chalk.red('• ') + chalk.white(error) + '\n')
             .join('')

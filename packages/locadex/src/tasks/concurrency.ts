@@ -86,7 +86,7 @@ export async function runParallelProcessing<TTask, TContext>(
   processor: TaskProcessor<TTask, TContext>,
   context: TContext,
   options: ParallelProcessingOptions,
-  maxRetries: number = 1
+  maxRetries: number = 3
 ): Promise<void> {
   const { concurrency, batchSize } = options;
   const manager = LocadexManager.getInstance();
@@ -150,7 +150,7 @@ export async function runParallelProcessing<TTask, TContext>(
           prompt,
           {
             timeoutSec: dynamicTimeoutSec,
-            maxRetries: 1,
+            maxRetries,
           },
           {}
         );

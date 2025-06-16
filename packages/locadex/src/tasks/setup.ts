@@ -13,7 +13,7 @@ import { i18nTask } from '../tasks/i18n.js';
 import { getNextDirectories } from '../utils/fs/getFiles.js';
 import { LocadexManager } from '../utils/locadexManager.js';
 import { outro } from '@clack/prompts';
-import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { exit } from '../utils/shutdown.js';
 import {
@@ -22,6 +22,7 @@ import {
 } from '../utils/packages/installPackage.js';
 import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { getLocadexVersion } from '../utils/getPaths.js';
+import { getResource } from '../resources/getResource.js';
 
 export async function setupTask(
   bypassPrompts: boolean,
@@ -139,6 +140,9 @@ export async function setupTask(
   // Create dictionary.json file if not exists
   setupDictionary(manager);
 
+  // Add locadex github action if not exists
+  setupGithubAction(manager);
+
   const formatter = await detectFormatter();
   if (formatter && filesUpdated.length > 0) {
     await formatFiles(filesUpdated, formatter);
@@ -160,9 +164,45 @@ function setupDictionary(manager: LocadexManager) {
         'dictionary.json'
       )} file at ${chalk.cyan(dictionaryPath)}.`
     );
+  } else {
+    logger.step(
+      `Found ${chalk.cyan('dictionary.json')} file at ${chalk.cyan(
+        dictionaryPath
+      )}. Skipping creation...`
+    );
   }
 }
 
+function setupGithubAction(manager: LocadexManager) {
+  const githubActionPath = path.join(
+    manager.rootDirectory,
+    '.github',
+    'workflows',
+    'locadex.yml'
+  );
+  if (!existsSync(githubActionPath)) {
+    mkdirSync(path.join(manager.rootDirectory, '.github', 'workflows'), {
+      recursive: true,
+    });
+    const resource = getResource('ghaYaml.yml');
+    if (resource.content) {
+      writeFileSync(githubActionPath, resource.content);
+      logger.step(
+        `Created ${chalk.cyan(
+          'locadex.yml'
+        )} Github Action at ${chalk.cyan(githubActionPath)}.`
+      );
+    } else {
+      logger.error(`Error reading resource ghaYaml.yml: ${resource.error}`);
+    }
+  } else {
+    logger.step(
+      `Found ${chalk.cyan('locadex.yml')} Github Action at ${chalk.cyan(
+        githubActionPath
+      )}. Skipping creation...`
+    );
+  }
+}
 async function setupLocaleSelector() {
   logger.initializeSpinner();
   logger.spinner.start('Creating locale selector...');
@@ -217,11 +257,11 @@ function getLocaleSelectorPrompt(appDirectory: string) {
 - The app root is: "${appDirectory}"
 
 ## LOCALE SELECTOR USAGE
-(1) Import the locale selector component from 'gt-next/client'
+(1) Import the locale selector component from 'gt-next'
 (2) Add the locale selector to the app
 
 For example:
-import { LocaleSelector } from 'gt-next/client';
+import { LocaleSelector } from 'gt-next';
 
 function MyComponent() {
   return (

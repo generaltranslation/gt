@@ -23,6 +23,8 @@ import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { installGlobalPackage } from '../utils/packages/installPackage.js';
 import { fixErrorsTask } from './fixErrors.js';
 import { getLocadexVersion } from '../utils/getPaths.js';
+import { execFunction } from '../utils/exec.js';
+import { isGTAuthConfigured } from '../utils/config.js';
 
 export async function i18nTask() {
   const manager = LocadexManager.getInstance();
@@ -152,10 +154,12 @@ export async function i18nTask() {
       concurrency,
       batchSize,
     },
-    1
+    3
   );
 
   if (manager.isAborted()) {
+    cleanupOnExit();
+    await exit(1);
     return;
   }
 
@@ -196,10 +200,32 @@ ${reports.join('\n')}`;
 
   logger.message(chalk.dim(`Updated lockfile with ${files.length} files`));
 
-  deleteAddedFiles([
-    path.relative(manager.rootDirectory, manager.locadexDirectory),
-  ]);
+  // Delete any files the AI may have arbitrarily created
+  deleteAddedFiles(
+    [path.relative(manager.rootDirectory, manager.locadexDirectory)],
+    ['dictionary.json', 'gt.config.json', 'locadex.yml']
+  );
 
+  cleanupOnExit();
+
+  // Run translate cmd
+  if (isGTAuthConfigured()) {
+    try {
+      await execFunction('locadex', ['translate'], false, manager.appDirectory);
+      logger.step(`Translations generated!`);
+    } catch (error) {}
+  } else {
+    logger.step(
+      `No GT_API_KEY or GT_PROJECT_ID found. Skipping translation...`
+    );
+  }
+
+  outro(chalk.green('✅ Locadex i18n complete!'));
+  await exit(0);
+}
+
+function cleanupOnExit() {
+  const manager = LocadexManager.getInstance();
   logger.info(
     chalk.dim(
       `Total Cost: $${manager.stats.getStats().totalCost.toFixed(2)}
@@ -221,9 +247,6 @@ Total cached input tokens: ${finalStats.cachedInputTokens}
 Total output tokens: ${finalStats.outputTokens}
 Total turns: ${finalStats.turns}`
   );
-
-  outro(chalk.green('✅ Locadex i18n complete!'));
-  await exit(0);
 }
 
 function getPrompt({

@@ -55,7 +55,7 @@ export async function stageProject(
     if (settings.ignoreErrors) {
       logWarning(
         chalk.yellow(
-          `Warning: CLI tool encountered syntax errors while scanning for translatable content. These components will not be translated.\n` +
+          `Warning: CLI tool encountered ${errors.length} syntax errors while scanning for translatable content. These components will not be translated.\n` +
             errors
               .map((error) => chalk.yellow('• ') + chalk.white(error) + '\n')
               .join('')
@@ -64,7 +64,7 @@ export async function stageProject(
     } else {
       logErrorAndExit(
         chalk.red(
-          `Error: CLI tool encountered syntax errors while scanning for translatable content. ${chalk.dim('To ignore these errors, re-run with --ignore-errors')}\n` +
+          `Error: CLI tool encountered ${errors.length} syntax errors while scanning for translatable content. ${chalk.dim('To ignore these errors, re-run with --ignore-errors')}\n` +
             errors
               .map((error) => chalk.red('• ') + chalk.white(error) + '\n')
               .join('')
