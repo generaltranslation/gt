@@ -1,4 +1,4 @@
-import { GT } from 'generaltranslation';
+import { formatMessage } from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
@@ -53,7 +53,7 @@ export default async function tx(
   // ----- DEFINE RENDER FUNCTION ----- //
 
   const renderContent = (message: string, locales: string[]) => {
-    return GT.formatMessage(message, {
+    return formatMessage(message, {
       locales,
       variables: options.variables,
     });

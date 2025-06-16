@@ -6,7 +6,7 @@ import {
   RenderMethod,
 } from '../../types/types';
 import { TranslateContentCallback } from '../../types/runtime';
-import { GT } from 'generaltranslation';
+import { formatMessage } from 'generaltranslation';
 
 export default function useCreateInternalUseGTFunction(
   translations: TranslationsObject | null,
@@ -39,7 +39,7 @@ export default function useCreateInternalUseGTFunction(
 
       // Render method
       const renderContent = (message: string, locales: string[]) => {
-        return GT.formatMessage(message, {
+        return formatMessage(message, {
           locales,
           variables: options.variables,
         });

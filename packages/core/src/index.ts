@@ -31,7 +31,10 @@ import {
   invalidLocaleError,
   invalidLocalesError,
 } from './settings/errors';
-// ----- CORE CLASS ----- //
+
+// ============================================================ //
+//                        Core Class                            //
+// ============================================================ //
 /**
  * Type representing the constructor parameters for the GT class.
  * @typedef {Object} GTConstructorParams
@@ -70,10 +73,6 @@ type GTConstructorParams = {
  * });
  */
 export class GT {
-  // ============================================================ //
-  //                     Instance Properties                      //
-  // ============================================================ //
-
   /** Base URL for the translation service API */
   baseUrl: string;
 
@@ -100,10 +99,6 @@ export class GT {
 
   /** Custom mapping for locale codes to their names */
   customMapping?: CustomMapping;
-
-  // ============================================================ //
-  //                     Instance Methods                         //
-  // ============================================================ //
 
   /**
    * Constructs an instance of the GT class.
@@ -186,10 +181,6 @@ export class GT {
     this.customMapping = customMapping;
   }
 
-  // ============================================================ //
-  //                     Instance methods                         //
-  // ============================================================ //
-
   // -------------- Translation methods -------------- //
   translatef() {}
 
@@ -215,11 +206,11 @@ export class GT {
   formatMessage(
     message: string,
     options?: {
-      locales?: string[];
+      locales?: string | string[];
       variables?: FormatVariables;
     }
   ): string {
-    return GT.formatMessage(message, {
+    return formatMessage(message, {
       locales: this._renderingLocales,
       ...options,
     });
@@ -229,7 +220,7 @@ export class GT {
    *
    * @param {number} number - The number to format
    * @param {Object} [options] - Additional options for number formatting
-   * @param {string[]} [options.locales] - The locales to use for formatting
+   * @param {string | string[]} [options.locales] - The locales to use for formatting
    * @param {Intl.NumberFormatOptions} [options] - Additional Intl.NumberFormat options
    * @returns {string} The formatted number
    *
@@ -240,10 +231,10 @@ export class GT {
   formatNum(
     number: number,
     options?: {
-      locales?: string[];
+      locales?: string | string[];
     } & Intl.NumberFormatOptions
   ): string {
-    return GT.formatNum(number, {
+    return formatNum(number, {
       locales: this._renderingLocales,
       ...options,
     });
@@ -254,7 +245,7 @@ export class GT {
    *
    * @param {Date} date - The date to format
    * @param {Object} [options] - Additional options for date formatting
-   * @param {string[]} [options.locales] - The locales to use for formatting
+   * @param {string | string[]} [options.locales] - The locales to use for formatting
    * @param {Intl.DateTimeFormatOptions} [options] - Additional Intl.DateTimeFormat options
    * @returns {string} The formatted date
    *
@@ -265,10 +256,10 @@ export class GT {
   formatDateTime(
     date: Date,
     options?: {
-      locales?: string[];
+      locales?: string | string[];
     } & Intl.DateTimeFormatOptions
   ): string {
-    return GT.formatDateTime(date, {
+    return formatDateTime(date, {
       locales: this._renderingLocales,
       ...options,
     });
@@ -280,7 +271,7 @@ export class GT {
    * @param {number} value - The currency value to format
    * @param {string} currency - The currency code (e.g., 'USD', 'EUR')
    * @param {Object} [options] - Additional options for currency formatting
-   * @param {string[]} [options.locales] - The locales to use for formatting
+   * @param {string | string[]} [options.locales] - The locales to use for formatting
    * @param {Intl.NumberFormatOptions} [options] - Additional Intl.NumberFormat options
    * @returns {string} The formatted currency value
    *
@@ -292,10 +283,10 @@ export class GT {
     value: number,
     currency: string,
     options?: {
-      locales?: string[];
+      locales?: string | string[];
     } & Intl.NumberFormatOptions
   ): string {
-    return GT.formatCurrency(value, currency, {
+    return formatCurrency(value, currency, {
       locales: this._renderingLocales,
       ...options,
     });
@@ -306,7 +297,7 @@ export class GT {
    *
    * @param {Array<string | number>} array - The list of items to format
    * @param {Object} [options] - Additional options for list formatting
-   * @param {string[]} [options.locales] - The locales to use for formatting
+   * @param {string | string[]} [options.locales] - The locales to use for formatting
    * @param {Intl.ListFormatOptions} [options] - Additional Intl.ListFormat options
    * @returns {string} The formatted list
    *
@@ -317,7 +308,7 @@ export class GT {
   formatList(
     array: Array<string | number>,
     options?: {
-      locales?: string[];
+      locales?: string | string[];
     } & Intl.ListFormatOptions
   ) {
     return _formatList({
@@ -333,7 +324,7 @@ export class GT {
    * @param {number} value - The relative time value to format
    * @param {Intl.RelativeTimeFormatUnit} unit - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'week', 'month', 'year')
    * @param {Object} options - Additional options for relative time formatting
-   * @param {string[]} [options.locales] - The locales to use for formatting
+   * @param {string | string[]} [options.locales] - The locales to use for formatting
    * @param {Intl.RelativeTimeFormatOptions} [options] - Additional Intl.RelativeTimeFormat options
    * @returns {string} The formatted relative time string
    *
@@ -345,10 +336,10 @@ export class GT {
     value: number,
     unit: Intl.RelativeTimeFormatUnit,
     options?: {
-      locales?: string[];
+      locales?: string | string[];
     } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
   ): string {
-    return GT.formatRelativeTime(value, unit, {
+    return formatRelativeTime(value, unit, {
       locales: this._renderingLocales,
       ...options,
     });
@@ -385,20 +376,7 @@ export class GT {
    */
   getLocaleEmoji(locale = this.targetLocale): string {
     if (!locale) throw new Error(noTargetLocaleProvidedError('getLocaleEmoji'));
-    return GT.getLocaleEmoji(locale, this.customMapping);
-  }
-
-  /**
-   * Retrieves an emoji based on a given locale code, taking into account region, language, and specific exceptions.
-   *
-   * This function uses the locale's region (if present) to select an emoji or falls back on default emojis for certain languages.
-   *
-   * @param locale - A string representing the locale code (e.g., 'en-US', 'fr-CA').
-   * @param {CustomMapping} [customMapping] - A custom mapping of locale codes to their names.
-   * @returns The emoji representing the locale or its region, or a default emoji if no specific match is found.
-   */
-  static getLocaleEmoji(locale: string, customMapping?: CustomMapping): string {
-    return _getLocaleEmoji(locale, customMapping);
+    return getLocaleEmoji(locale, this.customMapping);
   }
 
   /**
@@ -436,11 +414,7 @@ export class GT {
   getLocaleProperties(locale = this.targetLocale): LocaleProperties {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('getLocaleProperties'));
-    return GT.getLocaleProperties(
-      locale,
-      this.sourceLocale,
-      this.customMapping
-    );
+    return getLocaleProperties(locale, this.sourceLocale, this.customMapping);
   }
 
   /**
@@ -501,7 +475,7 @@ export class GT {
   getLocaleDirection(locale = this.targetLocale): 'ltr' | 'rtl' {
     if (!locale)
       throw new Error(noTargetLocaleProvidedError('getLocaleDirection'));
-    return GT.getLocaleDirection(locale);
+    return getLocaleDirection(locale);
   }
 
   /**
@@ -517,7 +491,7 @@ export class GT {
    */
   isValidLocale(locale = this.targetLocale): boolean {
     if (!locale) throw new Error(noTargetLocaleProvidedError('isValidLocale'));
-    return GT.isValidLocale(locale);
+    return isValidLocale(locale);
   }
 
   /**
@@ -551,7 +525,7 @@ export class GT {
    * // Returns: true
    */
   isSameDialect(...locales: (string | string[])[]): boolean {
-    return GT.isSameDialect(...locales);
+    return isSameDialect(...locales);
   }
 
   /**
@@ -583,285 +557,319 @@ export class GT {
    * // Returns: false
    */
   isSupersetLocale(superLocale: string, subLocale: string): boolean {
-    return GT.isSupersetLocale(superLocale, subLocale);
+    return isSupersetLocale(superLocale, subLocale);
   }
+}
 
-  // ============================================================ //
-  //                     Static methods                           //
-  // ============================================================ //
+// ============================================================ //
+//                    Utility methods                           //
+// ============================================================ //
 
-  // -------------- Formatting -------------- //
+// -------------- Formatting -------------- //
 
-  static formatMessage(
-    message: string,
-    options?: {
-      locales?: string[];
-      variables?: FormatVariables;
-    }
-  ): string {
-    return _formatMessage(message, options?.locales, options?.variables);
+/**
+ * Formats a message according to the specified locales and options.
+ *
+ * @param {string} message - The message to format.
+ * @param {string | string[]} [locales='en'] - The locales to use for formatting.
+ * @param {FormatVariables} [variables={}] - The variables to use for formatting.
+ * @returns {string} The formatted message.
+ *
+ * @example
+ * formatMessage('Hello {name}', { name: 'John' });
+ * // Returns: "Hello John"
+ *
+ * formatMessage('Hello {name}', { name: 'John' }, { locales: ['fr'] });
+ * // Returns: "Bonjour John"
+ */
+export function formatMessage(
+  message: string,
+  options?: {
+    locales?: string | string[];
+    variables?: FormatVariables;
   }
+): string {
+  return _formatMessage(message, options?.locales, options?.variables);
+}
 
-  /**
-   * Formats a number according to the specified locales and options.
-   * @param {Object} params - The parameters for the number formatting.
-   * @param {number} params.value - The number to format.
-   * @param {Intl.NumberFormatOptions} [params.options] - Additional options for number formatting.
-   * @param {string[]} [params.options.locales] - The locales to use for formatting.
-   * @returns {string} The formatted number.
-   */
-  static formatNum(
-    number: number,
-    options: {
-      locales: string[];
-    } & Intl.NumberFormatOptions
-  ): string {
-    return _formatNum({
-      value: number,
-      locales: options.locales,
-      options,
-    });
-  }
-
-  /**
-   * Formats a date according to the specified languages and options.
-   * @param {Object} params - The parameters for the date formatting.
-   * @param {Date} params.value - The date to format.
-   * @param {Intl.DateTimeFormatOptions} [params.options] - Additional options for date formatting.
-   * @param {string[]} [params.options.locales] - The languages to use for formatting.
-   * @returns {string} The formatted date.
-   */
-  static formatDateTime(
-    date: Date,
-    options?: {
-      locales?: string[];
-    } & Intl.DateTimeFormatOptions
-  ): string {
-    return _formatDateTime({
-      value: date,
-      locales: options?.locales,
-      options,
-    });
-  }
-
-  /**
-   * Formats a currency value according to the specified languages, currency, and options.
-   * @param {Object} params - The parameters for the currency formatting.
-   * @param {number} params.value - The currency value to format.
-   * @param {string} params.currency - The currency code (e.g., 'USD').
-   * @param {Intl.NumberFormatOptions} [params.options={}] - Additional options for currency formatting.
-   * @param {string[]} [params.options.locales] - The locale codes to use for formatting.
-   * @returns {string} The formatted currency value.
-   */
-  static formatCurrency(
+/**
+ * Formats a number according to the specified locales and options.
+ * @param {Object} params - The parameters for the number formatting.
+ * @param {number} params.value - The number to format.
+ * @param {Intl.NumberFormatOptions} [params.options] - Additional options for number formatting.
+ * @param {string | string[]} [params.options.locales] - The locales to use for formatting.
+ * @returns {string} The formatted number.
+ */
+export function formatNum(
+  number: number,
+  options: {
+    locales: string | string[];
+  } & Intl.NumberFormatOptions
+): string {
+  return _formatNum({
     value: number,
-    currency: string,
-    options: {
-      locales: string[];
-    } & Intl.NumberFormatOptions
-  ): string {
-    return _formatCurrency({
-      value,
-      currency,
-      locales: options.locales,
-      options,
-    });
-  }
+    locales: options.locales,
+    options,
+  });
+}
 
-  /**
-   * Formats a list of items according to the specified locales and options.
-   * @param {Object} params - The parameters for the list formatting.
-   * @param {Array<string | number>} params.value - The list of items to format.
-   * @param {Intl.ListFormatOptions} [params.options={}] - Additional options for list formatting.
-   * @param {string[]} [params.options.locales] - The locales to use for formatting.
-   * @returns {string} The formatted list.
-   */
-  static formatList(
-    array: Array<string | number>,
-    options: {
-      locales: string[];
-    } & Intl.ListFormatOptions
-  ): string {
-    return _formatList({
-      value: array,
-      locales: options.locales,
-      options,
-    });
-  }
+/**
+ * Formats a date according to the specified languages and options.
+ * @param {Object} params - The parameters for the date formatting.
+ * @param {Date} params.value - The date to format.
+ * @param {Intl.DateTimeFormatOptions} [params.options] - Additional options for date formatting.
+ * @param {string | string[]} [params.options.locales] - The languages to use for formatting.
+ * @returns {string} The formatted date.
+ */
+export function formatDateTime(
+  date: Date,
+  options?: {
+    locales?: string | string[];
+  } & Intl.DateTimeFormatOptions
+): string {
+  return _formatDateTime({
+    value: date,
+    locales: options?.locales,
+    options,
+  });
+}
 
-  /**
-   * Formats a relative time value according to the specified locales and options.
-   * @param {Object} params - The parameters for the relative time formatting.
-   * @param {number} params.value - The relative time value to format.
-   * @param {Intl.RelativeTimeFormatUnit} params.unit - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'week', 'month', 'year').
-   * @param {Intl.RelativeTimeFormatOptions} [params.options={}] - Additional options for relative time formatting.
-   * @param {string[]} [params.options.locales] - The locales to use for formatting.
-   * @returns {string} The formatted relative time string.
-   */
-  static formatRelativeTime(
-    value: number,
-    unit: Intl.RelativeTimeFormatUnit,
-    options: {
-      locales: string[];
-    } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
-  ): string {
-    return _formatRelativeTime({
-      value,
-      unit,
-      locales: options.locales,
-      options,
-    });
-  }
-  // -------------- Locale Properties -------------- //
+/**
+ * Formats a currency value according to the specified languages, currency, and options.
+ * @param {Object} params - The parameters for the currency formatting.
+ * @param {number} params.value - The currency value to format.
+ * @param {string} params.currency - The currency code (e.g., 'USD').
+ * @param {Intl.NumberFormatOptions} [params.options={}] - Additional options for currency formatting.
+ * @param {string | string[]} [params.options.locales] - The locale codes to use for formatting.
+ * @returns {string} The formatted currency value.
+ */
+export function formatCurrency(
+  value: number,
+  currency: string,
+  options: {
+    locales: string | string[];
+  } & Intl.NumberFormatOptions
+): string {
+  return _formatCurrency({
+    value,
+    currency,
+    locales: options.locales,
+    options,
+  });
+}
 
-  /**
-   * Retrieves the display name of locale code using Intl.DisplayNames.
-   *
-   * @param {string} locale - A BCP-47 locale code.
-   * @param {string} [defaultLocale] - The default locale to use for formatting.
-   * @param {CustomMapping} [customMapping] - A custom mapping of locale codes to their names.
-   * @returns {string} The display name corresponding to the code.
-   */
-  static getLocaleName(
-    locale: string,
-    defaultLocale?: string,
-    customMapping?: CustomMapping
-  ): string {
-    return _getLocaleName(locale, defaultLocale, customMapping);
-  }
+/**
+ * Formats a list of items according to the specified locales and options.
+ * @param {Object} params - The parameters for the list formatting.
+ * @param {Array<string | number>} params.value - The list of items to format.
+ * @param {Intl.ListFormatOptions} [params.options={}] - Additional options for list formatting.
+ * @param {string | string[]} [params.options.locales] - The locales to use for formatting.
+ * @returns {string} The formatted list.
+ */
+export function formatList(
+  array: Array<string | number>,
+  options: {
+    locales: string | string[];
+  } & Intl.ListFormatOptions
+): string {
+  return _formatList({
+    value: array,
+    locales: options.locales,
+    options,
+  });
+}
 
-  /**
-   * Generates linguistic details for a given locale code.
-   *
-   * This function returns information about the locale,
-   * script, and region of a given language code both in a standard form and in a maximized form (with likely script and region).
-   * The function provides these names in both your default language and native forms, and an associated emoji.
-   *
-   * @param {string} locale - The locale code to get properties for (e.g., "de-AT").
-   * @param {string} [defaultLocale] - The default locale to use for formatting.
-   * @param {CustomMapping} [customMapping] - A custom mapping of locale codes to their names.
-   * @returns {LocaleProperties} - An object containing detailed information about the locale.
-   *
-   * @property {string} code - The full locale code, e.g., "de-AT".
-   * @property {string} name - Language name in the default display language, e.g., "Austrian German".
-   * @property {string} nativeName - Language name in the locale's native language, e.g., "Österreichisches Deutsch".
-   * @property {string} languageCode - The base language code, e.g., "de".
-   * @property {string} languageName - The language name in the default display language, e.g., "German".
-   * @property {string} nativeLanguageName - The language name in the native language, e.g., "Deutsch".
-   * @property {string} nameWithRegionCode - Language name with region in the default language, e.g., "German (AT)".
-   * @property {string} nativeNameWithRegionCode - Language name with region in the native language, e.g., "Deutsch (AT)".
-   * @property {string} regionCode - The region code from maximization, e.g., "AT".
-   * @property {string} regionName - The region name in the default display language, e.g., "Austria".
-   * @property {string} nativeRegionName - The region name in the native language, e.g., "Österreich".
-   * @property {string} scriptCode - The script code from maximization, e.g., "Latn".
-   * @property {string} scriptName - The script name in the default display language, e.g., "Latin".
-   * @property {string} nativeScriptName - The script name in the native language, e.g., "Lateinisch".
-   * @property {string} maximizedCode - The maximized locale code, e.g., "de-Latn-AT".
-   * @property {string} maximizedName - Maximized locale name with likely script in the default language, e.g., "Austrian German (Latin)".
-   * @property {string} nativeMaximizedName - Maximized locale name in the native language, e.g., "Österreichisches Deutsch (Lateinisch)".
-   * @property {string} minimizedCode - Minimized locale code, e.g., "de-AT" (or "de" for "de-DE").
-   * @property {string} minimizedName - Minimized language name in the default language, e.g., "Austrian German".
-   * @property {string} nativeMinimizedName - Minimized language name in the native language, e.g., "Österreichisches Deutsch".
-   * @property {string} emoji - The emoji associated with the locale's region, if applicable.
-   */
-  static getLocaleProperties(
-    locale: string,
-    defaultLocale?: string,
-    customMapping?: CustomMapping
-  ): LocaleProperties {
-    return _getLocaleProperties(locale, defaultLocale, customMapping);
-  }
+/**
+ * Formats a relative time value according to the specified locales and options.
+ * @param {Object} params - The parameters for the relative time formatting.
+ * @param {number} params.value - The relative time value to format.
+ * @param {Intl.RelativeTimeFormatUnit} params.unit - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'week', 'month', 'year').
+ * @param {Intl.RelativeTimeFormatOptions} [params.options={}] - Additional options for relative time formatting.
+ * @param {string | string[]} [params.options.locales] - The locales to use for formatting.
+ * @returns {string} The formatted relative time string.
+ */
+export function formatRelativeTime(
+  value: number,
+  unit: Intl.RelativeTimeFormatUnit,
+  options: {
+    locales: string | string[];
+  } & Omit<Intl.RelativeTimeFormatOptions, 'locales'>
+): string {
+  return _formatRelativeTime({
+    value,
+    unit,
+    locales: options.locales,
+    options,
+  });
+}
+// -------------- Locale Properties -------------- //
 
-  /**
-   * Determines whether a translation is required based on the source and target locales.
-   *
-   * - If the target locale is not specified, the function returns `false`, as translation is not needed.
-   * - If the source and target locale are the same, returns `false`, indicating that no translation is necessary.
-   * - If the `approvedLocales` array is provided, and the target locale is not within that array, the function also returns `false`.
-   * - Otherwise, it returns `true`, meaning that a translation is required.
-   *
-   * @param {string} sourceLocale - The locale code for the original content (BCP 47 locale code).
-   * @param {string} targetLocale - The locale code of the language to translate the content into (BCP 47 locale code).
-   * @param {string[]} [approvedLocale] - An optional array of approved target locales.
-   *
-   * @returns {boolean} - Returns `true` if translation is required, otherwise `false`.
-   */
-  static requiresTranslation(
-    sourceLocale: string,
-    targetLocale: string,
-    approvedLocales?: string[]
-  ): boolean {
-    return _requiresTranslation(sourceLocale, targetLocale, approvedLocales);
-  }
+/**
+ * Retrieves the display name of locale code using Intl.DisplayNames.
+ *
+ * @param {string} locale - A BCP-47 locale code.
+ * @param {string} [defaultLocale] - The default locale to use for formatting.
+ * @param {CustomMapping} [customMapping] - A custom mapping of locale codes to their names.
+ * @returns {string} The display name corresponding to the code.
+ */
+export function getLocaleName(
+  locale: string,
+  defaultLocale?: string,
+  customMapping?: CustomMapping
+): string {
+  return _getLocaleName(locale, defaultLocale, customMapping);
+}
 
-  /**
-   * Determines the best matching locale from the provided approved locales list.
-   * @param {string | string[]} locales - A single locale or an array of locales sorted in preference order.
-   * @param {string[]} [approvedLocales=this.locales] - An array of approved locales, also sorted by preference.
-   * @returns {string | undefined} - The best matching locale from the approvedLocales list, or undefined if no match is found.
-   */
-  static determineLocale(
-    locales: string | string[],
-    approvedLocales: string[] | undefined = []
-  ): string | undefined {
-    return _determineLocale(locales, approvedLocales);
-  }
+/**
+ * Retrieves an emoji based on a given locale code, taking into account region, language, and specific exceptions.
+ *
+ * This function uses the locale's region (if present) to select an emoji or falls back on default emojis for certain languages.
+ *
+ * @param locale - A string representing the locale code (e.g., 'en-US', 'fr-CA').
+ * @param {CustomMapping} [customMapping] - A custom mapping of locale codes to their names.
+ * @returns The emoji representing the locale or its region, or a default emoji if no specific match is found.
+ */
+export function getLocaleEmoji(
+  locale: string,
+  customMapping?: CustomMapping
+): string {
+  return _getLocaleEmoji(locale, customMapping);
+}
 
-  /**
-   * Get the text direction for a given locale code using the Intl.Locale API.
-   *
-   * @param {string} locale - A BCP-47 locale code.
-   * @returns {string} - 'rtl' if the locale is right-to-left, otherwise 'ltr'.
-   */
-  static getLocaleDirection(locale: string): 'ltr' | 'rtl' {
-    return _getLocaleDirection(locale);
-  }
+/**
+ * Generates linguistic details for a given locale code.
+ *
+ * This function returns information about the locale,
+ * script, and region of a given language code both in a standard form and in a maximized form (with likely script and region).
+ * The function provides these names in both your default language and native forms, and an associated emoji.
+ *
+ * @param {string} locale - The locale code to get properties for (e.g., "de-AT").
+ * @param {string} [defaultLocale] - The default locale to use for formatting.
+ * @param {CustomMapping} [customMapping] - A custom mapping of locale codes to their names.
+ * @returns {LocaleProperties} - An object containing detailed information about the locale.
+ *
+ * @property {string} code - The full locale code, e.g., "de-AT".
+ * @property {string} name - Language name in the default display language, e.g., "Austrian German".
+ * @property {string} nativeName - Language name in the locale's native language, e.g., "Österreichisches Deutsch".
+ * @property {string} languageCode - The base language code, e.g., "de".
+ * @property {string} languageName - The language name in the default display language, e.g., "German".
+ * @property {string} nativeLanguageName - The language name in the native language, e.g., "Deutsch".
+ * @property {string} nameWithRegionCode - Language name with region in the default language, e.g., "German (AT)".
+ * @property {string} nativeNameWithRegionCode - Language name with region in the native language, e.g., "Deutsch (AT)".
+ * @property {string} regionCode - The region code from maximization, e.g., "AT".
+ * @property {string} regionName - The region name in the default display language, e.g., "Austria".
+ * @property {string} nativeRegionName - The region name in the native language, e.g., "Österreich".
+ * @property {string} scriptCode - The script code from maximization, e.g., "Latn".
+ * @property {string} scriptName - The script name in the default display language, e.g., "Latin".
+ * @property {string} nativeScriptName - The script name in the native language, e.g., "Lateinisch".
+ * @property {string} maximizedCode - The maximized locale code, e.g., "de-Latn-AT".
+ * @property {string} maximizedName - Maximized locale name with likely script in the default language, e.g., "Austrian German (Latin)".
+ * @property {string} nativeMaximizedName - Maximized locale name in the native language, e.g., "Österreichisches Deutsch (Lateinisch)".
+ * @property {string} minimizedCode - Minimized locale code, e.g., "de-AT" (or "de" for "de-DE").
+ * @property {string} minimizedName - Minimized language name in the default language, e.g., "Austrian German".
+ * @property {string} nativeMinimizedName - Minimized language name in the native language, e.g., "Österreichisches Deutsch".
+ * @property {string} emoji - The emoji associated with the locale's region, if applicable.
+ */
+export function getLocaleProperties(
+  locale: string,
+  defaultLocale?: string,
+  customMapping?: CustomMapping
+): LocaleProperties {
+  return _getLocaleProperties(locale, defaultLocale, customMapping);
+}
 
-  /**
-   * Checks if a given BCP 47 locale code is valid.
-   * @param {string} locale - The BCP 47 locale code to validate.
-   * @returns {boolean} True if the BCP 47 code is valid, false otherwise.
-   */
-  static isValidLocale(locale: string): boolean {
-    return _isValidLocale(locale);
-  }
+/**
+ * Determines whether a translation is required based on the source and target locales.
+ *
+ * - If the target locale is not specified, the function returns `false`, as translation is not needed.
+ * - If the source and target locale are the same, returns `false`, indicating that no translation is necessary.
+ * - If the `approvedLocales` array is provided, and the target locale is not within that array, the function also returns `false`.
+ * - Otherwise, it returns `true`, meaning that a translation is required.
+ *
+ * @param {string} sourceLocale - The locale code for the original content (BCP 47 locale code).
+ * @param {string} targetLocale - The locale code of the language to translate the content into (BCP 47 locale code).
+ * @param {string[]} [approvedLocale] - An optional array of approved target locales.
+ *
+ * @returns {boolean} - Returns `true` if translation is required, otherwise `false`.
+ */
+export function requiresTranslation(
+  sourceLocale: string,
+  targetLocale: string,
+  approvedLocales?: string[]
+): boolean {
+  return _requiresTranslation(sourceLocale, targetLocale, approvedLocales);
+}
 
-  /**
-   * Standardizes a BCP 47 locale code to ensure correct formatting.
-   * @param {string} locale - The BCP 47 locale code to standardize.
-   * @returns {string} The standardized BCP 47 locale code or an empty string if it is an invalid code.
-   */
-  static standardizeLocale(locale: string): string {
-    return _standardizeLocale(locale);
-  }
+/**
+ * Determines the best matching locale from the provided approved locales list.
+ * @param {string | string[]} locales - A single locale or an array of locales sorted in preference order.
+ * @param {string[]} [approvedLocales=this.locales] - An array of approved locales, also sorted by preference.
+ * @returns {string | undefined} - The best matching locale from the approvedLocales list, or undefined if no match is found.
+ */
+export function determineLocale(
+  locales: string | string[],
+  approvedLocales: string[] | undefined = []
+): string | undefined {
+  return _determineLocale(locales, approvedLocales);
+}
 
-  /**
-   * Checks if multiple BCP 47 locale codes represent the same dialect.
-   * @param {string[]} locales - The BCP 47 locale codes to compare.
-   * @returns {boolean} True if all BCP 47 codes represent the same dialect, false otherwise.
-   */
-  static isSameDialect(...locales: (string | string[])[]): boolean {
-    return _isSameDialect(...locales);
-  }
+/**
+ * Get the text direction for a given locale code using the Intl.Locale API.
+ *
+ * @param {string} locale - A BCP-47 locale code.
+ * @returns {string} - 'rtl' if the locale is right-to-left, otherwise 'ltr'.
+ */
+export function getLocaleDirection(locale: string): 'ltr' | 'rtl' {
+  return _getLocaleDirection(locale);
+}
 
-  /**
-   * Checks if multiple BCP 47 locale codes represent the same language.
-   * @param {string[]} locales - The BCP 47 locale codes to compare.
-   * @returns {boolean} True if all BCP 47 codes represent the same language, false otherwise.
-   */
-  static isSameLanguage(...locales: (string | string[])[]): boolean {
-    return _isSameLanguage(...locales);
-  }
+/**
+ * Checks if a given BCP 47 locale code is valid.
+ * @param {string} locale - The BCP 47 locale code to validate.
+ * @returns {boolean} True if the BCP 47 code is valid, false otherwise.
+ */
+export function isValidLocale(locale: string): boolean {
+  return _isValidLocale(locale);
+}
 
-  /**
-   * Checks if a locale is a superset of another locale.
-   * A subLocale is a subset of superLocale if it is an extension of superLocale or are otherwise identical.
-   *
-   * @param {string} superLocale - The locale to check if it is a superset of the other locale.
-   * @param {string} subLocale - The locale to check if it is a subset of the other locale.
-   * @returns {boolean} True if the first locale is a superset of the second locale, false otherwise.
-   */
-  static isSupersetLocale(superLocale: string, subLocale: string): boolean {
-    return _isSupersetLocale(superLocale, subLocale);
-  }
+/**
+ * Standardizes a BCP 47 locale code to ensure correct formatting.
+ * @param {string} locale - The BCP 47 locale code to standardize.
+ * @returns {string} The standardized BCP 47 locale code or an empty string if it is an invalid code.
+ */
+export function standardizeLocale(locale: string): string {
+  return _standardizeLocale(locale);
+}
+
+/**
+ * Checks if multiple BCP 47 locale codes represent the same dialect.
+ * @param {string[]} locales - The BCP 47 locale codes to compare.
+ * @returns {boolean} True if all BCP 47 codes represent the same dialect, false otherwise.
+ */
+export function isSameDialect(...locales: (string | string[])[]): boolean {
+  return _isSameDialect(...locales);
+}
+
+/**
+ * Checks if multiple BCP 47 locale codes represent the same language.
+ * @param {string[]} locales - The BCP 47 locale codes to compare.
+ * @returns {boolean} True if all BCP 47 codes represent the same language, false otherwise.
+ */
+export function isSameLanguage(...locales: (string | string[])[]): boolean {
+  return _isSameLanguage(...locales);
+}
+
+/**
+ * Checks if a locale is a superset of another locale.
+ * A subLocale is a subset of superLocale if it is an extension of superLocale or are otherwise identical.
+ *
+ * @param {string} superLocale - The locale to check if it is a superset of the other locale.
+ * @param {string} subLocale - The locale to check if it is a subset of the other locale.
+ * @returns {boolean} True if the first locale is a superset of the second locale, false otherwise.
+ */
+export function isSupersetLocale(
+  superLocale: string,
+  subLocale: string
+): boolean {
+  return _isSupersetLocale(superLocale, subLocale);
 }

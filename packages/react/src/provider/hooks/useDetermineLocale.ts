@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { GT } from 'generaltranslation';
+import { determineLocale } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocaleWarning } from '../../errors/createErrors';
 import { defaultLocaleCookieName } from '../../utils/cookies';
@@ -21,7 +21,7 @@ export function useDetermineLocale({
   const [locale, _setLocale] = useState<string>(
     ssr
       ? _locale
-        ? GT.determineLocale(_locale, locales) || ''
+        ? determineLocale(_locale, locales) || ''
         : ''
       : getNewLocale({
           _locale,
@@ -73,7 +73,7 @@ function getNewLocale({
   if (
     _locale &&
     _locale === locale &&
-    GT.determineLocale(_locale, locales) === locale
+    determineLocale(_locale, locales) === locale
   )
     return _locale;
 
@@ -97,7 +97,7 @@ function getNewLocale({
 
   // determine locale
   const newLocale =
-    GT.determineLocale(
+    determineLocale(
       [
         ...(_locale ? [_locale] : []), // prefer user passed locale
         ...(cookieLocale ? [cookieLocale] : []), // then prefer cookie locale
@@ -135,7 +135,7 @@ function createSetLocale({
   const internalSetLocale = (newLocale: string): string => {
     // validate locale
     const validatedLocale =
-      GT.determineLocale(newLocale, locales) || locale || defaultLocale;
+      determineLocale(newLocale, locales) || locale || defaultLocale;
     if (validatedLocale !== newLocale) {
       console.warn(createUnsupportedLocaleWarning(validatedLocale, newLocale));
     }

@@ -1,4 +1,4 @@
-import { GT } from 'generaltranslation';
+import { getLocaleProperties } from 'generaltranslation';
 import { dictionaryMissingWarning } from '../errors/createErrors';
 import { CustomLoader, Dictionary } from '../types/types';
 
@@ -7,7 +7,7 @@ export default async function loadDictionaryHelper(
   loadDictionary: CustomLoader
 ): Promise<Dictionary | undefined> {
   const localeVariants = Array.from(
-    new Set([locale, GT.getLocaleProperties(locale).languageCode])
+    new Set([locale, getLocaleProperties(locale).languageCode])
   );
   for (const locale of localeVariants) {
     try {

@@ -15,7 +15,7 @@ import {
   createNoEntryFoundWarning,
 } from '../../errors/createErrors';
 import { hashSource } from 'generaltranslation/id';
-import { GT } from 'generaltranslation';
+import { formatMessage } from 'generaltranslation';
 import { TranslateContentCallback } from '../../types/runtime';
 
 export default function useCreateInternalUseTranslationsFunction(
@@ -61,7 +61,7 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Render method
       const renderMessage = (message: string, locales: string[]) => {
-        return GT.formatMessage(message, {
+        return formatMessage(message, {
           locales,
           variables: options.variables,
         });

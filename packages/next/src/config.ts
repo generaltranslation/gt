@@ -8,7 +8,6 @@ import {
   conflictingConfigurationBuildError,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
-  unresolvedGetLocaleBuildError,
   projectIdMissingWarn,
   standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
@@ -16,7 +15,7 @@ import {
   unsupportedGetLocalePathBuildError,
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import { GT } from 'generaltranslation';
+import { getLocaleProperties, standardizeLocale } from 'generaltranslation';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -190,7 +189,7 @@ export function withGTConfig(
 
     // Check [defaultLanguageCode].json file
     if (!resolvedDictionaryFilePath) {
-      const defaultLanguage = GT.getLocaleProperties(
+      const defaultLanguage = getLocaleProperties(
         mergedConfig.defaultLocale
       )?.languageCode;
 
@@ -253,7 +252,7 @@ export function withGTConfig(
   mergedConfig.locales = Array.from(new Set(mergedConfig.locales)).map(
     (locale) => {
       const updatedLocale = gtServicesEnabled
-        ? GT.standardizeLocale(locale)
+        ? standardizeLocale(locale)
         : locale;
       if (updatedLocale !== locale) {
         updatedLocales.push(`${locale} -> ${updatedLocale}`);

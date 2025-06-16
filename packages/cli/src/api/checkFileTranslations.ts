@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { createOraSpinner, logError } from '../console';
-import { GT } from 'generaltranslation';
+import { getLocaleProperties } from 'generaltranslation';
 import { downloadFile } from './downloadFile';
 import { downloadFileBatch } from './downloadFileBatch';
 /**
@@ -201,7 +201,7 @@ function generateStatusSuffixText(
     // Add completed locales
     if (status.completed.size > 0) {
       const completedCodes = Array.from(status.completed)
-        .map((locale) => GT.getLocaleProperties(locale).code)
+        .map((locale) => getLocaleProperties(locale).code)
         .join(', ');
       localeStatuses.push(chalk.green(`${completedCodes}`));
     }
@@ -209,7 +209,7 @@ function generateStatusSuffixText(
     // Add failed locales
     if (status.failed.size > 0) {
       const failedCodes = Array.from(status.failed)
-        .map((locale) => GT.getLocaleProperties(locale).code)
+        .map((locale) => getLocaleProperties(locale).code)
         .join(', ');
       localeStatuses.push(chalk.red(`${failedCodes}`));
     }
@@ -217,7 +217,7 @@ function generateStatusSuffixText(
     // Add pending locales
     if (status.pending.size > 0) {
       const pendingCodes = Array.from(status.pending)
-        .map((locale) => GT.getLocaleProperties(locale).code)
+        .map((locale) => getLocaleProperties(locale).code)
         .join(', ');
       localeStatuses.push(chalk.yellow(`${pendingCodes}`));
     }

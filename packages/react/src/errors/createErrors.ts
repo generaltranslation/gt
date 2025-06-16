@@ -1,4 +1,4 @@
-import { GT } from 'generaltranslation';
+import { getLocaleProperties } from 'generaltranslation';
 
 // ---- ERRORS ---- //
 
@@ -83,7 +83,7 @@ export const APIKeyMissingWarn =
 export const createUnsupportedLocalesWarning = (locales: string[]) =>
   `gt-react: The following locales are currently unsupported by our service: ${locales
     .map((locale) => {
-      const { name } = GT.getLocaleProperties(locale);
+      const { name } = getLocaleProperties(locale);
       return `${locale} (${name})`;
     })
     .join(', ')}`;
@@ -96,7 +96,7 @@ export const createUnsupportedLocaleWarning = (
 ) => {
   return (
     `You are trying to switch to "${newLocale}" which is not supported.  ` +
-    `Update the list of supported locales through your dashboard or your gt.config.json file if you are using a config file. ` +
+    `Update the list of supported locales through your dashboard or your config.json file if you are using a config file. ` +
     `Falling back to "${validatedLocale}".`
   );
 };

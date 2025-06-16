@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useDetermineLocale } from './useDetermineLocale';
-import { GT } from 'generaltranslation';
+import { requiresTranslation, isSameLanguage } from 'generaltranslation';
 
 export function useLocaleData({
   _locale,
@@ -30,7 +30,7 @@ export function useLocaleData({
 
   const [translationRequired, dialectTranslationRequired] = useMemo(() => {
     // User locale is not default locale or equivalent
-    const translationRequired = GT.requiresTranslation(
+    const translationRequired = requiresTranslation(
       defaultLocale,
       locale,
       locales
@@ -38,7 +38,7 @@ export function useLocaleData({
 
     // User locale is not default locale but is a dialect of the same language
     const dialectTranslationRequired =
-      translationRequired && GT.isSameLanguage(defaultLocale, locale);
+      translationRequired && isSameLanguage(defaultLocale, locale);
 
     return [translationRequired, dialectTranslationRequired];
   }, [defaultLocale, locale, locales]);

@@ -1,4 +1,8 @@
-import { GT } from 'generaltranslation';
+import {
+  isValidLocale,
+  isSameDialect,
+  standardizeLocale,
+} from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';
 import { NextRequest, NextResponse } from 'next/server';
@@ -82,12 +86,12 @@ export default function createNextMiddleware({
   const localeHeaderName =
     headersAndCookies?.localeHeaderName || defaultLocaleHeaderName;
 
-  if (!GT.isValidLocale(defaultLocale))
+  if (!isValidLocale(defaultLocale))
     throw new Error(
       `gt-next middleware: defaultLocale "${defaultLocale}" is not a valid locale.`
     );
 
-  const warningLocales = locales.filter((locale) => !GT.isValidLocale(locale));
+  const warningLocales = locales.filter((locale) => !isValidLocale(locale));
   if (warningLocales.length)
     console.warn(createUnsupportedLocalesWarning(warningLocales));
 
@@ -104,7 +108,7 @@ export default function createNextMiddleware({
         acc[sharedPath] = Object.entries(localizedPath).reduce<{
           [key: string]: string;
         }>((acc, [locale, localizedPath]) => {
-          acc[gtServicesEnabled ? GT.standardizeLocale(locale) : locale] =
+          acc[gtServicesEnabled ? standardizeLocale(locale) : locale] =
             localizedPath;
           return acc;
         }, {});
@@ -243,10 +247,7 @@ export default function createNextMiddleware({
       if (localizedPathWithParameters === undefined) {
         // --- CASE: remove defaultLocale prefix --- //
 
-        if (
-          !prefixDefaultLocale &&
-          GT.isSameDialect(userLocale, defaultLocale)
-        ) {
+        if (!prefixDefaultLocale && isSameDialect(userLocale, defaultLocale)) {
           if (pathnameLocale) {
             // REDIRECT CASE: used setLocale (/fr/customers -> /customers) (/en/customers -> /customers)
             if (clearResetCookie) {
@@ -286,7 +287,7 @@ export default function createNextMiddleware({
 
       // ----- CASE: localized path exists ----- //
 
-      if (!prefixDefaultLocale && GT.isSameDialect(userLocale, defaultLocale)) {
+      if (!prefixDefaultLocale && isSameDialect(userLocale, defaultLocale)) {
         // --- CASE: remove defaultLocale prefix --- //
 
         if (pathnameLocale) {

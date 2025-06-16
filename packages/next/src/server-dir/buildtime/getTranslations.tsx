@@ -14,7 +14,7 @@ import {
 } from '../../errors/createErrors';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
-import { GT } from 'generaltranslation';
+import { formatMessage } from 'generaltranslation';
 import { hashSource } from 'generaltranslation/id';
 import use from '../../utils/use';
 
@@ -106,7 +106,7 @@ export async function getTranslations(
 
     // Render Method
     const renderContent = (message: string, locales: string[]) => {
-      return GT.formatMessage(message, {
+      return formatMessage(message, {
         locales,
         variables: options.variables,
       });
@@ -122,7 +122,7 @@ export async function getTranslations(
 
     // Render dictionaryTranslation
     if (dictionaryTranslation) {
-      return GT.formatMessage(dictionaryTranslation, {
+      return formatMessage(dictionaryTranslation, {
         locales: [locale, defaultLocale],
         variables: options.variables,
       });

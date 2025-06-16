@@ -5,7 +5,6 @@ import chalk from 'chalk';
 import { promptConfirm } from '../console';
 import { SetupOptions, SupportedFrameworks } from '../types';
 import findFilepath from '../fs/findFilepath';
-import { generateSettings } from '../config/generateSettings';
 import { formatFiles } from '../hooks/postProcess';
 import handleInitGT from '../next/parse/handleInitGT';
 import { getPackageJson, isPackageInstalled } from '../utils/packageJson';

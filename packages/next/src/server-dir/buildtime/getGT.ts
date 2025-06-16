@@ -1,4 +1,4 @@
-import { GT } from 'generaltranslation';
+import { formatMessage } from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../server';
 import { hashSource } from 'generaltranslation/id';
@@ -52,7 +52,7 @@ export async function getGT(): Promise<
 
     // Render Method
     const renderContent = (message: string, locales: string[]) => {
-      return GT.formatMessage(message, {
+      return formatMessage(message, {
         locales,
         variables: options.variables,
       });

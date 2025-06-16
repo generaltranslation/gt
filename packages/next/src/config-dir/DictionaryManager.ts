@@ -1,4 +1,4 @@
-import { GT } from 'generaltranslation';
+import { standardizeLocale } from 'generaltranslation';
 import { DictionaryObject } from 'gt-react/internal';
 import resolveDictionaryLoader from '../loaders/resolveDictionary';
 import { customLoadDictionaryWarning } from '../errors/createErrors';
@@ -49,7 +49,7 @@ export class DictionaryManager {
   async getDictionary(locale: string): Promise<DictionaryObject | undefined> {
     const reference =
       process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true'
-        ? GT.standardizeLocale(locale)
+        ? standardizeLocale(locale)
         : locale;
 
     // Check internal cache

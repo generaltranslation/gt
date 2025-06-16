@@ -1,6 +1,6 @@
 import chalk from 'chalk';
-import { createOraSpinner, createSpinner } from '../console';
-import { GT } from 'generaltranslation';
+import { createOraSpinner } from '../console';
+import { getLocaleProperties } from 'generaltranslation';
 
 /**
  * Waits for translations to be deployed to the General Translation API
@@ -54,7 +54,7 @@ export const waitForUpdates = async (
             chalk.green(`[${availableLocales.length}/${locales.length}]`) +
               ` translations completed`,
             ...availableLocales.map((locale: string) => {
-              const localeProperties = GT.getLocaleProperties(locale);
+              const localeProperties = getLocaleProperties(locale);
               return `Translation completed for ${chalk.green(
                 localeProperties.name
               )} (${chalk.green(localeProperties.code)})`;
