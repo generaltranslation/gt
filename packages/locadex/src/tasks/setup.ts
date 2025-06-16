@@ -116,8 +116,8 @@ export async function setupTask(
   if (manager.getCliOptions().localTranslations) {
     gtConfig.files = {
       gt: {
-        output: 'public/_gt/[locale].json'
-      }
+        output: 'public/_gt/[locale].json',
+      },
     };
   }
 
