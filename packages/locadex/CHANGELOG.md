@@ -1,5 +1,11 @@
 # locadex
 
+## 0.1.8
+
+### Patch Changes
+
+- [#394](https://github.com/generaltranslation/gt/pull/394) [`f5d2fd2`](https://github.com/generaltranslation/gt/commit/f5d2fd2d34359a05eb9ba45c9cf0fbdcc732eedc) Thanks [@brian-lou](https://github.com/brian-lou)! - Switch default mcp to stdio
+
 ## 0.1.7
 
 ### Patch Changes
