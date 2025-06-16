@@ -6,12 +6,12 @@ export default async function loadDictionaryHelper(
   locale: string,
   loadDictionary: CustomLoader
 ): Promise<Dictionary | undefined> {
-  const localeVariants = Array.from(
+  const locales = Array.from(
     new Set([locale, getLocaleProperties(locale).languageCode])
   );
-  for (const locale of localeVariants) {
+  for (const currentLocale of locales) {
     try {
-      const result = await loadDictionary(locale);
+      const result = await loadDictionary(currentLocale);
       if (result) {
         return result;
       }

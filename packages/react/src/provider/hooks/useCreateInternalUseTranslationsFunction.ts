@@ -96,7 +96,7 @@ export default function useCreateInternalUseTranslationsFunction(
       }
 
       // ----- TRANSLATE ON DEMAND ----- //
-      // develoment only
+      // development only
 
       // Check if runtime translation is enabled
       if (!runtimeTranslationEnabled) {

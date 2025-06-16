@@ -32,7 +32,7 @@ export function hashSource(
     id,
     dataFormat,
   }: {
-    source: JsxChildren;
+    source: JsxChildren | string;
     context?: string;
     id?: string;
     dataFormat: DataFormat;

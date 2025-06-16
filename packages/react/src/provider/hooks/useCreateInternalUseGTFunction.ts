@@ -38,7 +38,7 @@ export default function useCreateInternalUseGTFunction(
       if (!contentString || typeof contentString !== 'string') return '';
 
       // Render method
-      const renderContent = (message: string, locales: string[]) => {
+      const renderMessage = (message: string, locales: string[]) => {
         return formatMessage(message, {
           locales,
           variables: options.variables,
@@ -76,23 +76,23 @@ export default function useCreateInternalUseGTFunction(
 
       // Render fallback when tx not required or error
       if (!translationRequired || translationEntry?.state === 'error') {
-        return renderContent(contentString, [defaultLocale]);
+        return renderMessage(contentString, [defaultLocale]);
       }
 
       // Render success
       if (translationEntry?.state === 'success') {
-        return renderContent(translationEntry.target as string, [
+        return renderMessage(translationEntry.target as string, [
           locale,
           defaultLocale,
         ]);
       }
 
       // ----- TRANSLATE ON DEMAND ----- //
-      // develoment only
+      // development only
 
       // Check if runtime translation is enabled
       if (!runtimeTranslationEnabled) {
-        return renderContent(contentString, [defaultLocale]);
+        return renderMessage(contentString, [defaultLocale]);
       }
 
       // Translate Content
@@ -108,12 +108,12 @@ export default function useCreateInternalUseGTFunction(
 
       // Loading behavior
       if (renderSettings.method === 'replace') {
-        return renderContent(contentString, [defaultLocale]);
+        return renderMessage(contentString, [defaultLocale]);
       } else if (renderSettings.method === 'skeleton') {
         return '';
       }
       return dialectTranslationRequired // default behavior
-        ? renderContent(contentString, [defaultLocale])
+        ? renderMessage(contentString, [defaultLocale])
         : '';
     },
     [

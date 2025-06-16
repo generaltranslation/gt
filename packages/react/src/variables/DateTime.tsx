@@ -26,7 +26,6 @@ function DateTime({
 }: {
   children: Date | null | undefined;
   locales?: string[];
-  name?: string;
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
 }): React.JSX.Element | null {
   if (!children) return null;

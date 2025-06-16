@@ -168,13 +168,24 @@ export default function useRuntimeTranslation({
         const translationPromise = new Promise<
           TranslationSuccess | TranslationError
         >((resolve, reject) => {
-          requestQueueRef.current.set(key, {
-            dataFormat: dataFormat,
-            source: params.source,
-            metadata: params.metadata,
-            resolve,
-            reject,
-          } as TranslationRequestQueueItem);
+          requestQueueRef.current.set(
+            key,
+            dataFormat === 'JSX'
+              ? {
+                  dataFormat: 'JSX' as const,
+                  source: params.source as JsxChildren,
+                  metadata: params.metadata,
+                  resolve,
+                  reject,
+                }
+              : {
+                  dataFormat: dataFormat as 'ICU' | 'I18NEXT',
+                  source: params.source as string,
+                  metadata: params.metadata,
+                  resolve,
+                  reject,
+                }
+          );
         })
           .catch((error) => {
             throw error;

@@ -1,4 +1,4 @@
-import { FormatVariables } from 'src/types';
+import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
 import IntlMessageFormat from 'intl-messageformat';

@@ -15,10 +15,10 @@ import React from 'react';
  * </Num>
  * ```
  *
- * @param {number | string} children - Content to render inside the number component.
+ * @param {number | string | null | undefined} children - Content to render inside the number component.
  * @param {string[]} [locales] - Optional locales to use for number formatting. If not provided, the library will default to the user's locale.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
- * @returns {Promise<React.JSX.Element>} The formatted number component.
+ * @returns {React.JSX.Element} The formatted number component.
  */
 function Num({
   children,

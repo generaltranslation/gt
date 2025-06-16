@@ -122,7 +122,7 @@ DateTime.gtTransformation = 'variable-datetime';
  *
  * @param {any} [children] - Optional content (typically a number) to render inside the component.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
- * @returns {Promise<React.JSX.Element>} The formatted number component.
+ * @returns {React.JSX.Element} The formatted number component.
  */
 export const Num: typeof _Num = () => {
   throw new Error(typesFileError);

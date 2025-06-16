@@ -13,7 +13,7 @@ import React from 'react';
  * </DateTime>
  * ```
  *
- * @param {Date} [children] - Optional content to render inside the component.
+ * @param {Date | null | undefined} children - Optional content to render inside the component.
  * @param {string[]} [locales] - Optional locales to use for date formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.DateTimeFormatOptions} [options={}] - Optional formatting options for the date, following `Intl.DateTimeFormatOptions` specifications.
  * @returns {JSX.Element} The formatted date or time component.
@@ -24,7 +24,6 @@ function DateTime({
   options = {},
 }: {
   children: Date | null | undefined;
-  name?: string;
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
   locales?: string[];
 }): React.JSX.Element | null {

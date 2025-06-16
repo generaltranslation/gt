@@ -16,10 +16,10 @@ import { GTContext } from '../provider/GTContext';
  * </Num>
  * ```
  *
- * @param {number | string} children - Content to render inside the number component.
+ * @param {number | string | null | undefined} children - Content to render inside the number component.
  * @param {string[]} [locales] - Optional locales to use for number formatting. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
- * @returns {JSX.Element} The formatted number component.
+ * @returns {React.JSX.Element} The formatted number component.
  */
 function Num({
   children,
@@ -29,7 +29,6 @@ function Num({
   children: number | string | null | undefined;
   locales?: string[];
   options?: Intl.NumberFormatOptions; // Optional options for the number formatting
-  name?: string;
 }): React.JSX.Element | null {
   if (!children) return null;
   const context = useContext(GTContext);

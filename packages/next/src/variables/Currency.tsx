@@ -12,7 +12,7 @@ import React from 'react';
  * </Currency>
  * ```
  *
- * @param {number | string} children - Content to render inside the currency component.
+ * @param {number | string | null | undefined} children - Content to render inside the currency component.
  * @param {string} [currency="USD"] - The currency type (e.g., USD, EUR, etc.).
  * @param {string[]} [locales] - Optional locales to use for currency formatting. If not provided, the library will default to the user's locale..
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options to customize how the currency is displayed.
