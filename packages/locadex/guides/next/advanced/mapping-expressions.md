@@ -77,6 +77,7 @@ const MyComponent = () => {
 - This is the classic dictionary approach. It separates content from implementation context.
 - **Use sparingly** - only use this approach when content reuse across components justifies the separation.
 - Additionally, this approach may be used to internationalize complex strings that are both logically functional and are also displayed in UI.
+- If you use this approach, your dictionary entries must be stored in a filed called `dictionary.json` in the root of the project. (or in `src/dictionary.json` if there is a `src` directory). `dictionary.js` and `dictionary.ts` are also valid.
 
 **Dictionary structure**:
 

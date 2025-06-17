@@ -3,6 +3,7 @@ import { logger } from '../logging/logger.js';
 import path from 'node:path';
 import { CliOptions, LocadexConfig } from '../types/cli.js';
 import { exit } from './shutdown.js';
+import dotenv from 'dotenv';
 
 export async function validateConfig(options: CliOptions) {
   // Validate ANTHROPIC_API_KEY
@@ -36,7 +37,12 @@ export async function validateConfig(options: CliOptions) {
   }
 }
 
-export function isGTAuthConfigured() {
+export function isGTAuthConfigured(cwd?: string) {
+  if (cwd) {
+    dotenv.config({ path: path.join(cwd, '.env.production') });
+    dotenv.config({ path: path.join(cwd, '.env.local') });
+    dotenv.config({ path: path.join(cwd, '.env') });
+  }
   return process.env.GT_API_KEY && process.env.GT_PROJECT_ID;
 }
 

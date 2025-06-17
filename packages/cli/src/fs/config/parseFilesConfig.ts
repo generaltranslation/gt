@@ -44,7 +44,8 @@ export function resolveLocaleFiles(
  */
 export function resolveFiles(
   files: FilesOptions,
-  locale: string
+  locale: string,
+  cwd: string
 ): {
   resolvedPaths: ResolvedFiles;
   placeholderPaths: ResolvedFiles;
@@ -71,6 +72,7 @@ export function resolveFiles(
     // ==== PLACEHOLDERS ==== //
     if (files[fileType]?.include) {
       const filePaths = expandGlobPatterns(
+        cwd,
         files[fileType].include,
         files[fileType]?.exclude || [],
         locale,
@@ -90,6 +92,7 @@ export function resolveFiles(
 
 // Helper function to expand glob patterns
 function expandGlobPatterns(
+  cwd: string,
   includePatterns: string[],
   excludePatterns: string[],
   locale: string,
@@ -128,11 +131,11 @@ function expandGlobPatterns(
     const expandedPattern = pattern.replace(/\[locale\]/g, locale);
 
     // Resolve the absolute pattern path
-    const absolutePattern = path.resolve(process.cwd(), expandedPattern);
+    const absolutePattern = path.resolve(cwd, expandedPattern);
 
     // Prepare exclude patterns with locale replaced
     const expandedExcludePatterns = excludePatterns.map((p) =>
-      path.resolve(process.cwd(), p.replace(/\[locale\]/g, locale))
+      path.resolve(cwd, p.replace(/\[locale\]/g, locale))
     );
 
     // Use fast-glob to find all matching files, excluding the patterns
@@ -146,7 +149,7 @@ function expandGlobPatterns(
     // For each match, create a version with [locale] in the correct positions
     matches.forEach((match) => {
       // Convert to relative path to make replacement easier
-      const relativePath = path.relative(process.cwd(), match);
+      const relativePath = path.relative(cwd, match);
       let originalRelativePath = relativePath;
 
       // Replace locale with [locale] at each tracked position
@@ -170,7 +173,7 @@ function expandGlobPatterns(
       }
 
       // Convert back to absolute path
-      const originalPath = path.resolve(process.cwd(), originalRelativePath);
+      const originalPath = path.resolve(cwd, originalRelativePath);
       placeholderPaths.push(originalPath);
     });
   }

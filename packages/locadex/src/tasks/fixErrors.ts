@@ -70,8 +70,11 @@ Your new task is to fix any errors that were introduced by your previous impleme
   - These guides provide additional knowledge about how to internationalize the content.
 - NEVER move content to a different file. All content MUST remain in the same file where it came from.
 - NEVER CREATE OR DELETE ANY FILES (especially .bak files)
+- YOU MAY NOT RUN ANY COMMANDS THAT ARE NOT LISTED BELOW:
+  - 'locadex validate'
+  - 'tsc --noEmit'
 
-To run the gt-next validator, run the following command from the app root:
+To run the gt-next validator, run the following command from the app root directory:
 'locadex validate' (global command)
 The app root is: "${appDirectory}"
 

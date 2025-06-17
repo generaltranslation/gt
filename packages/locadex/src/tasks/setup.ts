@@ -1,6 +1,9 @@
 import { createSpinner, promptConfirm } from '../logging/console.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
-import { getPackageManager } from 'gtx-cli/utils/packageManager';
+import {
+  getPackageManager,
+  PackageManager,
+} from 'gtx-cli/utils/packageManager';
 import { installPackage } from 'gtx-cli/utils/installPackage';
 import chalk from 'chalk';
 import { logger } from '../logging/logger.js';
@@ -23,12 +26,24 @@ import {
 import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { getLocadexVersion } from '../utils/getPaths.js';
 import { getResource } from '../resources/getResource.js';
+import { generateSettings } from 'gtx-cli/config/generateSettings';
+import { setCredentials } from 'gtx-cli/utils/credentials';
+import { retrieveCredentials } from 'gtx-cli/utils/credentials';
+import { isGTAuthConfigured } from '../utils/config.js';
+import { CliOptions } from '../types/cli.js';
 
+/**
+ * Run Locadex setup on the project
+ * If autoSetup is true, the task will run without human intervention.
+ * If autoSetup is false, the task may prompt the user for confirmation.
+ */
 export async function setupTask(
+  cliOptions: CliOptions,
+  autoSetup: boolean,
   bypassPrompts: boolean,
   specifiedPackageManager?: string
 ) {
-  if (!bypassPrompts) {
+  if (!bypassPrompts && !autoSetup) {
     await promptConfirm({
       message: chalk.yellow(
         `Locadex will modify files! Make sure you have committed or stashed any changes. Do you want to continue?`
@@ -40,9 +55,21 @@ export async function setupTask(
 
   const manager = LocadexManager.getInstance();
 
+  // Setup API keys
+  if (!autoSetup && !isGTAuthConfigured(manager.appDirectory)) {
+    const shouldGenerateApiKeys = await promptConfirm({
+      message: `Would you like locadex to automatically generate a General Translation API key and project ID for you?`,
+      defaultValue: true,
+    });
+    if (shouldGenerateApiKeys) {
+      await setupApiKeys('production', manager);
+    }
+  }
+
   const packageManager = await getPackageManager(
     manager.rootDirectory,
-    specifiedPackageManager
+    specifiedPackageManager,
+    autoSetup
   );
   let appPackageJson = await getPackageJson(manager.appDirectory);
 
@@ -138,10 +165,11 @@ export async function setupTask(
   await setupLocaleSelector();
 
   // Create dictionary.json file if not exists
-  setupDictionary(manager);
+  // commented out because this trips up the AI
+  // setupDictionary(manager);
 
   // Add locadex github action if not exists
-  setupGithubAction(manager);
+  setupGithubAction(manager, packageManager);
 
   const formatter = await detectFormatter();
   if (formatter && filesUpdated.length > 0) {
@@ -149,7 +177,7 @@ export async function setupTask(
   }
 
   // Run i18n command
-  await i18nTask();
+  await i18nTask(cliOptions);
 }
 
 function setupDictionary(manager: LocadexManager) {
@@ -173,7 +201,10 @@ function setupDictionary(manager: LocadexManager) {
   }
 }
 
-function setupGithubAction(manager: LocadexManager) {
+function setupGithubAction(
+  manager: LocadexManager,
+  packageManager: PackageManager
+) {
   const githubActionPath = path.join(
     manager.rootDirectory,
     '.github',
@@ -186,11 +217,15 @@ function setupGithubAction(manager: LocadexManager) {
     });
     const resource = getResource('ghaYaml.yml');
     if (resource.content) {
-      writeFileSync(githubActionPath, resource.content);
+      const content = resource.content.replace(
+        '[packageManager install command]',
+        packageManager.installAllCommand
+      );
+      writeFileSync(githubActionPath, content);
       logger.step(
         `Created ${chalk.cyan(
           'locadex.yml'
-        )} Github Action at ${chalk.cyan(githubActionPath)}.`
+        )} Github Action at ${chalk.cyan(githubActionPath)}. You can edit this file to customize the Github Action. Make sure to add the corresponding secrets to your repo settings!`
       );
     } else {
       logger.error(`Error reading resource ghaYaml.yml: ${resource.error}`);
@@ -203,6 +238,21 @@ function setupGithubAction(manager: LocadexManager) {
     );
   }
 }
+
+async function setupApiKeys(
+  keyType: 'development' | 'production',
+  manager: LocadexManager
+) {
+  const settings = await generateSettings({}, manager.appDirectory);
+  const credentials = await retrieveCredentials(settings, keyType);
+  await setCredentials(
+    credentials,
+    keyType,
+    settings.framework,
+    manager.appDirectory
+  );
+}
+
 async function setupLocaleSelector() {
   logger.initializeSpinner();
   logger.spinner.start('Creating locale selector...');
