@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 1.2.29
+
+### Patch Changes
+
+- [#400](https://github.com/generaltranslation/gt/pull/400) [`cf9c724`](https://github.com/generaltranslation/gt/commit/cf9c72488f74db5ccd7c4dca2650d75e3484d1f2) Thanks [@brian-lou](https://github.com/brian-lou)! - Reorder linter detection preference
+
 ## 1.2.28
 
 ### Patch Changes
