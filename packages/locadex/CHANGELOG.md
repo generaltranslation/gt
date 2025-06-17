@@ -1,5 +1,11 @@
 # locadex
 
+## 0.1.11
+
+### Patch Changes
+
+- [#402](https://github.com/generaltranslation/gt/pull/402) [`9f94c96`](https://github.com/generaltranslation/gt/commit/9f94c961898b35f77cd7f92748aafe895d8376b8) Thanks [@brian-lou](https://github.com/brian-lou)! - Add format cmd for formatting files
+
 ## 0.1.10
 
 ### Patch Changes
