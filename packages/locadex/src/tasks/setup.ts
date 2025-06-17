@@ -30,6 +30,7 @@ import { generateSettings } from 'gtx-cli/config/generateSettings';
 import { setCredentials } from 'gtx-cli/utils/credentials';
 import { retrieveCredentials } from 'gtx-cli/utils/credentials';
 import { isGTAuthConfigured } from '../utils/config.js';
+import { CliOptions } from '../types/cli.js';
 
 /**
  * Run Locadex setup on the project
@@ -37,6 +38,7 @@ import { isGTAuthConfigured } from '../utils/config.js';
  * If autoSetup is false, the task may prompt the user for confirmation.
  */
 export async function setupTask(
+  cliOptions: CliOptions,
   autoSetup: boolean,
   bypassPrompts: boolean,
   specifiedPackageManager?: string
@@ -163,7 +165,8 @@ export async function setupTask(
   await setupLocaleSelector();
 
   // Create dictionary.json file if not exists
-  setupDictionary(manager);
+  // commented out because this trips up the AI
+  // setupDictionary(manager);
 
   // Add locadex github action if not exists
   setupGithubAction(manager, packageManager);
@@ -174,7 +177,7 @@ export async function setupTask(
   }
 
   // Run i18n command
-  await i18nTask();
+  await i18nTask(cliOptions);
 }
 
 function setupDictionary(manager: LocadexManager) {

@@ -25,12 +25,13 @@ import { fixErrorsTask } from './fixErrors.js';
 import { getLocadexVersion } from '../utils/getPaths.js';
 import { execFunction } from '../utils/exec.js';
 import { isGTAuthConfigured } from '../utils/config.js';
+import { CliOptions } from '../types/cli.js';
 
 /**
  * Run Locadex i18n on the project
  * This task requires no human intervention and is safe to run in CI/CD pipelines.
  */
-export async function i18nTask() {
+export async function i18nTask(cliOptions: CliOptions) {
   const manager = LocadexManager.getInstance();
   // have to use the package.json from the appDir
   const packageJson = await getPackageJson(manager.appDirectory);
@@ -213,14 +214,27 @@ ${reports.join('\n')}`;
   cleanupOnExit();
 
   // Run translate cmd
-  if (isGTAuthConfigured(manager.appDirectory)) {
+  if (isGTAuthConfigured(manager.appDirectory) && !cliOptions.noTranslate) {
     try {
-      await execFunction('locadex', ['translate'], false, manager.appDirectory);
-      logger.step(`Translations generated!`);
-    } catch (error) {}
+      logger.initializeSpinner();
+      logger.spinner.start('Running locadex translate...');
+      await execFunction(
+        'locadex',
+        ['translate'],
+        false,
+        manager.appDirectory,
+        manager.getAgentAbortController()
+      );
+      logger.spinner.stop('Translations generated!');
+    } catch (error) {
+      logger.spinner.stop('Translations failed!');
+      logger.error(
+        `Error running 'locadex translate': ${(error as Error).message}`
+      );
+    }
   } else {
     logger.step(
-      `No GT_API_KEY or GT_PROJECT_ID found. Skipping translation...`
+      `No GT_API_KEY or GT_PROJECT_ID found. Skipping translation step...`
     );
   }
 
@@ -232,11 +246,11 @@ function cleanupOnExit() {
   const manager = LocadexManager.getInstance();
   logger.info(
     chalk.dim(
-      `Total Cost: $${manager.stats.getStats().totalCost.toFixed(2)}
-Total wall time: ${Math.round(
+      `Locadex Cost: $${manager.stats.getStats().totalCost.toFixed(2)}
+Locadex wall time: ${Math.round(
         (Date.now() - manager.stats.getStats().startTime) / 1000
       )}s
-Total files processed: ${manager.stats.getStats().processedFiles}`
+Locadex files processed: ${manager.stats.getStats().processedFiles}`
     )
   );
 
@@ -246,10 +260,10 @@ Total files processed: ${manager.stats.getStats().processedFiles}`
   manager.stats.recordTelemetry(true);
 
   logger.verboseMessage(
-    `Total input tokens: ${finalStats.inputTokens}
-Total cached input tokens: ${finalStats.cachedInputTokens}
-Total output tokens: ${finalStats.outputTokens}
-Total turns: ${finalStats.turns}`
+    `Locadex input tokens: ${finalStats.inputTokens}
+Locadex cached input tokens: ${finalStats.cachedInputTokens}
+Locadex output tokens: ${finalStats.outputTokens}
+Locadex turns: ${finalStats.turns}`
   );
 }
 

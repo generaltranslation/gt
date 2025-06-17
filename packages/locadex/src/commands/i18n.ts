@@ -41,7 +41,7 @@ export async function i18nCommand(options: CliOptions, command: Command) {
           }),
         },
       });
-      await i18nTask();
+      await i18nTask(allOptions);
     }
   );
 }

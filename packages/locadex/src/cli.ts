@@ -44,6 +44,7 @@ program
   )
   .option('-y, --bypass-prompts', 'Bypass interactive prompts')
   .option('--no-telemetry', 'Disable telemetry')
+  .option('--no-translate', 'Disable translation step')
   .option('--app-dir <dir>', 'Relative path to the application directory', '.')
   .action(setupCommand);
 
@@ -64,6 +65,7 @@ program
     'Package manager to use. (npm, pnpm, yarn_v1, yarn_v2, bun, deno)'
   )
   .option('--no-telemetry', 'Disable telemetry')
+  .option('--no-translate', 'Disable translation step')
   .option('--app-dir <dir>', 'Relative path to the application directory', '.')
   .action(autoSetupCommand);
 
@@ -80,6 +82,7 @@ program
     'Comma-separated list of glob patterns to match source files. Should be relative to root directory.'
   )
   .option('--no-telemetry', 'Disable telemetry')
+  .option('--no-translate', 'Disable translation step')
   .option('--app-dir <dir>', 'Relative path to the application directory', '.')
   .action(i18nCommand);
 

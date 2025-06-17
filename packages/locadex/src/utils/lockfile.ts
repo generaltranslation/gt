@@ -97,6 +97,12 @@ export function updateLockfile(
 ): void {
   const lockfile = loadLockfile(lockfilePath);
 
+  // Build a map of paths to hashes for efficient lookup
+  const pathToHashMap = new Map<string, string>();
+  for (const [hash, entry] of Object.entries(lockfile.checksums)) {
+    pathToHashMap.set(entry.path, hash);
+  }
+
   for (const filePath of files) {
     const relativePath = path.relative(rootDirectory, filePath);
     const currentHash = calculateFileHash(filePath);
@@ -105,12 +111,21 @@ export function updateLockfile(
       continue;
     }
 
+    // Remove old hash entry for this file path (O(1) lookup and deletion)
+    const oldHash = pathToHashMap.get(relativePath);
+    if (oldHash) {
+      delete lockfile.checksums[oldHash];
+    }
+
     const stats = fs.statSync(filePath);
     // Use hash as key, store current path and metadata
     lockfile.checksums[currentHash] = {
       path: relativePath,
       lastModified: stats.mtime.getTime(),
     };
+
+    // Update the path-to-hash mapping
+    pathToHashMap.set(relativePath, currentHash);
   }
 
   saveLockfile(lockfilePath, lockfile);

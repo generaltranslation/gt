@@ -48,6 +48,7 @@ export async function setupCommand(
         },
       });
       await setupTask(
+        allOptions,
         false,
         !!allOptions.bypassPrompts,
         allOptions.packageManager
@@ -97,6 +98,7 @@ export async function autoSetupCommand(
         },
       });
       await setupTask(
+        allOptions,
         true,
         !!allOptions.bypassPrompts,
         allOptions.packageManager
