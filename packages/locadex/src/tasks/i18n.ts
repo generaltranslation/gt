@@ -208,6 +208,12 @@ ${reports.join('\n')}`;
 
   const lockfilePath = manager.getLockFilePath();
 
+  // Delete any files the AI may have arbitrarily created
+  deleteAddedFiles(
+    [path.relative(manager.rootDirectory, manager.locadexDirectory)],
+    ['dictionary.json', 'gt.config.json', 'locadex.yml']
+  );
+
   // Update lockfile with processed files
   updateLockfile(files, lockfilePath, manager.rootDirectory);
 
@@ -215,12 +221,6 @@ ${reports.join('\n')}`;
   cleanupLockfile(lockfilePath, manager.rootDirectory);
 
   logger.message(chalk.dim(`Updated lockfile with ${files.length} files`));
-
-  // Delete any files the AI may have arbitrarily created
-  deleteAddedFiles(
-    [path.relative(manager.rootDirectory, manager.locadexDirectory)],
-    ['dictionary.json', 'gt.config.json', 'locadex.yml']
-  );
 
   cleanupOnExit();
 
