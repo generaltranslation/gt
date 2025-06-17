@@ -8,7 +8,6 @@ export type GTProviderProps = {
 
 export type TxProps = {
   children: any;
-  id?: string;
   context?: string;
   locale?: string;
 };

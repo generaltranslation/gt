@@ -132,7 +132,7 @@ export type InlineTranslationOptions = {
 } & DictionaryTranslationOptions;
 export type RuntimeTranslationOptions = {
   locale?: string;
-} & InlineTranslationOptions;
+} & Omit<InlineTranslationOptions, 'id'>;
 
 // ----- VARIABLES ----- //
 

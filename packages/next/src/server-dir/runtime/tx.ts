@@ -15,7 +15,6 @@ import { RuntimeTranslationOptions } from 'gt-react/internal';
  *
  * @param {string} content - The content string that needs to be translated.
  * @param {Object} [options] - Translation options.
- * @param {string} [options.id] - A unique identifier for the content, used for caching and fetching translations.
  * @param {string} [options.locale] - The target locale for translation. Defaults to the current locale if not provided.
  * @param {string} [options.context] - Additional context for the translation process, which may influence the translation's outcome.
  * @param {Object} [options.variables] - An optional map of variables to be injected into the translated content.
@@ -68,7 +67,6 @@ export default async function tx(
   const hash = hashSource({
     source: message,
     ...(options?.context && { context: options.context }),
-    ...(options?.id && { id: options.id }),
     dataFormat: 'ICU',
   });
 
@@ -94,7 +92,7 @@ export default async function tx(
     })) as string;
     return renderContent(target, [locale, defaultLocale]);
   } catch (error) {
-    console.error(createStringTranslationError(message, options.id), error);
+    console.error(createStringTranslationError(message), error);
     return renderContent(message, [defaultLocale]);
   }
 }

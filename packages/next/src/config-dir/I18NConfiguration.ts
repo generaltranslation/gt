@@ -598,7 +598,6 @@ export default class I18NConfiguration {
         let errorMsg = 'Translation failed.';
         let errorCode = 500;
 
-        // TODO: add indexing by id
         const hash = request.metadata.hash;
         if (result && typeof result === 'object') {
           if ('translation' in result && result.translation) {

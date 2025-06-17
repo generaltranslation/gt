@@ -18,7 +18,30 @@ async function Resolver({ children }: { children: React.ReactNode }) {
   return await children;
 }
 
-async function Tx({ children, id, context, locale }: TxProps): Promise<any> {
+/**
+ * Runtime translation component that renders its children in the user's given locale.
+ *
+ * @example
+ * ```jsx
+ * // Basic usage:
+ * <Tx>
+ *  Hello, {name}!
+ * </Tx>
+ * ```
+ *
+ * @example
+ * ```jsx
+ * // With a context:
+ * <Tx context="greeting">
+ *  Hello, {name}!
+ * </Tx>
+ * ```
+ *
+ * @param {string} [context] - A context for the translation.
+ * @param {string} [locale] - The locale to use for the translation.
+ * @returns {Promise<any>} The translated content.
+ */
+async function Tx({ children, context, locale }: TxProps): Promise<any> {
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
@@ -59,7 +82,6 @@ async function Tx({ children, id, context, locale }: TxProps): Promise<any> {
   const hash = hashSource({
     source: childrenAsObjects,
     ...(context && { context }),
-    ...(id && { id }),
     dataFormat: 'JSX',
   });
 
@@ -111,7 +133,6 @@ async function Tx({ children, id, context, locale }: TxProps): Promise<any> {
         source: childrenAsObjects,
         targetLocale: locale,
         options: {
-          ...(id && { id }),
           hash,
           ...(context && { context }),
           ...(renderSettings.timeout && { timeout: renderSettings.timeout }),
