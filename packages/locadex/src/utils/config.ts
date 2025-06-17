@@ -39,9 +39,9 @@ export async function validateConfig(options: CliOptions) {
 
 export function isGTAuthConfigured(cwd?: string) {
   if (cwd) {
-    dotenv.config({ path: path.join(cwd, '.env') });
-    dotenv.config({ path: path.join(cwd, '.env.local') });
     dotenv.config({ path: path.join(cwd, '.env.production') });
+    dotenv.config({ path: path.join(cwd, '.env.local') });
+    dotenv.config({ path: path.join(cwd, '.env') });
   }
   return process.env.GT_API_KEY && process.env.GT_PROJECT_ID;
 }
