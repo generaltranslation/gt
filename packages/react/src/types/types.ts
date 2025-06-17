@@ -1,32 +1,59 @@
-import { Content } from 'generaltranslation/internal';
-import React, { ReactElement } from 'react';
+import { Content, JsxChildren } from 'generaltranslation/internal';
+import React from 'react';
 
-export type Child = React.ReactNode;
-export type Children = Child[] | Child;
+/**
+ * Transformations are made from a prefix and a suffix.
+ */
+export type Transformation =
+  | 'translate-client'
+  | 'translate-server'
+  | 'variable-variable'
+  | 'variable-currency'
+  | 'variable-datetime'
+  | 'variable-number'
+  | 'plural'
+  | 'branch';
+export type TransformationPrefix =
+  | 'translate'
+  | 'variable'
+  | 'plural'
+  | 'branch'
+  | 'fragment';
+export type VariableTransformationSuffix =
+  | 'variable'
+  | 'number'
+  | 'datetime'
+  | 'currency';
+
+/**
+ * GTProp is an internal property used to contain data for translating and rendering elements.
+ */
 export type GTProp = {
   id: number;
-  transformation?: string;
-  children?: Children;
-} & Record<string, any>;
+  transformation?: TransformationPrefix;
+  variableType?: VariableTransformationSuffix;
+  branches?: Record<string, JsxChildren>;
+};
 
-export type TaggedChild = React.ReactNode | TaggedElement;
-export type TaggedChildren = TaggedChild[] | TaggedChild;
+/**
+ * TaggedElement is a React element with a GTProp property.
+ */
 export type TaggedElementProps = Record<string, any> & { 'data-_gt': GTProp };
 export type TaggedElement = React.ReactElement<TaggedElementProps>;
-export type TaggedEntry = Content | TaggedChildren;
+export type TaggedChild =
+  | Exclude<React.ReactNode, React.ReactElement>
+  | TaggedElement;
+export type TaggedChildren = TaggedChild[] | TaggedChild;
 
-export type FlattenedContentDictionary = Record<
-  string,
-  { hash: string; source: Content; metadata?: Record<string, any> }
->;
-
+/**
+ * For dictionaries, we have Entry and MetaEntry
+ */
 export type Entry = string;
-export type Metadata = {
+export type MetaEntry = {
   context?: string;
-  variablesOptions?: Record<string, any>;
-  [key: string]: any;
+  [key: string]: unknown;
 };
-export type DictionaryEntry = Entry | [Entry] | [Entry, Metadata];
+export type DictionaryEntry = Entry | [Entry] | [Entry, MetaEntry];
 export type Dictionary = {
   [key: string]: Dictionary | DictionaryEntry;
 };
@@ -34,6 +61,9 @@ export type FlattenedDictionary = {
   [key: string]: DictionaryEntry;
 };
 
+/**
+ * Variables are used to store the variable name and type.
+ */
 export type Variable = {
   key: string;
   id?: number;
@@ -42,6 +72,9 @@ export type Variable = {
 
 // ----- TRANSLATION ----- //
 
+/**
+ * Translated content types
+ */
 export type TranslatedElement = {
   type: string;
   props: {
@@ -52,30 +85,19 @@ export type TranslatedElement = {
     children?: TranslatedChildren;
   };
 };
-
 export type TranslatedChild = TranslatedElement | string | Variable;
 export type TranslatedChildren = TranslatedChild | TranslatedChild[];
-export type TranslatedContent = string | (string | Variable)[];
-
-export type TranslationError = {
-  state: 'error';
-  error: string;
-  code?: number;
-};
-export type TranslationSuccess = {
-  state: 'success';
-  target: TranslatedChildren | TranslatedContent; // target
-};
-export type TranslationLoading = {
-  state: 'loading';
+export type Translations = {
+  [hash: string]: TranslatedChildren;
 };
 
-export type TranslationsObject = {
-  [hash: string]: TranslationSuccess | TranslationLoading | TranslationError;
-};
-// maps locales to translation objects
-export type LocalesTranslations = {
-  [locale: string]: TranslationsObject | null;
+/**
+ * Mapping of hashes to translation result status.
+ */
+export type TranslationResultStatus = {
+  [hash: string]:
+    | { status: 'success' | 'loading' }
+    | { status: 'error'; code?: number; error?: string };
 };
 
 // ----- DICTIONARY ----- //
@@ -111,24 +133,6 @@ export type InlineTranslationOptions = {
 export type RuntimeTranslationOptions = {
   locale?: string;
 } & InlineTranslationOptions;
-
-export class GTTranslationError extends Error {
-  constructor(
-    public error: string,
-    public code: number
-  ) {
-    super(error);
-    this.code = code;
-  }
-
-  toTranslationError(): TranslationError {
-    return {
-      state: 'error',
-      error: this.error,
-      code: this.code,
-    };
-  }
-}
 
 // ----- VARIABLES ----- //
 

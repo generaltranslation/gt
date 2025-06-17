@@ -3,7 +3,8 @@ import {
   Dictionary,
   DictionaryTranslationOptions,
   RenderMethod,
-  TranslationsObject,
+  TranslationResultStatus,
+  Translations,
 } from '../../types/types';
 import {
   getDictionaryEntry,
@@ -20,7 +21,8 @@ import { TranslateIcuCallback } from '../../types/runtime';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
-  translations: TranslationsObject | null,
+  translations: Translations | null,
+  translationResultStatus: TranslationResultStatus | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
@@ -82,16 +84,17 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Check id first
       const translationEntry = translations?.[hash];
+      const translationStatus = translationResultStatus?.[hash];
 
       // Check translation successful
-      if (translationEntry?.state === 'success') {
-        return renderMessage(translationEntry.target as string, [
+      if (translationStatus?.status === 'success') {
+        return renderMessage(translationEntry as string, [
           locale,
           defaultLocale,
         ]);
       }
 
-      if (translationEntry?.state === 'error') {
+      if (translationStatus?.status === 'error') {
         return renderMessage(entry, [defaultLocale]);
       }
 
@@ -127,6 +130,7 @@ export default function useCreateInternalUseTranslationsFunction(
     [
       dictionary,
       translations,
+      translationResultStatus,
       locale,
       defaultLocale,
       translationRequired,

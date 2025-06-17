@@ -75,8 +75,10 @@ export default async function tx(
   // ----- CHECK LOCAL CACHE ----- //
 
   const recentTranslations = I18NConfig.getRecentTranslations(locale);
-  if (recentTranslations?.[hash]?.state === 'success') {
-    return renderContent(recentTranslations[hash].target as string, [
+  const translationResultStatus =
+    I18NConfig.getCachedTranslationResultStatus(locale);
+  if (translationResultStatus?.[hash]?.status === 'success') {
+    return renderContent(recentTranslations[hash] as string, [
       locale,
       defaultLocale,
     ]);

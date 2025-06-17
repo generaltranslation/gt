@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { determineLocale, GT } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/config';
-import { TranslationsObject } from '../types/types';
+import { TranslationResultStatus, Translations } from '../types/types';
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
@@ -47,9 +47,12 @@ export default function ClientProvider({
 
   // ----- TRANSLATIONS STATE ----- //
 
-  const [translations, setTranslations] = useState<TranslationsObject | null>(
+  const [translations, setTranslations] = useState<Translations | null>(
     devApiKey ? null : initialTranslations
   );
+
+  const [translationResultStatus, setTranslationResultStatus] =
+    useState<TranslationResultStatus | null>(null);
 
   // ----- LOCALE STATE ----- //
 
@@ -98,6 +101,17 @@ export default function ClientProvider({
   // Fetch additional translations and queue them for merging
   useEffect(() => {
     setTranslations((prev) => ({ ...initialTranslations, ...prev }));
+    setTranslationResultStatus(
+      Object.keys(initialTranslations).reduce(
+        (acc: TranslationResultStatus, hash) => {
+          acc[hash] = {
+            status: 'success',
+          };
+          return acc;
+        },
+        {}
+      )
+    );
   }, [initialTranslations]);
 
   // ---------- TRANSLATION METHODS ---------- //
@@ -115,6 +129,7 @@ export default function ClientProvider({
     devApiKey,
     runtimeUrl,
     setTranslations,
+    setTranslationResultStatus,
     defaultLocale,
     renderSettings,
     runtimeTranslationEnabled,
@@ -124,6 +139,7 @@ export default function ClientProvider({
 
   const _internalUseGTFunction = useCreateInternalUseGTFunction(
     translations,
+    translationResultStatus,
     locale,
     defaultLocale,
     translationRequired,
@@ -139,6 +155,7 @@ export default function ClientProvider({
     useCreateInternalUseTranslationsFunction(
       dictionary,
       translations,
+      translationResultStatus,
       locale,
       defaultLocale,
       translationRequired,
@@ -167,6 +184,7 @@ export default function ClientProvider({
         locales,
         defaultLocale,
         translations,
+        translationResultStatus,
         translationRequired,
         dialectTranslationRequired,
         renderSettings,

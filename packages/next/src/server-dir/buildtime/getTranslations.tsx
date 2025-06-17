@@ -53,7 +53,9 @@ export async function getTranslations(
   const translations = translationRequired
     ? await I18NConfig.getCachedTranslations(locale)
     : undefined;
-
+  const translationResultStatus = translationRequired
+    ? I18NConfig.getCachedTranslationResultStatus(locale)
+    : undefined;
   const renderSettings = I18NConfig.getRenderSettings();
 
   // ---------- THE t() METHOD ---------- //
@@ -137,18 +139,16 @@ export async function getTranslations(
       dataFormat: 'ICU',
     });
     const translationEntry = translations?.[hash];
+    const translationResultStatusEntry = translationResultStatus?.[hash];
 
     // ----- RENDER TRANSLATION ----- //
 
     // If a translation already exists
-    if (translationEntry?.state === 'success')
-      return renderContent(translationEntry.target as string, [
-        locale,
-        defaultLocale,
-      ]);
+    if (translationResultStatusEntry?.status === 'success')
+      return renderContent(translationEntry as string, [locale, defaultLocale]);
 
     // If a translation errored
-    if (translationEntry?.state === 'error')
+    if (translationResultStatusEntry?.status === 'error')
       return renderContent(entry, [defaultLocale]);
 
     // ----- CREATE TRANSLATION ----- //

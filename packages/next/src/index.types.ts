@@ -63,7 +63,7 @@ export const GTProvider: typeof _GTProvider = () => {
 export const T: typeof _T = () => {
   throw new Error(typesFileError);
 };
-T.gtTransformation = 'translate-type';
+T.gtTransformation = 'translate';
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
@@ -175,7 +175,7 @@ Var.gtTransformation = 'variable-variable';
 export const Branch: typeof _Branch = () => {
   throw new Error(typesFileError);
 };
-Branch.gtTransformation = 'branch-type';
+Branch.gtTransformation = 'branch';
 
 /**
  * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).
@@ -205,7 +205,7 @@ Branch.gtTransformation = 'branch-type';
 export const Plural: typeof _Plural = () => {
   throw new Error(typesFileError);
 };
-Plural.gtTransformation = 'plural-type';
+Plural.gtTransformation = 'plural';
 
 /**
  * A dropdown component that allows users to select a locale.

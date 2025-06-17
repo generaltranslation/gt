@@ -7,9 +7,9 @@ import {
 } from '../../errors/createErrors';
 import {
   RenderMethod,
-  TranslationError,
-  TranslationsObject,
-  TranslationSuccess,
+  TranslatedChildren,
+  TranslationResultStatus,
+  Translations,
 } from '../../types/types';
 
 import {
@@ -55,6 +55,7 @@ export default function useRuntimeTranslation({
   runtimeUrl,
   renderSettings,
   setTranslations,
+  setTranslationResultStatus,
   ...globalMetadata
 }: {
   projectId?: string;
@@ -67,7 +68,10 @@ export default function useRuntimeTranslation({
     method: RenderMethod;
     timeout?: number;
   };
-  setTranslations: React.Dispatch<React.SetStateAction<any>>;
+  setTranslations: React.Dispatch<React.SetStateAction<Translations | null>>;
+  setTranslationResultStatus: React.Dispatch<
+    React.SetStateAction<TranslationResultStatus | null>
+  >;
   [key: string]: any;
 }): {
   registerI18nextForTranslation: TranslateI18nextCallback;
@@ -125,7 +129,7 @@ export default function useRuntimeTranslation({
   );
   // Requests that have yet to be resolved
   const pendingRequestQueueRef = useRef<
-    Map<string, Promise<TranslationSuccess | TranslationError>>
+    Map<string, Promise<TranslatedChildren>>
   >(new Map());
 
   useEffect(() => {
@@ -154,7 +158,7 @@ export default function useRuntimeTranslation({
               : never;
         targetLocale: string;
         metadata: TranslationRequestMetadata;
-      }): Promise<TranslationSuccess | TranslationError> => {
+      }): Promise<TranslatedChildren> => {
         // Get the key, which is a combination of hash and locale
         const key = `${params.metadata.hash}:${params.targetLocale}`;
 
@@ -165,28 +169,28 @@ export default function useRuntimeTranslation({
         }
 
         // Promise for hooking into the translation request to know when complete
-        const translationPromise = new Promise<
-          TranslationSuccess | TranslationError
-        >((resolve, reject) => {
-          requestQueueRef.current.set(
-            key,
-            dataFormat === 'JSX'
-              ? {
-                  dataFormat: 'JSX' as const,
-                  source: params.source as JsxChildren,
-                  metadata: params.metadata,
-                  resolve,
-                  reject,
-                }
-              : {
-                  dataFormat: dataFormat as 'ICU' | 'I18NEXT',
-                  source: params.source as string,
-                  metadata: params.metadata,
-                  resolve,
-                  reject,
-                }
-          );
-        })
+        const translationPromise = new Promise<TranslatedChildren>(
+          (resolve, reject) => {
+            requestQueueRef.current.set(
+              key,
+              dataFormat === 'JSX'
+                ? {
+                    dataFormat: 'JSX' as const,
+                    source: params.source as JsxChildren,
+                    metadata: params.metadata,
+                    resolve,
+                    reject,
+                  }
+                : {
+                    dataFormat: dataFormat as 'ICU' | 'I18NEXT',
+                    source: params.source as string,
+                    metadata: params.metadata,
+                    resolve,
+                    reject,
+                  }
+            );
+          }
+        )
           .catch((error) => {
             throw error;
           })
@@ -214,27 +218,28 @@ export default function useRuntimeTranslation({
       targetLocale: string
     ) => {
       if (requestQueueRef.current.size === 0) {
-        return {};
+        return [{}, {}];
       }
 
       // increment active requests
       setActiveRequests((prev) => prev + 1);
 
       const requests = Array.from(batchRequests.values());
-      const newTranslations: TranslationsObject = {};
+      const newTranslations: Translations = {};
+      const newTranslationResultStatus: TranslationResultStatus = {};
 
       try {
         // ----- TRANSLATION LOADING ----- //
-        const loadingTranslations: TranslationsObject = Object.entries(
+        const loadingTranslations: TranslationResultStatus = Object.entries(
           batchRequests
-        ).reduce((acc: TranslationsObject, [hash, request]) => {
+        ).reduce((acc: TranslationResultStatus, [, request]) => {
           // loading state for jsx, render loading behavior
           acc[request.metadata.hash] = {
-            state: 'loading',
+            status: 'loading',
           };
           return acc;
         }, {});
-        setTranslations((prev: any) => {
+        setTranslationResultStatus((prev) => {
           return { ...(prev || {}), ...loadingTranslations };
         });
 
@@ -298,9 +303,9 @@ export default function useRuntimeTranslation({
           ) {
             const { translation } = result;
             // set translation
-            newTranslations[hash] = {
-              state: 'success',
-              target: translation,
+            newTranslations[hash] = translation;
+            newTranslationResultStatus[hash] = {
+              status: 'success',
             };
             return;
           }
@@ -322,10 +327,10 @@ export default function useRuntimeTranslation({
               result.error
             );
             // set error in translation object
-            newTranslations[hash] = {
-              state: 'error',
-              error: result.error,
+            newTranslationResultStatus[hash] = {
+              status: 'error',
               code: result.code,
+              error: result.error,
             };
             return;
           }
@@ -338,10 +343,10 @@ export default function useRuntimeTranslation({
             ),
             result
           );
-          newTranslations[hash] = {
-            state: 'error',
-            error: 'An error occurred.',
+          newTranslationResultStatus[hash] = {
+            status: 'error',
             code: 500,
+            error: 'An error occurred.',
           };
         });
       } catch (error) {
@@ -355,8 +360,8 @@ export default function useRuntimeTranslation({
         // add error message to all translations from this request
         requests.forEach((request) => {
           // id defaults to hash if none provided
-          newTranslations[request.metadata.hash] = {
-            state: 'error',
+          newTranslationResultStatus[request.metadata.hash] = {
+            status: 'error',
             error: 'An error occurred.',
             code: 500,
           };
@@ -366,12 +371,12 @@ export default function useRuntimeTranslation({
         setActiveRequests((prev) => prev - 1);
 
         // resolve all promises
-        requests.forEach((request) =>
-          request.resolve(newTranslations[request.metadata.hash])
-        );
+        requests.forEach((request) => {
+          request.resolve(newTranslations[request.metadata.hash]);
+        });
 
         // return the new translations
-        return newTranslations;
+        return [newTranslations, newTranslationResultStatus];
       }
     },
     [
@@ -405,11 +410,19 @@ export default function useRuntimeTranslation({
           Array.from(requestQueueRef.current.entries()).slice(0, batchSize)
         );
         (async () => {
-          const batchResult = await sendBatchRequest(batchRequests, locale);
+          // Update the translation result
+          const [batchResult, batchStatus] = await sendBatchRequest(
+            batchRequests,
+            locale
+          );
           if (storeResults) {
-            setTranslations((prev: any) => ({
+            setTranslations((prev) => ({
               ...(prev || {}),
               ...batchResult,
+            }));
+            setTranslationResultStatus((prev) => ({
+              ...(prev || {}),
+              ...batchStatus,
             }));
           }
         })();

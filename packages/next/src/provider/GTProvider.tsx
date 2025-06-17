@@ -3,7 +3,7 @@ import { isValidElement } from 'react';
 import getI18NConfig from '../config-dir/getI18NConfig';
 import { getLocale } from '../request/getLocale';
 import getDictionary, { getDictionaryEntry } from '../dictionary/getDictionary';
-import { Dictionary, TranslationsObject } from 'gt-react/internal';
+import { Dictionary, Translations } from 'gt-react/internal';
 import { createDictionarySubsetError } from '../errors/createErrors';
 import ClientProvider from './ClientProviderWrapper';
 import { GTProviderProps } from '../utils/types';
@@ -26,10 +26,9 @@ export default async function GTProvider({
 
   // ----- FETCH TRANSLATIONS FROM CACHE ----- //
 
-  const cachedTranslationsPromise: Promise<TranslationsObject> =
-    translationRequired
-      ? I18NConfig.getCachedTranslations(locale)
-      : ({} as any);
+  const cachedTranslationsPromise: Promise<Translations> = translationRequired
+    ? I18NConfig.getCachedTranslations(locale)
+    : ({} as any);
 
   // ---------- PROCESS DICTIONARY ---------- //
   // (While waiting for cache...)

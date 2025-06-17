@@ -53,6 +53,7 @@ function T({
   const {
     translations,
     translationRequired,
+    translationResultStatus,
     runtimeTranslationEnabled,
     dialectTranslationRequired,
     registerJsxForTranslation,
@@ -100,6 +101,8 @@ function T({
   const translationEntry = translationWithIdExists
     ? translations?.[id as string]
     : translations?.[hash];
+
+  const translationStatus = translationResultStatus?.[hash];
 
   // Do dev translation if required
   useEffect(() => {
@@ -163,13 +166,13 @@ function T({
     !translationRequired || // no translation required
     // !translationEnabled || // translation not enabled
     (translations && !translationEntry && !runtimeTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
-    translationEntry?.state === 'error' // error fetching translation
+    translationStatus?.status === 'error' // error fetching translation
   ) {
     return <>{renderDefault()}</>;
   }
 
   // Loading behavior (checking cache or fetching runtime translation)
-  if (!translationEntry || translationEntry?.state === 'loading') {
+  if (!translationEntry || translationStatus?.status === 'loading') {
     let loadingFallback;
     if (renderSettings.method === 'skeleton') {
       loadingFallback = renderSkeleton();
@@ -185,7 +188,7 @@ function T({
   }
 
   // Render translated content
-  return <>{renderTranslation(translationEntry.target)}</>;
+  return <>{renderTranslation(translationEntry)}</>;
 }
 
 T.gtTransformation = 'translate-client';

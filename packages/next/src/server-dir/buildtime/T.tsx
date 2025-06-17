@@ -94,7 +94,11 @@ async function T({
 
   // Get the translation entry object
   const translations = await translationsPromise;
+  const translationResultStatus = translationRequired
+    ? I18NConfig.getCachedTranslationResultStatus(locale)
+    : undefined;
   let translationEntry = translations?.[id || ''];
+  let translationResultStatusEntry = translationResultStatus?.[id || ''];
 
   let childrenAsObjects;
   let hash;
@@ -110,6 +114,7 @@ async function T({
       dataFormat: 'JSX',
     });
     translationEntry = translations?.[hash];
+    translationResultStatusEntry = translationResultStatus?.[hash];
   }
 
   // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
@@ -126,11 +131,11 @@ async function T({
   // ----- RENDER CACHED TRANSLATIONS ----- //
 
   // if we have a cached translation, render it
-  if (translationEntry?.state === 'success') {
-    return renderTranslation(translationEntry.target);
+  if (translationResultStatusEntry?.status === 'success') {
+    return renderTranslation(translationEntry);
   }
 
-  if (translationEntry?.state === 'error') {
+  if (translationResultStatusEntry?.status === 'error') {
     return renderDefault();
   }
 

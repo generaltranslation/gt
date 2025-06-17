@@ -2,14 +2,16 @@ import { hashSource } from 'generaltranslation/id';
 import { useCallback } from 'react';
 import {
   InlineTranslationOptions,
-  TranslationsObject,
+  TranslationResultStatus,
+  Translations,
   RenderMethod,
 } from '../../types/types';
 import { TranslateIcuCallback } from '../../types/runtime';
 import { formatMessage } from 'generaltranslation';
 
 export default function useCreateInternalUseGTFunction(
-  translations: TranslationsObject | null,
+  translations: Translations | null,
+  translationResultStatus: TranslationResultStatus | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
@@ -72,16 +74,18 @@ export default function useCreateInternalUseGTFunction(
         ? translations?.[id as string]
         : translations?.[hash];
 
+      const translationStatus = translationResultStatus?.[hash];
+
       // ----- TRANSLATE ON DEMAND ----- //
 
       // Render fallback when tx not required or error
-      if (!translationRequired || translationEntry?.state === 'error') {
+      if (!translationRequired || translationStatus?.status === 'error') {
         return renderMessage(contentString, [defaultLocale]);
       }
 
       // Render success
-      if (translationEntry?.state === 'success') {
-        return renderMessage(translationEntry.target as string, [
+      if (translationStatus?.status === 'success') {
+        return renderMessage(translationEntry as string, [
           locale,
           defaultLocale,
         ]);
@@ -118,6 +122,7 @@ export default function useCreateInternalUseGTFunction(
     },
     [
       translations,
+      translationResultStatus,
       locale,
       defaultLocale,
       translationRequired,

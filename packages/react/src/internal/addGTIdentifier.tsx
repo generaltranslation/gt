@@ -1,21 +1,22 @@
-import React, { ReactElement, isValidElement } from 'react';
+import React, { ReactElement, isValidElement, ReactNode } from 'react';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import {
   createNestedDataGTError,
   createNestedTError,
 } from '../errors/createErrors';
 import {
-  Child,
-  Children,
   GTProp,
   TaggedChild,
   TaggedChildren,
   TaggedElement,
   TaggedElementProps,
+  Transformation,
+  TransformationPrefix,
+  VariableTransformationSuffix,
 } from '../types/types';
 
 export default function addGTIdentifier(
-  children: Children,
+  children: ReactNode,
   startingIndex: number = 0
 ): TaggedChildren {
   // Object to keep track of the current index for GT IDs
@@ -30,27 +31,30 @@ export default function addGTIdentifier(
     const { type, props } = child;
     index += 1;
     const result: GTProp = { id: index };
-    let transformation: string;
+    let transformation: Transformation | undefined;
     try {
       transformation =
         typeof type === 'function' ? (type as any).gtTransformation || '' : '';
-    } catch (error) {
-      transformation = '';
+    } catch {
+      /* empty */
     }
     if (transformation) {
       const transformationParts = transformation.split('-');
       if (transformationParts[0] === 'translate') {
+        // TODO: turn transformation into a fragment here
         throw new Error(createNestedTError(child));
       }
       if (transformationParts[0] === 'variable') {
-        result.variableType = transformationParts?.[1] || 'variable';
+        result.variableType =
+          (transformationParts?.[1] as VariableTransformationSuffix) ||
+          'variable';
       }
       if (transformationParts[0] === 'plural') {
         const pluralBranches = Object.entries(props).reduce(
           (acc, [branchName, branch]) => {
             if (isAcceptedPluralForm(branchName)) {
               (acc as Record<string, any>)[branchName] = addGTIdentifier(
-                branch as Children,
+                branch as ReactNode,
                 index
               );
             }
@@ -66,7 +70,7 @@ export default function addGTIdentifier(
         const resultBranches = Object.entries(branches).reduce(
           (acc, [branchName, branch]) => {
             (acc as Record<string, any>)[branchName] = addGTIdentifier(
-              branch as Children,
+              branch as ReactNode,
               index
             );
             return acc;
@@ -76,7 +80,7 @@ export default function addGTIdentifier(
         if (Object.keys(resultBranches).length)
           result.branches = resultBranches;
       }
-      result.transformation = transformationParts[0];
+      result.transformation = transformationParts[0] as TransformationPrefix;
     }
     return result;
   };
@@ -92,7 +96,7 @@ export default function addGTIdentifier(
       'data-_gt': generaltranslation,
     };
     if (props.children && !generaltranslation.variableType) {
-      newProps.children = handleChildren(props.children as Children);
+      newProps.children = handleChildren(props.children as ReactNode);
     }
     if (child.type === React.Fragment) {
       newProps['data-_gt'].transformation = 'fragment';
@@ -100,14 +104,14 @@ export default function addGTIdentifier(
     return React.cloneElement(child, newProps) as TaggedElement;
   }
 
-  function handleSingleChild(child: Child): TaggedChild {
+  function handleSingleChild(child: ReactNode): TaggedChild {
     if (isValidElement(child)) {
       return handleSingleChildElement(child);
     }
     return child;
   }
 
-  function handleChildren(children: Children): TaggedChildren {
+  function handleChildren(children: ReactNode): TaggedChildren {
     if (Array.isArray(children)) {
       return React.Children.map(children, handleSingleChild);
     } else {

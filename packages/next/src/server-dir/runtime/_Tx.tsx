@@ -65,6 +65,8 @@ async function Tx({ children, id, context, locale }: TxProps): Promise<any> {
 
   // Get the translation entry object
   const translationEntry = I18NConfig.getRecentTranslations(locale)?.[hash];
+  const translationResultStatusEntry =
+    I18NConfig.getCachedTranslationResultStatus(locale)?.[hash];
 
   // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
 
@@ -80,11 +82,11 @@ async function Tx({ children, id, context, locale }: TxProps): Promise<any> {
   // ----- RENDER CACHED TRANSLATIONS ----- //
 
   // if we have a cached translation, render it
-  if (translationEntry?.state === 'success') {
-    return renderTranslation(translationEntry.target);
+  if (translationResultStatusEntry?.status === 'success') {
+    return renderTranslation(translationEntry);
   }
 
-  if (translationEntry?.state === 'error') {
+  if (translationResultStatusEntry?.status === 'error') {
     return renderDefault();
   }
 

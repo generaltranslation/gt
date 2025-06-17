@@ -35,7 +35,7 @@ import { useLoadTranslations } from './hooks/useLoadTranslations';
  * @param {object} [metadata] - Additional metadata to pass to the context.
  * @param {boolean} [ssr=isSSREnabled()] - Whether to enable server-side rendering.
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the cookie to store the locale.
- * @param {TranslationsObject | null} [translations=null] - The translations to use for the context.
+ * @param {Translations | null} [translations=null] - The translations to use for the context.
  * @param {React.ReactNode} [fallback = undefined] - Custom fallback to display while loading
  *
  * @returns {JSX.Element} The provider component for General Translation context.
@@ -132,7 +132,12 @@ export default function GTProvider({
 
   // ---------- TRANSLATION STATE ---------- //
 
-  const { translations, setTranslations } = useLoadTranslations({
+  const {
+    translations,
+    setTranslations,
+    translationResultStatus,
+    setTranslationResultStatus,
+  } = useLoadTranslations({
     _translations,
     translationRequired,
     loadTranslationsType,
@@ -159,6 +164,7 @@ export default function GTProvider({
     runtimeUrl,
     renderSettings,
     setTranslations,
+    setTranslationResultStatus,
     ...metadata,
   });
 
@@ -166,6 +172,7 @@ export default function GTProvider({
 
   const _internalUseGTFunction = useCreateInternalUseGTFunction(
     translations,
+    translationResultStatus,
     locale,
     defaultLocale,
     translationRequired,
@@ -181,6 +188,7 @@ export default function GTProvider({
     useCreateInternalUseTranslationsFunction(
       dictionary,
       translations,
+      translationResultStatus,
       locale,
       defaultLocale,
       translationRequired,
@@ -210,6 +218,7 @@ export default function GTProvider({
         setLocale,
         defaultLocale,
         translations,
+        translationResultStatus,
         translationRequired,
         dialectTranslationRequired,
         projectId,

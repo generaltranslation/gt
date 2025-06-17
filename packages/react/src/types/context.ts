@@ -1,8 +1,9 @@
 import {
-  TranslationsObject,
+  Translations,
   RenderMethod,
   InlineTranslationOptions,
   DictionaryTranslationOptions,
+  TranslationResultStatus,
 } from './types';
 import {
   TranslateIcuCallback,
@@ -29,7 +30,8 @@ export type GTContextType = {
   locales: string[];
   setLocale: (locale: string) => void;
   defaultLocale: string;
-  translations: TranslationsObject | null;
+  translations: Translations | null;
+  translationResultStatus: TranslationResultStatus | null;
   translationRequired: boolean;
   dialectTranslationRequired: boolean;
   renderSettings: { method: RenderMethod; timeout?: number };

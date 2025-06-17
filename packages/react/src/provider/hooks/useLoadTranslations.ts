@@ -1,6 +1,10 @@
 import { customLoadTranslationsError } from '../../errors/createErrors';
 import fetchTranslations from '../../utils/fetchTranslations';
-import { CustomLoader, TranslationsObject } from '../../types/types';
+import {
+  CustomLoader,
+  TranslationResultStatus,
+  Translations,
+} from '../../types/types';
 import { useEffect, useState } from 'react';
 
 export function useLoadTranslations({
@@ -13,7 +17,7 @@ export function useLoadTranslations({
   projectId,
   _versionId,
 }: {
-  _translations: TranslationsObject | null;
+  _translations: Translations | null;
   translationRequired: boolean;
   loadTranslationsType: string;
   loadTranslations?: CustomLoader;
@@ -26,25 +30,18 @@ export function useLoadTranslations({
    * Cache Loading            -> translations = null
    * Cache Fail (for locale)  -> translations = {}
    * Cache Fail (for hash)    -> translations[hash] = undefined
-   *
-   * API Loading              -> translations[hash] = TranslationLoading
-   * API Fail (for batch)     -> translations[hash] = TranslationError
-   * API Fail (for hash)      -> translations[hash] = TranslationError
-   *
-   * Success (Cache/API)      -> translations[hash] = TranslationSuccess
-   *
-   * Possible scenarios:
-   * Cache Loading -> Success
-   * Cache Loading -> Cache Fail -> API Loading -> Success
-   * Cache Loading -> Cache Fail -> API Loading -> API Fail
    */
 
-  const [translations, setTranslations] = useState<TranslationsObject | null>(
+  const [translations, setTranslations] = useState<Translations | null>(
     _translations ||
       (translationRequired && loadTranslationsType !== 'disabled')
       ? null
       : {}
   );
+
+  // Mapping of hashes to translation result status
+  const [translationResultStatus, setTranslationResultStatus] =
+    useState<TranslationResultStatus | null>(null);
 
   // Reset translations if locale changes (null to trigger a new cache fetch)
   useEffect(
@@ -98,25 +95,17 @@ export function useLoadTranslations({
         result = {};
       }
 
-      // Parse
-      try {
-        result = Object.entries(result).reduce(
-          (
-            translationsAcc: Record<string, any>,
-            [hash, target]: [string, any]
-          ) => {
-            translationsAcc[hash] = { state: 'success', target };
-            return translationsAcc;
-          },
-          {}
-        );
-      } catch (error) {
-        console.error(error);
-      }
-
       // Record results
       if (storeResults) {
         setTranslations(result); // not classified as a translation error, because we can still fetch from API
+        setTranslationResultStatus(
+          Object.keys(result).reduce((acc: TranslationResultStatus, hash) => {
+            acc[hash] = {
+              status: 'success',
+            };
+            return acc;
+          }, {})
+        );
       }
     })();
 
@@ -134,5 +123,10 @@ export function useLoadTranslations({
     _versionId,
   ]);
 
-  return { translations, setTranslations };
+  return {
+    translations,
+    setTranslations,
+    translationResultStatus,
+    setTranslationResultStatus,
+  };
 }

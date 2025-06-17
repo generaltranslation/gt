@@ -1,4 +1,4 @@
-import { TranslationsObject } from 'gt-react/internal';
+import { TranslationResultStatus, Translations } from 'gt-react/internal';
 import {
   customLoadTranslationsError,
   remoteTranslationsError,
@@ -16,32 +16,16 @@ let loadTranslationsFunction: (
   props: RemoteLoadTranslationsInput
 ) => Promise<any>;
 
-// parse translation result (local or remote)
-function parseResult(result: any): TranslationsObject | undefined {
-  if (result && Object.keys(result).length) {
-    // Mark success
-    const parsedResult: TranslationsObject = Object.entries(result).reduce(
-      (translationsAcc: TranslationsObject, [hash, target]: [string, any]) => {
-        translationsAcc[hash] = { state: 'success', target };
-        return translationsAcc;
-      },
-      {}
-    );
-    return parsedResult;
-  }
-  return undefined;
-}
-
 /**
  * Loads the translations for the user's current locale.
  * Supports custom translation loaders.
  *
- * @returns {Promise<TranslationsObject | undefined>} The translation object or undefined if not found or errored
+ * @returns {Promise<Translations | undefined>} The translation object or undefined if not found or errored
  *
  */
 export default async function loadTranslations(
   props: RemoteLoadTranslationsInput
-): Promise<TranslationsObject | undefined> {
+): Promise<Translations | undefined> {
   // Singleton pattern
   if (loadTranslationsFunction) return await loadTranslationsFunction(props);
 
@@ -57,8 +41,7 @@ export default async function loadTranslations(
     loadTranslationsFunction = async (_props: RemoteLoadTranslationsInput) => {
       // Load translation
       try {
-        const result = await customLoadTranslations(_props.targetLocale);
-        return parseResult(result);
+        return await customLoadTranslations(_props.targetLocale);
       } catch (error) {
         console.error(customLoadTranslationsError(_props.targetLocale), error);
         return undefined;
@@ -77,8 +60,7 @@ export default async function loadTranslations(
             _props._versionId ? `/${_props._versionId}` : ''
           }`
         );
-        const result = await response.json();
-        return parseResult(result);
+        return await response.json();
       } catch (error) {
         console.error(remoteTranslationsError, error);
         return undefined;
