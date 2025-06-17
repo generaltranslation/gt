@@ -134,7 +134,6 @@ export async function setupTask(
 
   // Create loadTranslations file if local translations flag is set
   if (manager.getCliOptions().localTranslations) {
-    logger.step(`Creating loadTranslations file...`);
     await createLoadTranslationsFile(manager.appDirectory);
   }
 
