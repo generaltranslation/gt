@@ -45,7 +45,8 @@ export const waitForUpdates = async (
         const data = await response.json();
         const { availableLocales, locales, localesWaitingForApproval } = data;
         if (localesWaitingForApproval.length > 0) {
-          console.error(
+          spinner.stop();
+          logErrorAndExit(
             `Error! ${localesWaitingForApproval.length} translations are waiting for approval:\n${localesWaitingForApproval
               .map((locale: string) => {
                 const localeProperties = getLocaleProperties(locale);
@@ -55,7 +56,6 @@ export const waitForUpdates = async (
                 '\n'
               )}\nPlease approve these locales in the General Translation dashboard, then re-run the command.`
           );
-          process.exit(1);
         }
         if (availableLocales) {
           availableLocales.forEach((locale: string) => {
