@@ -54,29 +54,29 @@ function getFixPrompt(appDirectory: string) {
 
 Previously, you helped me internationalize a set of files in this project.
 Your new task is to fix any errors that were introduced by your previous implementation.
+You should only fix errors that the gt-next validator has identified.
 
 ## Steps:
 1. Run the gt-next validator.
 2. Fix all errors output by the gt-next validator.
 3. Repeat steps 1-2 until there are no more errors, or until you believe that you have fixed all errors.
 
-## RULES:
-- ONLY modify files that are relevant to the internationalization of the project.
-- ONLY fix errors that result from your current or previous implementation.
-- Resolve unused imports from 'gt-next'. 
-  - In particular, if a file contains user-facing content that should be internationalized and is not, you should internationalize it.
-- Resolve missing imports from 'gt-next'. If a file is missing an import from 'gt-next', add it.
-- ALWAYS adhere to the guides provided via the 'mcp__locadex__' tools.
-  - These guides provide additional knowledge about how to internationalize the content.
-- NEVER move content to a different file. All content MUST remain in the same file where it came from.
-- NEVER CREATE OR DELETE ANY FILES (especially .bak files)
-- YOU MAY NOT RUN ANY COMMANDS THAT ARE NOT LISTED BELOW:
-  - 'locadex validate'
-  - 'tsc --noEmit'
-
 To run the gt-next validator, run the following command from the app root directory:
 'locadex validate' (global command)
 The app root is: "${appDirectory}"
+
+## RULES:
+- ONLY modify files that are relevant to the internationalization of the project.
+- ONLY fix errors that the gt-next validator has identified.
+- Resolve missing imports from 'gt-next'. If a file is missing an import from 'gt-next', add it.
+- ALWAYS adhere to the guides provided via the 'mcp__locadex__*' tools.
+  - These guides provide additional knowledge about how to internationalize the content.
+- NEVER move content to a different file. All content MUST remain in the same file where it came from.
+- NEVER CREATE OR DELETE ANY FILES (especially .bak files)
+- NEVER try running build commands (for example, 'next dev' or 'next build')
+- YOU MAY NOT RUN ANY COMMANDS THAT ARE NOT LISTED BELOW:
+  - 'locadex validate'
+  - 'tsc --noEmit'
 
 ## MCP TOOLS
 

@@ -295,7 +295,8 @@ function getPrompt({
 - The project is already setup for internationalization. Do not try to setup the project again for i18n.
 
 ## Workflow:
-1. **Gather context** Read the target files closely (you should not have to read the dependency/dependent files).
+1. **Gather context** Read the target files closely 
+  - You do not have to read the dependency/dependent files for each target file. They are provided for convenience.
 2. **Evaluate if i18n is necessary** Evaluate if the target files need to be internationalized using gt-next 
   - If the target files have no relevant content, are already internationalized, or contain build-time code (e.g. nextjs plugins) they should never be internationalized.
 **IMPORTANT**: IF NONE OF THE TARGET FILES NEED TO BE INTERNATIONALIZED, YOUR TASK IS COMPLETE AND YOU MAY RETURN.
@@ -313,7 +314,7 @@ function getPrompt({
   - When possible, avoid using useTranslations(); useGT() is always preferred.
 - DO NOT internationalize non-user facing content or content that is functional, such as ids, class names, error strings, logical strings, etc.
 - Do not add i18n middleware to the app.
-- ALWAYS adhere to the guides provided via the 'mcp__locadex__' tools.
+- ALWAYS adhere to the guides provided via the 'mcp__locadex__*' tools.
   - These guides provide additional knowledge about how to internationalize the content.
 - Minimize the footprint of your changes.
 - Focus on internationalizing all user facing content in the target files. 
