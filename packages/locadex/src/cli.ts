@@ -48,7 +48,7 @@ program
   .option('--app-dir <dir>', 'Relative path to the application directory', '.')
   .option(
     '--local-translations',
-    'Enable local translations with loadTranslations.ts file and GT config'
+    'Enable local translations with loadTranslations.js file and GT config'
   )
   .action(setupCommand);
 

@@ -134,6 +134,7 @@ export async function setupTask(
 
   // Create loadTranslations file if local translations flag is set
   if (manager.getCliOptions().localTranslations) {
+    logger.step(`Creating loadTranslations file...`);
     await createLoadTranslationsFile(manager.appDirectory);
   }
 
@@ -267,7 +268,7 @@ ${report}`;
 
 async function createLoadTranslationsFile(appDirectory: string) {
   const loadTranslationsContent = `
-export default async function loadTranslations(locale: string) {
+export default async function loadTranslations(locale) {
   try {
     // Load translations from public/_gt directory
     // This matches the GT config files.gt.output path
@@ -279,10 +280,9 @@ export default async function loadTranslations(locale: string) {
   }
 }
 `;
-
-  const filePath = path.join(appDirectory, 'src', 'loadTranslations.ts');
+  const filePath = path.join(appDirectory, 'src', 'loadTranslations.js');
   writeFileSync(filePath, loadTranslationsContent);
-  logger.step(`Created ${chalk.cyan('src/loadTranslations.ts')} file`);
+  logger.step(`Created ${chalk.cyan('src/loadTranslations.js')} file`);
 }
 
 function getLocaleSelectorPrompt(appDirectory: string) {
