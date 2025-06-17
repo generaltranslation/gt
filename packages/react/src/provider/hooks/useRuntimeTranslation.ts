@@ -8,7 +8,7 @@ import {
 import {
   RenderMethod,
   TranslatedChildren,
-  TranslationResultStatus,
+  TranslationsStatus,
   Translations,
 } from '../../types/types';
 
@@ -55,7 +55,7 @@ export default function useRuntimeTranslation({
   runtimeUrl,
   renderSettings,
   setTranslations,
-  setTranslationResultStatus,
+  setTranslationsStatus,
   ...globalMetadata
 }: {
   projectId?: string;
@@ -69,8 +69,8 @@ export default function useRuntimeTranslation({
     timeout?: number;
   };
   setTranslations: React.Dispatch<React.SetStateAction<Translations | null>>;
-  setTranslationResultStatus: React.Dispatch<
-    React.SetStateAction<TranslationResultStatus | null>
+  setTranslationsStatus: React.Dispatch<
+    React.SetStateAction<TranslationsStatus | null>
   >;
   [key: string]: any;
 }): {
@@ -226,20 +226,20 @@ export default function useRuntimeTranslation({
 
       const requests = Array.from(batchRequests.values());
       const newTranslations: Translations = {};
-      const newTranslationResultStatus: TranslationResultStatus = {};
+      const newTranslationsStatus: TranslationsStatus = {};
 
       try {
         // ----- TRANSLATION LOADING ----- //
-        const loadingTranslations: TranslationResultStatus = Object.entries(
+        const loadingTranslations: TranslationsStatus = Object.entries(
           batchRequests
-        ).reduce((acc: TranslationResultStatus, [, request]) => {
+        ).reduce((acc: TranslationsStatus, [, request]) => {
           // loading state for jsx, render loading behavior
           acc[request.metadata.hash] = {
             status: 'loading',
           };
           return acc;
         }, {});
-        setTranslationResultStatus((prev) => {
+        setTranslationsStatus((prev) => {
           return { ...(prev || {}), ...loadingTranslations };
         });
 
@@ -304,7 +304,7 @@ export default function useRuntimeTranslation({
             const { translation } = result;
             // set translation
             newTranslations[hash] = translation;
-            newTranslationResultStatus[hash] = {
+            newTranslationsStatus[hash] = {
               status: 'success',
             };
             return;
@@ -327,7 +327,7 @@ export default function useRuntimeTranslation({
               result.error
             );
             // set error in translation object
-            newTranslationResultStatus[hash] = {
+            newTranslationsStatus[hash] = {
               status: 'error',
               code: result.code,
               error: result.error,
@@ -343,7 +343,7 @@ export default function useRuntimeTranslation({
             ),
             result
           );
-          newTranslationResultStatus[hash] = {
+          newTranslationsStatus[hash] = {
             status: 'error',
             code: 500,
             error: 'An error occurred.',
@@ -360,7 +360,7 @@ export default function useRuntimeTranslation({
         // add error message to all translations from this request
         requests.forEach((request) => {
           // id defaults to hash if none provided
-          newTranslationResultStatus[request.metadata.hash] = {
+          newTranslationsStatus[request.metadata.hash] = {
             status: 'error',
             error: 'An error occurred.',
             code: 500,
@@ -376,7 +376,7 @@ export default function useRuntimeTranslation({
         });
 
         // return the new translations
-        return [newTranslations, newTranslationResultStatus];
+        return [newTranslations, newTranslationsStatus];
       }
     },
     [
@@ -420,7 +420,7 @@ export default function useRuntimeTranslation({
               ...(prev || {}),
               ...batchResult,
             }));
-            setTranslationResultStatus((prev) => ({
+            setTranslationsStatus((prev) => ({
               ...(prev || {}),
               ...batchStatus,
             }));

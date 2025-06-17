@@ -12,7 +12,7 @@ import {
   runtimeTranslationTimeoutWarning,
 } from '../errors/createErrors';
 import { Content, JsxChildren } from 'generaltranslation/internal';
-import { Translations, TranslationResultStatus } from 'gt-react/internal';
+import { Translations, TranslationsStatus } from 'gt-react/internal';
 import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import dictionaryManager, { DictionaryManager } from './DictionaryManager';
 import { HeadersAndCookies } from './props/withGTConfigProps';
@@ -412,10 +412,8 @@ export default class I18NConfiguration {
    * @param locale - The locale set by the user
    * @returns The translation result status.
    */
-  getCachedTranslationResultStatus(locale: string): TranslationResultStatus {
-    return (
-      this._translationManager?.getCachedTranslationResultStatus(locale) || {}
-    );
+  getCachedTranslationsStatus(locale: string): TranslationsStatus {
+    return this._translationManager?.getCachedTranslationsStatus(locale) || {};
   }
 
   /**

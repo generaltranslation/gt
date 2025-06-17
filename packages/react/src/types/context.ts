@@ -3,7 +3,7 @@ import {
   RenderMethod,
   InlineTranslationOptions,
   DictionaryTranslationOptions,
-  TranslationResultStatus,
+  TranslationsStatus,
 } from './types';
 import {
   TranslateIcuCallback,
@@ -31,7 +31,7 @@ export type GTContextType = {
   setLocale: (locale: string) => void;
   defaultLocale: string;
   translations: Translations | null;
-  translationResultStatus: TranslationResultStatus | null;
+  translationsStatus: TranslationsStatus | null;
   translationRequired: boolean;
   dialectTranslationRequired: boolean;
   renderSettings: { method: RenderMethod; timeout?: number };

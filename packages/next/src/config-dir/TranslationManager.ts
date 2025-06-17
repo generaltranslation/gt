@@ -3,7 +3,7 @@ import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import { TranslatedChildren, Translations } from 'gt-react/internal';
 import loadTranslations from './loadTranslation';
-import { TranslationResultStatus } from 'gt-react/internal';
+import { TranslationsStatus } from 'gt-react/internal';
 
 /**
  * Configuration type for TranslationManager.
@@ -26,7 +26,7 @@ export type TranslationManagerConfig = {
 export class TranslationManager {
   private config: TranslationManagerConfig;
   private translationsMap: Map<string, Translations>;
-  private translationResultStatusMap: Map<string, TranslationResultStatus>;
+  private translationsStatusMap: Map<string, TranslationsStatus>;
   private translationTimestamps: Map<string, number>;
   private fetchPromises: Map<string, Promise<Translations | undefined>>;
   private gtServicesEnabled: boolean;
@@ -43,7 +43,7 @@ export class TranslationManager {
       cacheExpiryTime: defaultWithGTConfigProps.cacheExpiryTime,
     };
     this.translationsMap = new Map();
-    this.translationResultStatusMap = new Map();
+    this.translationsStatusMap = new Map();
     this.translationTimestamps = new Map();
     this.fetchPromises = new Map();
     this.gtServicesEnabled =
@@ -120,8 +120,8 @@ export class TranslationManager {
     if (retrievedTranslations) {
       // Update the translation result status
       Object.keys(retrievedTranslations).forEach((hash) => {
-        this.translationResultStatusMap.set(reference, {
-          ...(this.translationResultStatusMap.get(reference) || {}),
+        this.translationsStatusMap.set(reference, {
+          ...(this.translationsStatusMap.get(reference) || {}),
           [hash]: { status: 'success' },
         });
       });
@@ -138,9 +138,9 @@ export class TranslationManager {
    * @param locale - The locale set by the user
    * @returns The translation result status.
    */
-  getCachedTranslationResultStatus(locale: string): TranslationResultStatus {
+  getCachedTranslationsStatus(locale: string): TranslationsStatus {
     const reference = this._standardizeLocale(locale);
-    return this.translationResultStatusMap.get(reference) || {};
+    return this.translationsStatusMap.get(reference) || {};
   }
 
   /**
@@ -181,8 +181,8 @@ export class TranslationManager {
   setTranslationsSuccess(locale: string, hash: string) {
     if (!(locale && hash)) return false;
     const reference = this._standardizeLocale(locale);
-    this.translationResultStatusMap.set(reference, {
-      ...(this.translationResultStatusMap.get(reference) || {}),
+    this.translationsStatusMap.set(reference, {
+      ...(this.translationsStatusMap.get(reference) || {}),
       [hash]: {
         status: 'success',
       },
@@ -204,8 +204,8 @@ export class TranslationManager {
   ) {
     if (!(locale && hash)) return;
     const reference = this._standardizeLocale(locale);
-    this.translationResultStatusMap.set(reference, {
-      ...(this.translationResultStatusMap.get(reference) || {}),
+    this.translationsStatusMap.set(reference, {
+      ...(this.translationsStatusMap.get(reference) || {}),
       [hash]: { status: 'error', error, code },
     });
   }
@@ -213,8 +213,8 @@ export class TranslationManager {
   setTranslationsLoading(locale: string, hash: string) {
     if (!(locale && hash)) return;
     const reference = this._standardizeLocale(locale);
-    this.translationResultStatusMap.set(reference, {
-      ...(this.translationResultStatusMap.get(reference) || {}),
+    this.translationsStatusMap.set(reference, {
+      ...(this.translationsStatusMap.get(reference) || {}),
       [hash]: { status: 'loading' },
     });
   }

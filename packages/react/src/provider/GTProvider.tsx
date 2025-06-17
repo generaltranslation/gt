@@ -135,8 +135,8 @@ export default function GTProvider({
   const {
     translations,
     setTranslations,
-    translationResultStatus,
-    setTranslationResultStatus,
+    translationsStatus,
+    setTranslationsStatus,
   } = useLoadTranslations({
     _translations,
     translationRequired,
@@ -164,7 +164,7 @@ export default function GTProvider({
     runtimeUrl,
     renderSettings,
     setTranslations,
-    setTranslationResultStatus,
+    setTranslationsStatus,
     ...metadata,
   });
 
@@ -172,7 +172,7 @@ export default function GTProvider({
 
   const _internalUseGTFunction = useCreateInternalUseGTFunction(
     translations,
-    translationResultStatus,
+    translationsStatus,
     locale,
     defaultLocale,
     translationRequired,
@@ -188,7 +188,7 @@ export default function GTProvider({
     useCreateInternalUseTranslationsFunction(
       dictionary,
       translations,
-      translationResultStatus,
+      translationsStatus,
       locale,
       defaultLocale,
       translationRequired,
@@ -218,7 +218,7 @@ export default function GTProvider({
         setLocale,
         defaultLocale,
         translations,
-        translationResultStatus,
+        translationsStatus,
         translationRequired,
         dialectTranslationRequired,
         projectId,

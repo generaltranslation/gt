@@ -3,7 +3,7 @@ import {
   Dictionary,
   DictionaryTranslationOptions,
   RenderMethod,
-  TranslationResultStatus,
+  TranslationsStatus,
   Translations,
 } from '../../types/types';
 import {
@@ -22,7 +22,7 @@ import { TranslateIcuCallback } from '../../types/runtime';
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
   translations: Translations | null,
-  translationResultStatus: TranslationResultStatus | null,
+  translationsStatus: TranslationsStatus | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
@@ -84,7 +84,7 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Check id first
       const translationEntry = translations?.[hash];
-      const translationStatus = translationResultStatus?.[hash];
+      const translationStatus = translationsStatus?.[hash];
 
       // Check translation successful
       if (translationStatus?.status === 'success') {
@@ -130,7 +130,7 @@ export default function useCreateInternalUseTranslationsFunction(
     [
       dictionary,
       translations,
-      translationResultStatus,
+      translationsStatus,
       locale,
       defaultLocale,
       translationRequired,

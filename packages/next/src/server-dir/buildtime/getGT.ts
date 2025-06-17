@@ -32,8 +32,8 @@ export async function getGT(): Promise<
     ? await I18NConfig.getCachedTranslations(locale)
     : undefined;
 
-  const translationResultStatus = translationRequired
-    ? I18NConfig.getCachedTranslationResultStatus(locale)
+  const translationsStatus = translationRequired
+    ? I18NConfig.getCachedTranslationsStatus(locale)
     : undefined;
 
   // ---------- THE t() METHOD ---------- //
@@ -68,12 +68,12 @@ export async function getGT(): Promise<
     // ----- GET TRANSLATION ----- //
 
     let translationEntry = undefined;
-    let translationResultStatusEntry = undefined;
+    let translationsStatusEntry = undefined;
 
     // Use id to index
     if (options?.id) {
       translationEntry = translations?.[options?.id];
-      translationResultStatusEntry = translationResultStatus?.[options?.id];
+      translationsStatusEntry = translationsStatus?.[options?.id];
     }
 
     // Calculate hash
@@ -90,17 +90,17 @@ export async function getGT(): Promise<
     if (!translationEntry) {
       hash = calcHash();
       translationEntry = translations?.[hash];
-      translationResultStatusEntry = translationResultStatus?.[hash];
+      translationsStatusEntry = translationsStatus?.[hash];
     }
 
     // ----- RENDER TRANSLATION ----- //
 
     // If a translation already exists
-    if (translationResultStatusEntry?.status === 'success')
+    if (translationsStatusEntry?.status === 'success')
       return renderContent(translationEntry as string, [locale, defaultLocale]);
 
     // If a translation errored
-    if (translationResultStatusEntry?.status === 'error')
+    if (translationsStatusEntry?.status === 'error')
       return renderContent(message, [defaultLocale]);
 
     // ----- CREATE TRANSLATION ----- //

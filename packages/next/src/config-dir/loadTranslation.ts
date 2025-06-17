@@ -1,4 +1,4 @@
-import { TranslationResultStatus, Translations } from 'gt-react/internal';
+import { Translations } from 'gt-react/internal';
 import {
   customLoadTranslationsError,
   remoteTranslationsError,

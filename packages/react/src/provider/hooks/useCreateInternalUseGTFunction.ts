@@ -2,7 +2,7 @@ import { hashSource } from 'generaltranslation/id';
 import { useCallback } from 'react';
 import {
   InlineTranslationOptions,
-  TranslationResultStatus,
+  TranslationsStatus,
   Translations,
   RenderMethod,
 } from '../../types/types';
@@ -11,7 +11,7 @@ import { formatMessage } from 'generaltranslation';
 
 export default function useCreateInternalUseGTFunction(
   translations: Translations | null,
-  translationResultStatus: TranslationResultStatus | null,
+  translationsStatus: TranslationsStatus | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
@@ -74,7 +74,7 @@ export default function useCreateInternalUseGTFunction(
         ? translations?.[id as string]
         : translations?.[hash];
 
-      const translationStatus = translationResultStatus?.[hash];
+      const translationStatus = translationsStatus?.[hash];
 
       // ----- TRANSLATE ON DEMAND ----- //
 
@@ -122,7 +122,7 @@ export default function useCreateInternalUseGTFunction(
     },
     [
       translations,
-      translationResultStatus,
+      translationsStatus,
       locale,
       defaultLocale,
       translationRequired,

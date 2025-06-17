@@ -33,7 +33,7 @@ import {
   CustomLoader,
   RenderVariable,
   VariableProps,
-  TranslationResultStatus,
+  TranslationsStatus,
 } from './types/types';
 
 import { GTContextType } from './types/context';
@@ -65,7 +65,7 @@ export {
   Entry,
   TranslatedChildren,
   Translations,
-  TranslationResultStatus,
+  TranslationsStatus,
   GTContextType,
   ClientProviderProps,
   DictionaryTranslationOptions,

@@ -94,7 +94,7 @@ export type Translations = {
 /**
  * Mapping of hashes to translation result status.
  */
-export type TranslationResultStatus = {
+export type TranslationsStatus = {
   [hash: string]:
     | { status: 'success' | 'loading' }
     | { status: 'error'; code?: number; error?: string };

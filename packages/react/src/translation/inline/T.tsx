@@ -53,7 +53,7 @@ function T({
   const {
     translations,
     translationRequired,
-    translationResultStatus,
+    translationsStatus,
     runtimeTranslationEnabled,
     dialectTranslationRequired,
     registerJsxForTranslation,
@@ -102,7 +102,7 @@ function T({
     ? translations?.[id as string]
     : translations?.[hash];
 
-  const translationStatus = translationResultStatus?.[hash];
+  const translationStatus = translationsStatus?.[hash];
 
   // Do dev translation if required
   useEffect(() => {
