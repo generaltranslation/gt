@@ -1,4 +1,4 @@
-import { Content, JsxChildren } from 'generaltranslation/internal';
+import { JsxChildren } from 'generaltranslation/internal';
 import React from 'react';
 
 /**
@@ -59,15 +59,6 @@ export type Dictionary = {
 };
 export type FlattenedDictionary = {
   [key: string]: DictionaryEntry;
-};
-
-/**
- * Variables are used to store the variable name and type.
- */
-export type Variable = {
-  key: string;
-  id?: number;
-  variable?: 'variable' | 'number' | 'datetime' | 'currency';
 };
 
 // ----- TRANSLATION ----- //
@@ -135,6 +126,15 @@ export type RuntimeTranslationOptions = {
 } & Omit<InlineTranslationOptions, 'id'>;
 
 // ----- VARIABLES ----- //
+
+/**
+ * Variables are used to store the variable name and type.
+ */
+export type Variable = {
+  key: string;
+  id?: number;
+  variable?: 'variable' | 'number' | 'datetime' | 'currency';
+};
 
 export type VariableProps = {
   variableType: 'variable' | 'number' | 'datetime' | 'currency';
