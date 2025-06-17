@@ -316,7 +316,8 @@ export class ReactCLI extends BaseCLI {
     const { updates, errors } = await createUpdates(
       options,
       options.dictionary,
-      this.library === 'gt-next' ? 'gt-next' : 'gt-react'
+      this.library === 'gt-next' ? 'gt-next' : 'gt-react',
+      false
     );
 
     if (errors.length > 0) {

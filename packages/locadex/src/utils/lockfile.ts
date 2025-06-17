@@ -8,7 +8,6 @@ export const LOCKFILE_NAME = 'locadex-lock.json';
 
 export interface LockfileEntry {
   path: string;
-  lastModified: number;
 }
 
 export interface Lockfile {
@@ -117,11 +116,9 @@ export function updateLockfile(
       delete lockfile.checksums[oldHash];
     }
 
-    const stats = fs.statSync(filePath);
     // Use hash as key, store current path and metadata
     lockfile.checksums[currentHash] = {
       path: relativePath,
-      lastModified: stats.mtime.getTime(),
     };
 
     // Update the path-to-hash mapping

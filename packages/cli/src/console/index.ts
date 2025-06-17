@@ -44,6 +44,13 @@ export const warnHasUnwrappedExpressionSync = (
     location
   );
 
+export const warnNestedTComponent = (file: string, location?: string): string =>
+  withLocation(
+    file,
+    `Found nested <T> component. <T> components cannot be directly nested.`,
+    location
+  );
+
 export const warnNonStaticExpressionSync = (
   file: string,
   attrName: string,
@@ -77,6 +84,20 @@ export const warnNonStringSync = (
   withLocation(
     file,
     `Found non-string literal (${colorizeContent(value)}). Change the value to a string literal to ensure this content is translated.`,
+    location
+  );
+
+export const warnAsyncUseGT = (file: string, location?: string): string =>
+  withLocation(
+    file,
+    `Found useGT() in an async function. Use getGT() instead, or make the function synchronous.`,
+    location
+  );
+
+export const warnSyncGetGT = (file: string, location?: string): string =>
+  withLocation(
+    file,
+    `Found getGT() in a synchronous function. Use useGT() instead, or make the function async.`,
     location
   );
 

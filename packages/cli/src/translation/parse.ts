@@ -19,7 +19,8 @@ import chalk from 'chalk';
 export async function createUpdates(
   options: Options | GenerateSourceOptions,
   sourceDictionary: string | undefined,
-  pkg: 'gt-react' | 'gt-next'
+  pkg: 'gt-react' | 'gt-next',
+  validate: boolean
 ): Promise<{ updates: Updates; errors: string[] }> {
   let updates: Updates = [];
   let errors: string[] = [];
@@ -62,7 +63,7 @@ export async function createUpdates(
   // Scan through project for <T> tags
   if (options.inline) {
     const { updates: newUpdates, errors: newErrors } =
-      await createInlineUpdates(options as any, pkg);
+      await createInlineUpdates(options as any, pkg, validate);
     errors = [...errors, ...newErrors];
     updates = [...updates, ...newUpdates];
   }

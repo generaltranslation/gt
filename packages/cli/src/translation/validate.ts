@@ -24,7 +24,8 @@ export async function validateProject(
   const { updates, errors } = await createUpdates(
     settings,
     settings.dictionary,
-    pkg
+    pkg,
+    true
   );
 
   if (errors.length > 0) {
