@@ -1,39 +1,6 @@
 import { JsxChildren } from 'generaltranslation/internal';
+import { HtmlContentPropKeysRecord, GTProp } from 'generaltranslation/types';
 import React from 'react';
-
-/**
- * Transformations are made from a prefix and a suffix.
- */
-export type Transformation =
-  | 'translate-client'
-  | 'translate-server'
-  | 'variable-variable'
-  | 'variable-currency'
-  | 'variable-datetime'
-  | 'variable-number'
-  | 'plural'
-  | 'branch';
-export type TransformationPrefix =
-  | 'translate'
-  | 'variable'
-  | 'plural'
-  | 'branch'
-  | 'fragment';
-export type VariableTransformationSuffix =
-  | 'variable'
-  | 'number'
-  | 'datetime'
-  | 'currency';
-
-/**
- * GTProp is an internal property used to contain data for translating and rendering elements.
- */
-export type GTProp = {
-  id: number;
-  transformation?: TransformationPrefix;
-  variableType?: VariableTransformationSuffix;
-  branches?: Record<string, JsxChildren>;
-};
 
 /**
  * TaggedElement is a React element with a GTProp property.
@@ -71,8 +38,9 @@ export type TranslatedElement = {
   props: {
     'data-_gt': {
       id: number;
-      [key: string]: any;
-    };
+      transformation?: string;
+      branches?: Record<string, JsxChildren>;
+    } & HtmlContentPropKeysRecord;
     children?: TranslatedChildren;
   };
 };

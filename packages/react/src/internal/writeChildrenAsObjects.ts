@@ -1,12 +1,12 @@
 import getVariableName from '../variables/getVariableName';
-import {
-  GTProp,
-  TaggedChild,
-  TaggedChildren,
-  TaggedElement,
-} from '../types/types';
+import { TaggedChild, TaggedChildren, TaggedElement } from '../types/types';
 import { isValidTaggedElement } from '../utils/utils';
 import { JsxChild, JsxChildren, JsxElement } from 'generaltranslation/internal';
+import {
+  GTProp,
+  HTML_CONTENT_PROPS,
+  HtmlContentPropKeysRecord,
+} from 'generaltranslation/types';
 
 /**
  * Gets the tag name of a React element.
@@ -39,11 +39,18 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
     props: {},
   };
   if (props['data-_gt']) {
+    // Add translatable HTML content props
     const generaltranslation = props['data-_gt'];
     let newGTProp: GTProp = {
       ...generaltranslation,
     };
-
+    Object.entries(HTML_CONTENT_PROPS).forEach(([minifiedName, fullName]) => {
+      if (props[fullName]) {
+        newGTProp[minifiedName as keyof HtmlContentPropKeysRecord] =
+          props[fullName];
+      }
+    });
+    // Add transformation
     const transformation = generaltranslation.transformation;
     if (transformation === 'variable') {
       const variableType = generaltranslation.variableType || 'variable';

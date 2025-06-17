@@ -112,7 +112,8 @@ function T({
       !translationRequired || // no translation required
       !translations || // cache not checked yet
       !locale || // locale not loaded
-      translationEntry // translation exists
+      translationEntry || // translation exists
+      translationStatus // translation request has already been sent
     ) {
       return;
     }
