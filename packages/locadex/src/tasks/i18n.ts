@@ -190,9 +190,20 @@ ${reports.join('\n')}`;
   logger.step(`Saved summary of changes to: ${summaryFilePath}`);
 
   // cleanup
-  const formatter = await detectFormatter();
-  if (formatter) {
-    await formatFiles(files, formatter);
+  if (cliOptions.formatCmd) {
+    await execFunction(
+      cliOptions.formatCmd,
+      [],
+      false,
+      manager.appDirectory,
+      manager.getAgentAbortController()
+    );
+  } else {
+    const formatter = await detectFormatter();
+    if (formatter && files.length > 0) {
+      await formatFiles(files, formatter);
+      logger.log(`Formatted ${files.length} files with ${formatter}`);
+    }
   }
 
   const lockfilePath = manager.getLockFilePath();

@@ -31,6 +31,7 @@ import { setCredentials } from 'gtx-cli/utils/credentials';
 import { retrieveCredentials } from 'gtx-cli/utils/credentials';
 import { isGTAuthConfigured } from '../utils/config.js';
 import { CliOptions } from '../types/cli.js';
+import { execFunction } from 'src/utils/exec.js';
 
 /**
  * Run Locadex setup on the project
@@ -171,10 +172,20 @@ export async function setupTask(
   // Add locadex github action if not exists
   setupGithubAction(manager, packageManager);
 
-  const formatter = await detectFormatter();
-  if (formatter && filesUpdated.length > 0) {
-    await formatFiles(filesUpdated, formatter);
-    logger.log(`Formatted ${filesUpdated.length} files with ${formatter}`);
+  if (cliOptions.formatCmd) {
+    await execFunction(
+      cliOptions.formatCmd,
+      [],
+      false,
+      manager.appDirectory,
+      manager.getAgentAbortController()
+    );
+  } else {
+    const formatter = await detectFormatter();
+    if (formatter && filesUpdated.length > 0) {
+      await formatFiles(filesUpdated, formatter);
+      logger.log(`Formatted ${filesUpdated.length} files with ${formatter}`);
+    }
   }
 
   // Run i18n command
