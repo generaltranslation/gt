@@ -1,5 +1,11 @@
 # locadex
 
+## 0.1.12
+
+### Patch Changes
+
+- [#404](https://github.com/generaltranslation/gt/pull/404) [`bf06c8e`](https://github.com/generaltranslation/gt/commit/bf06c8e06579c16ff2e1a87c2a884646912eeb36) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix error caused by cursor
+
 ## 0.1.11
 
 ### Patch Changes
