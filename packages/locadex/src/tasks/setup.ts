@@ -266,12 +266,19 @@ ${report}`;
 }
 
 async function createLoadTranslationsFile(appDirectory: string) {
-  const loadTranslationsContent = `
+  const usingSrcDirectory = existsSync(path.join(appDirectory, 'src'));
+  const publicPath = usingSrcDirectory ? '../public/_gt/' : './public/_gt/';
+  const filePath = usingSrcDirectory
+    ? path.join(appDirectory, 'src', 'loadTranslations.js')
+    : path.join(appDirectory, 'loadTranslations.js');
+
+  if (!existsSync(filePath)) {
+    const loadTranslationsContent = `
 export default async function loadTranslations(locale) {
   try {
     // Load translations from public/_gt directory
     // This matches the GT config files.gt.output path
-    const t = await import(\`../public/_gt/\${locale}.json\`);
+    const t = await import(\`${publicPath}\${locale}.json\`);
     return t.default;
   } catch (error) {
     console.warn(\`Failed to load translations for locale \${locale}:\`, error);
@@ -279,9 +286,19 @@ export default async function loadTranslations(locale) {
   }
 }
 `;
-  const filePath = path.join(appDirectory, 'src', 'loadTranslations.js');
-  writeFileSync(filePath, loadTranslationsContent);
-  logger.step(`Created ${chalk.cyan('src/loadTranslations.js')} file`);
+    writeFileSync(filePath, loadTranslationsContent);
+    logger.step(
+      `Created ${chalk.cyan(
+        'loadTranslations.js'
+      )} file at ${chalk.cyan(filePath)}.`
+    );
+  } else {
+    logger.step(
+      `Found ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
+        filePath
+      )}. Skipping creation...`
+    );
+  }
 }
 
 function getLocaleSelectorPrompt(appDirectory: string) {
