@@ -45,6 +45,7 @@ program
   .option('-y, --bypass-prompts', 'Bypass interactive prompts')
   .option('--no-telemetry', 'Disable telemetry')
   .option('--no-translate', 'Disable translation step')
+  .option('-f, --format-cmd <cmd>', 'Command to format modified files')
   .option('--app-dir <dir>', 'Relative path to the application directory', '.')
   .action(setupCommand);
 
@@ -66,6 +67,7 @@ program
   )
   .option('--no-telemetry', 'Disable telemetry')
   .option('--no-translate', 'Disable translation step')
+  .option('-f, --format-cmd <cmd>', 'Command to format modified files')
   .option('--app-dir <dir>', 'Relative path to the application directory', '.')
   .action(autoSetupCommand);
 
@@ -83,6 +85,7 @@ program
   )
   .option('--no-telemetry', 'Disable telemetry')
   .option('--no-translate', 'Disable translation step')
+  .option('-f, --format-cmd <cmd>', 'Command to format modified files')
   .option('--app-dir <dir>', 'Relative path to the application directory', '.')
   .action(i18nCommand);
 

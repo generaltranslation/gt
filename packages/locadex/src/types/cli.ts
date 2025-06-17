@@ -8,6 +8,7 @@ export type CliOptions = {
   appDir: string;
   timeout?: string;
   noTranslate?: boolean;
+  formatCmd?: string;
 };
 
 export type LocadexConfig = {
