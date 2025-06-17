@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 1.2.28
+
+### Patch Changes
+
+- [#397](https://github.com/generaltranslation/gt/pull/397) [`80a1395`](https://github.com/generaltranslation/gt/commit/80a13955db9ff46e5883ac8b0909ab294c63d001) Thanks [@brian-lou](https://github.com/brian-lou)! - Run translate after i18n
+
 ## 1.2.27
 
 ### Patch Changes
