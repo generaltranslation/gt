@@ -31,7 +31,7 @@ import { setCredentials } from 'gtx-cli/utils/credentials';
 import { retrieveCredentials } from 'gtx-cli/utils/credentials';
 import { isGTAuthConfigured } from '../utils/config.js';
 import { CliOptions } from '../types/cli.js';
-import { execFunction } from 'src/utils/exec.js';
+import { execFunction } from '../utils/exec.js';
 
 /**
  * Run Locadex setup on the project
