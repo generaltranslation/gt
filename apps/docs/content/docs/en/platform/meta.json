@@ -4,6 +4,7 @@
   "icon": "House",
   "root": true,
   "pages": [
+    "---Getting Started---",
     "index",
     "---Features---",
     "features/inline",

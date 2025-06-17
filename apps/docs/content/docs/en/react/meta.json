@@ -2,6 +2,7 @@
   "title": "React SDK",
   "icon": "Atom",
   "pages": [
+    "---Getting Started---",
     "index",
     "introduction",
     "---Guides---",
