@@ -174,6 +174,7 @@ export async function setupTask(
   const formatter = await detectFormatter();
   if (formatter && filesUpdated.length > 0) {
     await formatFiles(filesUpdated, formatter);
+    logger.log(`Formatted ${filesUpdated.length} files with ${formatter}`);
   }
 
   // Run i18n command

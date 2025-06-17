@@ -12,6 +12,12 @@ export async function detectFormatter(): Promise<Formatter | null> {
     return 'prettier';
   } catch {}
 
+  // Try ESLint
+  try {
+    await import('eslint');
+    return 'eslint';
+  } catch {}
+
   // Try Biome
   try {
     return await new Promise<Formatter | null>((resolve, reject) => {
@@ -31,12 +37,6 @@ export async function detectFormatter(): Promise<Formatter | null> {
         }
       });
     });
-  } catch {}
-
-  // Try ESLint
-  try {
-    await import('eslint');
-    return 'eslint';
   } catch {}
 
   return null;
