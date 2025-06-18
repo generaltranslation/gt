@@ -6,6 +6,7 @@ import {
   GTProp,
   HTML_CONTENT_PROPS,
   HtmlContentPropKeysRecord,
+  VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES,
 } from 'generaltranslation/types';
 
 /**
@@ -53,12 +54,15 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
     // Add transformation
     const transformation = generaltranslation.transformation;
     if (transformation === 'variable') {
-      const variableType = generaltranslation.variableType || 'variable';
+      const variableType =
+        VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES[
+          generaltranslation.variableType || 'variable'
+        ];
       const variableName = getVariableName(props, variableType);
       return {
-        variable: variableType,
-        key: variableName,
-        id: generaltranslation.id,
+        v: variableType,
+        k: variableName,
+        i: generaltranslation.id,
       };
     }
     if (transformation === 'plural' && generaltranslation.branches) {

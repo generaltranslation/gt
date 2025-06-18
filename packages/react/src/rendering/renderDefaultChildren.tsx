@@ -1,24 +1,33 @@
-import React, { ReactElement, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import getGTProp from './getGTProp';
-import getVariableProps from '../variables/_getVariableProps';
+import getVariableProps, {
+  isVariableElementProps,
+} from '../variables/_getVariableProps';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import getPluralBranch from '../branches/plurals/getPluralBranch';
-import { RenderVariable } from '../types/types';
+import {
+  RenderVariable,
+  TaggedChild,
+  TaggedChildren,
+  TaggedElement,
+} from '../types/types';
 
 export default function renderDefaultChildren({
   children,
   defaultLocale = libraryDefaultLocale,
   renderVariable,
 }: {
-  children: ReactNode;
+  children: TaggedChildren;
   defaultLocale: string;
   renderVariable: RenderVariable;
 }): React.ReactNode {
-  const handleSingleChildElement = (child: ReactElement<any>) => {
+  const handleSingleChildElement = (child: TaggedElement): ReactNode => {
     const generaltranslation = getGTProp(child);
-    if (generaltranslation?.transformation === 'variable') {
+
+    // Variable
+    if (isVariableElementProps(child.props)) {
       const { variableType, variableValue, variableOptions } = getVariableProps(
-        child.props as any
+        child.props
       );
       return renderVariable({
         variableType,
@@ -27,6 +36,8 @@ export default function renderDefaultChildren({
         locales: [defaultLocale],
       });
     }
+
+    // Plural
     if (generaltranslation?.transformation === 'plural') {
       const branches = generaltranslation.branches || {};
       return handleChildren(
@@ -34,6 +45,8 @@ export default function renderDefaultChildren({
           child.props.children
       );
     }
+
+    // Branch
     if (generaltranslation?.transformation === 'branch') {
       let {
         children,
@@ -42,18 +55,21 @@ export default function renderDefaultChildren({
         'data-_gt': _gt,
         ...branches
       } = child.props;
-      name = name || child.props['data-_gt-name'] || 'branch';
       branches = generaltranslation.branches || {};
       return handleChildren(
         branches[branch] !== undefined ? branches[branch] : children
       );
     }
+
+    // Fragment
     if (generaltranslation?.transformation === 'fragment') {
       return React.createElement(child.type, {
         key: child.props.key,
         children: handleChildren(child.props.children),
       });
     }
+
+    // Default
     if (child.props.children) {
       return React.cloneElement(child, {
         ...child.props,
@@ -64,14 +80,14 @@ export default function renderDefaultChildren({
     return React.cloneElement(child, { ...child.props, 'data-_gt': undefined });
   };
 
-  const handleSingleChild = (child: ReactNode) => {
-    if (React.isValidElement<any>(child)) {
+  const handleSingleChild = (child: TaggedChild): ReactNode => {
+    if (React.isValidElement(child)) {
       return handleSingleChildElement(child);
     }
     return child;
   };
 
-  const handleChildren = (children: ReactNode): ReactNode => {
+  const handleChildren = (children: TaggedChildren): ReactNode => {
     return Array.isArray(children)
       ? React.Children.map(children, handleSingleChild)
       : handleSingleChild(children);

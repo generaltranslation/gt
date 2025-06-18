@@ -19,10 +19,11 @@ import {
   RenderMethod,
   TranslatedChildren,
   Translations,
+  RenderVariable,
+  VariableProps,
   DictionaryEntry,
   FlattenedDictionary,
   MetaEntry,
-  GTProp,
   Entry,
   DictionaryTranslationOptions,
   InlineTranslationOptions,
@@ -31,8 +32,6 @@ import {
   DictionaryContent,
   DictionaryObject,
   CustomLoader,
-  RenderVariable,
-  VariableProps,
   TranslationsStatus,
 } from './types/types';
 
@@ -40,6 +39,7 @@ import { GTContextType } from './types/context';
 import { ClientProviderProps } from './types/config';
 import { defaultLocaleCookieName } from './utils/cookies';
 import mergeDictionaries from './dictionaries/mergeDictionaries';
+import { GTProp } from 'generaltranslation/types';
 
 export {
   addGTIdentifier,

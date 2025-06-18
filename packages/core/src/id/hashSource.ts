@@ -3,6 +3,7 @@
 import { DataFormat, JsxChild, JsxChildren, Variable } from '../types';
 import stringify from 'fast-json-stable-stringify';
 import CryptoJS from 'crypto-js';
+import isVariable from '../utils/isVariable';
 
 // ----- FUNCTIONS ----- //
 /**
@@ -101,11 +102,11 @@ const sanitizeChild = (child: JsxChild): SanitizedChild => {
       }
       return newChild;
     }
-    if ('key' in child) {
+    if (isVariable(child)) {
       return {
-        key: child.key,
-        ...(child.variable && {
-          variable: child.variable,
+        k: child.k,
+        ...(child.v && {
+          v: child.v,
         }),
       };
     }

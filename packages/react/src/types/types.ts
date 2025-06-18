@@ -1,5 +1,11 @@
 import { JsxChildren } from 'generaltranslation/internal';
-import { HtmlContentPropKeysRecord, GTProp } from 'generaltranslation/types';
+import {
+  HtmlContentPropKeysRecord,
+  GTProp,
+  Variable,
+  VariableType,
+  VariableTransformationSuffix,
+} from 'generaltranslation/types';
 import React from 'react';
 
 /**
@@ -93,19 +99,8 @@ export type RuntimeTranslationOptions = {
   locale?: string;
 } & Omit<InlineTranslationOptions, 'id'>;
 
-// ----- VARIABLES ----- //
-
-/**
- * Variables are used to store the variable name and type.
- */
-export type Variable = {
-  key: string;
-  id?: number;
-  variable?: 'variable' | 'number' | 'datetime' | 'currency';
-};
-
 export type VariableProps = {
-  variableType: 'variable' | 'number' | 'datetime' | 'currency';
+  variableType: VariableTransformationSuffix;
   variableValue: any;
   variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
   variableName: string;

@@ -1,14 +1,32 @@
+import { GTProp, VariableTransformationSuffix } from 'generaltranslation/types';
 import { VariableProps } from '../types/types';
 import getVariableName from './getVariableName';
 
-export default function getVariableProps(props: {
-  'data-_gt'?: {
+type VariableElementProps = {
+  'data-_gt': GTProp & {
     transformation: 'variable';
-    [key: string]: any;
   };
-  [key: string]: any;
-}): VariableProps {
-  const variableType: 'variable' | 'number' | 'datetime' | 'currency' =
+  [key: string]: unknown;
+};
+
+export function isVariableElementProps(
+  props: unknown
+): props is VariableElementProps {
+  return (
+    typeof props === 'object' &&
+    !!props &&
+    'data-_gt' in props &&
+    typeof props['data-_gt'] === 'object' &&
+    !!props['data-_gt'] &&
+    'transformation' in props['data-_gt'] &&
+    props['data-_gt']?.transformation === 'variable'
+  );
+}
+
+export default function getVariableProps(
+  props: VariableElementProps
+): VariableProps {
+  const variableType: VariableTransformationSuffix =
     props['data-_gt']?.variableType || 'variable';
 
   const result: VariableProps = {
@@ -23,8 +41,12 @@ export default function getVariableProps(props: {
     })(),
     variableOptions: (() => {
       const variableOptions = {
-        ...(props.currency && { currency: props.currency }),
-        ...(props.options && { ...props.options }),
+        ...(typeof props.currency !== 'undefined' && {
+          currency: props.currency,
+        }),
+        ...(typeof props.options !== 'undefined' && {
+          options: props.options,
+        }),
       };
       if (Object.keys(variableOptions).length) return variableOptions;
       if (typeof props['data-_gt-variable-options'] === 'string')

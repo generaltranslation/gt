@@ -8,6 +8,7 @@ export { pluralForms, isAcceptedPluralForm } from './settings/plurals';
 import _getPluralForm from './locales/getPluralForm';
 import { Content, JsxChild, JsxChildren, JsxElement } from './types';
 import { LocaleProperties } from './types';
+import isVariable from './utils/isVariable';
 export {
   _getPluralForm as getPluralForm,
   JsxChildren,
@@ -15,4 +16,5 @@ export {
   JsxChild,
   JsxElement,
   LocaleProperties,
+  isVariable,
 };

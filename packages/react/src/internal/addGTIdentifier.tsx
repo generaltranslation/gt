@@ -5,15 +5,17 @@ import {
   createNestedTError,
 } from '../errors/createErrors';
 import {
-  GTProp,
   TaggedChild,
   TaggedChildren,
   TaggedElement,
   TaggedElementProps,
+} from '../types/types';
+import {
+  GTProp,
   Transformation,
   TransformationPrefix,
   VariableTransformationSuffix,
-} from '../types/types';
+} from 'generaltranslation/types';
 
 export default function addGTIdentifier(
   children: ReactNode,

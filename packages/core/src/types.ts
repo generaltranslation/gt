@@ -2,12 +2,6 @@ import { LocaleProperties } from './locales/getLocaleProperties';
 
 export { LocaleProperties };
 
-export type Variable = {
-  variable?: string;
-  id?: string | number;
-  key: string;
-};
-
 export type Content = string | Array<string | Variable>;
 
 /**
@@ -52,6 +46,20 @@ export type VariableTransformationSuffix =
   | 'number'
   | 'datetime'
   | 'currency';
+
+export const VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES = {
+  variable: 'v',
+  number: 'n',
+  datetime: 'd',
+  currency: 'c',
+} as const;
+
+export const MINIFIED_NAMES_TO_VARIABLE_TRANSFORMATION_SUFFIXES = {
+  v: 'variable',
+  n: 'number',
+  d: 'datetime',
+  c: 'currency',
+} as const;
 
 /**
  * GTProp is an internal property used to contain data for translating and rendering elements.
@@ -160,3 +168,20 @@ export type TranslationError = {
 };
 
 export type { CustomMapping } from './locales/customLocaleMapping';
+
+// ----- VARIABLES ----- //
+
+export type VariableType =
+  | 'v' // Variable
+  | 'n' // Number
+  | 'd' // Date
+  | 'c'; // Currency
+
+/**
+ * Variables are used to store the variable name and type.
+ */
+export type Variable = {
+  k: string;
+  i?: number;
+  v?: VariableType;
+};

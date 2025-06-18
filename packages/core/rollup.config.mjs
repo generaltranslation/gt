@@ -108,4 +108,38 @@ export default [
     },
     plugins: [dts()],
   },
+
+  // Bundling for the types module
+  {
+    input: 'src/types.ts',
+    output: [
+      {
+        file: 'dist/types.cjs.min.cjs',
+        format: 'cjs',
+        exports: 'auto',
+        sourcemap: true,
+      },
+      {
+        file: 'dist/types.esm.min.mjs',
+        format: 'es',
+        exports: 'named',
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      typescript({ tsconfig: './tsconfig.json' }),
+      commonjs(),
+      terser(),
+    ],
+  },
+
+  // TypeScript declarations for the types module
+  {
+    input: 'src/types.ts',
+    output: {
+      file: 'dist/types.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+  },
 ];

@@ -1,20 +1,22 @@
-import React, { ReactElement, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import {
-  RenderVariable,
   TaggedChildren,
   TaggedElement,
   TranslatedChildren,
+  RenderVariable,
   TranslatedElement,
 } from '../types/types';
-import isVariableObject from './isVariableObject';
 import getGTProp from './getGTProp';
-import getVariableProps from '../variables/_getVariableProps';
+import getVariableProps, {
+  isVariableElementProps,
+} from '../variables/_getVariableProps';
 import renderDefaultChildren from './renderDefaultChildren';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { isVariable, libraryDefaultLocale } from 'generaltranslation/internal';
 import getPluralBranch from '../branches/plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
+  MINIFIED_NAMES_TO_VARIABLE_TRANSFORMATION_SUFFIXES,
 } from 'generaltranslation/types';
 
 function renderTranslatedElement({
@@ -23,7 +25,7 @@ function renderTranslatedElement({
   locales = [libraryDefaultLocale],
   renderVariable,
 }: {
-  sourceElement: ReactElement<any>;
+  sourceElement: TaggedElement;
   targetElement: TranslatedElement;
   locales: string[];
   renderVariable: RenderVariable;
@@ -153,10 +155,9 @@ export default function renderTranslatedChildren({
     const sourceElements: TaggedElement[] = source.filter(
       (sourceChild): sourceChild is TaggedElement => {
         if (React.isValidElement(sourceChild)) {
-          const generaltranslation = getGTProp(sourceChild);
-          if (generaltranslation?.transformation === 'variable') {
+          if (isVariableElementProps(sourceChild.props)) {
             const { variableName, variableValue, variableOptions } =
-              getVariableProps(sourceChild.props as any);
+              getVariableProps(sourceChild.props);
             variables[variableName] = variableValue;
             variablesOptions[variableName] = variableOptions;
           } else {
@@ -191,13 +192,16 @@ export default function renderTranslatedChildren({
         );
 
       // Render variable
-      if (isVariableObject(targetChild)) {
+      if (isVariable(targetChild)) {
         return (
           <React.Fragment key={`var_${index}`}>
             {renderVariable({
-              variableType: targetChild.variable || 'variable',
-              variableValue: variables[targetChild.key],
-              variableOptions: variablesOptions[targetChild.key],
+              variableType:
+                MINIFIED_NAMES_TO_VARIABLE_TRANSFORMATION_SUFFIXES[
+                  targetChild.v || 'v'
+                ],
+              variableValue: variables[targetChild.k],
+              variableOptions: variablesOptions[targetChild.k],
               locales,
             })}
           </React.Fragment>
@@ -224,7 +228,7 @@ export default function renderTranslatedChildren({
 
   // Single child
   if (target && typeof target === 'object' && !Array.isArray(target)) {
-    const targetType: 'variable' | 'element' = isVariableObject(target)
+    const targetType: 'variable' | 'element' = isVariable(target)
       ? 'variable'
       : 'element';
 
