@@ -18,7 +18,6 @@ import { extractFiles } from '../utils/dag/extractFiles.js';
 import { Dag } from '../utils/dag/createDag.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 import { deleteAddedFiles } from '../utils/fs/git.js';
-import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { installGlobalPackage } from '../utils/packages/installPackage.js';
 import { fixErrorsTask } from './fixErrors.js';
 import { getLocadexVersion } from '../utils/getPaths.js';
@@ -46,7 +45,9 @@ export async function i18nTask(cliOptions: CliOptions) {
   }
 
   // Install claude-code if not installed
-  await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
+  // 6/18/25: Moved to claude-code TS SDK
+  // await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
+
   // Install locadex if not installed
   await installGlobalPackage('locadex', getLocadexVersion());
 
@@ -213,10 +214,10 @@ ${reports.join('\n')}`;
 
   // Run translate cmd
   if (isGTAuthConfigured(manager.appDirectory) && !cliOptions.noTranslate) {
+    const spinner = createSpinner();
     try {
-      logger.initializeSpinner();
-      logger.spinner.start('Running locadex translate...');
-      const { stderr, code } = await execFunction(
+      spinner.start('Running locadex translate...');
+      const { stdout, code } = await execFunction(
         'locadex',
         ['translate'],
         false,
@@ -224,14 +225,14 @@ ${reports.join('\n')}`;
         manager.getAgentAbortController()
       );
       if (code !== 0) {
-        logger.spinner.stop('Translations failed!');
-        logger.error(`Error running 'locadex translate': ${stderr}`);
+        spinner.stop('Translations failed');
+        logger.error(`Error running 'locadex translate': ${stdout}`);
       } else {
-        logger.spinner.stop('Translations generated!');
+        spinner.stop('Translations generated!');
         logger.log(`Translations generated with 'locadex translate'`);
       }
     } catch (error) {
-      logger.spinner.stop('Translations failed!');
+      spinner.stop('Translations failed');
       logger.error(
         `Error running 'locadex translate': ${(error as Error).message}`
       );

@@ -4,14 +4,13 @@ import { logger } from '../logging/logger.js';
 import { LocadexManager } from '../utils/locadexManager.js';
 import { outro } from '@clack/prompts';
 import chalk from 'chalk';
-import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
-import { installGlobalPackage } from '../utils/packages/installPackage.js';
 
 export async function fixErrorsTask() {
   const manager = LocadexManager.getInstance();
   const reports: string[] = [];
   // Install claude-code if not installed
-  await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
+  // 6/18/25: Moved to claude-code TS SDK
+  // await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
 
   // Create a clean agent for cleanup
   const cleanupAgent = manager.createSingleAgent('claude_cleanup_agent', {});
