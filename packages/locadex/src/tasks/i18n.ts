@@ -18,7 +18,6 @@ import { extractFiles } from '../utils/dag/extractFiles.js';
 import { Dag } from '../utils/dag/createDag.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 import { deleteAddedFiles } from '../utils/fs/git.js';
-import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { installGlobalPackage } from '../utils/packages/installPackage.js';
 import { fixErrorsTask } from './fixErrors.js';
 import { getLocadexVersion } from '../utils/getPaths.js';
@@ -46,7 +45,9 @@ export async function i18nTask(cliOptions: CliOptions) {
   }
 
   // Install claude-code if not installed
-  await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
+  // 6/18/25: Moved to claude-code TS SDK
+  // await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
+
   // Install locadex if not installed
   await installGlobalPackage('locadex', getLocadexVersion());
 

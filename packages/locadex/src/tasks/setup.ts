@@ -22,7 +22,6 @@ import {
   addTranslateScript,
   installGlobalPackage,
 } from '../utils/packages/installPackage.js';
-import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { getLocadexVersion } from '../utils/getPaths.js';
 import { getResource } from '../resources/getResource.js';
 import { generateSettings } from 'gtx-cli/config/generateSettings';
@@ -172,7 +171,8 @@ export async function setupTask(
   }
 
   // Install claude-code if not installed
-  await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
+  // 6/18/25: Moved to claude-code TS SDK
+  // await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
 
   // Install locadex if not installed
   await installGlobalPackage('locadex', getLocadexVersion());

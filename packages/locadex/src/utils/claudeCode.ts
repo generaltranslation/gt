@@ -1,17 +1,16 @@
-import { spawn } from 'node:child_process';
-import { ClaudeSDKMessage } from '../types/claude-sdk.js';
 import { guides } from '../mcp/tools/guides.js';
 import { logger } from '../logging/logger.js';
 import { posthog } from '../telemetry.js';
 import { LocadexManager } from './locadexManager.js';
 import { getSessionId } from './session.js';
 import * as Sentry from '@sentry/node';
+import { TimeoutError, UserAbortError, AgentProcessError } from './errors.js';
 import {
-  TimeoutError,
-  UserAbortError,
-  AgentProcessError,
-  AgentSpawnError,
-} from './errors.js';
+  query,
+  type Options,
+  type SDKMessage,
+  type McpServerConfig,
+} from '@anthropic-ai/claude-code';
 
 export type ClaudeRunOptions = {
   additionalSystemPrompt?: string;
@@ -44,7 +43,7 @@ const DISALLOWED_TOOLS = ['NotebookEdit', 'WebFetch', 'WebSearch'];
 export class ClaudeCodeRunner {
   private id: string;
   private sessionId: string | undefined;
-  private mcpConfig: string | undefined;
+  private mcpConfig: McpServerConfig | undefined;
   private manager: LocadexManager;
   private changes: string[] = [];
   private controller: AbortController;
@@ -68,7 +67,7 @@ export class ClaudeCodeRunner {
     private options: {
       id: string;
       apiKey: string;
-      mcpConfig: string;
+      mcpConfig: McpServerConfig;
       softTurnLimit: number;
     }
   ) {
@@ -237,53 +236,57 @@ export class ClaudeCodeRunner {
           },
           () =>
             this.withTimeout(
-              (timeoutController: AbortController) =>
-                new Promise<string>((resolve, reject) => {
-                  const args = ['-p', prompt];
+              async (timeoutController: AbortController) => {
+                // Create a combined abort controller that triggers on either user abort or timeout
+                const combinedController = new AbortController();
+
+                const abortHandler = () => {
+                  combinedController.abort();
+                };
+
+                this.controller.signal.addEventListener('abort', abortHandler);
+                timeoutController.signal.addEventListener(
+                  'abort',
+                  abortHandler
+                );
+
+                try {
+                  // Build query options
+                  const queryOptions: Options = {
+                    maxTurns: options.maxTurns,
+                    allowedTools: [
+                      ...DEFAULT_ALLOWED_TOOLS,
+                      ...(options?.additionalAllowedTools || []),
+                    ],
+                    disallowedTools: DISALLOWED_TOOLS,
+                  };
 
                   if (options.additionalSystemPrompt) {
-                    args.push(
-                      '--append-system-prompt',
-                      options.additionalSystemPrompt
-                    );
-                  }
-
-                  args.push('--output-format', 'stream-json');
-                  args.push('--verbose');
-
-                  if (this.sessionId) {
-                    if (this.turns < this.softTurnLimit) {
-                      args.push('--resume', this.sessionId);
-                    } else {
-                      logger.debugMessage(
-                        `[${this.id}] Resetting session id because of soft turn limit reached: ${this.turns} >= ${this.softTurnLimit}`
-                      );
-                      this.reset();
-                    }
+                    queryOptions.appendSystemPrompt =
+                      options.additionalSystemPrompt;
                   }
 
                   if (this.mcpConfig) {
-                    args.push('--mcp-config', this.mcpConfig);
+                    queryOptions.mcpServers = {
+                      locadex: this.mcpConfig,
+                    };
                   }
 
-                  args.push(
-                    '--allowedTools',
-                    [
-                      ...DEFAULT_ALLOWED_TOOLS,
-                      ...(options?.additionalAllowedTools || []),
-                    ].join(',')
-                  );
-
-                  args.push('--disallowedTools', DISALLOWED_TOOLS.join(','));
-
-                  if (options.maxTurns) {
-                    args.push('--max-turns', options.maxTurns.toString());
+                  if (this.sessionId && this.turns < this.softTurnLimit) {
+                    queryOptions.resume = this.sessionId;
+                  } else if (this.turns >= this.softTurnLimit) {
+                    logger.debugMessage(
+                      `[${this.id}] Resetting session id because of soft turn limit reached: ${this.turns} >= ${this.softTurnLimit}`
+                    );
+                    this.reset();
                   }
 
-                  const env = { ...process.env };
-                  env.ANTHROPIC_API_KEY = this.options.apiKey;
+                  if (this.options.apiKey) {
+                    process.env.ANTHROPIC_API_KEY = this.options.apiKey;
+                  }
+
                   logger.debugMessage(
-                    `[${this.id}] Spawning Claude Code with additional args: ${JSON.stringify(
+                    `[${this.id}] Running Claude Code SDK with options: ${JSON.stringify(
                       {
                         maxTurns: options.maxTurns,
                         softTurnLimit: this.softTurnLimit,
@@ -295,167 +298,40 @@ export class ClaudeCodeRunner {
                       },
                       null,
                       2
-                    )}. API key is ${this.options.apiKey ? 'set' : 'not set'}`
+                    )}. API key is ${process.env.ANTHROPIC_API_KEY ? 'set' : 'not set'}`
                   );
 
-                  // Create a combined abort controller that triggers on either user abort or timeout
-                  const combinedController = new AbortController();
+                  try {
+                    for await (const message of query({
+                      prompt,
+                      abortController: combinedController,
+                      options: queryOptions,
+                    })) {
+                      const result = this.handleSDKOutput(message, _obs);
+                      if (!result.success) {
+                        throw new AgentProcessError(
+                          `[${this.id}] Claude Code error: ${result.error}`,
+                          undefined
+                        );
+                      }
+                    }
+                  } finally {
+                    // pass
+                  }
 
-                  const abortHandler = () => {
-                    combinedController.abort();
-                  };
-
-                  this.controller.signal.addEventListener(
+                  return '';
+                } finally {
+                  // Clean up event listeners
+                  this.controller.signal.removeEventListener(
                     'abort',
                     abortHandler
                   );
-                  timeoutController.signal.addEventListener(
+                  timeoutController.signal.removeEventListener(
                     'abort',
                     abortHandler
                   );
-
-                  const claude = spawn('claude', args, {
-                    stdio: ['ignore', 'pipe', 'pipe'],
-                    env,
-                    signal: combinedController.signal,
-                  });
-
-                  logger.debugMessage(
-                    `[${this.id}] Spawned claude code process`
-                  );
-
-                  const output = {
-                    error: '',
-                  };
-
-                  let buffer = '';
-                  claude.stdout?.on('data', (data) => {
-                    buffer += data.toString();
-                    const lines = buffer.split('\n');
-
-                    // Keep the last incomplete line in buffer
-                    buffer = lines.pop() || '';
-
-                    for (const line of lines) {
-                      if (line.trim()) {
-                        try {
-                          logger.debugMessage(`[${this.id}] ${line}`);
-                          const outputData: ClaudeSDKMessage = JSON.parse(line);
-                          const result = this.handleSDKOutput(outputData, _obs);
-                          if (!result.success) {
-                            output.error = result.error ?? '';
-                          }
-                        } catch (error) {
-                          logger.debugMessage(
-                            `[${this.id}] Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
-                          );
-                        }
-                      }
-                    }
-                  });
-
-                  claude.stderr?.on('data', (data) => {
-                    logger.debugMessage(
-                      `[${this.id}] ${data.toString().trim()}`
-                    );
-                  });
-
-                  claude.on('close', (code, signal) => {
-                    // Clean up event listeners
-                    this.controller.signal.removeEventListener(
-                      'abort',
-                      abortHandler
-                    );
-                    timeoutController.signal.removeEventListener(
-                      'abort',
-                      abortHandler
-                    );
-
-                    if (signal === 'SIGTERM' || signal === 'SIGKILL') {
-                      // Process was terminated due to abort
-                      if (this.controller.signal.aborted) {
-                        reject(
-                          new UserAbortError(
-                            'Claude Code process was aborted by user'
-                          )
-                        );
-                      } else if (timeoutController.signal.aborted) {
-                        reject(
-                          new TimeoutError(
-                            `Claude Code process timed out after ${options.timeoutSec}s`,
-                            options.timeoutSec
-                          )
-                        );
-                      } else {
-                        reject(
-                          new AgentProcessError(
-                            `[${this.id}] Claude Code process was terminated with signal ${signal}`,
-                            code ?? undefined
-                          )
-                        );
-                      }
-                    } else if (code === 0) {
-                      logger.debugMessage(
-                        `[${this.id}] Claude Code exited with code ${code}`
-                      );
-                      resolve('');
-                    } else {
-                      logger.debugMessage(
-                        `[${this.id}] Claude Code exited with code ${code}: ${output.error}`
-                      );
-                      reject(
-                        new AgentProcessError(
-                          `[${this.id}] Claude Code exited with code ${code}: ${output.error}`,
-                          code ?? undefined
-                        )
-                      );
-                    }
-                  });
-
-                  claude.on('error', (error) => {
-                    // Clean up event listeners
-                    this.controller.signal.removeEventListener(
-                      'abort',
-                      abortHandler
-                    );
-                    timeoutController.signal.removeEventListener(
-                      'abort',
-                      abortHandler
-                    );
-
-                    if (error.name === 'AbortError') {
-                      // Determine if this was a user abort or timeout abort
-                      if (this.controller.signal.aborted) {
-                        reject(
-                          new UserAbortError(
-                            'Claude Code process was aborted by user'
-                          )
-                        );
-                      } else if (timeoutController.signal.aborted) {
-                        reject(
-                          new TimeoutError(
-                            `Claude Code process timed out after ${options.timeoutSec}s`,
-                            options.timeoutSec
-                          )
-                        );
-                      } else {
-                        reject(
-                          new UserAbortError('Claude Code process was aborted')
-                        );
-                      }
-                    } else {
-                      logger.debugMessage(
-                        `[${this.id}] failed to run Claude Code: ${error.message}`
-                      );
-                      reject(
-                        new AgentSpawnError(
-                          `[${this.id}] failed to run Claude Code: ${error.message}`,
-                          error
-                        )
-                      );
-                    }
-                  });
-                }),
+                }
+              },
               options.timeoutSec,
               `Claude Code operation timed out after ${options.timeoutSec}s`
             )
@@ -465,7 +341,7 @@ export class ClaudeCodeRunner {
   }
 
   private handleSDKOutput(
-    outputData: ClaudeSDKMessage,
+    outputData: SDKMessage,
     _obs: ClaudeCodeObservation
   ): { success: boolean; error?: string } {
     if (outputData.type === 'assistant') {

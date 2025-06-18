@@ -14,6 +14,7 @@ import { findAvailablePort } from '../mcp/getPort.js';
 import { createConfig, getConfig } from './config.js';
 import { gracefulShutdown, exit } from './shutdown.js';
 import { LOCKFILE_NAME } from './lockfile.js';
+import { McpServerConfig } from '@anthropic-ai/claude-code';
 
 export interface LocadexRunMetadata {
   createdAt: string;
@@ -32,21 +33,14 @@ export interface LocadexRunMetadata {
 }
 
 const mcpSseConfig = {
-  mcpServers: {
-    locadex: {
-      type: 'sse',
-      url: 'http://localhost:8888/sse',
-    },
-  },
+  type: 'sse' as const,
+  url: 'http://localhost:8888/sse',
 };
 const mcpStdioConfig = {
-  mcpServers: {
-    locadex: {
-      command: 'locadex-mcp',
-      args: [],
-      env: {},
-    },
-  },
+  type: 'stdio' as const,
+  command: 'locadex-mcp',
+  args: [],
+  env: {},
 };
 
 export class LocadexManager {
@@ -55,7 +49,7 @@ export class LocadexManager {
   private mcpTransport: 'sse' | 'stdio';
 
   // Paths
-  private mcpConfigPath: string;
+  private mcpConfig: McpServerConfig | undefined;
   private filesStateFilePath: string;
   private metadataFilePath: string;
   private lockFilePath: string;
@@ -137,7 +131,6 @@ export class LocadexManager {
     this.maxConcurrency = this.config.maxConcurrency;
     this.batchSize = this.config.batchSize;
     this.timeout = this.config.timeout;
-    this.mcpConfigPath = path.resolve(this.currentRunDir, 'mcp.json');
     this.filesStateFilePath = path.resolve(
       this.currentRunDir,
       'files-state.json'
@@ -190,11 +183,8 @@ export class LocadexManager {
       APP_DIRECTORY: this.appDirectory,
     };
     if (this.mcpTransport === 'stdio') {
-      mcpStdioConfig.mcpServers.locadex.env = env;
-      fs.writeFileSync(
-        this.mcpConfigPath,
-        JSON.stringify(mcpStdioConfig, null, 2)
-      );
+      mcpStdioConfig.env = env;
+      this.mcpConfig = mcpStdioConfig;
       logger.debugMessage(
         `Starting MCP server on stdio with config: ${JSON.stringify(
           mcpStdioConfig,
@@ -205,11 +195,8 @@ export class LocadexManager {
     } else {
       // First, search for an available port
       const port = await findAvailablePort(8888);
-      mcpSseConfig.mcpServers.locadex.url = `http://localhost:${port}/sse`;
-      fs.writeFileSync(
-        this.mcpConfigPath,
-        JSON.stringify(mcpSseConfig, null, 2)
-      );
+      mcpSseConfig.url = `http://localhost:${port}/sse`;
+      this.mcpConfig = mcpSseConfig;
 
       logger.debugMessage(
         `Starting MCP server on port ${port} with config: ${JSON.stringify(
@@ -295,7 +282,7 @@ export class LocadexManager {
   ): ClaudeCodeRunner {
     return new ClaudeCodeRunner(this, this.agentAbortController, {
       apiKey: this.apiKey,
-      mcpConfig: this.mcpConfigPath,
+      mcpConfig: this.mcpConfig ?? mcpStdioConfig, // Default to Stdio
       softTurnLimit: options.softTurnLimit ?? this.defaultSoftTurnLimit,
       id,
     });
