@@ -94,8 +94,8 @@ const sanitizeChild = (child: JsxChild): SanitizedChild => {
           ])
         );
       }
-      if (child?.props?.children) {
-        newChild.children = sanitizeJsxChildren(child.props.children);
+      if (child?.props?.c) {
+        newChild.children = sanitizeJsxChildren(child.props.c);
       }
       if (child?.props?.['d']?.t) {
         newChild.transformation = child.props['d'].t;

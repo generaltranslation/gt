@@ -51,7 +51,7 @@ export type TranslatedElement = {
   i: number;
   props: {
     d: GTProp;
-    children?: TranslatedChildren;
+    c?: TranslatedChildren;
   };
 };
 export type TranslatedChild = TranslatedElement | string | Variable;

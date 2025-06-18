@@ -41,10 +41,10 @@ function renderTranslatedElement({
   if (unprocessedTargetGT) {
     Object.entries(HTML_CONTENT_PROPS).forEach(([minifiedName, fullName]) => {
       if (
-        unprocessedTargetGT[minifiedName as keyof typeof unprocessedTargetGT]
+        unprocessedTargetGT[minifiedName as keyof typeof HTML_CONTENT_PROPS]
       ) {
         translatedProps[fullName] = unprocessedTargetGT[
-          minifiedName as keyof typeof unprocessedTargetGT
+          minifiedName as keyof typeof HTML_CONTENT_PROPS
         ] as string;
       }
     });
@@ -59,8 +59,7 @@ function renderTranslatedElement({
       sourceElement.props.children;
     const targetBranches = targetElement.props['d'].b || {};
     const targetBranch =
-      getPluralBranch(n, locales, targetBranches) ||
-      targetElement.props.children;
+      getPluralBranch(n, locales, targetBranches) || targetElement.props.c;
     return renderTranslatedChildren({
       source: sourceBranch,
       target: targetBranch,
@@ -74,8 +73,7 @@ function renderTranslatedElement({
     const { branch, children } = sourceProps;
     const sourceBranch = (sourceGT.branches || {})[branch] || children;
     const targetBranch =
-      (targetElement.props['d'].b || {})[branch] ||
-      targetElement.props.children;
+      (targetElement.props['d'].b || {})[branch] || targetElement.props.c;
     return renderTranslatedChildren({
       source: sourceBranch,
       target: targetBranch as TranslatedChildren,
@@ -85,12 +83,12 @@ function renderTranslatedElement({
   }
 
   // fragment (create a valid fragment)
-  if (transformation === 'fragment' && targetElement.props?.children) {
+  if (transformation === 'fragment' && targetElement.props?.c) {
     return React.createElement(sourceElement.type, {
       key: sourceElement.props.key,
       children: renderTranslatedChildren({
         source: sourceProps.children,
-        target: targetElement.props.children,
+        target: targetElement.props.c,
         locales,
         renderVariable,
       }),
@@ -98,14 +96,14 @@ function renderTranslatedElement({
   }
 
   // other
-  if (sourceProps?.children && targetElement.props?.children) {
+  if (sourceProps?.children && targetElement.props?.c) {
     return React.cloneElement(sourceElement, {
       ...sourceProps,
       ...translatedProps,
       'data-_gt': undefined,
       children: renderTranslatedChildren({
         source: sourceProps.children,
-        target: targetElement.props.children,
+        target: targetElement.props.c,
         locales,
         renderVariable,
       }),

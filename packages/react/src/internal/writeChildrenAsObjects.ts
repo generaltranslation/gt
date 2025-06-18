@@ -98,7 +98,7 @@ const handleSingleChildElement = (
     objectElement.props.d = newGTProp;
   }
   if (props.children) {
-    objectElement.props.children = writeChildrenAsObjects(props.children);
+    objectElement.props.c = writeChildrenAsObjects(props.children);
   }
   return objectElement;
 };
