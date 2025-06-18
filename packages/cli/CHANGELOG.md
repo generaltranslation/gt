@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 1.2.30
+
+### Patch Changes
+
+- [#409](https://github.com/generaltranslation/gt/pull/409) [`557f74d`](https://github.com/generaltranslation/gt/commit/557f74da58ebd84ca50c1961fc6dfecd63bb7797) Thanks [@brian-lou](https://github.com/brian-lou)! - Make locadex more reliable + improve validation
+
 ## 1.2.29
 
 ### Patch Changes
