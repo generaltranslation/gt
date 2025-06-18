@@ -8,11 +8,17 @@ import {
 import fs from 'node:fs';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import { resolveFiles } from '../fs/config/parseFilesConfig.js';
-import { findFilepaths } from '../fs/findFilepath.js';
 import { validateSettings } from './validateSettings.js';
 import { GT_DASHBOARD_URL } from '../utils/constants.js';
 import { resolveProjectId } from '../fs/utils.js';
 import path from 'node:path';
+
+export const DEFAULT_SRC_PATTERNS = [
+  'src/**/*.{js,jsx,ts,tsx}',
+  'app/**/*.{js,jsx,ts,tsx}',
+  'pages/**/*.{js,jsx,ts,tsx}',
+  'components/**/*.{js,jsx,ts,tsx}',
+];
 
 /**
  * Generates settings from any
@@ -88,14 +94,7 @@ export async function generateSettings(
   mergedOptions.stageTranslations = mergedOptions.stageTranslations ?? false;
 
   // Populate src if not provided
-  mergedOptions.src =
-    mergedOptions.src ||
-    findFilepaths([
-      path.join(cwd, './src'),
-      path.join(cwd, './app'),
-      path.join(cwd, './pages'),
-      path.join(cwd, './components'),
-    ]);
+  mergedOptions.src = mergedOptions.src || DEFAULT_SRC_PATTERNS;
 
   // Resolve all glob patterns in the files object
   mergedOptions.files = mergedOptions.files

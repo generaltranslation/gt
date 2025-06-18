@@ -26,7 +26,10 @@ import {
 import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { getLocadexVersion } from '../utils/getPaths.js';
 import { getResource } from '../resources/getResource.js';
-import { generateSettings } from 'gtx-cli/config/generateSettings';
+import {
+  DEFAULT_SRC_PATTERNS,
+  generateSettings,
+} from 'gtx-cli/config/generateSettings';
 import { setCredentials } from 'gtx-cli/utils/credentials';
 import { retrieveCredentials } from 'gtx-cli/utils/credentials';
 import { isGTAuthConfigured } from '../utils/config.js';
@@ -114,7 +117,7 @@ export async function setupTask(
   // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
   const { filesUpdated: filesUpdatedNext } = await wrapContentNext(
     {
-      src: getNextDirectories(manager.appDirectory),
+      src: DEFAULT_SRC_PATTERNS,
       config: nextConfigPath,
       disableIds: true,
       disableFormatting: true,

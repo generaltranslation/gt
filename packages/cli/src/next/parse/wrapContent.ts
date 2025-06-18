@@ -9,7 +9,6 @@ import generateModule from '@babel/generator';
 const traverse = traverseModule.default || traverseModule;
 const generate = generateModule.default || generateModule;
 
-import { getFiles } from '../../fs/findJsxFilepath.js';
 import { isMeaningful } from '../../react/jsx/evaluateJsx.js';
 import { handleJsxElement } from '../../react/jsx/wrapJsx.js';
 import { getRelativePath } from '../../fs/findFilepath.js';
@@ -24,6 +23,8 @@ import {
   generateImportMap,
   createImports,
 } from '../../react/jsx/utils/parseAst.js';
+import { matchFiles } from '../../fs/matchFiles.js';
+import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 
 const IMPORT_MAP = {
   T: { name: 'T', source: 'gt-next' },
@@ -47,16 +48,14 @@ export async function wrapContentNext(
   errors: string[],
   warnings: string[]
 ): Promise<{ filesUpdated: string[] }> {
-  const srcDirectory = options.src || ['./'];
-
-  const files = srcDirectory.flatMap((dir) => getFiles(dir));
+  const files = matchFiles(process.cwd(), options.src || DEFAULT_SRC_PATTERNS);
   const filesUpdated = [];
 
   for (const file of files) {
     const code = await fs.promises.readFile(file, 'utf8');
 
     // Create relative path from src directory and remove extension
-    const relativePath = getRelativePath(file, srcDirectory[0]);
+    const relativePath = getRelativePath(file, process.cwd());
 
     let ast;
     try {

@@ -35,7 +35,7 @@ export type Options = {
 };
 
 export type WrapOptions = {
-  src: string[];
+  src?: string[];
   config: string;
   skipTs: boolean;
   disableIds: boolean;
@@ -44,12 +44,12 @@ export type WrapOptions = {
 };
 
 export type SetupOptions = {
-  src: string[];
+  src?: string[];
   config: string;
 };
 
 export type GenerateSourceOptions = {
-  src: string[];
+  src?: string[];
   config: string;
   defaultLocale: string;
   dictionary?: string;
@@ -137,6 +137,6 @@ export type Settings = {
   _versionId?: string; // internal use only
   version?: string; // for specifying a custom version id to use. Should be unique
   description?: string;
-  src?: string[]; // list of src directories for gt-next and gt-react
+  src: string[]; // list of glob patterns for gt-next and gt-react
   framework?: SupportedFrameworks;
 };

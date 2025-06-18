@@ -172,8 +172,7 @@ export class BaseCLI {
       )
       .option(
         '--src <paths...>',
-        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
-        findFilepaths(['./src', './app', './pages', './components'])
+        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
       )
       .option(
         '-c, --config <path>',
@@ -248,8 +247,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       )
       .option(
         '--src <paths...>',
-        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
-        findFilepaths(['./src', './app', './pages', './components'])
+        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
       )
       .option(
         '-c, --config <path>',
