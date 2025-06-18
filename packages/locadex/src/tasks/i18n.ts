@@ -12,7 +12,6 @@ import { runParallelProcessing, TaskProcessor } from './concurrency.js';
 import { outro } from '@clack/prompts';
 import chalk from 'chalk';
 import { appendFileSync } from 'node:fs';
-import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import path from 'node:path';
 import { updateLockfile } from '../utils/lockfile.js';
 import { extractFiles } from '../utils/dag/extractFiles.js';
@@ -26,6 +25,7 @@ import { getLocadexVersion } from '../utils/getPaths.js';
 import { execFunction } from '../utils/exec.js';
 import { isGTAuthConfigured } from '../utils/config.js';
 import { CliOptions } from '../types/cli.js';
+import { formatFiles } from 'src/utils/fs/formatFiles.js';
 
 /**
  * Run Locadex i18n on the project
@@ -191,28 +191,7 @@ ${reports.join('\n')}`;
 
   // cleanup
   if (cliOptions.formatCmd) {
-    logger.verboseMessage(`Running ${cliOptions.formatCmd}...`);
-    const { stderr, code } = await execFunction(
-      cliOptions.formatCmd,
-      [],
-      false,
-      manager.appDirectory,
-      manager.getAgentAbortController()
-    );
-    if (code !== 0) {
-      logger.error(`Error running '${cliOptions.formatCmd}': ${stderr}`);
-    } else {
-      logger.step(
-        `Formatted ${files.length} files with ${cliOptions.formatCmd}`
-      );
-    }
-  } else {
-    logger.verboseMessage(`Running formatter...`);
-    const formatter = await detectFormatter();
-    if (formatter && files.length > 0) {
-      await formatFiles(files, formatter);
-      logger.log(`Formatted ${files.length} files with ${formatter}`);
-    }
+    await formatFiles(cliOptions.formatCmd, manager);
   }
 
   const lockfilePath = manager.getLockFilePath();
