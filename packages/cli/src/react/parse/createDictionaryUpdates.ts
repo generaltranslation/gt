@@ -4,7 +4,6 @@ import os from 'os';
 import { build, BuildOptions } from 'esbuild';
 import { Updates } from '../../types/index.js';
 import flattenDictionary from '../utils/flattenDictionary.js';
-import { splitStringToContent } from 'generaltranslation';
 import loadJSON from '../../fs/loadJSON.js';
 import { hashSource } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata.js';

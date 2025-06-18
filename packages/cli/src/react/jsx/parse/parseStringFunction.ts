@@ -1,6 +1,5 @@
 import { NodePath } from '@babel/traverse';
 import { Updates } from '../../../types/index.js';
-import { splitStringToContent } from 'generaltranslation';
 import * as t from '@babel/types';
 import { isStaticExpression } from '../evaluateJsx.js';
 import {
