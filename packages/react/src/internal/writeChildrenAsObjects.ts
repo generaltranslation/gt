@@ -48,16 +48,18 @@ const handleSingleChildElement = (
   };
   if (props['data-_gt']) {
     const generaltranslation = props['data-_gt'];
-    let newGTProp: GTProp = {
-      id: generaltranslation.id,
-    };
+    objectElement.i = generaltranslation.id;
     // Add translatable HTML content props
-    Object.entries(HTML_CONTENT_PROPS).forEach(([minifiedName, fullName]) => {
-      if (props[fullName]) {
-        newGTProp[minifiedName as keyof HtmlContentPropKeysRecord] =
-          props[fullName];
-      }
-    });
+    let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce(
+      (acc, [minifiedName, fullName]) => {
+        if (props[fullName]) {
+          newGTProp[minifiedName as keyof HtmlContentPropKeysRecord] =
+            props[fullName];
+        }
+        return acc;
+      },
+      {}
+    );
 
     // Check if variable
     const transformation = generaltranslation.transformation;
@@ -95,7 +97,7 @@ const handleSingleChildElement = (
       newGTProp = { ...newGTProp, b: newBranches, t: 'b' };
     }
 
-    objectElement.props['data-_gt'] = newGTProp;
+    objectElement.props.d = newGTProp;
   }
   if (props.children) {
     objectElement.props.children = writeChildrenAsObjects(props.children);

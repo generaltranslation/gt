@@ -36,7 +36,7 @@ function renderTranslatedElement({
   const transformation = sourceGT?.transformation;
 
   // Get translated props
-  const unprocessedTargetGT = unprocessedTargetProps['data-_gt'];
+  const unprocessedTargetGT = unprocessedTargetProps['d'];
   const translatedProps: HtmlContentPropValuesRecord = {};
   if (unprocessedTargetGT) {
     Object.entries(HTML_CONTENT_PROPS).forEach(([minifiedName, fullName]) => {
@@ -57,7 +57,7 @@ function renderTranslatedElement({
     const sourceBranch =
       getPluralBranch(n, locales, sourceBranches) ||
       sourceElement.props.children;
-    const targetBranches = targetElement.props['data-_gt'].b || {};
+    const targetBranches = targetElement.props['d'].b || {};
     const targetBranch =
       getPluralBranch(n, locales, targetBranches) ||
       targetElement.props.children;
@@ -74,7 +74,7 @@ function renderTranslatedElement({
     const { branch, children } = sourceProps;
     const sourceBranch = (sourceGT.branches || {})[branch] || children;
     const targetBranch =
-      (targetElement.props['data-_gt'].b || {})[branch] ||
+      (targetElement.props['d'].b || {})[branch] ||
       targetElement.props.children;
     return renderTranslatedChildren({
       source: sourceBranch,
@@ -120,6 +120,7 @@ function renderTranslatedElement({
   });
 }
 
+// TODO: backwards compatibility
 export default function renderTranslatedChildren({
   source,
   target,
@@ -175,7 +176,7 @@ export default function renderTranslatedChildren({
           const generaltranslation = getGTProp(sourceChild);
           if (typeof generaltranslation?.id !== 'undefined') {
             const sourceId = generaltranslation.id;
-            const targetId = targetElement?.props?.['data-_gt']?.id;
+            const targetId = targetElement.i;
             return sourceId === targetId;
           }
           return false;

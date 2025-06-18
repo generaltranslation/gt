@@ -52,15 +52,15 @@ export type VariableTransformationSuffix =
  * note, transformations are only read on the server side if they are 'plural' or 'branch'
  */
 export type GTProp = {
-  id: number;
   b?: Record<string, JsxChildren>; // Branches
   t?: 'p' | 'b'; // Branch Transformation
 } & HtmlContentPropKeysRecord;
 
 export type JsxElement = {
   type: string;
+  i?: number; // id
   props: {
-    'data-_gt'?: GTProp;
+    d?: GTProp;
     children?: JsxChildren;
   };
 };

@@ -82,7 +82,7 @@ const sanitizeChild = (child: JsxChild): SanitizedChild => {
   if (child && typeof child === 'object') {
     if ('props' in child) {
       const newChild: SanitizedChild = {};
-      const dataGt = child?.props?.['data-_gt'];
+      const dataGt = child?.props?.['d'];
       if (dataGt?.b) {
         // The only thing that prevents sanitizeJsx from being stable is
         // the order of the keys in the branches object.
@@ -97,8 +97,8 @@ const sanitizeChild = (child: JsxChild): SanitizedChild => {
       if (child?.props?.children) {
         newChild.children = sanitizeJsxChildren(child.props.children);
       }
-      if (child?.props?.['data-_gt']?.t) {
-        newChild.transformation = child.props['data-_gt'].t;
+      if (child?.props?.['d']?.t) {
+        newChild.transformation = child.props['d'].t;
       }
       return newChild;
     }

@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "6.0.0-alpha.17",
+  "version": "6.0.0-alpha.19",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -13,9 +13,9 @@
     "CHANGELOG.md"
   ],
   "dependencies": {
-    "@generaltranslation/supported-locales": "^2.0.11-alpha.17",
-    "generaltranslation": "^7.0.0-alpha.17",
-    "gt-react": "^10.0.0-alpha.17"
+    "@generaltranslation/supported-locales": "^2.0.11-alpha.19",
+    "generaltranslation": "^7.0.0-alpha.19",
+    "gt-react": "^10.0.0-alpha.19"
   },
   "scripts": {
     "patch": "npm version patch",
