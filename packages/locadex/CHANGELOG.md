@@ -1,5 +1,16 @@
 # locadex
 
+## 0.1.13
+
+### Patch Changes
+
+- [#396](https://github.com/generaltranslation/gt/pull/396) [`4f41851`](https://github.com/generaltranslation/gt/commit/4f41851a124df2f855db616a618f3e28b5a94455) Thanks [@andrewherndon](https://github.com/andrewherndon)! - added local translations as param to start command
+
+- [#409](https://github.com/generaltranslation/gt/pull/409) [`557f74d`](https://github.com/generaltranslation/gt/commit/557f74da58ebd84ca50c1961fc6dfecd63bb7797) Thanks [@brian-lou](https://github.com/brian-lou)! - Make locadex more reliable + improve validation
+
+- Updated dependencies [[`557f74d`](https://github.com/generaltranslation/gt/commit/557f74da58ebd84ca50c1961fc6dfecd63bb7797)]:
+  - gtx-cli@1.2.30
+
 ## 0.1.12
 
 ### Patch Changes
