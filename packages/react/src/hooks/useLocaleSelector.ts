@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import useLocale from '../hooks/useLocale';
 import useLocales from '../hooks/useLocales';
 import useSetLocale from '../hooks/useSetLocale';
@@ -38,10 +38,18 @@ export default function useLocaleSelector(locales?: string[]) {
     return res;
   }, [contextLocales]);
 
+  // create getLocaleProperties callback
+  const getLocalePropertiesCallback = useCallback(
+    (locale: string) => {
+      return gt.getLocaleProperties(locale);
+    },
+    [gt]
+  );
+
   return {
     locale,
     locales: locales ? locales : sortedLocales,
     setLocale,
-    getLocaleProperties: gt.getLocaleProperties,
+    getLocaleProperties: getLocalePropertiesCallback,
   };
 }
