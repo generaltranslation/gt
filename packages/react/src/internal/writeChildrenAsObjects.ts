@@ -34,7 +34,7 @@ const getTagName = (child: TaggedElement): string => {
 };
 
 const handleSingleChildElement = (child: TaggedElement): JsxChild => {
-  const { type, props } = child;
+  const { props } = child;
   const objectElement: JsxElement = {
     type: getTagName(child),
     props: {},
@@ -52,7 +52,7 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
       }
     });
     // Add transformation
-    const transformation = generaltranslation.t;
+    const transformation = generaltranslation.transformation;
     if (transformation === 'variable') {
       const variableType =
         VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES[
@@ -65,20 +65,24 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
         i: generaltranslation.id,
       };
     }
-    if (transformation === 'plural' && generaltranslation.b) {
+    if (transformation === 'plural' && generaltranslation.branches) {
       objectElement.type = 'Plural';
       const newBranches: Record<string, any> = {};
-      Object.entries(generaltranslation.b).forEach(([key, value]: any) => {
-        newBranches[key] = writeChildrenAsObjects(value);
-      });
+      Object.entries(generaltranslation.branches).forEach(
+        ([key, value]: any) => {
+          newBranches[key] = writeChildrenAsObjects(value);
+        }
+      );
       newGTProp = { ...newGTProp, b: newBranches };
     }
-    if (transformation === 'branch' && generaltranslation.b) {
+    if (transformation === 'branch' && generaltranslation.branches) {
       objectElement.type = 'Branch';
       const newBranches: Record<string, any> = {};
-      Object.entries(generaltranslation.b).forEach(([key, value]: any) => {
-        newBranches[key] = writeChildrenAsObjects(value);
-      });
+      Object.entries(generaltranslation.branches).forEach(
+        ([key, value]: any) => {
+          newBranches[key] = writeChildrenAsObjects(value);
+        }
+      );
       newGTProp = { ...newGTProp, b: newBranches };
     }
 
@@ -100,6 +104,7 @@ const handleSingleChild = (child: TaggedChild): JsxChild => {
 
 /**
  * Transforms children elements into objects, processing each child recursively if needed.
+ * TaggedChildren are transformed into JsxChildren
  * @param {Children} children - The children to process.
  * @returns {object} The processed children as objects.
  */

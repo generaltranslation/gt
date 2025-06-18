@@ -1,17 +1,25 @@
 import { JsxChildren } from 'generaltranslation/internal';
 import {
   HtmlContentPropKeysRecord,
-  GTProp,
   Variable,
-  VariableType,
   VariableTransformationSuffix,
+  TransformationPrefix,
+  GTProp,
 } from 'generaltranslation/types';
 import React from 'react';
 
 /**
  * TaggedElement is a React element with a GTProp property.
  */
-export type TaggedElementProps = Record<string, any> & { 'data-_gt': GTProp };
+export type GTTag = {
+  id: number;
+  transformation?: TransformationPrefix;
+  branches?: Record<string, JsxChildren>;
+  variableType?: VariableTransformationSuffix;
+};
+export type TaggedElementProps = Record<string, any> & {
+  'data-_gt': GTTag;
+};
 export type TaggedElement = React.ReactElement<TaggedElementProps>;
 export type TaggedChild =
   | Exclude<React.ReactNode, React.ReactElement>
@@ -42,11 +50,7 @@ export type FlattenedDictionary = {
 export type TranslatedElement = {
   type: string;
   props: {
-    'data-_gt': {
-      id: number;
-      transformation?: string;
-      b?: Record<string, JsxChildren>;
-    } & HtmlContentPropKeysRecord;
+    'data-_gt': GTProp;
     children?: TranslatedChildren;
   };
 };

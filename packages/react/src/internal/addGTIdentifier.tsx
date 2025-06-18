@@ -5,13 +5,13 @@ import {
   createNestedTError,
 } from '../errors/createErrors';
 import {
+  GTTag,
   TaggedChild,
   TaggedChildren,
   TaggedElement,
   TaggedElementProps,
 } from '../types/types';
 import {
-  GTProp,
   Transformation,
   TransformationPrefix,
   VariableTransformationSuffix,
@@ -25,14 +25,14 @@ export default function addGTIdentifier(
   let index = startingIndex;
 
   /**
-   * Function to create a GTProp object for a ReactElement
-   * @param child - The ReactElement for which the GTProp is created
-   * @returns - The GTProp object
+   * Function to create a GTTag object for a ReactElement
+   * @param child - The ReactElement for which the GTTag is created
+   * @returns - The GTTag object
    */
-  const createGTProp = (child: ReactElement<any>): GTProp => {
+  const createGTTag = (child: ReactElement<any>): GTTag => {
     const { type, props } = child;
     index += 1;
-    const result: GTProp = { id: index };
+    const result: GTTag = { id: index };
     let transformation: Transformation | undefined;
     try {
       transformation =
@@ -64,7 +64,8 @@ export default function addGTIdentifier(
           },
           {}
         );
-        if (Object.keys(pluralBranches).length) result.b = pluralBranches;
+        if (Object.keys(pluralBranches).length)
+          result.branches = pluralBranches;
       }
       if (transformationParts[0] === 'branch') {
         const { children, branch, ...branches } = props;
@@ -78,9 +79,10 @@ export default function addGTIdentifier(
           },
           {}
         );
-        if (Object.keys(resultBranches).length) result.b = resultBranches;
+        if (Object.keys(resultBranches).length)
+          result.branches = resultBranches;
       }
-      result.t = transformationParts[0] as TransformationPrefix;
+      result.transformation = transformationParts[0] as TransformationPrefix;
     }
     return result;
   };
@@ -90,7 +92,7 @@ export default function addGTIdentifier(
 
     if (props['data-_gt']) throw new Error(createNestedDataGTError(child));
     // Create new props for the element, including the GT identifier and a key
-    const generaltranslation: GTProp = createGTProp(child);
+    const generaltranslation: GTTag = createGTTag(child);
     const newProps: TaggedElementProps = {
       ...props,
       'data-_gt': generaltranslation,
@@ -99,7 +101,7 @@ export default function addGTIdentifier(
       newProps.children = handleChildren(props.children as ReactNode);
     }
     if (child.type === React.Fragment) {
-      newProps['data-_gt'].t = 'fragment';
+      newProps['data-_gt'].transformation = 'fragment';
     }
     return React.cloneElement(child, newProps) as TaggedElement;
   }
