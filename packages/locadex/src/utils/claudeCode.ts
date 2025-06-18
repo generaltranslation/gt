@@ -345,6 +345,13 @@ export class ClaudeCodeRunner {
     _obs: ClaudeCodeObservation
   ): { success: boolean; error?: string } {
     if (outputData.type === 'assistant') {
+      logger.log(
+        `[${this.id}] Assistant message: ${JSON.stringify(
+          outputData.message.content,
+          null,
+          2
+        )}`
+      );
       const text: string[] = [];
       const toolUses: string[] = [];
       outputData.message.content.forEach((c) => {
@@ -376,6 +383,9 @@ export class ClaudeCodeRunner {
       this.stats.cachedInputTokens +=
         outputData.message.usage.cache_read_input_tokens ?? 0;
     } else if (outputData.type === 'result') {
+      logger.log(
+        `[${this.id}] Result message: ${JSON.stringify(outputData, null, 2)}`
+      );
       this.stats.cost = outputData.total_cost_usd;
       this.stats.wallDuration = outputData.duration_ms;
       this.stats.apiDuration = outputData.duration_api_ms;
@@ -396,6 +406,7 @@ export class ClaudeCodeRunner {
         this.changes.push(outputData.result);
       }
     } else if (outputData.type === 'system') {
+      logger.log(`[${this.id}] System Initialized`);
       if (outputData.subtype === 'init') {
         this.sessionId = outputData.session_id;
       }

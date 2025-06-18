@@ -214,10 +214,10 @@ ${reports.join('\n')}`;
 
   // Run translate cmd
   if (isGTAuthConfigured(manager.appDirectory) && !cliOptions.noTranslate) {
+    const spinner = createSpinner();
     try {
-      logger.initializeSpinner();
-      logger.spinner.start('Running locadex translate...');
-      const { stderr, code } = await execFunction(
+      spinner.start('Running locadex translate...');
+      const { stdout, code } = await execFunction(
         'locadex',
         ['translate'],
         false,
@@ -225,14 +225,14 @@ ${reports.join('\n')}`;
         manager.getAgentAbortController()
       );
       if (code !== 0) {
-        logger.spinner.stop('Translations failed!');
-        logger.error(`Error running 'locadex translate': ${stderr}`);
+        spinner.stop('Translations failed');
+        logger.error(`Error running 'locadex translate': ${stdout}`);
       } else {
-        logger.spinner.stop('Translations generated!');
+        spinner.stop('Translations generated!');
         logger.log(`Translations generated with 'locadex translate'`);
       }
     } catch (error) {
-      logger.spinner.stop('Translations failed!');
+      spinner.stop('Translations failed');
       logger.error(
         `Error running 'locadex translate': ${(error as Error).message}`
       );

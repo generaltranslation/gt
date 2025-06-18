@@ -185,7 +185,9 @@ export async function setupTask(
   // setupDictionary(manager);
 
   // Add locadex github action if not exists
-  setupGithubAction(manager, packageManager);
+  if (!autoSetup) {
+    setupGithubAction(manager, packageManager);
+  }
 
   if (cliOptions.formatCmd) {
     await formatFiles(cliOptions.formatCmd, manager);

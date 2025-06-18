@@ -64,6 +64,8 @@ export class LocadexManager {
   private batchSize: number;
   private timeout: number;
   private defaultSoftTurnLimit: number = 100;
+  public verbose: boolean = false;
+  public debug: boolean = false;
 
   // Agent pool
   private agentPool: Map<string, { agent: ClaudeCodeRunner; busy: boolean }>;
@@ -131,13 +133,32 @@ export class LocadexManager {
     this.maxConcurrency = this.config.maxConcurrency;
     this.batchSize = this.config.batchSize;
     this.timeout = this.config.timeout;
+    this.lockFilePath = path.resolve(this.locadexDirectory, LOCKFILE_NAME);
+
+    this.verbose = this.cliOptions.verbose ?? false;
+    this.debug = this.cliOptions.debug ?? false;
+    if (this.debug) {
+      this.verbose = true;
+    }
+
+    // Register cleanup with graceful shutdown
+    gracefulShutdown.addHandler({
+      name: 'locadex-manager-cleanup',
+      handler: () => this.cleanup(),
+      timeout: 3000,
+    });
+
+    this.logFile = path.resolve(this.currentRunDir, 'log.txt');
+
+    // ==== DEBUG Settings ====
+    // if (!this.debug) {
+    //   return;
+    // }
     this.filesStateFilePath = path.resolve(
       this.currentRunDir,
       'files-state.json'
     );
     this.metadataFilePath = path.resolve(this.currentRunDir, 'metadata.json');
-    this.logFile = path.resolve(this.currentRunDir, 'log.txt');
-    this.lockFilePath = path.resolve(this.locadexDirectory, LOCKFILE_NAME);
 
     // Create files-state.json
     const filesState: FileEntry[] = [];
@@ -165,21 +186,14 @@ export class LocadexManager {
       ...params.metadata,
     };
     fs.writeFileSync(this.metadataFilePath, JSON.stringify(metadata, null, 2));
-
-    // Register cleanup with graceful shutdown
-    gracefulShutdown.addHandler({
-      name: 'locadex-manager-cleanup',
-      handler: () => this.cleanup(),
-      timeout: 3000,
-    });
   }
 
   async startMcpServer() {
     const env = {
       LOCADEX_FILES_STATE_FILE_PATH: this.filesStateFilePath,
       LOCADEX_LOG_FILE_PATH: this.logFile,
-      LOCADEX_VERBOSE: logger.verbose ? 'true' : 'false',
-      LOCADEX_DEBUG: logger.debug ? 'true' : 'false',
+      LOCADEX_VERBOSE: this.verbose ? 'true' : 'false',
+      LOCADEX_DEBUG: this.debug ? 'true' : 'false',
       APP_DIRECTORY: this.appDirectory,
     };
     if (this.mcpTransport === 'stdio') {
@@ -257,7 +271,6 @@ export class LocadexManager {
     if (!LocadexManager.instance) {
       LocadexManager.instance = new LocadexManager(params);
       logger.initialize(params.cliOptions, LocadexManager.instance.logFile);
-
       logger.debugMessage(
         `Locadex loaded with config: ${JSON.stringify(
           LocadexManager.instance.config,
