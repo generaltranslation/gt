@@ -16,7 +16,6 @@ import getPluralBranch from '../branches/plurals/getPluralBranch';
 import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
-  MINIFIED_NAMES_TO_VARIABLE_TRANSFORMATION_SUFFIXES,
 } from 'generaltranslation/types';
 
 function renderTranslatedElement({
@@ -196,10 +195,7 @@ export default function renderTranslatedChildren({
         return (
           <React.Fragment key={`var_${index}`}>
             {renderVariable({
-              variableType:
-                MINIFIED_NAMES_TO_VARIABLE_TRANSFORMATION_SUFFIXES[
-                  targetChild.v || 'v'
-                ],
+              variableType: targetChild.v || 'v',
               variableValue: variables[targetChild.k],
               variableOptions: variablesOptions[targetChild.k],
               locales,
@@ -243,10 +239,9 @@ export default function renderTranslatedChildren({
       }
 
       // Render variable
-      const generaltranslation = getGTProp(source);
-      if (generaltranslation?.transformation === 'variable') {
+      if (isVariableElementProps(source.props)) {
         const { variableValue, variableOptions, variableType } =
-          getVariableProps(source.props as any);
+          getVariableProps(source.props);
         return renderVariable({
           variableType,
           variableValue,

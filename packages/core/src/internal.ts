@@ -9,6 +9,7 @@ import _getPluralForm from './locales/getPluralForm';
 import { Content, JsxChild, JsxChildren, JsxElement } from './types';
 import { LocaleProperties } from './types';
 import isVariable from './utils/isVariable';
+import { minifyVariableType } from './utils/minify';
 export {
   _getPluralForm as getPluralForm,
   JsxChildren,
@@ -17,4 +18,5 @@ export {
   JsxElement,
   LocaleProperties,
   isVariable,
+  minifyVariableType,
 };

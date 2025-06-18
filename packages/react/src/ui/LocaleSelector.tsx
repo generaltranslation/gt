@@ -1,6 +1,6 @@
 import React from 'react';
 import useLocaleSelector from '../hooks/useLocaleSelector';
-import { useGTClass } from '../hooks/useGTClass';
+import { useGTClass, useLocaleProperties } from '../hooks/useGTClass';
 
 /**
  * Capitalizes the first letter of a language name if applicable.

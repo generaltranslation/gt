@@ -1,12 +1,17 @@
 import getVariableName from '../variables/getVariableName';
 import { TaggedChild, TaggedChildren, TaggedElement } from '../types/types';
 import { isValidTaggedElement } from '../utils/utils';
-import { JsxChild, JsxChildren, JsxElement } from 'generaltranslation/internal';
+import {
+  JsxChild,
+  JsxChildren,
+  JsxElement,
+  minifyVariableType,
+} from 'generaltranslation/internal';
 import {
   GTProp,
   HTML_CONTENT_PROPS,
   HtmlContentPropKeysRecord,
-  VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES,
+  Variable,
 } from 'generaltranslation/types';
 
 /**
@@ -33,31 +38,33 @@ const getTagName = (child: TaggedElement): string => {
   return 'function';
 };
 
-const handleSingleChildElement = (child: TaggedElement): JsxChild => {
+const handleSingleChildElement = (
+  child: TaggedElement
+): JsxElement | Variable => {
   const { props } = child;
   const objectElement: JsxElement = {
     type: getTagName(child),
     props: {},
   };
   if (props['data-_gt']) {
-    // Add translatable HTML content props
     const generaltranslation = props['data-_gt'];
     let newGTProp: GTProp = {
-      ...generaltranslation,
+      id: generaltranslation.id,
     };
+    // Add translatable HTML content props
     Object.entries(HTML_CONTENT_PROPS).forEach(([minifiedName, fullName]) => {
       if (props[fullName]) {
         newGTProp[minifiedName as keyof HtmlContentPropKeysRecord] =
           props[fullName];
       }
     });
-    // Add transformation
+
+    // Check if variable
     const transformation = generaltranslation.transformation;
     if (transformation === 'variable') {
-      const variableType =
-        VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES[
-          generaltranslation.variableType || 'variable'
-        ];
+      const variableType = minifyVariableType(
+        generaltranslation.variableType || 'variable'
+      );
       const variableName = getVariableName(props, variableType);
       return {
         v: variableType,
@@ -65,6 +72,8 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
         i: generaltranslation.id,
       };
     }
+
+    // Check if plural
     if (transformation === 'plural' && generaltranslation.branches) {
       objectElement.type = 'Plural';
       const newBranches: Record<string, any> = {};
@@ -73,7 +82,7 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
           newBranches[key] = writeChildrenAsObjects(value);
         }
       );
-      newGTProp = { ...newGTProp, b: newBranches };
+      newGTProp = { ...newGTProp, b: newBranches, t: 'p' };
     }
     if (transformation === 'branch' && generaltranslation.branches) {
       objectElement.type = 'Branch';
@@ -83,7 +92,7 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
           newBranches[key] = writeChildrenAsObjects(value);
         }
       );
-      newGTProp = { ...newGTProp, b: newBranches };
+      newGTProp = { ...newGTProp, b: newBranches, t: 'b' };
     }
 
     objectElement.props['data-_gt'] = newGTProp;

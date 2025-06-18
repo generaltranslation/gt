@@ -1,10 +1,10 @@
 import { JsxChildren } from 'generaltranslation/internal';
 import {
-  HtmlContentPropKeysRecord,
   Variable,
   VariableTransformationSuffix,
   TransformationPrefix,
   GTProp,
+  VariableType,
 } from 'generaltranslation/types';
 import React from 'react';
 
@@ -104,7 +104,7 @@ export type RuntimeTranslationOptions = {
 } & Omit<InlineTranslationOptions, 'id'>;
 
 export type VariableProps = {
-  variableType: VariableTransformationSuffix;
+  variableType: VariableType;
   variableValue: any;
   variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
   variableName: string;

@@ -47,28 +47,15 @@ export type VariableTransformationSuffix =
   | 'datetime'
   | 'currency';
 
-export const VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES = {
-  variable: 'v',
-  number: 'n',
-  datetime: 'd',
-  currency: 'c',
-} as const;
-
-export const MINIFIED_NAMES_TO_VARIABLE_TRANSFORMATION_SUFFIXES = {
-  v: 'variable',
-  n: 'number',
-  d: 'datetime',
-  c: 'currency',
-} as const;
-
 /**
  * GTProp is an internal property used to contain data for translating and rendering elements.
+ * note, transformations are only read on the server side if they are 'plural' or 'branch'
  */
 export type GTProp = {
   id: number;
-  t?: TransformationPrefix; // Transformation
-  variableType?: VariableTransformationSuffix;
+  variableType?: VariableType;
   b?: Record<string, JsxChildren>; // Branches
+  t?: 'p' | 'b'; // Branch Transformation
 } & HtmlContentPropKeysRecord;
 
 export type JsxElement = {

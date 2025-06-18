@@ -31,6 +31,7 @@ type Element = {
     i?: number; // GT ID of the element
     d?: {
         b?: Record<string, Element | Variable | string>; // branches
+        t?: "p" | "b"; // branch transformation type (plural or branch)
         pl?: string; // placeholder
         ti?: string; // title
         alt?: string; // alt
@@ -146,6 +147,7 @@ type Element = {
     i?: number; // GT ID of the element
     d?: { // data-_gt prop
         b?: Record<string, GTJSXTree | GTJSXTree[]>; // branches
+        t?: "p" | "b"; // branch transformation type (plural or branch)
         pl?: string; // placeholder
         ti?: string; // title
         alt?: string; // alt
@@ -206,6 +208,7 @@ Would be represented in GT JSX as:
 { 
     i: 1,
     d: {
+        t: "p",
         b: {
             one: {
                 c: ["I have", { k: "_gt_num_4", v: "n", i: 3 }, "item"],
