@@ -118,6 +118,11 @@ export class ClaudeCodeRunner {
     };
   }
   aggregateStats() {
+    logger.verboseMessage(
+      `[${this.id}] Aggregating stats.\nCost: $${this.stats.cost.toFixed(
+        2
+      )}\nDuration: ${this.stats.wallDuration / 1000}s`
+    );
     this.manager.stats.updateStats({
       newCost: this.stats.cost,
       newWallDuration: this.stats.wallDuration,
@@ -500,16 +505,10 @@ export class ClaudeCodeRunner {
       this.stats.turns = outputData.num_turns;
       this.turns = outputData.num_turns;
       if (!outputData.is_error) {
-        logger.verboseMessage(
-          `[${this.id}] finished task.\nCost: $${outputData.total_cost_usd.toFixed(2)}\nDuration: ${
-            outputData.duration_ms / 1000
-          }s`
-        );
+        logger.verboseMessage(`[${this.id}] finished task.`);
       } else {
         logger.verboseMessage(
-          `[${this.id}] finished task with error: ${outputData.subtype}\nCost: $${outputData.total_cost_usd}\nDuration: ${
-            outputData.duration_ms / 1000
-          }s`
+          `[${this.id}] finished task with error: ${outputData.subtype}`
         );
         return {
           success: false,

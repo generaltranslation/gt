@@ -25,7 +25,7 @@ import { getLocadexVersion } from '../utils/getPaths.js';
 import { execFunction } from '../utils/exec.js';
 import { isGTAuthConfigured } from '../utils/config.js';
 import { CliOptions } from '../types/cli.js';
-import { formatFiles } from 'src/utils/fs/formatFiles.js';
+import { formatFiles } from '../utils/fs/formatFiles.js';
 
 /**
  * Run Locadex i18n on the project

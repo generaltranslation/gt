@@ -9,16 +9,16 @@ Locadex is a powerful agent that can be used to internationalize your project.
 
 Here are some tips and tricks for using Locadex.
 
-## Linting
+## Formatting
 
-Because Locadex is a code agent and modifies files, we recommend providing a linting command to Locadex.
+Because Locadex is a code agent and modifies files, we recommend providing a formatting command to Locadex.
 
 Locadex will run this command after it has finished internationalizing your project (but before updating its lockfile!).
 
 Specify it with the `--format-cmd` flag.
 
 ```bash
-npx locadex start --format-cmd "pnpm run lint:fix"
+npx locadex start --format-cmd "npm run lint:fix"
 ```
 
 Or, if you're using Locadex as a Github action, you can specify the command to run in the `format_cmd` field.

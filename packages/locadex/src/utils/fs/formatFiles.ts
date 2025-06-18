@@ -6,6 +6,9 @@ export async function formatFiles(cmd: string, manager: LocadexManager) {
   const trimmed = cmd.trim();
   const stripped = trimmed.replace(/^["'](.*)["']$/, '$1');
   const formattedCmd = `"${stripped}"`;
+  logger.verboseMessage(
+    `Running ${formattedCmd}... in ${manager.appDirectory}`
+  );
   const { stderr, code } = await execFunction(
     'sh',
     ['-c', formattedCmd],
@@ -14,7 +17,9 @@ export async function formatFiles(cmd: string, manager: LocadexManager) {
     manager.getAgentAbortController()
   );
   if (code !== 0) {
-    logger.error(`Error running '${cmd}': ${stderr}`);
+    logger.error(
+      `Error running ${formattedCmd} in ${manager.appDirectory}: ${stderr}`
+    );
   } else {
     logger.step(`Formatted files with ${cmd}`);
   }
