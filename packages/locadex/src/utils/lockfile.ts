@@ -102,6 +102,7 @@ export function updateLockfile(
     pathToHashMap.set(entry.path, hash);
   }
 
+  // Update lockfile with new files
   for (const filePath of files) {
     const relativePath = path.relative(rootDirectory, filePath);
     const currentHash = calculateFileHash(filePath);
@@ -125,17 +126,7 @@ export function updateLockfile(
     pathToHashMap.set(relativePath, currentHash);
   }
 
-  saveLockfile(lockfilePath, lockfile);
-  logger.debugMessage(`Updated lockfile with ${files.length} files`);
-}
-
-export function cleanupLockfile(
-  lockfilePath: string,
-  rootDirectory: string
-): void {
-  const lockfile = loadLockfile(lockfilePath);
-
-  // Remove entries for files that no longer exist
+  // Cleanup stale entries for files that no longer exist
   let removedCount = 0;
   for (const hash in lockfile.checksums) {
     const entry = lockfile.checksums[hash];
@@ -147,10 +138,8 @@ export function cleanupLockfile(
     }
   }
 
-  if (removedCount > 0) {
-    saveLockfile(lockfilePath, lockfile);
-    logger.debugMessage(
-      `Cleaned up ${removedCount} stale entries from lockfile`
-    );
-  }
+  saveLockfile(lockfilePath, lockfile);
+  logger.debugMessage(
+    `Updated lockfile with ${files.length} files${removedCount > 0 ? ` and cleaned up ${removedCount} stale entries` : ''}`
+  );
 }

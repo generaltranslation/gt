@@ -14,7 +14,7 @@ import chalk from 'chalk';
 import { appendFileSync } from 'node:fs';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import path from 'node:path';
-import { updateLockfile, cleanupLockfile } from '../utils/lockfile.js';
+import { updateLockfile } from '../utils/lockfile.js';
 import { extractFiles } from '../utils/dag/extractFiles.js';
 import { Dag } from '../utils/dag/createDag.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
@@ -223,9 +223,6 @@ ${reports.join('\n')}`;
 
   // Update lockfile with processed files
   updateLockfile(files, lockfilePath, manager.rootDirectory);
-
-  // Clean up stale entries from lockfile
-  cleanupLockfile(lockfilePath, manager.rootDirectory);
 
   logger.message(chalk.dim(`Updated lockfile with ${files.length} files`));
 

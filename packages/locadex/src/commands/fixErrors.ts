@@ -26,9 +26,7 @@ export async function fixErrorsCommand(options: CliOptions, command: Command) {
         cliOptions: allOptions,
         options: {
           ...(allOptions.matchingFiles && {
-            matchingFiles: allOptions.matchingFiles
-              .split(',')
-              .map((file) => file.trim()),
+            matchingFiles: allOptions.matchingFiles,
           }),
           ...(allOptions.concurrency && {
             maxConcurrency: Number(allOptions.concurrency),

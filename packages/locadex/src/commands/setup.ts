@@ -32,9 +32,7 @@ export async function setupCommand(
         cliOptions: allOptions,
         options: {
           ...(allOptions.matchingFiles && {
-            matchingFiles: allOptions.matchingFiles
-              .split(',')
-              .map((file) => file.trim()),
+            matchingFiles: allOptions.matchingFiles,
           }),
           ...(allOptions.concurrency && {
             maxConcurrency: Number(allOptions.concurrency),
@@ -82,9 +80,7 @@ export async function autoSetupCommand(
         cliOptions: allOptions,
         options: {
           ...(allOptions.matchingFiles && {
-            matchingFiles: allOptions.matchingFiles
-              .split(',')
-              .map((file) => file.trim()),
+            matchingFiles: allOptions.matchingFiles,
           }),
           ...(allOptions.concurrency && {
             maxConcurrency: Number(allOptions.concurrency),

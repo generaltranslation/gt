@@ -35,8 +35,8 @@ program
   .option('-t, --timeout <number>', 'Timeout for each file in a batch')
   .option('-c, --concurrency <number>', 'Max number of concurrent agents')
   .option(
-    '-m, --match-files <pattern>',
-    'Comma-separated list of glob patterns to match source files. Should be relative to root directory.'
+    '-m, --match-files <patterns...>',
+    'Space-separated list of glob patterns to match source files. Should be relative to root directory.'
   )
   .option(
     '--package-manager <manager>',
@@ -58,8 +58,8 @@ program
   .option('-t, --timeout <number>', 'Timeout for each file in a batch')
   .option('-c, --concurrency <number>', 'Max number of concurrent agents')
   .option(
-    '-m, --match-files <pattern>',
-    'Comma-separated list of glob patterns to match source files. Should be relative to root directory.'
+    '-m, --match-files <patterns...>',
+    'Space-separated list of glob patterns to match source files. Should be relative to root directory.'
   )
   .option(
     '--package-manager <manager>',
@@ -80,8 +80,8 @@ program
   .option('-t, --timeout <number>', 'Timeout for each file in a batch')
   .option('-c, --concurrency <number>', 'Max number of concurrent agents')
   .option(
-    '-m, --match-files <pattern>',
-    'Comma-separated list of glob patterns to match source files. Should be relative to root directory.'
+    '-m, --match-files <patterns...>',
+    'Space-separated list of glob patterns to match source files. Should be relative to root directory.'
   )
   .option('--no-telemetry', 'Disable telemetry')
   .option('--no-translate', 'Disable translation step')
