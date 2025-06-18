@@ -191,6 +191,7 @@ ${reports.join('\n')}`;
 
   // cleanup
   if (cliOptions.formatCmd) {
+    logger.verboseMessage(`Running ${cliOptions.formatCmd}...`);
     const { stderr, code } = await execFunction(
       cliOptions.formatCmd,
       [],
@@ -206,6 +207,7 @@ ${reports.join('\n')}`;
       );
     }
   } else {
+    logger.verboseMessage(`Running formatter...`);
     const formatter = await detectFormatter();
     if (formatter && files.length > 0) {
       await formatFiles(files, formatter);
@@ -215,12 +217,14 @@ ${reports.join('\n')}`;
 
   const lockfilePath = manager.getLockFilePath();
 
+  logger.verboseMessage(`Deleting extra files...`);
   // Delete any files the AI may have arbitrarily created
   deleteAddedFiles(
     [path.relative(manager.rootDirectory, manager.locadexDirectory)],
     ['dictionary.json', 'gt.config.json', 'locadex.yml', 'loadTranslations.js']
   );
 
+  logger.verboseMessage(`Updating lockfile...`);
   // Update lockfile with processed files
   updateLockfile(files, lockfilePath, manager.rootDirectory);
 
