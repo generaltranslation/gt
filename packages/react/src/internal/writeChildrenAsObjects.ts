@@ -52,7 +52,7 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
       }
     });
     // Add transformation
-    const transformation = generaltranslation.transformation;
+    const transformation = generaltranslation.t;
     if (transformation === 'variable') {
       const variableType =
         VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES[
@@ -65,25 +65,21 @@ const handleSingleChildElement = (child: TaggedElement): JsxChild => {
         i: generaltranslation.id,
       };
     }
-    if (transformation === 'plural' && generaltranslation.branches) {
+    if (transformation === 'plural' && generaltranslation.b) {
       objectElement.type = 'Plural';
       const newBranches: Record<string, any> = {};
-      Object.entries(generaltranslation.branches).forEach(
-        ([key, value]: any) => {
-          newBranches[key] = writeChildrenAsObjects(value);
-        }
-      );
-      newGTProp = { ...newGTProp, branches: newBranches };
+      Object.entries(generaltranslation.b).forEach(([key, value]: any) => {
+        newBranches[key] = writeChildrenAsObjects(value);
+      });
+      newGTProp = { ...newGTProp, b: newBranches };
     }
-    if (transformation === 'branch' && generaltranslation.branches) {
+    if (transformation === 'branch' && generaltranslation.b) {
       objectElement.type = 'Branch';
       const newBranches: Record<string, any> = {};
-      Object.entries(generaltranslation.branches).forEach(
-        ([key, value]: any) => {
-          newBranches[key] = writeChildrenAsObjects(value);
-        }
-      );
-      newGTProp = { ...newGTProp, branches: newBranches };
+      Object.entries(generaltranslation.b).forEach(([key, value]: any) => {
+        newBranches[key] = writeChildrenAsObjects(value);
+      });
+      newGTProp = { ...newGTProp, b: newBranches };
     }
 
     objectElement.props['data-_gt'] = newGTProp;

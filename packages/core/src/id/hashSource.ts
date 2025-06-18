@@ -83,12 +83,12 @@ const sanitizeChild = (child: JsxChild): SanitizedChild => {
     if ('props' in child) {
       const newChild: SanitizedChild = {};
       const dataGt = child?.props?.['data-_gt'];
-      if (dataGt?.branches) {
+      if (dataGt?.b) {
         // The only thing that prevents sanitizeJsx from being stable is
         // the order of the keys in the branches object.
         // We don't sort them because stable-stringify sorts them anyways
         newChild.branches = Object.fromEntries(
-          Object.entries(dataGt.branches).map(([key, value]) => [
+          Object.entries(dataGt.b).map(([key, value]) => [
             key,
             sanitizeJsxChildren(value as JsxChildren),
           ])
@@ -97,8 +97,8 @@ const sanitizeChild = (child: JsxChild): SanitizedChild => {
       if (child?.props?.children) {
         newChild.children = sanitizeJsxChildren(child.props.children);
       }
-      if (child?.props?.['data-_gt']?.transformation) {
-        newChild.transformation = child.props['data-_gt'].transformation;
+      if (child?.props?.['data-_gt']?.t) {
+        newChild.transformation = child.props['data-_gt'].t;
       }
       return newChild;
     }

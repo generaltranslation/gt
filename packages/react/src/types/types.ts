@@ -45,7 +45,7 @@ export type TranslatedElement = {
     'data-_gt': {
       id: number;
       transformation?: string;
-      branches?: Record<string, JsxChildren>;
+      b?: Record<string, JsxChildren>;
     } & HtmlContentPropKeysRecord;
     children?: TranslatedChildren;
   };

@@ -66,9 +66,9 @@ export const MINIFIED_NAMES_TO_VARIABLE_TRANSFORMATION_SUFFIXES = {
  */
 export type GTProp = {
   id: number;
-  transformation?: TransformationPrefix;
+  t?: TransformationPrefix; // Transformation
   variableType?: VariableTransformationSuffix;
-  branches?: Record<string, JsxChildren>;
+  b?: Record<string, JsxChildren>; // Branches
 } & HtmlContentPropKeysRecord;
 
 export type JsxElement = {

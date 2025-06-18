@@ -64,8 +64,7 @@ export default function addGTIdentifier(
           },
           {}
         );
-        if (Object.keys(pluralBranches).length)
-          result.branches = pluralBranches;
+        if (Object.keys(pluralBranches).length) result.b = pluralBranches;
       }
       if (transformationParts[0] === 'branch') {
         const { children, branch, ...branches } = props;
@@ -79,10 +78,9 @@ export default function addGTIdentifier(
           },
           {}
         );
-        if (Object.keys(resultBranches).length)
-          result.branches = resultBranches;
+        if (Object.keys(resultBranches).length) result.b = resultBranches;
       }
-      result.transformation = transformationParts[0] as TransformationPrefix;
+      result.t = transformationParts[0] as TransformationPrefix;
     }
     return result;
   };
@@ -101,7 +99,7 @@ export default function addGTIdentifier(
       newProps.children = handleChildren(props.children as ReactNode);
     }
     if (child.type === React.Fragment) {
-      newProps['data-_gt'].transformation = 'fragment';
+      newProps['data-_gt'].t = 'fragment';
     }
     return React.cloneElement(child, newProps) as TaggedElement;
   }

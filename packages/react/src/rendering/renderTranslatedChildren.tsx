@@ -34,7 +34,7 @@ function renderTranslatedElement({
   const { props: sourceProps } = sourceElement;
   const { props: unprocessedTargetProps } = targetElement;
   const sourceGT = sourceProps['data-_gt'];
-  const transformation = sourceGT?.['transformation'];
+  const transformation = sourceGT?.t;
 
   // Get translated props
   const unprocessedTargetGT = unprocessedTargetProps['data-_gt'];
@@ -54,11 +54,11 @@ function renderTranslatedElement({
   // plural (choose a branch)
   if (transformation === 'plural') {
     const n = sourceElement.props.n;
-    const sourceBranches = sourceGT.branches || {};
+    const sourceBranches = sourceGT.b || {};
     const sourceBranch =
       getPluralBranch(n, locales, sourceBranches) ||
       sourceElement.props.children;
-    const targetBranches = targetElement.props['data-_gt'].branches || {};
+    const targetBranches = targetElement.props['data-_gt'].b || {};
     const targetBranch =
       getPluralBranch(n, locales, targetBranches) ||
       targetElement.props.children;
@@ -73,9 +73,9 @@ function renderTranslatedElement({
   // branch (choose a branch)
   if (transformation === 'branch') {
     const { branch, children } = sourceProps;
-    const sourceBranch = (sourceGT.branches || {})[branch] || children;
+    const sourceBranch = (sourceGT.b || {})[branch] || children;
     const targetBranch =
-      (targetElement.props['data-_gt'].branches || {})[branch] ||
+      (targetElement.props['data-_gt'].b || {})[branch] ||
       targetElement.props.children;
     return renderTranslatedChildren({
       source: sourceBranch,
