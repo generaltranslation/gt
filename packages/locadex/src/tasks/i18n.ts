@@ -218,7 +218,7 @@ ${reports.join('\n')}`;
   // Delete any files the AI may have arbitrarily created
   deleteAddedFiles(
     [path.relative(manager.rootDirectory, manager.locadexDirectory)],
-    ['dictionary.json', 'gt.config.json', 'locadex.yml']
+    ['dictionary.json', 'gt.config.json', 'locadex.yml', 'loadTranslations.js']
   );
 
   // Update lockfile with processed files

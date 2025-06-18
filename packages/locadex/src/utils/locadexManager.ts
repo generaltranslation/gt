@@ -82,6 +82,7 @@ export class LocadexManager {
   // State
   private agentMutex = Promise.resolve();
   private config: LocadexConfig;
+  private cliOptions: CliOptions;
   public stats: AgentStats;
   public logFile: string;
 
@@ -91,12 +92,14 @@ export class LocadexManager {
     mcpTransport: 'sse' | 'stdio';
     apiKey: string;
     metadata: Partial<LocadexRunMetadata>;
+    cliOptions: CliOptions;
     options: Partial<LocadexConfig>;
   }) {
     this.apiKey = params.apiKey;
     this.agentPool = new Map();
     this.stats = new AgentStats();
     this.mcpTransport = params.mcpTransport;
+    this.cliOptions = params.cliOptions;
     this.agentAbortController = new AbortController();
     this.mcpAbortController = new AbortController();
 
@@ -377,6 +380,10 @@ export class LocadexManager {
   }
   getConfig(): LocadexConfig {
     return this.config;
+  }
+
+  getCliOptions(): CliOptions {
+    return this.cliOptions;
   }
 
   getLockFilePath(): string {

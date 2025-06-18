@@ -134,13 +134,24 @@ export async function setupTask(
   logger.step(`Added withGTConfig() to your ${nextConfigPath} file.`);
 
   // Create gt.config.json
+  const gtConfig: any = {
+    defaultLocale: 'en',
+    locales: ['es', 'fr', 'de', 'ja', 'zh'],
+    framework: 'next-app',
+  };
+
+  // Add local translations config if flag is set
+  if (manager.getCliOptions().localTranslations) {
+    gtConfig.files = {
+      gt: {
+        output: 'public/_gt/[locale].json',
+      },
+    };
+  }
+
   await createOrUpdateConfig(
     path.resolve(manager.appDirectory, 'gt.config.json'),
-    {
-      defaultLocale: 'en',
-      locales: ['es', 'fr', 'de', 'ja', 'zh'],
-      framework: 'next-app',
-    }
+    gtConfig
   );
 
   logger.success(
@@ -148,6 +159,11 @@ export async function setupTask(
       'gt.config.json'
     )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
   );
+
+  // Create loadTranslations file if local translations flag is set
+  if (manager.getCliOptions().localTranslations) {
+    await createLoadTranslationsFile(manager.appDirectory);
+  }
 
   // Add translate to scripts
   // Re-get the package.json to make sure it's updated
@@ -316,6 +332,42 @@ ${report}`;
   agent.aggregateStats();
 
   logger.spinner.stop('Locale selector setup complete');
+}
+
+async function createLoadTranslationsFile(appDirectory: string) {
+  const usingSrcDirectory = existsSync(path.join(appDirectory, 'src'));
+  const publicPath = usingSrcDirectory ? '../public/_gt/' : './public/_gt/';
+  const filePath = usingSrcDirectory
+    ? path.join(appDirectory, 'src', 'loadTranslations.js')
+    : path.join(appDirectory, 'loadTranslations.js');
+
+  if (!existsSync(filePath)) {
+    const loadTranslationsContent = `
+export default async function loadTranslations(locale) {
+  try {
+    // Load translations from public/_gt directory
+    // This matches the GT config files.gt.output path
+    const t = await import(\`${publicPath}\${locale}.json\`);
+    return t.default;
+  } catch (error) {
+    console.warn(\`Failed to load translations for locale \${locale}:\`, error);
+    return {};
+  }
+}
+`;
+    writeFileSync(filePath, loadTranslationsContent);
+    logger.step(
+      `Created ${chalk.cyan(
+        'loadTranslations.js'
+      )} file at ${chalk.cyan(filePath)}.`
+    );
+  } else {
+    logger.step(
+      `Found ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
+        filePath
+      )}. Skipping creation...`
+    );
+  }
 }
 
 function getLocaleSelectorPrompt(appDirectory: string) {
