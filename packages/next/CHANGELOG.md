@@ -1,5 +1,14 @@
 # gt-next
 
+## 5.2.39
+
+### Patch Changes
+
+- [#412](https://github.com/generaltranslation/gt/pull/412) [`08b8c8c`](https://github.com/generaltranslation/gt/commit/08b8c8c8e6acd25f828633c46a8e6309369d8c03) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix improper use of getLocaleProperties callback
+
+- Updated dependencies [[`08b8c8c`](https://github.com/generaltranslation/gt/commit/08b8c8c8e6acd25f828633c46a8e6309369d8c03)]:
+  - gt-react@9.2.30
+
 ## 5.2.38
 
 ### Patch Changes
