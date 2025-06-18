@@ -11,15 +11,13 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { logger } from './logging/logger.js';
 import { findAvailablePort } from './mcp/getPort.js';
 import { exit } from './utils/shutdown.js';
+import { addValidateProjectTool } from './mcp/tools/validate.js';
+import { validateEnv } from './mcp/validateEnv.js';
 
 export async function start() {
-  const stateFile = process.env.LOCADEX_FILES_STATE_FILE_PATH;
-  const logFile = process.env.LOCADEX_LOG_FILE_PATH;
+  const { stateFile, logFile, verbose, debug, appDirectory } = validateEnv();
   const requestedPort = process.env.PORT ? parseInt(process.env.PORT) : 8888;
   const port = await findAvailablePort(requestedPort);
-
-  const verbose = process.env.LOCADEX_VERBOSE === 'true';
-  const debug = process.env.LOCADEX_DEBUG === 'true';
 
   logger.initialize({ verbose, debug }, logFile);
 
@@ -49,6 +47,7 @@ export async function start() {
 
   addDocsTools(mcpServer);
   addGuidesTools(mcpServer);
+  addValidateProjectTool(mcpServer, appDirectory);
 
   // SSE endpoint for legacy clients
   // Claude Code only supports SSE as of 2025-06-04

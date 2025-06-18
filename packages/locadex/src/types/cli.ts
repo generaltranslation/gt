@@ -4,10 +4,12 @@ export type CliOptions = {
   noTelemetry?: boolean;
   batchSize?: string;
   concurrency?: string;
-  matchingFiles?: string;
+  matchingFiles?: string[];
   appDir: string;
   timeout?: string;
   localTranslations?: boolean;
+  noTranslate?: boolean;
+  formatCmd?: string;
 };
 
 export type LocadexConfig = {

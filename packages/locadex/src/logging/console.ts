@@ -77,7 +77,8 @@ function displayInitializingText(telemetryEnabled: boolean) {
   console.log(
     `\n${chalk.bold.blue('General Translation, Inc.')}
 ${chalk.dim('https://generaltranslation.com/docs')}
-${telemetryEnabled ? chalk.dim('\nLocadex is configured to collect anonymous telemetry data. You can opt out by running with the --no-telemetry flag.') : ''}
+${telemetryEnabled ? chalk.dim('\nLocadex is configured to collect anonymous telemetry data. You can opt out by running with the --no-telemetry flag.\n') : ''}
+Locadex is in open beta and may make mistakes. Please report any bugs or issues to https://github.com/generaltranslation/gt/issues.
 `
   );
 }

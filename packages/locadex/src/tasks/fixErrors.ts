@@ -1,4 +1,4 @@
-import { allMcpPrompt } from '../prompts/system.js';
+import { allMcpPromptFixErrors } from '../prompts/system.js';
 import { exit } from '../utils/shutdown.js';
 import { logger } from '../logging/logger.js';
 import { LocadexManager } from '../utils/locadexManager.js';
@@ -52,32 +52,30 @@ function getFixPrompt(appDirectory: string) {
 
 ## INSTRUCTIONS
 
-Previously, you helped me internationalize a set of files in this project.
+Previously, you helped me internationalize a set of files in this project (app directory: "${appDirectory}").
 Your new task is to fix any errors that were introduced by your previous implementation.
+You should only fix errors that the gt-next validator has identified.
 
 ## Steps:
 1. Run the gt-next validator.
 2. Fix all errors output by the gt-next validator.
 3. Repeat steps 1-2 until there are no more errors, or until you believe that you have fixed all errors.
 
+To run the gt-next validator, call the 'mcp__locadex__validate-project' tool.
+
 ## RULES:
 - ONLY modify files that are relevant to the internationalization of the project.
-- ONLY fix errors that result from your current or previous implementation.
-- Resolve unused imports from 'gt-next'. 
-  - In particular, if a file contains user-facing content that should be internationalized and is not, you should internationalize it.
+- ONLY fix errors that the gt-next validator has identified.
 - Resolve missing imports from 'gt-next'. If a file is missing an import from 'gt-next', add it.
-- ALWAYS adhere to the guides provided via the 'mcp__locadex__' tools.
+- ALWAYS adhere to the guides provided via the 'mcp__locadex__*' tools.
   - These guides provide additional knowledge about how to internationalize the content.
 - NEVER move content to a different file. All content MUST remain in the same file where it came from.
 - NEVER CREATE OR DELETE ANY FILES (especially .bak files)
-
-To run the gt-next validator, run the following command from the app root:
-'locadex validate' (global command)
-The app root is: "${appDirectory}"
+- NEVER try running build commands (for example, 'next dev' or 'next build')
 
 ## MCP TOOLS
 
-${allMcpPrompt}
+${allMcpPromptFixErrors}
 
 ## Final output
 - When you are done, please return a brief summary of the files you modified, following this format.

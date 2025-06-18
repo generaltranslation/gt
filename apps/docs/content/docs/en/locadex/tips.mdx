@@ -1,0 +1,54 @@
+---
+title: Tips and Tricks
+description: Tips and tricks for using Locadex
+---
+
+## Overview
+
+Locadex is a powerful agent that can be used to internationalize your project.
+
+Here are some tips and tricks for using Locadex.
+
+## Linting
+
+Because Locadex is a code agent and modifies files, we recommend providing a linting command to Locadex.
+
+Locadex will run this command after it has finished internationalizing your project (but before updating its lockfile!).
+
+Specify it with the `--format-cmd` flag.
+
+```bash
+npx locadex start --format-cmd "pnpm run lint:fix"
+```
+
+Or, if you're using Locadex as a Github action, you can specify the command to run in the `format_cmd` field.
+
+## Speed
+
+Locadex can be configured to run with different batch sizes and concurrency levels to speed up the process.
+
+By default, Locadex will run with a batch size of 10 and a concurrency level of 1.
+
+You can configure these values with the `--batch-size` and `--concurrency` flags.
+
+```bash
+npx locadex start --batch-size 10 --concurrency 1
+```
+
+The batch size is the number of files that will be processed at the same time per process, while the concurrency level is the number of processes that will be spawned in parallel.
+
+
+<Callout type="info">
+  **Important**: We do not recommend using a batch size larger than 10. Locadex tends to make more mistakes when using a batch size larger than 10.
+</Callout>
+
+## Configuration
+
+Locadex will save its configuration to `.locadex/locadex-lock.json`.
+Locadex will use this config every time it runs, with flags overriding the config.
+
+You can manually edit this file to change the configuration.
+
+<Callout type="info">
+  If you are using a monorepo, we recommend using flags for every run.
+</Callout>

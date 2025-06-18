@@ -14,7 +14,7 @@ import chalk from 'chalk';
 import { appendFileSync } from 'node:fs';
 import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import path from 'node:path';
-import { updateLockfile, cleanupLockfile } from '../utils/lockfile.js';
+import { updateLockfile } from '../utils/lockfile.js';
 import { extractFiles } from '../utils/dag/extractFiles.js';
 import { Dag } from '../utils/dag/createDag.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
@@ -25,8 +25,13 @@ import { fixErrorsTask } from './fixErrors.js';
 import { getLocadexVersion } from '../utils/getPaths.js';
 import { execFunction } from '../utils/exec.js';
 import { isGTAuthConfigured } from '../utils/config.js';
+import { CliOptions } from '../types/cli.js';
 
-export async function i18nTask() {
+/**
+ * Run Locadex i18n on the project
+ * This task requires no human intervention and is safe to run in CI/CD pipelines.
+ */
+export async function i18nTask(cliOptions: CliOptions) {
   const manager = LocadexManager.getInstance();
   // have to use the package.json from the appDir
   const packageJson = await getPackageJson(manager.appDirectory);
@@ -185,20 +190,30 @@ ${reports.join('\n')}`;
   logger.step(`Saved summary of changes to: ${summaryFilePath}`);
 
   // cleanup
-  const formatter = await detectFormatter();
-  if (formatter) {
-    await formatFiles(files, formatter);
+  if (cliOptions.formatCmd) {
+    const { stderr, code } = await execFunction(
+      cliOptions.formatCmd,
+      [],
+      false,
+      manager.appDirectory,
+      manager.getAgentAbortController()
+    );
+    if (code !== 0) {
+      logger.error(`Error running '${cliOptions.formatCmd}': ${stderr}`);
+    } else {
+      logger.step(
+        `Formatted ${files.length} files with ${cliOptions.formatCmd}`
+      );
+    }
+  } else {
+    const formatter = await detectFormatter();
+    if (formatter && files.length > 0) {
+      await formatFiles(files, formatter);
+      logger.log(`Formatted ${files.length} files with ${formatter}`);
+    }
   }
 
   const lockfilePath = manager.getLockFilePath();
-
-  // Update lockfile with processed files
-  updateLockfile(files, lockfilePath, manager.rootDirectory);
-
-  // Clean up stale entries from lockfile
-  cleanupLockfile(lockfilePath, manager.rootDirectory);
-
-  logger.message(chalk.dim(`Updated lockfile with ${files.length} files`));
 
   // Delete any files the AI may have arbitrarily created
   deleteAddedFiles(
@@ -206,17 +221,41 @@ ${reports.join('\n')}`;
     ['dictionary.json', 'gt.config.json', 'locadex.yml', 'loadTranslations.js']
   );
 
+  // Update lockfile with processed files
+  updateLockfile(files, lockfilePath, manager.rootDirectory);
+
+  logger.message(chalk.dim(`Updated lockfile with ${files.length} files`));
+
   cleanupOnExit();
 
   // Run translate cmd
-  if (isGTAuthConfigured()) {
+  if (isGTAuthConfigured(manager.appDirectory) && !cliOptions.noTranslate) {
     try {
-      await execFunction('locadex', ['translate'], false, manager.appDirectory);
-      logger.step(`Translations generated!`);
-    } catch (error) {}
+      logger.initializeSpinner();
+      logger.spinner.start('Running locadex translate...');
+      const { stderr, code } = await execFunction(
+        'locadex',
+        ['translate'],
+        false,
+        manager.appDirectory,
+        manager.getAgentAbortController()
+      );
+      if (code !== 0) {
+        logger.spinner.stop('Translations failed!');
+        logger.error(`Error running 'locadex translate': ${stderr}`);
+      } else {
+        logger.spinner.stop('Translations generated!');
+        logger.log(`Translations generated with 'locadex translate'`);
+      }
+    } catch (error) {
+      logger.spinner.stop('Translations failed!');
+      logger.error(
+        `Error running 'locadex translate': ${(error as Error).message}`
+      );
+    }
   } else {
     logger.step(
-      `No GT_API_KEY or GT_PROJECT_ID found. Skipping translation...`
+      `No GT_API_KEY or GT_PROJECT_ID found. Skipping translation step...`
     );
   }
 
@@ -228,11 +267,11 @@ function cleanupOnExit() {
   const manager = LocadexManager.getInstance();
   logger.info(
     chalk.dim(
-      `Total Cost: $${manager.stats.getStats().totalCost.toFixed(2)}
-Total wall time: ${Math.round(
+      `Locadex Cost: $${manager.stats.getStats().totalCost.toFixed(2)}
+Locadex wall time: ${Math.round(
         (Date.now() - manager.stats.getStats().startTime) / 1000
       )}s
-Total files processed: ${manager.stats.getStats().processedFiles}`
+Locadex files processed: ${manager.stats.getStats().processedFiles}`
     )
   );
 
@@ -242,10 +281,10 @@ Total files processed: ${manager.stats.getStats().processedFiles}`
   manager.stats.recordTelemetry(true);
 
   logger.verboseMessage(
-    `Total input tokens: ${finalStats.inputTokens}
-Total cached input tokens: ${finalStats.cachedInputTokens}
-Total output tokens: ${finalStats.outputTokens}
-Total turns: ${finalStats.turns}`
+    `Locadex input tokens: ${finalStats.inputTokens}
+Locadex cached input tokens: ${finalStats.cachedInputTokens}
+Locadex output tokens: ${finalStats.outputTokens}
+Locadex turns: ${finalStats.turns}`
   );
 }
 
@@ -266,7 +305,8 @@ function getPrompt({
 - The project is already setup for internationalization. Do not try to setup the project again for i18n.
 
 ## Workflow:
-1. **Gather context** Read the target files closely (you should not have to read the dependency/dependent files).
+1. **Gather context** Read the target files closely 
+  - You do not have to read the dependency/dependent files for each target file. They are provided for convenience.
 2. **Evaluate if i18n is necessary** Evaluate if the target files need to be internationalized using gt-next 
   - If the target files have no relevant content, are already internationalized, or contain build-time code (e.g. nextjs plugins) they should never be internationalized.
 **IMPORTANT**: IF NONE OF THE TARGET FILES NEED TO BE INTERNATIONALIZED, YOUR TASK IS COMPLETE AND YOU MAY RETURN.
@@ -284,7 +324,7 @@ function getPrompt({
   - When possible, avoid using useTranslations(); useGT() is always preferred.
 - DO NOT internationalize non-user facing content or content that is functional, such as ids, class names, error strings, logical strings, etc.
 - Do not add i18n middleware to the app.
-- ALWAYS adhere to the guides provided via the 'mcp__locadex__' tools.
+- ALWAYS adhere to the guides provided via the 'mcp__locadex__*' tools.
   - These guides provide additional knowledge about how to internationalize the content.
 - Minimize the footprint of your changes.
 - Focus on internationalizing all user facing content in the target files. 

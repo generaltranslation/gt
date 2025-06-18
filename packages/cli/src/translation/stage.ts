@@ -48,7 +48,8 @@ export async function stageProject(
   const { updates, errors } = await createUpdates(
     settings,
     settings.dictionary,
-    pkg
+    pkg,
+    false
   );
 
   if (errors.length > 0) {

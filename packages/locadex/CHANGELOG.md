@@ -1,5 +1,35 @@
 # locadex
 
+## 0.1.12
+
+### Patch Changes
+
+- [#404](https://github.com/generaltranslation/gt/pull/404) [`bf06c8e`](https://github.com/generaltranslation/gt/commit/bf06c8e06579c16ff2e1a87c2a884646912eeb36) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix error caused by cursor
+
+## 0.1.11
+
+### Patch Changes
+
+- [#402](https://github.com/generaltranslation/gt/pull/402) [`9f94c96`](https://github.com/generaltranslation/gt/commit/9f94c961898b35f77cd7f92748aafe895d8376b8) Thanks [@brian-lou](https://github.com/brian-lou)! - Add format cmd for formatting files
+
+## 0.1.10
+
+### Patch Changes
+
+- [#400](https://github.com/generaltranslation/gt/pull/400) [`cf9c724`](https://github.com/generaltranslation/gt/commit/cf9c72488f74db5ccd7c4dca2650d75e3484d1f2) Thanks [@brian-lou](https://github.com/brian-lou)! - Reorder linter detection preference
+
+- Updated dependencies [[`cf9c724`](https://github.com/generaltranslation/gt/commit/cf9c72488f74db5ccd7c4dca2650d75e3484d1f2)]:
+  - gtx-cli@1.2.29
+
+## 0.1.9
+
+### Patch Changes
+
+- [#397](https://github.com/generaltranslation/gt/pull/397) [`80a1395`](https://github.com/generaltranslation/gt/commit/80a13955db9ff46e5883ac8b0909ab294c63d001) Thanks [@brian-lou](https://github.com/brian-lou)! - Run translate after i18n
+
+- Updated dependencies [[`80a1395`](https://github.com/generaltranslation/gt/commit/80a13955db9ff46e5883ac8b0909ab294c63d001)]:
+  - gtx-cli@1.2.28
+
 ## 0.1.8
 
 ### Patch Changes

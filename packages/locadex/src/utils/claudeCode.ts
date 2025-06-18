@@ -32,6 +32,7 @@ export interface ClaudeCodeObservation {}
 const DEFAULT_ALLOWED_TOOLS = [
   'mcp__locadex__fetch-docs',
   'mcp__locadex__list-docs',
+  'mcp__locadex__validate-project',
   'Bash',
   'Edit',
   'MultiEdit',

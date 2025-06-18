@@ -8,7 +8,6 @@ export const LOCKFILE_NAME = 'locadex-lock.json';
 
 export interface LockfileEntry {
   path: string;
-  lastModified: number;
 }
 
 export interface Lockfile {
@@ -97,6 +96,13 @@ export function updateLockfile(
 ): void {
   const lockfile = loadLockfile(lockfilePath);
 
+  // Build a map of paths to hashes for efficient lookup
+  const pathToHashMap = new Map<string, string>();
+  for (const [hash, entry] of Object.entries(lockfile.checksums)) {
+    pathToHashMap.set(entry.path, hash);
+  }
+
+  // Update lockfile with new files
   for (const filePath of files) {
     const relativePath = path.relative(rootDirectory, filePath);
     const currentHash = calculateFileHash(filePath);
@@ -105,25 +111,22 @@ export function updateLockfile(
       continue;
     }
 
-    const stats = fs.statSync(filePath);
+    // Remove old hash entry for this file path (O(1) lookup and deletion)
+    const oldHash = pathToHashMap.get(relativePath);
+    if (oldHash) {
+      delete lockfile.checksums[oldHash];
+    }
+
     // Use hash as key, store current path and metadata
     lockfile.checksums[currentHash] = {
       path: relativePath,
-      lastModified: stats.mtime.getTime(),
     };
+
+    // Update the path-to-hash mapping
+    pathToHashMap.set(relativePath, currentHash);
   }
 
-  saveLockfile(lockfilePath, lockfile);
-  logger.debugMessage(`Updated lockfile with ${files.length} files`);
-}
-
-export function cleanupLockfile(
-  lockfilePath: string,
-  rootDirectory: string
-): void {
-  const lockfile = loadLockfile(lockfilePath);
-
-  // Remove entries for files that no longer exist
+  // Cleanup stale entries for files that no longer exist
   let removedCount = 0;
   for (const hash in lockfile.checksums) {
     const entry = lockfile.checksums[hash];
@@ -135,10 +138,8 @@ export function cleanupLockfile(
     }
   }
 
-  if (removedCount > 0) {
-    saveLockfile(lockfilePath, lockfile);
-    logger.debugMessage(
-      `Cleaned up ${removedCount} stale entries from lockfile`
-    );
-  }
+  saveLockfile(lockfilePath, lockfile);
+  logger.debugMessage(
+    `Updated lockfile with ${files.length} files${removedCount > 0 ? ` and cleaned up ${removedCount} stale entries` : ''}`
+  );
 }

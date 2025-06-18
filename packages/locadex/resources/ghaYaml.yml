@@ -15,7 +15,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          [packageManager install command]
       - name: Run Locadex
-        uses: generaltranslation/locadex@v0.1.1
+        uses: generaltranslation/locadex@v0
         with:
-          api_key: \${{ secrets.LOCADEX_API_KEY }}
+          api_key: ${{ secrets.LOCADEX_API_KEY }}

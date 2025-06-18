@@ -182,13 +182,15 @@ export class LocadexManager {
   }
 
   async startMcpServer() {
+    const env = {
+      LOCADEX_FILES_STATE_FILE_PATH: this.filesStateFilePath,
+      LOCADEX_LOG_FILE_PATH: this.logFile,
+      LOCADEX_VERBOSE: logger.verbose ? 'true' : 'false',
+      LOCADEX_DEBUG: logger.debug ? 'true' : 'false',
+      APP_DIRECTORY: this.appDirectory,
+    };
     if (this.mcpTransport === 'stdio') {
-      mcpStdioConfig.mcpServers.locadex.env = {
-        LOCADEX_FILES_STATE_FILE_PATH: this.filesStateFilePath,
-        LOCADEX_LOG_FILE_PATH: this.logFile,
-        LOCADEX_VERBOSE: logger.verbose ? 'true' : 'false',
-        LOCADEX_DEBUG: logger.debug ? 'true' : 'false',
-      };
+      mcpStdioConfig.mcpServers.locadex.env = env;
       fs.writeFileSync(
         this.mcpConfigPath,
         JSON.stringify(mcpStdioConfig, null, 2)
@@ -217,13 +219,10 @@ export class LocadexManager {
         )}`
       );
 
-      this.mcpProcess = spawn('node', [fromPackageRoot('dist/mcp.js')], {
+      this.mcpProcess = spawn('node', [fromPackageRoot('dist/mcp-sse.js')], {
         env: {
           ...process.env,
-          LOCADEX_FILES_STATE_FILE_PATH: this.filesStateFilePath,
-          LOCADEX_VERBOSE: logger.verbose ? 'true' : 'false',
-          LOCADEX_DEBUG: logger.debug ? 'true' : 'false',
-          LOCADEX_LOG_FILE_PATH: this.logFile,
+          ...env,
           PORT: port.toString(),
         },
         stdio: ['ignore', 'inherit', 'inherit'],

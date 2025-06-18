@@ -26,9 +26,7 @@ export async function i18nCommand(options: CliOptions, command: Command) {
         cliOptions: allOptions,
         options: {
           ...(allOptions.matchingFiles && {
-            matchingFiles: allOptions.matchingFiles
-              .split(',')
-              .map((file) => file.trim()),
+            matchingFiles: allOptions.matchingFiles,
           }),
           ...(allOptions.concurrency && {
             maxConcurrency: Number(allOptions.concurrency),
@@ -41,7 +39,7 @@ export async function i18nCommand(options: CliOptions, command: Command) {
           }),
         },
       });
-      await i18nTask();
+      await i18nTask(allOptions);
     }
   );
 }

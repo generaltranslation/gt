@@ -9,6 +9,7 @@ export interface PackageManager {
   name: string;
   label: string;
   installCommand: string;
+  installAllCommand: string;
   buildCommand: string;
   /* The command that the package manager uses to run a script from package.json */
   runScriptCommand: string;
@@ -20,11 +21,19 @@ export interface PackageManager {
   addOverride: (pkgName: string, pkgVersion: string) => Promise<void>;
 }
 
+export class NoPackageManagerError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NoPackageManagerError';
+  }
+}
+
 export const BUN: PackageManager = {
   id: 'bun',
   name: 'bun',
   label: 'Bun',
   installCommand: 'add',
+  installAllCommand: 'bun install',
   buildCommand: 'bun run build',
   runScriptCommand: 'bun run',
   flags: '',
@@ -59,6 +68,7 @@ export const DENO: PackageManager = {
   name: 'deno',
   label: 'Deno',
   installCommand: 'install',
+  installAllCommand: 'deno install',
   buildCommand: 'deno task build',
   runScriptCommand: 'deno task',
   flags: '',
@@ -93,6 +103,7 @@ export const YARN_V1: PackageManager = {
   name: 'yarn',
   label: 'Yarn V1',
   installCommand: 'add',
+  installAllCommand: 'yarn install',
   buildCommand: 'yarn build',
   runScriptCommand: 'yarn',
   flags: '--ignore-workspace-root-check',
@@ -130,6 +141,7 @@ export const YARN_V2: PackageManager = {
   name: 'yarn',
   label: 'Yarn V2/3/4',
   installCommand: 'add',
+  installAllCommand: 'yarn install',
   buildCommand: 'yarn build',
   runScriptCommand: 'yarn',
   flags: '',
@@ -166,6 +178,7 @@ export const PNPM: PackageManager = {
   name: 'pnpm',
   label: 'PNPM',
   installCommand: 'add',
+  installAllCommand: 'pnpm install',
   buildCommand: 'pnpm build',
   runScriptCommand: 'pnpm',
   flags: '--ignore-workspace-root-check',
@@ -203,6 +216,7 @@ export const NPM: PackageManager = {
   name: 'npm',
   label: 'NPM',
   installCommand: 'install',
+  installAllCommand: 'npm ci',
   buildCommand: 'npm run build',
   runScriptCommand: 'npm run',
   flags: '',
@@ -252,7 +266,8 @@ export function _detectPackageManger(cwd: string): PackageManager | null {
 // Uses a global cache to avoid prompting the user multiple times
 export async function getPackageManager(
   cwd: string = process.cwd(),
-  specifiedPackageManager?: string
+  specifiedPackageManager?: string,
+  errorIfNotFound: boolean = false
 ): Promise<PackageManager> {
   const globalWizard: typeof global & {
     _gt_wizard_cached_package_manager?: PackageManager;
@@ -277,6 +292,10 @@ export async function getPackageManager(
   if (detectedPackageManager) {
     globalWizard._gt_wizard_cached_package_manager = detectedPackageManager;
     return detectedPackageManager;
+  }
+
+  if (errorIfNotFound) {
+    throw new NoPackageManagerError('No package manager found');
   }
 
   const selectedPackageManager: PackageManager =
