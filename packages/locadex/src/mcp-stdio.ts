@@ -8,13 +8,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fromPackageRoot } from './utils/getPaths.js';
 import { addGuidesTools } from './mcp/tools/guides.js';
 import { logger } from './logging/logger.js';
+import { addValidateProjectTool } from './mcp/tools/validate.js';
+import { validateEnv } from './mcp/validateEnv.js';
 
 async function main() {
-  const stateFile = process.env.LOCADEX_FILES_STATE_FILE_PATH;
-  const logFile = process.env.LOCADEX_LOG_FILE_PATH;
-  const verbose = process.env.LOCADEX_VERBOSE === 'true';
-  const debug = process.env.LOCADEX_DEBUG === 'true';
-
+  const { stateFile, logFile, verbose, debug, appDirectory } = validateEnv();
   logger.initialize({ verbose, debug }, logFile);
 
   if (stateFile && existsSync(stateFile)) {
@@ -32,6 +30,7 @@ async function main() {
 
   addDocsTools(server);
   addGuidesTools(server);
+  addValidateProjectTool(server, appDirectory);
 
   logger.log('[locadex-mcp] All tools registered');
   const transport = new StdioServerTransport();

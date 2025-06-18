@@ -191,13 +191,20 @@ ${reports.join('\n')}`;
 
   // cleanup
   if (cliOptions.formatCmd) {
-    await execFunction(
+    const { stderr, code } = await execFunction(
       cliOptions.formatCmd,
       [],
       false,
       manager.appDirectory,
       manager.getAgentAbortController()
     );
+    if (code !== 0) {
+      logger.error(`Error running '${cliOptions.formatCmd}': ${stderr}`);
+    } else {
+      logger.step(
+        `Formatted ${files.length} files with ${cliOptions.formatCmd}`
+      );
+    }
   } else {
     const formatter = await detectFormatter();
     if (formatter && files.length > 0) {
@@ -229,14 +236,20 @@ ${reports.join('\n')}`;
     try {
       logger.initializeSpinner();
       logger.spinner.start('Running locadex translate...');
-      await execFunction(
+      const { stderr, code } = await execFunction(
         'locadex',
         ['translate'],
         false,
         manager.appDirectory,
         manager.getAgentAbortController()
       );
-      logger.spinner.stop('Translations generated!');
+      if (code !== 0) {
+        logger.spinner.stop('Translations failed!');
+        logger.error(`Error running 'locadex translate': ${stderr}`);
+      } else {
+        logger.spinner.stop('Translations generated!');
+        logger.log(`Translations generated with 'locadex translate'`);
+      }
     } catch (error) {
       logger.spinner.stop('Translations failed!');
       logger.error(
