@@ -9,13 +9,12 @@ import addGTIdentifierToSyntaxTree from '../../data-_gt/addGTIdentifierToSyntaxT
 import {
   warnHasUnwrappedExpressionSync,
   warnVariablePropSync,
+  warnNestedTComponent,
 } from '../../../console/index.js';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { handleChildrenWhitespace } from '../trimJsxStringChildren.js';
 import { isStaticExpression } from '../evaluateJsx.js';
-
-// Valid variable components
-const VARIABLE_COMPONENTS = ['Var', 'DateTime', 'Currency', 'Num'];
+import { VARIABLE_COMPONENTS } from './constants.js';
 
 /**
  * Builds a JSX tree from a given node, recursively handling children.
@@ -24,6 +23,7 @@ const VARIABLE_COMPONENTS = ['Var', 'DateTime', 'Currency', 'Num'];
  * @param updates - The updates array
  * @param errors - The errors array
  * @param file - The file name
+ * @param insideT - Whether the current node is inside a <T> component
  * @returns The built JSX tree
  */
 export function buildJSXTree(
@@ -32,7 +32,8 @@ export function buildJSXTree(
   unwrappedExpressions: string[],
   updates: Updates,
   errors: string[],
-  file: string
+  file: string,
+  insideT: boolean
 ): any {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
@@ -74,6 +75,17 @@ export function buildJSXTree(
     // Convert from alias to original name
     const componentType = importAliases[typeName ?? ''];
 
+    if (componentType === 'T' && insideT) {
+      // Add error: No nested <T> components are allowed
+      errors.push(
+        warnNestedTComponent(
+          file,
+          `${element.loc?.start?.line}:${element.loc?.start?.column}`
+        )
+      );
+      return null;
+    }
+
     // If this JSXElement is one of the recognized variable components,
     const elementIsVariable = VARIABLE_COMPONENTS.includes(componentType);
 
@@ -108,7 +120,8 @@ export function buildJSXTree(
               unwrappedExpressions,
               updates,
               errors,
-              file
+              file,
+              true
             );
           }
         }
@@ -134,7 +147,8 @@ export function buildJSXTree(
           unwrappedExpressions,
           updates,
           errors,
-          file
+          file,
+          true
         )
       )
       .filter((child) => child !== null && child !== '');
@@ -162,7 +176,8 @@ export function buildJSXTree(
           unwrappedExpressions,
           updates,
           errors,
-          file
+          file,
+          true
         )
       )
       .filter((child: any) => child !== null && child !== '');
@@ -212,93 +227,100 @@ export function parseJSXElement(
   const name = openingElement.name;
 
   // Only proceed if it's <T> ...
-  if (name.type === 'JSXIdentifier' && importAliases[name.name] === 'T') {
-    const componentObj: any = { props: {} };
+  if (!(name.type === 'JSXIdentifier' && importAliases[name.name] === 'T')) {
+    return;
+  }
+  const componentErrors: string[] = [];
+  const componentObj: any = { props: {} };
 
-    // We'll track this flag to know if any unwrapped {variable} is found in children
-    const unwrappedExpressions: string[] = [];
+  // We'll track this flag to know if any unwrapped {variable} is found in children
+  const unwrappedExpressions: string[] = [];
 
-    // Gather <T>'s props
-    openingElement.attributes.forEach((attr) => {
-      if (!t.isJSXAttribute(attr)) return;
-      const attrName = attr.name.name;
-      if (typeof attrName !== 'string') return;
+  // Gather <T>'s props
+  openingElement.attributes.forEach((attr) => {
+    if (!t.isJSXAttribute(attr)) return;
+    const attrName = attr.name.name;
+    if (typeof attrName !== 'string') return;
 
-      if (attr.value) {
-        // If it's a plain string literal like id="hello"
-        if (t.isStringLiteral(attr.value)) {
-          componentObj.props[attrName] = attr.value.value;
-        }
-        // If it's an expression container like id={"hello"}, id={someVar}, etc.
-        else if (t.isJSXExpressionContainer(attr.value)) {
-          const expr = attr.value.expression;
-          const code = generate(expr).code;
+    if (attr.value) {
+      // If it's a plain string literal like id="hello"
+      if (t.isStringLiteral(attr.value)) {
+        componentObj.props[attrName] = attr.value.value;
+      }
+      // If it's an expression container like id={"hello"}, id={someVar}, etc.
+      else if (t.isJSXExpressionContainer(attr.value)) {
+        const expr = attr.value.expression;
+        const code = generate(expr).code;
 
-          // Only check for static expressions on id and context props
-          if (attrName === 'id' || attrName === 'context') {
-            const staticAnalysis = isStaticExpression(expr);
-            if (!staticAnalysis.isStatic) {
-              errors.push(
-                warnVariablePropSync(
-                  file,
-                  attrName,
-                  code,
-                  `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
-                )
-              );
-            }
-            // Use the static value if available
-            if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
-              componentObj.props[attrName] = staticAnalysis.value;
-            } else {
-              // Only store the code if we couldn't extract a static value
-              componentObj.props[attrName] = code;
-            }
+        // Only check for static expressions on id and context props
+        if (attrName === 'id' || attrName === 'context') {
+          const staticAnalysis = isStaticExpression(expr);
+          if (!staticAnalysis.isStatic) {
+            componentErrors.push(
+              warnVariablePropSync(
+                file,
+                attrName,
+                code,
+                `${expr.loc?.start?.line}:${expr.loc?.start?.column}`
+              )
+            );
+          }
+          // Use the static value if available
+          if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
+            componentObj.props[attrName] = staticAnalysis.value;
           } else {
-            // For other attributes that aren't id or context
+            // Only store the code if we couldn't extract a static value
             componentObj.props[attrName] = code;
           }
+        } else {
+          // For other attributes that aren't id or context
+          componentObj.props[attrName] = code;
         }
       }
-    });
-
-    // Build the JSX tree for this component
-    const initialTree = buildJSXTree(
-      importAliases,
-      node,
-      unwrappedExpressions,
-      updates,
-      errors,
-      file
-    ).props.children;
-
-    const whitespaceHandledTree = handleChildrenWhitespace(initialTree);
-
-    const tree = addGTIdentifierToSyntaxTree(whitespaceHandledTree);
-
-    componentObj.tree = tree.length === 1 ? tree[0] : tree;
-
-    const id = componentObj.props.id;
-
-    // If we found an unwrapped expression, skip
-    if (unwrappedExpressions.length > 0) {
-      errors.push(
-        warnHasUnwrappedExpressionSync(
-          file,
-          unwrappedExpressions,
-          id,
-          `${node.loc?.start?.line}:${node.loc?.start?.column}`
-        )
-      );
     }
+  });
 
-    if (errors.length > 0) return;
+  // Build the JSX tree for this component
+  const initialTree = buildJSXTree(
+    importAliases,
+    node,
+    unwrappedExpressions,
+    updates,
+    componentErrors,
+    file,
+    false
+  )?.props?.children;
 
-    // <T> is valid here
-    updates.push({
-      dataFormat: 'JSX',
-      source: componentObj.tree,
-      metadata: componentObj.props,
-    });
+  if (componentErrors.length > 0) {
+    errors.push(...componentErrors);
+    return;
   }
+
+  const whitespaceHandledTree = handleChildrenWhitespace(initialTree);
+
+  const tree = addGTIdentifierToSyntaxTree(whitespaceHandledTree);
+
+  componentObj.tree = tree.length === 1 ? tree[0] : tree;
+
+  const id = componentObj.props.id;
+
+  // If we found an unwrapped expression, skip
+  if (unwrappedExpressions.length > 0) {
+    errors.push(
+      warnHasUnwrappedExpressionSync(
+        file,
+        unwrappedExpressions,
+        id,
+        `${node.loc?.start?.line}:${node.loc?.start?.column}`
+      )
+    );
+    return;
+  }
+
+  // <T> is valid here
+  updates.push({
+    dataFormat: 'JSX',
+    source: componentObj.tree,
+    metadata: componentObj.props,
+  });
 }

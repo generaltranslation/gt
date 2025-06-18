@@ -173,13 +173,20 @@ export async function setupTask(
   setupGithubAction(manager, packageManager);
 
   if (cliOptions.formatCmd) {
-    await execFunction(
+    const { stderr, code } = await execFunction(
       cliOptions.formatCmd,
       [],
       false,
       manager.appDirectory,
       manager.getAgentAbortController()
     );
+    if (code !== 0) {
+      logger.error(`Error running '${cliOptions.formatCmd}': ${stderr}`);
+    } else {
+      logger.step(
+        `Formatted ${filesUpdated.length} files with ${cliOptions.formatCmd}`
+      );
+    }
   } else {
     const formatter = await detectFormatter();
     if (formatter && filesUpdated.length > 0) {

@@ -8,7 +8,6 @@ export const LOCKFILE_NAME = 'locadex-lock.json';
 
 export interface LockfileEntry {
   path: string;
-  lastModified: number;
 }
 
 export interface Lockfile {
@@ -103,6 +102,7 @@ export function updateLockfile(
     pathToHashMap.set(entry.path, hash);
   }
 
+  // Update lockfile with new files
   for (const filePath of files) {
     const relativePath = path.relative(rootDirectory, filePath);
     const currentHash = calculateFileHash(filePath);
@@ -117,28 +117,16 @@ export function updateLockfile(
       delete lockfile.checksums[oldHash];
     }
 
-    const stats = fs.statSync(filePath);
     // Use hash as key, store current path and metadata
     lockfile.checksums[currentHash] = {
       path: relativePath,
-      lastModified: stats.mtime.getTime(),
     };
 
     // Update the path-to-hash mapping
     pathToHashMap.set(relativePath, currentHash);
   }
 
-  saveLockfile(lockfilePath, lockfile);
-  logger.debugMessage(`Updated lockfile with ${files.length} files`);
-}
-
-export function cleanupLockfile(
-  lockfilePath: string,
-  rootDirectory: string
-): void {
-  const lockfile = loadLockfile(lockfilePath);
-
-  // Remove entries for files that no longer exist
+  // Cleanup stale entries for files that no longer exist
   let removedCount = 0;
   for (const hash in lockfile.checksums) {
     const entry = lockfile.checksums[hash];
@@ -150,10 +138,8 @@ export function cleanupLockfile(
     }
   }
 
-  if (removedCount > 0) {
-    saveLockfile(lockfilePath, lockfile);
-    logger.debugMessage(
-      `Cleaned up ${removedCount} stale entries from lockfile`
-    );
-  }
+  saveLockfile(lockfilePath, lockfile);
+  logger.debugMessage(
+    `Updated lockfile with ${files.length} files${removedCount > 0 ? ` and cleaned up ${removedCount} stale entries` : ''}`
+  );
 }

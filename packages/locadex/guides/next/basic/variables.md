@@ -13,7 +13,7 @@ import { Var, Num, Currency, DateTime } from 'gt-next';
 
 **Key Behavior:**
 
-- `<Var>`: Renders any content dynamically (user names, identifiers)
+- `<Var>`: Sanitizes dynamic content (user names, identifiers), and renders it dynamically. `<Var>` components must always be used within a `<T>` component.
 - `<Num>`: Formats numbers with locale-specific rules
 - `<Currency>`: Formats currency with symbols and localization
 - `<DateTime>`: Formats dates/times with locale conventions
@@ -59,7 +59,7 @@ The `<T>` component provides locale context and translates surrounding text whil
 
 ## Use Cases by Component
 
-- `<Var>`: Unformatted private data (user names, account numbers), or conditional content that should be excluded from translation
+- `<Var>`: Unsanitized, dynamic data (user names, account ids, email addresses), or conditional content that should be excluded from translation when using `<T>` components. `<Var>` components act as "escaping" mechanisms.
 - `<Num>`: Private numbers needing locale formatting (quantities, ages, distances)
 - `<Currency>`: Private currency values (transactions, balances)
 - `<DateTime>`: Private dates/times (timestamps, creation dates)
