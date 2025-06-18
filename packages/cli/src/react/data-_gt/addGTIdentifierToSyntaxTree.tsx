@@ -20,37 +20,25 @@ export default function addGTIdentifierToSyntaxTree(
         return {
           variable: 'variable',
           id: indexObject.index,
-          key: getVariableName(
-            { ...props, 'data-_gt': generaltranslation },
-            'variable'
-          ),
+          key: getVariableName(props, 'variable', indexObject.index),
         };
       } else if (type === 'Num') {
         return {
           variable: 'number',
           id: indexObject.index,
-          key: getVariableName(
-            { ...props, 'data-_gt': generaltranslation },
-            'number'
-          ),
+          key: getVariableName(props, 'number', indexObject.index),
         };
       } else if (type === 'Currency') {
         return {
           variable: 'currency',
           id: indexObject.index,
-          key: getVariableName(
-            { ...props, 'data-_gt': generaltranslation },
-            'currency'
-          ),
+          key: getVariableName(props, 'currency', indexObject.index),
         };
       } else if (type === 'DateTime') {
         return {
           variable: 'datetime',
           id: indexObject.index,
-          key: getVariableName(
-            { ...props, 'data-_gt': generaltranslation },
-            'datetime'
-          ),
+          key: getVariableName(props, 'datetime', indexObject.index),
         };
       } else if (type === '' || type === 'React.Fragment') {
         generaltranslation.transformation = 'fragment';

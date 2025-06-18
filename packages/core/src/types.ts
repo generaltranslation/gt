@@ -53,7 +53,6 @@ export type VariableTransformationSuffix =
  */
 export type GTProp = {
   id: number;
-  variableType?: VariableType;
   b?: Record<string, JsxChildren>; // Branches
   t?: 'p' | 'b'; // Branch Transformation
 } & HtmlContentPropKeysRecord;
