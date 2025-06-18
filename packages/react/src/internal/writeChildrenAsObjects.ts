@@ -43,7 +43,7 @@ const handleSingleChildElement = (
 ): JsxElement | Variable => {
   const { props } = child;
   const objectElement: JsxElement = {
-    type: getTagName(child),
+    t: getTagName(child),
     props: {},
   };
   if (props['data-_gt']) {
@@ -77,7 +77,6 @@ const handleSingleChildElement = (
 
     // Check if plural
     if (transformation === 'plural' && generaltranslation.branches) {
-      objectElement.type = 'Plural';
       const newBranches: Record<string, any> = {};
       Object.entries(generaltranslation.branches).forEach(
         ([key, value]: any) => {
@@ -87,7 +86,6 @@ const handleSingleChildElement = (
       newGTProp = { ...newGTProp, b: newBranches, t: 'p' };
     }
     if (transformation === 'branch' && generaltranslation.branches) {
-      objectElement.type = 'Branch';
       const newBranches: Record<string, any> = {};
       Object.entries(generaltranslation.branches).forEach(
         ([key, value]: any) => {

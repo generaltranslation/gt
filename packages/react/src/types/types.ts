@@ -48,7 +48,6 @@ export type FlattenedDictionary = {
  * Translated content types
  */
 export type TranslatedElement = {
-  type: string;
   i: number;
   props: {
     d: GTProp;

@@ -57,8 +57,8 @@ export type GTProp = {
 } & HtmlContentPropKeysRecord;
 
 export type JsxElement = {
-  type: string;
   i?: number; // id
+  t?: string; // tag name
   props: {
     d?: GTProp;
     children?: JsxChildren;
