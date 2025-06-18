@@ -106,6 +106,7 @@ export class ClaudeCodeRunner {
     this.resetStats();
   }
   resetStats() {
+    this.aggregateStats();
     this.stats = {
       cost: 0,
       wallDuration: 0,
