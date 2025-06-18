@@ -1,20 +1,26 @@
 import fs from 'node:fs';
+import { spawn } from 'node:child_process';
 import chalk from 'chalk';
-import { logInfo, logMessage, logStep, logWarning } from '../console';
+import { logMessage, logWarning } from '../console/logging.js';
 
 type Formatter = 'prettier' | 'biome' | 'eslint';
 
 export async function detectFormatter(): Promise<Formatter | null> {
   // Try Prettier
   try {
-    require('prettier');
+    await import('prettier');
     return 'prettier';
+  } catch {}
+
+  // Try ESLint
+  try {
+    await import('eslint');
+    return 'eslint';
   } catch {}
 
   // Try Biome
   try {
     return await new Promise<Formatter | null>((resolve, reject) => {
-      const { spawn } = require('child_process');
       const child = spawn('npx', ['@biomejs/biome', '--version'], {
         stdio: 'ignore',
       });
@@ -31,12 +37,6 @@ export async function detectFormatter(): Promise<Formatter | null> {
         }
       });
     });
-  } catch {}
-
-  // Try ESLint
-  try {
-    require('eslint');
-    return 'eslint';
   } catch {}
 
   return null;
@@ -57,8 +57,8 @@ export async function formatFiles(
     }
 
     if (detectedFormatter === 'prettier') {
-      logMessage(chalk.gray('Cleaning up with prettier...'));
-      const prettier = require('prettier');
+      logMessage(chalk.dim('Cleaning up with prettier...'));
+      const prettier = await import('prettier');
       for (const file of filesUpdated) {
         const config = await prettier.resolveConfig(file);
         const content = await fs.promises.readFile(file, 'utf-8');
@@ -72,10 +72,9 @@ export async function formatFiles(
     }
 
     if (detectedFormatter === 'biome') {
-      logMessage(chalk.gray('Cleaning up with biome...'));
+      logMessage(chalk.dim('Cleaning up with biome...'));
       try {
         await new Promise<void>((resolve, reject) => {
-          const { spawn } = require('child_process');
           const args = [
             '@biomejs/biome',
             'format',
@@ -110,8 +109,8 @@ export async function formatFiles(
     }
 
     if (detectedFormatter === 'eslint') {
-      logMessage(chalk.gray('Cleaning up with eslint...'));
-      const { ESLint } = require('eslint');
+      logMessage(chalk.dim('Cleaning up with eslint...'));
+      const { ESLint } = await import('eslint');
       const eslint = new ESLint({
         fix: true,
         overrideConfigFile: undefined, // Will use project's .eslintrc

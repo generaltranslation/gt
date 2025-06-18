@@ -1,6 +1,8 @@
 import { isValidLocale, isSupersetLocale } from 'generaltranslation';
-import { Settings } from '../types';
-import { logErrorAndExit } from '../console';
+import { Settings } from '../types/index.js';
+import { logErrorAndExit } from '../console/logging.js';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export function validateSettings(settings: Settings) {
   // Validate locales
@@ -33,4 +35,20 @@ export function validateSettings(settings: Settings) {
       `defaultLocale: ${settings.defaultLocale} is a superset of another locale (${locale})! Please change the defaultLocale to a more specific locale.`
     );
   }
+}
+
+export function validateConfigExists() {
+  const possibleConfigPaths = ['gt.config.json', 'src/gt.config.json'];
+  for (const possibleConfigPath of possibleConfigPaths) {
+    if (
+      fs.existsSync(
+        path.resolve(path.relative(process.cwd(), possibleConfigPath))
+      )
+    ) {
+      return possibleConfigPath;
+    }
+  }
+  logErrorAndExit(
+    'No gt.config.json file found. Are you in the correct directory?'
+  );
 }

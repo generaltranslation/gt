@@ -2,12 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'os';
 import { build, BuildOptions } from 'esbuild';
-import { Options, Updates } from '../../types';
-import flattenDictionary from '../utils/flattenDictionary';
-import loadJSON from '../../fs/loadJSON';
+import { Options, Updates } from '../../types/index.js';
+import flattenDictionary from '../utils/flattenDictionary.js';
+import { splitStringToContent } from 'generaltranslation';
+import loadJSON from '../../fs/loadJSON.js';
 import { hashSource } from 'generaltranslation/id';
-import getEntryAndMetadata from '../utils/getEntryAndMetadata';
-import { logError, logErrorAndExit } from '../../console';
+import getEntryAndMetadata from '../utils/getEntryAndMetadata.js';
+import { logError, logErrorAndExit } from '../../console/logging.js';
 
 export default async function createDictionaryUpdates(
   options: Options,
@@ -33,10 +34,10 @@ export default async function createDictionaryUpdates(
     const tempFilePath = path.join(os.tmpdir(), 'bundled-dictionary.js');
     await fs.promises.writeFile(tempFilePath, bundledCode);
 
-    // Load the module using require
+    // Load the module using dynamic import
     let dictionaryModule;
     try {
-      dictionaryModule = require(tempFilePath);
+      dictionaryModule = await import(tempFilePath);
     } catch (error) {
       logError(`Failed to load the bundled dictionary code: ${error}`);
       process.exit(1);
@@ -48,12 +49,6 @@ export default async function createDictionaryUpdates(
       dictionaryModule.default ||
         dictionaryModule.dictionary ||
         dictionaryModule
-    );
-  }
-
-  if (!Object.keys(dictionary).length) {
-    logErrorAndExit(
-      `Dictionary filepath provided: "${options.dictionary}", but no entries found.`
     );
   }
 

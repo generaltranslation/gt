@@ -1,18 +1,24 @@
-import { detectFormatter } from '../hooks/postProcess';
-import { createSpinner, logMessage, promptSelect } from '../console';
-import { logInfo, logError, logSuccess, logStep, logWarning } from '../console';
+import { detectFormatter } from '../hooks/postProcess.js';
+import { createSpinner, logMessage, promptSelect } from '../console/logging.js';
+import {
+  logInfo,
+  logError,
+  logSuccess,
+  logStep,
+  logWarning,
+} from '../console/logging.js';
 import chalk from 'chalk';
-import { promptConfirm } from '../console';
-import { SetupOptions, SupportedFrameworks } from '../types';
-import findFilepath from '../fs/findFilepath';
-import { formatFiles } from '../hooks/postProcess';
-import handleInitGT from '../next/parse/handleInitGT';
-import { getPackageJson, isPackageInstalled } from '../utils/packageJson';
-import wrapContentReact from '../react/parse/wrapContent';
-import wrapContentNext from '../next/parse/wrapContent';
-import { getPackageManager } from '../utils/packageManager';
-import { installPackage } from '../utils/installPackage';
-import createOrUpdateConfig from '../fs/config/setupConfig';
+import { promptConfirm } from '../console/logging.js';
+import { SetupOptions, SupportedFrameworks } from '../types/index.js';
+import findFilepath from '../fs/findFilepath.js';
+import { formatFiles } from '../hooks/postProcess.js';
+import { handleInitGT } from '../next/parse/handleInitGT.js';
+import { getPackageJson, isPackageInstalled } from '../utils/packageJson.js';
+import { wrapContentReact } from '../react/parse/wrapContent.js';
+import { wrapContentNext } from '../next/parse/wrapContent.js';
+import { getPackageManager } from '../utils/packageManager.js';
+import { installPackage } from '../utils/installPackage.js';
+import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 
 export async function handleSetupReactCommand(
   options: SetupOptions
@@ -45,7 +51,7 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
       { value: 'gatsby', label: chalk.magenta('Gatsby') },
       { value: 'react', label: chalk.yellow('React') },
       { value: 'redwood', label: chalk.red('RedwoodJS') },
-      { value: 'other', label: chalk.gray('Other') },
+      { value: 'other', label: chalk.dim('Other') },
     ],
     defaultValue: 'next-app',
   });
@@ -63,6 +69,14 @@ Please let us know what you would like to see supported at https://github.com/ge
   });
 
   const packageJson = await getPackageJson();
+  if (!packageJson) {
+    logError(
+      chalk.red(
+        'No package.json found in the current directory. Please run this command from the root of your project.'
+      )
+    );
+    process.exit(1);
+  }
   // Check if gt-next or gt-react is installed
   if (
     frameworkType === 'next-app' &&
@@ -121,6 +135,7 @@ Please let us know what you would like to see supported at https://github.com/ge
       ...options,
       disableIds: !includeTId,
       disableFormatting: true,
+      skipTs: false,
       addGTProvider,
     };
     const spinner = createSpinner();
@@ -183,6 +198,7 @@ Please let us know what you would like to see supported at https://github.com/ge
       ...options,
       disableIds: !includeTId,
       disableFormatting: true,
+      skipTs: false,
       addGTProvider,
     };
     const spinner = createSpinner();
@@ -235,7 +251,7 @@ Please let us know what you would like to see supported at https://github.com/ge
   }
 
   const applyFormatting = await promptConfirm({
-    message: `Would you like the wizard to auto-format the modified files? ${chalk.gray(
+    message: `Would you like the wizard to auto-format the modified files? ${chalk.dim(
       `(${formatter})`
     )}`,
     defaultValue: true,

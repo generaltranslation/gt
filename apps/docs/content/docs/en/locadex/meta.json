@@ -1,0 +1,14 @@
+{
+  "title": "Locadex",
+  "description": "AI i18n engineer",
+  "icon": "Brain",
+  "root": true,
+  "pages": [
+    "---Getting Started---",
+    "index",
+    "github-action",
+    "---Advanced---",
+    "monorepo",
+    "tips"
+  ]
+}

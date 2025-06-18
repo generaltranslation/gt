@@ -1,24 +1,29 @@
-import { displayProjectId } from '../console/console';
-import { warnApiKeyInConfig } from '../console/warnings';
-import loadConfig from '../fs/config/loadConfig';
-import { Settings, SupportedFrameworks } from '../types';
+import { displayProjectId, warnApiKeyInConfig } from '../console/logging.js';
+import loadConfig from '../fs/config/loadConfig.js';
+import { Settings, SupportedFrameworks } from '../types/index.js';
 import {
   defaultBaseUrl,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
 import fs from 'node:fs';
-import createOrUpdateConfig from '../fs/config/setupConfig';
-import { resolveFiles } from '../fs/config/parseFilesConfig';
-import { findFilepaths } from '../fs/findFilepath';
-import { validateSettings } from './validateSettings';
-import { GT_DASHBOARD_URL } from '../utils/constants';
-import { resolveProjectId } from '../fs/utils';
+import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
+import { resolveFiles } from '../fs/config/parseFilesConfig.js';
+import { findFilepaths } from '../fs/findFilepath.js';
+import { validateSettings } from './validateSettings.js';
+import { GT_DASHBOARD_URL } from '../utils/constants.js';
+import { resolveProjectId } from '../fs/utils.js';
+import path from 'node:path';
+
 /**
  * Generates settings from any
  * @param options - The options to generate settings from
+ * @param cwd - The current working directory
  * @returns The generated settings
  */
-export async function generateSettings(options: any): Promise<Settings> {
+export async function generateSettings(
+  options: any,
+  cwd: string = process.cwd()
+): Promise<Settings> {
   // Load config file
   let gtConfig: Record<string, any> = {};
 
@@ -27,12 +32,12 @@ export async function generateSettings(options: any): Promise<Settings> {
   }
   if (options.config) {
     gtConfig = loadConfig(options.config);
-  } else if (fs.existsSync('gt.config.json')) {
-    options.config = 'gt.config.json';
-    gtConfig = loadConfig('gt.config.json');
-  } else if (fs.existsSync('src/gt.config.json')) {
-    options.config = 'src/gt.config.json';
-    gtConfig = loadConfig('src/gt.config.json');
+  } else if (fs.existsSync(path.join(cwd, 'gt.config.json'))) {
+    options.config = path.join(cwd, 'gt.config.json');
+    gtConfig = loadConfig(options.config);
+  } else if (fs.existsSync(path.join(cwd, 'src/gt.config.json'))) {
+    options.config = path.join(cwd, 'src/gt.config.json');
+    gtConfig = loadConfig(options.config);
   } else {
     // If neither config exists, use empty config
     gtConfig = {};
@@ -72,7 +77,8 @@ export async function generateSettings(options: any): Promise<Settings> {
   mergedOptions.locales = mergedOptions.locales || [];
 
   // Add default config file name if not provided
-  mergedOptions.config = mergedOptions.config || 'gt.config.json';
+  mergedOptions.config =
+    mergedOptions.config || path.join(cwd, 'gt.config.json');
 
   // Display projectId if present
   if (mergedOptions.projectId) displayProjectId(mergedOptions.projectId);
@@ -84,11 +90,16 @@ export async function generateSettings(options: any): Promise<Settings> {
   // Populate src if not provided
   mergedOptions.src =
     mergedOptions.src ||
-    findFilepaths(['./src', './app', './pages', './components']);
+    findFilepaths([
+      path.join(cwd, './src'),
+      path.join(cwd, './app'),
+      path.join(cwd, './pages'),
+      path.join(cwd, './components'),
+    ]);
 
   // Resolve all glob patterns in the files object
   mergedOptions.files = mergedOptions.files
-    ? resolveFiles(mergedOptions.files, mergedOptions.defaultLocale)
+    ? resolveFiles(mergedOptions.files, mergedOptions.defaultLocale, cwd)
     : undefined;
 
   // if there's no existing config file, creates one

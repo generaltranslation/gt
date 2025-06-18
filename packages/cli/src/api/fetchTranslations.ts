@@ -1,6 +1,6 @@
 import chalk from 'chalk';
-import { RetrievedTranslations } from '../types/api';
-import { logError } from '../console/errors';
+import { RetrievedTranslations } from '../types/api.js';
+import { logError } from '../console/logging.js';
 
 /**
  * Fetches translations from the API and saves them to a local directory

@@ -1,12 +1,12 @@
 import * as t from '@babel/types';
-import traverse from '@babel/traverse';
+import traverseModule from '@babel/traverse';
+
+// Handle CommonJS/ESM interop
+const traverse = traverseModule.default || traverseModule;
+
 import { ParseResult } from '@babel/parser';
 import * as babel from '@babel/types';
-import {
-  ImportDeclaration,
-  VariableDeclarator,
-  VariableDeclaration,
-} from '@babel/types';
+import { ImportDeclaration, VariableDeclaration } from '@babel/types';
 
 export function determineModuleType(ast: ParseResult<t.File>) {
   let isESM = false;

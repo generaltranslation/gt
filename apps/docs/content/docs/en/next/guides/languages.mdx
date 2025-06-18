@@ -23,7 +23,7 @@ We'll cover the first three methods in this guide. See the [middleware routing](
 The `useSetLocale` hook is a client-side hook that allows you to change the language of your app. It must be used within a `GTProvider` component.
 
 ```tsx
-import { useSetLocale } from 'gt-next/client';
+ } from 'gt-next/client';
 export default function MyComponent() {
   const setLocale = useSetLocale();
 
@@ -56,8 +56,7 @@ This hook returns the current locale, the list of locales your project supports,
 Here is an example of how to use the `useLocaleSelector` hook to create a custom locale selector component.
 
 ```tsx copy
-import { useLocaleSelector } from 'gt-next/client';
-import { getLocaleProperties } from 'generaltranslation';
+import { useLocaleSelector, useGTClass } from 'gt-next/client';
 
 function capitalizeLanguageName(language: string): string {
   if (!language) return '';
@@ -69,7 +68,7 @@ function capitalizeLanguageName(language: string): string {
 
 export default function LocaleDropdown({ className }: { className?: string }) {
   // Retrieve the locale, locales, and setLocale function
-  const { locale, locales, setLocale } = useLocaleSelector();
+  const { locale, locales, setLocale, getLocaleProperties } = useLocaleSelector();
 
   // Helper function to get the display name of a locale
   const getDisplayName = (locale: string) => {

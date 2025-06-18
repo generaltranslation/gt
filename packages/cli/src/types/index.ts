@@ -1,5 +1,5 @@
 import { JsxChildren } from 'generaltranslation/internal';
-import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles';
+import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 
 export type Updates = ({ metadata: Record<string, any> } & (
   | {
@@ -37,6 +37,7 @@ export type Options = {
 export type WrapOptions = {
   src: string[];
   config: string;
+  skipTs: boolean;
   disableIds: boolean;
   disableFormatting: boolean;
   addGTProvider: boolean;

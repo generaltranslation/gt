@@ -1,8 +1,8 @@
 import * as t from '@babel/types';
-import { isStaticExpression, isStaticValue } from './evaluateJsx';
-import { ImportItem } from './utils/parseAst';
-import generate from '@babel/generator';
-import { warnTernarySync } from '../../console';
+import { isStaticExpression, isStaticValue } from './evaluateJsx.js';
+import { ImportItem } from './utils/parseAst.js';
+import { default as generate } from '@babel/generator';
+import { warnTernarySync } from '../../console/index.js';
 /**
  * Recursively wraps a JSX element with a <T> component and unique id
  * @param node - The JSX element to wrap

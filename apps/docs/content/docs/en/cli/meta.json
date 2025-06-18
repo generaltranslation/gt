@@ -2,6 +2,7 @@
   "title": "CLI Tool",
   "icon": "Terminal",
   "pages": [
+    "---Getting Started---",
     "index",
     "---Commands---",
     "init",

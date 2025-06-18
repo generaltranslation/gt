@@ -1,11 +1,16 @@
 import fs from 'node:fs';
 import { parse } from '@babel/parser';
-import generate from '@babel/generator';
-import traverse from '@babel/traverse';
-import * as t from '@babel/types';
-import { logError } from '../../console';
+import generateModule from '@babel/generator';
+import traverseModule from '@babel/traverse';
 
-export default async function handleInitGT(
+// Handle CommonJS/ESM interop
+const traverse = traverseModule.default || traverseModule;
+const generate = generateModule.default || generateModule;
+
+import * as t from '@babel/types';
+import { logError } from '../../console/logging.js';
+
+export async function handleInitGT(
   filepath: string,
   errors: string[],
   warnings: string[],

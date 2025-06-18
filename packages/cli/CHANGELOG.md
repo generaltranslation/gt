@@ -1,5 +1,47 @@
 # gtx-cli
 
+## 1.2.30
+
+### Patch Changes
+
+- [#409](https://github.com/generaltranslation/gt/pull/409) [`557f74d`](https://github.com/generaltranslation/gt/commit/557f74da58ebd84ca50c1961fc6dfecd63bb7797) Thanks [@brian-lou](https://github.com/brian-lou)! - Make locadex more reliable + improve validation
+
+## 1.2.29
+
+### Patch Changes
+
+- [#400](https://github.com/generaltranslation/gt/pull/400) [`cf9c724`](https://github.com/generaltranslation/gt/commit/cf9c72488f74db5ccd7c4dca2650d75e3484d1f2) Thanks [@brian-lou](https://github.com/brian-lou)! - Reorder linter detection preference
+
+## 1.2.28
+
+### Patch Changes
+
+- [#397](https://github.com/generaltranslation/gt/pull/397) [`80a1395`](https://github.com/generaltranslation/gt/commit/80a13955db9ff46e5883ac8b0909ab294c63d001) Thanks [@brian-lou](https://github.com/brian-lou)! - Run translate after i18n
+
+## 1.2.27
+
+### Patch Changes
+
+- [#392](https://github.com/generaltranslation/gt/pull/392) [`cebc905`](https://github.com/generaltranslation/gt/commit/cebc905cb5364bdcc218d4e93a6aee606d804419) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix require not being present in ESM package
+
+## 1.2.26
+
+### Patch Changes
+
+- [#391](https://github.com/generaltranslation/gt/pull/391) [`dd41343`](https://github.com/generaltranslation/gt/commit/dd413435742930d995c9fdb84368a91381da3d65) Thanks [@brian-lou](https://github.com/brian-lou)! - Improve logs for cli; Improve QOL setup for locadex
+
+## 1.2.25
+
+### Patch Changes
+
+- [#368](https://github.com/generaltranslation/gt/pull/368) [`86f5a18`](https://github.com/generaltranslation/gt/commit/86f5a188439864244b74d590d07bfd6a52c193f9) Thanks [@brian-lou](https://github.com/brian-lou)! - Add new 'validate' command to gtx-cli
+
+## 1.2.24
+
+### Patch Changes
+
+- [#358](https://github.com/generaltranslation/gt/pull/358) [`b0ea226`](https://github.com/generaltranslation/gt/commit/b0ea226310abb04ef5aa9ef1af23ee37b9e18cd1) Thanks [@brian-lou](https://github.com/brian-lou)! - Release Locadex (Beta) version
+
 ## 1.2.23
 
 ### Patch Changes

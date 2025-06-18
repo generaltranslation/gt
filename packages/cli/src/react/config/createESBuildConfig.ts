@@ -1,7 +1,7 @@
 import esbuild from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
-import { displayResolvedPaths } from '../../console/console';
+import { displayResolvedPaths } from '../../console/logging.js';
 
 export default function createESBuildConfig(config: Record<string, any> = {}) {
   const esbuildOptions: esbuild.BuildOptions = {

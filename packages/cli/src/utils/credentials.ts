@@ -1,7 +1,11 @@
-import { createSpinner, logErrorAndExit, logMessage } from '../console';
+import {
+  createSpinner,
+  logErrorAndExit,
+  logMessage,
+} from '../console/logging.js';
 import path from 'node:path';
 import fs from 'node:fs';
-import { Settings, SupportedFrameworks } from '../types';
+import { Settings, SupportedFrameworks } from '../types/index.js';
 import chalk from 'chalk';
 // Type for credentials returned from the dashboard
 type Credentials = {
@@ -28,7 +32,7 @@ export async function retrieveCredentials(
   );
 
   logMessage(
-    `${chalk.gray(
+    `${chalk.dim(
       `If the browser window didn't open automatically, please open the following link:`
     )}\n\n${chalk.cyan(urlToOpen)}`
   );
@@ -105,9 +109,10 @@ export function areCredentialsSet() {
 export async function setCredentials(
   credentials: Credentials,
   type: 'development' | 'production',
-  framework?: SupportedFrameworks
+  framework?: SupportedFrameworks,
+  cwd: string = process.cwd()
 ) {
-  const envFile = path.join(process.cwd(), '.env.local');
+  const envFile = path.join(cwd, '.env.local');
   let envContent = '';
 
   // Check if .env.local exists, create it if it doesn't
@@ -116,7 +121,7 @@ export async function setCredentials(
     await fs.promises.writeFile(envFile, '', 'utf8');
 
     // Add .env.local to .gitignore if it exists
-    const gitignoreFile = path.join(process.cwd(), '.gitignore');
+    const gitignoreFile = path.join(cwd, '.gitignore');
     if (fs.existsSync(gitignoreFile)) {
       const gitignoreContent = await fs.promises.readFile(
         gitignoreFile,

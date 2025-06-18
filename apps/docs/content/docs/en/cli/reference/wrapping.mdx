@@ -12,7 +12,7 @@ It will also wrap a [`<Var>`](/docs/next/api/components/var) component around an
 
 For example, the following will be wrapped in a `<T>` component:
 ```jsx
-<div>Hello, World!</div> -> <T id="SOME_ID"><div>Hello, World!</div></T>
+<div>Hello, world!</div> -> <T id="SOME_ID"><div>Hello, world!</div></T>
 ```
 
 but the following will not:
@@ -35,7 +35,7 @@ In some cases, such as with [logical operators](#logical-operators), some human 
     Static content is content that cannot change at runtime.
     For example, the following is static:
     ```jsx
-    <div>Hello, World!</div>
+    <div>Hello, world!</div>
     ```
     but the following is dynamic:
     ```jsx
@@ -48,7 +48,7 @@ Meaningful content is content that could feasibly be translated and has a differ
 
 For example, this is meaningful:
 ```jsx
-<div>Hello, World!</div> -> <T id="SOME_ID"><div>Hello, World!</div></T>
+<div>Hello, world!</div> -> <T id="SOME_ID"><div>Hello, world!</div></T>
 ```
 while these are not:
 ```jsx

@@ -32,10 +32,9 @@ export default function LocaleSelector({
   [key: string]: any;
 }): React.JSX.Element | null {
   // Get locale selector properties
-  const { locale, locales, setLocale } = useLocaleSelector(
+  const { locale, locales, setLocale, getLocaleProperties } = useLocaleSelector(
     _locales ? _locales : undefined
   );
-  const gt = useGTClass();
 
   // Get display name
   const getDisplayName = (locale: string) => {
@@ -43,7 +42,7 @@ export default function LocaleSelector({
       return customNames[locale];
     }
     return capitalizeLanguageName(
-      gt.getLocaleProperties(locale).nativeNameWithRegionCode
+      getLocaleProperties(locale).nativeNameWithRegionCode
     );
   };
 

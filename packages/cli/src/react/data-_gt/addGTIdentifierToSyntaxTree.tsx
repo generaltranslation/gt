@@ -1,4 +1,4 @@
-import { getVariableName } from '../utils/getVariableName';
+import { getVariableName } from '../utils/getVariableName.js';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 
 // recreates addGTIdentifier and writeChildrenAsObjects

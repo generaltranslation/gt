@@ -1,19 +1,26 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { Options, Updates } from '../../types';
+import { Options, Updates } from '../../types/index.js';
 
 import { parse } from '@babel/parser';
-import traverse, { NodePath } from '@babel/traverse';
+import traverseModule from '@babel/traverse';
+import { NodePath } from '@babel/traverse';
+
+// Handle CommonJS/ESM interop
+const traverse = traverseModule.default || traverseModule;
 
 import { hashSource } from 'generaltranslation/id';
-import { parseJSXElement } from '../jsx/utils/parseJsx';
-import { parseStrings } from '../jsx/utils/parseStringFunction';
-import { extractImportName } from '../jsx/utils/parseAst';
-import { logError } from '../../console';
+import { parseJSXElement } from '../jsx/utils/parseJsx.js';
+import { parseStrings } from '../jsx/utils/parseStringFunction.js';
+import { extractImportName } from '../jsx/utils/parseAst.js';
+import { logError } from '../../console/logging.js';
+import { validateStringFunction } from '../jsx/utils/validateStringFunction.js';
+import { GT_TRANSLATION_FUNCS } from '../jsx/utils/constants.js';
 
 export default async function createInlineUpdates(
   options: Options,
-  pkg: 'gt-react' | 'gt-next'
+  pkg: 'gt-react' | 'gt-next',
+  validate: boolean
 ): Promise<{ updates: Updates; errors: string[] }> {
   const updates: Updates = [];
 
@@ -69,21 +76,14 @@ export default async function createInlineUpdates(
       continue;
     }
 
-    const translationFuncs = [
-      'useGT',
-      'getGT',
-      'T',
-      'Var',
-      'DateTime',
-      'Currency',
-      'Num',
-      'Branch',
-      'Plural',
-    ];
     const importAliases: Record<string, string> = {};
 
     // First pass: collect imports and process translation functions
-    const translationPaths: Array<{ name: string; path: NodePath }> = [];
+    const translationPaths: Array<{
+      localName: string;
+      path: NodePath;
+      originalName: string;
+    }> = [];
 
     traverse(ast, {
       ImportDeclaration(path) {
@@ -91,11 +91,15 @@ export default async function createInlineUpdates(
           const importName = extractImportName(
             path.node,
             pkg,
-            translationFuncs
+            GT_TRANSLATION_FUNCS
           );
           for (const name of importName) {
             if (name.original === 'useGT' || name.original === 'getGT') {
-              translationPaths.push({ name: name.local, path });
+              translationPaths.push({
+                localName: name.local,
+                path,
+                originalName: name.original,
+              });
             } else {
               importAliases[name.local] = name.original;
             }
@@ -121,11 +125,15 @@ export default async function createInlineUpdates(
               const importName = extractImportName(
                 parentPath.node,
                 pkg,
-                translationFuncs
+                GT_TRANSLATION_FUNCS
               );
               for (const name of importName) {
                 if (name.original === 'useGT' || name.original === 'getGT') {
-                  translationPaths.push({ name: name.local, path: parentPath });
+                  translationPaths.push({
+                    localName: name.local,
+                    path: parentPath,
+                    originalName: name.original,
+                  });
                 } else {
                   importAliases[name.local] = name.original;
                 }
@@ -137,7 +145,7 @@ export default async function createInlineUpdates(
     });
 
     // Process translation functions asynchronously
-    for (const { name, path } of translationPaths) {
+    for (const { localName: name, path } of translationPaths) {
       parseStrings(name, path, updates, errors, file);
     }
 
@@ -147,6 +155,13 @@ export default async function createInlineUpdates(
         parseJSXElement(importAliases, path.node, updates, errors, file);
       },
     });
+
+    // Extra validation (for Locadex)
+    if (validate) {
+      for (const { localName: name, path, originalName } of translationPaths) {
+        validateStringFunction(name, path, updates, errors, file, originalName);
+      }
+    }
   }
 
   // Post-process to add a hash to each update

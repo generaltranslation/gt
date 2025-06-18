@@ -1,4 +1,4 @@
-import { DictionaryEntry, DictionaryMetadata } from '../../types/data';
+import { DictionaryEntry, DictionaryMetadata } from '../../types/data.js';
 
 export default function getEntryAndMetadata(value: DictionaryEntry): {
   entry: string;

@@ -1,21 +1,21 @@
 ---
-title: useDict()
-description: API Reference for the useDict hook
+title: useTranslations()
+description: API Reference for the useTranslations hook
 ---
 
 ## Overview
 
-`useDict()` is used to access string translations from the [translation dictionary](/docs/react/guides/dictionaries).
+`useTranslations()` is used to access string translations from the [translation dictionary](/docs/react/guides/dictionaries).
 It must be used within a component wrapped by a [`<GTProvider>`](/docs/react/api/components/gtprovider).
 
 ```jsx
-const d = useDict(); // Get the translation function
+const d = useTranslations(); // Get the translation function
 d('greeting.hello'); // pass the id to get a translation
 ```
 
 
 <Callout>
-  `useDict()` uses a [dictionary](/docs/react/guides/dictionaries) to store all content for translation.
+  `useTranslations()` uses a [dictionary](/docs/react/guides/dictionaries) to store all content for translation.
   This is different from using the [`<T>` component](/docs/react/guides/jsx) for translation.
   If you are interested in only using `<T>` components for translation, then this document is not relevant.
 </Callout>
@@ -68,17 +68,17 @@ const dictionary = {
 export default dictionary;
 ```
 
-When we want to access these entries, we call `useDict()`.
+When we want to access these entries, we call `useTranslations()`.
 This returns a function that accepts the key of a translation from the dictionary.
 
 You must pass the dictionary to the `GTProvider` component.
 
 ```jsx title="TranslateGreeting.jsx" copy
-import { useDict } from 'gt-react';
+import { useTranslations } from 'gt-react';
 import dictionary from "./dictionary.json"
 
 export default async function TranslateGreeting() {
-  const d = useDict(); // [!code highlight]
+  const d = useTranslations(); // [!code highlight]
   return (
     <GTProvider dictionary={dictionary}>
       <p>
@@ -105,10 +105,10 @@ export default dictionary;
 
 ```jsx title="TranslateGreeting.jsx" copy
 // [!code word:userName]
-import { useDict } from 'gt-react';
+import { useTranslations } from 'gt-react';
 
 export default async function TranslateGreeting() {
-  const d = useDict();
+  const d = useTranslations();
   
   // Hello Alice!
   const greetingAlice = d('greeting', { userName: "Alice" }); // [!code highlight]
@@ -134,12 +134,12 @@ const dictionary = {
 };
 export default dictionary;
 ```
-Because we added the value `'prefix1.prefix2'` to the `useDict` hook, all of the keys are prefixed with `prefix1.prefix2`:
+Because we added the value `'prefix1.prefix2'` to the `useTranslations` hook, all of the keys are prefixed with `prefix1.prefix2`:
 ```jsx title="UserDetails.jsx" copy
-import { useDict } from 'gt-react';
+import { useTranslations } from 'gt-react';
 
 export default function UserDetails() {
-  const d = useDict('prefix1.prefix2'); // [!code highlight]
+  const d = useTranslations('prefix1.prefix2'); // [!code highlight]
   return (
     <div>
       <p>{d('greeting')}</p> // greeting => prefix1.prefix2.greeting // [!code highlight]
@@ -149,8 +149,8 @@ export default function UserDetails() {
 ```
 --- 
 ## Notes
- * The `useDict()` function allows you to access dictionary translations.
- * The `useDict()` hook can only be used within a component wrapped by a [`<GTProvider>` component](/docs/react/api/components/gtprovider).
+ * The `useTranslations()` function allows you to access dictionary translations.
+ * The `useTranslations()` hook can only be used within a component wrapped by a [`<GTProvider>` component](/docs/react/api/components/gtprovider).
 
 ## Next Steps
  * Learn more about using dictionaries in the [dictionaries reference](/docs/react/guides/dictionaries).

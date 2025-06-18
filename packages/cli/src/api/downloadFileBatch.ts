@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { logError, logWarning } from '../console/console';
+import { logError, logWarning } from '../console/logging.js';
 
 /**
  * Downloads multiple translation files in a single batch request

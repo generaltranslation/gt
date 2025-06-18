@@ -1,9 +1,9 @@
 import chalk from 'chalk';
-import { createSpinner, logSuccess, logWarning } from '../console';
-import { Settings, SupportedLibraries, Updates } from '../types';
-import updateConfig from '../fs/config/updateConfig';
-import { DataFormat } from '../types/data';
-import { isUsingLocalTranslations } from '../config/utils';
+import { createSpinner, logSuccess, logWarning } from '../console/logging.js';
+import { Settings, SupportedLibraries, Updates } from '../types/index.js';
+import updateConfig from '../fs/config/updateConfig.js';
+import { DataFormat } from '../types/data.js';
+import { isUsingLocalTranslations } from '../config/utils.js';
 
 type ApiOptions = Settings & {
   timeout: string;

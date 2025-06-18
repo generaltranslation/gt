@@ -1,29 +1,31 @@
-import { checkFileTranslations } from '../../api/checkFileTranslations';
-import { sendFiles } from '../../api/sendFiles';
+import { checkFileTranslations } from '../../api/checkFileTranslations.js';
+import { sendFiles } from '../../api/sendFiles.js';
 import {
   noSupportedFormatError,
-  logErrorAndExit,
-  createSpinner,
-  logError,
-  logSuccess,
   noLocalesError,
   noDefaultLocaleError,
   noApiKeyError,
   noProjectIdError,
   devApiKeyError,
-} from '../../console';
-import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig';
-import { getRelative, readFile } from '../../fs/findFilepath';
-import { flattenJsonDictionary } from '../../react/utils/flattenDictionary';
-import { ResolvedFiles, Settings, TransformFiles } from '../../types';
-import { FileExtension, DataFormat } from '../../types/data';
+} from '../../console/index.js';
+import {
+  logErrorAndExit,
+  createSpinner,
+  logError,
+  logSuccess,
+} from '../../console/logging.js';
+import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
+import { getRelative, readFile } from '../../fs/findFilepath.js';
+import { flattenJsonDictionary } from '../../react/utils/flattenDictionary.js';
+import { ResolvedFiles, Settings, TransformFiles } from '../../types/index.js';
+import { FileExtension, DataFormat } from '../../types/data.js';
 import path from 'node:path';
 import chalk from 'chalk';
-import { downloadFile } from '../../api/downloadFile';
-import { downloadFileBatch } from '../../api/downloadFileBatch';
-import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles';
-import { TranslateOptions } from '../../cli/base';
-const SUPPORTED_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
+import { downloadFile } from '../../api/downloadFile.js';
+import { downloadFileBatch } from '../../api/downloadFileBatch.js';
+import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
+import { TranslateOptions } from '../../cli/base.js';
+const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 /**
  * Sends multiple files to the API for translation
@@ -46,7 +48,7 @@ export async function translateFiles(
 
   // Process JSON files
   if (filePaths.json) {
-    if (!SUPPORTED_FORMATS.includes(dataFormat)) {
+    if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
       logErrorAndExit(noSupportedFormatError);
     }
 

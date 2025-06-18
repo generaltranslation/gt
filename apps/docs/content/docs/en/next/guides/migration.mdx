@@ -90,7 +90,7 @@ You'll never have to wait for translations again.
     Next, add `withGTConfig` to your `next.config.js` file.
 
     ```js title="next.config.ts" copy
-    import withGTConfig from 'gt-next/next-config'
+    import withGTConfig from 'gt-next/config'
     const nextConfig = {
       // Your next.config.ts options
     }
@@ -119,7 +119,7 @@ This option is the most straightforward, and will also require the most code cha
 
 After you've setup your project, you'll need to search for all instances of your old i18n library and replace them with `gt-next`.
 
-If your app is using React hooks such as `useTranslation`, search for all instances of `useTranslation` in your codebase and replace them with `useGT`.
+If your app is using React hooks such as `useTranslations`, search for all instances of `useTranslations` in your codebase and replace them with `useGT`.
 
 Then, you'll need to replace all the string keys with their actual string values.
 
@@ -144,7 +144,7 @@ You'll need to replace it with:
 
 ```tsx
 export default function MyComponent() {
-  const { t } = useGT()
+  const t = useGT()
   return <div>{t('Hello, world!')}</div>
 }
 // OR
@@ -162,9 +162,9 @@ and only use GT in-line features for new content.
 
 In this case, you can do something similar to Option 1:
 
-Find all instances of your old i18n library, such as `useTranslation` hooks, and replace them with `useDict` hooks.
+Find all instances of your old i18n library, such as `useTranslations` hooks, and replace them with `useTranslations` hooks from `gt-next`.
 
-The `useDict` hook behaves very similarly to `useTranslation` hooks, and you can use it in the same way.
+The `useTranslations` hook behaves very similarly to `useTranslations` hooks in other i18n libraries, and you can use it in the same way.
 
 <Tabs items={['Before', 'After']}>
   <Tab value="Before">
@@ -178,9 +178,9 @@ The `useDict` hook behaves very similarly to `useTranslation` hooks, and you can
   </Tab>
   <Tab value="After">
   ```tsx
-  import { useDict } from 'gt-next'
+  import { useTranslations } from 'gt-next'
   export default function MyComponent() {
-    const t = useDict()
+    const t = useTranslations()
     return <div>{t('hello.description')}</div>
   }
   ```
@@ -214,9 +214,9 @@ Wherever possible, we recommend using the `useGT` hook or `<T>` component.
 
 This will make editing your content much easier in the future, and make your codebase much more readable.
 
-### 2. Use the `useDict` hook for existing content
+### 2. Use the `useTranslations` hook for existing content
 
-The `useDict` hook is a great way to keep using your existing dictionaries.
+The `useTranslations` hook is a great way to keep using your existing dictionaries.
 
 We offer it as a way to make migration easier, but we don't recommend using it for new content.
 

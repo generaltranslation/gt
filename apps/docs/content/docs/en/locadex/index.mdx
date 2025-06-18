@@ -1,0 +1,115 @@
+---
+title: Locadex — AI i18n engineer
+description: Get started with Locadex, an automated internationalization engineer
+---
+
+```bash
+npx locadex start
+```
+
+Translating your Next.js app into French, Spanish, Japanese, or any other language is painful and time-consuming.
+
+**Locadex is an open-source, Claude-powered agent** built to handle 100% of the internationalization (i18n) work for you.
+
+This includes:
+* Configuring your project to use the gt-next i18n library
+* Modifying your React components and strings to support multilingual content
+* Translating your app into as many languages as you need
+
+It can be installed as a CLI tool or configured as a [Github Action](/docs/locadex/github-action).
+
+## Getting Started
+
+### 1. Configure API Keys
+
+Before running Locadex, you need to configure your API keys. You can set them as environment variables in your terminal:
+
+```bash title="Terminal"
+export ANTHROPIC_API_KEY="<Your Anthropic API Key>"
+export GT_API_KEY="<Your GT Production API Key>"
+export GT_PROJECT_ID="<Your GT Project ID>"
+```
+
+Alternatively, you can create a `.env` file in your project's root directory with the following content:
+
+```bash title=".env"
+ANTHROPIC_API_KEY="<Your Anthropic API Key>"
+GT_API_KEY="<Your GT Production API Key>"
+GT_PROJECT_ID="<Your GT Project ID>"
+```
+
+You can get API keys from the [dashboard](https://dash.generaltranslation.com).
+
+### 2. Run Locadex CLI
+
+The easiest way to get started is to run the following command in your project's root directory:
+
+```bash
+npx locadex start
+```
+
+This single command:
+
+- Installs `locadex` and `gt-next`
+- Fully internationalizes every file in your project
+- Adds the [`translate`](/docs/cli/translate) command to your build script
+- Adds the [locadex Github Action](/docs/locadex/github-action) to your project's CI workflow
+- Fully translates your project with production-quality translations (if you provide a GT API key)
+
+<Callout type="info">
+  Depending on the size of your project, this agent may take some time to complete. We recommend running it in a keep-alive terminal session. 
+</Callout>
+
+### 3. Continuous internationalization
+
+Locadex can also be configured as a Github action for continuous internationalization. 
+Your app will automatically be internationalized every time you push a change to your repository.
+
+<Callout type="info">
+  Make sure that your project is already prepared for i18n with the gt-next library! The easiest way to do this is to run `npx locadex start` in your project first!
+</Callout>
+
+Add the following to a `.github/workflows/locadex.yml` file:
+
+```yaml title=".github/workflows/locadex.yml" copy
+name: Run Locadex
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  locadex:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Run Locadex
+        uses: generaltranslation/locadex@v0
+        with:
+          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          gt_api_key: ${{ secrets.GT_API_KEY }}
+          gt_project_id: ${{ secrets.GT_PROJECT_ID }}
+```
+
+Every time this workflow triggers, Locadex will automatically internationalize any changes you've made to your project
+and create a pull request with the changes.
+
+Feel free to customize this workflow to your needs.
+
+## Requirements
+
+- Node.js 18+
+- git 2.23+
+
+## Next steps
+
+- See the [Github Action](/docs/locadex/github-action) documentation for more configuration options
+- See the [Tips and Tricks](/docs/locadex/tips) page for tips on how to use Locadex
+- See the [Monorepo](/docs/locadex/monorepo) page for a guide on how to use Locadex with a monorepo
