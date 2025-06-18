@@ -22,17 +22,17 @@ export function addValidateProjectTool(
         );
         if (code === 0) {
           logger.log(
-            `[locadex-mcp: validate] Successfully validated project: ${stdout}`
+            `[locadex-mcp: validate] Successfully validated project: ${stdout} ${stderr}`
           );
           return {
-            content: [{ type: 'text', text: stdout }],
+            content: [{ type: 'text', text: stdout + stderr }],
           };
         } else {
           logger.log(
-            `[locadex-mcp: validate] Error validating project: ${stdout} with code ${code}`
+            `[locadex-mcp: validate] Error validating project: ${stdout} ${stderr} with code ${code}`
           );
           return {
-            content: [{ type: 'text', text: stdout }],
+            content: [{ type: 'text', text: stdout + stderr }],
           };
         }
       } catch (error) {

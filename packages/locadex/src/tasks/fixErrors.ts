@@ -71,7 +71,7 @@ To run the gt-next validator, call the 'mcp__locadex__validate-project' tool.
   - These guides provide additional knowledge about how to internationalize the content.
 - NEVER move content to a different file. All content MUST remain in the same file where it came from.
 - NEVER CREATE OR DELETE ANY FILES (especially .bak files)
-- NEVER try running build commands (for example, 'next dev' or 'next build')
+- NEVER run long running commands (for example, 'next dev')
 
 ## MCP TOOLS
 

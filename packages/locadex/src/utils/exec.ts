@@ -2,6 +2,8 @@ import chalk from 'chalk';
 import { spawn } from 'node:child_process';
 import { logger } from '../logging/logger.js';
 
+// Utility function for executing a command and returning the output (and error)
+// If pipeStdout is true, the output will be logged to the console
 export async function execFunction(
   command: string,
   args: string[],
@@ -28,23 +30,21 @@ export async function execFunction(
         signal: abortController.signal,
       });
 
-      let stdoutOutput = '';
-      let errorOutput = '';
+      let stdOutOutput = '';
+      let stdErrOutput = '';
 
       const timeout = global.setTimeout(() => {
         abortController.abort();
         reject(new Error(`Process timed out after ${timeoutMs / 1000}s`));
       }, timeoutMs);
 
-      if (childProcess.stderr) {
-        childProcess.stderr.on('data', (data) => {
-          errorOutput += data.toString();
-        });
-      }
+      childProcess.stderr.on('data', (data) => {
+        stdErrOutput += data.toString();
+      });
 
       childProcess.stdout.on('data', (data) => {
         const output = data.toString();
-        stdoutOutput += output;
+        stdOutOutput += output;
         if (!pipeStdout) {
           logger.log(output);
         } else {
@@ -61,16 +61,20 @@ export async function execFunction(
       childProcess.on('close', (code) => {
         global.clearTimeout(timeout);
         if (code === 0) {
-          resolve({ stdout: stdoutOutput, stderr: errorOutput, code });
+          resolve({ stdout: stdOutOutput, stderr: stdErrOutput, code });
         } else {
-          logger.log(chalk.red(`${command} failed with exit code ${code}`));
-          if (errorOutput) {
-            logger.log(chalk.red(`Error details: ${errorOutput}`));
+          logger.log(
+            chalk.red(
+              `${command} ${args.join(' ')} failed with exit code ${code} in ${cwd}`
+            )
+          );
+          if (stdErrOutput) {
+            logger.log(chalk.red(`Error details: ${stdErrOutput}`));
           }
           // reject with the most recent output
           resolve({
-            stdout: stdoutOutput,
-            stderr: errorOutput,
+            stdout: stdOutOutput,
+            stderr: stdErrOutput,
             code: code ?? 1,
           });
         }

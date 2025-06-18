@@ -7,6 +7,10 @@ export const DAG_IGNORED_FILES = [
   'next.config.cts',
   'tailwind.config.js',
   'webpack.config.js',
+  // ignore dictionary files
+  'dictionary.json',
+  'dictionary.ts',
+  'dictionary.js',
 ];
 
 export const DAG_IGNORED_PATTERNS = [
