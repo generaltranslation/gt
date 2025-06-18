@@ -3,23 +3,16 @@ import { logger } from '../../logging/logger.js';
 import { execFunction } from '../exec.js';
 
 export async function formatFiles(cmd: string, manager: LocadexManager) {
-  const trimmed = cmd.trim();
-  const stripped = trimmed.replace(/^["'](.*)["']$/, '$1');
-  const formattedCmd = `"${stripped}"`;
-  logger.verboseMessage(
-    `Running ${formattedCmd}... in ${manager.appDirectory}`
-  );
+  logger.verboseMessage(`Running ${cmd}... in ${manager.appDirectory}`);
   const { stderr, code } = await execFunction(
     'sh',
-    ['-c', formattedCmd],
+    ['-c', cmd],
     false,
     manager.appDirectory,
     manager.getAgentAbortController()
   );
   if (code !== 0) {
-    logger.error(
-      `Error running ${formattedCmd} in ${manager.appDirectory}: ${stderr}`
-    );
+    logger.error(`Error running ${cmd} in ${manager.appDirectory}: ${stderr}`);
   } else {
     logger.step(`Formatted files with ${cmd}`);
   }
