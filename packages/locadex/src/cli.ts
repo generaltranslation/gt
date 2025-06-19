@@ -73,6 +73,10 @@ program
   .option('--no-translate', 'Disable translation step')
   .option('-f, --format-cmd <cmd>', 'Command to format modified files')
   .option('--app-dir <dir>', 'Relative path to the application directory', '.')
+  .option(
+    '--local-translations',
+    'Enable local translations with loadTranslations.js file and GT config'
+  )
   .action(autoSetupCommand);
 
 program
