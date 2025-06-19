@@ -55,10 +55,8 @@ export default function addGTIdentifier(
         const pluralBranches = Object.entries(props).reduce(
           (acc, [branchName, branch]) => {
             if (isAcceptedPluralForm(branchName)) {
-              (acc as Record<string, any>)[branchName] = addGTIdentifier(
-                branch as ReactNode,
-                index
-              );
+              (acc as Record<string, TaggedChildren>)[branchName] =
+                addGTIdentifier(branch as ReactNode, index);
             }
             return acc;
           },
@@ -68,13 +66,12 @@ export default function addGTIdentifier(
           result.branches = pluralBranches;
       }
       if (transformationParts[0] === 'branch') {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
         const { children, branch, ...branches } = props;
         const resultBranches = Object.entries(branches).reduce(
           (acc, [branchName, branch]) => {
-            (acc as Record<string, any>)[branchName] = addGTIdentifier(
-              branch as ReactNode,
-              index
-            );
+            (acc as Record<string, TaggedChildren>)[branchName] =
+              addGTIdentifier(branch as ReactNode, index);
             return acc;
           },
           {}

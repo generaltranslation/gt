@@ -77,6 +77,8 @@ type SanitizedChildren = SanitizedChild | SanitizedChild[];
  *
  * @param child - The child object to sanitize.
  * @returns The sanitized child object.
+ *
+ * TODO: Ignore accessibility labels in the hash
  */
 const sanitizeChild = (child: JsxChild): SanitizedChild => {
   if (child && typeof child === 'object') {

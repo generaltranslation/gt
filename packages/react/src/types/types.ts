@@ -1,4 +1,3 @@
-import { JsxChildren } from 'generaltranslation/internal';
 import {
   Variable,
   VariableTransformationSuffix,
@@ -14,7 +13,7 @@ import React from 'react';
 export type GTTag = {
   id: number;
   transformation?: TransformationPrefix;
-  branches?: Record<string, JsxChildren>;
+  branches?: Record<string, TaggedChildren>;
   variableType?: VariableTransformationSuffix;
 };
 export type TaggedElementProps = Record<string, any> & {

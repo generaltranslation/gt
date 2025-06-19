@@ -67,10 +67,10 @@ const handleSingleChildElement = (
     objectElement.i = generaltranslation.id;
 
     // Add translatable HTML content props
-    let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce(
+    let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce<GTProp>(
       (acc, [minifiedName, fullName]) => {
         if (props[fullName]) {
-          newGTProp[minifiedName as keyof HtmlContentPropKeysRecord] =
+          acc[minifiedName as keyof HtmlContentPropKeysRecord] =
             props[fullName];
         }
         return acc;
@@ -80,18 +80,18 @@ const handleSingleChildElement = (
 
     // Check if plural
     if (transformation === 'plural' && generaltranslation.branches) {
-      const newBranches: Record<string, any> = {};
+      const newBranches: Record<string, JsxChildren> = {};
       Object.entries(generaltranslation.branches).forEach(
-        ([key, value]: any) => {
+        ([key, value]: [string, TaggedChildren]) => {
           newBranches[key] = writeChildrenAsObjects(value);
         }
       );
       newGTProp = { ...newGTProp, b: newBranches, t: 'p' };
     }
     if (transformation === 'branch' && generaltranslation.branches) {
-      const newBranches: Record<string, any> = {};
+      const newBranches: Record<string, JsxChildren> = {};
       Object.entries(generaltranslation.branches).forEach(
-        ([key, value]: any) => {
+        ([key, value]: [string, TaggedChildren]) => {
           newBranches[key] = writeChildrenAsObjects(value);
         }
       );
