@@ -6,7 +6,6 @@ import {
   RenderVariable,
   TranslatedElement,
 } from '../types/types';
-import getGTProp from './getGTProp';
 import getVariableProps, {
   isVariableElementProps,
 } from '../variables/_getVariableProps';
@@ -17,6 +16,7 @@ import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
 } from 'generaltranslation/types';
+import getGTTag from './getGTTag';
 
 function renderTranslatedElement({
   sourceElement,
@@ -31,12 +31,11 @@ function renderTranslatedElement({
 }): React.ReactNode {
   // Get props and generaltranslation
   const { props: sourceProps } = sourceElement;
-  const { props: unprocessedTargetProps } = targetElement;
   const sourceGT = sourceProps['data-_gt'];
   const transformation = sourceGT?.transformation;
 
   // Get translated props
-  const unprocessedTargetGT = unprocessedTargetProps['d'];
+  const unprocessedTargetGT = targetElement.d;
   const translatedProps: HtmlContentPropValuesRecord = {};
   if (unprocessedTargetGT) {
     Object.entries(HTML_CONTENT_PROPS).forEach(([minifiedName, fullName]) => {
@@ -57,9 +56,9 @@ function renderTranslatedElement({
     const sourceBranch =
       getPluralBranch(n, locales, sourceBranches) ||
       sourceElement.props.children;
-    const targetBranches = targetElement.props['d'].b || {};
+    const targetBranches = targetElement.d?.b || {};
     const targetBranch =
-      getPluralBranch(n, locales, targetBranches) || targetElement.props.c;
+      getPluralBranch(n, locales, targetBranches) || targetElement.c;
     return renderTranslatedChildren({
       source: sourceBranch,
       target: targetBranch,
@@ -72,8 +71,7 @@ function renderTranslatedElement({
   if (transformation === 'branch') {
     const { branch, children } = sourceProps;
     const sourceBranch = (sourceGT.branches || {})[branch] || children;
-    const targetBranch =
-      (targetElement.props['d'].b || {})[branch] || targetElement.props.c;
+    const targetBranch = (targetElement.d?.b || {})[branch] || targetElement.c;
     return renderTranslatedChildren({
       source: sourceBranch,
       target: targetBranch as TranslatedChildren,
@@ -83,12 +81,12 @@ function renderTranslatedElement({
   }
 
   // fragment (create a valid fragment)
-  if (transformation === 'fragment' && targetElement.props?.c) {
+  if (transformation === 'fragment' && targetElement.c) {
     return React.createElement(sourceElement.type, {
       key: sourceElement.props.key,
       children: renderTranslatedChildren({
         source: sourceProps.children,
-        target: targetElement.props.c,
+        target: targetElement.c,
         locales,
         renderVariable,
       }),
@@ -96,14 +94,14 @@ function renderTranslatedElement({
   }
 
   // other
-  if (sourceProps?.children && targetElement.props?.c) {
+  if (sourceProps?.children && targetElement?.c) {
     return React.cloneElement(sourceElement, {
       ...sourceProps,
       ...translatedProps,
       'data-_gt': undefined,
       children: renderTranslatedChildren({
         source: sourceProps.children,
-        target: targetElement.props.c,
+        target: targetElement.c,
         locales,
         renderVariable,
       }),
@@ -171,7 +169,7 @@ export default function renderTranslatedChildren({
     ): TaggedElement | undefined => {
       return (
         sourceElements.find((sourceChild): sourceChild is TaggedElement => {
-          const generaltranslation = getGTProp(sourceChild);
+          const generaltranslation = getGTTag(sourceChild);
           if (typeof generaltranslation?.id !== 'undefined') {
             const sourceId = generaltranslation.id;
             const targetId = targetElement.i;

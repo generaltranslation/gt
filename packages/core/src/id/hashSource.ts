@@ -60,14 +60,14 @@ export function hashSource(
   return hashFunction(stringify(sanitizedData));
 }
 
-type SanitizedVariable = Omit<Variable, 'id'>;
+type SanitizedVariable = Omit<Variable, 'i'>;
 
 type SanitizedElement = {
-  branches?: {
+  b?: {
     [k: string]: SanitizedChildren;
   };
-  children?: SanitizedChildren;
-  transformation?: string;
+  c?: SanitizedChildren;
+  t?: string;
 };
 type SanitizedChild = SanitizedElement | SanitizedVariable | string;
 type SanitizedChildren = SanitizedChild | SanitizedChild[];
@@ -80,25 +80,25 @@ type SanitizedChildren = SanitizedChild | SanitizedChild[];
  */
 const sanitizeChild = (child: JsxChild): SanitizedChild => {
   if (child && typeof child === 'object') {
-    if ('props' in child) {
+    if ('d' in child) {
       const newChild: SanitizedChild = {};
-      const dataGt = child?.props?.['d'];
-      if (dataGt?.b) {
+      const generaltranslation = child?.d;
+      if (generaltranslation?.b) {
         // The only thing that prevents sanitizeJsx from being stable is
         // the order of the keys in the branches object.
         // We don't sort them because stable-stringify sorts them anyways
-        newChild.branches = Object.fromEntries(
-          Object.entries(dataGt.b).map(([key, value]) => [
+        newChild.b = Object.fromEntries(
+          Object.entries(generaltranslation.b).map(([key, value]) => [
             key,
             sanitizeJsxChildren(value as JsxChildren),
           ])
         );
       }
-      if (child?.props?.c) {
-        newChild.children = sanitizeJsxChildren(child.props.c);
+      if (child?.c) {
+        newChild.c = sanitizeJsxChildren(child.c);
       }
-      if (child?.props?.['d']?.t) {
-        newChild.transformation = child.props['d'].t;
+      if (child?.d?.t) {
+        newChild.t = child.d.t;
       }
       return newChild;
     }

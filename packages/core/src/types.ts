@@ -59,10 +59,8 @@ export type GTProp = {
 export type JsxElement = {
   t?: string; // tag name
   i?: number; // id
-  props: {
-    d?: GTProp;
-    c?: JsxChildren;
-  };
+  d?: GTProp; // GT data
+  c?: JsxChildren; // children
 };
 
 export type JsxChild = string | JsxElement | Variable;

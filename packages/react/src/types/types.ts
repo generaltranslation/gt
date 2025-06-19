@@ -48,11 +48,9 @@ export type FlattenedDictionary = {
  * Translated content types
  */
 export type TranslatedElement = {
-  i: number;
-  props: {
-    d: GTProp;
-    c?: TranslatedChildren;
-  };
+  i?: number;
+  d?: GTProp;
+  c?: TranslatedChildren;
 };
 export type TranslatedChild = TranslatedElement | string | Variable;
 export type TranslatedChildren = TranslatedChild | TranslatedChild[];

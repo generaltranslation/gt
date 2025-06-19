@@ -44,22 +44,10 @@ const handleSingleChildElement = (
   const { props } = child;
   const objectElement: JsxElement = {
     t: getTagName(child),
-    props: {},
   };
   if (props['data-_gt']) {
+    // Get generaltranslation props
     const generaltranslation = props['data-_gt'];
-    objectElement.i = generaltranslation.id;
-    // Add translatable HTML content props
-    let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce(
-      (acc, [minifiedName, fullName]) => {
-        if (props[fullName]) {
-          newGTProp[minifiedName as keyof HtmlContentPropKeysRecord] =
-            props[fullName];
-        }
-        return acc;
-      },
-      {}
-    );
 
     // Check if variable
     const transformation = generaltranslation.transformation;
@@ -74,6 +62,21 @@ const handleSingleChildElement = (
         i: generaltranslation.id,
       };
     }
+
+    // Add id
+    objectElement.i = generaltranslation.id;
+
+    // Add translatable HTML content props
+    let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce(
+      (acc, [minifiedName, fullName]) => {
+        if (props[fullName]) {
+          newGTProp[minifiedName as keyof HtmlContentPropKeysRecord] =
+            props[fullName];
+        }
+        return acc;
+      },
+      {}
+    );
 
     // Check if plural
     if (transformation === 'plural' && generaltranslation.branches) {
@@ -95,10 +98,10 @@ const handleSingleChildElement = (
       newGTProp = { ...newGTProp, b: newBranches, t: 'b' };
     }
 
-    objectElement.props.d = newGTProp;
+    objectElement.d = newGTProp;
   }
   if (props.children) {
-    objectElement.props.c = writeChildrenAsObjects(props.children);
+    objectElement.c = writeChildrenAsObjects(props.children);
   }
   return objectElement;
 };

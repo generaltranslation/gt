@@ -1,5 +1,4 @@
 import React, { ReactNode } from 'react';
-import getGTProp from './getGTProp';
 import getVariableProps, {
   isVariableElementProps,
 } from '../variables/_getVariableProps';
@@ -11,6 +10,7 @@ import {
   TaggedChildren,
   TaggedElement,
 } from '../types/types';
+import getGTTag from './getGTTag';
 
 export default function renderDefaultChildren({
   children,
@@ -22,7 +22,7 @@ export default function renderDefaultChildren({
   renderVariable: RenderVariable;
 }): React.ReactNode {
   const handleSingleChildElement = (child: TaggedElement): ReactNode => {
-    const generaltranslation = getGTProp(child);
+    const generaltranslation = getGTTag(child);
 
     // Variable
     if (isVariableElementProps(child.props)) {
@@ -48,13 +48,8 @@ export default function renderDefaultChildren({
 
     // Branch
     if (generaltranslation?.transformation === 'branch') {
-      let {
-        children,
-        name,
-        branch,
-        'data-_gt': _gt,
-        ...branches
-      } = child.props;
+      // eslint-disable-next-line prefer-const, @typescript-eslint/no-unused-vars, no-unused-vars
+      let { children, branch, 'data-_gt': _gt, ...branches } = child.props;
       branches = generaltranslation.branches || {};
       return handleChildren(
         branches[branch] !== undefined ? branches[branch] : children
