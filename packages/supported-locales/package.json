@@ -10,6 +10,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
+    "build:release": "npm run build:clean",
     "build:clean": "rm -rf dist; npm run build",
     "build": "rollup -c",
     "lint": "eslint \"src/**/*.{js,ts}\" \"__tests__/**/*.{js,ts}\"",

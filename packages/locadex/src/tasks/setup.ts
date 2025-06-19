@@ -10,7 +10,6 @@ import { logger } from '../logging/logger.js';
 import { findFilepaths } from '../utils/fs/findConfigs.js';
 import { wrapContentNext } from 'gtx-cli/next/parse/wrapContent';
 import { handleInitGT } from 'gtx-cli/next/parse/handleInitGT';
-import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import { createOrUpdateConfig } from 'gtx-cli/fs/config/setupConfig';
 import { i18nTask } from '../tasks/i18n.js';
 import { getNextDirectories } from '../utils/fs/getFiles.js';
@@ -23,7 +22,6 @@ import {
   addTranslateScript,
   installGlobalPackage,
 } from '../utils/packages/installPackage.js';
-import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { getLocadexVersion } from '../utils/getPaths.js';
 import { getResource } from '../resources/getResource.js';
 import {
@@ -34,7 +32,7 @@ import { setCredentials } from 'gtx-cli/utils/credentials';
 import { retrieveCredentials } from 'gtx-cli/utils/credentials';
 import { isGTAuthConfigured } from '../utils/config.js';
 import { CliOptions } from '../types/cli.js';
-import { execFunction } from '../utils/exec.js';
+import { formatFiles } from '../utils/fs/formatFiles.js';
 
 /**
  * Run Locadex setup on the project
@@ -176,7 +174,8 @@ export async function setupTask(
   }
 
   // Install claude-code if not installed
-  await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
+  // 6/18/25: Moved to claude-code TS SDK
+  // await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
 
   // Install locadex if not installed
   await installGlobalPackage('locadex', getLocadexVersion());
@@ -189,29 +188,12 @@ export async function setupTask(
   // setupDictionary(manager);
 
   // Add locadex github action if not exists
-  setupGithubAction(manager, packageManager);
+  if (!autoSetup) {
+    setupGithubAction(manager, packageManager);
+  }
 
   if (cliOptions.formatCmd) {
-    const { stderr, code } = await execFunction(
-      cliOptions.formatCmd,
-      [],
-      false,
-      manager.appDirectory,
-      manager.getAgentAbortController()
-    );
-    if (code !== 0) {
-      logger.error(`Error running '${cliOptions.formatCmd}': ${stderr}`);
-    } else {
-      logger.step(
-        `Formatted ${filesUpdated.length} files with ${cliOptions.formatCmd}`
-      );
-    }
-  } else {
-    const formatter = await detectFormatter();
-    if (formatter && filesUpdated.length > 0) {
-      await formatFiles(filesUpdated, formatter);
-      logger.log(`Formatted ${filesUpdated.length} files with ${formatter}`);
-    }
+    await formatFiles(cliOptions.formatCmd, manager);
   }
 
   // Run i18n command

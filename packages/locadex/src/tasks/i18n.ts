@@ -12,20 +12,19 @@ import { runParallelProcessing, TaskProcessor } from './concurrency.js';
 import { outro } from '@clack/prompts';
 import chalk from 'chalk';
 import { appendFileSync } from 'node:fs';
-import { detectFormatter, formatFiles } from 'gtx-cli/hooks/postProcess';
 import path from 'node:path';
 import { updateLockfile } from '../utils/lockfile.js';
 import { extractFiles } from '../utils/dag/extractFiles.js';
 import { Dag } from '../utils/dag/createDag.js';
 import { getPackageJson, isPackageInstalled } from 'gtx-cli/utils/packageJson';
 import { deleteAddedFiles } from '../utils/fs/git.js';
-import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
 import { installGlobalPackage } from '../utils/packages/installPackage.js';
 import { fixErrorsTask } from './fixErrors.js';
 import { getLocadexVersion } from '../utils/getPaths.js';
 import { execFunction } from '../utils/exec.js';
 import { isGTAuthConfigured } from '../utils/config.js';
 import { CliOptions } from '../types/cli.js';
+import { formatFiles } from '../utils/fs/formatFiles.js';
 
 /**
  * Run Locadex i18n on the project
@@ -46,7 +45,9 @@ export async function i18nTask(cliOptions: CliOptions) {
   }
 
   // Install claude-code if not installed
-  await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
+  // 6/18/25: Moved to claude-code TS SDK
+  // await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
+
   // Install locadex if not installed
   await installGlobalPackage('locadex', getLocadexVersion());
 
@@ -191,36 +192,19 @@ ${reports.join('\n')}`;
 
   // cleanup
   if (cliOptions.formatCmd) {
-    const { stderr, code } = await execFunction(
-      cliOptions.formatCmd,
-      [],
-      false,
-      manager.appDirectory,
-      manager.getAgentAbortController()
-    );
-    if (code !== 0) {
-      logger.error(`Error running '${cliOptions.formatCmd}': ${stderr}`);
-    } else {
-      logger.step(
-        `Formatted ${files.length} files with ${cliOptions.formatCmd}`
-      );
-    }
-  } else {
-    const formatter = await detectFormatter();
-    if (formatter && files.length > 0) {
-      await formatFiles(files, formatter);
-      logger.log(`Formatted ${files.length} files with ${formatter}`);
-    }
+    await formatFiles(cliOptions.formatCmd, manager);
   }
 
   const lockfilePath = manager.getLockFilePath();
 
+  logger.verboseMessage(`Deleting extra files...`);
   // Delete any files the AI may have arbitrarily created
   deleteAddedFiles(
     [path.relative(manager.rootDirectory, manager.locadexDirectory)],
     ['dictionary.json', 'gt.config.json', 'locadex.yml', 'loadTranslations.js']
   );
 
+  logger.verboseMessage(`Updating lockfile...`);
   // Update lockfile with processed files
   updateLockfile(files, lockfilePath, manager.rootDirectory);
 
@@ -230,10 +214,10 @@ ${reports.join('\n')}`;
 
   // Run translate cmd
   if (isGTAuthConfigured(manager.appDirectory) && !cliOptions.noTranslate) {
+    const spinner = createSpinner();
     try {
-      logger.initializeSpinner();
-      logger.spinner.start('Running locadex translate...');
-      const { stderr, code } = await execFunction(
+      spinner.start('Running locadex translate...');
+      const { stdout, code } = await execFunction(
         'locadex',
         ['translate'],
         false,
@@ -241,14 +225,14 @@ ${reports.join('\n')}`;
         manager.getAgentAbortController()
       );
       if (code !== 0) {
-        logger.spinner.stop('Translations failed!');
-        logger.error(`Error running 'locadex translate': ${stderr}`);
+        spinner.stop('Translations failed');
+        logger.error(`Error running 'locadex translate': ${stdout}`);
       } else {
-        logger.spinner.stop('Translations generated!');
+        spinner.stop('Translations generated!');
         logger.log(`Translations generated with 'locadex translate'`);
       }
     } catch (error) {
-      logger.spinner.stop('Translations failed!');
+      spinner.stop('Translations failed');
       logger.error(
         `Error running 'locadex translate': ${(error as Error).message}`
       );

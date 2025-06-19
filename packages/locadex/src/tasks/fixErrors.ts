@@ -4,14 +4,13 @@ import { logger } from '../logging/logger.js';
 import { LocadexManager } from '../utils/locadexManager.js';
 import { outro } from '@clack/prompts';
 import chalk from 'chalk';
-import { CLAUDE_CODE_VERSION } from '../utils/shared.js';
-import { installGlobalPackage } from '../utils/packages/installPackage.js';
 
 export async function fixErrorsTask() {
   const manager = LocadexManager.getInstance();
   const reports: string[] = [];
   // Install claude-code if not installed
-  await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
+  // 6/18/25: Moved to claude-code TS SDK
+  // await installGlobalPackage('@anthropic-ai/claude-code', CLAUDE_CODE_VERSION);
 
   // Create a clean agent for cleanup
   const cleanupAgent = manager.createSingleAgent('claude_cleanup_agent', {});
@@ -71,7 +70,7 @@ To run the gt-next validator, call the 'mcp__locadex__validate-project' tool.
   - These guides provide additional knowledge about how to internationalize the content.
 - NEVER move content to a different file. All content MUST remain in the same file where it came from.
 - NEVER CREATE OR DELETE ANY FILES (especially .bak files)
-- NEVER try running build commands (for example, 'next dev' or 'next build')
+- NEVER run long running commands (for example, 'next dev')
 
 ## MCP TOOLS
 
