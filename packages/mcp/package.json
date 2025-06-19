@@ -30,6 +30,7 @@
     "transpile": "tsc",
     "build": "npm run transpile",
     "build:clean": "rm -rf dist; npm run lint && npm run build",
+    "build:release": "npm run build:clean",
     "dev": "npm run build && node dist/index.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
     "lint": "eslint .",

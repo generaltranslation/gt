@@ -30,7 +30,9 @@ jobs:
         run: npm ci
 
       - name: Build packages
-        run: npm run build
+        run: npm run build:release
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets

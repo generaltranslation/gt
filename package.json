@@ -12,6 +12,7 @@
     "transpile": "turbo run transpile",
     "release": "changeset publish",
     "build:clean": "turbo run build:clean",
+    "build:release": "turbo run build:release",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,yml,yaml}\"",
     "changeset": "changeset",
     "version-packages": "changeset version"
