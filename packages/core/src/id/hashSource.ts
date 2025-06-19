@@ -67,7 +67,6 @@ type SanitizedElement = {
     [k: string]: SanitizedChildren;
   };
   c?: SanitizedChildren;
-  t?: string;
 };
 type SanitizedChild = SanitizedElement | SanitizedVariable | string;
 type SanitizedChildren = SanitizedChild | SanitizedChild[];
@@ -78,7 +77,6 @@ type SanitizedChildren = SanitizedChild | SanitizedChild[];
  * @param child - The child object to sanitize.
  * @returns The sanitized child object.
  *
- * TODO: Ignore accessibility labels in the hash
  */
 const sanitizeChild = (child: JsxChild): SanitizedChild => {
   if (child && typeof child === 'object') {
@@ -98,9 +96,6 @@ const sanitizeChild = (child: JsxChild): SanitizedChild => {
       }
       if (child?.c) {
         newChild.c = sanitizeJsxChildren(child.c);
-      }
-      if (child?.d?.t) {
-        newChild.t = child.d.t;
       }
       return newChild;
     }

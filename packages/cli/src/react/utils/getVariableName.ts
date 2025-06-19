@@ -1,3 +1,5 @@
+import { VariableType } from 'generaltranslation/types';
+
 /**
  * These are the names of the variable components as they appear in gt-next and gt-react
  */
@@ -22,8 +24,8 @@ const minifyVariableTypeMap = {
  */
 export const minifyVariableType = (
   variableType: keyof typeof defaultVariableNames
-): string => {
-  return minifyVariableTypeMap[variableType];
+): VariableType => {
+  return minifyVariableTypeMap[variableType] as VariableType;
 };
 
 export const baseVariablePrefix = '_gt_';

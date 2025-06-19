@@ -7,12 +7,9 @@ import {
 import {
   defaultVariableNames,
   getVariableName,
-} from '../utils/getVariableName.js';
-import {
-  isAcceptedPluralForm,
-  JsxChild,
   minifyVariableType,
-} from 'generaltranslation/internal';
+} from '../utils/getVariableName.js';
+import { isAcceptedPluralForm, JsxChild } from 'generaltranslation/internal';
 
 /**
  * Construct the data-_gt prop
@@ -25,7 +22,7 @@ function constructGTProp(
   type: string,
   props: Record<string, any>,
   id: number
-): GTProp {
+): GTProp | undefined {
   // Add translatable HTML content props
   const generaltranslation: GTProp = Object.entries(
     HTML_CONTENT_PROPS
@@ -71,7 +68,9 @@ function constructGTProp(
     }
   }
 
-  return generaltranslation;
+  return Object.keys(generaltranslation).length
+    ? generaltranslation
+    : undefined;
 }
 
 /**
@@ -95,11 +94,17 @@ export default function addGTIdentifierToSyntaxTree(
   const handleSingleChild = (child: any): JsxChild => {
     // Handle JSX elements
     if (child && typeof child === 'object') {
-      const { type, props } = child;
+      let { type } = child;
+      const { props } = child;
       indexObject.index += 1;
 
+      // Handle fragments
+      if (type === 'React.Fragment') {
+        type = '';
+      }
+
       // Variables
-      if (type in Object.keys(defaultVariableNames)) {
+      if (Object.keys(defaultVariableNames).includes(type)) {
         const variableType = minifyVariableType(type);
         const variableName = getVariableName(props, type, indexObject.index);
         return {
@@ -120,8 +125,8 @@ export default function addGTIdentifierToSyntaxTree(
       return {
         t: type || `C${indexObject.index}`,
         i: indexObject.index,
-        d: generaltranslation,
         c: handleChildren(props.children),
+        ...(generaltranslation && { d: generaltranslation }),
       };
     }
     if (typeof child === 'number') {
@@ -136,7 +141,6 @@ export default function addGTIdentifierToSyntaxTree(
    * @returns The handled children
    */
   const handleChildren = (children: any): JsxChildren => {
-    console.log('children', children);
     return Array.isArray(children)
       ? children.map(handleSingleChild)
       : handleSingleChild(children);

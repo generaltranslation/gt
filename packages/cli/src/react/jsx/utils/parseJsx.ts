@@ -319,6 +319,7 @@ export function parseJSXElement(
 
   // Add GT identifiers to the tree
   let minifiedTree = addGTIdentifierToSyntaxTree(whitespaceHandledTree);
+  console.log('minifiedTree', JSON.stringify(minifiedTree, null, 2));
   minifiedTree =
     Array.isArray(minifiedTree) && minifiedTree.length === 1
       ? minifiedTree[0]

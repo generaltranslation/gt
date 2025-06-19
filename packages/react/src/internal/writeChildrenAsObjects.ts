@@ -11,6 +11,7 @@ import {
   GTProp,
   HTML_CONTENT_PROPS,
   HtmlContentPropKeysRecord,
+  Transformation,
   Variable,
 } from 'generaltranslation/types';
 
@@ -37,12 +38,60 @@ const getTagName = (child: TaggedElement): string => {
   if (props['data-_gt']?.id) return `C${props['data-_gt'].id}`;
   return 'function';
 };
+const createGTProp = (
+  transformation: Transformation,
+  props: Record<string, any>,
+  branches?: Record<string, TaggedChildren>
+): GTProp | undefined => {
+  // Add translatable HTML content props
+  let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce<GTProp>(
+    (acc, [minifiedName, fullName]) => {
+      if (props[fullName]) {
+        acc[minifiedName as keyof HtmlContentPropKeysRecord] = props[fullName];
+      }
+      return acc;
+    },
+    {}
+  );
 
+  // Check if plural
+  if (transformation === 'plural' && branches) {
+    const newBranches: Record<string, JsxChildren> = {};
+    Object.entries(branches).forEach(
+      ([key, value]: [string, TaggedChildren]) => {
+        newBranches[key] = writeChildrenAsObjects(value);
+      }
+    );
+    newGTProp = { ...newGTProp, b: newBranches, t: 'p' };
+  }
+  if (transformation === 'branch' && branches) {
+    const newBranches: Record<string, JsxChildren> = {};
+    Object.entries(branches).forEach(
+      ([key, value]: [string, TaggedChildren]) => {
+        newBranches[key] = writeChildrenAsObjects(value);
+      }
+    );
+    newGTProp = { ...newGTProp, b: newBranches, t: 'b' };
+  }
+
+  return Object.keys(newGTProp).length ? newGTProp : undefined;
+};
+
+/**
+ * Handles a single child element.
+ * @param {TaggedElement} child - The child to handle.
+ * @returns {JsxElement | Variable} The minified element.
+ */
 const handleSingleChildElement = (
   child: TaggedElement
 ): JsxElement | Variable => {
   const { props } = child;
-  const objectElement: JsxElement = {
+  console.log(
+    'getTagName',
+    getTagName(child),
+    JSON.stringify(child.type, null, 2)
+  );
+  const minifiedElement: JsxElement = {
     t: getTagName(child),
   };
   if (props['data-_gt']) {
@@ -64,7 +113,14 @@ const handleSingleChildElement = (
     }
 
     // Add id
-    objectElement.i = generaltranslation.id;
+    minifiedElement.i = generaltranslation.id;
+
+    // Add GT prop
+    minifiedElement.d = createGTProp(
+      transformation as Transformation,
+      props,
+      generaltranslation.branches
+    );
 
     // Add translatable HTML content props
     let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce<GTProp>(
@@ -98,12 +154,12 @@ const handleSingleChildElement = (
       newGTProp = { ...newGTProp, b: newBranches, t: 'b' };
     }
 
-    objectElement.d = newGTProp;
+    minifiedElement.d = Object.keys(newGTProp).length ? newGTProp : undefined;
   }
   if (props.children) {
-    objectElement.c = writeChildrenAsObjects(props.children);
+    minifiedElement.c = writeChildrenAsObjects(props.children);
   }
-  return objectElement;
+  return minifiedElement;
 };
 
 const handleSingleChild = (child: TaggedChild): JsxChild => {
@@ -123,7 +179,9 @@ const handleSingleChild = (child: TaggedChild): JsxChild => {
 export default function writeChildrenAsObjects(
   children: TaggedChildren
 ): JsxChildren {
-  return Array.isArray(children)
+  const result = Array.isArray(children)
     ? children.map(handleSingleChild)
     : handleSingleChild(children);
+  console.log('result', JSON.stringify(result, null, 2));
+  return result;
 }
