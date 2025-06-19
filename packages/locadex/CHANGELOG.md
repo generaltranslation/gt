@@ -1,5 +1,11 @@
 # locadex
 
+## 0.1.15
+
+### Patch Changes
+
+- [#416](https://github.com/generaltranslation/gt/pull/416) [`1542aad`](https://github.com/generaltranslation/gt/commit/1542aad7156ee4f178d7c0564681f65074ec9054) Thanks [@brian-lou](https://github.com/brian-lou)! - Upgrade to claude-code typescript sdk
+
 ## 0.1.14
 
 ### Patch Changes
