@@ -1,6 +1,5 @@
 import { NodePath } from '@babel/traverse';
 import { Updates } from '../../../types/index.js';
-import { splitStringToContent } from 'generaltranslation';
 import * as t from '@babel/types';
 import { isStaticExpression } from '../evaluateJsx.js';
 import {
@@ -62,8 +61,6 @@ export function parseStrings(
                 arg.type === 'StringLiteral'
                   ? arg.value
                   : arg.quasis[0].value.raw;
-              // split the string into content (same as runtime behavior)
-              const content = splitStringToContent(source);
 
               // get metadata and id from options
               const options = tPath.parent.arguments[1];
@@ -99,8 +96,8 @@ export function parseStrings(
               }
 
               updates.push({
-                dataFormat: 'JSX',
-                source: content,
+                dataFormat: 'ICU',
+                source,
                 metadata,
               });
             } else if (t.isTemplateLiteral(arg)) {

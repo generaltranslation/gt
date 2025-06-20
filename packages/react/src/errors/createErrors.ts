@@ -1,6 +1,6 @@
-// ---- ERRORS ---- //
-
 import { getLocaleProperties } from 'generaltranslation';
+
+// ---- ERRORS ---- //
 
 export const projectIdMissingError =
   'gt-react Error: General Translation cloud services require a project ID! Find yours at generaltranslation.com/dashboard.';
@@ -96,7 +96,7 @@ export const createUnsupportedLocaleWarning = (
 ) => {
   return (
     `You are trying to switch to "${newLocale}" which is not supported.  ` +
-    `Update the list of supported locales through your dashboard or your gt.config.json file if you are using a config file. ` +
+    `Update the list of supported locales through your dashboard or your config.json file if you are using a config file. ` +
     `Falling back to "${validatedLocale}".`
   );
 };

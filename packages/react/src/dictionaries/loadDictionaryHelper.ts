@@ -6,22 +6,21 @@ export default async function loadDictionaryHelper(
   locale: string,
   loadDictionary: CustomLoader
 ): Promise<Dictionary | undefined> {
-  let result: Dictionary | undefined;
-
-  // Check for [locale].json file
-  try {
-    result = await loadDictionary(locale);
-  } catch {}
-
-  // Check the simplified locale name (e.g. 'en' instead of 'en-US')
-  const languageCode = getLocaleProperties(locale)?.languageCode;
-  if (languageCode && languageCode !== locale) {
+  const locales = Array.from(
+    new Set([locale, getLocaleProperties(locale).languageCode])
+  );
+  for (const currentLocale of locales) {
     try {
-      result = await loadDictionary(languageCode);
-    } catch (error) {
-      console.warn(dictionaryMissingWarning, error);
+      const result = await loadDictionary(currentLocale);
+      if (result) {
+        return result;
+      }
+    } catch {
+      /* empty */
     }
   }
+  // eslint-disable-next-line no-console
+  console.warn(dictionaryMissingWarning);
 
-  return result;
+  return undefined;
 }

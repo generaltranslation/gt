@@ -11,10 +11,11 @@ import {
   warnVariablePropSync,
   warnNestedTComponent,
 } from '../../../console/index.js';
-import { isAcceptedPluralForm } from 'generaltranslation/internal';
+import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
 import { handleChildrenWhitespace } from '../trimJsxStringChildren.js';
 import { isStaticExpression } from '../evaluateJsx.js';
 import { VARIABLE_COMPONENTS } from './constants.js';
+import { Metadata } from 'generaltranslation/types';
 
 /**
  * Builds a JSX tree from a given node, recursively handling children.
@@ -34,7 +35,17 @@ export function buildJSXTree(
   errors: string[],
   file: string,
   insideT: boolean
-): any {
+):
+  | {
+      expression?: boolean;
+      result?: string;
+      type?: string;
+      props?: {
+        children?: any;
+      };
+    }
+  | string
+  | null {
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
     if (t.isJSXEmptyExpression(node.expression)) {
@@ -231,7 +242,7 @@ export function parseJSXElement(
     return;
   }
   const componentErrors: string[] = [];
-  const componentObj: any = { props: {} };
+  const metadata: Metadata = {};
 
   // We'll track this flag to know if any unwrapped {variable} is found in children
   const unwrappedExpressions: string[] = [];
@@ -245,7 +256,7 @@ export function parseJSXElement(
     if (attr.value) {
       // If it's a plain string literal like id="hello"
       if (t.isStringLiteral(attr.value)) {
-        componentObj.props[attrName] = attr.value.value;
+        metadata[attrName] = attr.value.value;
       }
       // If it's an expression container like id={"hello"}, id={someVar}, etc.
       else if (t.isJSXExpressionContainer(attr.value)) {
@@ -267,21 +278,21 @@ export function parseJSXElement(
           }
           // Use the static value if available
           if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
-            componentObj.props[attrName] = staticAnalysis.value;
+            metadata[attrName] = staticAnalysis.value;
           } else {
             // Only store the code if we couldn't extract a static value
-            componentObj.props[attrName] = code;
+            metadata[attrName] = code;
           }
         } else {
           // For other attributes that aren't id or context
-          componentObj.props[attrName] = code;
+          metadata[attrName] = code;
         }
       }
     }
   });
 
   // Build the JSX tree for this component
-  const initialTree = buildJSXTree(
+  const treeResult = buildJSXTree(
     importAliases,
     node,
     unwrappedExpressions,
@@ -289,20 +300,31 @@ export function parseJSXElement(
     componentErrors,
     file,
     false
-  )?.props?.children;
+  );
+
+  let jsxTree = undefined;
+  if (treeResult && typeof treeResult === 'object') {
+    jsxTree = treeResult.props?.children;
+  } else {
+    jsxTree = treeResult;
+  }
 
   if (componentErrors.length > 0) {
     errors.push(...componentErrors);
     return;
   }
 
-  const whitespaceHandledTree = handleChildrenWhitespace(initialTree);
+  // Handle whitespace in children
+  const whitespaceHandledTree = handleChildrenWhitespace(jsxTree);
 
-  const tree = addGTIdentifierToSyntaxTree(whitespaceHandledTree);
+  // Add GT identifiers to the tree
+  let minifiedTree = addGTIdentifierToSyntaxTree(whitespaceHandledTree);
+  minifiedTree =
+    Array.isArray(minifiedTree) && minifiedTree.length === 1
+      ? minifiedTree[0]
+      : minifiedTree;
 
-  componentObj.tree = tree.length === 1 ? tree[0] : tree;
-
-  const id = componentObj.props.id;
+  const id = metadata.id;
 
   // If we found an unwrapped expression, skip
   if (unwrappedExpressions.length > 0) {
@@ -320,7 +342,7 @@ export function parseJSXElement(
   // <T> is valid here
   updates.push({
     dataFormat: 'JSX',
-    source: componentObj.tree,
-    metadata: componentObj.props,
+    source: minifiedTree,
+    metadata,
   });
 }

@@ -3,10 +3,7 @@ import {
   DictionaryEntry,
   getDictionaryEntry as getEntry,
 } from 'gt-react/internal';
-import {
-  customLoadDictionaryWarning,
-  dictionaryNotFoundWarning,
-} from '../errors/createErrors';
+import { customLoadDictionaryWarning } from '../errors/createErrors';
 import resolveDictionaryLoader from '../loaders/resolveDictionary';
 import defaultWithGTConfigProps from '../config-dir/props/defaultWithGTConfigProps';
 import { getLocaleProperties } from 'generaltranslation';

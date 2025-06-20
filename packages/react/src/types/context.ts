@@ -1,15 +1,21 @@
 import {
-  TranslationsObject,
+  Translations,
   RenderMethod,
   InlineTranslationOptions,
   DictionaryTranslationOptions,
+  TranslationsStatus,
 } from './types';
-import { TranslateContentCallback, TranslateChildrenCallback } from './runtime';
+import {
+  TranslateIcuCallback,
+  TranslateChildrenCallback,
+  TranslateI18nextCallback,
+} from './runtime';
 import { GT } from 'generaltranslation';
 
 export type GTContextType = {
   gt: GT;
-  registerContentForTranslation: TranslateContentCallback;
+  registerI18nextForTranslation: TranslateI18nextCallback;
+  registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
   _internalUseGTFunction: (
     string: string,
@@ -24,7 +30,8 @@ export type GTContextType = {
   locales: string[];
   setLocale: (locale: string) => void;
   defaultLocale: string;
-  translations: TranslationsObject | null;
+  translations: Translations | null;
+  translationsStatus: TranslationsStatus | null;
   translationRequired: boolean;
   dialectTranslationRequired: boolean;
   renderSettings: { method: RenderMethod; timeout?: number };

@@ -1,5 +1,27 @@
+import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
+import IntlMessageFormat from 'intl-messageformat';
+
+/**
+ * Formats a message according to the specified locales and options.
+ *
+ * @param {string} message - The message to format.
+ * @param {string | string[]} [locales='en'] - The locales to use for formatting.
+ * @param {Record<string, any>} [variables={}] - The variables to use for formatting.
+ * @returns {string} The formatted message.
+ * @internal
+ *
+ * Will fallback to an empty string
+ */
+export function _formatMessage(
+  message: string,
+  locales: string | string[] = libraryDefaultLocale,
+  variables: FormatVariables = {}
+): string {
+  const messageFormat = new IntlMessageFormat(message, locales);
+  return messageFormat.format(variables)?.toString() ?? '';
+}
 
 /**
  * Formats a number according to the specified locales and options.

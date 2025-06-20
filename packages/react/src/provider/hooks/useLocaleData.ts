@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useDetermineLocale } from './useDetermineLocale';
-import { isSameLanguage, requiresTranslation } from 'generaltranslation';
+import { requiresTranslation, isSameLanguage } from 'generaltranslation';
 
 export function useLocaleData({
   _locale,

@@ -9,11 +9,11 @@ const renderVariable: RenderVariable = ({
   variableValue,
   variableOptions,
 }) => {
-  if (variableType === 'number') {
+  if (variableType === 'n') {
     return <Num options={variableOptions}>{variableValue}</Num>;
-  } else if (variableType === 'datetime') {
+  } else if (variableType === 'd') {
     return <DateTime options={variableOptions}>{variableValue}</DateTime>;
-  } else if (variableType === 'currency') {
+  } else if (variableType === 'c') {
     return <Currency options={variableOptions}>{variableValue}</Currency>;
   }
   return <Var>{variableValue}</Var>;

@@ -1,6 +1,6 @@
-import { formatNum } from 'generaltranslation';
 import getI18NConfig from '../config-dir/getI18NConfig';
 import { useLocale } from '../request/getLocale';
+import React from 'react';
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
@@ -15,24 +15,26 @@ import { useLocale } from '../request/getLocale';
  * </Num>
  * ```
  *
- * @param {any} [children] - Optional content (typically a number) to render inside the component.
+ * @param {number | string | null | undefined} children - Content to render inside the number component.
+ * @param {string[]} [locales] - Optional locales to use for number formatting. If not provided, the library will default to the user's locale.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
- * @returns {Promise<React.JSX.Element>} The formatted number component.
+ * @returns {React.JSX.Element} The formatted number component.
  */
 function Num({
   children,
-  name,
   locales,
   options = {},
 }: {
-  children?: React.ReactNode;
+  children: number | string | null | undefined;
   name?: string;
   options?: Intl.NumberFormatOptions;
   locales?: string[];
-}): React.JSX.Element {
+}): React.JSX.Element | null {
+  if (!children) return null;
   if (!locales) {
     locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }
+  const gt = getI18NConfig().getGTClass();
 
   // Determine the value to be used
   const renderedValue =
@@ -41,7 +43,7 @@ function Num({
   // Format the number according to the locale
   const formattedValue =
     typeof renderedValue === 'number'
-      ? formatNum(renderedValue, { locales, ...options })
+      ? gt.formatNum(renderedValue, { locales, ...options })
       : renderedValue;
 
   return <>{formattedValue}</>;

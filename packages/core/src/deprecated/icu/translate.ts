@@ -1,9 +1,4 @@
-import {
-  Content,
-  ContentTranslationResult,
-  IcuTranslationResult,
-  TranslationError,
-} from '../../types';
+import { IcuTranslationResult, TranslationError } from '../../types';
 import { maxTimeout } from '../../settings/settings';
 import { translateIcuUrl } from '../../settings/settingsUrls';
 

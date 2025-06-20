@@ -44,7 +44,7 @@ export default function Home({ user }) {
 
 | Parameter       | Description                                      | Type    | Optional | Default         |
 |-----------------|--------------------------------------------------|---------|----------|-----------------|
-| `--src <path>`           | The source directory to scan                     | `string`  | `true`     |  `./src && ./app && ./pages && ./components` |
+| `--src <paths>`           | Space-separated list of glob patterns to match source files. Should be relative to root directory.                     | `string`  | `true`     |  `./src && ./app && ./pages && ./components` |
 | `--config <path>`        | The path to the GT config file                   | `string`  | `true`     | `"gt.config.json"` |
 | `--disable-ids`   | Disable the automatic generation of IDs for `<T>` components         | `flag` | `true`    | `false`           |
 | `--disable-formatting`   | Disable auto-formatting         | `flag` | `true`    | `false`           |
