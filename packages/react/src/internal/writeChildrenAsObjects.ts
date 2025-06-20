@@ -177,6 +177,5 @@ export default function writeChildrenAsObjects(
   const result = Array.isArray(children)
     ? children.map(handleSingleChild)
     : handleSingleChild(children);
-  console.log('result', JSON.stringify(result, null, 2));
   return result;
 }

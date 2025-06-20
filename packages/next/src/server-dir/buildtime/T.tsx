@@ -113,7 +113,6 @@ async function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
-    console.log('hash', hash);
     translationEntry = translations?.[hash];
     translationsStatusEntry = translationsStatus?.[hash];
   }
