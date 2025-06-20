@@ -25,6 +25,10 @@
     "build:clean": {
       "dependsOn": ["^build:clean"],
       "outputs": ["dist/**"]
+    },
+    "build:release": {
+      "dependsOn": ["^build:release"],
+      "outputs": ["dist/**"]
     }
   }
 }
