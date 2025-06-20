@@ -108,9 +108,9 @@ export default function addGTIdentifierToSyntaxTree(
         const variableType = minifyVariableType(type);
         const variableName = getVariableName(props, type, indexObject.index);
         return {
-          v: variableType,
           i: indexObject.index,
           k: variableName,
+          v: variableType,
         };
       }
 

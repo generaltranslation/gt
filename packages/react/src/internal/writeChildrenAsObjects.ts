@@ -86,11 +86,6 @@ const handleSingleChildElement = (
   child: TaggedElement
 ): JsxElement | Variable => {
   const { props } = child;
-  console.log(
-    'getTagName',
-    getTagName(child),
-    JSON.stringify(child.type, null, 2)
-  );
   const minifiedElement: JsxElement = {
     t: getTagName(child),
   };
@@ -106,9 +101,9 @@ const handleSingleChildElement = (
       );
       const variableName = getVariableName(props, variableType);
       return {
-        v: variableType,
-        k: variableName,
         i: generaltranslation.id,
+        k: variableName,
+        v: variableType,
       };
     }
 

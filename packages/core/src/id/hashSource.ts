@@ -64,9 +64,10 @@ type SanitizedVariable = Omit<Variable, 'i'>;
 
 type SanitizedElement = {
   b?: {
-    [k: string]: SanitizedChildren;
+    [k: string]: SanitizedChildren; // Branches
   };
-  c?: SanitizedChildren;
+  c?: SanitizedChildren; // Children
+  t?: string; // Branch Transformation
 };
 type SanitizedChild = SanitizedElement | SanitizedVariable | string;
 type SanitizedChildren = SanitizedChild | SanitizedChild[];
@@ -80,8 +81,11 @@ type SanitizedChildren = SanitizedChild | SanitizedChild[];
  */
 const sanitizeChild = (child: JsxChild): SanitizedChild => {
   if (child && typeof child === 'object') {
+    const newChild: SanitizedChild = {};
+    if ('c' in child && child.c) {
+      newChild.c = sanitizeJsxChildren(child.c);
+    }
     if ('d' in child) {
-      const newChild: SanitizedChild = {};
       const generaltranslation = child?.d;
       if (generaltranslation?.b) {
         // The only thing that prevents sanitizeJsx from being stable is
@@ -94,10 +98,9 @@ const sanitizeChild = (child: JsxChild): SanitizedChild => {
           ])
         );
       }
-      if (child?.c) {
-        newChild.c = sanitizeJsxChildren(child.c);
+      if (generaltranslation?.t) {
+        newChild.t = generaltranslation.t;
       }
-      return newChild;
     }
     if (isVariable(child)) {
       return {
@@ -107,6 +110,7 @@ const sanitizeChild = (child: JsxChild): SanitizedChild => {
         }),
       };
     }
+    return newChild;
   }
   return child;
 };
