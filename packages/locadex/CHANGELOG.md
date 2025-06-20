@@ -1,5 +1,11 @@
 # locadex
 
+## 0.1.17
+
+### Patch Changes
+
+- [#420](https://github.com/generaltranslation/gt/pull/420) [`cd7e2f0`](https://github.com/generaltranslation/gt/commit/cd7e2f015b29f101ba43619b0ea449db53a496da) Thanks [@SamEggert](https://github.com/SamEggert)! - Add --local-translations flag to 'locadex auto' command
+
 ## 0.1.15
 
 ### Patch Changes
