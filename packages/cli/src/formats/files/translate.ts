@@ -146,6 +146,7 @@ export async function translateFiles(
 
     // Check for remaining translations
     await checkFileTranslations(
+      options.projectId,
       options.apiKey,
       options.baseUrl,
       data,
@@ -261,6 +262,7 @@ async function processInitialTranslations(
     if (batchFiles.length > 1) {
       const batchResult = await downloadFileBatch(
         options.baseUrl,
+        options.projectId,
         options.apiKey,
         batchFiles.map(({ translationId, outputPath }: any) => ({
           translationId,
@@ -282,6 +284,7 @@ async function processInitialTranslations(
       const file = batchFiles[0];
       const result = await downloadFile(
         options.baseUrl,
+        options.projectId,
         options.apiKey,
         file.translationId,
         file.outputPath

@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { RetrievedTranslations } from '../types/api.js';
 import { logError } from '../console/logging.js';
+import { getAuthHeaders } from '../utils/headers.js';
 
 /**
  * Fetches translations from the API and saves them to a local directory
@@ -12,6 +13,7 @@ import { logError } from '../console/logging.js';
  */
 export async function fetchTranslations(
   baseUrl: string,
+  projectId: string,
   apiKey: string,
   versionId: string
 ): Promise<RetrievedTranslations> {
@@ -22,7 +24,7 @@ export async function fetchTranslations(
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...(apiKey && { 'x-gt-api-key': apiKey }),
+        ...getAuthHeaders(projectId, apiKey),
       },
     }
   );
