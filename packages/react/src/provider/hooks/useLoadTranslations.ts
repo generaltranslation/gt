@@ -44,13 +44,14 @@ export function useLoadTranslations({
     useState<TranslationsStatus | null>(null);
 
   // Reset translations if locale changes (null to trigger a new cache fetch)
-  useEffect(
-    () =>
-      setTranslations(
-        translationRequired && loadTranslationsType !== 'disabled' ? null : {}
-      ),
-    [locale, loadTranslationsType]
-  );
+  useEffect(() => {
+    setTranslations(
+      translationRequired && loadTranslationsType !== 'disabled' ? null : {}
+    );
+    setTranslationsStatus(
+      translationRequired && loadTranslationsType !== 'disabled' ? null : {}
+    );
+  }, [locale, loadTranslationsType]);
 
   useEffect(() => {
     // Early return if no need to translate

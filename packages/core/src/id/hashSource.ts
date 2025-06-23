@@ -57,7 +57,8 @@ export function hashSource(
     ...(context && { context }),
     ...(dataFormat && { dataFormat }),
   };
-  return hashFunction(stringify(sanitizedData));
+  const stringifiedData = stringify(sanitizedData);
+  return hashFunction(stringifiedData);
 }
 
 type SanitizedVariable = Omit<Variable, 'i'>;

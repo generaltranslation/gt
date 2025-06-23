@@ -37,6 +37,11 @@ function Num({
   let renderedValue: string | number =
     typeof children === 'string' ? parseFloat(children) : children;
   if (typeof renderedValue === 'number') {
+    if (!locales) {
+      locales ||= [];
+      if (context?.locale) locales.push(context.locale);
+      if (context?.defaultLocale) locales.push(context.defaultLocale);
+    }
     // Using Intl.NumberFormat for consistent number formatting
     renderedValue = gt.formatNum(renderedValue, { locales, ...options });
   }

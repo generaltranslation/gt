@@ -32,6 +32,11 @@ function DateTime({
   const context = useContext(GTContext);
   const gt = context?.gt || new GT();
 
+  if (!locales) {
+    locales ||= [];
+    if (context?.locale) locales.push(context.locale);
+    if (context?.defaultLocale) locales.push(context.defaultLocale);
+  }
   const result = gt
     .formatDateTime(children, { locales, ...options })
     .replace(/[\u200F\u202B\u202E]/g, '');

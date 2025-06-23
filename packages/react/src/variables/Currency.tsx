@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { GT } from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
@@ -37,6 +38,11 @@ function Currency({
   let renderedValue: string | number =
     typeof children === 'string' ? parseFloat(children) : children;
   if (typeof renderedValue === 'number') {
+    if (!locales) {
+      locales ||= [];
+      if (context?.locale) locales.push(context.locale);
+      if (context?.defaultLocale) locales.push(context.defaultLocale);
+    }
     // Format the value using Intl.NumberFormat
     renderedValue = gt.formatCurrency(renderedValue, currency, {
       locales,

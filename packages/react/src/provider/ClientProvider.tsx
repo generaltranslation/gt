@@ -101,8 +101,8 @@ export default function ClientProvider({
   // Fetch additional translations and queue them for merging
   useEffect(() => {
     setTranslations((prev) => ({ ...initialTranslations, ...prev }));
-    setTranslationsStatus(
-      Object.keys(initialTranslations).reduce(
+    setTranslationsStatus((prev) => ({
+      ...Object.keys(initialTranslations).reduce(
         (acc: TranslationsStatus, hash) => {
           acc[hash] = {
             status: 'success',
@@ -110,8 +110,9 @@ export default function ClientProvider({
           return acc;
         },
         {}
-      )
-    );
+      ),
+      ...prev,
+    }));
   }, [initialTranslations]);
 
   // ---------- TRANSLATION METHODS ---------- //
@@ -129,7 +130,7 @@ export default function ClientProvider({
     devApiKey,
     runtimeUrl,
     setTranslations,
-    setTranslationsStatus: setTranslationsStatus,
+    setTranslationsStatus,
     defaultLocale,
     renderSettings,
     runtimeTranslationEnabled,
