@@ -2,16 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'os';
 import { build, BuildOptions } from 'esbuild';
-import { Options, Updates } from '../../types/index.js';
+import { Updates } from '../../types/index.js';
 import flattenDictionary from '../utils/flattenDictionary.js';
-import { splitStringToContent } from 'generaltranslation';
 import loadJSON from '../../fs/loadJSON.js';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata.js';
-import { logError, logErrorAndExit } from '../../console/logging.js';
+import { logError } from '../../console/logging.js';
 
 export default async function createDictionaryUpdates(
-  options: Options,
   dictionaryPath: string,
   esbuildConfig?: BuildOptions
 ): Promise<Updates> {
@@ -62,22 +60,21 @@ export default async function createDictionaryUpdates(
       metadata: props, // context, etc.
     } = getEntryAndMetadata(dictionary[id]);
 
-    const source = splitStringToContent(entry);
     const context = props?.context;
     const metadata: Record<string, any> = {
       id,
       ...(context && { context }),
       // This hash isn't actually used by the GT API, just for consistency sake
-      hash: hashJsxChildren({
-        source,
+      hash: hashSource({
+        source: entry,
         ...(context && { context }),
         ...(id && { id }),
-        dataFormat: 'JSX',
+        dataFormat: 'ICU',
       }),
     };
     updates.push({
-      dataFormat: 'JSX',
-      source,
+      dataFormat: 'ICU',
+      source: entry,
       metadata,
     });
   }

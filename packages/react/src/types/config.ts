@@ -1,7 +1,7 @@
 // Type definition for the params extracted from gt.config.json
 
 import { RenderMethod } from '../internal';
-import { Dictionary, TranslationsObject, CustomLoader } from './types';
+import { Dictionary, Translations, CustomLoader } from './types';
 import { CustomMapping } from 'generaltranslation/types';
 
 export type GTConfig = {
@@ -39,7 +39,7 @@ export type GTProviderProps = {
   _versionId?: string;
   ssr?: boolean;
   localeCookieName?: string;
-  translations?: TranslationsObject | null;
+  translations?: Translations | null;
   loadDictionary?: CustomLoader;
   loadTranslations?: CustomLoader;
   config?: GTConfig;
@@ -51,7 +51,7 @@ export type GTProviderProps = {
 export type ClientProviderProps = {
   children: any;
   dictionary: Dictionary;
-  initialTranslations: TranslationsObject;
+  initialTranslations: Translations;
   locale: string;
   locales: string[];
   _versionId?: string;

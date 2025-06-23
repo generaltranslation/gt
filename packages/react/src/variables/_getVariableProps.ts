@@ -1,19 +1,38 @@
-import { VariableProps } from '../types/types';
+import { VariableTransformationSuffix } from 'generaltranslation/types';
+import { GTTag, VariableProps } from '../types/types';
 import getVariableName from './getVariableName';
+import { minifyVariableType } from 'generaltranslation/internal';
 
-export default function getVariableProps(props: {
-  'data-_gt'?: {
+type VariableElementProps = {
+  'data-_gt': GTTag & {
     transformation: 'variable';
-    [key: string]: any;
   };
-  [key: string]: any;
-}): VariableProps {
-  const variableType: 'variable' | 'number' | 'datetime' | 'currency' =
+  [key: string]: unknown;
+};
+
+export function isVariableElementProps(
+  props: unknown
+): props is VariableElementProps {
+  return (
+    typeof props === 'object' &&
+    !!props &&
+    'data-_gt' in props &&
+    typeof props['data-_gt'] === 'object' &&
+    !!props['data-_gt'] &&
+    'transformation' in props['data-_gt'] &&
+    props['data-_gt']?.transformation === 'variable'
+  );
+}
+
+export default function getVariableProps(
+  props: VariableElementProps
+): VariableProps {
+  const variableType: VariableTransformationSuffix =
     props['data-_gt']?.variableType || 'variable';
 
   const result: VariableProps = {
     variableName: getVariableName(props, variableType),
-    variableType,
+    variableType: minifyVariableType(variableType),
     variableValue: (() => {
       if (typeof props.value !== 'undefined') return props.value;
       if (typeof props['data-_gt-unformatted-value'] !== 'undefined')
@@ -23,8 +42,12 @@ export default function getVariableProps(props: {
     })(),
     variableOptions: (() => {
       const variableOptions = {
-        ...(props.currency && { currency: props.currency }),
-        ...(props.options && { ...props.options }),
+        ...(typeof props.currency !== 'undefined' && {
+          currency: props.currency,
+        }),
+        ...(typeof props.options !== 'undefined' && {
+          options: props.options,
+        }),
       };
       if (Object.keys(variableOptions).length) return variableOptions;
       if (typeof props['data-_gt-variable-options'] === 'string')

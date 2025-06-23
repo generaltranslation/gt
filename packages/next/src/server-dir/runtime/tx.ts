@@ -1,11 +1,8 @@
-import {
-  renderContentToString,
-  splitStringToContent,
-} from 'generaltranslation';
+import { formatMessage } from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
 import { createStringTranslationError } from '../../errors/createErrors';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import { RuntimeTranslationOptions } from 'gt-react/internal';
 
 /**
@@ -18,7 +15,6 @@ import { RuntimeTranslationOptions } from 'gt-react/internal';
  *
  * @param {string} content - The content string that needs to be translated.
  * @param {Object} [options] - Translation options.
- * @param {string} [options.id] - A unique identifier for the content, used for caching and fetching translations.
  * @param {string} [options.locale] - The target locale for translation. Defaults to the current locale if not provided.
  * @param {string} [options.context] - Additional context for the translation process, which may influence the translation's outcome.
  * @param {Object} [options.variables] - An optional map of variables to be injected into the translated content.
@@ -41,10 +37,10 @@ import { RuntimeTranslationOptions } from 'gt-react/internal';
  * const translation = await tx("The price is {price}", { locale: 'es-MX', variables: { price: 29.99 } });
  */
 export default async function tx(
-  string: string,
+  message: string,
   options: RuntimeTranslationOptions = {}
 ): Promise<string> {
-  if (!string || typeof string !== 'string') return '';
+  if (!message || typeof message !== 'string') return '';
 
   // ----- SET UP ----- //
 
@@ -52,37 +48,34 @@ export default async function tx(
   const locale = options.locale || (await getLocale());
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
-  const source = splitStringToContent(string); // parse content
 
   // ----- DEFINE RENDER FUNCTION ----- //
 
-  const renderContent = (content: any, locales: string[]) => {
-    return renderContentToString(
-      content,
+  const renderContent = (message: string, locales: string[]) => {
+    return formatMessage(message, {
       locales,
-      options.variables,
-      options.variablesOptions
-    );
+      variables: options.variables,
+    });
   };
 
   // ----- CHECK IF TRANSLATION REQUIRED ----- //
 
-  if (!translationRequired) return renderContent(source, [defaultLocale]);
+  if (!translationRequired) return renderContent(message, [defaultLocale]);
 
   // ----- CALCULATE HASH ----- //
 
-  const hash = hashJsxChildren({
-    source,
+  const hash = hashSource({
+    source: message,
     ...(options?.context && { context: options.context }),
-    ...(options?.id && { id: options.id }),
-    dataFormat: 'JSX',
+    dataFormat: 'ICU',
   });
 
   // ----- CHECK LOCAL CACHE ----- //
 
   const recentTranslations = I18NConfig.getRecentTranslations(locale);
-  if (recentTranslations?.[hash]?.state === 'success') {
-    return renderContent(recentTranslations[hash].target, [
+  const translationsStatus = I18NConfig.getCachedTranslationsStatus(locale);
+  if (translationsStatus?.[hash]?.status === 'success') {
+    return renderContent(recentTranslations[hash] as string, [
       locale,
       defaultLocale,
     ]);
@@ -92,14 +85,14 @@ export default async function tx(
 
   // New translation required
   try {
-    const target = await I18NConfig.translateContent({
-      source,
+    const target = (await I18NConfig.translateIcu({
+      source: message,
       targetLocale: locale,
       options: { ...options, hash },
-    });
+    })) as string;
     return renderContent(target, [locale, defaultLocale]);
   } catch (error) {
-    console.error(createStringTranslationError(string, options.id), error);
-    return renderContent(source, [defaultLocale]);
+    console.error(createStringTranslationError(message), error);
+    return renderContent(message, [defaultLocale]);
   }
 }

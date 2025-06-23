@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  isValidLocale,
   determineLocale,
+  isValidLocale,
   standardizeLocale,
 } from 'generaltranslation';
 import { NextURL } from 'next/dist/server/web/next-url';

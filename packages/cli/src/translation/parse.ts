@@ -34,7 +34,7 @@ export async function createUpdates(
     if (sourceDictionary.endsWith('.json')) {
       updates = [
         ...updates,
-        ...(await createDictionaryUpdates(options as any, sourceDictionary)),
+        ...(await createDictionaryUpdates(sourceDictionary)),
       ];
     } else {
       let esbuildConfig;
@@ -52,11 +52,7 @@ export async function createUpdates(
       }
       updates = [
         ...updates,
-        ...(await createDictionaryUpdates(
-          options as any,
-          sourceDictionary,
-          esbuildConfig
-        )),
+        ...(await createDictionaryUpdates(sourceDictionary, esbuildConfig)),
       ];
     }
   }

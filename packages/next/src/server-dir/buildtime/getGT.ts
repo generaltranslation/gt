@@ -1,10 +1,7 @@
-import {
-  renderContentToString,
-  splitStringToContent,
-} from 'generaltranslation';
+import { formatMessage } from 'generaltranslation';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../server';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import {
   createStringTranslationError,
   translationLoadingWarning,
@@ -22,7 +19,7 @@ import use from '../../utils/use';
  * console.log(t('Hello, world!')); // Translates 'Hello, world!'
  */
 export async function getGT(): Promise<
-  (string: string, options?: InlineTranslationOptions) => string
+  (message: string, options?: InlineTranslationOptions) => string
 > {
   // ---------- SET UP ---------- //
 
@@ -35,7 +32,9 @@ export async function getGT(): Promise<
     ? await I18NConfig.getCachedTranslations(locale)
     : undefined;
 
-  const renderSettings = I18NConfig.getRenderSettings();
+  const translationsStatus = translationRequired
+    ? I18NConfig.getCachedTranslationsStatus(locale)
+    : undefined;
 
   // ---------- THE t() METHOD ---------- //
 
@@ -50,77 +49,74 @@ export async function getGT(): Promise<
    * @example
    * t('My name is {name}', { variables: { name: 'John' } }); // Translates 'My name is {name}' and replaces {name} with 'John'
    */
-  const t = (string: string, options: InlineTranslationOptions = {}) => {
+  const t = (message: string, options: InlineTranslationOptions = {}) => {
     // ----- SET UP ----- //
-
     // Validate content
-    if (!string || typeof string !== 'string') return '';
-
-    // Parse content
-    const source = splitStringToContent(string);
+    if (!message || typeof message !== 'string') return '';
 
     // Render Method
-    const renderContent = (content: any, locales: string[]) => {
-      return renderContentToString(
-        content,
+    const renderContent = (message: string, locales: string[]) => {
+      return formatMessage(message, {
         locales,
-        options.variables,
-        options.variablesOptions
-      );
+        variables: options.variables,
+      });
     };
 
     // Check: translation required
-    if (!translationRequired) return renderContent(source, [defaultLocale]);
+    if (!translationRequired) return renderContent(message, [defaultLocale]);
 
     // ----- GET TRANSLATION ----- //
 
     let translationEntry = undefined;
+    let translationsStatusEntry = undefined;
 
     // Use id to index
     if (options?.id) {
       translationEntry = translations?.[options?.id];
+      translationsStatusEntry = translationsStatus?.[options?.id];
     }
 
     // Calculate hash
     let hash = '';
     const calcHash = () =>
-      hashJsxChildren({
-        source,
+      hashSource({
+        source: message,
         ...(options?.context && { context: options?.context }),
         ...(options?.id && { id: options?.id }),
-        dataFormat: 'JSX',
+        dataFormat: 'ICU',
       });
 
     // Use hash to index
     if (!translationEntry) {
       hash = calcHash();
       translationEntry = translations?.[hash];
+      translationsStatusEntry = translationsStatus?.[hash];
     }
 
     // ----- RENDER TRANSLATION ----- //
 
     // If a translation already exists
-    if (translationEntry?.state === 'success')
-      return renderContent(translationEntry.target, [locale, defaultLocale]);
+    if (translationsStatusEntry?.status === 'success')
+      return renderContent(translationEntry as string, [locale, defaultLocale]);
 
     // If a translation errored
-    if (translationEntry?.state === 'error')
-      return renderContent(source, [defaultLocale]);
+    if (translationsStatusEntry?.status === 'error')
+      return renderContent(message, [defaultLocale]);
 
     // ----- CREATE TRANSLATION ----- //
     // Since this is buildtime string translation, it's dev only
 
     if (!I18NConfig.isDevelopmentApiEnabled()) {
-      console.warn(createStringTranslationError(string, options?.id, 't'));
-      return renderContent(source, [defaultLocale]);
+      console.warn(createStringTranslationError(message, options?.id, 't'));
+      return renderContent(message, [defaultLocale]);
     }
 
     // Get hash
     if (!hash) hash = calcHash();
 
     // Translate on demand
-    I18NConfig.translateContent({
-      source,
+    I18NConfig.translateIcu({
+      source: message,
       targetLocale: locale,
       options: {
         ...(options?.context && { context: options?.context }),
@@ -133,7 +129,7 @@ export async function getGT(): Promise<
     console.warn(translationLoadingWarning);
 
     // Default is returning source, rather than returning a loading state
-    return renderContent(source, [defaultLocale]);
+    return renderContent(message, [defaultLocale]);
   };
 
   return t;

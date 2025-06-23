@@ -8,7 +8,6 @@ import {
   conflictingConfigurationBuildError,
   createUnsupportedLocalesWarning,
   devApiKeyIncludedInProductionError,
-  unresolvedGetLocaleBuildError,
   projectIdMissingWarn,
   standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,

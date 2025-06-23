@@ -11,7 +11,7 @@ import {
 } from 'gt-react/internal';
 import renderVariable from '../variables/renderVariable';
 import React from 'react';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 
 async function Resolver({ children }: { children: React.ReactNode }) {
   return await children;
@@ -94,7 +94,11 @@ async function T({
 
   // Get the translation entry object
   const translations = await translationsPromise;
+  const translationsStatus = translationRequired
+    ? I18NConfig.getCachedTranslationsStatus(locale)
+    : undefined;
   let translationEntry = translations?.[id || ''];
+  let translationsStatusEntry = translationsStatus?.[id || ''];
 
   let childrenAsObjects;
   let hash;
@@ -103,13 +107,14 @@ async function T({
     // Turns tagged children into objects
     // The hash is used to identify the translation
     childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    hash = hashJsxChildren({
+    hash = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
     translationEntry = translations?.[hash];
+    translationsStatusEntry = translationsStatus?.[hash];
   }
 
   // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
@@ -126,11 +131,11 @@ async function T({
   // ----- RENDER CACHED TRANSLATIONS ----- //
 
   // if we have a cached translation, render it
-  if (translationEntry?.state === 'success') {
-    return renderTranslation(translationEntry.target);
+  if (translationsStatusEntry?.status === 'success') {
+    return renderTranslation(translationEntry);
   }
 
-  if (translationEntry?.state === 'error') {
+  if (translationsStatusEntry?.status === 'error') {
     return renderDefault();
   }
 
@@ -148,7 +153,7 @@ async function T({
   const translationPromise = (async () => {
     try {
       childrenAsObjects ||= writeChildrenAsObjects(taggedChildren);
-      hash ||= hashJsxChildren({
+      hash ||= hashSource({
         source: childrenAsObjects,
         ...(context && { context }),
         ...(id && { id }),

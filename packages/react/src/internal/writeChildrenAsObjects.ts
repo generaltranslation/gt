@@ -1,12 +1,19 @@
 import getVariableName from '../variables/getVariableName';
+import { TaggedChild, TaggedChildren, TaggedElement } from '../types/types';
+import { isValidTaggedElement } from '../utils/utils';
+import {
+  JsxChild,
+  JsxChildren,
+  JsxElement,
+  minifyVariableType,
+} from 'generaltranslation/internal';
 import {
   GTProp,
-  TaggedChild,
-  TaggedChildren,
-  TaggedElement,
-} from '../types/types';
-import { isValidTaggedElement } from '../utils/utils';
-import { JsxChild, JsxChildren, JsxElement } from 'generaltranslation/internal';
+  HTML_CONTENT_PROPS,
+  HtmlContentPropKeysRecord,
+  Transformation,
+  Variable,
+} from 'generaltranslation/types';
 
 /**
  * Gets the tag name of a React element.
@@ -31,56 +38,122 @@ const getTagName = (child: TaggedElement): string => {
   if (props['data-_gt']?.id) return `C${props['data-_gt'].id}`;
   return 'function';
 };
+const createGTProp = (
+  transformation: Transformation,
+  props: Record<string, any>,
+  branches?: Record<string, TaggedChildren>
+): GTProp | undefined => {
+  // Add translatable HTML content props
+  let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce<GTProp>(
+    (acc, [minifiedName, fullName]) => {
+      if (props[fullName]) {
+        acc[minifiedName as keyof HtmlContentPropKeysRecord] = props[fullName];
+      }
+      return acc;
+    },
+    {}
+  );
 
-const handleSingleChildElement = (child: TaggedElement): JsxChild => {
-  const { type, props } = child;
-  const objectElement: JsxElement = {
-    type: getTagName(child),
-    props: {},
+  // Check if plural
+  if (transformation === 'plural' && branches) {
+    const newBranches: Record<string, JsxChildren> = {};
+    Object.entries(branches).forEach(
+      ([key, value]: [string, TaggedChildren]) => {
+        newBranches[key] = writeChildrenAsObjects(value);
+      }
+    );
+    newGTProp = { ...newGTProp, b: newBranches, t: 'p' };
+  }
+  if (transformation === 'branch' && branches) {
+    const newBranches: Record<string, JsxChildren> = {};
+    Object.entries(branches).forEach(
+      ([key, value]: [string, TaggedChildren]) => {
+        newBranches[key] = writeChildrenAsObjects(value);
+      }
+    );
+    newGTProp = { ...newGTProp, b: newBranches, t: 'b' };
+  }
+
+  return Object.keys(newGTProp).length ? newGTProp : undefined;
+};
+
+/**
+ * Handles a single child element.
+ * @param {TaggedElement} child - The child to handle.
+ * @returns {JsxElement | Variable} The minified element.
+ */
+const handleSingleChildElement = (
+  child: TaggedElement
+): JsxElement | Variable => {
+  const { props } = child;
+  const minifiedElement: JsxElement = {
+    t: getTagName(child),
   };
   if (props['data-_gt']) {
+    // Get generaltranslation props
     const generaltranslation = props['data-_gt'];
-    let newGTProp: GTProp = {
-      ...generaltranslation,
-    };
 
+    // Check if variable
     const transformation = generaltranslation.transformation;
     if (transformation === 'variable') {
       const variableType = generaltranslation.variableType || 'variable';
       const variableName = getVariableName(props, variableType);
+      const minifiedVariableType = minifyVariableType(variableType);
       return {
-        variable: variableType,
-        key: variableName,
-        id: generaltranslation.id,
+        i: generaltranslation.id,
+        k: variableName,
+        v: minifiedVariableType,
       };
     }
+
+    // Add id
+    minifiedElement.i = generaltranslation.id;
+
+    // Add GT prop
+    minifiedElement.d = createGTProp(
+      transformation as Transformation,
+      props,
+      generaltranslation.branches
+    );
+
+    // Add translatable HTML content props
+    let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce<GTProp>(
+      (acc, [minifiedName, fullName]) => {
+        if (props[fullName]) {
+          acc[minifiedName as keyof HtmlContentPropKeysRecord] =
+            props[fullName];
+        }
+        return acc;
+      },
+      {}
+    );
+
+    // Check if plural
     if (transformation === 'plural' && generaltranslation.branches) {
-      objectElement.type = 'Plural';
-      const newBranches: Record<string, any> = {};
+      const newBranches: Record<string, JsxChildren> = {};
       Object.entries(generaltranslation.branches).forEach(
-        ([key, value]: any) => {
+        ([key, value]: [string, TaggedChildren]) => {
           newBranches[key] = writeChildrenAsObjects(value);
         }
       );
-      newGTProp = { ...newGTProp, branches: newBranches };
+      newGTProp = { ...newGTProp, b: newBranches, t: 'p' };
     }
     if (transformation === 'branch' && generaltranslation.branches) {
-      objectElement.type = 'Branch';
-      const newBranches: Record<string, any> = {};
+      const newBranches: Record<string, JsxChildren> = {};
       Object.entries(generaltranslation.branches).forEach(
-        ([key, value]: any) => {
+        ([key, value]: [string, TaggedChildren]) => {
           newBranches[key] = writeChildrenAsObjects(value);
         }
       );
-      newGTProp = { ...newGTProp, branches: newBranches };
+      newGTProp = { ...newGTProp, b: newBranches, t: 'b' };
     }
 
-    objectElement.props['data-_gt'] = newGTProp;
+    minifiedElement.d = Object.keys(newGTProp).length ? newGTProp : undefined;
   }
   if (props.children) {
-    objectElement.props.children = writeChildrenAsObjects(props.children);
+    minifiedElement.c = writeChildrenAsObjects(props.children);
   }
-  return objectElement;
+  return minifiedElement;
 };
 
 const handleSingleChild = (child: TaggedChild): JsxChild => {
@@ -93,13 +166,15 @@ const handleSingleChild = (child: TaggedChild): JsxChild => {
 
 /**
  * Transforms children elements into objects, processing each child recursively if needed.
+ * TaggedChildren are transformed into JsxChildren
  * @param {Children} children - The children to process.
  * @returns {object} The processed children as objects.
  */
 export default function writeChildrenAsObjects(
   children: TaggedChildren
 ): JsxChildren {
-  return Array.isArray(children)
+  const result = Array.isArray(children)
     ? children.map(handleSingleChild)
     : handleSingleChild(children);
+  return result;
 }

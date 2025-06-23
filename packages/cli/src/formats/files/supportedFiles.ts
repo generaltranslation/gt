@@ -6,7 +6,7 @@ export const SUPPORTED_FILE_EXTENSIONS = [
   'js',
 ] as const;
 
-export const FILE_EXT_TO_FORMAT = {
+export const FILE_EXT_TO_EXT_LABEL = {
   json: 'JSON',
   mdx: 'MDX',
   md: 'Markdown',
