@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 1.2.31
+
+### Patch Changes
+
+- [#423](https://github.com/generaltranslation/gt/pull/423) [`0ed08c7`](https://github.com/generaltranslation/gt/commit/0ed08c7bb1e63c99296b74138e4d44b718681fc8) Thanks [@brian-lou](https://github.com/brian-lou)! - Add setting configuration options
+
 ## 1.2.30
 
 ### Patch Changes
