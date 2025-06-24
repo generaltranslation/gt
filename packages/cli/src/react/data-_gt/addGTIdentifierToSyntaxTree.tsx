@@ -103,6 +103,11 @@ export default function addGTIdentifierToSyntaxTree(
         type = '';
       }
 
+      // Convert a nested <T> into a fragment
+      if (props?.['_GT_INTERNAL_NESTED_T_COMPONENT']) {
+        type = '';
+      }
+
       // Variables
       if (Object.keys(defaultVariableNames).includes(type)) {
         const variableType = minifyVariableType(type);

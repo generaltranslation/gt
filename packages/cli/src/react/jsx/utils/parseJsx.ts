@@ -86,15 +86,14 @@ export function buildJSXTree(
     // Convert from alias to original name
     const componentType = importAliases[typeName ?? ''];
 
+    // Flag as a nested <T> component
     if (componentType === 'T' && insideT) {
-      // Add error: No nested <T> components are allowed
-      errors.push(
-        warnNestedTComponent(
-          file,
-          `${element.loc?.start?.line}:${element.loc?.start?.column}`
+      element.openingElement.attributes.push(
+        t.jsxAttribute(
+          t.jsxIdentifier('_GT_INTERNAL_NESTED_T_COMPONENT'),
+          t.jsxExpressionContainer(t.booleanLiteral(true))
         )
       );
-      return null;
     }
 
     // If this JSXElement is one of the recognized variable components,
