@@ -116,7 +116,6 @@ function renderTranslatedElement({
   });
 }
 
-// TODO: backwards compatibility
 export default function renderTranslatedChildren({
   source,
   target,

@@ -599,7 +599,6 @@ export default class I18NConfiguration {
         let errorCode = 500;
 
         const hash = request.metadata.hash;
-        // TODO: minify api response
         if (result && typeof result === 'object') {
           if ('translation' in result && result.translation) {
             // record translations

@@ -43,8 +43,8 @@ export default function addGTIdentifier(
     if (transformation) {
       const transformationParts = transformation.split('-');
       if (transformationParts[0] === 'translate') {
-        // TODO: turn transformation into a fragment here
-        throw new Error(createNestedTError(child));
+        // Nested <T> components, convert <T> into a fragment
+        result.transformation = 'fragment';
       }
       if (transformationParts[0] === 'variable') {
         result.variableType =
