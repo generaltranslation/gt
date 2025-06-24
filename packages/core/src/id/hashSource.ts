@@ -9,11 +9,13 @@ import isVariable from '../utils/isVariable';
 /**
  * Calculates a unique hash for a given string using sha256.
  *
+ * First 16 characters of hash, hex encoded.
+ *
  * @param {string} string - The string to be hashed.
  * @returns {string} - The resulting hash as a hexadecimal string.
  */
 export function hashString(string: string): string {
-  return CryptoJS.SHA256(string).toString(CryptoJS.enc.Hex);
+  return CryptoJS.SHA256(string).toString(CryptoJS.enc.Hex).slice(0, 16);
 }
 
 /**

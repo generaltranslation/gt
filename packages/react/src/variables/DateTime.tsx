@@ -28,8 +28,8 @@ function DateTime({
   locales?: string[];
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
 }): React.JSX.Element | null {
-  if (!children) return null;
   const context = useContext(GTContext);
+  if (!children) return null;
   const gt = context?.gt || new GT();
 
   if (!locales) {

@@ -30,8 +30,8 @@ function Num({
   locales?: string[];
   options?: Intl.NumberFormatOptions; // Optional options for the number formatting
 }): React.JSX.Element | null {
-  if (!children) return null;
   const context = useContext(GTContext);
+  if (!children) return null;
   const gt = context?.gt || new GT();
 
   let renderedValue: string | number =

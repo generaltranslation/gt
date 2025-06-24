@@ -32,8 +32,8 @@ function Currency({
   locales?: string[];
   options?: Intl.NumberFormatOptions;
 }): React.JSX.Element | null {
-  if (!children) return null;
   const context = useContext(GTContext);
+  if (!children) return null;
   const gt = context?.gt || new GT();
   let renderedValue: string | number =
     typeof children === 'string' ? parseFloat(children) : children;
