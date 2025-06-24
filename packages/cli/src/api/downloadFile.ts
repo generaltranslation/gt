@@ -1,10 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logError } from '../console/logging.js';
+import { getAuthHeaders } from '../utils/headers.js';
 
 // Helper function to download a file
 export async function downloadFile(
   baseUrl: string,
+  projectId: string,
   apiKey: string,
   translationId: string,
   outputPath: string,
@@ -20,7 +22,7 @@ export async function downloadFile(
         {
           method: 'GET',
           headers: {
-            ...(apiKey && { 'x-gt-api-key': apiKey }),
+            ...getAuthHeaders(projectId, apiKey),
           },
         }
       );

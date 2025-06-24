@@ -3,6 +3,7 @@ import { createOraSpinner, logError } from '../console/logging.js';
 import { getLocaleProperties } from 'generaltranslation';
 import { downloadFile } from './downloadFile.js';
 import { downloadFileBatch } from './downloadFileBatch.js';
+import { getAuthHeaders } from '../utils/headers.js';
 /**
  * Checks the status of translations for a given version ID
  * @param apiKey - The API key for the General Translation API
@@ -14,6 +15,7 @@ import { downloadFileBatch } from './downloadFileBatch.js';
  * @returns True if all translations are deployed, false otherwise
  */
 export async function checkFileTranslations(
+  projectId: string,
   apiKey: string,
   baseUrl: string,
   data: {
@@ -38,6 +40,7 @@ export async function checkFileTranslations(
   // Do first check immediately
   const initialCheck = await checkTranslationDeployment(
     baseUrl,
+    projectId,
     apiKey,
     fileQueryData,
     downloadStatus,
@@ -63,6 +66,7 @@ export async function checkFileTranslations(
       intervalCheck = setInterval(async () => {
         const isDeployed = await checkTranslationDeployment(
           baseUrl,
+          projectId,
           apiKey,
           fileQueryData,
           downloadStatus,
@@ -243,6 +247,7 @@ function generateStatusSuffixText(
  */
 async function checkTranslationDeployment(
   baseUrl: string,
+  projectId: string,
   apiKey: string,
   fileQueryData: { versionId: string; fileName: string; locale: string }[],
   downloadStatus: { downloaded: Set<string>; failed: Set<string> },
@@ -268,7 +273,7 @@ async function checkTranslationDeployment(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(apiKey && { 'x-gt-api-key': apiKey }),
+          ...getAuthHeaders(projectId, apiKey),
         },
         body: JSON.stringify({ files: currentQueryData }),
       }
@@ -302,6 +307,7 @@ async function checkTranslationDeployment(
         if (batchFiles.length > 1) {
           const batchResult = await downloadFileBatch(
             baseUrl,
+            projectId,
             apiKey,
             batchFiles.map(({ translationId, outputPath }: any) => ({
               translationId,
@@ -323,6 +329,7 @@ async function checkTranslationDeployment(
           const file = batchFiles[0];
           const result = await downloadFile(
             baseUrl,
+            projectId,
             apiKey,
             file.translationId,
             file.outputPath
