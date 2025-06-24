@@ -191,6 +191,6 @@ function T({
   return <>{renderTranslation(translationEntry)}</>;
 }
 
-T.gtTransformation = 'translate-client';
+T._gt_transformation = 'translate-client';
 
 export default T;

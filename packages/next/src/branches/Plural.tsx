@@ -46,6 +46,6 @@ function Plural({
   );
 }
 
-Plural.gtTransformation = 'plural';
+Plural._gt_transformation = 'plural';
 
 export default Plural;

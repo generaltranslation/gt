@@ -26,6 +26,6 @@ function Var({ children }: { children?: any }): React.JSX.Element | null {
   return <>{children}</>;
 }
 
-Var.gtTransformation = 'variable-variable';
+Var._gt_transformation = 'variable-variable';
 
 export default Var;

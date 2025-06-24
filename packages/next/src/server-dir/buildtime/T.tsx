@@ -196,6 +196,6 @@ async function T({
   );
 }
 
-T.gtTransformation = 'translate-server';
+T._gt_transformation = 'translate-server';
 
 export default T;

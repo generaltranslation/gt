@@ -40,6 +40,6 @@ function DateTime({
   return <>{result}</>;
 }
 
-DateTime.gtTransformation = 'variable-datetime';
+DateTime._gt_transformation = 'variable-datetime';
 
 export default DateTime;

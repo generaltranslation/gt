@@ -48,6 +48,6 @@ function Num({
   return <>{renderedValue}</>;
 }
 
-Num.gtTransformation = 'variable-number';
+Num._gt_transformation = 'variable-number';
 
 export default Num;

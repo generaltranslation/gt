@@ -54,6 +54,6 @@ function Currency({
 }
 
 // Static property to indicate the transformation type
-Currency.gtTransformation = 'variable-currency';
+Currency._gt_transformation = 'variable-currency';
 
 export default Currency;
