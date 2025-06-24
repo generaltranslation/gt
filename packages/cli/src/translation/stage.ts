@@ -45,7 +45,7 @@ export async function stageProject(
   settings.timeout = timeout.toString();
 
   // ---- CREATING UPDATES ---- //
-  const { updates, errors } = await createUpdates(
+  const { updates, errors, warnings } = await createUpdates(
     settings,
     settings.dictionary,
     pkg,
@@ -72,6 +72,14 @@ export async function stageProject(
         )
       );
     }
+  }
+
+  if (warnings.length > 0) {
+    logWarning(
+      chalk.yellow('Warnings encountered:') +
+        '\n' +
+        warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')
+    );
   }
 
   if (settings.dryRun) {

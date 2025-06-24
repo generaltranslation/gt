@@ -11,11 +11,12 @@ import {
   warnVariablePropSync,
   warnNestedTComponent,
 } from '../../../console/index.js';
-import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
+import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { handleChildrenWhitespace } from '../trimJsxStringChildren.js';
 import { isStaticExpression } from '../evaluateJsx.js';
 import { VARIABLE_COMPONENTS } from './constants.js';
 import { Metadata } from 'generaltranslation/types';
+import { NESTED_T_COMPONENT_KEY } from '../../data-_gt/addGTIdentifierToSyntaxTree.js';
 
 /**
  * Builds a JSX tree from a given node, recursively handling children.
@@ -33,6 +34,7 @@ export function buildJSXTree(
   unwrappedExpressions: string[],
   updates: Updates,
   errors: string[],
+  warnings: string[],
   file: string,
   insideT: boolean
 ):
@@ -90,8 +92,16 @@ export function buildJSXTree(
     if (componentType === 'T' && insideT) {
       element.openingElement.attributes.push(
         t.jsxAttribute(
-          t.jsxIdentifier('_GT_INTERNAL_NESTED_T_COMPONENT'),
+          t.jsxIdentifier(NESTED_T_COMPONENT_KEY),
           t.jsxExpressionContainer(t.booleanLiteral(true))
+        )
+      );
+
+      // Add warning: Nested <T> components are redundant
+      warnings.push(
+        warnNestedTComponent(
+          file,
+          `${element.loc?.start?.line}:${element.loc?.start?.column}`
         )
       );
     }
@@ -130,6 +140,7 @@ export function buildJSXTree(
               unwrappedExpressions,
               updates,
               errors,
+              warnings,
               file,
               true
             );
@@ -140,7 +151,7 @@ export function buildJSXTree(
     });
 
     if (elementIsVariable) {
-      parseJSXElement(importAliases, element, updates, errors, file);
+      parseJSXElement(importAliases, element, updates, errors, warnings, file);
       return {
         // if componentType is undefined, use typeName
         // Basically, if componentType is not a GT component, use typeName such as <div>
@@ -157,6 +168,7 @@ export function buildJSXTree(
           unwrappedExpressions,
           updates,
           errors,
+          warnings,
           file,
           true
         )
@@ -186,6 +198,7 @@ export function buildJSXTree(
           unwrappedExpressions,
           updates,
           errors,
+          warnings,
           file,
           true
         )
@@ -231,6 +244,7 @@ export function parseJSXElement(
   node: t.JSXElement,
   updates: Updates,
   errors: string[],
+  warnings: string[],
   file: string
 ) {
   const openingElement = node.openingElement;
@@ -241,6 +255,7 @@ export function parseJSXElement(
     return;
   }
   const componentErrors: string[] = [];
+  const componentWarnings: string[] = [];
   const metadata: Metadata = {};
 
   // We'll track this flag to know if any unwrapped {variable} is found in children
@@ -297,6 +312,7 @@ export function parseJSXElement(
     unwrappedExpressions,
     updates,
     componentErrors,
+    componentWarnings,
     file,
     false
   );
@@ -311,6 +327,10 @@ export function parseJSXElement(
   if (componentErrors.length > 0) {
     errors.push(...componentErrors);
     return;
+  }
+
+  if (componentWarnings.length > 0) {
+    warnings.push(...componentWarnings);
   }
 
   // Handle whitespace in children

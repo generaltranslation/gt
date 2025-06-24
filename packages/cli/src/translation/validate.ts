@@ -1,4 +1,4 @@
-import { logErrorAndExit } from '../console/logging.js';
+import { logErrorAndExit, logWarning } from '../console/logging.js';
 import chalk from 'chalk';
 import findFilepath from '../fs/findFilepath.js';
 import { Options, Settings } from '../types/index.js';
@@ -21,7 +21,7 @@ export async function validateProject(
     ]);
   }
 
-  const { updates, errors } = await createUpdates(
+  const { updates, errors, warnings } = await createUpdates(
     settings,
     settings.dictionary,
     pkg,
@@ -36,6 +36,14 @@ export async function validateProject(
             .map((error) => chalk.red('• ') + chalk.white(error) + '\n')
             .join('')
       )
+    );
+  }
+
+  if (warnings.length > 0) {
+    logWarning(
+      chalk.yellow('Warnings encountered:') +
+        '\n' +
+        warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')
     );
   }
 

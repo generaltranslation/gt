@@ -312,7 +312,7 @@ export class ReactCLI extends BaseCLI {
 
     // User has to provide a dictionary file
     // will not read from settings.files.resolvedPaths.json
-    const { updates, errors } = await createUpdates(
+    const { updates, errors, warnings } = await createUpdates(
       options,
       options.dictionary,
       this.library === 'gt-next' ? 'gt-next' : 'gt-react',
@@ -342,6 +342,17 @@ export class ReactCLI extends BaseCLI {
         );
       }
     }
+
+    if (warnings.length > 0) {
+      logWarning(
+        chalk.yellow('Warnings encountered:') +
+          '\n' +
+          warnings
+            .map((warning) => `${chalk.yellow('-')} ${warning}`)
+            .join('\n')
+      );
+    }
+
     // Convert updates to the proper data format
     const newData: Record<string, any> = {};
     for (const update of updates) {

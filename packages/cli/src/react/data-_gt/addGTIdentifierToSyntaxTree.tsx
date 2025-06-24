@@ -11,6 +11,7 @@ import {
 } from '../utils/getVariableName.js';
 import { isAcceptedPluralForm, JsxChild } from 'generaltranslation/internal';
 
+export const NESTED_T_COMPONENT_KEY = '_GT_INTERNAL_NESTED_T_COMPONENT';
 /**
  * Construct the data-_gt prop
  * @param type - The type of the element
@@ -104,7 +105,7 @@ export default function addGTIdentifierToSyntaxTree(
       }
 
       // Convert a nested <T> into a fragment
-      if (props?.['_GT_INTERNAL_NESTED_T_COMPONENT']) {
+      if (props?.[NESTED_T_COMPONENT_KEY]) {
         type = '';
       }
 
