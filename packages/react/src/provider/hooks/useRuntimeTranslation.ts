@@ -296,7 +296,6 @@ export default function useRuntimeTranslation({
           const hash = request.metadata.hash; // identical to reference hash
 
           // translation received
-          // TODO: minify api response
           if (
             'translation' in result &&
             result.translation &&

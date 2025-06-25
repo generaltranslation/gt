@@ -30,7 +30,14 @@ import {
   noTargetLocaleProvidedError,
   invalidLocaleError,
   invalidLocalesError,
+  missingsArgumentError,
 } from './settings/errors';
+import _mtranslate from './translate/mtranslate';
+import {
+  BatchTranslationData,
+  BatchTranslationMetadataParams,
+  TranslationResults,
+} from './translate/utils/types';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -182,9 +189,29 @@ export class GT {
   }
 
   // -------------- Translation methods -------------- //
-  translatef() {}
+  translate() {}
 
-  mtranslatef() {}
+  mtranslate(
+    data: BatchTranslationData,
+    targetLocale: string | undefined = this.targetLocale,
+    projectId: string | undefined = this.projectId,
+    apiKey: string | undefined = this.apiKey,
+    metadata?: BatchTranslationMetadataParams
+  ) {
+    if (targetLocale === undefined) {
+      throw new Error(missingsArgumentError('mtranslate', 'targetLocale'));
+    }
+    if (projectId === undefined) {
+      throw new Error(missingsArgumentError('mtranslate', 'projectId'));
+    }
+    if (apiKey === undefined) {
+      throw new Error(missingsArgumentError('mtranslate', 'apiKey'));
+    }
+    metadata ||= {};
+    metadata.baseUrl ||= this.baseUrl;
+    metadata.sourceLocale ||= this.sourceLocale;
+    return mtranslate(data, targetLocale, projectId, apiKey, metadata);
+  }
 
   // -------------- Formatting -------------- //
 
@@ -564,6 +591,18 @@ export class GT {
 // ============================================================ //
 //                    Utility methods                           //
 // ============================================================ //
+
+// -------------- Translation methods -------------- //
+
+export async function mtranslate(
+  data: BatchTranslationData,
+  targetLocale: string,
+  projectId: string,
+  apiKey: string,
+  metadata?: BatchTranslationMetadataParams
+): Promise<TranslationResults> {
+  return await _mtranslate(data, targetLocale, projectId, apiKey, metadata);
+}
 
 // -------------- Formatting -------------- //
 

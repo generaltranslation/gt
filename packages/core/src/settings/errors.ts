@@ -9,3 +9,6 @@ export const invalidLocaleError = (locale: string) =>
 
 export const invalidLocalesError = (locales: string[]) =>
   `GT error: Invalid locales: ${locales.join(', ')}.`;
+
+export const missingsArgumentError = (functionName: string, argName: string) =>
+  `GT error: Cannot call \`${functionName}\` without the following argument: ${argName}. You can pass this argument to the \`${functionName}\` function or specify it in the GT constructor.`;
