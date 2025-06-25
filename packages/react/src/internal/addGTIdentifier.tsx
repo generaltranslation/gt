@@ -1,9 +1,6 @@
 import React, { ReactElement, isValidElement, ReactNode } from 'react';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
-import {
-  createNestedDataGTError,
-  createNestedTError,
-} from '../errors/createErrors';
+import { createNestedDataGTError } from '../errors/createErrors';
 import {
   GTTag,
   TaggedChild,

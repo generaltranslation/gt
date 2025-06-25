@@ -27,9 +27,6 @@ export const createClientSideTHydrationError = (id: string) =>
 export const createNestedDataGTError = (child: any) =>
   `General Translation already in use on child with props: ${child.props}. This usually occurs when you nest <T> components within the same file. Remove one of the <T> components to continue.`;
 
-export const createNestedTError = (child: any) =>
-  `General Translation: Nested <T> components. The inner <T> has the id: "${child?.props?.id}".`;
-
 export const renderingError = 'General Translation: Rendering error.';
 
 export const dynamicTranslationError = 'Error fetching batched translations:';

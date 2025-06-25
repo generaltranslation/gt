@@ -164,6 +164,6 @@ async function Tx({ children, context, locale }: TxProps): Promise<any> {
   );
 }
 
-Tx._gt_transformation = 'translate-server';
+Tx._gt_transformation = 'translate-server-runtime';
 
 export default Tx;

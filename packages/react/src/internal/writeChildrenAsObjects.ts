@@ -38,6 +38,7 @@ const getTagName = (child: TaggedElement): string => {
   if (props['data-_gt']?.id) return `C${props['data-_gt'].id}`;
   return 'function';
 };
+
 const createGTProp = (
   transformation: Transformation,
   props: Record<string, any>,
