@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 1.2.33
+
+### Patch Changes
+
+- [#426](https://github.com/generaltranslation/gt/pull/426) [`ce57545`](https://github.com/generaltranslation/gt/commit/ce575454301185c663cfb93345d3058c9ceb25dd) Thanks [@brian-lou](https://github.com/brian-lou)! - Improve file pattern matching
+
 ## 1.2.31
 
 ### Patch Changes
