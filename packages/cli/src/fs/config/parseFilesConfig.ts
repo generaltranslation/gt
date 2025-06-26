@@ -148,33 +148,40 @@ function expandGlobPatterns(
 
     // For each match, create a version with [locale] in the correct positions
     matches.forEach((match) => {
-      // Convert to relative path to make replacement easier
-      const relativePath = path.relative(cwd, match);
-      let originalRelativePath = relativePath;
+      // Convert to absolute path to make replacement easier
+      const absolutePath = path.resolve(cwd, match);
+      const patternPath = path.resolve(cwd, pattern);
+      let originalAbsolutePath = absolutePath;
 
-      // Replace locale with [locale] at each tracked position
       if (localePositions.length > 0) {
-        // We need to account for path resolution differences
-        // This is a simplified approach - we'll replace all instances of the locale
+        // Replace all instances of [locale]
         // but only in path segments where we expect it based on the original pattern
-        const pathParts = relativePath.split(path.sep);
-        const patternParts = pattern.split(/[\/\\]/); // Handle both slash types
+        const pathParts = absolutePath.split(path.sep);
+        const patternParts = patternPath.split(path.sep);
 
         for (let i = 0; i < pathParts.length; i++) {
           if (i < patternParts.length) {
             if (patternParts[i].includes(localeTag)) {
               // This segment should have the locale replaced
-              pathParts[i] = pathParts[i].replace(locale, localeTag);
+              // Create regex from pattern to match the actual path structure
+              const regexPattern = patternParts[i].replace(
+                /\[locale\]/g,
+                `(${locale.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`
+              );
+              const regex = new RegExp(regexPattern);
+              pathParts[i] = pathParts[i].replace(
+                regex,
+                patternParts[i].replace(/\[locale\]/g, localeTag)
+              );
             }
           }
         }
 
-        originalRelativePath = pathParts.join(path.sep);
+        originalAbsolutePath = pathParts.join(path.sep);
       }
 
       // Convert back to absolute path
-      const originalPath = path.resolve(cwd, originalRelativePath);
-      placeholderPaths.push(originalPath);
+      placeholderPaths.push(originalAbsolutePath);
     });
   }
 
