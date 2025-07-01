@@ -163,7 +163,7 @@ export async function translateFiles(
 /**
  * Creates a mapping between source files and their translated counterparts for each locale
  */
-function createFileMapping(
+export function createFileMapping(
   filePaths: ResolvedFiles,
   placeholderPaths: ResolvedFiles,
   transformPaths: TransformFiles,

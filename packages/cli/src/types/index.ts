@@ -32,6 +32,8 @@ export type Options = {
   dryRun: boolean;
   timeout: string;
   stageTranslations?: boolean;
+  experimentalLocalizeStaticUrls?: boolean;
+  experimentalHideDefaultLocale?: boolean;
 };
 
 export type WrapOptions = {
