@@ -25,6 +25,7 @@ import { downloadFile } from '../../api/downloadFile.js';
 import { downloadFileBatch } from '../../api/downloadFileBatch.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { TranslateOptions } from '../../cli/base.js';
+import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 /**
@@ -76,9 +77,10 @@ export async function translateFiles(
     if (filePaths[fileType]) {
       const files = filePaths[fileType].map((filePath) => {
         const content = readFile(filePath);
+        const sanitizedContent = sanitizeFileContent(content);
         const relativePath = getRelative(filePath);
         return {
-          content,
+          content: sanitizedContent,
           fileName: relativePath,
           fileFormat: fileType.toUpperCase() as FileFormats,
           dataFormat,
