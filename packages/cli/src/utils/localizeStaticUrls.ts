@@ -50,7 +50,7 @@ export default async function localizeStaticUrls(settings: Settings & Options) {
             fileContent,
             settings.defaultLocale,
             locale,
-            true // Force to true for testing hideDefaultLocale - change back to settings.experimentalHideDefaultLocale || false when done
+            settings.experimentalHideDefaultLocale || false
           );
           // Write the localized file to the target path
           await fs.promises.writeFile(filePath, localizedFile);
