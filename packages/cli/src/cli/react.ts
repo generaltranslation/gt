@@ -186,7 +186,8 @@ export class ReactCLI extends BaseCLI {
       )
       .option(
         '--experimental-localize-static-urls',
-        'Triggering this will run a script after the cli tool that localizes all urls in content files. Currently only supported for md and mdx files.'
+        'Triggering this will run a script after the cli tool that localizes all urls in content files. Currently only supported for md and mdx files.',
+        false
       )
       .option(
         '--experimental-hide-default-locale',
