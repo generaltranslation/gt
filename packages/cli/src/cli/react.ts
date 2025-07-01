@@ -33,7 +33,8 @@ import updateConfig from '../fs/config/updateConfig.js';
 import { validateConfigExists } from '../config/validateSettings.js';
 import { validateProject } from '../translation/validate.js';
 import { intro } from '@clack/prompts';
-import localizeStaticUrls from '../translation/localizeStaticUrls.js';
+import localizeStaticUrls from '../utils/localizeStaticUrls.js';
+import flattenJsonFiles from '../utils/flattenJsonFiles.js';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
@@ -190,6 +191,11 @@ export class ReactCLI extends BaseCLI {
       .option(
         '--experimental-hide-default-locale',
         'When localizing static locales, hide the default locale from the path',
+        false
+      )
+      .option(
+        '--experimental-flatten-json-files',
+        'Triggering this will flatten the json files into a single file. This is useful for projects that have a lot of json files.',
         false
       )
       .action(async (options: Options) => {
@@ -511,7 +517,12 @@ export class ReactCLI extends BaseCLI {
 
     // Localize static urls (/docs -> /[locale]/docs)
     if (options.experimentalLocalizeStaticUrls) {
-      localizeStaticUrls(options);
+      await localizeStaticUrls(options);
+    }
+
+    // Flatten json files into a single file
+    if (options.experimentalFlattenJsonFiles) {
+      await flattenJsonFiles(options);
     }
   }
 

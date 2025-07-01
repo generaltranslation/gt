@@ -34,6 +34,7 @@ export type Options = {
   stageTranslations?: boolean;
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
+  experimentalFlattenJsonFiles?: boolean;
 };
 
 export type WrapOptions = {

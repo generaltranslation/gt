@@ -15,7 +15,7 @@ import { createFileMapping } from '../formats/files/translate.js';
  * - Support more file types
  * - Support more complex paths
  */
-export default function localizeStaticUrls(settings: Settings & Options) {
+export default async function localizeStaticUrls(settings: Settings & Options) {
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&
@@ -33,25 +33,31 @@ export default function localizeStaticUrls(settings: Settings & Options) {
   );
 
   // Process all file types at once with a single call
-  for (const [locale, filesMap] of Object.entries(fileMapping)) {
-    // Get all files that are md or mdx
-    const targetFiles = Object.values(filesMap);
-
-    // Replace the placeholder path with the target path
-    targetFiles.forEach((filePath) => {
-      // Get file content
-      const fileContent = fs.readFileSync(filePath, 'utf8');
-      // Localize the file
-      const localizedFile = localizeStaticUrlsForFile(
-        fileContent,
-        settings.defaultLocale,
-        locale,
-        true // Force to true for testing hideDefaultLocale - change back to settings.experimentalHideDefaultLocale || false when done
+  await Promise.all(
+    Object.entries(fileMapping).map(async ([locale, filesMap]) => {
+      // Get all files that are md or mdx
+      const targetFiles = Object.values(filesMap).filter(
+        (path) => path.endsWith('.md') || path.endsWith('.mdx')
       );
-      // Write the localized file to the target path
-      fs.writeFileSync(filePath, localizedFile);
-    });
-  }
+
+      // Replace the placeholder path with the target path
+      await Promise.all(
+        targetFiles.map(async (filePath) => {
+          // Get file content
+          const fileContent = fs.readFileSync(filePath, 'utf8');
+          // Localize the file
+          const localizedFile = localizeStaticUrlsForFile(
+            fileContent,
+            settings.defaultLocale,
+            locale,
+            true // Force to true for testing hideDefaultLocale - change back to settings.experimentalHideDefaultLocale || false when done
+          );
+          // Write the localized file to the target path
+          await fs.promises.writeFile(filePath, localizedFile);
+        })
+      );
+    })
+  );
 }
 
 // Assumption: we will be seeing localized paths in the source files: (docs/en/ -> docs/ja/)
