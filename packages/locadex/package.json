@@ -33,7 +33,7 @@
   "scripts": {
     "patch": "npm version patch",
     "build": "tsc",
-    "build:release": "npm run build:clean && npm run sentry:sourcemaps",
+    "build:release": "npm run build:clean",
     "build:clean": "rm -rf dist && npm run build",
     "dev": "npm run build && node dist/index.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
