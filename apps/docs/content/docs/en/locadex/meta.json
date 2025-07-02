@@ -6,6 +6,7 @@
   "pages": [
     "---Getting Started---",
     "index",
+    "github-app",
     "github-action",
     "---Advanced---",
     "monorepo",
