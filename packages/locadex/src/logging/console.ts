@@ -77,6 +77,7 @@ function displayInitializingText() {
   console.log(
     `\n${chalk.bold.blue('General Translation, Inc.')}
 ${chalk.dim('https://generaltranslation.com/docs')}
+
 Locadex is in research preview and may make mistakes. Please report any bugs or issues to https://github.com/generaltranslation/gt/issues.
 `
   );
