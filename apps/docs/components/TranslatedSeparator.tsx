@@ -1,7 +1,6 @@
 'use client';
 import { useDict } from 'gt-next/client';
 import { SidebarSeparator } from 'fumadocs-ui/components/layout/sidebar';
-import { cn } from '@/lib/cn';
 import { ReactNode, ReactElement } from 'react';
 
 const sectionHeaderMap: Record<string, string> = {
