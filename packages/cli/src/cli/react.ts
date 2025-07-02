@@ -33,6 +33,8 @@ import updateConfig from '../fs/config/updateConfig.js';
 import { validateConfigExists } from '../config/validateSettings.js';
 import { validateProject } from '../translation/validate.js';
 import { intro } from '@clack/prompts';
+import localizeStaticUrls from '../utils/localizeStaticUrls.js';
+import flattenJsonFiles from '../utils/flattenJsonFiles.js';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
@@ -181,6 +183,21 @@ export class ReactCLI extends BaseCLI {
         '--timeout <seconds>',
         'Timeout in seconds for waiting for updates to be deployed to the CDN',
         DEFAULT_TIMEOUT.toString()
+      )
+      .option(
+        '--experimental-localize-static-urls',
+        'Triggering this will run a script after the cli tool that localizes all urls in content files. Currently only supported for md and mdx files.',
+        false
+      )
+      .option(
+        '--experimental-hide-default-locale',
+        'When localizing static locales, hide the default locale from the path',
+        false
+      )
+      .option(
+        '--experimental-flatten-json-files',
+        'Triggering this will flatten the json files into a single file. This is useful for projects that have a lot of json files.',
+        false
       )
       .action(async (options: Options) => {
         displayHeader('Translating project...');
@@ -480,7 +497,7 @@ export class ReactCLI extends BaseCLI {
     try {
       await super.handleGenericTranslate(options);
       // If the base class's handleTranslate completes successfully, continue with ReactCLI-specific code
-    } catch (error) {
+    } catch {
       // Continue with ReactCLI-specific code even if base handleTranslate failed
     }
 
@@ -497,6 +514,16 @@ export class ReactCLI extends BaseCLI {
         process.exit(1);
       }
       await translate(options, settings._versionId);
+    }
+
+    // Localize static urls (/docs -> /[locale]/docs)
+    if (options.experimentalLocalizeStaticUrls) {
+      await localizeStaticUrls(options);
+    }
+
+    // Flatten json files into a single file
+    if (options.experimentalFlattenJsonFiles) {
+      await flattenJsonFiles(options);
     }
   }
 
