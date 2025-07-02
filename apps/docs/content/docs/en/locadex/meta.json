@@ -3,12 +3,5 @@
   "description": "AI i18n engineer",
   "icon": "Bot",
   "root": true,
-  "pages": [
-    "---Getting Started---",
-    "index",
-    "github-action",
-    "---Advanced---",
-    "monorepo",
-    "tips"
-  ]
+  "pages": ["---Getting Started---", "index", "tips"]
 }
