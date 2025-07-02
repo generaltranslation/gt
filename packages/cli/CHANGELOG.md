@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 1.2.34
+
+### Patch Changes
+
+- [#428](https://github.com/generaltranslation/gt/pull/428) [`54036f5`](https://github.com/generaltranslation/gt/commit/54036f54308bdb9f9e6dcec93871e004dcf1be4c) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add experimental options to translate
+
 ## 1.2.33
 
 ### Patch Changes
