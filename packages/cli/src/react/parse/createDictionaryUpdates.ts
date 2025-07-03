@@ -57,7 +57,8 @@ export default async function createDictionaryUpdates(
       metadata: props, // context, etc.
     } = getEntryAndMetadata(dictionary[id]);
 
-    const context = props?.context;
+    // Map $context to context
+    const context = props?.$context;
     const metadata: Record<string, any> = {
       id,
       ...(context && { context }),

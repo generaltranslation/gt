@@ -14,7 +14,7 @@ import {
 import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
 import { handleChildrenWhitespace } from '../trimJsxStringChildren.js';
 import { isStaticExpression } from '../evaluateJsx.js';
-import { VARIABLE_COMPONENTS } from './constants.js';
+import { GT_ATTRIBUTES, VARIABLE_COMPONENTS } from './constants.js';
 import { Metadata } from 'generaltranslation/types';
 
 /**
@@ -264,7 +264,7 @@ export function parseJSXElement(
         const code = generate(expr).code;
 
         // Only check for static expressions on id and context props
-        if (attrName === 'id' || attrName === 'context') {
+        if (GT_ATTRIBUTES.includes(attrName)) {
           const staticAnalysis = isStaticExpression(expr);
           if (!staticAnalysis.isStatic) {
             componentErrors.push(
