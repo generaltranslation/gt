@@ -17,7 +17,7 @@
  * If the `branch` prop is set to `"male"`, it will render `<p>He is happy.</p>`. If the `branch` is set to "female" it will render `<p>She is happy.</p>`. If the gender is not set or does not match any props, it renders the fallback content `<p>Fallback content</p>`.
  *
  * @param {any} [children] - Fallback content to render if no matching branch is found.
- * @param {string} [branch] - The name of the branch to render. The component looks for this key in the `...branches` object.
+ * @param {any} [branch] - The name of the branch to render. The component looks for this key in the `...branches` object.
  * @param {...branches} [branches] - A spread object containing possible branches as keys and their corresponding content as values.
  * @returns {React.JSX.Element} The rendered branch or fallback content.
  */
@@ -27,7 +27,7 @@ function Branch({
   ...branches
 }: {
   children?: any;
-  branch?: string;
+  branch?: any;
   [key: string]: any;
 }): React.JSX.Element {
   // const { 'data-_gt': generaltranslation, ...branches } = props;
