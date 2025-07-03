@@ -80,10 +80,7 @@ export async function getTranslations(
    * // Translates item in dictionary under greetings.greeting2 and replaces {name} with 'John'
    * t('greetings.greeting2', { variables: { name: 'John' } });
    */
-  const t = (
-    id: string,
-    options: DictionaryTranslationOptions = {}
-  ): string => {
+  const t = (id: string, options: Record<string, any> = {}): string => {
     // Get entry
     id = getId(id);
     const value = getDictionaryEntry(dictionary, id);
@@ -110,7 +107,7 @@ export async function getTranslations(
     const renderContent = (message: string, locales: string[]) => {
       return formatMessage(message, {
         locales,
-        variables: options.variables,
+        variables: options,
       });
     };
 
@@ -126,7 +123,7 @@ export async function getTranslations(
     if (dictionaryTranslation) {
       return formatMessage(dictionaryTranslation, {
         locales: [locale, defaultLocale],
-        variables: options.variables,
+        variables: options,
       });
     }
 
@@ -134,7 +131,7 @@ export async function getTranslations(
 
     const hash = hashSource({
       source: entry,
-      ...(metadata?.context && { context: metadata?.context }),
+      ...(metadata?.$context && { context: metadata.$context }),
       id,
       dataFormat: 'ICU',
     });
@@ -164,7 +161,7 @@ export async function getTranslations(
       source: entry,
       targetLocale: locale,
       options: {
-        ...(metadata?.context && { context: metadata?.context }),
+        ...(metadata?.$context && { context: metadata.$context }),
         id,
         hash,
       },

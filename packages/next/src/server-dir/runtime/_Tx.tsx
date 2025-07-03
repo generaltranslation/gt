@@ -41,8 +41,18 @@ async function Resolver({ children }: { children: React.ReactNode }) {
  * @param {string} [locale] - The locale to use for the translation.
  * @returns {Promise<any>} The translated content.
  */
-async function Tx({ children, context, locale }: TxProps): Promise<any> {
+async function Tx({
+  children,
+  context,
+  locale,
+  ...options
+}: TxProps): Promise<any> {
   // ----- SET UP ----- //
+
+  // Compatibility with different options
+  const { $context, $locale } = options;
+  context = context ?? $context;
+  locale = locale ?? $locale;
 
   const I18NConfig = getI18NConfig();
   locale ||= await getLocale();

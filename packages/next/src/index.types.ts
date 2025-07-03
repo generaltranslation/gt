@@ -229,7 +229,7 @@ export const LocaleSelector: typeof _LocaleSelector = () => {
  * const t = useGT();
  * return (<>
  *  {
- *     t('My name is {customName}', { variables: { customName: "Brian" } } )
+ *     t('My name is {customName}', { customName: "Brian" } )
  *  }
  * </>);
  *

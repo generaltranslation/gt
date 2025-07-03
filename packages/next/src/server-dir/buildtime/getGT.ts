@@ -47,18 +47,27 @@ export async function getGT(): Promise<
    * t('Hello, world!'); // Translates 'Hello, world!'
    *
    * @example
-   * t('My name is {name}', { variables: { name: 'John' } }); // Translates 'My name is {name}' and replaces {name} with 'John'
+   * // With a context and a custom identifier:
+   * t('My name is {customName}', { customName: "John", $id: 'my-name', $context: 'a proper noun' } )); // Translates 'My name is {name}' and replaces {name} with 'John'
    */
-  const t = (message: string, options: InlineTranslationOptions = {}) => {
+  const t = (
+    message: string,
+    options: Record<string, any> & {
+      $context?: string;
+      $id?: string;
+    } = {}
+  ) => {
     // ----- SET UP ----- //
     // Validate content
     if (!message || typeof message !== 'string') return '';
+
+    const { $id: id, $context: context, ...variables } = options;
 
     // Render Method
     const renderContent = (message: string, locales: string[]) => {
       return formatMessage(message, {
         locales,
-        variables: options.variables,
+        variables,
       });
     };
 
@@ -71,9 +80,9 @@ export async function getGT(): Promise<
     let translationsStatusEntry = undefined;
 
     // Use id to index
-    if (options?.id) {
-      translationEntry = translations?.[options?.id];
-      translationsStatusEntry = translationsStatus?.[options?.id];
+    if (id) {
+      translationEntry = translations?.[id];
+      translationsStatusEntry = translationsStatus?.[id];
     }
 
     // Calculate hash
@@ -81,8 +90,8 @@ export async function getGT(): Promise<
     const calcHash = () =>
       hashSource({
         source: message,
-        ...(options?.context && { context: options?.context }),
-        ...(options?.id && { id: options?.id }),
+        ...(context && { context }),
+        ...(id && { id }),
         dataFormat: 'ICU',
       });
 
@@ -107,7 +116,7 @@ export async function getGT(): Promise<
     // Since this is buildtime string translation, it's dev only
 
     if (!I18NConfig.isDevelopmentApiEnabled()) {
-      console.warn(createStringTranslationError(message, options?.id, 't'));
+      console.warn(createStringTranslationError(message, id, 't'));
       return renderContent(message, [defaultLocale]);
     }
 
@@ -119,8 +128,8 @@ export async function getGT(): Promise<
       source: message,
       targetLocale: locale,
       options: {
-        ...(options?.context && { context: options?.context }),
-        ...(options?.id && { id: options?.id }),
+        ...(context && { context }),
+        ...(id && { id }),
         hash,
       },
     }).catch(() => {}); // No need for error logging, error logged in I18NConfig

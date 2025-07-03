@@ -42,10 +42,13 @@ export default async function tx(
 ): Promise<string> {
   if (!message || typeof message !== 'string') return '';
 
+  // Compatibility with different options
+  const { $locale, $context: context, ...variables } = options;
+
   // ----- SET UP ----- //
 
   const I18NConfig = getI18NConfig();
-  const locale = options.locale || (await getLocale());
+  const locale = $locale || (await getLocale());
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired] = I18NConfig.requiresTranslation(locale);
 
@@ -54,7 +57,7 @@ export default async function tx(
   const renderContent = (message: string, locales: string[]) => {
     return formatMessage(message, {
       locales,
-      variables: options.variables,
+      variables,
     });
   };
 
@@ -66,7 +69,7 @@ export default async function tx(
 
   const hash = hashSource({
     source: message,
-    ...(options?.context && { context: options.context }),
+    ...(context && { context }),
     dataFormat: 'ICU',
   });
 
@@ -88,7 +91,7 @@ export default async function tx(
     const target = (await I18NConfig.translateIcu({
       source: message,
       targetLocale: locale,
-      options: { ...options, hash },
+      options: { ...variables, hash, context },
     })) as string;
     return renderContent(target, [locale, defaultLocale]);
   } catch (error) {

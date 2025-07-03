@@ -42,6 +42,7 @@ function T({
   children,
   id,
   context,
+  ...options
 }: {
   children: any;
   id?: string;
@@ -49,6 +50,10 @@ function T({
   [key: string]: any;
 }): React.JSX.Element | null {
   if (!children) return null;
+
+  // Compatibility with different options
+  id = id ?? options?.$id;
+  context = context ?? options?.$context;
 
   const {
     translations,

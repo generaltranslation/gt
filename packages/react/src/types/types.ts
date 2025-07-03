@@ -30,7 +30,7 @@ export type TaggedChildren = TaggedChild[] | TaggedChild;
  */
 export type Entry = string;
 export type MetaEntry = {
-  context?: string;
+  $context?: string;
   [key: string]: unknown;
 };
 export type DictionaryEntry = Entry | [Entry] | [Entry, MetaEntry];
@@ -85,17 +85,11 @@ export type CustomLoader = (locale: string) => Promise<any>;
 
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 
-export type DictionaryTranslationOptions = {
-  variables?: Record<string, any>;
-  variablesOptions?: Record<
-    string,
-    Intl.NumberFormatOptions | Intl.DateTimeFormatOptions
-  >;
+export type DictionaryTranslationOptions = Record<string, any>;
+export type InlineTranslationOptions = DictionaryTranslationOptions & {
+  $context?: string;
+  $id?: string;
 };
-export type InlineTranslationOptions = {
-  context?: string;
-  id?: string;
-} & DictionaryTranslationOptions;
 export type RuntimeTranslationOptions = {
   locale?: string;
 } & Omit<InlineTranslationOptions, 'id'>;

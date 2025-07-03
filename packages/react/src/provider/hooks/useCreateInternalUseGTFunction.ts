@@ -21,20 +21,9 @@ export default function useCreateInternalUseGTFunction(
   renderSettings: { method: RenderMethod }
 ): (string: string, options?: InlineTranslationOptions) => string {
   return useCallback(
-    (
-      contentString: string,
-      options: {
-        locale?: string;
-        context?: string;
-        variables?: Record<string, any>;
-        variableOptions?: Record<
-          string,
-          Intl.NumberFormatOptions | Intl.DateTimeFormatOptions
-        >;
-        [key: string]: any;
-      } = {}
-    ) => {
+    (contentString: string, options: InlineTranslationOptions = {}) => {
       // ----- SET UP ----- //
+      const { $id: id, $context: context, ...variables } = options;
 
       // Check: reject invalid content
       if (!contentString || typeof contentString !== 'string') return '';
@@ -43,14 +32,13 @@ export default function useCreateInternalUseGTFunction(
       const renderMessage = (message: string, locales: string[]) => {
         return formatMessage(message, {
           locales,
-          variables: options.variables,
+          variables,
         });
       };
 
       // ----- CHECK TRANSLATIONS ----- //
 
       // Dependency flag to avoid recalculating hash whenever translation object changes
-      const id = options?.id;
       const translationWithIdExists = id && translations?.[id as string];
 
       let hash = '';
@@ -63,7 +51,7 @@ export default function useCreateInternalUseGTFunction(
         // Calculate hash
         hash = hashSource({
           source: contentString,
-          ...(options?.context && { context: options.context }),
+          ...(context && { context }),
           ...(id && { id }),
           dataFormat: 'ICU',
         });
@@ -104,8 +92,8 @@ export default function useCreateInternalUseGTFunction(
         source: contentString,
         targetLocale: locale,
         metadata: {
-          ...(options?.context && { context: options.context }),
-          id,
+          ...(context && { context }),
+          ...(id && { id }),
           hash: hash || '',
         },
       });

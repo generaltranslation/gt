@@ -65,7 +65,7 @@ export default function useCreateInternalUseTranslationsFunction(
       const renderMessage = (message: string, locales: string[]) => {
         return formatMessage(message, {
           locales,
-          variables: options.variables,
+          variables: options,
         });
       };
 
@@ -77,7 +77,7 @@ export default function useCreateInternalUseTranslationsFunction(
       // Get hash
       const hash = hashSource({
         source: entry,
-        ...(metadata?.context && { context: metadata.context }),
+        ...(metadata?.$context && { context: metadata.$context }),
         id,
         dataFormat: 'ICU',
       });
@@ -111,7 +111,7 @@ export default function useCreateInternalUseTranslationsFunction(
         source: entry,
         targetLocale: locale,
         metadata: {
-          ...(metadata?.context && { context: metadata.context }),
+          ...(metadata?.$context && { context: metadata.$context }),
           id,
           hash,
         },
