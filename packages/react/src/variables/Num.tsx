@@ -27,6 +27,7 @@ function Num({
   options = {},
 }: {
   children: number | string | null | undefined;
+  name?: string;
   locales?: string[];
   options?: Intl.NumberFormatOptions; // Optional options for the number formatting
 }): React.JSX.Element | null {
