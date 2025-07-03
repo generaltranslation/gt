@@ -8,7 +8,8 @@
       "include": ["content/ui.[locale].json"]
     },
     "mdx": {
-      "include": ["content/docs/[locale]/**/*.mdx"]
+      "include": ["content/docs/[locale]/**/*.mdx"],
+      "exclude": ["content/docs/changelog/*.mdx"]
     }
   },
   "locales": ["zh", "de", "fr", "es", "ja"],
