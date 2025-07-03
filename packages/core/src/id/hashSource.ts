@@ -60,6 +60,11 @@ export function hashSource(
     ...(dataFormat && { dataFormat }),
   };
   const stringifiedData = stringify(sanitizedData);
+  console.log(`---
+id: ${id}
+context: ${context}
+dataFormat: ${dataFormat}
+hash: ${hashFunction(stringifiedData)}`);
   return hashFunction(stringifiedData);
 }
 
