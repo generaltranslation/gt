@@ -28,7 +28,8 @@
     },
     "build:release": {
       "dependsOn": ["^build:release"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**"],
+      "env": ["SENTRY_ORG", "SENTRY_PROJECT", "SENTRY_AUTH_TOKEN"]
     }
   }
 }

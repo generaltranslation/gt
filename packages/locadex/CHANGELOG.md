@@ -1,5 +1,17 @@
 # locadex
 
+## 1.0.0
+
+### Major Changes
+
+- [#430](https://github.com/generaltranslation/gt/pull/430) [`9665ab1`](https://github.com/generaltranslation/gt/commit/9665ab1a125b3ef566fe18670c8b8c99d2156d30) Thanks [@brian-lou](https://github.com/brian-lou)! - Release support for Locadex Cloud, deprecate CLI agent
+
+## 0.1.17
+
+### Patch Changes
+
+- [#420](https://github.com/generaltranslation/gt/pull/420) [`cd7e2f0`](https://github.com/generaltranslation/gt/commit/cd7e2f015b29f101ba43619b0ea449db53a496da) Thanks [@SamEggert](https://github.com/SamEggert)! - Add --local-translations flag to 'locadex auto' command
+
 ## 0.1.15
 
 ### Patch Changes

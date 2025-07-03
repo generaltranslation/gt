@@ -4,6 +4,7 @@ import { Settings, SupportedLibraries, Updates } from '../types/index.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { DataFormat } from '../types/data.js';
 import { isUsingLocalTranslations } from '../config/utils.js';
+import { getAuthHeaders } from '../utils/headers.js';
 
 type ApiOptions = Settings & {
   timeout: string;
@@ -55,7 +56,7 @@ export async function sendUpdates(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(apiKey && { 'x-gt-api-key': apiKey }),
+          ...getAuthHeaders(options.projectId, options.apiKey),
         },
         body: JSON.stringify(body),
       }

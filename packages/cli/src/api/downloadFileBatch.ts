@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logError, logWarning } from '../console/logging.js';
+import { getAuthHeaders } from '../utils/headers.js';
 
 /**
  * Downloads multiple translation files in a single batch request
@@ -13,6 +14,7 @@ import { logError, logWarning } from '../console/logging.js';
  */
 export async function downloadFileBatch(
   baseUrl: string,
+  projectId: string,
   apiKey: string,
   files: Array<{
     translationId: string;
@@ -38,7 +40,7 @@ export async function downloadFileBatch(
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(apiKey && { 'x-gt-api-key': apiKey }),
+            ...getAuthHeaders(projectId, apiKey),
           },
           body: JSON.stringify({ fileIds }),
         }

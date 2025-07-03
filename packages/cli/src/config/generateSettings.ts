@@ -1,5 +1,9 @@
-import { displayProjectId, warnApiKeyInConfig } from '../console/logging.js';
-import loadConfig from '../fs/config/loadConfig.js';
+import {
+  displayProjectId,
+  logErrorAndExit,
+  warnApiKeyInConfig,
+} from '../console/logging.js';
+import { loadConfig } from '../fs/config/loadConfig.js';
 import { Settings, SupportedFrameworks } from '../types/index.js';
 import {
   defaultBaseUrl,
@@ -12,6 +16,8 @@ import { validateSettings } from './validateSettings.js';
 import { GT_DASHBOARD_URL } from '../utils/constants.js';
 import { resolveProjectId } from '../fs/utils.js';
 import path from 'node:path';
+import chalk from 'chalk';
+import { resolveConfig } from './resolveConfig.js';
 
 export const DEFAULT_SRC_PATTERNS = [
   'src/**/*.{js,jsx,ts,tsx}',
@@ -38,21 +44,39 @@ export async function generateSettings(
   }
   if (options.config) {
     gtConfig = loadConfig(options.config);
-  } else if (fs.existsSync(path.join(cwd, 'gt.config.json'))) {
-    options.config = path.join(cwd, 'gt.config.json');
-    gtConfig = loadConfig(options.config);
-  } else if (fs.existsSync(path.join(cwd, 'src/gt.config.json'))) {
-    options.config = path.join(cwd, 'src/gt.config.json');
-    gtConfig = loadConfig(options.config);
   } else {
-    // If neither config exists, use empty config
-    gtConfig = {};
+    const config = resolveConfig(cwd);
+    if (config) {
+      gtConfig = config.config;
+      options.config = config.path;
+    } else {
+      gtConfig = {};
+    }
   }
 
   // Warn if apiKey is present in gt.config.json
   if (gtConfig.apiKey) {
     warnApiKeyInConfig(options.config);
     process.exit(1);
+  }
+  const projectIdEnv = resolveProjectId();
+  // Resolve mismatched projectIds
+  if (
+    gtConfig.projectId &&
+    options.projectId &&
+    gtConfig.projectId !== options.projectId
+  ) {
+    logErrorAndExit(
+      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(options.projectId)}! Please use the same projectId in all configs.`
+    );
+  } else if (
+    gtConfig.projectId &&
+    projectIdEnv &&
+    gtConfig.projectId !== projectIdEnv
+  ) {
+    logErrorAndExit(
+      `Project ID mismatch between ${chalk.green(gtConfig.projectId)} and ${chalk.green(projectIdEnv)}! Please use the same projectId in all configs.`
+    );
   }
 
   // merge options

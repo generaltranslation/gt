@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { createSpinner, logMessage, logSuccess } from '../console/logging.js';
 import { Settings } from '../types/index.js';
 import { FileExtension, DataFormat } from '../types/data.js';
+import { getAuthHeaders } from '../utils/headers.js';
 
 /**
  * File object structure
@@ -29,8 +30,6 @@ type ApiOptions = Settings & {
  * @returns The translated content or version ID
  */
 export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
-  const { apiKey } = options;
-
   logMessage(
     chalk.cyan('Files to translate:') +
       '\n' +
@@ -69,7 +68,7 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
       {
         method: 'POST',
         headers: {
-          ...(apiKey && { 'x-gt-api-key': apiKey }),
+          ...getAuthHeaders(options.projectId, options.apiKey),
         },
         body: formData,
       }

@@ -107,7 +107,7 @@ The CLI tool will save translated files to the corresponding path, with the `[lo
 
 If used, the value of the `exclude` key should be an array of glob patterns that match the files you want to exclude from translation.
 
-The pattern is the same as the `include` pattern.
+The pattern is the same as the `include` pattern, with the exception that the `[locale]` placeholder is optional. If provided, it will be replaced with the `defaultLocale` value.
 
 ```json
 {

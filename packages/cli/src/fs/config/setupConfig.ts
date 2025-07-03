@@ -18,6 +18,7 @@ export async function createOrUpdateConfig(
     locales?: string[];
     files?: FilesOptions;
     framework?: SupportedFrameworks;
+    baseUrl?: string;
   }
 ): Promise<string> {
   // Filter out empty string values from the config object
@@ -26,6 +27,7 @@ export async function createOrUpdateConfig(
     ...(options.defaultLocale && { defaultLocale: options.defaultLocale }),
     ...(options.files && { files: options.files }),
     ...(options.framework && { framework: options.framework }),
+    ...(options.baseUrl && { baseUrl: options.baseUrl }),
   };
   try {
     // if file exists

@@ -1,38 +1,24 @@
 {
   "name": "locadex",
-  "version": "0.1.15",
+  "version": "1.0.0",
   "description": "An AI agent for internationalization",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "locadex": "dist/cli.js",
-    "locadex-mcp": "dist/mcp-stdio.js"
+    "locadex": "dist/cli.js"
   },
   "files": [
     "dist",
-    "resources",
-    "CHANGELOG.md",
-    "guides"
+    "CHANGELOG.md"
   ],
   "dependencies": {
-    "@anthropic-ai/claude-code": "^1.0.29",
     "@clack/prompts": "^1.0.0-alpha.1",
-    "@modelcontextprotocol/sdk": "^1.12.0",
-    "@sentry/cli": "^2.46.0",
-    "@sentry/node": "^9.26.0",
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
-    "dependency-tree": "^11.1.1",
     "dotenv": "^16.4.5",
-    "express": "^5.1.0",
-    "gtx-cli": "^1.2.30",
-    "micromatch": "^4.0.8",
-    "posthog-node": "^4.18.0"
+    "gtx-cli": "^1.2.33"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.54.0",
-    "@modelcontextprotocol/inspector": "^0.14.2",
-    "@types/express": "^5.0.2",
     "@types/jest": "^29.5.14",
     "@types/micromatch": "^4.0.9",
     "@types/node": ">=20.0.0",
@@ -47,7 +33,7 @@
   "scripts": {
     "patch": "npm version patch",
     "build": "tsc",
-    "build:release": "npm run build:clean && npm run sentry:sourcemaps",
+    "build:release": "npm run build:clean",
     "build:clean": "rm -rf dist && npm run build",
     "dev": "npm run build && node dist/index.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
@@ -66,7 +52,7 @@
     "url": "git+https://github.com/generaltranslation/gt.git"
   },
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
   },

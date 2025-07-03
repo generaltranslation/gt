@@ -5,6 +5,7 @@ import {
   logErrorAndExit,
 } from '../console/logging.js';
 import { getLocaleProperties } from 'generaltranslation';
+import { getAuthHeaders } from '../utils/headers.js';
 
 /**
  * Waits for translations to be deployed to the General Translation API
@@ -17,6 +18,7 @@ import { getLocaleProperties } from 'generaltranslation';
  * @returns True if all translations are deployed, false otherwise
  */
 export const waitForUpdates = async (
+  projectId: string,
   apiKey: string,
   baseUrl: string,
   versionId: string,
@@ -37,7 +39,7 @@ export const waitForUpdates = async (
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            ...(apiKey && { 'x-gt-api-key': apiKey }),
+            ...getAuthHeaders(projectId, apiKey),
           },
         }
       );

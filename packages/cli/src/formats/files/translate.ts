@@ -25,6 +25,7 @@ import { downloadFile } from '../../api/downloadFile.js';
 import { downloadFileBatch } from '../../api/downloadFileBatch.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { TranslateOptions } from '../../cli/base.js';
+import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 /**
@@ -75,9 +76,10 @@ export async function translateFiles(
     if (filePaths[fileType]) {
       const files = filePaths[fileType].map((filePath) => {
         const content = readFile(filePath);
+        const sanitizedContent = sanitizeFileContent(content);
         const relativePath = getRelative(filePath);
         return {
-          content,
+          content: sanitizedContent,
           fileName: relativePath,
           fileExtension: fileType.toUpperCase() as FileExtension,
           dataFormat,
@@ -145,6 +147,7 @@ export async function translateFiles(
 
     // Check for remaining translations
     await checkFileTranslations(
+      options.projectId,
       options.apiKey,
       options.baseUrl,
       data,
@@ -161,7 +164,7 @@ export async function translateFiles(
 /**
  * Creates a mapping between source files and their translated counterparts for each locale
  */
-function createFileMapping(
+export function createFileMapping(
   filePaths: ResolvedFiles,
   placeholderPaths: ResolvedFiles,
   transformPaths: TransformFiles,
@@ -260,6 +263,7 @@ async function processInitialTranslations(
     if (batchFiles.length > 1) {
       const batchResult = await downloadFileBatch(
         options.baseUrl,
+        options.projectId,
         options.apiKey,
         batchFiles.map(({ translationId, outputPath }: any) => ({
           translationId,
@@ -281,6 +285,7 @@ async function processInitialTranslations(
       const file = batchFiles[0];
       const result = await downloadFile(
         options.baseUrl,
+        options.projectId,
         options.apiKey,
         file.translationId,
         file.outputPath

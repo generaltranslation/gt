@@ -13,6 +13,7 @@ export async function translate(
   const timeout = parseInt(settings.timeout) * 1000;
 
   const result = await waitForUpdates(
+    settings.projectId,
     settings.apiKey,
     settings.baseUrl,
     versionId,
@@ -26,6 +27,7 @@ export async function translate(
 
   const translations = await fetchTranslations(
     settings.baseUrl,
+    settings.projectId,
     settings.apiKey,
     versionId
   );
