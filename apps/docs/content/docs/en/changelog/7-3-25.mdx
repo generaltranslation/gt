@@ -1,19 +1,99 @@
 ---
 title: Changelog for 7/3/25
-description: Breaking changes in GT libraries
+description: Breaking changes in GT libraries as of July 3rd, 2025
 ---
 
 ## ICU message format support
-- gt-next v6.0.0, gt-react v10.0.0, core v7.0.0, cli v2.0.0
 
-## Minified JSX strings
-- gt-next v6.0.0, gt-react v10.0.0, core v7.0.0, cli v2.0.0
-
-## New `useGT` (and `getGT()`) variable pattern
-- gt-next v6.0.0, gt-react v10.0.0
-
-## `src` in `gt.config.json` becoming glob pattern
+Affected libraries: 
+- gt-next v6.0.0
+- gt-react v10.0.0
+- core v7.0.0 
 - cli v2.0.0
 
-## Removed unused `translate` functions from core
+### gt-next and gt-react
+
+- `t()` functions created by `useGT()` now accept ICU-compatible message strings as their first parameter
+
+- Dictionaries now accept ICU-compatible message strings
+
+### gt-next
+
+- `t()` functions created by `getGT()` now accept ICU-compatible message strings as their first parameter
+
+- `tx()` functions imported from `gt-next/server` now accept ICU-compatible message strings as their first parameter 
+
+## New string variable pattern
+
+Affected libraries:
+- gt-next v6.0.0
+- gt-react v10.0.0
+
+### gt-next and gt-react
+
+- `t()` functions created by `useGT()` now accept variables directly as attributes of their second (optional) parameter
+
+For example:
+
+```ts
+const t = useGT()
+t("Hello {name}", { name: "John" })
+```
+
+### gt-next
+
+- `t()` functions created by `getGT()` now accept variables directly as attributes of their second (optional) parameter
+
+- `tx()` functions imported from `gt-next/server` now accept variables directly as attributes of their second (optional) parameter
+
+For example:
+
+```ts
+import { tx } from "gt-next/server"
+await tx("Hello {name}", { name: "John" })
+```
+
+## Removing the deprecated `useDict` and `getDict` functions
+
+Affected libraries: 
+- gt-next v6.0.0
+- gt-react v10.0.0
+
+### gt-next and gt-react
+
+- Removed the `useDict()` function, deprecated in favor of `useTranslations()`
+
+### gt-next
+
+- Removed the `getDict()` function, deprecated in favor of `getTranslations()`
+
+## Minified JSX strings
+
+Affected libraries:
+- gt-next v6.0.0
+- gt-react v10.0.0
 - core v7.0.0
+- cli v2.0.0
+
+### cli
+
+CLI tool now sends minified JSX objects to the `api2` endpoint by default.
+
+
+## `src` in `gt.config.json` becoming glob pattern
+
+Affected libraries:
+- cli v2.0.0
+
+### cli
+
+- `src` in `gt.config.json` is now read as a glob pattern rather than a specified directory
+
+## Removed unused `translate` functions from core
+
+Affected libraries:
+- core v7.0.0
+
+### core
+
+- Removed unused `translate`, `translateJsx`, `translateIcu` and `translateBatch` functions from the `GT` class
