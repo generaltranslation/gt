@@ -9,7 +9,7 @@
     },
     "mdx": {
       "include": ["content/docs/[locale]/**/*.mdx"],
-      "exclude": ["content/docs/changelog/*.mdx"]
+      "exclude": ["content/docs/[locale]/changelog/**/*.mdx"]
     }
   },
   "locales": ["zh", "de", "fr", "es", "ja"],
