@@ -256,24 +256,6 @@ export const useTranslations: typeof _useTranslations = () => {
 };
 
 /**
- * Returns the dictionary access function `d`.
- * @deprecated Use the equivalent `useTranslations` function instead. `useDict` is supported as an alias.
- *
- * @param {string} [id] - Optional prefix to prepend to the translation keys.
- * @returns {Function} A translation function that accepts a key string and returns the translated value.
- *
- * @example
- * const d = useDict('user');
- * console.log(d('name')); // Translates item 'user.name'
- *
- * const d = useDict();
- * console.log(d('hello')); // Translates item 'hello'
- */
-export const useDict: typeof _useTranslations = () => {
-  throw new Error(typesFileError);
-};
-
-/**
  * Returns the user's current locale.
  *
  * @returns {string} BCP 47 locale tag, e.g., 'en-US'.

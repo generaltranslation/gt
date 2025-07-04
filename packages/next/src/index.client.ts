@@ -43,10 +43,6 @@ export {
   LocaleSelector,
   useGT,
   useTranslations,
-  /**
-   * @deprecated Use useTranslations instead
-   */
-  useTranslations as useDict,
   useLocale,
   useLocales,
   useDefaultLocale,
