@@ -23,6 +23,10 @@ Affected libraries:
 
 - `tx()` functions imported from `gt-next/server` now accept ICU-compatible message strings as their first parameter 
 
+### core
+
+- Removed the `splitStringToContent` and `renderContent` functions (adding the `formatMessage` function instead)
+
 ## New string variable pattern
 
 Affected libraries:
@@ -72,12 +76,17 @@ Affected libraries:
 Affected libraries:
 - gt-next v6.0.0
 - gt-react v10.0.0
-- core v7.0.0
 - cli v2.0.0
+
+### gt-next and gt-react
+
+- Internal rendering functions now expect the custom [GT JSX format](/docs/react/reference/gt-jsx) rather than a valid JSX trees
+
+- Hashes are rendered as 16 character strings rather than 64 character strinvs
 
 ### cli
 
-CLI tool now sends minified JSX objects to the `api2` endpoint by default.
+CLI tool now minifies JSX trees and sends to the `api2` endpoint by default
 
 
 ## `src` in `gt.config.json` becoming glob pattern
