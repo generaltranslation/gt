@@ -1,5 +1,18 @@
 # gt-next
 
+## 6.0.0
+
+### Major Changes
+
+- [#436](https://github.com/generaltranslation/gt/pull/436) [`08377f3`](https://github.com/generaltranslation/gt/commit/08377f3b5b3b600efb1e232a7b9361e8c85ea4ae) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Breaking changes
+
+### Patch Changes
+
+- Updated dependencies [[`08377f3`](https://github.com/generaltranslation/gt/commit/08377f3b5b3b600efb1e232a7b9361e8c85ea4ae)]:
+  - gt-react@10.0.0
+  - generaltranslation@7.0.0
+  - @generaltranslation/supported-locales@2.0.11
+
 ## 5.2.39
 
 ### Patch Changes
