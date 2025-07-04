@@ -1,7 +1,7 @@
 import { checkFileTranslations } from '../../api/checkFileTranslations.js';
 import { sendFiles } from '../../api/sendFiles.js';
 import {
-  noSupportedDataFormatError,
+  noSupportedFormatError,
   noLocalesError,
   noDefaultLocaleError,
   noApiKeyError,
@@ -18,7 +18,7 @@ import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
 import { flattenJsonDictionary } from '../../react/utils/flattenDictionary.js';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types/index.js';
-import { FileFormats, DataFormat } from '../../types/data.js';
+import { FileExtension, DataFormat } from '../../types/data.js';
 import path from 'node:path';
 import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile.js';
@@ -33,7 +33,6 @@ const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
  * @param filePaths - Resolved file paths for different file types
  * @param placeholderPaths - Placeholder paths for translated files
  * @param transformPaths - Transform paths for file naming
- * @param fileFormat - Format of the files
  * @param dataFormat - Format of the data within the files
  * @param options - Translation options including API settings
  * @returns Promise that resolves when translation is complete
@@ -51,7 +50,7 @@ export async function translateFiles(
   // Process JSON files
   if (filePaths.json) {
     if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
-      logErrorAndExit(noSupportedDataFormatError);
+      logErrorAndExit(noSupportedFormatError);
     }
 
     const jsonFiles = filePaths.json.map((filePath) => {
@@ -65,7 +64,7 @@ export async function translateFiles(
       return {
         content,
         fileName: relativePath,
-        fileFormat: 'JSON' as FileFormats,
+        fileExtension: 'JSON' as FileExtension,
         dataFormat,
       };
     });
@@ -82,7 +81,7 @@ export async function translateFiles(
         return {
           content: sanitizedContent,
           fileName: relativePath,
-          fileFormat: fileType.toUpperCase() as FileFormats,
+          fileExtension: fileType.toUpperCase() as FileExtension,
           dataFormat,
         };
       });

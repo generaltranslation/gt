@@ -1,32 +1,39 @@
-import { Content } from 'generaltranslation/internal';
-import React, { ReactElement } from 'react';
+import {
+  Variable,
+  VariableTransformationSuffix,
+  TransformationPrefix,
+  GTProp,
+  VariableType,
+} from 'generaltranslation/types';
+import React from 'react';
 
-export type Child = React.ReactNode;
-export type Children = Child[] | Child;
-export type GTProp = {
+/**
+ * TaggedElement is a React element with a GTProp property.
+ */
+export type GTTag = {
   id: number;
-  transformation?: string;
-  children?: Children;
-} & Record<string, any>;
-
-export type TaggedChild = React.ReactNode | TaggedElement;
-export type TaggedChildren = TaggedChild[] | TaggedChild;
-export type TaggedElementProps = Record<string, any> & { 'data-_gt': GTProp };
-export type TaggedElement = React.ReactElement<TaggedElementProps>;
-export type TaggedEntry = Content | TaggedChildren;
-
-export type FlattenedContentDictionary = Record<
-  string,
-  { hash: string; source: Content; metadata?: Record<string, any> }
->;
-
-export type Entry = string;
-export type Metadata = {
-  context?: string;
-  variablesOptions?: Record<string, any>;
-  [key: string]: any;
+  transformation?: TransformationPrefix;
+  branches?: Record<string, TaggedChildren>;
+  variableType?: VariableTransformationSuffix;
 };
-export type DictionaryEntry = Entry | [Entry] | [Entry, Metadata];
+export type TaggedElementProps = Record<string, any> & {
+  'data-_gt': GTTag;
+};
+export type TaggedElement = React.ReactElement<TaggedElementProps>;
+export type TaggedChild =
+  | Exclude<React.ReactNode, React.ReactElement>
+  | TaggedElement;
+export type TaggedChildren = TaggedChild[] | TaggedChild;
+
+/**
+ * For dictionaries, we have Entry and MetaEntry
+ */
+export type Entry = string;
+export type MetaEntry = {
+  $context?: string;
+  [key: string]: unknown;
+};
+export type DictionaryEntry = Entry | [Entry] | [Entry, MetaEntry];
 export type Dictionary = {
   [key: string]: Dictionary | DictionaryEntry;
 };
@@ -34,48 +41,29 @@ export type FlattenedDictionary = {
   [key: string]: DictionaryEntry;
 };
 
-export type Variable = {
-  key: string;
-  id?: number;
-  variable?: 'variable' | 'number' | 'datetime' | 'currency';
-};
-
 // ----- TRANSLATION ----- //
 
+/**
+ * Translated content types
+ */
 export type TranslatedElement = {
-  type: string;
-  props: {
-    'data-_gt': {
-      id: number;
-      [key: string]: any;
-    };
-    children?: TranslatedChildren;
-  };
+  i?: number;
+  d?: GTProp;
+  c?: TranslatedChildren;
 };
-
 export type TranslatedChild = TranslatedElement | string | Variable;
 export type TranslatedChildren = TranslatedChild | TranslatedChild[];
-export type TranslatedContent = string | (string | Variable)[];
-
-export type TranslationError = {
-  state: 'error';
-  error: string;
-  code?: number;
-};
-export type TranslationSuccess = {
-  state: 'success';
-  target: TranslatedChildren | TranslatedContent; // target
-};
-export type TranslationLoading = {
-  state: 'loading';
+export type Translations = {
+  [hash: string]: TranslatedChildren;
 };
 
-export type TranslationsObject = {
-  [hash: string]: TranslationSuccess | TranslationLoading | TranslationError;
-};
-// maps locales to translation objects
-export type LocalesTranslations = {
-  [locale: string]: TranslationsObject | null;
+/**
+ * Mapping of hashes to translation result status.
+ */
+export type TranslationsStatus = {
+  [hash: string]:
+    | { status: 'success' | 'loading' }
+    | { status: 'error'; code?: number; error?: string };
 };
 
 // ----- DICTIONARY ----- //
@@ -97,43 +85,17 @@ export type CustomLoader = (locale: string) => Promise<any>;
 
 export type RenderMethod = 'skeleton' | 'replace' | 'default';
 
-export type DictionaryTranslationOptions = {
-  variables?: Record<string, any>;
-  variablesOptions?: Record<
-    string,
-    Intl.NumberFormatOptions | Intl.DateTimeFormatOptions
-  >;
+export type DictionaryTranslationOptions = Record<string, any>;
+export type InlineTranslationOptions = DictionaryTranslationOptions & {
+  $context?: string;
+  $id?: string;
 };
-export type InlineTranslationOptions = {
-  context?: string;
-  id?: string;
-} & DictionaryTranslationOptions;
 export type RuntimeTranslationOptions = {
   locale?: string;
-} & InlineTranslationOptions;
-
-export class GTTranslationError extends Error {
-  constructor(
-    public error: string,
-    public code: number
-  ) {
-    super(error);
-    this.code = code;
-  }
-
-  toTranslationError(): TranslationError {
-    return {
-      state: 'error',
-      error: this.error,
-      code: this.code,
-    };
-  }
-}
-
-// ----- VARIABLES ----- //
+} & Omit<InlineTranslationOptions, 'id'>;
 
 export type VariableProps = {
-  variableType: 'variable' | 'number' | 'datetime' | 'currency';
+  variableType: VariableType;
   variableValue: any;
   variableOptions: Intl.NumberFormatOptions | Intl.DateTimeFormatOptions;
   variableName: string;

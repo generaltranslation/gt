@@ -10,7 +10,6 @@ import { NodePath } from '@babel/traverse';
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
 const generate = generateModule.default || generateModule;
-import { getFiles } from '../../fs/findJsxFilepath.js';
 import { isMeaningful } from '../jsx/evaluateJsx.js';
 import { handleJsxElement } from '../jsx/wrapJsx.js';
 import { getRelativePath } from '../../fs/findFilepath.js';
@@ -19,6 +18,8 @@ import {
   createImports,
   ImportItem,
 } from '../jsx/utils/parseAst.js';
+import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
+import { matchFiles } from '../../fs/matchFiles.js';
 
 const IMPORT_MAP = {
   T: { name: 'T', source: 'gt-react' },
@@ -43,9 +44,9 @@ export async function wrapContentReact(
   errors: string[],
   warnings: string[]
 ): Promise<{ filesUpdated: string[] }> {
-  const srcDirectory = options.src || ['./'];
+  const filePatterns = options.src || DEFAULT_SRC_PATTERNS;
 
-  const files = srcDirectory.flatMap((dir) => getFiles(dir));
+  const files = matchFiles(process.cwd(), filePatterns);
   const filesUpdated = [];
 
   for (const file of files) {
@@ -63,7 +64,7 @@ export async function wrapContentReact(
     const code = await fs.promises.readFile(file, 'utf8');
 
     // Create relative path from src directory and remove extension
-    const relativePath = getRelativePath(file, srcDirectory[0]);
+    const relativePath = getRelativePath(file, process.cwd());
 
     let ast;
     try {

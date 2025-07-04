@@ -92,7 +92,7 @@ export class ReactCLI extends BaseCLI {
       .option('--dictionary <path>', 'Path to dictionary file')
       .option(
         '--src <paths...>',
-        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components"
+        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
       )
       .option(
         '--default-language, --default-locale <locale>',
@@ -154,7 +154,7 @@ export class ReactCLI extends BaseCLI {
       .option('--dictionary <path>', 'Path to dictionary file')
       .option(
         '--src <paths...>',
-        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components"
+        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
       )
       .option(
         '--default-language, --default-locale <locale>',
@@ -224,7 +224,7 @@ export class ReactCLI extends BaseCLI {
       .option('--dictionary <path>', 'Path to dictionary file')
       .option(
         '--src <paths...>',
-        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components"
+        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
       )
       .option(
         '--inline',
@@ -247,7 +247,7 @@ export class ReactCLI extends BaseCLI {
       )
       .option(
         '--src <paths...>',
-        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components"
+        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
       )
       .option(
         '--tsconfig, --jsconfig <path>',
@@ -288,8 +288,7 @@ export class ReactCLI extends BaseCLI {
       )
       .option(
         '--src <paths...>',
-        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
-        findFilepaths(['./src', './app', './pages', './components'])
+        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
       )
       .option(
         '-c, --config <path>',
@@ -352,7 +351,7 @@ export class ReactCLI extends BaseCLI {
       } else {
         logErrorAndExit(
           chalk.red(
-            `CLI tool encountered errors while scanning for translatable content. ${chalk.dim('To ignore these errors, re-run with --ignore-errors')}\n` +
+            `CLI tool encountered errors while scanning for translatable content. ${chalk.gray('To ignore these errors, re-run with --ignore-errors')}\n` +
               errors
                 .map((error) => chalk.red('• Error: ') + chalk.white(error))
                 .join('\n')

@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { formatCurrency } from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 
@@ -14,39 +14,37 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * </Currency>
  * ```
  *
- * @param {any} [children] - Optional content to render inside the currency component.
- * @param {string} [currency] - The currency type (e.g., USD, EUR, etc.).
- * @param {string[]} [locales] - Optional locales to use for currency formatting. If not provided, the library default locale (en-US) is used. If wrapped in a `<GTProvider>`, the user's locale is used.
- * @param {Intl.NumberFormatOptions} [options] - Optional formatting options to customize how the currency is displayed.
+ * @param {number | string | null | undefined} children - Content to render inside the currency component.
+ * @param {string} [currency="USD"] - The currency type (e.g., USD, EUR, etc.).
+ * @param {string[]} [locales] - Optional locales to use for currency formatting. If wrapped in a `<GTProvider>`, the user's locale is used.
+ * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options to customize how the currency is displayed.
  * @returns {JSX.Element} The formatted currency component.
  */
 function Currency({
   children,
   currency = 'USD',
-  name,
   locales,
   options = {},
 }: {
-  children?: any;
+  children: number | string | null | undefined;
   currency?: string;
   name?: string;
   locales?: string[];
   options?: Intl.NumberFormatOptions;
-}): React.JSX.Element {
+}): React.JSX.Element | null {
   const context = useContext(GTContext);
-  if (context) {
-    locales ||= [
-      ...(context.locale && [context.locale]),
-      context.defaultLocale,
-    ];
-  } else {
-    locales ||= [libraryDefaultLocale];
-  }
-  let renderedValue =
+  if (!children) return null;
+  const gt = context?.gt || new GT();
+  let renderedValue: string | number =
     typeof children === 'string' ? parseFloat(children) : children;
   if (typeof renderedValue === 'number') {
+    if (!locales) {
+      locales ||= [];
+      if (context?.locale) locales.push(context.locale);
+      if (context?.defaultLocale) locales.push(context.defaultLocale);
+    }
     // Format the value using Intl.NumberFormat
-    renderedValue = formatCurrency(renderedValue, currency, {
+    renderedValue = gt.formatCurrency(renderedValue, currency, {
       locales,
       ...options,
     });

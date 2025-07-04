@@ -6,9 +6,8 @@ export type GTProviderProps = {
   locale?: string;
 };
 
-export type TxProps = {
+export type TxProps = Record<string, any> & {
   children: any;
-  id?: string;
   context?: string;
   locale?: string;
 };

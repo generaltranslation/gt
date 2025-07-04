@@ -24,10 +24,6 @@ export {
   // Hooks
   useGT,
   useTranslations,
-  /**
-   * @deprecated Use useTranslations instead
-   */
-  useTranslations as useDict,
   useLocale,
   useLocales,
   useSetLocale,

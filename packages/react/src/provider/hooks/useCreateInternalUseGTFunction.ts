@@ -1,63 +1,44 @@
-import {
-  renderContentToString,
-  splitStringToContent,
-} from 'generaltranslation';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import { useCallback } from 'react';
 import {
   InlineTranslationOptions,
-  TranslationsObject,
+  TranslationsStatus,
+  Translations,
   RenderMethod,
 } from '../../types/types';
-import { TranslateContentCallback } from '../../types/runtime';
-import { Content } from 'generaltranslation/internal';
+import { TranslateIcuCallback } from '../../types/runtime';
+import { formatMessage } from 'generaltranslation';
 
 export default function useCreateInternalUseGTFunction(
-  translations: TranslationsObject | null,
+  translations: Translations | null,
+  translationsStatus: TranslationsStatus | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
   dialectTranslationRequired: boolean,
   runtimeTranslationEnabled: boolean,
-  registerContentForTranslation: TranslateContentCallback,
+  registerIcuForTranslation: TranslateIcuCallback,
   renderSettings: { method: RenderMethod }
 ): (string: string, options?: InlineTranslationOptions) => string {
   return useCallback(
-    (
-      contentString: string,
-      options: {
-        locale?: string;
-        context?: string;
-        variables?: Record<string, any>;
-        variableOptions?: Record<
-          string,
-          Intl.NumberFormatOptions | Intl.DateTimeFormatOptions
-        >;
-        [key: string]: any;
-      } = {}
-    ) => {
+    (contentString: string, options: InlineTranslationOptions = {}) => {
       // ----- SET UP ----- //
+      const { $id: id, $context: context, ...variables } = options;
 
       // Check: reject invalid content
       if (!contentString || typeof contentString !== 'string') return '';
 
-      // Parse content
-      const source = splitStringToContent(contentString);
-
       // Render method
-      const renderContent = (content: Content, locales: string[]) => {
-        return renderContentToString(
-          content,
+      const renderMessage = (message: string, locales: string[]) => {
+        return formatMessage(message, {
           locales,
-          options.variables,
-          options.variablesOptions
-        );
+          variables,
+        });
       };
 
       // ----- CHECK TRANSLATIONS ----- //
 
       // Dependency flag to avoid recalculating hash whenever translation object changes
-      const id = options?.id;
       const translationWithIdExists = id && translations?.[id as string];
 
       let hash = '';
@@ -68,11 +49,11 @@ export default function useCreateInternalUseGTFunction(
         !translationWithIdExists // Translation doesn't exist under the id
       ) {
         // Calculate hash
-        hash = hashJsxChildren({
-          source,
-          ...(options?.context && { context: options.context }),
+        hash = hashSource({
+          source: contentString,
+          ...(context && { context }),
           ...(id && { id }),
-          dataFormat: 'JSX',
+          dataFormat: 'ICU',
         });
       }
 
@@ -81,57 +62,60 @@ export default function useCreateInternalUseGTFunction(
         ? translations?.[id as string]
         : translations?.[hash];
 
+      const translationStatus = translationsStatus?.[hash];
+
       // ----- TRANSLATE ON DEMAND ----- //
 
       // Render fallback when tx not required or error
-      if (!translationRequired || translationEntry?.state === 'error') {
-        return renderContent(source, [defaultLocale]);
+      if (!translationRequired || translationStatus?.status === 'error') {
+        return renderMessage(contentString, [defaultLocale]);
       }
 
       // Render success
-      if (translationEntry?.state === 'success') {
-        return renderContent(translationEntry.target as Content, [
+      if (translationStatus?.status === 'success') {
+        return renderMessage(translationEntry as string, [
           locale,
           defaultLocale,
         ]);
       }
 
       // ----- TRANSLATE ON DEMAND ----- //
-      // develoment only
+      // development only
 
       // Check if runtime translation is enabled
       if (!runtimeTranslationEnabled) {
-        return renderContent(source, [defaultLocale]);
+        return renderMessage(contentString, [defaultLocale]);
       }
 
       // Translate Content
-      registerContentForTranslation({
-        source,
+      registerIcuForTranslation({
+        source: contentString,
         targetLocale: locale,
         metadata: {
-          ...(options?.context && { context: options.context }),
-          id,
+          ...(context && { context }),
+          ...(id && { id }),
           hash: hash || '',
         },
       });
 
       // Loading behavior
       if (renderSettings.method === 'replace') {
-        return renderContent(source, [defaultLocale]);
+        return renderMessage(contentString, [defaultLocale]);
       } else if (renderSettings.method === 'skeleton') {
         return '';
       }
       return dialectTranslationRequired // default behavior
-        ? renderContent(source, [defaultLocale])
+        ? renderMessage(contentString, [defaultLocale])
         : '';
     },
     [
       translations,
+      translationsStatus,
       locale,
       defaultLocale,
       translationRequired,
       runtimeTranslationEnabled,
-      registerContentForTranslation,
+      registerIcuForTranslation,
       dialectTranslationRequired,
     ]
   );

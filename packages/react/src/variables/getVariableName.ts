@@ -9,10 +9,9 @@ export const baseVariablePrefix = '_gt_';
 
 export default function getVariableName(
   props: Record<string, any> = {},
-  variableType: string
+  variableType: keyof typeof defaultVariableNames
 ): string {
   if (props.name) return props.name;
-  const baseVariableName =
-    (defaultVariableNames as Record<string, any>)[variableType] || 'value';
+  const baseVariableName = defaultVariableNames[variableType] || 'value';
   return `${baseVariablePrefix}${baseVariableName}_${props['data-_gt']?.id}`;
 }

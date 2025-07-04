@@ -7,21 +7,23 @@ import {
 } from '../../errors/createErrors';
 import {
   RenderMethod,
-  TranslationError,
-  TranslationsObject,
-  TranslationSuccess,
+  TranslatedChildren,
+  TranslationsStatus,
+  Translations,
 } from '../../types/types';
 
 import {
-  TranslateContentCallback,
+  TranslateIcuCallback,
   TranslateChildrenCallback,
+  TranslateI18nextCallback,
 } from '../../types/runtime';
-import { Content, JsxChildren } from 'generaltranslation/internal';
+import { JsxChildren } from 'generaltranslation/internal';
 import {
   maxConcurrentRequests,
   maxBatchSize,
   batchInterval,
 } from '../config/defaultProps';
+import { DataFormat } from 'generaltranslation/types';
 
 // Queue to store requested keys between renders.
 type TranslationRequestMetadata = {
@@ -31,11 +33,11 @@ type TranslationRequestMetadata = {
 };
 type TranslationRequestQueueItem = (
   | {
-      type: 'content';
-      source: Content;
+      dataFormat: 'ICU' | 'I18NEXT';
+      source: string;
     }
   | {
-      type: 'jsx';
+      dataFormat: 'JSX';
       source: JsxChildren;
     }
 ) & {
@@ -53,6 +55,7 @@ export default function useRuntimeTranslation({
   runtimeUrl,
   renderSettings,
   setTranslations,
+  setTranslationsStatus,
   ...globalMetadata
 }: {
   projectId?: string;
@@ -65,17 +68,20 @@ export default function useRuntimeTranslation({
     method: RenderMethod;
     timeout?: number;
   };
-  setTranslations: React.Dispatch<React.SetStateAction<any>>;
+  setTranslations: React.Dispatch<React.SetStateAction<Translations | null>>;
+  setTranslationsStatus: React.Dispatch<
+    React.SetStateAction<TranslationsStatus | null>
+  >;
   [key: string]: any;
 }): {
-  registerContentForTranslation: TranslateContentCallback;
+  registerI18nextForTranslation: TranslateI18nextCallback;
+  registerIcuForTranslation: TranslateIcuCallback;
   registerJsxForTranslation: TranslateChildrenCallback;
   runtimeTranslationEnabled: boolean;
 } {
   // ------ EARLY RETURN IF DISABLED ----- //
 
   // Translation at runtime during development is enabled
-  // TODO: deprecate and reassign to plugin
   const runtimeTranslationEnabled = !!(
     projectId &&
     runtimeUrl &&
@@ -86,10 +92,16 @@ export default function useRuntimeTranslation({
   if (!runtimeTranslationEnabled)
     return {
       runtimeTranslationEnabled,
-      registerContentForTranslation: () =>
+      registerI18nextForTranslation: () =>
         Promise.reject(
           new Error(
-            'registerContentForTranslation() failed because translation is disabled'
+            'registerI18nextForTranslation() failed because translation is disabled'
+          )
+        ),
+      registerIcuForTranslation: () =>
+        Promise.reject(
+          new Error(
+            'registerIcuForTranslation() failed because translation is disabled'
           )
         ),
       registerJsxForTranslation: () =>
@@ -116,7 +128,7 @@ export default function useRuntimeTranslation({
   );
   // Requests that have yet to be resolved
   const pendingRequestQueueRef = useRef<
-    Map<string, Promise<TranslationSuccess | TranslationError>>
+    Map<string, Promise<TranslatedChildren>>
   >(new Map());
 
   useEffect(() => {
@@ -127,53 +139,74 @@ export default function useRuntimeTranslation({
 
   // ----- DEFINE FUNCTIONS ----- //
 
-  const [registerContentForTranslation, registerJsxForTranslation] =
-    useMemo(() => {
-      const createTranslationRegistrationFunction = (
-        type: 'jsx' | 'content'
-      ) => {
-        return (params: {
-          source: Content;
-          targetLocale: string;
-          metadata: TranslationRequestMetadata;
-        }): Promise<TranslationSuccess | TranslationError> => {
-          // Get the key, which is a combination of hash and locale
-          const key = `${params.metadata.hash}:${params.targetLocale}`;
+  const {
+    i18next: registerI18nextForTranslation,
+    icu: registerIcuForTranslation,
+    jsx: registerJsxForTranslation,
+  } = useMemo(() => {
+    const createTranslationRegistrationFunction = <T extends DataFormat>(
+      dataFormat: T
+    ) => {
+      return (params: {
+        source: T extends 'I18NEXT'
+          ? Parameters<TranslateI18nextCallback>[0]['source']
+          : T extends 'ICU'
+            ? Parameters<TranslateIcuCallback>[0]['source']
+            : T extends 'JSX'
+              ? Parameters<TranslateChildrenCallback>[0]['source']
+              : never;
+        targetLocale: string;
+        metadata: TranslationRequestMetadata;
+      }): Promise<TranslatedChildren> => {
+        // Get the key, which is a combination of hash and locale
+        const key = `${params.metadata.hash}:${params.targetLocale}`;
 
-          // Return a promise to current request if it exists
-          const pendingRequest = pendingRequestQueueRef.current.get(key);
-          if (pendingRequest) {
-            return pendingRequest;
+        // Return a promise to current request if it exists
+        const pendingRequest = pendingRequestQueueRef.current.get(key);
+        if (pendingRequest) {
+          return pendingRequest;
+        }
+
+        // Promise for hooking into the translation request to know when complete
+        const translationPromise = new Promise<TranslatedChildren>(
+          (resolve, reject) => {
+            requestQueueRef.current.set(
+              key,
+              dataFormat === 'JSX'
+                ? {
+                    dataFormat: 'JSX' as const,
+                    source: params.source as JsxChildren,
+                    metadata: params.metadata,
+                    resolve,
+                    reject,
+                  }
+                : {
+                    dataFormat: dataFormat as 'ICU' | 'I18NEXT',
+                    source: params.source as string,
+                    metadata: params.metadata,
+                    resolve,
+                    reject,
+                  }
+            );
           }
-
-          // Promise for hooking into the translation request to know when complete
-          const translationPromise = new Promise<
-            TranslationSuccess | TranslationError
-          >((resolve, reject) => {
-            requestQueueRef.current.set(key, {
-              type,
-              source: params.source,
-              metadata: params.metadata,
-              resolve,
-              reject,
-            });
+        )
+          .catch((error) => {
+            throw error;
           })
-            .catch((error) => {
-              throw error;
-            })
-            .finally(() => {
-              pendingRequestQueueRef.current.delete(key);
-            });
+          .finally(() => {
+            pendingRequestQueueRef.current.delete(key);
+          });
 
-          pendingRequestQueueRef.current.set(key, translationPromise);
-          return translationPromise;
-        };
+        pendingRequestQueueRef.current.set(key, translationPromise);
+        return translationPromise;
       };
-      return [
-        createTranslationRegistrationFunction('content'),
-        createTranslationRegistrationFunction('jsx'),
-      ];
-    }, []); // refs are stable so don't need to be included in dep array
+    };
+    return {
+      i18next: createTranslationRegistrationFunction('I18NEXT'),
+      icu: createTranslationRegistrationFunction('ICU'),
+      jsx: createTranslationRegistrationFunction('JSX'),
+    };
+  }, []); // refs are stable so don't need to be included in dep array
 
   // ----- DEFINE FUNCTIONS ----- //
 
@@ -184,27 +217,28 @@ export default function useRuntimeTranslation({
       targetLocale: string
     ) => {
       if (requestQueueRef.current.size === 0) {
-        return {};
+        return [{}, {}];
       }
 
       // increment active requests
       setActiveRequests((prev) => prev + 1);
 
       const requests = Array.from(batchRequests.values());
-      const newTranslations: TranslationsObject = {};
+      const newTranslations: Translations = {};
+      const newTranslationsStatus: TranslationsStatus = {};
 
       try {
         // ----- TRANSLATION LOADING ----- //
-        const loadingTranslations: TranslationsObject = Object.entries(
+        const loadingTranslations: TranslationsStatus = Object.entries(
           batchRequests
-        ).reduce((acc: TranslationsObject, [hash, request]) => {
+        ).reduce((acc: TranslationsStatus, [, request]) => {
           // loading state for jsx, render loading behavior
           acc[request.metadata.hash] = {
-            state: 'loading',
+            status: 'loading',
           };
           return acc;
         }, {});
-        setTranslations((prev: any) => {
+        setTranslationsStatus((prev) => {
           return { ...(prev || {}), ...loadingTranslations };
         });
 
@@ -268,9 +302,9 @@ export default function useRuntimeTranslation({
           ) {
             const { translation } = result;
             // set translation
-            newTranslations[hash] = {
-              state: 'success',
-              target: translation,
+            newTranslations[hash] = translation;
+            newTranslationsStatus[hash] = {
+              status: 'success',
             };
             return;
           }
@@ -292,10 +326,10 @@ export default function useRuntimeTranslation({
               result.error
             );
             // set error in translation object
-            newTranslations[hash] = {
-              state: 'error',
-              error: result.error,
+            newTranslationsStatus[hash] = {
+              status: 'error',
               code: result.code,
+              error: result.error,
             };
             return;
           }
@@ -308,10 +342,10 @@ export default function useRuntimeTranslation({
             ),
             result
           );
-          newTranslations[hash] = {
-            state: 'error',
-            error: 'An error occurred.',
+          newTranslationsStatus[hash] = {
+            status: 'error',
             code: 500,
+            error: 'An error occurred.',
           };
         });
       } catch (error) {
@@ -325,8 +359,8 @@ export default function useRuntimeTranslation({
         // add error message to all translations from this request
         requests.forEach((request) => {
           // id defaults to hash if none provided
-          newTranslations[request.metadata.hash] = {
-            state: 'error',
+          newTranslationsStatus[request.metadata.hash] = {
+            status: 'error',
             error: 'An error occurred.',
             code: 500,
           };
@@ -336,12 +370,12 @@ export default function useRuntimeTranslation({
         setActiveRequests((prev) => prev - 1);
 
         // resolve all promises
-        requests.forEach((request) =>
-          request.resolve(newTranslations[request.metadata.hash])
-        );
+        requests.forEach((request) => {
+          request.resolve(newTranslations[request.metadata.hash]);
+        });
 
         // return the new translations
-        return newTranslations;
+        return [newTranslations, newTranslationsStatus];
       }
     },
     [
@@ -375,11 +409,19 @@ export default function useRuntimeTranslation({
           Array.from(requestQueueRef.current.entries()).slice(0, batchSize)
         );
         (async () => {
-          const batchResult = await sendBatchRequest(batchRequests, locale);
+          // Update the translation result
+          const [batchResult, batchStatus] = await sendBatchRequest(
+            batchRequests,
+            locale
+          );
           if (storeResults) {
-            setTranslations((prev: any) => ({
+            setTranslations((prev) => ({
               ...(prev || {}),
               ...batchResult,
+            }));
+            setTranslationsStatus((prev) => ({
+              ...(prev || {}),
+              ...batchStatus,
             }));
           }
         })();
@@ -395,7 +437,8 @@ export default function useRuntimeTranslation({
 
   return {
     runtimeTranslationEnabled,
-    registerContentForTranslation,
+    registerI18nextForTranslation,
+    registerIcuForTranslation,
     registerJsxForTranslation,
   };
 }
