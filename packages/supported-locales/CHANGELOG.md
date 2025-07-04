@@ -1,5 +1,14 @@
 # @generaltranslation/supported-locales
 
+## 2.0.11
+
+### Patch Changes
+
+- [#436](https://github.com/generaltranslation/gt/pull/436) [`08377f3`](https://github.com/generaltranslation/gt/commit/08377f3b5b3b600efb1e232a7b9361e8c85ea4ae) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Breaking changes
+
+- Updated dependencies [[`08377f3`](https://github.com/generaltranslation/gt/commit/08377f3b5b3b600efb1e232a7b9361e8c85ea4ae)]:
+  - generaltranslation@7.0.0
+
 ## 2.0.10
 
 ### Patch Changes
