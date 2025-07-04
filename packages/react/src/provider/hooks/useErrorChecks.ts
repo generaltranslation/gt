@@ -10,9 +10,7 @@ import {
 } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../../errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
-import { GT } from 'generaltranslation';
 
-// TODO: do this in a plugin
 export function useErrorChecks({
   devApiKey,
   projectId,

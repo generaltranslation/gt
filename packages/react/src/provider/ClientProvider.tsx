@@ -116,7 +116,6 @@ export default function ClientProvider({
   }, [initialTranslations]);
 
   // ---------- TRANSLATION METHODS ---------- //
-  // TODO: do this in a plugin
 
   const {
     registerIcuForTranslation,
