@@ -107,7 +107,7 @@ npx gtx-cli translate --dry-run
 | `--version-id`    | Specify a version ID (by default, a hash of the content)    | `string`  | `true`     |                 |
 | `--config <path>`| Specify a path to the GT config file                       | `string`  | `true`     | `"gt.config.json"`  |
 | `--tsconfig, --jsconfig <path>`| Specify a path to the TS or JS config file | `string`  | `true`     |                 |
-| `--src <paths>`   | Space-separated list of glob patterns to match source files. Should be relative to root directory.                     | `[string]`  | `true`     | `./src && ./app && ./pages && ./components`      |
+| `--src <paths>`   | Space-separated list of glob patterns to match source files. Should be relative to root directory.                     | `[string]`  | `true`     | `[  'src/**/*.{js,jsx,ts,tsx}', 'app/**/*.{js,jsx,ts,tsx}', 'pages/**/*.{js,jsx,ts,tsx}', 'components/**/*.{js,jsx,ts,tsx}', ]`           |
 | `--dictionary <path>`    | Specify a path to the dictionary file                | `string`  | `true`     |                 |
 | `--inline`        | Include inline `<T>` tags in addition to the dictionary     | `boolean` | `true`     | `true`            |
 | `--timeout`       | The timeout for the translation request in seconds          | `number`  | `true`     | `600`              |
