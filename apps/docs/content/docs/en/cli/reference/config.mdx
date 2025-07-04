@@ -22,7 +22,15 @@ If you are using `gt-next` or `gt-react`, these are also the locales that your a
 
 - `stageTranslations`: An optional boolean flag that indicates whether your project is configured to use human review.
 
-- `src`: An optional array of relative directory paths that contain translatable content.
+- `src`: An optional array of file glob patterns for your source files. By default, set to:
+```json
+[
+  "src/**/*.{js,jsx,ts,tsx}",
+  "app/**/*.{js,jsx,ts,tsx}",
+  "pages/**/*.{js,jsx,ts,tsx}",
+  "components/**/*.{js,jsx,ts,tsx}"
+]
+```
 
 - `dictionary`: An optional string that specifies the relative path to the dictionary file.
 
