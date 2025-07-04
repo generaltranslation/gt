@@ -45,7 +45,7 @@ If your project is using the Next.js App Router, the setup command will add a `<
 
 | Parameter       | Description                                      | Type    | Optional | Default         |
 |-----------------|--------------------------------------------------|---------|----------|-----------------|
-| `--src <path>`           | The source directory to scan                     | `string`  | `true`     |  `./src && ./app && ./pages && ./components` |
+| `--src <paths>`           | Space-separated list of glob patterns to match source files. Should be relative to root directory.                     | `string`  | `true`     |  `[  'src/**/*.{js,jsx,ts,tsx}', 'app/**/*.{js,jsx,ts,tsx}', 'pages/**/*.{js,jsx,ts,tsx}', 'components/**/*.{js,jsx,ts,tsx}', ]`      |
 | `--config <path>`        | The path to the GT config file                   | `string`  | `true`     | `"gt.config.json"` |
 
 ---

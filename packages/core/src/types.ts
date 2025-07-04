@@ -2,24 +2,65 @@ import { LocaleProperties } from './locales/getLocaleProperties';
 
 export { LocaleProperties };
 
-export type Variable = {
-  variable?: string;
-  id?: string | number;
-  key: string;
-};
-
 export type Content = string | Array<string | Variable>;
 
+/**
+ * Map of data-_gt properties to their corresponding React props
+ */
+export const HTML_CONTENT_PROPS = {
+  pl: 'placeholder',
+  ti: 'title',
+  alt: 'alt',
+  arl: 'aria-label',
+  arb: 'aria-labelledby',
+  ard: 'aria-describedby',
+} as const;
+
+export type HtmlContentPropKeysRecord = Partial<
+  Record<keyof typeof HTML_CONTENT_PROPS, string>
+>;
+export type HtmlContentPropValuesRecord = Partial<
+  Record<(typeof HTML_CONTENT_PROPS)[keyof typeof HTML_CONTENT_PROPS], string>
+>;
+
+/**
+ * Transformations are made from a prefix and a suffix.
+ */
+export type Transformation =
+  | 'translate-client'
+  | 'translate-server'
+  | 'variable-variable'
+  | 'variable-currency'
+  | 'variable-datetime'
+  | 'variable-number'
+  | 'plural'
+  | 'branch';
+export type TransformationPrefix =
+  | 'translate'
+  | 'variable'
+  | 'plural'
+  | 'branch'
+  | 'fragment';
+export type VariableTransformationSuffix =
+  | 'variable'
+  | 'number'
+  | 'datetime'
+  | 'currency';
+
+/**
+ * GTProp is an internal property used to contain data for translating and rendering elements.
+ * note, transformations are only read on the server side if they are 'plural' or 'branch'
+ */
+export type GTProp = {
+  b?: Record<string, JsxChildren>; // Branches
+  t?: 'p' | 'b'; // Branch Transformation
+} & HtmlContentPropKeysRecord;
+
 export type JsxElement = {
-  type: string;
-  props: {
-    'data-_gt'?: {
-      id: number;
-      transformation?: string;
-      branches?: Record<string, JsxChildren>;
-    };
-    children?: JsxChildren;
-  };
+  t?: string; // tag name
+  i?: number; // id
+  d?: GTProp; // GT data
+  c?: JsxChildren; // children
 };
 
 export type JsxChild = string | JsxElement | Variable;
@@ -32,6 +73,13 @@ export type Metadata = {
   actionType?: 'standard' | 'fast' | string;
   [key: string]: any;
 };
+
+export type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
+
+export type FormatVariables = Record<
+  string,
+  string | number | boolean | null | undefined | Date
+>;
 
 export type Update =
   | {
@@ -104,3 +152,20 @@ export type TranslationError = {
 };
 
 export type { CustomMapping } from './locales/customLocaleMapping';
+
+// ----- VARIABLES ----- //
+
+export type VariableType =
+  | 'v' // Variable
+  | 'n' // Number
+  | 'd' // Date
+  | 'c'; // Currency
+
+/**
+ * Variables are used to store the variable name and type.
+ */
+export type Variable = {
+  k: string;
+  i?: number;
+  v?: VariableType;
+};

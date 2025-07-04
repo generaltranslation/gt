@@ -3,7 +3,8 @@ import {
   Dictionary,
   DictionaryTranslationOptions,
   RenderMethod,
-  TranslationsObject,
+  TranslationsStatus,
+  Translations,
 } from '../../types/types';
 import {
   getDictionaryEntry,
@@ -14,23 +15,20 @@ import {
   createInvalidDictionaryEntryWarning,
   createNoEntryFoundWarning,
 } from '../../errors/createErrors';
-import {
-  renderContentToString,
-  splitStringToContent,
-} from 'generaltranslation';
-import { hashJsxChildren } from 'generaltranslation/id';
-import { Content } from 'generaltranslation/internal';
-import { TranslateContentCallback } from '../../types/runtime';
+import { hashSource } from 'generaltranslation/id';
+import { formatMessage } from 'generaltranslation';
+import { TranslateIcuCallback } from '../../types/runtime';
 
 export default function useCreateInternalUseTranslationsFunction(
   dictionary: Dictionary | undefined,
-  translations: TranslationsObject | null,
+  translations: Translations | null,
+  translationsStatus: TranslationsStatus | null,
   locale: string,
   defaultLocale: string,
   translationRequired: boolean,
   dialectTranslationRequired: boolean,
   runtimeTranslationEnabled: boolean,
-  registerContentForTranslation: TranslateContentCallback,
+  registerIcuForTranslation: TranslateIcuCallback,
   renderSettings: { method: RenderMethod }
 ) {
   return useCallback(
@@ -63,61 +61,57 @@ export default function useCreateInternalUseTranslationsFunction(
       // Check: reject invalid content
       if (!entry || typeof entry !== 'string') return '';
 
-      // Parse content
-      const source = splitStringToContent(entry);
-
       // Render method
-      const renderContent = (content: Content, locales: string[]) => {
-        return renderContentToString(
-          content,
+      const renderMessage = (message: string, locales: string[]) => {
+        return formatMessage(message, {
           locales,
-          options.variables,
-          options.variablesOptions
-        );
+          variables: options,
+        });
       };
 
       // Check: translation not required
-      if (!translationRequired) return renderContent(source, [defaultLocale]);
+      if (!translationRequired) return renderMessage(entry, [defaultLocale]);
 
       // ----- CHECK TRANSLATIONS ----- //
 
       // Get hash
-      const hash = hashJsxChildren({
-        source,
-        ...(metadata?.context && { context: metadata.context }),
+      const hash = hashSource({
+        source: entry,
+        ...(metadata?.$context && { context: metadata.$context }),
         id,
-        dataFormat: 'JSX',
+        dataFormat: 'ICU',
       });
 
       // Check id first
       const translationEntry = translations?.[hash];
+      const translationStatus = translationsStatus?.[hash];
 
       // Check translation successful
-      if (translationEntry?.state === 'success') {
-        return renderContent(translationEntry.target as Content, [
+      if (translationStatus?.status === 'success') {
+        return renderMessage(translationEntry as string, [
           locale,
           defaultLocale,
         ]);
       }
 
-      if (translationEntry?.state === 'error') {
-        return renderContent(source, [defaultLocale]);
+      if (translationStatus?.status === 'error') {
+        return renderMessage(entry, [defaultLocale]);
       }
 
       // ----- TRANSLATE ON DEMAND ----- //
-      // develoment only
+      // development only
 
       // Check if runtime translation is enabled
       if (!runtimeTranslationEnabled) {
-        return renderContent(source, [defaultLocale]);
+        return renderMessage(entry, [defaultLocale]);
       }
 
       // Translate Content
-      registerContentForTranslation({
-        source,
+      registerIcuForTranslation({
+        source: entry,
         targetLocale: locale,
         metadata: {
-          ...(metadata?.context && { context: metadata.context }),
+          ...(metadata?.$context && { context: metadata.$context }),
           id,
           hash,
         },
@@ -125,22 +119,23 @@ export default function useCreateInternalUseTranslationsFunction(
 
       // Loading behavior
       if (renderSettings.method === 'replace') {
-        return renderContent(source, [defaultLocale]);
+        return renderMessage(entry, [defaultLocale]);
       } else if (renderSettings.method === 'skeleton') {
         return '';
       }
       return dialectTranslationRequired // default behavior
-        ? renderContent(source, [defaultLocale])
+        ? renderMessage(entry, [defaultLocale])
         : '';
     },
     [
       dictionary,
       translations,
+      translationsStatus,
       locale,
       defaultLocale,
       translationRequired,
       runtimeTranslationEnabled,
-      registerContentForTranslation,
+      registerIcuForTranslation,
       dialectTranslationRequired,
     ]
   );

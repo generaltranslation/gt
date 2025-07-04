@@ -27,10 +27,12 @@ GT JSX is a compressed version of this JSX tree structure that is used by the Ge
 
 ```ts
 type Element = {
+    t?: string; // tag name
     c?: (Element | Variable | string)[]; // children
     i?: number; // GT ID of the element
     d?: {
         b?: Record<string, Element | Variable | string>; // branches
+        t?: "p" | "b"; // branch transformation type (plural or branch)
         pl?: string; // placeholder
         ti?: string; // title
         alt?: string; // alt
@@ -142,10 +144,12 @@ Elements which are not variable are represented using the following data structu
 </Callout>
 ```ts
 type Element = {
+    t?: string; // tag name
     c?: GTJSXTree | GTJSXTree[]; // children
     i?: number; // GT ID of the element
     d?: { // data-_gt prop
         b?: Record<string, GTJSXTree | GTJSXTree[]>; // branches
+        t?: "p" | "b"; // branch transformation type (plural or branch)
         pl?: string; // placeholder
         ti?: string; // title
         alt?: string; // alt
@@ -179,9 +183,10 @@ Would be represented in GT JSX as:
 
 ```ts
 [
-    { c: "Hello", i: 1 },
+    { t: "b", c: "Hello", i: 1 },
     ", my name is ",
     { 
+        t: "i",
         c: { k: "_gt_var_3", i: 3 }, 
         i: 2 
     }
@@ -206,6 +211,7 @@ Would be represented in GT JSX as:
 { 
     i: 1,
     d: {
+        t: "p",
         b: {
             one: {
                 c: ["I have", { k: "_gt_num_4", v: "n", i: 3 }, "item"],
@@ -280,7 +286,7 @@ Would be represented as the following JSX tree:
 This would be minified into GT JSX as:
 
 ```ts
-[{ c: "Alice's", i: 1 }, " happy ", { c: "customer", i: 2 }]
+[{ t: "b", c: "Alice's", i: 1 }, " happy ", { t: "i", c: "customer", i: 2 }]
 ```
 
 When translated into Spanish, the GT JSX would be:
@@ -292,7 +298,7 @@ When translated into Spanish, the GT JSX would be:
 It would be stored in a file which looks like:
 
 ```json
-{ "abc123": [{ c: "El cliente", i: 2 }, " feliz ", { c: "de Alice", i: 1 }] }
+{ "abc123": [{ "c": "El cliente", "i": 2 }, " feliz ", { "c": "de Alice", "i": 1 }] }
 ```
 
 <Callout type="info">`abc123` is the hash of the original English GT JSX tree, not the Spanish translation.</Callout>

@@ -1,5 +1,4 @@
 import useGTContext from '../../provider/GTContext';
-import { InlineTranslationOptions } from '../../types/types';
 
 /**
  * Gets the translation function `t` provided by `<GTProvider>`.
@@ -10,10 +9,11 @@ import { InlineTranslationOptions } from '../../types/types';
  * const t = useGT();
  * console.log(t('To be or not to be...'));
  *
+ * @example
  * const t = useGT();
  * return (<>
  *  {
- *     t('My name is {customName}', { variables: { customName: "Brian" } } )
+ *     t('My name is {customName}', { customName: "Brian", id: 'my-name', context: 'a proper noun' } )
  *  }
  * </>);
  *
@@ -26,9 +26,17 @@ export default function useGT() {
   /**
    * @param {string} string String to translate
    * @param {InlineTranslationOptions} options Options for the translation and variable insertion
+   * @param {string} [options.context] Additional context for the translation to help resolve ambiguous phrases (e.g., 'a formal greeting', 'as in a pop-up notification')
+   * @param {string} [options.id] An optional identifier for use with the translation editor to ensure consistent translation across your app
    * @returns {string} A translated string.
    */
-  function t(string: string, options: InlineTranslationOptions = {}): string {
+  function t(
+    string: string,
+    options: Record<string, any> & {
+      $id?: string;
+      $context?: string;
+    } = {}
+  ): string {
     return (_internalUseGTFunction as any)(string, options);
   }
 

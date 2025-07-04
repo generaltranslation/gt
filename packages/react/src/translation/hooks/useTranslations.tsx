@@ -1,6 +1,4 @@
-import React from 'react';
 import useGTContext from '../../provider/GTContext';
-import { DictionaryTranslationOptions } from '../../types/types';
 
 /**
  * Gets the dictionary access function `t` provided by `<GTProvider>`.
@@ -17,7 +15,7 @@ import { DictionaryTranslationOptions } from '../../types/types';
  */
 export default function useTranslations(
   id?: string
-): (id: string, options?: DictionaryTranslationOptions) => string {
+): (id: string, options?: Record<string, any>) => string {
   // Create a prefix for translation keys if an id is provided
   const getId = (suffix: string) => {
     return id ? `${id}.${suffix}` : suffix;
@@ -36,19 +34,23 @@ export default function useTranslations(
    *
    * @example
    * t('greetings.greeting1'); // Translates item in dictionary under greetings.greeting1
-   *x
+   *
    * @example
    * // dictionary entry
    * {
    *  greetings: {
    *    greeting2: "Hello, {name}!"
+   *    greeting3: ["Hi, {name}!", { $context: 'an informal greeting' }]
    *  }
    * }
    *
    * // Translates item in dictionary under greetings.greeting2 and replaces {name} with 'John'
-   * t('greetings.greeting2', { variables: { name: 'John' } });
+   * t('greetings.greeting2', { name: 'John' });
+   *
+   * // Translates item in dictionary under greetings.greeting3 and replaces {name} with 'John'
+   * t('greetings.greeting3', { name: 'John' });
    */
-  function t(id: string, options: DictionaryTranslationOptions = {}): string {
+  function t(id: string, options: Record<string, any> = {}): string {
     const prefixedId = getId(id);
     return _internalUseTranslationsFunction(prefixedId, options);
   }

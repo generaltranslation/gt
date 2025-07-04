@@ -1,3 +1,3 @@
-import { hashJsxChildren, hashString } from './id/hashJsxChildren';
+import { hashSource, hashString } from './id/hashSource';
 import hashTemplate from './id/hashTemplate';
-export { hashJsxChildren, hashString, hashTemplate };
+export { hashSource, hashString, hashTemplate };

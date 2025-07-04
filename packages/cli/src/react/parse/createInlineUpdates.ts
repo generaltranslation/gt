@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { Options, Updates } from '../../types/index.js';
 
 import { parse } from '@babel/parser';
@@ -9,13 +8,15 @@ import { NodePath } from '@babel/traverse';
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
 
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import { parseJSXElement } from '../jsx/utils/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { extractImportName } from '../jsx/utils/parseAst.js';
 import { logError } from '../../console/logging.js';
 import { validateStringFunction } from '../jsx/utils/validateStringFunction.js';
 import { GT_TRANSLATION_FUNCS } from '../jsx/utils/constants.js';
+import { matchFiles } from '../../fs/matchFiles.js';
+import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 
 export default async function createInlineUpdates(
   options: Options,
@@ -27,41 +28,9 @@ export default async function createInlineUpdates(
   const errors: string[] = [];
 
   // Use the provided app directory or default to the current directory
-  const srcDirectory = options.src || ['./'];
+  const filePatterns = options.src || DEFAULT_SRC_PATTERNS;
 
-  // Define the file extensions to look for
-  const extensions = ['.js', '.jsx', '.tsx', '.ts'];
-
-  /**
-   * Recursively scan the directory and collect all files with the specified extensions,
-   * excluding files or directories that start with a dot (.)
-   * @param dir - The directory to scan
-   * @returns An array of file paths
-   */
-  function getFiles(dir: string): string[] {
-    let files: string[] = [];
-    const items = fs.readdirSync(dir);
-
-    for (const item of items) {
-      // Skip hidden files and directories
-      if (item.startsWith('.')) continue;
-
-      const fullPath = path.join(dir, item);
-      const stat = fs.statSync(fullPath);
-
-      if (stat.isDirectory()) {
-        // Recursively scan subdirectories
-        files = files.concat(getFiles(fullPath));
-      } else if (extensions.includes(path.extname(item))) {
-        // Add files with the specified extensions
-        files.push(fullPath);
-      }
-    }
-
-    return files;
-  }
-
-  const files = srcDirectory.flatMap((dir) => getFiles(dir));
+  const files = matchFiles(process.cwd(), filePatterns);
 
   for (const file of files) {
     const code = await fs.promises.readFile(file, 'utf8');
@@ -168,11 +137,11 @@ export default async function createInlineUpdates(
   await Promise.all(
     updates.map(async (update) => {
       const context = update.metadata.context;
-      const hash = hashJsxChildren({
+      const hash = hashSource({
         source: update.source,
         ...(context && { context }),
         ...(update.metadata.id && { id: update.metadata.id }),
-        dataFormat: 'JSX',
+        dataFormat: update.dataFormat,
       });
       update.metadata.hash = hash;
     })

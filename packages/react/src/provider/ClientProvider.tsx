@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { determineLocale, GT } from 'generaltranslation';
 import { GTContext } from './GTContext';
 import { ClientProviderProps } from '../types/config';
-import { TranslationsObject } from '../types/types';
+import { TranslationsStatus, Translations } from '../types/types';
 import useRuntimeTranslation from './hooks/useRuntimeTranslation';
 import useCreateInternalUseGTFunction from './hooks/useCreateInternalUseGTFunction';
 import useCreateInternalUseTranslationsFunction from './hooks/useCreateInternalUseTranslationsFunction';
@@ -47,9 +47,12 @@ export default function ClientProvider({
 
   // ----- TRANSLATIONS STATE ----- //
 
-  const [translations, setTranslations] = useState<TranslationsObject | null>(
+  const [translations, setTranslations] = useState<Translations | null>(
     devApiKey ? null : initialTranslations
   );
+
+  const [translationsStatus, setTranslationsStatus] =
+    useState<TranslationsStatus | null>(null);
 
   // ----- LOCALE STATE ----- //
 
@@ -98,34 +101,51 @@ export default function ClientProvider({
   // Fetch additional translations and queue them for merging
   useEffect(() => {
     setTranslations((prev) => ({ ...initialTranslations, ...prev }));
+    setTranslationsStatus((prev) => ({
+      ...Object.keys(initialTranslations).reduce(
+        (acc: TranslationsStatus, hash) => {
+          acc[hash] = {
+            status: 'success',
+          };
+          return acc;
+        },
+        {}
+      ),
+      ...prev,
+    }));
   }, [initialTranslations]);
 
   // ---------- TRANSLATION METHODS ---------- //
-  // TODO: do this in a plugin
 
-  const { registerContentForTranslation, registerJsxForTranslation } =
-    useRuntimeTranslation({
-      locale: locale,
-      versionId: _versionId,
-      projectId,
-      devApiKey,
-      runtimeUrl,
-      setTranslations,
-      defaultLocale,
-      renderSettings,
-      runtimeTranslationEnabled,
-    });
+  const {
+    registerIcuForTranslation,
+    registerJsxForTranslation,
+    registerI18nextForTranslation,
+  } = useRuntimeTranslation({
+    gt,
+    locale: locale,
+    versionId: _versionId,
+    projectId,
+    devApiKey,
+    runtimeUrl,
+    setTranslations,
+    setTranslationsStatus,
+    defaultLocale,
+    renderSettings,
+    runtimeTranslationEnabled,
+  });
 
   // ---------- USE GT() TRANSLATION ---------- //
 
   const _internalUseGTFunction = useCreateInternalUseGTFunction(
     translations,
+    translationsStatus,
     locale,
     defaultLocale,
     translationRequired,
     dialectTranslationRequired,
     runtimeTranslationEnabled,
-    registerContentForTranslation,
+    registerIcuForTranslation,
     renderSettings
   );
 
@@ -135,12 +155,13 @@ export default function ClientProvider({
     useCreateInternalUseTranslationsFunction(
       dictionary,
       translations,
+      translationsStatus,
       locale,
       defaultLocale,
       translationRequired,
       dialectTranslationRequired,
       runtimeTranslationEnabled,
-      registerContentForTranslation,
+      registerIcuForTranslation,
       renderSettings
     );
 
@@ -149,12 +170,12 @@ export default function ClientProvider({
   // Block rendering until all translations are resolved (IF YOU REMOVE THIS YOU WILL BE FIRED)
   const display = !!(!translationRequired || translations) && locale;
 
-  ('ClientProvider End');
   return (
     <GTContext.Provider
       value={{
         gt,
-        registerContentForTranslation,
+        registerIcuForTranslation,
+        registerI18nextForTranslation,
         registerJsxForTranslation,
         setLocale,
         _internalUseGTFunction,
@@ -163,6 +184,7 @@ export default function ClientProvider({
         locales,
         defaultLocale,
         translations,
+        translationsStatus: translationsStatus,
         translationRequired,
         dialectTranslationRequired,
         renderSettings,

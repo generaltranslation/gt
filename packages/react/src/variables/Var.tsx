@@ -24,11 +24,10 @@ import React from 'react';
  */
 function Var({
   children,
-  name,
 }: {
   children?: any;
   name?: string;
-}): React.JSX.Element {
+}): React.JSX.Element | null {
   return <>{children}</>;
 }
 

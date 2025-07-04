@@ -1,18 +1,21 @@
 // Functions provided to other GT libraries
 
-import { JsxChild, JsxChildren, Variable } from '../types';
+import { DataFormat, JsxChild, JsxChildren, Variable } from '../types';
 import stringify from 'fast-json-stable-stringify';
 import CryptoJS from 'crypto-js';
+import isVariable from '../utils/isVariable';
 
 // ----- FUNCTIONS ----- //
 /**
  * Calculates a unique hash for a given string using sha256.
  *
+ * First 16 characters of hash, hex encoded.
+ *
  * @param {string} string - The string to be hashed.
  * @returns {string} - The resulting hash as a hexadecimal string.
  */
 export function hashString(string: string): string {
-  return CryptoJS.SHA256(string).toString(CryptoJS.enc.Hex);
+  return CryptoJS.SHA256(string).toString(CryptoJS.enc.Hex).slice(0, 16);
 }
 
 /**
@@ -21,76 +24,96 @@ export function hashString(string: string): string {
  * @param {any} childrenAsObjects - The children objects to be hashed.
  * @param {string} context - The context for the children
  * @param {string} id - The id for the JSX Children object
+ * @param {string} dataFormat - The data format of the sources
  * @param {function} hashFunction custom hash function
  * @returns {string} - The unique has of the children.
  */
-export function hashJsxChildren(
+export function hashSource(
   {
     source,
     context,
     id,
     dataFormat,
   }: {
-    source: JsxChildren;
+    source: JsxChildren | string;
     context?: string;
     id?: string;
-    dataFormat: string;
+    dataFormat: DataFormat;
   },
   hashFunction: (string: string) => string = hashString
 ): string {
-  const unhashedKey = stringify({
-    source: sanitizeJsxChildren(source),
+  let sanitizedData: {
+    source?: SanitizedChildren;
+    id?: string;
+    context?: string;
+    dataFormat?: string;
+  } = {};
+  if (dataFormat === 'JSX') {
+    sanitizedData.source = sanitizeJsxChildren(source);
+  } else {
+    sanitizedData.source = source as string;
+  }
+  sanitizedData = {
+    ...sanitizedData,
     ...(id && { id }),
     ...(context && { context }),
     ...(dataFormat && { dataFormat }),
-  });
-  return hashFunction(unhashedKey);
+  };
+  const stringifiedData = stringify(sanitizedData);
+  return hashFunction(stringifiedData);
 }
 
-type SanitizedVariable = Omit<Variable, 'id'>;
+type SanitizedVariable = Omit<Variable, 'i'>;
 
 type SanitizedElement = {
-  branches?: {
-    [k: string]: SanitizedChildren;
+  b?: {
+    [k: string]: SanitizedChildren; // Branches
   };
-  children?: SanitizedChildren;
-  transformation?: string;
+  c?: SanitizedChildren; // Children
+  t?: string; // Branch Transformation
 };
 type SanitizedChild = SanitizedElement | SanitizedVariable | string;
 type SanitizedChildren = SanitizedChild | SanitizedChild[];
 
+/**
+ * Sanitizes a child object by removing the data-_gt attribute and its branches.
+ *
+ * @param child - The child object to sanitize.
+ * @returns The sanitized child object.
+ *
+ */
 const sanitizeChild = (child: JsxChild): SanitizedChild => {
   if (child && typeof child === 'object') {
-    if ('props' in child) {
-      const newChild: SanitizedChild = {};
-      const dataGt = child?.props?.['data-_gt'];
-      if (dataGt?.branches) {
+    const newChild: SanitizedChild = {};
+    if ('c' in child && child.c) {
+      newChild.c = sanitizeJsxChildren(child.c);
+    }
+    if ('d' in child) {
+      const generaltranslation = child?.d;
+      if (generaltranslation?.b) {
         // The only thing that prevents sanitizeJsx from being stable is
         // the order of the keys in the branches object.
         // We don't sort them because stable-stringify sorts them anyways
-        newChild.branches = Object.fromEntries(
-          Object.entries(dataGt.branches).map(([key, value]) => [
+        newChild.b = Object.fromEntries(
+          Object.entries(generaltranslation.b).map(([key, value]) => [
             key,
             sanitizeJsxChildren(value as JsxChildren),
           ])
         );
       }
-      if (child?.props?.children) {
-        newChild.children = sanitizeJsxChildren(child.props.children);
+      if (generaltranslation?.t) {
+        newChild.t = generaltranslation.t;
       }
-      if (child?.props?.['data-_gt']?.transformation) {
-        newChild.transformation = child.props['data-_gt'].transformation;
-      }
-      return newChild;
     }
-    if ('key' in child) {
+    if (isVariable(child)) {
       return {
-        key: child.key,
-        ...(child.variable && {
-          variable: child.variable,
+        k: child.k,
+        ...(child.v && {
+          v: child.v,
         }),
       };
     }
+    return newChild;
   }
   return child;
 };

@@ -1,4 +1,4 @@
-import { hashString } from './hashJsxChildren';
+import { hashString } from './hashSource';
 import stringify from 'fast-json-stable-stringify';
 
 export default function hashTemplate(

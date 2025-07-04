@@ -1,8 +1,8 @@
 import { NodePath } from '@babel/traverse';
 import { Updates } from '../../../types/index.js';
-import { splitStringToContent } from 'generaltranslation';
 import * as t from '@babel/types';
 import { isStaticExpression } from '../evaluateJsx.js';
+import { GT_ATTRIBUTES, mapAttributeName } from './constants.js';
 import {
   warnNonStaticExpressionSync,
   warnNonStringSync,
@@ -19,8 +19,6 @@ import path from 'node:path';
 import { parse } from '@babel/parser';
 import { createMatchPath, loadConfig } from 'tsconfig-paths';
 import * as resolve from 'resolve';
-
-export const attributes = ['id', 'context'];
 
 /**
  * Processes a single translation function call (e.g., t('hello world', { id: 'greeting' })).
@@ -49,8 +47,6 @@ function processTranslationCall(
     ) {
       const source =
         arg.type === 'StringLiteral' ? arg.value : arg.quasis[0].value.raw;
-      // split the string into content (same as runtime behavior)
-      const content = splitStringToContent(source);
 
       // get metadata and id from options
       const options = tPath.parent.arguments[1];
@@ -62,7 +58,10 @@ function processTranslationCall(
             prop.key.type === 'Identifier'
           ) {
             const attribute = prop.key.name;
-            if (attributes.includes(attribute) && t.isExpression(prop.value)) {
+            if (
+              GT_ATTRIBUTES.includes(attribute) &&
+              t.isExpression(prop.value)
+            ) {
               const result = isStaticExpression(prop.value);
               if (!result.isStatic) {
                 errors.push(
@@ -75,7 +74,8 @@ function processTranslationCall(
                 );
               }
               if (result.isStatic && result.value) {
-                metadata[attribute] = result.value;
+                // Map $id and $context to id and context
+                metadata[mapAttributeName(attribute)] = result.value;
               }
             }
           }
@@ -83,8 +83,8 @@ function processTranslationCall(
       }
 
       updates.push({
-        dataFormat: 'JSX',
-        source: content,
+        dataFormat: 'ICU',
+        source,
         metadata,
       });
     } else if (t.isTemplateLiteral(arg)) {

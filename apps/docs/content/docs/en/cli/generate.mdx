@@ -26,7 +26,7 @@ After generating the source files, you can use [local translations](/docs/next/g
 
 | Parameter       | Description                                      | Type    | Optional | Default         |
 |-----------------|--------------------------------------------------|---------|----------|-----------------|
-| `--src <paths>`   | Specify the source directory(s) to scan                     | `[string]`  | `true`     | `./src && ./app && ./pages && ./components`      |
+| `--src <paths>`   | Space-separated list of glob patterns to match source files. Should be relative to root directory.                    | `[string]`  | `true`     | `[  'src/**/*.{js,jsx,ts,tsx}', 'app/**/*.{js,jsx,ts,tsx}', 'pages/**/*.{js,jsx,ts,tsx}', 'components/**/*.{js,jsx,ts,tsx}', ]`      |
 | `--dictionary <path>`    | Specify a path to the dictionary file                | `string`  | `true`     |                 |
 | `--tsconfig, --jsconfig <path>`| Specify a path to the TS or JS config file | `string`  | `true`     |                 |
 | `--inline`        | Include inline `<T>` tags in addition to the dictionary     | `boolean` | `true`     | `true`            |

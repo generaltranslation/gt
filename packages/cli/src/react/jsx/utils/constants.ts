@@ -12,3 +12,11 @@ export const GT_TRANSLATION_FUNCS = [
 ];
 // Valid variable components
 export const VARIABLE_COMPONENTS = ['Var', 'DateTime', 'Currency', 'Num'];
+
+export const GT_ATTRIBUTES = ['$id', '$context'];
+
+export function mapAttributeName(attrName: string): string {
+  if (attrName === '$id') return 'id';
+  if (attrName === '$context') return 'context';
+  return attrName;
+}
