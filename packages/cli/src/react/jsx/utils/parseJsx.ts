@@ -16,7 +16,6 @@ import { handleChildrenWhitespace } from '../trimJsxStringChildren.js';
 import { isStaticExpression } from '../evaluateJsx.js';
 import {
   GT_ATTRIBUTES,
-  GT_ATTRIBUTES_WITH_SUGAR,
   mapAttributeName,
   VARIABLE_COMPONENTS,
 } from './constants.js';
@@ -284,7 +283,13 @@ export function parseJSXElement(
           // Use the static value if available
           if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
             metadata[mapAttributeName(attrName)] = staticAnalysis.value;
+          } else {
+            // Only store the code if we couldn't extract a static value
+            metadata[attrName] = code;
           }
+        } else {
+          // For other attributes that aren't id or context
+          metadata[attrName] = code;
         }
       }
     }
