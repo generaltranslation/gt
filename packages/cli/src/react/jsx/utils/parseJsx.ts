@@ -14,7 +14,12 @@ import {
 import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
 import { handleChildrenWhitespace } from '../trimJsxStringChildren.js';
 import { isStaticExpression } from '../evaluateJsx.js';
-import { GT_ATTRIBUTES, VARIABLE_COMPONENTS } from './constants.js';
+import {
+  GT_ATTRIBUTES,
+  GT_ATTRIBUTES_WITH_SUGAR,
+  mapAttributeName,
+  VARIABLE_COMPONENTS,
+} from './constants.js';
 import { Metadata } from 'generaltranslation/types';
 
 /**
@@ -278,14 +283,8 @@ export function parseJSXElement(
           }
           // Use the static value if available
           if (staticAnalysis.isStatic && staticAnalysis.value !== undefined) {
-            metadata[attrName] = staticAnalysis.value;
-          } else {
-            // Only store the code if we couldn't extract a static value
-            metadata[attrName] = code;
+            metadata[mapAttributeName(attrName)] = staticAnalysis.value;
           }
-        } else {
-          // For other attributes that aren't id or context
-          metadata[attrName] = code;
         }
       }
     }

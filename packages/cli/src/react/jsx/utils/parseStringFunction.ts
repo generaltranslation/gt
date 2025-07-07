@@ -2,7 +2,7 @@ import { NodePath } from '@babel/traverse';
 import { Updates } from '../../../types/index.js';
 import * as t from '@babel/types';
 import { isStaticExpression } from '../evaluateJsx.js';
-import { GT_ATTRIBUTES, mapAttributeName } from './constants.js';
+import { GT_ATTRIBUTES_WITH_SUGAR, mapAttributeName } from './constants.js';
 import {
   warnNonStaticExpressionSync,
   warnNonStringSync,
@@ -59,7 +59,7 @@ function processTranslationCall(
           ) {
             const attribute = prop.key.name;
             if (
-              GT_ATTRIBUTES.includes(attribute) &&
+              GT_ATTRIBUTES_WITH_SUGAR.includes(attribute) &&
               t.isExpression(prop.value)
             ) {
               const result = isStaticExpression(prop.value);
