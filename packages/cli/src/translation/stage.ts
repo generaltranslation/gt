@@ -112,7 +112,7 @@ export async function stageProject(
     {
       ...settings,
       timeout: settings.timeout,
-      dataFormat: 'JSX',
+      fileDataFormat: 'JSX',
     },
     pkg
   );

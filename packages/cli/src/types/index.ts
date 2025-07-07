@@ -1,17 +1,17 @@
 import { JsxChildren } from 'generaltranslation/internal';
-import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
+import { SUPPORTED_FILE_FORMATS } from '../formats/files/supportedFiles.js';
 
 export type Updates = ({ metadata: Record<string, any> } & (
   | {
-      dataFormat: 'JSX';
+      fileDataFormat: 'JSX';
       source: JsxChildren;
     }
   | {
-      dataFormat: 'ICU';
+      fileDataFormat: 'ICU';
       source: string;
     }
   | {
-      dataFormat: 'I18NEXT';
+      fileDataFormat: 'I18NEXT';
       source: string;
     }
 ))[];
@@ -93,23 +93,23 @@ export interface ContentScanner {
 }
 
 // Create a type based on the supported file extensions
-export type SupportedFileExtension = (typeof SUPPORTED_FILE_EXTENSIONS)[number];
+export type SupportedFileFormats = (typeof SUPPORTED_FILE_FORMATS)[number];
 
 // Update ResolvedFiles to use the dynamic keys
 export type ResolvedFiles = {
-  [K in SupportedFileExtension]?: string[];
+  [K in SupportedFileFormats]?: string[];
 } & {
   gt?: string; // Output glob: /path/[locale].json
 };
 
 // Update TransformFiles similarly
 export type TransformFiles = {
-  [K in SupportedFileExtension]?: string;
+  [K in SupportedFileFormats]?: string;
 };
 
 // Update FilesOptions to fix the error
 export type FilesOptions = {
-  [K in SupportedFileExtension]?: {
+  [K in SupportedFileFormats]?: {
     include: string[];
     exclude?: string[];
     transform?: string;

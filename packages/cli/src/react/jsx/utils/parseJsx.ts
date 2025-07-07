@@ -341,7 +341,7 @@ export function parseJSXElement(
 
   // <T> is valid here
   updates.push({
-    dataFormat: 'JSX',
+    fileDataFormat: 'JSX',
     source: minifiedTree,
     metadata,
   });

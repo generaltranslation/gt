@@ -20,9 +20,9 @@ export type FlattenedJSONDictionary = {
   [key: string]: string;
 };
 
-export type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
+export type FileDataFormat = 'JSX' | 'ICU' | 'I18NEXT';
 
-export type FileExtension = 'JSON' | 'YAML' | 'MDX' | 'MD' | 'TS' | 'JS';
+export type FileFormats = 'JSON' | 'YAML' | 'MDX' | 'MD' | 'TS' | 'JS';
 
 export type JsxChildren = string | string[] | any;
 

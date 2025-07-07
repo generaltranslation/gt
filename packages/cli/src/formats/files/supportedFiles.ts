@@ -1,4 +1,4 @@
-export const SUPPORTED_FILE_EXTENSIONS = [
+export const SUPPORTED_FILE_FORMATS = [
   'json',
   'mdx',
   'md',

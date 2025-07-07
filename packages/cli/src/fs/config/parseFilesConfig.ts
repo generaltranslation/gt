@@ -5,7 +5,7 @@ import {
   TransformFiles,
 } from '../../types/index.js';
 import fg from 'fast-glob';
-import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
+import { SUPPORTED_FILE_FORMATS } from '../../formats/files/supportedFiles.js';
 import { logWarning } from '../../console/logging.js';
 import chalk from 'chalk';
 
@@ -23,7 +23,7 @@ export function resolveLocaleFiles(
 ): ResolvedFiles {
   const result: ResolvedFiles = {};
 
-  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+  for (const fileType of SUPPORTED_FILE_FORMATS) {
     result[fileType] = files[fileType]?.map((filepath) =>
       filepath.replace(/\[locale\]/g, locale)
     );
@@ -61,7 +61,7 @@ export function resolveFiles(
     placeholderResult.gt = files.gt.output;
   }
 
-  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+  for (const fileType of SUPPORTED_FILE_FORMATS) {
     // ==== TRANSFORMS ==== //
     if (
       files[fileType]?.transform &&

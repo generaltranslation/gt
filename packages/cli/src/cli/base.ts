@@ -22,7 +22,7 @@ import {
   SupportedLibraries,
   SetupOptions,
 } from '../types/index.js';
-import { DataFormat } from '../types/data.js';
+import { FileDataFormat } from '../types/data.js';
 import { generateSettings } from '../config/generateSettings.js';
 import chalk from 'chalk';
 import { translateFiles } from '../formats/files/translate.js';
@@ -266,18 +266,18 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
   protected async handleGenericTranslate(
     settings: Settings & TranslateOptions
   ): Promise<void> {
-    // dataFormat for JSONs
-    let dataFormat: DataFormat;
+    // fileDataFormat for JSONs
+    let fileDataFormat: FileDataFormat;
     if (this.library === 'next-intl') {
-      dataFormat = 'ICU';
+      fileDataFormat = 'ICU';
     } else if (this.library === 'i18next') {
       if (this.additionalModules.includes('i18next-icu')) {
-        dataFormat = 'ICU';
+        fileDataFormat = 'ICU';
       } else {
-        dataFormat = 'I18NEXT';
+        fileDataFormat = 'I18NEXT';
       }
     } else {
-      dataFormat = 'JSX';
+      fileDataFormat = 'JSX';
     }
 
     if (
@@ -298,7 +298,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       sourceFiles,
       placeholderPaths,
       transformPaths,
-      dataFormat,
+      fileDataFormat,
       settings
     );
   }
@@ -357,7 +357,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       : `${chalk.dim(
           '(Optional)'
         )} Do you have any separate files you would like to translate? For example, extra Markdown files for docs.`;
-    const fileExtensions = await promptMultiSelect({
+    const fileFormats = await promptMultiSelect({
       message,
       options: [
         { value: 'json', label: FILE_EXT_TO_EXT_LABEL.json },
@@ -370,13 +370,13 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
     });
 
     const files: FilesOptions = {};
-    for (const fileExtension of fileExtensions) {
+    for (const fileFormat of fileFormats) {
       const paths = await promptText({
-        message: `${chalk.cyan(FILE_EXT_TO_EXT_LABEL[fileExtension])}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_EXT_LABEL[fileExtension]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
-        defaultValue: `./**/[locale]/*.${fileExtension}`,
+        message: `${chalk.cyan(FILE_EXT_TO_EXT_LABEL[fileFormat])}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_EXT_LABEL[fileFormat]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
+        defaultValue: `./**/[locale]/*.${fileFormat}`,
       });
 
-      files[fileExtension] = {
+      files[fileFormat] = {
         include: paths.split(' '),
       };
     }

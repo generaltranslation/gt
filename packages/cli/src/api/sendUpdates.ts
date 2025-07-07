@@ -2,13 +2,13 @@ import chalk from 'chalk';
 import { createSpinner, logSuccess, logWarning } from '../console/logging.js';
 import { Settings, SupportedLibraries, Updates } from '../types/index.js';
 import updateConfig from '../fs/config/updateConfig.js';
-import { DataFormat } from '../types/data.js';
+import { FileDataFormat } from '../types/data.js';
 import { isUsingLocalTranslations } from '../config/utils.js';
 import { getAuthHeaders } from '../utils/headers.js';
 
 type ApiOptions = Settings & {
   timeout: string;
-  dataFormat: DataFormat;
+  fileDataFormat: FileDataFormat;
   description?: string;
   requireApproval?: boolean;
 };
@@ -24,7 +24,7 @@ export async function sendUpdates(
   options: ApiOptions,
   library: SupportedLibraries
 ): Promise<{ versionId: string; locales: string[] }> {
-  const { apiKey, projectId, defaultLocale, dataFormat } = options;
+  const { apiKey, projectId, defaultLocale, fileDataFormat } = options;
 
   const globalMetadata = {
     ...(projectId && { projectId }),
@@ -38,7 +38,7 @@ export async function sendUpdates(
     updates,
     ...(options.locales && { locales: options.locales }),
     metadata: globalMetadata,
-    ...(dataFormat && { dataFormat }),
+    ...(fileDataFormat && { fileDataFormat }),
     ...(options.version && { versionId: options.version }),
     ...(options.description && { description: options.description }),
     ...(options.requireApproval && {

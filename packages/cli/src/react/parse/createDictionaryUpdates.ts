@@ -67,11 +67,11 @@ export default async function createDictionaryUpdates(
         source: entry,
         ...(context && { context }),
         ...(id && { id }),
-        dataFormat: 'ICU',
+        fileDataFormat: 'ICU',
       }),
     };
     updates.push({
-      dataFormat: 'ICU',
+      fileDataFormat: 'ICU',
       source: entry,
       metadata,
     });
