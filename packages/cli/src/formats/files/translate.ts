@@ -18,7 +18,7 @@ import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
 import { flattenJsonDictionary } from '../../react/utils/flattenDictionary.js';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types/index.js';
-import { FileFormats, FileDataFormat } from '../../types/data.js';
+import { FileFormat, FileDataFormat } from '../../types/data.js';
 import path from 'node:path';
 import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile.js';
@@ -64,7 +64,7 @@ export async function translateFiles(
       return {
         content,
         fileName: relativePath,
-        fileFormat: 'JSON' as FileFormats,
+        fileFormat: 'JSON' as FileFormat,
         fileDataFormat,
       };
     });
@@ -81,7 +81,7 @@ export async function translateFiles(
         return {
           content: sanitizedContent,
           fileName: relativePath,
-          fileFormat: fileType.toUpperCase() as FileFormats,
+          fileFormat: fileType.toUpperCase() as FileFormat,
           fileDataFormat,
         };
       });

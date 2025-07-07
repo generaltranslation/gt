@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { createSpinner, logMessage, logSuccess } from '../console/logging.js';
 import { Settings } from '../types/index.js';
-import { FileFormats, FileDataFormat } from '../types/data.js';
+import { FileFormat, FileDataFormat } from '../types/data.js';
 import { getAuthHeaders } from '../utils/headers.js';
 
 /**
@@ -14,7 +14,7 @@ import { getAuthHeaders } from '../utils/headers.js';
 export interface FileToTranslate {
   content: string;
   fileName: string;
-  fileFormat: FileFormats;
+  fileFormat: FileFormat;
   fileDataFormat: FileDataFormat;
 }
 
