@@ -6,4 +6,4 @@
 '@generaltranslation/supported-locales': patch
 ---
 
-fix: cli hashing issues
+fixes to breaking changes
