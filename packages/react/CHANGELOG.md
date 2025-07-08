@@ -1,5 +1,15 @@
 # gt-react
 
+## 10.0.1
+
+### Patch Changes
+
+- [#440](https://github.com/generaltranslation/gt/pull/440) [`e6fdedf`](https://github.com/generaltranslation/gt/commit/e6fdedffcdfbac5d257ea35140cbb81de6aa2729) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fixes to breaking changes
+
+- Updated dependencies [[`e6fdedf`](https://github.com/generaltranslation/gt/commit/e6fdedffcdfbac5d257ea35140cbb81de6aa2729)]:
+  - generaltranslation@7.0.1
+  - @generaltranslation/supported-locales@2.0.12
+
 ## 10.0.0
 
 ### Major Changes
