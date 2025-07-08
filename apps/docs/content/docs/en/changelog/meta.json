@@ -1,3 +1,7 @@
 {
-    "pages": ["7-3-25"]
+  "pages": ["7-7-25"],
+  "root": true,
+  "title": "Changelog",
+  "icon": "History",
+  "description": "Changelog"
 }
