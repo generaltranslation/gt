@@ -1,6 +1,6 @@
 ---
 title: GitHub App
-description: The Locadex GitHub app automatically internationalizes your codebase by monitoring your repository and creating pull requests with translations whenever you push changes.
+description: The Locadex GitHub app automatically internationalizes your codebase by monitoring your repository and committing to pull requests with translations whenever you push changes.
 ---
 
 ## Setup Process
@@ -45,7 +45,7 @@ On the configuration screen, set up:
 
 ## What Happens Next
 
-### Initial Setup (First Time)
+### Initial Setup
 
 Once you complete the installation:
 
@@ -60,10 +60,10 @@ Once you complete the installation:
 
 After the initial setup is merged:
 
-1. **Automatic Monitoring**: Locadex monitors your main branch for new commits
-2. **Change Detection**: When you push new code with translatable content
-3. **Incremental Updates**: Locadex creates new PRs that only internationalize the new changes
-4. **Continuous i18n**: Your app stays translated without manual intervention
+1. Locadex monitors your main or specified branch for pull requests
+2. When you push new code with translatable content wait for Locadex to add its commit to the PR
+3. Once Locadex commits to the PR, it is safe to merge -- your new content is internationalized
+4. Your app stays translated without manual intervention
 
 ## Monitoring Your Repository
 
