@@ -26,7 +26,7 @@ import { DataFormat } from '../types/data.js';
 import { generateSettings } from '../config/generateSettings.js';
 import chalk from 'chalk';
 import { translateFiles } from '../formats/files/translate.js';
-import { FILE_EXT_TO_FORMAT } from '../formats/files/supportedFiles.js';
+import { FILE_EXT_TO_EXT_LABEL } from '../formats/files/supportedFiles.js';
 import { handleSetupReactCommand } from '../setup/wizard.js';
 import {
   isPackageInstalled,
@@ -172,8 +172,7 @@ export class BaseCLI {
       )
       .option(
         '--src <paths...>',
-        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
-        findFilepaths(['./src', './app', './pages', './components'])
+        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
       )
       .option(
         '-c, --config <path>',
@@ -248,8 +247,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       )
       .option(
         '--src <paths...>',
-        "Filepath to directory containing the app's source code, by default ./src || ./app || ./pages || ./components",
-        findFilepaths(['./src', './app', './pages', './components'])
+        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
       )
       .option(
         '-c, --config <path>',
@@ -359,26 +357,26 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
       : `${chalk.dim(
           '(Optional)'
         )} Do you have any separate files you would like to translate? For example, extra Markdown files for docs.`;
-    const dataFormats = await promptMultiSelect({
+    const fileExtensions = await promptMultiSelect({
       message,
       options: [
-        { value: 'json', label: 'JSON' },
-        { value: 'md', label: 'Markdown' },
-        { value: 'mdx', label: 'MDX' },
-        { value: 'ts', label: 'TypeScript' },
-        { value: 'js', label: 'JavaScript' },
+        { value: 'json', label: FILE_EXT_TO_EXT_LABEL.json },
+        { value: 'md', label: FILE_EXT_TO_EXT_LABEL.md },
+        { value: 'mdx', label: FILE_EXT_TO_EXT_LABEL.mdx },
+        { value: 'ts', label: FILE_EXT_TO_EXT_LABEL.ts },
+        { value: 'js', label: FILE_EXT_TO_EXT_LABEL.js },
       ],
       required: !isUsingGT,
     });
 
     const files: FilesOptions = {};
-    for (const dataFormat of dataFormats) {
+    for (const fileExtension of fileExtensions) {
       const paths = await promptText({
-        message: `${chalk.cyan(FILE_EXT_TO_FORMAT[dataFormat])}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_FORMAT[dataFormat]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
-        defaultValue: `./**/[locale]/*.${dataFormat}`,
+        message: `${chalk.cyan(FILE_EXT_TO_EXT_LABEL[fileExtension])}: Please enter a space-separated list of glob patterns matching the location of the ${FILE_EXT_TO_EXT_LABEL[fileExtension]} files you would like to translate.\nMake sure to include [locale] in the patterns.\nSee https://generaltranslation.com/docs/cli/reference/config#include for more information.`,
+        defaultValue: `./**/[locale]/*.${fileExtension}`,
       });
 
-      files[dataFormat] = {
+      files[fileExtension] = {
         include: paths.split(' '),
       };
     }

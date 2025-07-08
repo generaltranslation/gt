@@ -42,6 +42,5 @@ export {
   Plural,
   useGT,
   useTranslations,
-  useTranslations as useDict,
   useLocale,
 };

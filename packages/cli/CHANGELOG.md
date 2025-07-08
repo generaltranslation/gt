@@ -1,5 +1,31 @@
 # gtx-cli
 
+## 2.0.1
+
+### Patch Changes
+
+- [#440](https://github.com/generaltranslation/gt/pull/440) [`e6fdedf`](https://github.com/generaltranslation/gt/commit/e6fdedffcdfbac5d257ea35140cbb81de6aa2729) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fixes to breaking changes
+
+- Updated dependencies [[`e6fdedf`](https://github.com/generaltranslation/gt/commit/e6fdedffcdfbac5d257ea35140cbb81de6aa2729)]:
+  - generaltranslation@7.0.1
+
+## 2.0.0
+
+### Major Changes
+
+- [#436](https://github.com/generaltranslation/gt/pull/436) [`08377f3`](https://github.com/generaltranslation/gt/commit/08377f3b5b3b600efb1e232a7b9361e8c85ea4ae) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Breaking changes
+
+### Patch Changes
+
+- Updated dependencies [[`08377f3`](https://github.com/generaltranslation/gt/commit/08377f3b5b3b600efb1e232a7b9361e8c85ea4ae)]:
+  - generaltranslation@7.0.0
+
+## 1.2.34
+
+### Patch Changes
+
+- [#428](https://github.com/generaltranslation/gt/pull/428) [`54036f5`](https://github.com/generaltranslation/gt/commit/54036f54308bdb9f9e6dcec93871e004dcf1be4c) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add experimental options to translate
+
 ## 1.2.33
 
 ### Patch Changes

@@ -1,7 +1,6 @@
 import React, { useContext } from 'react';
-import { formatNum } from 'generaltranslation';
+import { GT } from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
@@ -17,36 +16,35 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
  * </Num>
  * ```
  *
- * @param {any} [children] - Optional content (typically a number) to render inside the component.
+ * @param {number | string | null | undefined} children - Content to render inside the number component.
+ * @param {string[]} [locales] - Optional locales to use for number formatting. If wrapped in a `<GTProvider>`, the user's locale is used.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
- * @returns {JSX.Element} The formatted number component.
+ * @returns {React.JSX.Element} The formatted number component.
  */
 function Num({
   children,
-  name,
   locales,
   options = {},
 }: {
-  children?: any;
+  children: number | string | null | undefined;
+  name?: string;
   locales?: string[];
   options?: Intl.NumberFormatOptions; // Optional options for the number formatting
-  name?: string;
-}): React.JSX.Element {
+}): React.JSX.Element | null {
   const context = useContext(GTContext);
-  if (context) {
-    locales ||= [
-      ...(context.locale && [context.locale]),
-      context.defaultLocale,
-    ];
-  } else {
-    locales ||= [libraryDefaultLocale];
-  }
+  if (!children) return null;
+  const gt = context?.gt || new GT();
 
-  let renderedValue =
+  let renderedValue: string | number =
     typeof children === 'string' ? parseFloat(children) : children;
   if (typeof renderedValue === 'number') {
+    if (!locales) {
+      locales ||= [];
+      if (context?.locale) locales.push(context.locale);
+      if (context?.defaultLocale) locales.push(context.defaultLocale);
+    }
     // Using Intl.NumberFormat for consistent number formatting
-    renderedValue = formatNum(renderedValue, { locales, ...options });
+    renderedValue = gt.formatNum(renderedValue, { locales, ...options });
   }
   return <>{renderedValue}</>;
 }

@@ -186,14 +186,17 @@ export default async function MyComponent() {
   const d = useTranslations();
   return (
     <div>
-      {d('greetings.hello', { variables: { name: 'Alice' }})}
-      {d('greetings.goodbye', { variables: { name: 'Bob' }})}
+      {d('greetings.hello', { name: 'Alice' })}
+      {d('greetings.goodbye', { name: 'Bob' })}
     </div>
   );
 }
 ```
 
 Read more about adding variables to your dictionary in the [`DictionaryTranslationOptions` type](/docs/react/api/types/DictionaryTranslationOptions).
+
+Dictionary strings in `gt-react` support ICU message format, which allows you to also format your variables.
+
 
 
 ### Prefixes

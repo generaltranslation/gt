@@ -63,7 +63,7 @@ export const GTProvider: typeof _GTProvider = () => {
 export const T: typeof _T = () => {
   throw new Error(typesFileError);
 };
-T.gtTransformation = 'translate-type';
+T.gtTransformation = 'translate';
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
@@ -122,7 +122,7 @@ DateTime.gtTransformation = 'variable-datetime';
  *
  * @param {any} [children] - Optional content (typically a number) to render inside the component.
  * @param {Intl.NumberFormatOptions} [options={}] - Optional formatting options for the number, following `Intl.NumberFormatOptions` specifications.
- * @returns {Promise<React.JSX.Element>} The formatted number component.
+ * @returns {React.JSX.Element} The formatted number component.
  */
 export const Num: typeof _Num = () => {
   throw new Error(typesFileError);
@@ -175,7 +175,7 @@ Var.gtTransformation = 'variable-variable';
 export const Branch: typeof _Branch = () => {
   throw new Error(typesFileError);
 };
-Branch.gtTransformation = 'branch-type';
+Branch.gtTransformation = 'branch';
 
 /**
  * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).
@@ -205,7 +205,7 @@ Branch.gtTransformation = 'branch-type';
 export const Plural: typeof _Plural = () => {
   throw new Error(typesFileError);
 };
-Plural.gtTransformation = 'plural-type';
+Plural.gtTransformation = 'plural';
 
 /**
  * A dropdown component that allows users to select a locale.
@@ -229,7 +229,7 @@ export const LocaleSelector: typeof _LocaleSelector = () => {
  * const t = useGT();
  * return (<>
  *  {
- *     t('My name is {customName}', { variables: { customName: "Brian" } } )
+ *     t('My name is {customName}', { customName: "Brian" } )
  *  }
  * </>);
  *
@@ -252,24 +252,6 @@ export const useGT: typeof _useGT = () => {
  * console.log(t('hello')); // Translates item 'hello'
  */
 export const useTranslations: typeof _useTranslations = () => {
-  throw new Error(typesFileError);
-};
-
-/**
- * Returns the dictionary access function `d`.
- * @deprecated Use the equivalent `useTranslations` function instead. `useDict` is supported as an alias.
- *
- * @param {string} [id] - Optional prefix to prepend to the translation keys.
- * @returns {Function} A translation function that accepts a key string and returns the translated value.
- *
- * @example
- * const d = useDict('user');
- * console.log(d('name')); // Translates item 'user.name'
- *
- * const d = useDict();
- * console.log(d('hello')); // Translates item 'hello'
- */
-export const useDict: typeof _useTranslations = () => {
   throw new Error(typesFileError);
 };
 

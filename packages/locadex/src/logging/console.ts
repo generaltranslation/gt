@@ -50,9 +50,9 @@ export function endCommand(message: string) {
 }
 
 // GT specific logging
-export function displayHeader(telemetryEnabled: boolean) {
+export function displayHeader() {
   displayAsciiTitle();
-  displayInitializingText(telemetryEnabled);
+  displayInitializingText();
   startCommand(chalk.cyan(`Locadex v${getLocadexVersion()}`));
 }
 
@@ -72,13 +72,13 @@ Y8,        88      88
   );
 }
 
-function displayInitializingText(telemetryEnabled: boolean) {
+function displayInitializingText() {
   // eslint-disable-next-line no-console
   console.log(
     `\n${chalk.bold.blue('General Translation, Inc.')}
 ${chalk.dim('https://generaltranslation.com/docs')}
-${telemetryEnabled ? chalk.dim('\nLocadex is configured to collect anonymous telemetry data. You can opt out by running with the --no-telemetry flag.\n') : ''}
-Locadex is in open beta and may make mistakes. Please report any bugs or issues to https://github.com/generaltranslation/gt/issues.
+
+Locadex is in research preview and may make mistakes. Please report any bugs or issues to https://github.com/generaltranslation/gt/issues.
 `
   );
 }

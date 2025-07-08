@@ -35,7 +35,7 @@ import { useLoadTranslations } from './hooks/useLoadTranslations';
  * @param {object} [metadata] - Additional metadata to pass to the context.
  * @param {boolean} [ssr=isSSREnabled()] - Whether to enable server-side rendering.
  * @param {string} [localeCookieName=defaultLocaleCookieName] - The name of the cookie to store the locale.
- * @param {TranslationsObject | null} [translations=null] - The translations to use for the context.
+ * @param {Translations | null} [translations=null] - The translations to use for the context.
  * @param {React.ReactNode} [fallback = undefined] - Custom fallback to display while loading
  *
  * @returns {JSX.Element} The provider component for General Translation context.
@@ -132,7 +132,12 @@ export default function GTProvider({
 
   // ---------- TRANSLATION STATE ---------- //
 
-  const { translations, setTranslations } = useLoadTranslations({
+  const {
+    translations,
+    setTranslations,
+    translationsStatus,
+    setTranslationsStatus,
+  } = useLoadTranslations({
     _translations,
     translationRequired,
     loadTranslationsType,
@@ -146,7 +151,8 @@ export default function GTProvider({
   // ------- RUNTIME TRANSLATION ----- //
 
   const {
-    registerContentForTranslation,
+    registerI18nextForTranslation,
+    registerIcuForTranslation,
     registerJsxForTranslation,
     runtimeTranslationEnabled,
   } = useRuntimeTranslation({
@@ -158,6 +164,7 @@ export default function GTProvider({
     runtimeUrl,
     renderSettings,
     setTranslations,
+    setTranslationsStatus,
     ...metadata,
   });
 
@@ -165,12 +172,13 @@ export default function GTProvider({
 
   const _internalUseGTFunction = useCreateInternalUseGTFunction(
     translations,
+    translationsStatus,
     locale,
     defaultLocale,
     translationRequired,
     dialectTranslationRequired,
     runtimeTranslationEnabled,
-    registerContentForTranslation,
+    registerIcuForTranslation,
     renderSettings
   );
 
@@ -180,12 +188,13 @@ export default function GTProvider({
     useCreateInternalUseTranslationsFunction(
       dictionary,
       translations,
+      translationsStatus,
       locale,
       defaultLocale,
       translationRequired,
       dialectTranslationRequired,
       runtimeTranslationEnabled,
-      registerContentForTranslation,
+      registerIcuForTranslation,
       renderSettings
     );
 
@@ -198,7 +207,8 @@ export default function GTProvider({
     <GTContext.Provider
       value={{
         gt,
-        registerContentForTranslation,
+        registerI18nextForTranslation,
+        registerIcuForTranslation,
         registerJsxForTranslation,
         _internalUseGTFunction,
         _internalUseTranslationsFunction,
@@ -208,6 +218,7 @@ export default function GTProvider({
         setLocale,
         defaultLocale,
         translations,
+        translationsStatus,
         translationRequired,
         dialectTranslationRequired,
         projectId,

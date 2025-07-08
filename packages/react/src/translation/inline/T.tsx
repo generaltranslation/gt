@@ -1,11 +1,11 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import renderDefaultChildren from '../../rendering/renderDefaultChildren';
 import { addGTIdentifier, writeChildrenAsObjects } from '../../internal';
 import useGTContext from '../../provider/GTContext';
 import renderTranslatedChildren from '../../rendering/renderTranslatedChildren';
 import { useMemo } from 'react';
 import renderVariable from '../../rendering/renderVariable';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import renderSkeleton from '../../rendering/renderSkeleton';
 import { TranslatedChildren } from '../../types/types';
 
@@ -42,6 +42,7 @@ function T({
   children,
   id,
   context,
+  ...options
 }: {
   children: any;
   id?: string;
@@ -50,9 +51,14 @@ function T({
 }): React.JSX.Element | null {
   if (!children) return null;
 
+  // Compatibility with different options
+  id = id ?? options?.$id;
+  context = context ?? options?.$context;
+
   const {
     translations,
     translationRequired,
+    translationsStatus,
     runtimeTranslationEnabled,
     dialectTranslationRequired,
     registerJsxForTranslation,
@@ -80,13 +86,12 @@ function T({
 
     // calculate hash
     const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-    const hash: string = hashJsxChildren({
+    const hash: string = hashSource({
       source: childrenAsObjects,
       ...(context && { context }),
       ...(id && { id }),
       dataFormat: 'JSX',
     });
-
     return [childrenAsObjects, hash];
   }, [
     taggedChildren,
@@ -101,6 +106,8 @@ function T({
     ? translations?.[id as string]
     : translations?.[hash];
 
+  const translationStatus = translationsStatus?.[hash];
+
   // Do dev translation if required
   useEffect(() => {
     // skip if:
@@ -109,7 +116,8 @@ function T({
       !translationRequired || // no translation required
       !translations || // cache not checked yet
       !locale || // locale not loaded
-      translationEntry // translation exists
+      translationEntry || // translation exists
+      translationStatus // translation request has already been sent
     ) {
       return;
     }
@@ -163,13 +171,13 @@ function T({
     !translationRequired || // no translation required
     // !translationEnabled || // translation not enabled
     (translations && !translationEntry && !runtimeTranslationEnabled) || // cache miss and dev runtime translation disabled (production)
-    translationEntry?.state === 'error' // error fetching translation
+    translationStatus?.status === 'error' // error fetching translation
   ) {
     return <>{renderDefault()}</>;
   }
 
   // Loading behavior (checking cache or fetching runtime translation)
-  if (!translationEntry || translationEntry?.state === 'loading') {
+  if (!translationEntry || translationStatus?.status === 'loading') {
     let loadingFallback;
     if (renderSettings.method === 'skeleton') {
       loadingFallback = renderSkeleton();
@@ -185,7 +193,7 @@ function T({
   }
 
   // Render translated content
-  return <>{renderTranslation(translationEntry.target)}</>;
+  return <>{renderTranslation(translationEntry)}</>;
 }
 
 T.gtTransformation = 'translate-client';

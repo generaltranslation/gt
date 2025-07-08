@@ -11,7 +11,6 @@ import {
 import { createUnsupportedLocalesWarning } from '../../errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 
-// TODO: do this in a plugin
 export function useErrorChecks({
   devApiKey,
   projectId,

@@ -1,7 +1,7 @@
 import {
   isValidLocale,
-  standardizeLocale,
   isSameDialect,
+  standardizeLocale,
 } from 'generaltranslation';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/createErrors';

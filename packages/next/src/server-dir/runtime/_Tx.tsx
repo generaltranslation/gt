@@ -11,15 +11,48 @@ import {
 } from 'gt-react/internal';
 import renderVariable from '../variables/renderVariable';
 import React from 'react';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { hashSource } from 'generaltranslation/id';
 import { TxProps } from '../../utils/types';
 
 async function Resolver({ children }: { children: React.ReactNode }) {
   return await children;
 }
 
-async function Tx({ children, id, context, locale }: TxProps): Promise<any> {
+/**
+ * Runtime translation component that renders its children in the user's given locale.
+ *
+ * @example
+ * ```jsx
+ * // Basic usage:
+ * <Tx>
+ *  Hello, {name}!
+ * </Tx>
+ * ```
+ *
+ * @example
+ * ```jsx
+ * // With a context:
+ * <Tx context="greeting">
+ *  Hello, {name}!
+ * </Tx>
+ * ```
+ *
+ * @param {string} [context] - A context for the translation.
+ * @param {string} [locale] - The locale to use for the translation.
+ * @returns {Promise<any>} The translated content.
+ */
+async function Tx({
+  children,
+  context,
+  locale,
+  ...options
+}: TxProps): Promise<any> {
   // ----- SET UP ----- //
+
+  // Compatibility with different options
+  const { $context, $locale } = options;
+  context = context ?? $context;
+  locale = locale ?? $locale;
 
   const I18NConfig = getI18NConfig();
   locale ||= await getLocale();
@@ -56,15 +89,16 @@ async function Tx({ children, id, context, locale }: TxProps): Promise<any> {
   // Turns tagged children into objects
   // The hash is used to identify the translation
   const childrenAsObjects = writeChildrenAsObjects(taggedChildren);
-  const hash = hashJsxChildren({
+  const hash = hashSource({
     source: childrenAsObjects,
     ...(context && { context }),
-    ...(id && { id }),
     dataFormat: 'JSX',
   });
 
   // Get the translation entry object
   const translationEntry = I18NConfig.getRecentTranslations(locale)?.[hash];
+  const translationsStatusEntry =
+    I18NConfig.getCachedTranslationsStatus(locale)?.[hash];
 
   // ----- RENDERING FUNCTION #2: RENDER TRANSLATED CONTENT ----- //
 
@@ -80,11 +114,11 @@ async function Tx({ children, id, context, locale }: TxProps): Promise<any> {
   // ----- RENDER CACHED TRANSLATIONS ----- //
 
   // if we have a cached translation, render it
-  if (translationEntry?.state === 'success') {
-    return renderTranslation(translationEntry.target);
+  if (translationsStatusEntry?.status === 'success') {
+    return renderTranslation(translationEntry);
   }
 
-  if (translationEntry?.state === 'error') {
+  if (translationsStatusEntry?.status === 'error') {
     return renderDefault();
   }
 
@@ -109,7 +143,6 @@ async function Tx({ children, id, context, locale }: TxProps): Promise<any> {
         source: childrenAsObjects,
         targetLocale: locale,
         options: {
-          ...(id && { id }),
           hash,
           ...(context && { context }),
           ...(renderSettings.timeout && { timeout: renderSettings.timeout }),

@@ -84,24 +84,23 @@ import { tx } from 'gt-next/server';
 
 export default async function TranslateWithOptions() {
     return await tx("Hello, world!", {
-        context: 'Translate informally' // [!code highlight]
+      $context: 'Translate informally' // [!code highlight]
     });
 }
 ```
 
 ### Using Variables [#variables]
 
-In order to pass values to your string, you must (1) assign an identifier and (2) reference the identifier in the `variables` field.
+In order to pass values to your string, you must (1) assign an identifier and (2) reference the identifier in the passed object.
 
 ```jsx title="translateWithVariables.js" copy
 // [!code word:price]
 import { tx } from 'gt-next/server';
 
 export default async function translateWithVariables() {
-    return await tx("The cost is {price}", {
-        variables: { price : 29.99 },
-        variableOptions: { price : { style: 'currency', currency: 'MXN' } }
-    });
+  return await tx("The cost is {price, number, ::currency/USD}", {
+    price: 29.99,
+  });
 }
 ```
 
@@ -113,7 +112,7 @@ By default, the locale is set to the user's preferred language.
 import { tx } from 'gt-next/server';
 
 export default async function translateWithLocale() {
-    return await tx("Hello, world!", { locale: 'fr' }); // [!code highlight]
+    return await tx("Hello, world!", { $locale: 'fr' }); // [!code highlight]
 }
 ```
 

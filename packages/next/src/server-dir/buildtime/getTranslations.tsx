@@ -14,11 +14,8 @@ import {
 } from '../../errors/createErrors';
 import getI18NConfig from '../../config-dir/getI18NConfig';
 import { getLocale } from '../../request/getLocale';
-import {
-  renderContentToString,
-  splitStringToContent,
-} from 'generaltranslation';
-import { hashJsxChildren } from 'generaltranslation/id';
+import { formatMessage } from 'generaltranslation';
+import { hashSource } from 'generaltranslation/id';
 import use from '../../utils/use';
 
 /**
@@ -56,7 +53,9 @@ export async function getTranslations(
   const translations = translationRequired
     ? await I18NConfig.getCachedTranslations(locale)
     : undefined;
-
+  const translationsStatus = translationRequired
+    ? I18NConfig.getCachedTranslationsStatus(locale)
+    : undefined;
   const renderSettings = I18NConfig.getRenderSettings();
 
   // ---------- THE t() METHOD ---------- //
@@ -81,10 +80,7 @@ export async function getTranslations(
    * // Translates item in dictionary under greetings.greeting2 and replaces {name} with 'John'
    * t('greetings.greeting2', { variables: { name: 'John' } });
    */
-  const t = (
-    id: string,
-    options: DictionaryTranslationOptions = {}
-  ): string => {
+  const t = (id: string, options: Record<string, any> = {}): string => {
     // Get entry
     id = getId(id);
     const value = getDictionaryEntry(dictionary, id);
@@ -107,21 +103,16 @@ export async function getTranslations(
     // Validate entry
     if (!entry || typeof entry !== 'string') return '';
 
-    // Parse content
-    const source = splitStringToContent(entry);
-
     // Render Method
-    const renderContent = (content: any, locales: string[]) => {
-      return renderContentToString(
-        content,
+    const renderContent = (message: string, locales: string[]) => {
+      return formatMessage(message, {
         locales,
-        options.variables,
-        options.variablesOptions
-      );
+        variables: options,
+      });
     };
 
     // Check: translation required
-    if (!translationRequired) return renderContent(source, [defaultLocale]);
+    if (!translationRequired) return renderContent(entry, [defaultLocale]);
 
     // ---------- DICTIONARY TRANSLATIONS ---------- //
 
@@ -130,48 +121,47 @@ export async function getTranslations(
 
     // Render dictionaryTranslation
     if (dictionaryTranslation) {
-      return renderContentToString(
-        splitStringToContent(dictionaryTranslation),
-        [locale, defaultLocale],
-        options.variables,
-        options.variablesOptions
-      );
+      return formatMessage(dictionaryTranslation, {
+        locales: [locale, defaultLocale],
+        variables: options,
+      });
     }
 
     // ---------- TRANSLATION ---------- //
 
-    const hash = hashJsxChildren({
-      source,
-      ...(metadata?.context && { context: metadata?.context }),
+    const hash = hashSource({
+      source: entry,
+      ...(metadata?.$context && { context: metadata.$context }),
       id,
-      dataFormat: 'JSX',
+      dataFormat: 'ICU',
     });
     const translationEntry = translations?.[hash];
+    const translationsStatusEntry = translationsStatus?.[hash];
 
     // ----- RENDER TRANSLATION ----- //
 
     // If a translation already exists
-    if (translationEntry?.state === 'success')
-      return renderContent(translationEntry.target, [locale, defaultLocale]);
+    if (translationsStatusEntry?.status === 'success')
+      return renderContent(translationEntry as string, [locale, defaultLocale]);
 
     // If a translation errored
-    if (translationEntry?.state === 'error')
-      return renderContent(source, [defaultLocale]);
+    if (translationsStatusEntry?.status === 'error')
+      return renderContent(entry, [defaultLocale]);
 
     // ----- CREATE TRANSLATION ----- //
     // Since this is buildtime string translation, it's dev only
 
     if (!I18NConfig.isDevelopmentApiEnabled()) {
       console.warn(createDictionaryTranslationError(id));
-      return renderContent(source, [defaultLocale]);
+      return renderContent(entry, [defaultLocale]);
     }
 
     // Translate on demand
-    I18NConfig.translateContent({
-      source,
+    I18NConfig.translateIcu({
+      source: entry,
       targetLocale: locale,
       options: {
-        ...(metadata?.context && { context: metadata?.context }),
+        ...(metadata?.$context && { context: metadata.$context }),
         id,
         hash,
       },
@@ -182,13 +172,13 @@ export async function getTranslations(
 
     // Loading behavior
     if (renderSettings.method === 'replace') {
-      return renderContent(source, [defaultLocale]);
+      return renderContent(entry, [defaultLocale]);
     } else if (renderSettings.method === 'skeleton') {
       return '';
     }
 
     // Default is returning source, rather than returning a loading state
-    return renderContent(source, [defaultLocale]);
+    return renderContent(entry, [defaultLocale]);
   };
 
   return t;
