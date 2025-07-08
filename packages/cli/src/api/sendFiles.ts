@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { createSpinner, logMessage, logSuccess } from '../console/logging.js';
 import { Settings } from '../types/index.js';
-import { FileExtension, DataFormat } from '../types/data.js';
+import { FileFormat, DataFormat } from '../types/data.js';
 import { getAuthHeaders } from '../utils/headers.js';
 
 /**
@@ -14,7 +14,7 @@ import { getAuthHeaders } from '../utils/headers.js';
 export interface FileToTranslate {
   content: string;
   fileName: string;
-  fileExtension: FileExtension;
+  fileFormat: FileFormat;
   dataFormat: DataFormat;
 }
 
@@ -47,8 +47,8 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
     // Add each file to the form data
     files.forEach((file, index) => {
       formData.append(`file${index}`, new Blob([file.content]), file.fileName);
-      formData.append(`fileExtension${index}`, file.fileExtension);
-      formData.append(`dataFormat${index}`, file.dataFormat); // Only used when translating JSON files
+      formData.append(`fileFormat${index}`, file.fileFormat);
+      formData.append(`fileDataFormat${index}`, file.dataFormat);
       formData.append(`fileName${index}`, file.fileName);
     });
 
