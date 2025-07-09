@@ -32,7 +32,7 @@ export default function addGTIdentifier(
     let transformation: Transformation | undefined;
     try {
       transformation =
-        typeof type === 'function' ? (type as any).gtTransformation || '' : '';
+        typeof type === 'function' ? (type as any)._gtt || '' : '';
     } catch {
       /* empty */
     }

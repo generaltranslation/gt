@@ -49,7 +49,7 @@ function Currency({
 
   return <>{formattedValue}</>;
 }
-
-Currency.gtTransformation = 'variable-currency';
+/** @internal _gtt - The GT transformation for the component. */
+Currency._gtt = 'variable-currency';
 
 export default Currency;

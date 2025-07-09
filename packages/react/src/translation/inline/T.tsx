@@ -195,7 +195,7 @@ function T({
   // Render translated content
   return <>{renderTranslation(translationEntry)}</>;
 }
-
-T.gtTransformation = 'translate-client';
+/** @internal _gtt - The GT transformation for the component. */
+T._gtt = 'translate-client';
 
 export default T;

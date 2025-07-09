@@ -45,7 +45,7 @@ function DateTime({
   return <>{result}</>;
 }
 
-// Static property for transformation type
-DateTime.gtTransformation = 'variable-datetime';
+/** @internal _gtt - The GT transformation for the component. */
+DateTime._gtt = 'variable-datetime';
 
 export default DateTime;

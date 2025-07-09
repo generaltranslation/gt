@@ -57,6 +57,6 @@ function Plural({
   return <>{getPluralBranch(n, providerLocales, branches) || children}</>;
 }
 
-Plural.gtTransformation = 'plural';
+Plural._gtt = 'plural';
 
 export default Plural;

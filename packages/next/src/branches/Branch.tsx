@@ -38,6 +38,6 @@ function Branch({
       : children;
   return <>{renderedBranch}</>;
 }
-
-Branch.gtTransformation = 'branch';
+/** @internal _gtt - The GT transformation for the component. */
+Branch._gtt = 'branch';
 export default Branch;
