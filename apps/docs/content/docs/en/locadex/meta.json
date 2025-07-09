@@ -3,5 +3,5 @@
   "description": "AI i18n engineer",
   "icon": "Brain",
   "root": true,
-  "pages": ["---Getting Started---", "index"]
+  "pages": ["---Getting Started---", "index", "github-app", "tips"]
 }
