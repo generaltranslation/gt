@@ -18,6 +18,13 @@ import { GT_TRANSLATION_FUNCS } from '../jsx/utils/constants.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 
+/**
+ * Creates inline updates for <T> components and translation functions
+ * @param options - The options object
+ * @param pkg - The package name
+ * @param validate - Whether to validate the updates
+ * @returns An object containing the updates, errors, and warnings
+ */
 export default async function createInlineUpdates(
   options: Options,
   pkg: 'gt-react' | 'gt-next',
