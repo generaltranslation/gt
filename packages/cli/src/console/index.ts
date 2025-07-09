@@ -44,6 +44,13 @@ export const warnHasUnwrappedExpressionSync = (
     location
   );
 
+export const warnNestedTComponent = (file: string, location?: string): string =>
+  withLocation(
+    file,
+    `Found nested <T> component. <T> components cannot be directly nested.`,
+    location
+  );
+
 export const warnNonStaticExpressionSync = (
   file: string,
   attrName: string,

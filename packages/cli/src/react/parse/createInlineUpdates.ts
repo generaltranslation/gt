@@ -22,10 +22,11 @@ export default async function createInlineUpdates(
   options: Options,
   pkg: 'gt-react' | 'gt-next',
   validate: boolean
-): Promise<{ updates: Updates; errors: string[] }> {
+): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];
 
   const errors: string[] = [];
+  const warnings: string[] = [];
 
   // Use the provided app directory or default to the current directory
   const filePatterns = options.src || DEFAULT_SRC_PATTERNS;
@@ -121,7 +122,14 @@ export default async function createInlineUpdates(
     // Parse <T> components
     traverse(ast, {
       JSXElement(path) {
-        parseJSXElement(importAliases, path.node, updates, errors, file);
+        parseJSXElement(
+          importAliases,
+          path.node,
+          updates,
+          errors,
+          warnings,
+          file
+        );
       },
     });
 
@@ -147,5 +155,5 @@ export default async function createInlineUpdates(
     })
   );
 
-  return { updates, errors };
+  return { updates, errors, warnings };
 }

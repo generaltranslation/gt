@@ -1,4 +1,4 @@
-import { logErrorAndExit } from '../console/logging.js';
+import { logErrorAndExit, logWarning } from '../console/logging.js';
 import chalk from 'chalk';
 import findFilepath from '../fs/findFilepath.js';
 import { Options, Settings } from '../types/index.js';
@@ -21,12 +21,24 @@ export async function validateProject(
     ]);
   }
 
-  const { updates, errors } = await createUpdates(
+  const { updates, errors, warnings } = await createUpdates(
     settings,
     settings.dictionary,
     pkg,
     true
   );
+
+  if (warnings.length > 0) {
+    logWarning(
+      chalk.yellow(
+        `CLI tool encountered ${warnings.length} warnings while scanning for translatable content.`
+      ) +
+        '\n' +
+        warnings
+          .map((warning) => chalk.yellow('• ') + chalk.white(warning))
+          .join('\n')
+    );
+  }
 
   if (errors.length > 0) {
     logErrorAndExit(

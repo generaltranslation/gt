@@ -29,6 +29,7 @@ export type Options = {
   baseUrl: string;
   inline?: boolean;
   ignoreErrors: boolean;
+  suppressWarnings: boolean;
   dryRun: boolean;
   timeout: string;
   stageTranslations?: boolean;
@@ -59,6 +60,7 @@ export type GenerateSourceOptions = {
   jsconfig?: string;
   inline?: boolean;
   ignoreErrors: boolean;
+  suppressWarnings: boolean;
 };
 
 export type Framework = 'gt-next' | 'gt-react';
