@@ -31,6 +31,6 @@ function Var({
   return <>{children}</>;
 }
 
-Var.gtTransformation = 'variable-variable';
+Var._gtt = 'variable-variable';
 
 export default Var;

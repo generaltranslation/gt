@@ -41,6 +41,6 @@ function DateTime({
   return <>{result}</>;
 }
 
-DateTime.gtTransformation = 'variable-datetime';
+DateTime._gtt = 'variable-datetime';
 
 export default DateTime;

@@ -50,6 +50,6 @@ function Currency({
   return <>{formattedValue}</>;
 }
 
-Currency.gtTransformation = 'variable-currency';
+Currency._gtt = 'variable-currency';
 
 export default Currency;

@@ -23,6 +23,6 @@ function Var({
   return <>{children}</>;
 }
 
-Var.gtTransformation = 'variable-variable'; // keep this because Var is imported in other functions
+Var._gtt = 'variable-variable'; // keep this because Var is imported in other functions
 
 export default Var;

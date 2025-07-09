@@ -39,5 +39,5 @@ function Branch({
   return <>{renderedBranch}</>;
 }
 
-Branch.gtTransformation = 'branch';
+Branch._gtt = 'branch';
 export default Branch;

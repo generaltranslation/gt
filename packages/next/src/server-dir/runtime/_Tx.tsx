@@ -174,6 +174,6 @@ async function Tx({
   );
 }
 
-Tx.gtTransformation = 'translate-server';
+Tx._gtt = 'translate-server';
 
 export default Tx;

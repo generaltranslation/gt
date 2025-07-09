@@ -46,6 +46,6 @@ function DateTime({
 }
 
 // Static property for transformation type
-DateTime.gtTransformation = 'variable-datetime';
+DateTime._gtt = 'variable-datetime';
 
 export default DateTime;

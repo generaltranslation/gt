@@ -49,6 +49,6 @@ function Num({
   return <>{formattedValue}</>;
 }
 
-Num.gtTransformation = 'variable-number';
+Num._gtt = 'variable-number';
 
 export default Num;
