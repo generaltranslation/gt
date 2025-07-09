@@ -40,7 +40,7 @@ function DateTime({
     .replace(/[\u200F\u202B\u202E]/g, '');
   return <>{result}</>;
 }
-
+/** @internal _gtt - The GT transformation for the component. */
 DateTime._gtt = 'variable-datetime';
 
 export default DateTime;

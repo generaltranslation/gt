@@ -63,6 +63,7 @@ export const GTProvider: typeof _GTProvider = () => {
 export const T: typeof _T = () => {
   throw new Error(typesFileError);
 };
+/** @internal _gtt - The GT transformation for the component. */
 T._gtt = 'translate';
 
 /**
@@ -85,6 +86,7 @@ T._gtt = 'translate';
 export const Currency: typeof _Currency = () => {
   throw new Error(typesFileError);
 };
+/** @internal _gtt - The GT transformation for the component. */
 Currency._gtt = 'variable-currency';
 
 /**
@@ -105,6 +107,7 @@ Currency._gtt = 'variable-currency';
 export const DateTime: typeof _DateTime = () => {
   throw new Error(typesFileError);
 };
+/** @internal _gtt - The GT transformation for the component. */
 DateTime._gtt = 'variable-datetime';
 
 /**
@@ -127,6 +130,7 @@ DateTime._gtt = 'variable-datetime';
 export const Num: typeof _Num = () => {
   throw new Error(typesFileError);
 };
+/** @internal _gtt - The GT transformation for the component. */
 Num._gtt = 'variable-number';
 
 /**
@@ -146,6 +150,7 @@ Num._gtt = 'variable-number';
 export const Var: typeof _Var = () => {
   throw new Error(typesFileError);
 };
+/** @internal _gtt - The GT transformation for the component. */
 Var._gtt = 'variable-variable';
 
 /**
@@ -175,6 +180,7 @@ Var._gtt = 'variable-variable';
 export const Branch: typeof _Branch = () => {
   throw new Error(typesFileError);
 };
+/** @internal _gtt - The GT transformation for the component. */
 Branch._gtt = 'branch';
 
 /**
@@ -205,6 +211,7 @@ Branch._gtt = 'branch';
 export const Plural: typeof _Plural = () => {
   throw new Error(typesFileError);
 };
+/** @internal _gtt - The GT transformation for the component. */
 Plural._gtt = 'plural';
 
 /**

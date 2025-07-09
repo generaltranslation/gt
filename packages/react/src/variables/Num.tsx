@@ -48,7 +48,7 @@ function Num({
   }
   return <>{renderedValue}</>;
 }
-
+/** @internal _gtt - The GT transformation for the component. */
 Num._gtt = 'variable-number';
 
 export default Num;

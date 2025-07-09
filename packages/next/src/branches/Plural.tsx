@@ -45,7 +45,7 @@ function Plural({
     </>
   );
 }
-
+/** @internal _gtt - The GT transformation for the component. */
 Plural._gtt = 'plural';
 
 export default Plural;

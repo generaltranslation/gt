@@ -31,6 +31,7 @@ function Var({
   return <>{children}</>;
 }
 
+/** @internal _gtt - The GT transformation for the component. */
 Var._gtt = 'variable-variable';
 
 export default Var;

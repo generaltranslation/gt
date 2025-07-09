@@ -173,7 +173,7 @@ async function Tx({
     </Suspense>
   );
 }
-
+/** @internal _gtt - The GT transformation for the component. */
 Tx._gtt = 'translate-server';
 
 export default Tx;
