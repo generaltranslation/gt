@@ -29,6 +29,7 @@ export type HtmlContentPropValuesRecord = Partial<
 export type Transformation =
   | 'translate-client'
   | 'translate-server'
+  | 'translate-runtime'
   | 'variable-variable'
   | 'variable-currency'
   | 'variable-datetime'
