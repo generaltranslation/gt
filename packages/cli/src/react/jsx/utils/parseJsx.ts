@@ -37,7 +37,7 @@ export function buildJSXTree(
   unwrappedExpressions: string[],
   updates: Updates,
   errors: string[],
-  warnings: string[],
+  warnings: Set<string>,
   file: string,
   insideT: boolean
 ):
@@ -93,7 +93,7 @@ export function buildJSXTree(
 
     if (componentType === 'T' && insideT) {
       // Add warning: Nested <T> components are allowed, but they are advised against
-      warnings.push(
+      warnings.add(
         warnNestedTComponent(
           file,
           `${element.loc?.start?.line}:${element.loc?.start?.column}`
@@ -240,7 +240,7 @@ export function parseJSXElement(
   node: t.JSXElement,
   updates: Updates,
   errors: string[],
-  warnings: string[],
+  warnings: Set<string>,
   file: string
 ) {
   const openingElement = node.openingElement;
@@ -251,7 +251,7 @@ export function parseJSXElement(
     return;
   }
   const componentErrors: string[] = [];
-  const componentWarnings: string[] = [];
+  const componentWarnings: Set<string> = new Set();
   const metadata: Metadata = {};
 
   // We'll track this flag to know if any unwrapped {variable} is found in children
@@ -320,8 +320,8 @@ export function parseJSXElement(
     jsxTree = treeResult;
   }
 
-  if (componentWarnings.length > 0) {
-    warnings.push(...componentWarnings);
+  if (componentWarnings.size > 0) {
+    componentWarnings.forEach((warning) => warnings.add(warning));
   }
 
   if (componentErrors.length > 0) {

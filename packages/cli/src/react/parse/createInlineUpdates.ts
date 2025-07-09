@@ -26,7 +26,7 @@ export default async function createInlineUpdates(
   const updates: Updates = [];
 
   const errors: string[] = [];
-  const warnings: string[] = [];
+  const warnings: Set<string> = new Set();
 
   // Use the provided app directory or default to the current directory
   const filePatterns = options.src || DEFAULT_SRC_PATTERNS;
@@ -155,5 +155,5 @@ export default async function createInlineUpdates(
     })
   );
 
-  return { updates, errors, warnings };
+  return { updates, errors, warnings: [...warnings] };
 }
