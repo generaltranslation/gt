@@ -58,7 +58,7 @@ export default function renderDefaultChildren({
 
     // Fragment
     if (generaltranslation?.transformation === 'fragment') {
-      return React.createElement(child.type, {
+      return React.createElement(React.Fragment, {
         key: child.props.key,
         children: handleChildren(child.props.children),
       });

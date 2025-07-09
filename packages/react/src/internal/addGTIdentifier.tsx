@@ -1,10 +1,6 @@
 import React, { ReactElement, isValidElement, ReactNode } from 'react';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import {
-  createNestedDataGTError,
-  createNestedTError,
-} from '../errors/createErrors';
-import {
   GTTag,
   TaggedChild,
   TaggedChildren,
@@ -43,8 +39,9 @@ export default function addGTIdentifier(
     if (transformation) {
       const transformationParts = transformation.split('-');
       if (transformationParts[0] === 'translate') {
-        // TODO: turn transformation into a fragment here
-        throw new Error(createNestedTError(child));
+        // Convert nested <T> to fragments
+        // This will nullify translation specific attributes of child, i.e. id, context, etc.
+        transformationParts[0] = 'fragment';
       }
       if (transformationParts[0] === 'variable') {
         result.variableType =
@@ -87,7 +84,6 @@ export default function addGTIdentifier(
   function handleSingleChildElement(child: ReactElement<any>): TaggedElement {
     const { props } = child;
 
-    if (props['data-_gt']) throw new Error(createNestedDataGTError(child));
     // Create new props for the element, including the GT identifier and a key
     const generaltranslation: GTTag = createGTTag(child);
     const newProps: TaggedElementProps = {

@@ -9,9 +9,8 @@ import addGTIdentifierToSyntaxTree from '../../data-_gt/addGTIdentifierToSyntaxT
 import {
   warnHasUnwrappedExpressionSync,
   warnVariablePropSync,
-  warnNestedTComponent,
 } from '../../../console/index.js';
-import { isAcceptedPluralForm, JsxChildren } from 'generaltranslation/internal';
+import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { handleChildrenWhitespace } from '../trimJsxStringChildren.js';
 import { isStaticExpression } from '../evaluateJsx.js';
 import {
@@ -89,17 +88,6 @@ export function buildJSXTree(
 
     // Convert from alias to original name
     const componentType = importAliases[typeName ?? ''];
-
-    if (componentType === 'T' && insideT) {
-      // Add error: No nested <T> components are allowed
-      errors.push(
-        warnNestedTComponent(
-          file,
-          `${element.loc?.start?.line}:${element.loc?.start?.column}`
-        )
-      );
-      return null;
-    }
 
     // If this JSXElement is one of the recognized variable components,
     const elementIsVariable = VARIABLE_COMPONENTS.includes(componentType);
