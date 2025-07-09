@@ -99,7 +99,6 @@ export function buildJSXTree(
           `${element.loc?.start?.line}:${element.loc?.start?.column}`
         )
       );
-      console.log(warnings);
     }
 
     // If this JSXElement is one of the recognized variable components,
