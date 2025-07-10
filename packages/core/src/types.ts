@@ -67,6 +67,8 @@ export type JsxElement = {
 export type JsxChild = string | JsxElement | Variable;
 export type JsxChildren = JsxChild | JsxChild[];
 
+export type IcuMessage = string;
+
 export type Metadata = {
   context?: string;
   id?: string;
@@ -169,4 +171,36 @@ export type Variable = {
   k: string;
   i?: number;
   v?: VariableType;
+};
+
+export type TranslationConfig = {
+  baseUrl: string;
+  apiKey?: string;
+  devApiKey?: string;
+  timeout?: number;
+};
+
+export type TranslationMetadata = {
+  sourceLocale?: string;
+  versionId?: string;
+  context?: string;
+  id?: string;
+  hash?: string;
+  actionType?: 'standard' | 'fast' | string;
+};
+
+export type BatchTranslationSource = (JsxChildren | IcuMessage)[];
+export type BatchTranslationMetadata = {
+  sourceLocale?: string;
+  versionId?: string;
+  batchMetadata: { context?: string; id?: string; hash?: string }[];
+};
+
+export type TranslationResult = {
+  translation: JsxChildren | IcuMessage;
+  locale: string;
+  reference: {
+    id: string;
+    key: string;
+  };
 };

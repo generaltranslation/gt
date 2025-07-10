@@ -15,7 +15,7 @@
     "build": "rollup -c",
     "lint": "eslint \"src/**/*.{js,ts}\" \"__tests__/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" \"__tests__/**/*.{js,ts}\" --fix",
-    "test": "vitest run",
+    "test": "vitest run --pool=threads --poolOptions.threads.maxThreads=4",
     "test:watch": "vitest",
     "release": "npm run build:clean && npm publish",
     "release:alpha": "npm run build:clean && npm publish --tag alpha",

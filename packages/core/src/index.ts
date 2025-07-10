@@ -13,7 +13,14 @@ import {
   _formatDateTime,
   _formatMessage,
 } from './formatting/format';
-import { CustomMapping, FormatVariables } from './types';
+import {
+  CustomMapping,
+  FormatVariables,
+  TranslationConfig,
+  TranslationMetadata,
+  JsxChildren,
+  IcuMessage,
+} from './types';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
   LocaleProperties,
@@ -31,6 +38,7 @@ import {
   invalidLocaleError,
   invalidLocalesError,
 } from './settings/errors';
+import _translate from './translate/translate';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -181,10 +189,40 @@ export class GT {
     this.customMapping = customMapping;
   }
 
-  // -------------- Translation methods -------------- //
+  // -------------- Private Methods -------------- //
+
+  private _getTranslationConfig(
+    config?: Partial<TranslationConfig>
+  ): TranslationConfig {
+    return {
+      baseUrl: this.baseUrl,
+      apiKey: this.apiKey,
+      devApiKey: this.devApiKey,
+      ...config,
+    };
+  }
+
+  // -------------- Translation Methods -------------- //
+
+  async translate(
+    source: JsxChildren | IcuMessage,
+    targetLocale: string | undefined = this.targetLocale,
+    metadata?: TranslationMetadata,
+    config?: Partial<TranslationConfig>
+  ) {
+    if (!targetLocale)
+      throw new Error(noTargetLocaleProvidedError('translate'));
+    return await translate(
+      source,
+      targetLocale,
+      metadata || {},
+      this._getTranslationConfig(config)
+    );
+  }
+
   translatef() {}
 
-  mtranslatef() {}
+  async mtranslate() {}
 
   // -------------- Formatting -------------- //
 
@@ -559,6 +597,19 @@ export class GT {
   isSupersetLocale(superLocale: string, subLocale: string): boolean {
     return isSupersetLocale(superLocale, subLocale);
   }
+}
+
+// ============================================================ //
+//                  Translation methods                         //
+// ============================================================ //
+
+export async function translate(
+  source: JsxChildren | IcuMessage,
+  targetLocale: string,
+  metadata?: TranslationMetadata,
+  config?: TranslationConfig
+) {
+  return await _translate(source, targetLocale, metadata || {}, config);
 }
 
 // ============================================================ //
