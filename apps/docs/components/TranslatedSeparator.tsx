@@ -1,5 +1,5 @@
 'use client';
-import { useDict } from 'gt-next/client';
+import { useTranslations } from 'gt-next/client';
 import { SidebarSeparator } from 'fumadocs-ui/components/layout/sidebar';
 import { ReactNode, ReactElement } from 'react';
 
@@ -27,7 +27,7 @@ interface TranslatedSeparatorProps {
 }
 
 export function TranslatedSeparator({ item }: TranslatedSeparatorProps) {
-  const d = useDict();
+  const d = useTranslations();
   
   // Convert ReactNode to string for lookup, only if it's actually a string
   const nameAsString = typeof item.name === 'string' ? item.name : undefined;
