@@ -27,7 +27,6 @@ describe('Translation Methods', () => {
   describe('exported translate function', () => {
     const mockTranslationResult: TranslationResult = {
       translation: 'Hola mundo',
-      locale: 'es',
       reference: {
         id: 'test-id',
         key: 'test-key',
@@ -138,7 +137,6 @@ describe('Translation Methods', () => {
     let gt: GT;
     const mockTranslationResult: TranslationResult = {
       translation: 'Hola mundo',
-      locale: 'es',
       reference: {
         id: 'test-id',
         key: 'test-key',

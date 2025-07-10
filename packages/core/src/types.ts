@@ -198,9 +198,8 @@ export type BatchTranslationMetadata = {
 
 export type TranslationResult = {
   translation: JsxChildren | IcuMessage;
-  locale: string;
   reference: {
-    id: string;
-    key: string;
+    id?: string;
+    key?: string;
   };
 };

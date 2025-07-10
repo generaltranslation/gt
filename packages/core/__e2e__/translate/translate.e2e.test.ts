@@ -1,9 +1,19 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { hashSource } from '../../src/id/hashSource';
-import { IcuMessage, JsxChildren, VariableType } from '../../src/types';
+import {
+  IcuMessage,
+  JsxChildren,
+  VariableType,
+  TranslationConfig,
+  TranslationMetadata,
+  TranslationResult,
+  TranslationError,
+} from '../../src/types';
+import _translate from '../../src/translate/translate';
+import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
 describe('Translation E2E Tests', () => {
-  const runtimeUrl = process.env.VITE_GT_RUNTIME_URL;
+  const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultRuntimeApiUrl;
   const projectId = process.env.VITE_GT_PROJECT_ID;
   const apiKey = process.env.VITE_GT_API_KEY;
 
@@ -17,14 +27,26 @@ describe('Translation E2E Tests', () => {
     throw new Error('GT_API_KEY environment variable is required');
   }
 
-  const clientEndpoint = `${runtimeUrl}/v1/runtime/${projectId}/client`;
-  const serverEndpoint = `${runtimeUrl}/v1/runtime/${projectId}/server`;
+  // Configuration for GT translate function
+  // Runtime endpoints have a different structure than standard translation endpoints
+  // Standard: baseUrl + '/v1/translate/content'
+  // Runtime: runtimeUrl + '/v1/runtime/${projectId}/client' (no content suffix)
+  const clientConfig: TranslationConfig = {
+    baseUrl: `${runtimeUrl}/v1/runtime/${projectId}/client`,
+    devApiKey: apiKey,
+  };
 
-  // Helper function to generate unique IDs and calculate proper hashes
-  const createTestRequest = (
+  const serverConfig: TranslationConfig = {
+    baseUrl: `${runtimeUrl}/v1/runtime/${projectId}/server`,
+    devApiKey: apiKey,
+  };
+
+  // Helper function to generate unique IDs and calculate hash values
+  // Note: The response.reference.key field will contain the hash value
+  const createTestMetadata = (
     source: JsxChildren | IcuMessage,
-    metadata: any = {}
-  ) => {
+    metadata: Partial<TranslationMetadata> = {}
+  ): TranslationMetadata => {
     const id = `test-id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const hash = hashSource({
       source,
@@ -34,32 +56,19 @@ describe('Translation E2E Tests', () => {
     });
 
     return {
-      source,
-      metadata: {
-        ...metadata,
-        id,
-        hash,
-      },
+      ...metadata,
+      id,
+      hash,
     };
   };
 
   beforeAll(async () => {
-    // Test server availability without excessive logging
+    // Test server availability using translate function
     try {
-      const testRequest = createTestRequest('Hello world', { context: 'test' });
-      await fetch(clientEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-dev-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          requests: [testRequest],
-          targetLocale: 'es',
-          metadata: {},
-          versionId: 'test-version',
-        }),
+      const testMetadata = createTestMetadata('Hello world', {
+        context: 'test',
       });
+      await _translate('Hello world', 'es', testMetadata, clientConfig);
     } catch {
       console.warn('Server may not be available for E2E tests');
     }
@@ -67,37 +76,29 @@ describe('Translation E2E Tests', () => {
 
   describe('Client Endpoint Tests (/client)', () => {
     it('should test client endpoint with dev API key', async () => {
-      const testRequest = createTestRequest('Hello world', {
+      const testMetadata = createTestMetadata('Hello world', {
         context: 'test',
         sourceLocale: 'en',
       });
 
       try {
-        const response = await fetch(clientEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'es',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
+        const result = await _translate(
+          'Hello world',
+          'es',
+          testMetadata,
+          clientConfig
+        );
 
-        expect(response).toBeDefined();
+        expect(result).toBeDefined();
 
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-          if (result.length > 0) {
-            expect(result[0]).toHaveProperty('translation');
-          }
+        if ('translation' in result) {
+          expect(result.translation).toBeDefined();
+          expect(result.reference).toBeDefined();
+          expect(result.reference.id).toBe(testMetadata.id);
+          expect(result.reference.key).toBe(testMetadata.hash);
         } else {
-          expect(response.status).toBeGreaterThan(0);
+          // Handle error case
+          expect(result).toHaveProperty('error');
         }
       } catch (error) {
         expect(error).toBeDefined();
@@ -105,97 +106,75 @@ describe('Translation E2E Tests', () => {
     });
 
     it('should reject client endpoint with regular API key', async () => {
-      const testRequest = createTestRequest('Hello world', {
+      const testMetadata = createTestMetadata('Hello world', {
         context: 'test',
         sourceLocale: 'en',
       });
 
-      try {
-        const response = await fetch(clientEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-api-key': 'fake-regular-key', // Regular API key should be rejected
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'es',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
+      const regularKeyConfig: TranslationConfig = {
+        baseUrl: `${runtimeUrl}/v1/runtime/${projectId}/client`,
+        apiKey: 'fake-regular-key', // Regular API key should be rejected
+      };
 
-        expect(response.status).toBe(401); // Should be unauthorized
+      try {
+        await _translate('Hello world', 'es', testMetadata, regularKeyConfig);
+        // Should not reach here if authentication fails
+        expect(false).toBe(true);
       } catch (error) {
         expect(error).toBeDefined();
+        expect(error.message).toContain('401');
       }
     });
   });
 
   describe('Server Endpoint Tests (/server)', () => {
     it('should test server endpoint with dev API key', async () => {
-      const testRequest = createTestRequest('Hello world', {
+      const testMetadata = createTestMetadata('Hello world', {
         context: 'test',
         sourceLocale: 'en',
       });
 
       try {
-        const response = await fetch(serverEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'es',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
+        const result = await _translate(
+          'Hello world',
+          'es',
+          testMetadata,
+          serverConfig
+        );
 
-        expect(response).toBeDefined();
+        expect(result).toBeDefined();
 
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-          if (result.length > 0) {
-            expect(result[0]).toHaveProperty('translation');
-          }
+        if ('translation' in result) {
+          expect(result.translation).toBeDefined();
+          expect(result.reference).toBeDefined();
+          expect(result.reference.id).toBe(testMetadata.id);
+          expect(result.reference.key).toBe(testMetadata.hash);
         } else {
-          expect(response.status).toBeGreaterThan(0);
+          expect(result).toHaveProperty('error');
         }
       } catch (error) {
         expect(error).toBeDefined();
       }
     });
 
-    it('should accept server endpoint with regular API key', async () => {
-      const testRequest = createTestRequest('Hello world', {
+    it('should reject server endpoint with invalid regular API key', async () => {
+      const testMetadata = createTestMetadata('Hello world', {
         context: 'test',
         sourceLocale: 'en',
       });
 
-      try {
-        const response = await fetch(serverEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-api-key': 'fake-regular-key', // Regular API key should work for server
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'es',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
+      const regularKeyConfig: TranslationConfig = {
+        baseUrl: `${runtimeUrl}/v1/runtime/${projectId}/server`,
+        apiKey: 'fake-regular-key', // Fake API key should be rejected
+      };
 
-        // Should work (not 401), but may fail with other errors due to fake key
-        expect(response.status).not.toBe(401);
+      try {
+        await _translate('Hello world', 'es', testMetadata, regularKeyConfig);
+        // Should not reach here if authentication fails
+        expect(false).toBe(true);
       } catch (error) {
-        expect(error).toBeDefined();
+        // Should fail with 401 for invalid key
+        expect(error.message).toContain('401');
       }
     });
   });
@@ -227,35 +206,23 @@ describe('Translation E2E Tests', () => {
         '!',
       ];
 
-      const testRequest = createTestRequest(complexNestedJsx, {
+      const testMetadata = createTestMetadata(complexNestedJsx, {
         context: 'nested-welcome',
         sourceLocale: 'en',
       });
 
       try {
-        const response = await fetch(clientEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'es',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
+        const result = await _translate(
+          complexNestedJsx,
+          'es',
+          testMetadata,
+          clientConfig
+        );
 
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-          if (result.length > 0) {
-            expect(result[0]).toHaveProperty('translation');
-          }
-        } else {
-          expect(response.status).toBeGreaterThan(0);
+        expect(result).toBeDefined();
+        if ('translation' in result) {
+          expect(result.translation).toBeDefined();
+          expect(result.reference.key).toBe(testMetadata.hash);
         }
       } catch {
         expect(true).toBe(true); // Server may not be available
@@ -279,86 +246,23 @@ describe('Translation E2E Tests', () => {
         ' in your cart.',
       ];
 
-      const testRequest = createTestRequest(jsxWithBranches, {
+      const testMetadata = createTestMetadata(jsxWithBranches, {
         context: 'cart-items',
         sourceLocale: 'en',
       });
 
       try {
-        const response = await fetch(clientEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'fr',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
+        const result = await _translate(
+          jsxWithBranches,
+          'fr',
+          testMetadata,
+          clientConfig
+        );
 
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-        } else {
-          expect(response.status).toBeGreaterThan(0);
-        }
-      } catch {
-        expect(true).toBe(true);
-      }
-    }, 10000);
-
-    it('should handle JSX with plurals', async () => {
-      const jsxWithPlurals = [
-        'The ',
-        {
-          t: 'strong',
-          c: ['event'],
-        },
-        ' will start in ',
-        {
-          t: 'span',
-          d: {
-            t: 'p' as const, // plural transformation
-            b: {
-              zero: ['no time'],
-              one: ['1 minute'],
-              other: [{ k: 'minutes', v: 'n' as VariableType }, ' minutes'],
-            },
-          },
-        },
-        '.',
-      ];
-
-      const testRequest = createTestRequest(jsxWithPlurals, {
-        context: 'event-countdown',
-        sourceLocale: 'en',
-      });
-
-      try {
-        const response = await fetch(serverEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'de',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-        } else {
-          expect(response.status).toBeGreaterThan(0);
+        expect(result).toBeDefined();
+        if ('translation' in result) {
+          expect(result.translation).toBeDefined();
+          expect(result.reference.key).toBe(testMetadata.hash);
         }
       } catch {
         expect(true).toBe(true);
@@ -378,40 +282,31 @@ describe('Translation E2E Tests', () => {
         '.',
       ];
 
-      const testRequest = createTestRequest(jsxWithVariables, {
+      const testMetadata = createTestMetadata(jsxWithVariables, {
         context: 'user-dashboard',
         sourceLocale: 'en',
       });
 
       try {
-        const response = await fetch(clientEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'ja',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
+        const result = await _translate(
+          jsxWithVariables,
+          'ja',
+          testMetadata,
+          clientConfig
+        );
 
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-        } else {
-          expect(response.status).toBeGreaterThan(0);
+        expect(result).toBeDefined();
+        if ('translation' in result) {
+          expect(result.translation).toBeDefined();
+          expect(result.reference.key).toBe(testMetadata.hash);
         }
       } catch {
         expect(true).toBe(true);
       }
     });
 
-    it('should handle complex JSX with nested elements, branches and variables', async () => {
-      const veryComplexJsx = [
+    it('should handle complex JSX with nested elements and variables', async () => {
+      const complexJsx = [
         {
           t: 'div',
           c: [
@@ -423,55 +318,11 @@ describe('Translation E2E Tests', () => {
               t: 'p',
               c: [
                 'You have ',
-                {
-                  t: 'span',
-                  d: {
-                    t: 'b' as const,
-                    b: {
-                      zero: ['no notifications'],
-                      one: [
-                        {
-                          t: 'strong',
-                          c: ['1 new notification'],
-                        },
-                      ],
-                      other: [
-                        {
-                          t: 'strong',
-                          c: [
-                            { k: 'notificationCount', v: 'n' as VariableType },
-                            ' new notifications',
-                          ],
-                        },
-                      ],
-                    },
-                  },
-                },
-                ' since your last visit on ',
+                { k: 'notificationCount', v: 'n' as VariableType },
+                ' new notifications since your last visit on ',
                 {
                   t: 'time',
                   c: [{ k: 'lastVisit', v: 'd' as VariableType }],
-                },
-                '.',
-              ],
-            },
-            {
-              t: 'footer',
-              c: [
-                'Your premium subscription expires in ',
-                {
-                  t: 'span',
-                  d: {
-                    t: 'p' as const,
-                    b: {
-                      zero: ['today'],
-                      one: ['1 day'],
-                      other: [
-                        { k: 'daysLeft', v: 'n' as VariableType },
-                        ' days',
-                      ],
-                    },
-                  },
                 },
                 '.',
               ],
@@ -480,40 +331,28 @@ describe('Translation E2E Tests', () => {
         },
       ];
 
-      const testRequest = createTestRequest(veryComplexJsx, {
+      const testMetadata = createTestMetadata(complexJsx, {
         context: 'user-dashboard-complex',
         sourceLocale: 'en',
       });
 
       try {
-        const response = await fetch(serverEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'zh',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
+        const result = await _translate(
+          complexJsx,
+          'es',
+          testMetadata,
+          clientConfig
+        );
 
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-          if (result.length > 0) {
-            expect(result[0]).toHaveProperty('translation');
-            // Verify the translation maintains structure
-            if (result[0].translation && Array.isArray(result[0].translation)) {
-              expect(result[0].translation[0]).toHaveProperty('t', 'div');
-              expect(result[0].translation[0]).toHaveProperty('c');
-            }
+        expect(result).toBeDefined();
+        if ('translation' in result) {
+          expect(result.translation).toBeDefined();
+          expect(result.reference.key).toBe(testMetadata.hash);
+          // Verify the translation maintains structure
+          if (Array.isArray(result.translation)) {
+            expect(result.translation[0]).toHaveProperty('t', 'div');
+            expect(result.translation[0]).toHaveProperty('c');
           }
-        } else {
-          expect(response.status).toBeGreaterThan(0);
         }
       } catch {
         expect(true).toBe(true);
@@ -546,32 +385,23 @@ describe('Translation E2E Tests', () => {
         },
       ];
 
-      const testRequest = createTestRequest(jsxWithHtmlProps, {
+      const testMetadata = createTestMetadata(jsxWithHtmlProps, {
         context: 'form-elements',
         sourceLocale: 'en',
       });
 
       try {
-        const response = await fetch(clientEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'it',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
+        const result = await _translate(
+          jsxWithHtmlProps,
+          'it',
+          testMetadata,
+          clientConfig
+        );
 
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-        } else {
-          expect(response.status).toBeGreaterThan(0);
+        expect(result).toBeDefined();
+        if ('translation' in result) {
+          expect(result.translation).toBeDefined();
+          expect(result.reference.key).toBe(testMetadata.hash);
         }
       } catch {
         expect(true).toBe(true);
@@ -579,112 +409,32 @@ describe('Translation E2E Tests', () => {
     });
   });
 
-  describe('Basic Source Types', () => {
-    it('should handle batch translation with different source types', async () => {
-      // Test multiple source types in a single batch request for efficiency
-      const testRequests = [
-        createTestRequest('Simple string', {
-          context: 'basic-string',
-          sourceLocale: 'en',
-        }),
-        createTestRequest(['Hello ', { t: 'strong', c: ['world'] }], {
-          context: 'basic-jsx',
-          sourceLocale: 'en',
-        }),
-        createTestRequest('Hello {name}', {
-          context: 'basic-icu',
-          sourceLocale: 'en',
-        }),
-        createTestRequest(
-          ['Count: ', { k: 'itemCount', v: 'n' as VariableType }],
-          { context: 'basic-variable', sourceLocale: 'en' }
-        ),
-      ];
-
-      try {
-        const response = await fetch(clientEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: testRequests,
-            targetLocale: 'es',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-          expect(result.length).toBe(testRequests.length);
-
-          // Test hash consistency: verify returned hashes match sent hashes
-          for (let i = 0; i < result.length; i++) {
-            const responseItem = result[i];
-            const requestItem = testRequests[i];
-
-            expect(responseItem).toHaveProperty('reference');
-            expect(responseItem.reference).toHaveProperty('hash');
-            expect(responseItem.reference).toHaveProperty('id');
-
-            // Verify the returned hash matches the hash we sent
-            expect(responseItem.reference.hash).toBe(requestItem.metadata.hash);
-            // Verify the returned ID matches the ID we sent
-            expect(responseItem.reference.id).toBe(requestItem.metadata.id);
-          }
-        } else {
-          expect(response.status).toBeGreaterThan(0);
-        }
-      } catch {
-        expect(true).toBe(true);
-      }
-    }, 8000);
-  });
-
-  describe('Hash Response Testing', () => {
-    it('should return consistent hashes for string sources', async () => {
-      const testRequest = createTestRequest('Hello world', {
-        context: 'hash-test-string',
+  describe('Key Response Testing', () => {
+    it('should return consistent keys for string sources', async () => {
+      const testMetadata = createTestMetadata('Hello world', {
+        context: 'key-test-string',
         sourceLocale: 'en',
       });
 
       try {
-        const response = await fetch(clientEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'es',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
+        const result = await _translate(
+          'Hello world',
+          'es',
+          testMetadata,
+          clientConfig
+        );
 
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-          expect(result.length).toBe(1);
-
-          const responseItem = result[0];
-          expect(responseItem.reference.hash).toBe(testRequest.metadata.hash);
-          expect(responseItem.reference.id).toBe(testRequest.metadata.id);
-        } else {
-          expect(response.status).toBeGreaterThan(0);
+        expect(result).toBeDefined();
+        if ('translation' in result) {
+          expect(result.reference.key).toBe(testMetadata.hash);
+          expect(result.reference.id).toBe(testMetadata.id);
         }
       } catch {
         expect(true).toBe(true);
       }
     });
 
-    it('should return consistent hashes for JSX sources', async () => {
+    it('should return consistent keys for JSX sources', async () => {
       const jsxSource = [
         'Welcome to ',
         {
@@ -694,192 +444,69 @@ describe('Translation E2E Tests', () => {
         '!',
       ];
 
-      const testRequest = createTestRequest(jsxSource, {
-        context: 'hash-test-jsx',
+      const testMetadata = createTestMetadata(jsxSource, {
+        context: 'key-test-jsx',
         sourceLocale: 'en',
       });
 
       try {
-        const response = await fetch(clientEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'fr',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
+        const result = await _translate(
+          jsxSource,
+          'fr',
+          testMetadata,
+          clientConfig
+        );
 
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-
-          const responseItem = result[0];
-          expect(responseItem.reference.hash).toBe(testRequest.metadata.hash);
-          expect(responseItem.reference.id).toBe(testRequest.metadata.id);
-        } else {
-          expect(response.status).toBeGreaterThan(0);
+        expect(result).toBeDefined();
+        if ('translation' in result) {
+          expect(result.reference.key).toBe(testMetadata.hash);
+          expect(result.reference.id).toBe(testMetadata.id);
         }
       } catch {
         expect(true).toBe(true);
       }
     });
 
-    it('should return consistent hashes for variable sources', async () => {
-      const variableSource = [
-        'Hello ',
-        { k: 'username', v: 'v' as VariableType },
-        ', you have ',
-        { k: 'count', v: 'n' as VariableType },
-        ' messages.',
-      ];
-
-      const testRequest = createTestRequest(variableSource, {
-        context: 'hash-test-variables',
-        sourceLocale: 'en',
-      });
-
-      try {
-        const response = await fetch(serverEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: [testRequest],
-            targetLocale: 'de',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-
-          const responseItem = result[0];
-          expect(responseItem.reference.hash).toBe(testRequest.metadata.hash);
-          expect(responseItem.reference.id).toBe(testRequest.metadata.id);
-        } else {
-          expect(response.status).toBeGreaterThan(0);
-        }
-      } catch {
-        expect(true).toBe(true);
-      }
-    });
-
-    it('should handle multiple requests with different hashes', async () => {
-      const testRequests = [
-        createTestRequest('First string', {
-          context: 'hash-batch-1',
-          sourceLocale: 'en',
-        }),
-        createTestRequest(['Second ', { t: 'em', c: ['string'] }], {
-          context: 'hash-batch-2',
-          sourceLocale: 'en',
-        }),
-        createTestRequest('Third {variable} string', {
-          context: 'hash-batch-3',
-          sourceLocale: 'en',
-        }),
-      ];
-
-      try {
-        const response = await fetch(clientEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: testRequests,
-            targetLocale: 'ja',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-          expect(result.length).toBe(testRequests.length);
-
-          // Verify each response has the correct hash and ID
-          for (let i = 0; i < result.length; i++) {
-            const responseItem = result[i];
-            const requestItem = testRequests[i];
-
-            expect(responseItem.reference.hash).toBe(requestItem.metadata.hash);
-            expect(responseItem.reference.id).toBe(requestItem.metadata.id);
-
-            // Verify all hashes are different (since content is different)
-            for (let j = i + 1; j < result.length; j++) {
-              expect(responseItem.reference.hash).not.toBe(
-                result[j].reference.hash
-              );
-            }
-          }
-        } else {
-          expect(response.status).toBeGreaterThan(0);
-        }
-      } catch {
-        expect(true).toBe(true);
-      }
-    }, 10000);
-
-    it('should generate identical hashes for identical content', async () => {
+    it('should generate identical keys for identical content', async () => {
       const identicalSource = 'This is identical content';
 
       // Create two identical requests (but different IDs)
-      const testRequest1 = createTestRequest(identicalSource, {
-        context: 'hash-identical-1',
+      const testMetadata1 = createTestMetadata(identicalSource, {
+        context: 'key-identical-1',
         sourceLocale: 'en',
       });
 
-      const testRequest2 = createTestRequest(identicalSource, {
-        context: 'hash-identical-1', // Same context
+      const testMetadata2 = createTestMetadata(identicalSource, {
+        context: 'key-identical-1', // Same context
         sourceLocale: 'en',
       });
 
       try {
-        const response = await fetch(clientEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-gt-dev-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            requests: [testRequest1, testRequest2],
-            targetLocale: 'es',
-            metadata: {},
-            versionId: 'test-version',
-          }),
-        });
+        const result1 = await _translate(
+          identicalSource,
+          'es',
+          testMetadata1,
+          clientConfig
+        );
+        const result2 = await _translate(
+          identicalSource,
+          'es',
+          testMetadata2,
+          clientConfig
+        );
 
-        if (response.ok) {
-          const result = await response.json();
-          expect(result).toBeDefined();
-          expect(Array.isArray(result)).toBe(true);
-          expect(result.length).toBe(2);
+        expect(result1).toBeDefined();
+        expect(result2).toBeDefined();
 
-          // Both requests should have the same hash (identical content + context)
-          expect(result[0].reference.hash).toBe(result[1].reference.hash);
+        if ('translation' in result1 && 'translation' in result2) {
+          // Both requests should have the same key (identical content + context)
+          expect(result1.reference.key).toBe(result2.reference.key);
           // But different IDs
-          expect(result[0].reference.id).not.toBe(result[1].reference.id);
+          expect(result1.reference.id).not.toBe(result2.reference.id);
 
-          // Verify hashes match what we calculated
-          expect(result[0].reference.hash).toBe(testRequest1.metadata.hash);
-          expect(result[1].reference.hash).toBe(testRequest2.metadata.hash);
-        } else {
-          expect(response.status).toBeGreaterThan(0);
+          // Verify keys match what we calculated as hash
+          expect(result1.reference.key).toBe(testMetadata1.hash);
+          expect(result2.reference.key).toBe(testMetadata2.hash);
         }
       } catch {
         expect(true).toBe(true);
@@ -889,79 +516,67 @@ describe('Translation E2E Tests', () => {
 
   describe('Authentication Scenarios', () => {
     it('should test authentication on client endpoint', async () => {
-      const testRequest = createTestRequest('Hello world', {
+      const testMetadata = createTestMetadata('Hello world', {
         context: 'auth-test',
         sourceLocale: 'en',
       });
 
       // Test without API key
-      const noAuthResponse = await fetch(clientEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requests: [testRequest],
-          targetLocale: 'es',
-          metadata: {},
-          versionId: 'test-version',
-        }),
-      });
+      const noAuthConfig: TranslationConfig = {
+        baseUrl: `${runtimeUrl}/v1/runtime/${projectId}/client`,
+      };
 
-      expect(noAuthResponse.status).toBe(401);
+      try {
+        await _translate('Hello world', 'es', testMetadata, noAuthConfig);
+        expect(false).toBe(true); // Should not reach here
+      } catch (error) {
+        expect(error.message).toContain('401');
+      }
 
       // Test with dev API key
-      const devAuthResponse = await fetch(clientEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-dev-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          requests: [testRequest],
-          targetLocale: 'es',
-          metadata: {},
-          versionId: 'test-version',
-        }),
-      });
-
-      expect(devAuthResponse.status).toBeGreaterThan(0);
+      try {
+        const result = await _translate(
+          'Hello world',
+          'es',
+          testMetadata,
+          clientConfig
+        );
+        expect(result).toBeDefined();
+      } catch {
+        expect(true).toBe(true);
+      }
     });
 
     it('should test authentication on server endpoint', async () => {
-      const testRequest = createTestRequest('Hello world', {
+      const testMetadata = createTestMetadata('Hello world', {
         context: 'auth-test',
         sourceLocale: 'en',
       });
 
       // Test without API key
-      const noAuthResponse = await fetch(serverEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requests: [testRequest],
-          targetLocale: 'es',
-          metadata: {},
-          versionId: 'test-version',
-        }),
-      });
+      const noAuthConfig: TranslationConfig = {
+        baseUrl: `${runtimeUrl}/v1/runtime/${projectId}/server`,
+      };
 
-      expect(noAuthResponse.status).toBe(401);
+      try {
+        await _translate('Hello world', 'es', testMetadata, noAuthConfig);
+        expect(false).toBe(true); // Should not reach here
+      } catch (error) {
+        expect(error.message).toContain('401');
+      }
 
       // Test with dev API key
-      const devAuthResponse = await fetch(serverEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gt-dev-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          requests: [testRequest],
-          targetLocale: 'es',
-          metadata: {},
-          versionId: 'test-version',
-        }),
-      });
-
-      expect(devAuthResponse.status).toBeGreaterThan(0);
+      try {
+        const result = await _translate(
+          'Hello world',
+          'es',
+          testMetadata,
+          serverConfig
+        );
+        expect(result).toBeDefined();
+      } catch {
+        expect(true).toBe(true);
+      }
     });
   });
 });

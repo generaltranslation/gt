@@ -34,11 +34,28 @@ export default async function _translate(
 ): Promise<TranslationResult | TranslationError> {
   let response;
   const timeout = Math.min(config?.timeout || maxTimeout, maxTimeout);
+  const sourceMetadata = {
+    ...(metadata.id && { id: metadata.id }),
+    ...(metadata.hash && { hash: metadata.hash }),
+    ...(metadata.context && { context: metadata.context }),
+  };
+  const requestMetadata = {
+    ...(metadata.versionId && { versionId: metadata.versionId }),
+    ...(metadata.actionType && { actionType: metadata.actionType }),
+    ...(metadata.sourceLocale && { sourceLocale: metadata.sourceLocale }),
+  };
   try {
     // Make HTTP POST request to the translation API endpoint
     // Uses the configured base URL or falls back to default
+    // For runtime URLs, don't append the standard content URL suffix
+    const baseUrl = config?.baseUrl || defaultBaseUrl;
+    const isRuntimeUrl = baseUrl.includes('/runtime/');
+    const finalUrl = isRuntimeUrl
+      ? baseUrl
+      : `${baseUrl}${translateContentUrl}`;
+
     response = await fetchWithTimeout(
-      `${config?.baseUrl || defaultBaseUrl}${translateContentUrl}`,
+      finalUrl,
       {
         method: 'POST',
         headers: {
@@ -47,9 +64,9 @@ export default async function _translate(
           ...(config?.devApiKey && { 'x-gt-dev-api-key': config.devApiKey }),
         },
         body: JSON.stringify({
-          source,
+          requests: [{ source, metadata: sourceMetadata }],
           targetLocale,
-          metadata,
+          metadata: requestMetadata,
         }),
       },
       timeout
@@ -65,6 +82,6 @@ export default async function _translate(
     throw new Error(`${response.status}: ${await response.text()}`);
   }
 
-  const result = await response.json();
-  return result as TranslationResult | TranslationError;
+  const results = (await response.json()) as unknown[];
+  return results[0] as TranslationResult | TranslationError;
 }
