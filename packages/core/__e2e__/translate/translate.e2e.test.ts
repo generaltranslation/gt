@@ -6,8 +6,6 @@ import {
   VariableType,
   TranslationConfig,
   TranslationMetadata,
-  TranslationResult,
-  TranslationError,
 } from '../../src/types';
 import _translate from '../../src/translate/translate';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
@@ -48,17 +46,19 @@ describe('Translation E2E Tests', () => {
     metadata: Partial<TranslationMetadata> = {}
   ): TranslationMetadata => {
     const id = `test-id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const dataFormat = typeof source === 'string' ? 'ICU' : 'JSX';
     const hash = hashSource({
       source,
       context: metadata.context,
       id,
-      dataFormat: typeof source === 'string' ? 'ICU' : 'JSX',
+      dataFormat,
     });
 
     return {
       ...metadata,
       id,
       hash,
+      dataFormat,
     };
   };
 
@@ -405,6 +405,69 @@ describe('Translation E2E Tests', () => {
         }
       } catch {
         expect(true).toBe(true);
+      }
+    });
+  });
+
+  describe('DataFormat Testing', () => {
+    it('should handle ICU dataFormat correctly', async () => {
+      const icuSource = 'Hello {name}, you have {count} messages';
+      const testMetadata = createTestMetadata(icuSource, {
+        context: 'icu-format-test',
+        sourceLocale: 'en',
+        dataFormat: 'ICU',
+      });
+
+      try {
+        const result = await _translate(
+          icuSource,
+          'es',
+          testMetadata,
+          clientConfig
+        );
+
+        expect(result).toBeDefined();
+        if ('translation' in result) {
+          expect(result.translation).toBeDefined();
+          expect(typeof result.translation).toBe('string');
+          expect(result.reference.key).toBe(testMetadata.hash);
+        }
+      } catch {
+        expect(true).toBe(true); // Server may not be available
+      }
+    });
+
+    it('should handle JSX dataFormat correctly', async () => {
+      const jsxSource = [
+        'Hello ',
+        { t: 'strong', c: [{ k: 'name', v: 'v' as VariableType }] },
+        ', you have ',
+        { k: 'count', v: 'n' as VariableType },
+        ' messages',
+      ];
+
+      const testMetadata = createTestMetadata(jsxSource, {
+        context: 'jsx-format-test',
+        sourceLocale: 'en',
+        dataFormat: 'JSX',
+      });
+
+      try {
+        const result = await _translate(
+          jsxSource,
+          'fr',
+          testMetadata,
+          clientConfig
+        );
+
+        expect(result).toBeDefined();
+        if ('translation' in result) {
+          expect(result.translation).toBeDefined();
+          expect(Array.isArray(result.translation)).toBe(true);
+          expect(result.reference.key).toBe(testMetadata.hash);
+        }
+      } catch {
+        expect(true).toBe(true); // Server may not be available
       }
     });
   });

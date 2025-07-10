@@ -18,8 +18,7 @@ import {
   FormatVariables,
   TranslationConfig,
   TranslationMetadata,
-  JsxChildren,
-  IcuMessage,
+  TranslationContent,
 } from './types';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
@@ -205,7 +204,7 @@ export class GT {
   // -------------- Translation Methods -------------- //
 
   async translate(
-    source: JsxChildren | IcuMessage,
+    source: TranslationContent,
     targetLocale: string | undefined = this.targetLocale,
     metadata?: TranslationMetadata,
     config?: Partial<TranslationConfig>
@@ -604,7 +603,7 @@ export class GT {
 // ============================================================ //
 
 export async function translate(
-  source: JsxChildren | IcuMessage,
+  source: TranslationContent,
   targetLocale: string,
   metadata?: TranslationMetadata,
   config?: TranslationConfig

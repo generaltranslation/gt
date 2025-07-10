@@ -1,4 +1,4 @@
-import { translationTimeoutError } from '../errors';
+import { translationTimeoutError } from '../logging/errors';
 import { maxTimeout } from '../settings/settings';
 
 /**

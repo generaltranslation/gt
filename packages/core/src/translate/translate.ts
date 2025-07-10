@@ -1,14 +1,14 @@
 import {
   TranslationConfig,
+  TranslationContent,
   TranslationError,
   TranslationMetadata,
-  JsxChildren,
-  IcuMessage,
   TranslationResult,
 } from '../types';
 import { defaultBaseUrl, translateContentUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
-import { translationTimeoutError } from 'src/errors';
+import { translationTimeoutError } from 'src/logging/errors';
+import { translationLogger } from '../logging/logger';
 import { maxTimeout } from 'src/settings/settings';
 
 /**
@@ -27,7 +27,7 @@ import { maxTimeout } from 'src/settings/settings';
  * @returns Promise that resolves to either a TranslationResult or TranslationError.
  **/
 export default async function _translate(
-  source: JsxChildren | IcuMessage,
+  source: TranslationContent,
   targetLocale: string,
   metadata: TranslationMetadata,
   config?: TranslationConfig
@@ -38,6 +38,7 @@ export default async function _translate(
     ...(metadata.id && { id: metadata.id }),
     ...(metadata.hash && { hash: metadata.hash }),
     ...(metadata.context && { context: metadata.context }),
+    ...(metadata.dataFormat && { dataFormat: metadata.dataFormat }),
   };
   const requestMetadata = {
     ...(metadata.versionId && { versionId: metadata.versionId }),
@@ -73,15 +74,39 @@ export default async function _translate(
     );
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
+      translationLogger.error('Translation request timed out', {
+        timeout,
+        targetLocale,
+      });
       throw new Error(translationTimeoutError(timeout));
     }
+    translationLogger.error('Translation request failed', {
+      error: error instanceof Error ? error.message : String(error),
+      targetLocale,
+    });
     throw error;
   }
 
   if (!response.ok) {
-    throw new Error(`${response.status}: ${await response.text()}`);
+    const errorText = await response.text();
+    translationLogger.error('Translation API returned error status', {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText,
+      targetLocale,
+    });
+    throw new Error(`${response.status}: ${errorText}`);
   }
 
   const results = (await response.json()) as unknown[];
-  return results[0] as TranslationResult | TranslationError;
+  const result = results[0] as TranslationResult | TranslationError;
+
+  if ('error' in result) {
+    translationLogger.warn('Translation returned error result', {
+      error: result.error,
+      code: result.code,
+    });
+  }
+
+  return result;
 }

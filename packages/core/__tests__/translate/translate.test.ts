@@ -297,6 +297,46 @@ describe('Translation Methods', () => {
       );
     });
 
+    it('should handle dataFormat in metadata', async () => {
+      const mockTranslate = vi.mocked(_translate);
+      mockTranslate.mockResolvedValue(mockTranslationResult);
+
+      // Test ICU format
+      await gt.translate('Hello {name}', 'es', {
+        context: 'greeting',
+        dataFormat: 'ICU',
+      });
+
+      expect(mockTranslate).toHaveBeenCalledWith(
+        'Hello {name}',
+        'es',
+        { context: 'greeting', dataFormat: 'ICU' },
+        {
+          baseUrl: 'https://api.test.com',
+          apiKey: 'test-api-key',
+          devApiKey: undefined,
+        }
+      );
+
+      // Test JSX format
+      const jsxSource = [{ t: 'span', c: ['Hello world'] }];
+      await gt.translate(jsxSource, 'fr', {
+        context: 'greeting',
+        dataFormat: 'JSX',
+      });
+
+      expect(mockTranslate).toHaveBeenCalledWith(
+        jsxSource,
+        'fr',
+        { context: 'greeting', dataFormat: 'JSX' },
+        {
+          baseUrl: 'https://api.test.com',
+          apiKey: 'test-api-key',
+          devApiKey: undefined,
+        }
+      );
+    });
+
     it('should handle translation metadata with all fields', async () => {
       const mockTranslate = vi.mocked(_translate);
       mockTranslate.mockResolvedValue(mockTranslationResult);
@@ -308,6 +348,7 @@ describe('Translation Methods', () => {
         id: 'welcome-msg',
         hash: 'abc123',
         actionType: 'fast',
+        dataFormat: 'ICU',
       };
 
       await gt.translate('Hello world', 'es', fullMetadata);

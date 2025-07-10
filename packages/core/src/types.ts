@@ -69,6 +69,12 @@ export type JsxChildren = JsxChild | JsxChild[];
 
 export type IcuMessage = string;
 
+/**
+ * @experimental This type is not currently supported but will be implemented in a future version.
+ * Use {@link IcuMessage} for current ICU message format support.
+ */
+export type I18nextMessage = string;
+
 export type Metadata = {
   context?: string;
   id?: string;
@@ -187,17 +193,25 @@ export type TranslationMetadata = {
   id?: string;
   hash?: string;
   actionType?: 'standard' | 'fast' | string;
+  dataFormat?: 'JSX' | 'ICU' | 'I18NEXT';
 };
 
-export type BatchTranslationSource = (JsxChildren | IcuMessage)[];
+export type TranslationContent = JsxChildren | IcuMessage | I18nextMessage;
+
+export type BatchTranslationSource = TranslationContent[];
 export type BatchTranslationMetadata = {
   sourceLocale?: string;
   versionId?: string;
-  batchMetadata: { context?: string; id?: string; hash?: string }[];
+  batchMetadata: {
+    context?: string;
+    id?: string;
+    hash?: string;
+    dataFormat?: 'JSX' | 'ICU' | 'I18NEXT';
+  }[];
 };
 
 export type TranslationResult = {
-  translation: JsxChildren | IcuMessage;
+  translation: TranslationContent;
   reference: {
     id?: string;
     key?: string;
