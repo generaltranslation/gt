@@ -1,27 +1,46 @@
 import { LocaleProperties } from './locales/getLocaleProperties';
 
-export { LocaleProperties };
+import { Variable, VariableType } from './types/Variables';
 
-export type Content = string | Array<string | Variable>;
+import {
+  IcuMessage,
+  I18nextMessage,
+  JsxChildren,
+  JsxChild,
+  JsxElement,
+  GTProp,
+  HtmlContentPropKeysRecord,
+  HtmlContentPropValuesRecord,
+  HTML_CONTENT_PROPS,
+  DataFormat,
+  Content,
+} from './types/Content';
+import { ActionType, GTRequestMetadata, GTRequest } from './types/GTRequest';
+
+export {
+  IcuMessage,
+  I18nextMessage,
+  JsxChildren,
+  JsxChild,
+  JsxElement,
+  GTProp,
+  HtmlContentPropKeysRecord,
+  HtmlContentPropValuesRecord,
+  HTML_CONTENT_PROPS,
+  Variable,
+  VariableType,
+  LocaleProperties,
+  DataFormat,
+  ActionType as EntryActionType,
+  GTRequestMetadata as EntryMetadata,
+  GTRequest as Entry,
+  Content,
+};
 
 /**
- * Map of data-_gt properties to their corresponding React props
+ * @deprecated Use {@link Content} instead.
  */
-export const HTML_CONTENT_PROPS = {
-  pl: 'placeholder',
-  ti: 'title',
-  alt: 'alt',
-  arl: 'aria-label',
-  arb: 'aria-labelledby',
-  ard: 'aria-describedby',
-} as const;
-
-export type HtmlContentPropKeysRecord = Partial<
-  Record<keyof typeof HTML_CONTENT_PROPS, string>
->;
-export type HtmlContentPropValuesRecord = Partial<
-  Record<(typeof HTML_CONTENT_PROPS)[keyof typeof HTML_CONTENT_PROPS], string>
->;
+export type _Content = string | Array<string | Variable>;
 
 /**
  * Transformations are made from a prefix and a suffix.
@@ -48,33 +67,6 @@ export type VariableTransformationSuffix =
   | 'datetime'
   | 'currency';
 
-/**
- * GTProp is an internal property used to contain data for translating and rendering elements.
- * note, transformations are only read on the server side if they are 'plural' or 'branch'
- */
-export type GTProp = {
-  b?: Record<string, JsxChildren>; // Branches
-  t?: 'p' | 'b'; // Branch Transformation
-} & HtmlContentPropKeysRecord;
-
-export type JsxElement = {
-  t?: string; // tag name
-  i?: number; // id
-  d?: GTProp; // GT data
-  c?: JsxChildren; // children
-};
-
-export type JsxChild = string | JsxElement | Variable;
-export type JsxChildren = JsxChild | JsxChild[];
-
-export type IcuMessage = string;
-
-/**
- * @experimental This type is not currently supported but will be implemented in a future version.
- * Use {@link IcuMessage} for current ICU message format support.
- */
-export type I18nextMessage = string;
-
 export type Metadata = {
   context?: string;
   id?: string;
@@ -82,8 +74,6 @@ export type Metadata = {
   actionType?: 'standard' | 'fast' | string;
   [key: string]: any;
 };
-
-export type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
 
 export type FormatVariables = Record<
   string,
@@ -94,7 +84,7 @@ export type Update =
   | {
       type: 'content';
       data: {
-        source: Content;
+        source: _Content;
         metadata: Metadata;
       };
     }
@@ -110,7 +100,7 @@ export type Request =
   | {
       type: 'content';
       data: {
-        source: Content;
+        source: _Content;
         targetLocale: string;
         metadata: Metadata;
       };
@@ -125,7 +115,7 @@ export type Request =
     };
 
 export type ContentTranslationResult = {
-  translation: Content;
+  translation: _Content;
   locale: string;
   reference?: {
     id: string;
@@ -164,56 +154,43 @@ export type { CustomMapping } from './locales/customLocaleMapping';
 
 // ----- VARIABLES ----- //
 
-export type VariableType =
-  | 'v' // Variable
-  | 'n' // Number
-  | 'd' // Date
-  | 'c'; // Currency
+// ----- TRANSLATION REQUEST TYPES ----- //
 
 /**
- * Variables are used to store the variable name and type.
+ * TranslationRequestConfig is used to configure the translation request.
+ *
+ * @param projectId - The project id of the translation request.
+ * @param baseUrl - The base url of the translation request.
+ * @param apiKey - The api key of the translation request.
+ * @param timeout - Time in ms to wait for the translation to complete.
  */
-export type Variable = {
-  k: string;
-  i?: number;
-  v?: VariableType;
-};
-
-export type TranslationConfig = {
-  baseUrl: string;
+export type TranslationRequestConfig = {
+  projectId: string;
+  baseUrl?: string;
   apiKey?: string;
-  devApiKey?: string;
   timeout?: number;
 };
 
-export type TranslationMetadata = {
-  sourceLocale?: string;
-  versionId?: string;
-  context?: string;
-  id?: string;
-  hash?: string;
-  actionType?: 'standard' | 'fast' | string;
-  dataFormat?: 'JSX' | 'ICU' | 'I18NEXT';
-};
-
-export type TranslationContent = JsxChildren | IcuMessage | I18nextMessage;
-
-export type BatchTranslationSource = TranslationContent[];
-export type BatchTranslationMetadata = {
-  sourceLocale?: string;
-  versionId?: string;
-  batchMetadata: {
-    context?: string;
-    id?: string;
-    hash?: string;
-    dataFormat?: 'JSX' | 'ICU' | 'I18NEXT';
-  }[];
-};
-
+/**
+ * TranslationResult is the result of a translation request.
+ */
 export type TranslationResult = {
-  translation: TranslationContent;
-  reference: {
-    id?: string;
-    key?: string;
-  };
+  translation: Content;
+  reference: TranslationResultReference;
+};
+
+/**
+ * BatchTranslationResult is the result of a batch translation request.
+ */
+export type TranslateManyResult = {
+  translations: TranslationResult[];
+  reference: TranslationResultReference[];
+};
+
+/**
+ * TranslationResultReference is used to store the reference for a translation result.
+ */
+export type TranslationResultReference = {
+  id?: string;
+  key?: string;
 };

@@ -14,11 +14,15 @@ import {
   _formatMessage,
 } from './formatting/format';
 import {
+  Content,
   CustomMapping,
   FormatVariables,
-  TranslationConfig,
-  TranslationMetadata,
-  TranslationContent,
+  I18nextMessage,
+  IcuMessage,
+  TranslateManyResult,
+  TranslationError,
+  TranslationRequestConfig,
+  TranslationResult,
 } from './types';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
@@ -28,7 +32,7 @@ import _getLocaleEmoji from './locales/getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
 import { _getLocaleName } from './locales/getLocaleName';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
-import { defaultBaseUrl, libraryDefaultLocale } from './internal';
+import { defaultBaseUrl, JsxChildren, libraryDefaultLocale } from './internal';
 import _isSameDialect from './locales/isSameDialect';
 import _isSupersetLocale from './locales/isSupersetLocale';
 import {
@@ -36,8 +40,12 @@ import {
   noTargetLocaleProvidedError,
   invalidLocaleError,
   invalidLocalesError,
-} from './settings/errors';
+  noProjectIdProvidedError,
+} from './logging/errors';
 import _translate from './translate/translate';
+import { GTRequest, GTRequestMetadata } from './types/GTRequest';
+import { gtInstanceLogger } from './logging/logger';
+import _translateMany from './translate/mtranslate';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -190,38 +198,135 @@ export class GT {
 
   // -------------- Private Methods -------------- //
 
-  private _getTranslationConfig(
-    config?: Partial<TranslationConfig>
-  ): TranslationConfig {
+  private _getTranslationConfig(): TranslationRequestConfig {
     return {
       baseUrl: this.baseUrl,
-      apiKey: this.apiKey,
-      devApiKey: this.devApiKey,
-      ...config,
+      apiKey: this.apiKey || this.devApiKey,
+      projectId: this.projectId || '',
     };
   }
 
   // -------------- Translation Methods -------------- //
 
-  async translate(
-    source: TranslationContent,
-    targetLocale: string | undefined = this.targetLocale,
-    metadata?: TranslationMetadata,
-    config?: Partial<TranslationConfig>
-  ) {
-    if (!targetLocale)
+  /**
+   * Translates the source content to the target locale.
+   *
+   * @param {Content} source - {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage} The source content to translate.
+   * @param {string} targetLocale - string The target locale to translate to.
+   * @param {GTRequestMetadata} metadata - {@link GTRequestMetadata} The metadata for the translation.
+   * @returns {Promise<TranslationResult | TranslationError>} The translated content.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.translate('Hello, world!', 'es-ES');
+   * console.log(result);
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.translate('Hello, world!', 'es-ES', { context: 'A formal greeting'});
+   * console.log(result);
+   */
+  // Overload for JSX content
+  async _translate(
+    source: JsxChildren,
+    targetLocale: string,
+    metadata: Omit<GTRequestMetadata, 'dataFormat'> & { dataFormat?: 'JSX' }
+  ): Promise<TranslationResult | TranslationError>;
+
+  // Overload for ICU content
+  async _translate(
+    source: IcuMessage,
+    targetLocale: string,
+    metadata: Omit<GTRequestMetadata, 'dataFormat'> & { dataFormat?: 'ICU' }
+  ): Promise<TranslationResult | TranslationError>;
+
+  // Overload for I18next content
+  async _translate(
+    source: I18nextMessage,
+    targetLocale: string,
+    metadata: Omit<GTRequestMetadata, 'dataFormat'> & {
+      dataFormat?: 'I18NEXT';
+    }
+  ): Promise<TranslationResult | TranslationError>;
+
+  // Implementation
+  async _translate(
+    source: Content,
+    targetLocale: string,
+    metadata: GTRequestMetadata = {}
+  ): Promise<TranslationResult | TranslationError> {
+    // Validation
+    if (!targetLocale) {
+      gtInstanceLogger.error(noTargetLocaleProvidedError('translate'));
       throw new Error(noTargetLocaleProvidedError('translate'));
-    return await translate(
+    }
+    if (!this.projectId) {
+      gtInstanceLogger.error(noProjectIdProvidedError('translate'));
+      throw new Error(noProjectIdProvidedError('translate'));
+    }
+
+    // Request the translation
+    return await _translate(
       source,
       targetLocale,
       metadata || {},
-      this._getTranslationConfig(config)
+      this._getTranslationConfig()
     );
   }
 
-  translatef() {}
+  /**
+   * Translates multiple source contents to the target locale.
+   * Override global metadata by supplying a metadata object for each request.
+   *
+   * @param {GTRequest[]} sources - The source contents to translate.
+   * @param {GTRequestMetadata} globalMetadata - {@link GTRequestMetadata} The metadata for the translation.
+   * @returns {Promise<TranslateManyResult>} The translated contents.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.translateMany([
+   *   { source: 'Hello, world!' },
+   *   { source: 'Goodbye, world!' },
+   * ], { targetLocale: 'es-ES' });
+   * console.log(result);
+   */
+  async translateMany(
+    sources: GTRequest[],
+    globalMetadata?: { targetLocale: string } & GTRequestMetadata
+  ): Promise<TranslateManyResult> {
+    // Validation
+    const targetLocale = globalMetadata?.targetLocale || this.targetLocale;
+    if (!targetLocale) {
+      gtInstanceLogger.error(noTargetLocaleProvidedError('translateMany'));
+      throw new Error(noTargetLocaleProvidedError('translateMany'));
+    }
+    if (!this.projectId) {
+      gtInstanceLogger.error(noProjectIdProvidedError('translateMany'));
+      throw new Error(noProjectIdProvidedError('translateMany'));
+    }
 
-  async mtranslate() {}
+    // Request the translation
+    return await _translateMany(
+      sources,
+      { ...globalMetadata, targetLocale },
+      this._getTranslationConfig()
+    );
+  }
 
   // -------------- Formatting -------------- //
 
@@ -596,19 +701,6 @@ export class GT {
   isSupersetLocale(superLocale: string, subLocale: string): boolean {
     return isSupersetLocale(superLocale, subLocale);
   }
-}
-
-// ============================================================ //
-//                  Translation methods                         //
-// ============================================================ //
-
-export async function translate(
-  source: TranslationContent,
-  targetLocale: string,
-  metadata?: TranslationMetadata,
-  config?: TranslationConfig
-) {
-  return await _translate(source, targetLocale, metadata || {}, config);
 }
 
 // ============================================================ //

@@ -11,7 +11,7 @@ import {
   createMismatchingHashWarning,
   runtimeTranslationTimeoutWarning,
 } from '../errors/createErrors';
-import { Content, JsxChildren } from 'generaltranslation/internal';
+import { _Content, JsxChildren } from 'generaltranslation/internal';
 import { Translations, TranslationsStatus } from 'gt-react/internal';
 import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import dictionaryManager, { DictionaryManager } from './DictionaryManager';
@@ -51,7 +51,7 @@ type I18NConfigurationParams = {
 type QueueEntry =
   | {
       dataFormat: 'I18NEXT' | 'ICU';
-      source: Content;
+      source: _Content;
       targetLocale: string;
       metadata: { hash: string } & Record<string, any>;
       resolve: (
@@ -429,7 +429,7 @@ export default class I18NConfiguration {
 
   private async _translateContent(
     params: {
-      source: Content;
+      source: _Content;
       targetLocale: string;
       options: { hash: string } & Record<string, any>;
     },
@@ -474,7 +474,7 @@ export default class I18NConfiguration {
    * @returns Translated string
    */
   async translateI18Next(params: {
-    source: Content;
+    source: _Content;
     targetLocale: string;
     options: { hash: string } & Record<string, any>;
   }): Promise<TranslatedChildren> {
@@ -487,7 +487,7 @@ export default class I18NConfiguration {
    * @returns Translated string
    */
   async translateIcu(params: {
-    source: Content;
+    source: _Content;
     targetLocale: string;
     options: { hash: string } & Record<string, any>;
   }): Promise<TranslatedChildren> {

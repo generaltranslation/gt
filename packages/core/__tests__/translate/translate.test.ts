@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GT, translate } from '../../src/index';
 import _translate from '../../src/translate/translate';
 import {
-  TranslationConfig,
-  TranslationMetadata,
+  TranslationRequestConfig,
+  TranslationRequestMetadata,
   JsxChildren,
   IcuMessage,
   TranslationError,
@@ -39,8 +39,8 @@ describe('Translation Methods', () => {
 
       const source: JsxChildren | IcuMessage = 'Hello world';
       const targetLocale = 'es';
-      const metadata: TranslationMetadata = { context: 'greeting' };
-      const config: TranslationConfig = {
+      const metadata: TranslationRequestMetadata = { context: 'greeting' };
+      const config: TranslationRequestConfig = {
         baseUrl: 'https://api.test.com',
         apiKey: 'test-key',
       };
@@ -62,7 +62,9 @@ describe('Translation Methods', () => {
 
       const source: JsxChildren | IcuMessage = 'Hello world';
       const targetLocale = 'es';
-      const config: TranslationConfig = { baseUrl: 'https://api.test.com' };
+      const config: TranslationRequestConfig = {
+        baseUrl: 'https://api.test.com',
+      };
 
       await translate(source, targetLocale, undefined, config);
 
@@ -156,7 +158,7 @@ describe('Translation Methods', () => {
       mockTranslate.mockResolvedValue(mockTranslationResult);
 
       const source: JsxChildren | IcuMessage = 'Hello world';
-      const metadata: TranslationMetadata = { context: 'greeting' };
+      const metadata: TranslationRequestMetadata = { context: 'greeting' };
 
       const result = await gt.translate(source, 'fr', metadata);
 
@@ -341,7 +343,7 @@ describe('Translation Methods', () => {
       const mockTranslate = vi.mocked(_translate);
       mockTranslate.mockResolvedValue(mockTranslationResult);
 
-      const fullMetadata: TranslationMetadata = {
+      const fullMetadata: TranslationRequestMetadata = {
         sourceLocale: 'en',
         versionId: 'v1.0',
         context: 'dashboard',

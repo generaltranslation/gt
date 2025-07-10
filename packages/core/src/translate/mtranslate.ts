@@ -1,32 +1,23 @@
-import {
-  TranslationRequestConfig,
-  TranslationError,
-  TranslationResult,
-} from '../types';
+import { TranslationRequestConfig, TranslateManyResult } from '../types';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { maxTimeout } from 'src/settings/settings';
-
-import { Content } from '../types/Content';
-import { GTRequestMetadata } from '../types/GTRequest';
+import { GTRequest, GTRequestMetadata } from 'src/types/GTRequest';
 import validateConfig from './utils/validateConfig';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 
 /**
  * @internal
- **/
-
-// Implementation
-export default async function _translate(
-  source: Content,
-  targetLocale: string,
-  metadata: GTRequestMetadata = {},
+ */
+export default async function _translateMany(
+  requests: GTRequest[],
+  globalMetadata: { targetLocale: string } & GTRequestMetadata,
   config: TranslationRequestConfig
-): Promise<TranslationResult | TranslationError> {
+): Promise<TranslateManyResult> {
   let response;
   const timeout = Math.min(config.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/translate/${config.projectId}`;
+  const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/runtime/${config.projectId}/client`;
 
   // Validation
   validateConfig(config);
@@ -42,9 +33,9 @@ export default async function _translate(
           ...(config.apiKey && { 'x-gt-api-key': config.apiKey }),
         },
         body: JSON.stringify({
-          requests: [{ source }],
-          targetLocale,
-          metadata,
+          requests,
+          targetLocale: globalMetadata.targetLocale,
+          metadata: globalMetadata,
         }),
       },
       timeout
@@ -56,10 +47,7 @@ export default async function _translate(
   // Validate response
   await validateResponse(response);
 
-  // Parse the response
-  const results = (await response.json()) as unknown[];
-  const result = results[0] as TranslationResult | TranslationError;
-
-  // Return the result
-  return result;
+  // Parse response
+  const results = await response.json();
+  return results as TranslateManyResult;
 }

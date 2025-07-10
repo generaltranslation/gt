@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   Logger,
   ConsoleLogHandler,
-  MemoryLogHandler,
   translationLogger,
+  LogHandler,
+  LogEntry,
 } from '../../src/logging/logger';
 
 describe('Logger', () => {
@@ -79,11 +80,14 @@ describe('Logger', () => {
     });
 
     it('should respect log level filtering', () => {
-      const memoryHandler = new MemoryLogHandler();
+      const entries: LogEntry[] = [];
+      const testHandler: LogHandler = {
+        handle: (entry: LogEntry) => entries.push(entry),
+      };
       const logger = new Logger({
         level: 'warn',
         enableConsole: false,
-        handlers: [memoryHandler],
+        handlers: [testHandler],
       });
 
       logger.debug('Debug message');
@@ -91,7 +95,6 @@ describe('Logger', () => {
       logger.warn('Warning message');
       logger.error('Error message');
 
-      const entries = memoryHandler.getEntries();
       expect(entries).toHaveLength(2);
       expect(entries[0].level).toBe('warn');
       expect(entries[1].level).toBe('error');
@@ -100,10 +103,13 @@ describe('Logger', () => {
     it('should filter debug and info messages with default warn level', () => {
       delete process.env._GT_LOG_LEVEL;
 
-      const memoryHandler = new MemoryLogHandler();
+      const entries: LogEntry[] = [];
+      const testHandler: LogHandler = {
+        handle: (entry: LogEntry) => entries.push(entry),
+      };
       const logger = new Logger({
         enableConsole: false,
-        handlers: [memoryHandler],
+        handlers: [testHandler],
       });
 
       logger.debug('Debug message');
@@ -111,24 +117,25 @@ describe('Logger', () => {
       logger.warn('Warning message');
       logger.error('Error message');
 
-      const entries = memoryHandler.getEntries();
       expect(entries).toHaveLength(2);
       expect(entries[0].level).toBe('warn');
       expect(entries[1].level).toBe('error');
     });
 
     it('should include context and metadata in log entries', () => {
-      const memoryHandler = new MemoryLogHandler();
+      const entries: LogEntry[] = [];
+      const testHandler: LogHandler = {
+        handle: (entry: LogEntry) => entries.push(entry),
+      };
       const logger = new Logger({
         level: 'info', // Explicitly set to info to allow info messages
         enableConsole: false,
-        handlers: [memoryHandler],
+        handlers: [testHandler],
       });
 
       const metadata = { userId: '123', action: 'translate' };
       logger.info('Test message', 'test-context', metadata);
 
-      const entries = memoryHandler.getEntries();
       expect(entries).toHaveLength(1);
       expect(entries[0].context).toBe('test-context');
       expect(entries[0].metadata).toEqual(metadata);
@@ -136,109 +143,39 @@ describe('Logger', () => {
     });
 
     it('should create child logger with context', () => {
-      const memoryHandler = new MemoryLogHandler();
+      const entries: LogEntry[] = [];
+      const testHandler: LogHandler = {
+        handle: (entry: LogEntry) => entries.push(entry),
+      };
       const logger = new Logger({
         level: 'info', // Explicitly set to info to allow info messages
         enableConsole: false,
-        handlers: [memoryHandler],
+        handlers: [testHandler],
       });
 
       const childLogger = logger.child('child-context');
       childLogger.info('Child message');
 
-      const entries = memoryHandler.getEntries();
       expect(entries).toHaveLength(1);
       expect(entries[0].context).toBe('child-context');
     });
 
     it('should handle nested child loggers', () => {
-      const memoryHandler = new MemoryLogHandler();
+      const entries: LogEntry[] = [];
+      const testHandler: LogHandler = {
+        handle: (entry: LogEntry) => entries.push(entry),
+      };
       const logger = new Logger({
         enableConsole: false,
-        handlers: [memoryHandler],
+        handlers: [testHandler],
       });
 
       const childLogger = logger.child('parent');
       const grandChildLogger = childLogger.child('child');
       grandChildLogger.warn('Nested message');
 
-      const entries = memoryHandler.getEntries();
       expect(entries).toHaveLength(1);
       expect(entries[0].context).toBe('parent:child');
-    });
-  });
-
-  describe('MemoryLogHandler', () => {
-    it('should store log entries in memory', () => {
-      const handler = new MemoryLogHandler();
-      const entry = {
-        level: 'info' as const,
-        message: 'Test message',
-        timestamp: new Date(),
-      };
-
-      handler.handle(entry);
-      const entries = handler.getEntries();
-
-      expect(entries).toHaveLength(1);
-      expect(entries[0]).toEqual(entry);
-    });
-
-    it('should respect max entries limit', () => {
-      const handler = new MemoryLogHandler(3);
-
-      for (let i = 0; i < 5; i++) {
-        handler.handle({
-          level: 'info',
-          message: `Message ${i}`,
-          timestamp: new Date(),
-        });
-      }
-
-      const entries = handler.getEntries();
-      expect(entries).toHaveLength(3);
-      expect(entries[0].message).toBe('Message 2');
-      expect(entries[2].message).toBe('Message 4');
-    });
-
-    it('should filter entries by level', () => {
-      const handler = new MemoryLogHandler();
-
-      handler.handle({
-        level: 'info',
-        message: 'Info message',
-        timestamp: new Date(),
-      });
-      handler.handle({
-        level: 'error',
-        message: 'Error message',
-        timestamp: new Date(),
-      });
-      handler.handle({
-        level: 'info',
-        message: 'Another info',
-        timestamp: new Date(),
-      });
-
-      const infoEntries = handler.getEntriesByLevel('info');
-      const errorEntries = handler.getEntriesByLevel('error');
-
-      expect(infoEntries).toHaveLength(2);
-      expect(errorEntries).toHaveLength(1);
-    });
-
-    it('should clear entries', () => {
-      const handler = new MemoryLogHandler();
-
-      handler.handle({
-        level: 'info',
-        message: 'Test message',
-        timestamp: new Date(),
-      });
-
-      expect(handler.getEntriesCount()).toBe(1);
-      handler.clear();
-      expect(handler.getEntriesCount()).toBe(0);
     });
   });
 
@@ -338,7 +275,7 @@ describe('Logger', () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {});
-      const faultyHandler = {
+      const faultyHandler: LogHandler = {
         handle: () => {
           throw new Error('Handler error');
         },
@@ -378,19 +315,22 @@ describe('Logger', () => {
 
   describe('handler management', () => {
     it('should add and remove handlers', () => {
+      const entries: LogEntry[] = [];
+      const testHandler: LogHandler = {
+        handle: (entry: LogEntry) => entries.push(entry),
+      };
       const logger = new Logger({
         level: 'info', // Explicitly set to info to allow info messages
         enableConsole: false,
       });
-      const handler = new MemoryLogHandler();
 
-      logger.addHandler(handler);
+      logger.addHandler(testHandler);
       logger.info('Test message');
-      expect(handler.getEntriesCount()).toBe(1);
+      expect(entries).toHaveLength(1);
 
-      logger.removeHandler(handler);
+      logger.removeHandler(testHandler);
       logger.info('Another message');
-      expect(handler.getEntriesCount()).toBe(1); // Should not increase
+      expect(entries).toHaveLength(1); // Should not increase
     });
   });
 });

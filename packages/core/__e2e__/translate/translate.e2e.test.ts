@@ -4,8 +4,8 @@ import {
   IcuMessage,
   JsxChildren,
   VariableType,
-  TranslationConfig,
-  TranslationMetadata,
+  TranslationRequestConfig,
+  TranslationRequestMetadata,
 } from '../../src/types';
 import _translate from '../../src/translate/translate';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
@@ -29,12 +29,12 @@ describe('Translation E2E Tests', () => {
   // Runtime endpoints have a different structure than standard translation endpoints
   // Standard: baseUrl + '/v1/translate/content'
   // Runtime: runtimeUrl + '/v1/runtime/${projectId}/client' (no content suffix)
-  const clientConfig: TranslationConfig = {
+  const clientConfig: TranslationRequestConfig = {
     baseUrl: `${runtimeUrl}/v1/runtime/${projectId}/client`,
     devApiKey: apiKey,
   };
 
-  const serverConfig: TranslationConfig = {
+  const serverConfig: TranslationRequestConfig = {
     baseUrl: `${runtimeUrl}/v1/runtime/${projectId}/server`,
     devApiKey: apiKey,
   };
@@ -43,8 +43,8 @@ describe('Translation E2E Tests', () => {
   // Note: The response.reference.key field will contain the hash value
   const createTestMetadata = (
     source: JsxChildren | IcuMessage,
-    metadata: Partial<TranslationMetadata> = {}
-  ): TranslationMetadata => {
+    metadata: Partial<TranslationRequestMetadata> = {}
+  ): TranslationRequestMetadata => {
     const id = `test-id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const dataFormat = typeof source === 'string' ? 'ICU' : 'JSX';
     const hash = hashSource({
@@ -111,7 +111,7 @@ describe('Translation E2E Tests', () => {
         sourceLocale: 'en',
       });
 
-      const regularKeyConfig: TranslationConfig = {
+      const regularKeyConfig: TranslationRequestConfig = {
         baseUrl: `${runtimeUrl}/v1/runtime/${projectId}/client`,
         apiKey: 'fake-regular-key', // Regular API key should be rejected
       };
@@ -163,7 +163,7 @@ describe('Translation E2E Tests', () => {
         sourceLocale: 'en',
       });
 
-      const regularKeyConfig: TranslationConfig = {
+      const regularKeyConfig: TranslationRequestConfig = {
         baseUrl: `${runtimeUrl}/v1/runtime/${projectId}/server`,
         apiKey: 'fake-regular-key', // Fake API key should be rejected
       };
@@ -585,7 +585,7 @@ describe('Translation E2E Tests', () => {
       });
 
       // Test without API key
-      const noAuthConfig: TranslationConfig = {
+      const noAuthConfig: TranslationRequestConfig = {
         baseUrl: `${runtimeUrl}/v1/runtime/${projectId}/client`,
       };
 
@@ -617,7 +617,7 @@ describe('Translation E2E Tests', () => {
       });
 
       // Test without API key
-      const noAuthConfig: TranslationConfig = {
+      const noAuthConfig: TranslationRequestConfig = {
         baseUrl: `${runtimeUrl}/v1/runtime/${projectId}/server`,
       };
 

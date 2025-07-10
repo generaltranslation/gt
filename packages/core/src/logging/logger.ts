@@ -123,44 +123,6 @@ export class ConsoleLogHandler implements LogHandler {
 }
 
 /**
- * Memory log handler that stores log entries in memory
- * Useful for testing or collecting logs for later analysis
- */
-export class MemoryLogHandler implements LogHandler {
-  private entries: LogEntry[] = [];
-  private maxEntries: number;
-
-  constructor(maxEntries: number = 1000) {
-    this.maxEntries = maxEntries;
-  }
-
-  handle(entry: LogEntry): void {
-    this.entries.push(entry);
-
-    // Remove oldest entries if we exceed max capacity
-    if (this.entries.length > this.maxEntries) {
-      this.entries.splice(0, this.entries.length - this.maxEntries);
-    }
-  }
-
-  getEntries(): LogEntry[] {
-    return [...this.entries];
-  }
-
-  getEntriesByLevel(level: LogLevel): LogEntry[] {
-    return this.entries.filter((entry) => entry.level === level);
-  }
-
-  clear(): void {
-    this.entries = [];
-  }
-
-  getEntriesCount(): number {
-    return this.entries.length;
-  }
-}
-
-/**
  * Main Logger class providing structured logging capabilities
  */
 export class Logger {
@@ -382,6 +344,7 @@ export const translationLogger = defaultLogger.child('translation');
 export const validationLogger = defaultLogger.child('validation');
 export const formattingLogger = defaultLogger.child('formatting');
 export const localeLogger = defaultLogger.child('locale');
+export const gtInstanceLogger = defaultLogger.child('GT instance');
 
 // Export types and classes
 export { Logger as GTLogger };
