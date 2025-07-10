@@ -1,141 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GT, translate } from '../../src/index';
+import { GT } from '../../src/index';
 import _translate from '../../src/translate/translate';
+import _translateMany from '../../src/translate/translateMany';
 import {
-  TranslationRequestConfig,
-  TranslationRequestMetadata,
-  JsxChildren,
-  IcuMessage,
-  TranslationError,
   TranslationResult,
+  TranslateManyResult,
+  Content,
+  JsxChildren,
 } from '../../src/types';
+import { GTRequestMetadata, GTRequest } from '../../src/types/GTRequest';
 
-// Mock the internal translate function
+// Mock the internal translate functions
 vi.mock('../../src/translate/translate', () => ({
   default: vi.fn(),
 }));
 
-// Mock fetch
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+vi.mock('../../src/translate/translateMany', () => ({
+  default: vi.fn(),
+}));
 
-describe('Translation Methods', () => {
+describe('GT Translation Methods', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('exported translate function', () => {
-    const mockTranslationResult: TranslationResult = {
-      translation: 'Hola mundo',
-      reference: {
-        id: 'test-id',
-        key: 'test-key',
-      },
-    };
-
-    it('should call _translate with correct parameters', async () => {
-      const mockTranslate = vi.mocked(_translate);
-      mockTranslate.mockResolvedValue(mockTranslationResult);
-
-      const source: JsxChildren | IcuMessage = 'Hello world';
-      const targetLocale = 'es';
-      const metadata: TranslationRequestMetadata = { context: 'greeting' };
-      const config: TranslationRequestConfig = {
-        baseUrl: 'https://api.test.com',
-        apiKey: 'test-key',
-      };
-
-      const result = await translate(source, targetLocale, metadata, config);
-
-      expect(mockTranslate).toHaveBeenCalledWith(
-        source,
-        targetLocale,
-        metadata,
-        config
-      );
-      expect(result).toEqual(mockTranslationResult);
-    });
-
-    it('should handle undefined metadata', async () => {
-      const mockTranslate = vi.mocked(_translate);
-      mockTranslate.mockResolvedValue(mockTranslationResult);
-
-      const source: JsxChildren | IcuMessage = 'Hello world';
-      const targetLocale = 'es';
-      const config: TranslationRequestConfig = {
-        baseUrl: 'https://api.test.com',
-      };
-
-      await translate(source, targetLocale, undefined, config);
-
-      expect(mockTranslate).toHaveBeenCalledWith(
-        source,
-        targetLocale,
-        {},
-        config
-      );
-    });
-
-    it('should handle JSX children as source', async () => {
-      const mockTranslate = vi.mocked(_translate);
-      mockTranslate.mockResolvedValue(mockTranslationResult);
-
-      const jsxSource = ['Hello ', { t: 'strong', c: ['world'] }];
-      const targetLocale = 'es';
-
-      await translate(jsxSource, targetLocale);
-
-      expect(mockTranslate).toHaveBeenCalledWith(
-        jsxSource,
-        targetLocale,
-        {},
-        undefined
-      );
-    });
-
-    it('should handle ICU message as source', async () => {
-      const mockTranslate = vi.mocked(_translate);
-      mockTranslate.mockResolvedValue(mockTranslationResult);
-
-      const icuSource = 'Hello {name}';
-      const targetLocale = 'es';
-
-      await translate(icuSource, targetLocale);
-
-      expect(mockTranslate).toHaveBeenCalledWith(
-        icuSource,
-        targetLocale,
-        {},
-        undefined
-      );
-    });
-
-    it('should handle translation errors', async () => {
-      const mockTranslate = vi.mocked(_translate);
-      const errorResult: TranslationError = {
-        error: 'Translation failed',
-        code: 500,
-        reference: { id: 'error-id', key: 'error-key' },
-      };
-      mockTranslate.mockResolvedValue(errorResult);
-
-      const result = await translate('Hello world', 'es');
-
-      expect(result).toEqual(errorResult);
-    });
-
-    it('should propagate internal translate errors', async () => {
-      const mockTranslate = vi.mocked(_translate);
-      const error = new Error('Network error');
-      mockTranslate.mockRejectedValue(error);
-
-      await expect(translate('Hello world', 'es')).rejects.toThrow(
-        'Network error'
-      );
-    });
-  });
-
-  describe('GT class translate method', () => {
+  describe('_translate method', () => {
     let gt: GT;
     const mockTranslationResult: TranslationResult = {
       translation: 'Hola mundo',
@@ -148,6 +37,7 @@ describe('Translation Methods', () => {
     beforeEach(() => {
       gt = new GT({
         apiKey: 'test-api-key',
+        projectId: 'test-project',
         baseUrl: 'https://api.test.com',
         targetLocale: 'es',
       });
@@ -157,47 +47,41 @@ describe('Translation Methods', () => {
       const mockTranslate = vi.mocked(_translate);
       mockTranslate.mockResolvedValue(mockTranslationResult);
 
-      const source: JsxChildren | IcuMessage = 'Hello world';
-      const metadata: TranslationRequestMetadata = { context: 'greeting' };
+      const source: Content = 'Hello world';
+      const metadata = {
+        context: 'greeting',
+      };
 
-      const result = await gt.translate(source, 'fr', metadata);
+      const result = await gt._translate(source, 'fr', metadata);
 
       expect(mockTranslate).toHaveBeenCalledWith(source, 'fr', metadata, {
         baseUrl: 'https://api.test.com',
         apiKey: 'test-api-key',
-        devApiKey: undefined,
+        projectId: 'test-project',
       });
       expect(result).toEqual(mockTranslationResult);
-    });
-
-    it('should use instance targetLocale when not provided', async () => {
-      const mockTranslate = vi.mocked(_translate);
-      mockTranslate.mockResolvedValue(mockTranslationResult);
-
-      const source: JsxChildren | IcuMessage = 'Hello world';
-
-      await gt.translate(source);
-
-      expect(mockTranslate).toHaveBeenCalledWith(
-        source,
-        'es',
-        {},
-        {
-          baseUrl: 'https://api.test.com',
-          apiKey: 'test-api-key',
-          devApiKey: undefined,
-        }
-      );
     });
 
     it('should throw error when no target locale is provided', async () => {
       const gtNoTarget = new GT({
         apiKey: 'test-api-key',
+        projectId: 'test-project',
         baseUrl: 'https://api.test.com',
       });
 
-      await expect(gtNoTarget.translate('Hello world')).rejects.toThrow(
+      await expect(gtNoTarget._translate('Hello world', '')).rejects.toThrow(
         'GT error: Cannot call `translate` without a specified locale. Either pass a locale to the `translate` function or specify a targetLocale in the GT constructor.'
+      );
+    });
+
+    it('should throw error when no project ID is provided', async () => {
+      const gtNoProject = new GT({
+        apiKey: 'test-api-key',
+        baseUrl: 'https://api.test.com',
+      });
+
+      await expect(gtNoProject._translate('Hello world', 'es')).rejects.toThrow(
+        'GT error: Cannot call `translate` without a specified project ID. Either pass a project ID to the `translate` function or specify a projectId in the GT constructor.'
       );
     });
 
@@ -205,74 +89,22 @@ describe('Translation Methods', () => {
       const mockTranslate = vi.mocked(_translate);
       mockTranslate.mockResolvedValue(mockTranslationResult);
 
-      const source: JsxChildren | IcuMessage = 'Hello world';
+      const source: Content = 'Hello world';
 
-      await gt.translate(source, 'fr');
+      await gt._translate(source, 'fr');
 
-      expect(mockTranslate).toHaveBeenCalledWith(
-        source,
-        'fr',
-        {},
-        {
-          baseUrl: 'https://api.test.com',
-          apiKey: 'test-api-key',
-          devApiKey: undefined,
-        }
-      );
-    });
-
-    it('should merge custom config with instance config', async () => {
-      const mockTranslate = vi.mocked(_translate);
-      mockTranslate.mockResolvedValue(mockTranslationResult);
-
-      const source: JsxChildren | IcuMessage = 'Hello world';
-      const customConfig = { timeout: 5000 };
-
-      await gt.translate(source, 'fr', {}, customConfig);
-
-      expect(mockTranslate).toHaveBeenCalledWith(
-        source,
-        'fr',
-        {},
-        {
-          baseUrl: 'https://api.test.com',
-          apiKey: 'test-api-key',
-          devApiKey: undefined,
-          timeout: 5000,
-        }
-      );
-    });
-
-    it('should handle devApiKey in configuration', async () => {
-      const gtWithDevKey = new GT({
-        apiKey: 'test-api-key',
-        devApiKey: 'dev-key',
+      expect(mockTranslate).toHaveBeenCalledWith(source, 'fr', undefined, {
         baseUrl: 'https://api.test.com',
-        targetLocale: 'es',
+        apiKey: 'test-api-key',
+        projectId: 'test-project',
       });
-
-      const mockTranslate = vi.mocked(_translate);
-      mockTranslate.mockResolvedValue(mockTranslationResult);
-
-      await gtWithDevKey.translate('Hello world');
-
-      expect(mockTranslate).toHaveBeenCalledWith(
-        'Hello world',
-        'es',
-        {},
-        {
-          baseUrl: 'https://api.test.com',
-          apiKey: 'test-api-key',
-          devApiKey: 'dev-key',
-        }
-      );
     });
 
     it('should handle complex JSX source', async () => {
       const mockTranslate = vi.mocked(_translate);
       mockTranslate.mockResolvedValue(mockTranslationResult);
 
-      const complexJsxSource = [
+      const complexJsxSource: JsxChildren = [
         'Welcome ',
         {
           t: 'strong',
@@ -285,16 +117,16 @@ describe('Translation Methods', () => {
         },
       ];
 
-      await gt.translate(complexJsxSource, 'es');
+      await gt._translate(complexJsxSource, 'es');
 
       expect(mockTranslate).toHaveBeenCalledWith(
         complexJsxSource,
         'es',
-        {},
+        undefined,
         {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
-          devApiKey: undefined,
+          projectId: 'test-project',
         }
       );
     });
@@ -304,7 +136,7 @@ describe('Translation Methods', () => {
       mockTranslate.mockResolvedValue(mockTranslationResult);
 
       // Test ICU format
-      await gt.translate('Hello {name}', 'es', {
+      await gt._translate('Hello {name}', 'es', {
         context: 'greeting',
         dataFormat: 'ICU',
       });
@@ -316,13 +148,13 @@ describe('Translation Methods', () => {
         {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
-          devApiKey: undefined,
+          projectId: 'test-project',
         }
       );
 
       // Test JSX format
-      const jsxSource = [{ t: 'span', c: ['Hello world'] }];
-      await gt.translate(jsxSource, 'fr', {
+      const jsxSource: JsxChildren = [{ t: 'span', c: ['Hello world'] }];
+      await gt._translate(jsxSource, 'fr', {
         context: 'greeting',
         dataFormat: 'JSX',
       });
@@ -334,7 +166,7 @@ describe('Translation Methods', () => {
         {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
-          devApiKey: undefined,
+          projectId: 'test-project',
         }
       );
     });
@@ -343,17 +175,17 @@ describe('Translation Methods', () => {
       const mockTranslate = vi.mocked(_translate);
       mockTranslate.mockResolvedValue(mockTranslationResult);
 
-      const fullMetadata: TranslationRequestMetadata = {
+      const fullMetadata = {
         sourceLocale: 'en',
-        versionId: 'v1.0',
         context: 'dashboard',
         id: 'welcome-msg',
         hash: 'abc123',
-        actionType: 'fast',
-        dataFormat: 'ICU',
+        actionType: 'fast' as const,
+        dataFormat: 'ICU' as const,
+        timeout: 5000,
       };
 
-      await gt.translate('Hello world', 'es', fullMetadata);
+      await gt._translate('Hello world', 'es', fullMetadata);
 
       expect(mockTranslate).toHaveBeenCalledWith(
         'Hello world',
@@ -362,7 +194,7 @@ describe('Translation Methods', () => {
         {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
-          devApiKey: undefined,
+          projectId: 'test-project',
         }
       );
     });
@@ -372,9 +204,203 @@ describe('Translation Methods', () => {
       const error = new Error('Translation service unavailable');
       mockTranslate.mockRejectedValue(error);
 
-      await expect(gt.translate('Hello world')).rejects.toThrow(
+      await expect(gt._translate('Hello world', 'es')).rejects.toThrow(
         'Translation service unavailable'
       );
+    });
+  });
+
+  describe('translateMany method', () => {
+    let gt: GT;
+    const mockTranslateManyResult: TranslateManyResult = {
+      translations: [
+        {
+          translation: 'Hola mundo',
+          reference: {
+            id: 'test-id-1',
+            key: 'test-key-1',
+          },
+        },
+        {
+          translation: 'Adiós mundo',
+          reference: {
+            id: 'test-id-2',
+            key: 'test-key-2',
+          },
+        },
+      ],
+      reference: [
+        {
+          id: 'test-id-1',
+          key: 'test-key-1',
+        },
+        {
+          id: 'test-id-2',
+          key: 'test-key-2',
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      gt = new GT({
+        apiKey: 'test-api-key',
+        projectId: 'test-project',
+        baseUrl: 'https://api.test.com',
+        targetLocale: 'es',
+      });
+    });
+
+    it('should call _translateMany with correct parameters', async () => {
+      const mockTranslateMany = vi.mocked(_translateMany);
+      mockTranslateMany.mockResolvedValue(mockTranslateManyResult);
+
+      const requests: GTRequest[] = [
+        {
+          source: 'Hello world',
+          targetLocale: 'es',
+          requestMetadata: { context: 'greeting' },
+        },
+        {
+          source: 'Goodbye world',
+          targetLocale: 'es',
+          requestMetadata: { context: 'farewell' },
+        },
+      ];
+
+      const globalMetadata: { targetLocale: string } & GTRequestMetadata = {
+        targetLocale: 'es',
+        sourceLocale: 'en',
+      };
+
+      const result = await gt.translateMany(requests, globalMetadata);
+
+      expect(mockTranslateMany).toHaveBeenCalledWith(requests, globalMetadata, {
+        baseUrl: 'https://api.test.com',
+        apiKey: 'test-api-key',
+        projectId: 'test-project',
+      });
+      expect(result).toEqual(mockTranslateManyResult);
+    });
+
+    it('should use instance targetLocale when not provided in global metadata', async () => {
+      const mockTranslateMany = vi.mocked(_translateMany);
+      mockTranslateMany.mockResolvedValue(mockTranslateManyResult);
+
+      const requests: GTRequest[] = [
+        {
+          source: 'Hello world',
+          targetLocale: 'es',
+          requestMetadata: { context: 'greeting' },
+        },
+      ];
+
+      const result = await gt.translateMany(requests);
+
+      expect(mockTranslateMany).toHaveBeenCalledWith(
+        requests,
+        { targetLocale: 'es' },
+        {
+          baseUrl: 'https://api.test.com',
+          apiKey: 'test-api-key',
+          projectId: 'test-project',
+        }
+      );
+      expect(result).toEqual(mockTranslateManyResult);
+    });
+
+    it('should throw error when no target locale is provided', async () => {
+      const gtNoTarget = new GT({
+        apiKey: 'test-api-key',
+        projectId: 'test-project',
+        baseUrl: 'https://api.test.com',
+      });
+
+      const requests: GTRequest[] = [
+        {
+          source: 'Hello world',
+          targetLocale: 'es',
+          requestMetadata: { context: 'greeting' },
+        },
+      ];
+
+      await expect(gtNoTarget.translateMany(requests)).rejects.toThrow(
+        'GT error: Cannot call `translateMany` without a specified locale. Either pass a locale to the `translateMany` function or specify a targetLocale in the GT constructor.'
+      );
+    });
+
+    it('should throw error when no project ID is provided', async () => {
+      const gtNoProject = new GT({
+        apiKey: 'test-api-key',
+        baseUrl: 'https://api.test.com',
+      });
+
+      const requests: GTRequest[] = [
+        {
+          source: 'Hello world',
+          targetLocale: 'es',
+          requestMetadata: { context: 'greeting' },
+        },
+      ];
+
+      await expect(
+        gtNoProject.translateMany(requests, { targetLocale: 'es' })
+      ).rejects.toThrow(
+        'GT error: Cannot call `translateMany` without a specified project ID. Either pass a project ID to the `translateMany` function or specify a projectId in the GT constructor.'
+      );
+    });
+
+    it('should handle complex JSX sources', async () => {
+      const mockTranslateMany = vi.mocked(_translateMany);
+      mockTranslateMany.mockResolvedValue(mockTranslateManyResult);
+
+      const requests: GTRequest[] = [
+        {
+          source: [
+            'Welcome ',
+            {
+              t: 'strong',
+              c: ['John'],
+            },
+          ],
+          targetLocale: 'es',
+          requestMetadata: { context: 'greeting', dataFormat: 'JSX' },
+        },
+        {
+          source: 'Hello {name}',
+          targetLocale: 'es',
+          requestMetadata: { context: 'greeting', dataFormat: 'ICU' },
+        },
+      ];
+
+      await gt.translateMany(requests, { targetLocale: 'es' });
+
+      expect(mockTranslateMany).toHaveBeenCalledWith(
+        requests,
+        { targetLocale: 'es' },
+        {
+          baseUrl: 'https://api.test.com',
+          apiKey: 'test-api-key',
+          projectId: 'test-project',
+        }
+      );
+    });
+
+    it('should propagate errors from _translateMany', async () => {
+      const mockTranslateMany = vi.mocked(_translateMany);
+      const error = new Error('Translation service unavailable');
+      mockTranslateMany.mockRejectedValue(error);
+
+      const requests: GTRequest[] = [
+        {
+          source: 'Hello world',
+          targetLocale: 'es',
+          requestMetadata: { context: 'greeting' },
+        },
+      ];
+
+      await expect(
+        gt.translateMany(requests, { targetLocale: 'es' })
+      ).rejects.toThrow('Translation service unavailable');
     });
   });
 
@@ -382,10 +408,12 @@ describe('Translation Methods', () => {
     it('should handle minimal GT configuration', () => {
       const gt = new GT({
         apiKey: 'test-key',
+        projectId: 'test-project',
         baseUrl: 'https://api.test.com',
       });
 
       expect(gt.apiKey).toBe('test-key');
+      expect(gt.projectId).toBe('test-project');
       expect(gt.baseUrl).toBe('https://api.test.com');
     });
 
@@ -393,12 +421,14 @@ describe('Translation Methods', () => {
       const gt = new GT({
         apiKey: 'test-key',
         devApiKey: 'dev-key',
+        projectId: 'test-project',
         baseUrl: 'https://api.test.com',
         targetLocale: 'es',
       });
 
       expect(gt.apiKey).toBe('test-key');
       expect(gt.devApiKey).toBe('dev-key');
+      expect(gt.projectId).toBe('test-project');
       expect(gt.baseUrl).toBe('https://api.test.com');
       expect(gt.targetLocale).toBe('es');
     });

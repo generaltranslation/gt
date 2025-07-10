@@ -17,7 +17,7 @@ export default async function _translateMany(
 ): Promise<TranslateManyResult> {
   let response;
   const timeout = Math.min(config.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/runtime/${config.projectId}/client`;
+  const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/translate/${config.projectId}`;
 
   // Validation
   validateConfig(config);

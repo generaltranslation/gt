@@ -45,7 +45,7 @@ import {
 import _translate from './translate/translate';
 import { GTRequest, GTRequestMetadata } from './types/GTRequest';
 import { gtInstanceLogger } from './logging/logger';
-import _translateMany from './translate/mtranslate';
+import _translateMany from './translate/translateMany';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -240,21 +240,25 @@ export class GT {
   async _translate(
     source: JsxChildren,
     targetLocale: string,
-    metadata: Omit<GTRequestMetadata, 'dataFormat'> & { dataFormat?: 'JSX' }
+    metadata?: Omit<GTRequestMetadata, 'dataFormat'> & {
+      dataFormat?: 'JSX';
+    }
   ): Promise<TranslationResult | TranslationError>;
 
   // Overload for ICU content
   async _translate(
     source: IcuMessage,
     targetLocale: string,
-    metadata: Omit<GTRequestMetadata, 'dataFormat'> & { dataFormat?: 'ICU' }
+    metadata?: Omit<GTRequestMetadata, 'dataFormat'> & {
+      dataFormat?: 'ICU';
+    }
   ): Promise<TranslationResult | TranslationError>;
 
   // Overload for I18next content
   async _translate(
     source: I18nextMessage,
     targetLocale: string,
-    metadata: Omit<GTRequestMetadata, 'dataFormat'> & {
+    metadata?: Omit<GTRequestMetadata, 'dataFormat'> & {
       dataFormat?: 'I18NEXT';
     }
   ): Promise<TranslationResult | TranslationError>;
@@ -263,7 +267,7 @@ export class GT {
   async _translate(
     source: Content,
     targetLocale: string,
-    metadata: GTRequestMetadata = {}
+    metadata?: GTRequestMetadata
   ): Promise<TranslationResult | TranslationError> {
     // Validation
     if (!targetLocale) {
@@ -279,7 +283,7 @@ export class GT {
     return await _translate(
       source,
       targetLocale,
-      metadata || {},
+      metadata,
       this._getTranslationConfig()
     );
   }
