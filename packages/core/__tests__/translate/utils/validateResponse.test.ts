@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../../src/logging/errors', () => ({
-  apiError: vi.fn((status: number, statusText: string, error: string) => 
-    `GT error: API returned error status. Status: ${status}, Status Text: ${statusText}, Error: ${error}`),
+  apiError: vi.fn(
+    (status: number, statusText: string, error: string) =>
+      `GT error: API returned error status. Status: ${status}, Status Text: ${statusText}, Error: ${error}`
+  ),
 }));
 
 vi.mock('../../../src/logging/logger', () => ({
@@ -44,7 +46,6 @@ describe.sequential('validateResponse', () => {
       text: vi.fn().mockResolvedValue(errorText),
     } as unknown as Response;
 
-
     await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
     expect(mockResponse.text).toHaveBeenCalled();
     expect(apiError).toHaveBeenCalledWith(401, 'Unauthorized', errorText);
@@ -57,7 +58,6 @@ describe.sequential('validateResponse', () => {
 
   it('should handle 404 not found errors', async () => {
     const errorText = 'Project not found';
-    const expectedErrorMessage = 'GT error: API returned error status. Status: 404, Status Text: Not Found, Error: Project not found';
 
     const mockResponse = {
       ok: false,
@@ -66,15 +66,12 @@ describe.sequential('validateResponse', () => {
       text: vi.fn().mockResolvedValue(errorText),
     } as unknown as Response;
 
-
     await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
     expect(apiError).toHaveBeenCalledWith(404, 'Not Found', errorText);
   });
 
   it('should handle 500 server errors', async () => {
     const errorText = 'Internal server error';
-    const expectedErrorMessage =
-      'GT error: API returned error status. Status: 500, Status Text: Internal Server Error, Error: Internal server error';
 
     const mockResponse = {
       ok: false,
@@ -82,7 +79,6 @@ describe.sequential('validateResponse', () => {
       statusText: 'Internal Server Error',
       text: vi.fn().mockResolvedValue(errorText),
     } as unknown as Response;
-
 
     await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
     expect(apiError).toHaveBeenCalledWith(
@@ -94,7 +90,6 @@ describe.sequential('validateResponse', () => {
 
   it('should handle empty error text', async () => {
     const errorText = '';
-    const expectedErrorMessage = 'GT error: API returned error status. Status: 400, Status Text: Bad Request, Error: ';
 
     const mockResponse = {
       ok: false,
@@ -102,7 +97,6 @@ describe.sequential('validateResponse', () => {
       statusText: 'Bad Request',
       text: vi.fn().mockResolvedValue(errorText),
     } as unknown as Response;
-
 
     await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
     expect(apiError).toHaveBeenCalledWith(400, 'Bad Request', errorText);
