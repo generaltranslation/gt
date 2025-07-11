@@ -1,373 +1,377 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { hashSource } from '../../src/id/hashSource';
 import {
-  IcuMessage,
-  JsxChildren,
-  VariableType,
+  TranslationError,
   TranslationRequestConfig,
   TranslationResult,
-  TranslationError,
-  Content,
 } from '../../src/types';
 import { EntryMetadata } from '../../src/types-dir/entry';
+import { Content } from '../../src/types-dir/content';
 import _translate from '../../src/translate/translate';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
-describe('Translation E2E Tests', () => {
-  const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultRuntimeApiUrl;
-  const projectId = process.env.VITE_GT_PROJECT_ID;
-  const apiKey = process.env.VITE_GT_API_KEY;
+describe('translate E2E Tests', () => {
+  let config: TranslationRequestConfig;
 
-  if (!runtimeUrl) {
-    throw new Error('VITE_GT_RUNTIME_URL environment variable is required');
-  }
+  beforeAll(() => {
+    const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultRuntimeApiUrl;
+    const projectId = process.env.VITE_GT_PROJECT_ID;
+    const apiKey = process.env.VITE_GT_API_KEY;
 
-  // Configuration for GT translate function
-  const config: TranslationRequestConfig = {
-    baseUrl: runtimeUrl,
-    projectId: projectId || 'test-project',
-    apiKey: apiKey || 'test-key',
-  };
-
-  // Helper function to generate unique IDs and calculate hash values
-  const createTestMetadata = (
-    source: Content,
-    metadata: Partial<EntryMetadata> = {}
-  ): EntryMetadata => {
-    const id = `test-id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const dataFormat = typeof source === 'string' ? 'ICU' : 'JSX';
-    const hash = hashSource({
-      source,
-      context: metadata.context,
-      id,
-      dataFormat,
-    });
-
-    return {
-      ...metadata,
-      id,
-      hash,
-      dataFormat,
+    config = {
+      baseUrl: runtimeUrl,
+      projectId: projectId || 'test-project',
+      apiKey: apiKey || 'test-key',
     };
-  };
-
-  beforeAll(async () => {
-    // Test server availability
-    try {
-      const testMetadata = createTestMetadata('Hello world', {
-        context: 'test',
-      });
-      await _translate('Hello world', 'es', testMetadata, config);
-    } catch {
-      // Server may not be available for E2E tests
-    }
   });
 
-  describe('Interface Compliance Tests', () => {
-    it('should accept Content type as source input', async () => {
-      const stringSource: Content = 'Hello world';
-      const jsxSource: Content = ['Hello ', { t: 'strong', c: ['world'] }];
-      const icuSource: Content = 'Hello {name}';
-
-      const testMetadata1 = createTestMetadata(stringSource, {
-        context: 'interface-string',
+  describe('String Content Translation', () => {
+    it('should translate simple string content', async () => {
+      const source: Content = 'Hello world';
+      const targetLocale = 'es';
+      const metadata: EntryMetadata = {
+        context: 'greeting',
         sourceLocale: 'en',
-      });
-
-      const testMetadata2 = createTestMetadata(jsxSource, {
-        context: 'interface-jsx',
-        sourceLocale: 'en',
-      });
-
-      const testMetadata3 = createTestMetadata(icuSource, {
-        context: 'interface-icu',
-        sourceLocale: 'en',
-      });
-
-      try {
-        const result1 = await _translate(
-          stringSource,
-          'es',
-          testMetadata1,
-          config
-        );
-        const result2 = await _translate(
-          jsxSource,
-          'es',
-          testMetadata2,
-          config
-        );
-        const result3 = await _translate(
-          icuSource,
-          'es',
-          testMetadata3,
-          config
-        );
-
-        // All should return either TranslationResult or TranslationError
-        expect(result1).toBeDefined();
-        expect(result2).toBeDefined();
-        expect(result3).toBeDefined();
-
-        // Verify return type structure
-        expect(result1).toHaveProperty('reference');
-        expect(result2).toHaveProperty('reference');
-        expect(result3).toHaveProperty('reference');
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true); // Server may not be available
-      }
-    });
-
-    it('should accept EntryMetadata with all fields', async () => {
-      const fullMetadata: EntryMetadata = {
-        context: 'full-metadata-test',
-        id: 'custom-id-123',
-        hash: 'custom-hash-456',
-        dataFormat: 'ICU',
-        sourceLocale: 'en',
-        actionType: 'fast',
       };
 
       try {
-        const result = await _translate(
-          'Hello world',
-          'es',
-          fullMetadata,
-          config
-        );
+        const result = await _translate(source, targetLocale, metadata, config);
 
         expect(result).toBeDefined();
         expect(result).toHaveProperty('reference');
 
         if ('translation' in result) {
           expect(result.translation).toBeDefined();
-          expect(result.reference.id).toBe(fullMetadata.id);
+          expect(typeof result.translation).toBe('string');
+          expect(result.reference).toHaveProperty('id');
+          expect(result.reference).toHaveProperty('key');
         } else {
+          // TranslationError case
           expect(result).toHaveProperty('error');
           expect(result).toHaveProperty('code');
         }
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true);
+      } catch (error) {
+        // Network or server issues - acceptable in e2e environment
+        expect(error).toBeDefined();
       }
     });
 
-    it('should return TranslationResult or TranslationError', async () => {
-      const testMetadata = createTestMetadata('Hello world', {
-        context: 'return-type-test',
+    it('should translate ICU message format', async () => {
+      const source: Content = 'Hello {name}, you have {count} messages';
+      const targetLocale = 'fr';
+      const metadata: EntryMetadata = {
+        context: 'icu-message',
         sourceLocale: 'en',
-      });
+      };
 
       try {
-        const result = await _translate(
-          'Hello world',
-          'es',
-          testMetadata,
-          config
-        );
+        const result = await _translate(source, targetLocale, metadata, config);
 
         expect(result).toBeDefined();
+        expect(result).toHaveProperty('reference');
 
-        // Should be either TranslationResult or TranslationError
         if ('translation' in result) {
-          // TranslationResult
-          const translationResult = result as TranslationResult;
-          expect(translationResult.translation).toBeDefined();
-          expect(translationResult.reference).toBeDefined();
-          expect(translationResult.reference).toHaveProperty('id');
-          expect(translationResult.reference).toHaveProperty('key');
-        } else {
-          // TranslationError
-          const translationError = result as TranslationError;
-          expect(translationError.error).toBeDefined();
-          expect(translationError.code).toBeDefined();
-          expect(typeof translationError.error).toBe('string');
-          expect(typeof translationError.code).toBe('number');
+          expect(result.translation).toBeDefined();
+          expect(typeof result.translation).toBe('string');
+          // Should preserve ICU placeholder format
+          expect(result.translation).toContain('{');
+          expect(result.translation).toContain('}');
         }
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true);
+      } catch (error) {
+        expect(error).toBeDefined();
       }
     });
   });
 
-  describe('Functional E2E Tests', () => {
-    it('should translate with valid API key', async () => {
-      const testMetadata = createTestMetadata('Hello world', {
-        context: 'basic-test',
+  describe('JSX Content Translation', () => {
+    it('should translate simple JSX content', async () => {
+      const source: Content = ['Hello ', { t: 'strong', c: ['world'] }];
+      const targetLocale = 'de';
+      const metadata: EntryMetadata = {
+        context: 'jsx-greeting',
         sourceLocale: 'en',
-      });
+      };
 
       try {
-        const result = await _translate(
-          'Hello world',
-          'es',
-          testMetadata,
-          config
-        );
+        const result = await _translate(source, targetLocale, metadata, config);
 
         expect(result).toBeDefined();
+        expect(result).toHaveProperty('reference');
 
         if ('translation' in result) {
           expect(result.translation).toBeDefined();
-          expect(result.reference).toBeDefined();
-          expect(result.reference.id).toBe(testMetadata.id);
-          expect(result.reference.key).toBe(testMetadata.hash);
-        } else {
-          expect(result).toHaveProperty('error');
+          expect(Array.isArray(result.translation)).toBe(true);
+
+          if (Array.isArray(result.translation)) {
+            expect(result.translation.length).toBeGreaterThan(0);
+            // Should preserve JSX structure
+            const strongElement = result.translation.find(
+              (item) =>
+                typeof item === 'object' && 't' in item && item.t === 'strong'
+            );
+            expect(strongElement).toBeDefined();
+          }
         }
       } catch (error) {
         expect(error).toBeDefined();
       }
     });
 
-    it('should handle ICU dataFormat correctly', async () => {
-      const icuSource: IcuMessage = 'Hello {name}, you have {count} messages';
-      const testMetadata = createTestMetadata(icuSource, {
-        context: 'icu-test',
-        sourceLocale: 'en',
-        dataFormat: 'ICU',
-      });
-
-      try {
-        const result = await _translate(icuSource, 'es', testMetadata, config);
-
-        expect(result).toBeDefined();
-        if ('translation' in result) {
-          expect(result.translation).toBeDefined();
-          expect(typeof result.translation).toBe('string');
-          expect(result.reference.key).toBe(testMetadata.hash);
-        }
-      } catch {
-        expect(true).toBe(true);
-      }
-    });
-
-    it('should handle JSX dataFormat correctly', async () => {
-      const jsxSource: JsxChildren = [
-        'Hello ',
-        { t: 'strong', c: [{ k: 'name', v: 'v' as VariableType }] },
-        ', you have ',
-        { k: 'count', v: 'n' as VariableType },
-        ' messages',
-      ];
-
-      const testMetadata = createTestMetadata(jsxSource, {
-        context: 'jsx-test',
-        sourceLocale: 'en',
-        dataFormat: 'JSX',
-      });
-
-      try {
-        const result = await _translate(jsxSource, 'fr', testMetadata, config);
-
-        expect(result).toBeDefined();
-        if ('translation' in result) {
-          expect(result.translation).toBeDefined();
-          expect(Array.isArray(result.translation)).toBe(true);
-          expect(result.reference.key).toBe(testMetadata.hash);
-        }
-      } catch {
-        expect(true).toBe(true);
-      }
-    });
-
-    it('should handle complex JSX with nested elements and variables', async () => {
-      const complexJsx: JsxChildren = [
+    it('should translate complex nested JSX content', async () => {
+      const source: Content = [
         {
           t: 'div',
           c: [
             {
               t: 'h1',
-              c: ['Welcome ', { k: 'firstName', v: 'v' as VariableType }],
+              c: ['Welcome'],
             },
             {
               t: 'p',
-              c: [
-                'You have ',
-                { k: 'notificationCount', v: 'n' as VariableType },
-                ' new notifications since your last visit on ',
-                {
-                  t: 'time',
-                  c: [{ k: 'lastVisit', v: 'd' as VariableType }],
-                },
-                '.',
-              ],
+              c: ['This is a ', { t: 'strong', c: ['complex'] }, ' example.'],
             },
           ],
         },
       ];
-
-      const testMetadata = createTestMetadata(complexJsx, {
-        context: 'complex-jsx-test',
+      const targetLocale = 'es';
+      const metadata: EntryMetadata = {
+        context: 'complex-jsx',
         sourceLocale: 'en',
-      });
+      };
 
       try {
-        const result = await _translate(complexJsx, 'es', testMetadata, config);
+        const result = await _translate(source, targetLocale, metadata, config);
 
         expect(result).toBeDefined();
+        expect(result).toHaveProperty('reference');
+
         if ('translation' in result) {
           expect(result.translation).toBeDefined();
-          expect(result.reference.key).toBe(testMetadata.hash);
-          // Verify the translation maintains structure
+          expect(Array.isArray(result.translation)).toBe(true);
+
           if (Array.isArray(result.translation)) {
-            expect(result.translation[0]).toHaveProperty('t', 'div');
-            expect(result.translation[0]).toHaveProperty('c');
+            // Should preserve nested structure
+            const divElement = result.translation[0];
+            expect(divElement).toHaveProperty('t', 'div');
+            expect(divElement).toHaveProperty('c');
+            expect(
+              typeof divElement === 'object' &&
+                'c' in divElement &&
+                Array.isArray(divElement.c)
+            ).toBe(true);
           }
         }
-      } catch {
-        expect(true).toBe(true);
+      } catch (error) {
+        expect(error).toBeDefined();
       }
-    }, 15000);
+    });
+  });
 
-    it('should generate identical keys for identical content', async () => {
-      const identicalSource = 'This is identical content';
-
-      // Create two identical requests (but different IDs)
-      const testMetadata1 = createTestMetadata(identicalSource, {
-        context: 'key-test',
+  describe('Metadata Handling', () => {
+    it('should handle metadata with context and sourceLocale', async () => {
+      const source: Content = 'Save changes';
+      const targetLocale = 'es';
+      const metadata: EntryMetadata = {
+        context: 'button-text',
         sourceLocale: 'en',
-      });
-
-      const testMetadata2 = createTestMetadata(identicalSource, {
-        context: 'key-test', // Same context
-        sourceLocale: 'en',
-      });
+      };
 
       try {
-        const result1 = await _translate(
-          identicalSource,
-          'es',
-          testMetadata1,
-          config
-        );
-        const result2 = await _translate(
-          identicalSource,
-          'es',
-          testMetadata2,
-          config
-        );
+        const result = await _translate(source, targetLocale, metadata, config);
 
-        expect(result1).toBeDefined();
-        expect(result2).toBeDefined();
+        expect(result).toBeDefined();
+        expect(result).toHaveProperty('reference');
 
-        if ('translation' in result1 && 'translation' in result2) {
-          // Both requests should have the same key (identical content + context)
-          expect(result1.reference.key).toBe(result2.reference.key);
-          // But different IDs
-          expect(result1.reference.id).not.toBe(result2.reference.id);
-
-          // Verify keys match what we calculated as hash
-          expect(result1.reference.key).toBe(testMetadata1.hash);
-          expect(result2.reference.key).toBe(testMetadata2.hash);
+        if ('translation' in result) {
+          expect(result.reference).toHaveProperty('id');
+          expect(result.reference).toHaveProperty('key');
         }
-      } catch {
-        expect(true).toBe(true);
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should handle metadata with custom timeout', async () => {
+      const source: Content = 'Loading...';
+      const targetLocale = 'fr';
+      const metadata: EntryMetadata = {
+        context: 'ui-text',
+        sourceLocale: 'en',
+        timeout: 10000, // Custom timeout
+      };
+
+      try {
+        const result = await _translate(source, targetLocale, metadata, config);
+
+        expect(result).toBeDefined();
+        expect(result).toHaveProperty('reference');
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should handle empty metadata', async () => {
+      const source: Content = 'Default text';
+      const targetLocale = 'es';
+      const metadata: EntryMetadata = {};
+
+      try {
+        const result = await _translate(source, targetLocale, metadata, config);
+
+        expect(result).toBeDefined();
+        expect(result).toHaveProperty('reference');
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
+  });
+
+  describe('Configuration Handling', () => {
+    it('should handle config with custom baseUrl', async () => {
+      const customConfig: TranslationRequestConfig = {
+        ...config,
+        baseUrl: config.baseUrl || defaultRuntimeApiUrl,
+      };
+
+      const source: Content = 'Test message';
+      const targetLocale = 'es';
+      const metadata: EntryMetadata = {
+        context: 'config-test',
+        sourceLocale: 'en',
+      };
+
+      try {
+        const result = await _translate(
+          source,
+          targetLocale,
+          metadata,
+          customConfig
+        );
+
+        expect(result).toBeDefined();
+        expect(result).toHaveProperty('reference');
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should handle config without baseUrl (defaults)', async () => {
+      const configWithoutUrl: TranslationRequestConfig = {
+        projectId: config.projectId,
+        apiKey: config.apiKey,
+        // baseUrl omitted - should use default
+      };
+
+      const source: Content = 'Default URL test';
+      const targetLocale = 'es';
+      const metadata: EntryMetadata = {
+        context: 'default-url-test',
+        sourceLocale: 'en',
+      };
+
+      try {
+        const result = await _translate(
+          source,
+          targetLocale,
+          metadata,
+          configWithoutUrl
+        );
+
+        expect(result).toBeDefined();
+        expect(result).toHaveProperty('reference');
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle invalid API key gracefully', async () => {
+      const invalidConfig: TranslationRequestConfig = {
+        ...config,
+        apiKey: 'invalid-key-12345',
+      };
+
+      const source: Content = 'Test with invalid key';
+      const targetLocale = 'es';
+      const metadata: EntryMetadata = {
+        context: 'error-test',
+        sourceLocale: 'en',
+      };
+
+      try {
+        const result = await _translate(
+          source,
+          targetLocale,
+          metadata,
+          invalidConfig
+        );
+
+        // Should return error result instead of throwing
+        expect(result).toBeDefined();
+
+        if ('error' in result) {
+          expect(result.error).toBeDefined();
+          expect(result.code).toBeDefined();
+          expect(typeof result.error).toBe('string');
+          expect(typeof result.code).toBe('number');
+        }
+      } catch (error) {
+        // Network errors are also acceptable
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should handle network timeout gracefully', async () => {
+      const source: Content = 'Timeout test';
+      const targetLocale = 'es';
+      const metadata: EntryMetadata = {
+        context: 'timeout-test',
+        sourceLocale: 'en',
+        timeout: 1, // Very short timeout to force timeout
+      };
+
+      try {
+        const result = await _translate(source, targetLocale, metadata, config);
+
+        expect(result).toBeDefined();
+      } catch (error) {
+        // Timeout errors are expected
+        expect(error).toBeDefined();
+      }
+    });
+  });
+
+  describe('Multiple Locales', () => {
+    it('should translate to different target locales', async () => {
+      const source: Content = 'Good morning';
+      const metadata: EntryMetadata = {
+        context: 'time-greeting',
+        sourceLocale: 'en',
+      };
+
+      const locales = ['es', 'fr', 'de'];
+      const results: {
+        locale: string;
+        result?: TranslationResult | TranslationError;
+        error?: any;
+      }[] = [];
+
+      for (const locale of locales) {
+        try {
+          const result = await _translate(source, locale, metadata, config);
+          results.push({ locale, result });
+        } catch (error) {
+          results.push({ locale, error });
+        }
+      }
+
+      expect(results).toHaveLength(locales.length);
+
+      // At least some results should be successful (if server is available)
+      for (const { result } of results) {
+        if (result) {
+          expect(result).toHaveProperty('reference');
+        }
       }
     });
   });

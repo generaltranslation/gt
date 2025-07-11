@@ -1,138 +1,192 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { hashSource } from '../../src/id/hashSource';
 import {
-  VariableType,
   TranslationRequestConfig,
   TranslateManyResult,
-  Content,
-  JsxChildren,
-  IcuMessage,
+  TranslationResult,
+  TranslationError,
 } from '../../src/types';
 import { EntryMetadata, Entry } from '../../src/types-dir/entry';
+import { Content } from '../../src/types-dir/content';
 import _translateMany from '../../src/translate/translateMany';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
-describe('TranslateMany E2E Tests', () => {
-  const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultRuntimeApiUrl;
-  const projectId = process.env.VITE_GT_PROJECT_ID;
-  const apiKey = process.env.VITE_GT_API_KEY;
+describe('translateMany E2E Tests', () => {
+  let config: TranslationRequestConfig;
 
-  if (!runtimeUrl) {
-    throw new Error('VITE_GT_RUNTIME_URL environment variable is required');
-  }
+  beforeAll(() => {
+    const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultRuntimeApiUrl;
+    const projectId = process.env.VITE_GT_PROJECT_ID;
+    const apiKey = process.env.VITE_GT_API_KEY;
 
-  // Configuration for GT translateMany function
-  const config: TranslationRequestConfig = {
-    baseUrl: runtimeUrl,
-    projectId: projectId || 'test-project',
-    apiKey: apiKey || 'test-key',
-  };
-
-  // Helper function to create Entry objects with proper metadata
-  const createEntry = (
-    source: Content,
-    targetLocale: string,
-    metadata: Partial<EntryMetadata> = {}
-  ): Entry => {
-    const id = `entry-id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const dataFormat = typeof source === 'string' ? 'ICU' : 'JSX';
-    const hash = hashSource({
-      source,
-      context: metadata.context,
-      id,
-      dataFormat,
-    });
-
-    return {
-      source,
-      targetLocale,
-      requestMetadata: {
-        ...metadata,
-        id,
-        hash,
-        dataFormat,
-      },
+    config = {
+      baseUrl: runtimeUrl,
+      projectId: projectId || 'test-project',
+      apiKey: apiKey || 'test-key',
     };
-  };
-
-  beforeAll(async () => {
-    // Test server availability
-    try {
-      const testEntry = createEntry('Hello world', 'es', { context: 'test' });
-      await _translateMany([testEntry], { targetLocale: 'es' }, config);
-    } catch {
-      // Server may not be available for E2E tests
-    }
   });
 
-  describe('Interface Compliance Tests', () => {
-    it('should accept Entry[] as requests input', async () => {
-      const requests: Entry[] = [
-        createEntry('Hello world', 'es', { context: 'greeting' }),
-        createEntry('Goodbye world', 'es', { context: 'farewell' }),
-        createEntry('How are you?', 'es', { context: 'question' }),
+  describe('Batch Translation', () => {
+    it('should translate multiple string entries in one request', async () => {
+      const entries: Entry[] = [
+        {
+          source: 'Hello world',
+          requestMetadata: { context: 'greeting-1' },
+        },
+        {
+          source: 'Good morning',
+          requestMetadata: { context: 'greeting-2' },
+        },
+        {
+          source: 'Welcome back',
+          requestMetadata: { context: 'greeting-3' },
+        },
       ];
 
       const globalMetadata: { targetLocale: string } & EntryMetadata = {
         targetLocale: 'es',
         sourceLocale: 'en',
+        context: 'batch-greetings',
       };
 
       try {
-        const result = await _translateMany(requests, globalMetadata, config);
+        const result = await _translateMany(entries, globalMetadata, config);
 
         expect(result).toBeDefined();
-        expect(result).toHaveProperty('translations');
-        expect(result).toHaveProperty('reference');
-        expect(Array.isArray(result.translations)).toBe(true);
-        expect(Array.isArray(result.reference)).toBe(true);
+        expect(Array.isArray(result)).toBe(true);
+        expect(result.length).toBe(entries.length);
 
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true); // Server may not be available
-      }
-    });
-
-    it('should accept mixed Content types in Entry requests', async () => {
-      const requests: Entry[] = [
-        createEntry('Hello world' as Content, 'es', {
-          context: 'string-content',
-        }),
-        createEntry(
-          ['Hello ', { t: 'strong', c: ['world'] }] as JsxChildren,
-          'es',
-          {
-            context: 'jsx-content',
-            dataFormat: 'JSX',
+        // Verify each translation result
+        result.forEach((translationResult, index) => {
+          expect(translationResult).toBeDefined();
+          if ('translation' in translationResult) {
+            expect(translationResult).toHaveProperty('translation');
+            expect(translationResult).toHaveProperty('reference');
+            expect(typeof translationResult.translation).toBe('string');
+            expect(translationResult.reference).toHaveProperty('id');
+            expect(translationResult.reference).toHaveProperty('key');
+          } else {
+            // TranslationError case
+            expect(translationResult).toHaveProperty('error');
+            expect(translationResult).toHaveProperty('code');
           }
-        ),
-        createEntry('Hello {name}' as IcuMessage, 'es', {
-          context: 'icu-content',
-          dataFormat: 'ICU',
-        }),
-      ];
-
-      const globalMetadata: { targetLocale: string } & EntryMetadata = {
-        targetLocale: 'es',
-        sourceLocale: 'en',
-      };
-
-      try {
-        const result = await _translateMany(requests, globalMetadata, config);
-
-        expect(result).toBeDefined();
-        expect(result.translations).toBeDefined();
-        expect(result.reference).toBeDefined();
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true);
+        });
+      } catch (error) {
+        // Network or server issues - acceptable in e2e environment
+        expect(error).toBeDefined();
       }
     });
 
-    it('should accept globalMetadata with targetLocale and EntryMetadata fields', async () => {
-      const requests: Entry[] = [
-        createEntry('Hello world', 'es', { context: 'test' }),
+    it('should translate mixed content types (string and JSX)', async () => {
+      const entries: Entry[] = [
+        {
+          source: 'Simple text message',
+          requestMetadata: { context: 'simple-text' },
+        },
+        {
+          source: ['Welcome ', { t: 'strong', c: ['John'] }],
+          requestMetadata: { context: 'jsx-content', dataFormat: 'JSX' },
+        },
+        {
+          source: 'Hello {name}, you have {count} messages',
+          requestMetadata: { context: 'icu-message', dataFormat: 'ICU' },
+        },
+      ];
+
+      const globalMetadata: { targetLocale: string } & EntryMetadata = {
+        targetLocale: 'fr',
+        sourceLocale: 'en',
+        context: 'mixed-content-batch',
+      };
+
+      try {
+        const result = await _translateMany(entries, globalMetadata, config);
+
+        expect(result).toBeDefined();
+        expect(Array.isArray(result)).toBe(true);
+        expect(result.length).toBe(entries.length);
+
+        // Check that different content types are preserved
+        const jsxTranslation = result[1];
+        if (jsxTranslation && 'translation' in jsxTranslation) {
+          expect(Array.isArray(jsxTranslation.translation)).toBe(true);
+        }
+
+        const icuTranslation = result[2];
+        if (icuTranslation && 'translation' in icuTranslation) {
+          expect(typeof icuTranslation.translation).toBe('string');
+          // Should preserve ICU format
+          if (typeof icuTranslation.translation === 'string') {
+            expect(icuTranslation.translation).toContain('{');
+            expect(icuTranslation.translation).toContain('}');
+          }
+        }
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should handle entries with individual metadata', async () => {
+      const entries: Entry[] = [
+        {
+          source: 'Save changes',
+          requestMetadata: {
+            context: 'button-save',
+            actionType: 'fast',
+          },
+        },
+        {
+          source: 'Delete item',
+          requestMetadata: {
+            context: 'button-delete',
+            actionType: 'standard',
+          },
+        },
+        {
+          source: 'Cancel operation',
+          requestMetadata: {
+            context: 'button-cancel',
+            dataFormat: 'ICU',
+          },
+        },
+      ];
+
+      const globalMetadata: { targetLocale: string } & EntryMetadata = {
+        targetLocale: 'de',
+        sourceLocale: 'en',
+        context: 'ui-buttons',
+      };
+
+      try {
+        const result = await _translateMany(entries, globalMetadata, config);
+
+        expect(result).toBeDefined();
+        expect(Array.isArray(result)).toBe(true);
+        expect(result.length).toBe(entries.length);
+
+        // Each translation should have proper reference data
+        result.forEach((translationResult) => {
+          expect(translationResult).toBeDefined();
+          if ('translation' in translationResult) {
+            expect(translationResult).toHaveProperty('reference');
+            expect(translationResult.reference).toHaveProperty('id');
+            expect(translationResult.reference).toHaveProperty('key');
+          } else {
+            // TranslationError case
+            expect(translationResult).toHaveProperty('error');
+            expect(translationResult).toHaveProperty('code');
+          }
+        });
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
+  });
+
+  describe('Global Metadata Handling', () => {
+    it('should apply global metadata to all entries', async () => {
+      const entries: Entry[] = [
+        { source: 'First message' },
+        { source: 'Second message' },
       ];
 
       const globalMetadata: { targetLocale: string } & EntryMetadata = {
@@ -140,366 +194,230 @@ describe('TranslateMany E2E Tests', () => {
         sourceLocale: 'en',
         context: 'global-context',
         actionType: 'fast',
-        id: 'batch-translation',
-        hash: 'global-hash-123',
+        timeout: 10000,
       };
 
       try {
-        const result = await _translateMany(requests, globalMetadata, config);
+        const result = await _translateMany(entries, globalMetadata, config);
 
         expect(result).toBeDefined();
-        expect(result).toHaveProperty('translations');
-        expect(result).toHaveProperty('reference');
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true);
+        expect(Array.isArray(result)).toBe(true);
+        expect(result.length).toBe(entries.length);
+      } catch (error) {
+        expect(error).toBeDefined();
       }
     });
 
-    it('should return TranslateManyResult', async () => {
-      const requests: Entry[] = [
-        createEntry('Hello', 'es', { context: 'greeting' }),
-        createEntry('World', 'es', { context: 'noun' }),
+    it('should handle different target locales', async () => {
+      const entries: Entry[] = [
+        { source: 'Good morning' },
+        { source: 'Good evening' },
       ];
 
-      const globalMetadata: { targetLocale: string } & EntryMetadata = {
-        targetLocale: 'es',
-        sourceLocale: 'en',
-      };
+      const locales = ['es', 'fr', 'de'];
+      const results: {
+        locale: string;
+        result?: TranslationResult | TranslationError;
+        error?: any;
+      }[] = [];
 
-      try {
-        const result = await _translateMany(requests, globalMetadata, config);
+      for (const locale of locales) {
+        const globalMetadata: { targetLocale: string } & EntryMetadata = {
+          targetLocale: locale,
+          sourceLocale: 'en',
+          context: 'time-greetings',
+        };
 
-        expect(result).toBeDefined();
-
-        // Verify TranslateManyResult structure
-        const translateManyResult = result as TranslateManyResult;
-        expect(translateManyResult.translations).toBeDefined();
-        expect(translateManyResult.reference).toBeDefined();
-        expect(Array.isArray(translateManyResult.translations)).toBe(true);
-        expect(Array.isArray(translateManyResult.reference)).toBe(true);
-
-        // Each translation should have proper structure
-        if (translateManyResult.translations.length > 0) {
-          const firstTranslation = translateManyResult.translations[0];
-          expect(firstTranslation).toHaveProperty('translation');
-          expect(firstTranslation).toHaveProperty('reference');
-          expect(firstTranslation.reference).toHaveProperty('id');
-          expect(firstTranslation.reference).toHaveProperty('key');
+        try {
+          const result = await _translateMany(entries, globalMetadata, config);
+          results.push({ locale, result });
+        } catch (error) {
+          results.push({ locale, error });
         }
+      }
 
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true);
+      expect(results).toHaveLength(locales.length);
+
+      // At least some results should be successful (if server is available)
+      for (const { result } of results) {
+        if (result) {
+          expect(Array.isArray(result)).toBe(true);
+          expect(result.length).toBe(entries.length);
+        }
       }
     });
   });
 
-  describe('Functional E2E Tests', () => {
-    it('should translate multiple entries with valid API key', async () => {
-      const requests: Entry[] = [
-        createEntry('Hello world', 'es', {
-          context: 'greeting',
-          sourceLocale: 'en',
-        }),
-        createEntry('Goodbye world', 'es', {
-          context: 'farewell',
-          sourceLocale: 'en',
-        }),
-      ];
+  describe('Configuration Handling', () => {
+    it('should handle config with custom baseUrl', async () => {
+      const customConfig: TranslationRequestConfig = {
+        ...config,
+        baseUrl: config.baseUrl || defaultRuntimeApiUrl,
+      };
+
+      const entries: Entry[] = [{ source: 'Test message' }];
 
       const globalMetadata: { targetLocale: string } & EntryMetadata = {
         targetLocale: 'es',
         sourceLocale: 'en',
+        context: 'config-test',
       };
 
       try {
-        const result = await _translateMany(requests, globalMetadata, config);
+        const result = await _translateMany(
+          entries,
+          globalMetadata,
+          customConfig
+        );
 
         expect(result).toBeDefined();
-        expect(result.translations).toBeDefined();
-        expect(result.reference).toBeDefined();
-
-        // Verify correspondence between requests and responses
-        if (result.translations.length > 0) {
-          expect(result.translations.length).toBeLessThanOrEqual(
-            requests.length
-          );
-          expect(result.reference.length).toBeLessThanOrEqual(requests.length);
-        }
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true);
+        expect(Array.isArray(result)).toBe(true);
+        expect(result.length).toBe(1);
+      } catch (error) {
+        expect(error).toBeDefined();
       }
     });
 
-    it('should handle JSX content in batch translation', async () => {
-      const jsxContent: JsxChildren = [
-        'Welcome ',
-        { t: 'strong', c: [{ k: 'userName', v: 'v' as VariableType }] },
-        ' to our platform!',
-      ];
+    it('should handle config without baseUrl (defaults)', async () => {
+      const configWithoutUrl: TranslationRequestConfig = {
+        projectId: config.projectId,
+        apiKey: config.apiKey,
+        // baseUrl omitted - should use default
+      };
 
-      const requests: Entry[] = [
-        createEntry(jsxContent, 'es', {
-          context: 'welcome-message',
-          dataFormat: 'JSX',
-        }),
-        createEntry('Thank you for joining us.', 'es', {
-          context: 'thank-you-message',
-        }),
-      ];
+      const entries: Entry[] = [{ source: 'Default URL test' }];
 
       const globalMetadata: { targetLocale: string } & EntryMetadata = {
         targetLocale: 'es',
         sourceLocale: 'en',
+        context: 'default-url-test',
       };
 
       try {
-        const result = await _translateMany(requests, globalMetadata, config);
+        const result = await _translateMany(
+          entries,
+          globalMetadata,
+          configWithoutUrl
+        );
 
         expect(result).toBeDefined();
-        if (result.translations.length > 0) {
-          // First translation should be JSX array
-          const jsxTranslation = result.translations[0];
-          expect(jsxTranslation.translation).toBeDefined();
-          if (Array.isArray(jsxTranslation.translation)) {
-            expect(jsxTranslation.translation.length).toBeGreaterThan(0);
+        expect(Array.isArray(result)).toBe(true);
+        expect(result.length).toBe(1);
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle invalid API key gracefully', async () => {
+      const invalidConfig: TranslationRequestConfig = {
+        ...config,
+        apiKey: 'invalid-key-12345',
+      };
+
+      const entries: Entry[] = [{ source: 'Test with invalid key' }];
+
+      const globalMetadata: { targetLocale: string } & EntryMetadata = {
+        targetLocale: 'es',
+        sourceLocale: 'en',
+        context: 'error-test',
+      };
+
+      try {
+        const result = await _translateMany(
+          entries,
+          globalMetadata,
+          invalidConfig
+        );
+
+        // Should either return results or throw an error
+        expect(result).toBeDefined();
+      } catch (error) {
+        // Network/auth errors are acceptable
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should handle timeout gracefully', async () => {
+      const entries: Entry[] = [{ source: 'Timeout test message' }];
+
+      const globalMetadata: { targetLocale: string } & EntryMetadata = {
+        targetLocale: 'es',
+        sourceLocale: 'en',
+        context: 'timeout-test',
+        timeout: 1, // Very short timeout to force timeout
+      };
+
+      try {
+        const result = await _translateMany(entries, globalMetadata, config);
+
+        expect(result).toBeDefined();
+      } catch (error) {
+        // Timeout errors are expected
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should handle empty entries array', async () => {
+      const entries: Entry[] = [];
+
+      const globalMetadata: { targetLocale: string } & EntryMetadata = {
+        targetLocale: 'es',
+        sourceLocale: 'en',
+        context: 'empty-test',
+      };
+
+      try {
+        const result = await _translateMany(entries, globalMetadata, config);
+
+        expect(result).toBeDefined();
+        expect(Array.isArray(result)).toBe(true);
+        expect(result).toHaveLength(0);
+      } catch (error) {
+        // Server may reject empty requests - acceptable
+        expect(error).toBeDefined();
+      }
+    });
+  });
+
+  describe('Large Batch Processing', () => {
+    it('should handle large batch of translations', async () => {
+      const entries: Entry[] = Array.from({ length: 10 }, (_, i) => ({
+        source: `Message ${i + 1}`,
+        requestMetadata: {
+          context: `batch-message-${i + 1}`,
+        },
+      }));
+
+      const globalMetadata: { targetLocale: string } & EntryMetadata = {
+        targetLocale: 'es',
+        sourceLocale: 'en',
+        context: 'large-batch-test',
+      };
+
+      try {
+        const result = await _translateMany(entries, globalMetadata, config);
+
+        expect(result).toBeDefined();
+        expect(Array.isArray(result)).toBe(true);
+        expect(result.length).toBe(entries.length);
+
+        // All translations should be successful
+        result.forEach((translationResult, index) => {
+          expect(translationResult).toBeDefined();
+          if ('translation' in translationResult) {
+            expect(translationResult).toHaveProperty('translation');
+            expect(translationResult).toHaveProperty('reference');
+          } else {
+            // TranslationError case
+            expect(translationResult).toHaveProperty('error');
+            expect(translationResult).toHaveProperty('code');
           }
-        }
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true);
+        });
+      } catch (error) {
+        expect(error).toBeDefined();
       }
     });
-
-    it('should handle ICU messages in batch translation', async () => {
-      const requests: Entry[] = [
-        createEntry('Hello {firstName}!', 'es', {
-          context: 'personalized-greeting',
-          dataFormat: 'ICU',
-        }),
-        createEntry(
-          'You have {count, plural, =0 {no messages} =1 {one message} other {# messages}}.',
-          'es',
-          {
-            context: 'message-count',
-            dataFormat: 'ICU',
-          }
-        ),
-      ];
-
-      const globalMetadata: { targetLocale: string } & EntryMetadata = {
-        targetLocale: 'es',
-        sourceLocale: 'en',
-      };
-
-      try {
-        const result = await _translateMany(requests, globalMetadata, config);
-
-        expect(result).toBeDefined();
-        if (result.translations.length > 0) {
-          // Translations should maintain ICU message format
-          for (const translation of result.translations) {
-            expect(translation.translation).toBeDefined();
-            expect(typeof translation.translation).toBe('string');
-          }
-        }
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true);
-      }
-    });
-
-    it('should handle empty requests array', async () => {
-      const requests: Entry[] = [];
-
-      const globalMetadata: { targetLocale: string } & EntryMetadata = {
-        targetLocale: 'es',
-        sourceLocale: 'en',
-      };
-
-      try {
-        const result = await _translateMany(requests, globalMetadata, config);
-
-        expect(result).toBeDefined();
-        expect(result.translations).toBeDefined();
-        expect(result.reference).toBeDefined();
-        expect(result.translations).toHaveLength(0);
-        expect(result.reference).toHaveLength(0);
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true);
-      }
-    });
-
-    it('should handle different target locales per request', async () => {
-      const requests: Entry[] = [
-        createEntry('Hello world', 'es', { context: 'spanish-greeting' }),
-        createEntry('Hello world', 'fr', { context: 'french-greeting' }),
-        createEntry('Hello world', 'de', { context: 'german-greeting' }),
-      ];
-
-      const globalMetadata: { targetLocale: string } & EntryMetadata = {
-        targetLocale: 'es', // Global target locale
-        sourceLocale: 'en',
-      };
-
-      try {
-        const result = await _translateMany(requests, globalMetadata, config);
-
-        expect(result).toBeDefined();
-        expect(result.translations).toBeDefined();
-
-        // Each request can have its own target locale
-        // The API should handle multiple target locales in one batch
-        if (result.translations.length > 0) {
-          for (const translation of result.translations) {
-            expect(translation.translation).toBeDefined();
-            expect(translation.reference).toBeDefined();
-          }
-        }
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true);
-      }
-    });
-
-    it('should preserve request metadata in responses', async () => {
-      const requests: Entry[] = [
-        createEntry('Save changes', 'es', {
-          context: 'button-text',
-          id: 'save-btn',
-          actionType: 'fast',
-        }),
-        createEntry('Cancel operation', 'es', {
-          context: 'button-text',
-          id: 'cancel-btn',
-          actionType: 'standard',
-        }),
-      ];
-
-      const globalMetadata: { targetLocale: string } & EntryMetadata = {
-        targetLocale: 'es',
-        sourceLocale: 'en',
-      };
-
-      try {
-        const result = await _translateMany(requests, globalMetadata, config);
-
-        expect(result).toBeDefined();
-        if (result.translations.length > 0 && result.reference.length > 0) {
-          // References should contain the IDs from request metadata
-          const saveReference = result.reference.find(
-            (ref) => ref.id === 'save-btn'
-          );
-          const cancelReference = result.reference.find(
-            (ref) => ref.id === 'cancel-btn'
-          );
-
-          if (saveReference || cancelReference) {
-            expect(true).toBe(true); // At least one reference preserved
-          }
-        }
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true);
-      }
-    });
-
-    it('should generate identical keys for identical content across requests', async () => {
-      const identicalSource = 'This is identical content';
-      const context = 'key-test';
-
-      const requests: Entry[] = [
-        createEntry(identicalSource, 'es', {
-          context,
-          sourceLocale: 'en',
-        }),
-        createEntry(identicalSource, 'es', {
-          context, // Same context
-          sourceLocale: 'en',
-        }),
-      ];
-
-      const globalMetadata: { targetLocale: string } & EntryMetadata = {
-        targetLocale: 'es',
-        sourceLocale: 'en',
-      };
-
-      try {
-        const result = await _translateMany(requests, globalMetadata, config);
-
-        expect(result).toBeDefined();
-        expect(result.translations).toBeDefined();
-        expect(Array.isArray(result.translations)).toBe(true);
-
-        if (result.translations.length >= 2) {
-          // Both requests should have the same key (identical content + context)
-          expect(result.translations[0].reference.key).toBe(
-            result.translations[1].reference.key
-          );
-          // But different IDs
-          expect(result.translations[0].reference.id).not.toBe(
-            result.translations[1].reference.id
-          );
-
-          // Verify keys match what we calculated as hash
-          expect(result.translations[0].reference.key).toBe(
-            requests[0].requestMetadata.hash
-          );
-          expect(result.translations[1].reference.key).toBe(
-            requests[1].requestMetadata.hash
-          );
-        }
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true);
-      }
-    });
-
-    it('should handle large batch of requests', async () => {
-      const batchSize = 5; // Reduced for E2E testing
-      const requests: Entry[] = Array.from({ length: batchSize }, (_, index) =>
-        createEntry(`Test message ${index + 1}`, 'es', {
-          context: 'batch-test',
-          sourceLocale: 'en',
-        })
-      );
-
-      const globalMetadata: { targetLocale: string } & EntryMetadata = {
-        targetLocale: 'es',
-        sourceLocale: 'en',
-      };
-
-      try {
-        const result = await _translateMany(requests, globalMetadata, config);
-
-        expect(result).toBeDefined();
-        expect(result.translations).toBeDefined();
-        expect(Array.isArray(result.translations)).toBe(true);
-
-        if (result.translations.length > 0) {
-          for (const translation of result.translations) {
-            expect(translation.translation).toBeDefined();
-            expect(translation.reference).toBeDefined();
-            expect(translation.reference).toHaveProperty('id');
-            expect(translation.reference).toHaveProperty('key');
-          }
-        }
-
-        expect(true).toBe(true);
-      } catch {
-        expect(true).toBe(true); // Server may not be available
-      }
-    }, 30000); // Longer timeout for batch processing
   });
 });

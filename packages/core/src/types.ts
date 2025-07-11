@@ -38,12 +38,11 @@ export {
 };
 
 export type {
-  FileTranslationCheck,
+  FileTranslationQuery,
   CheckFileTranslationsOptions,
   CheckFileTranslationsResult,
 } from './types-dir/checkFileTranslations';
 export type {
-  BatchDownloadFile,
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
 } from './types-dir/downloadFileBatch';
@@ -166,8 +165,8 @@ export type JsxTranslationResult = {
 };
 
 export type TranslationError = {
-  error: string;
-  code: number;
+  error?: string;
+  code?: number;
   reference?: {
     id: string;
     key: string;
@@ -204,10 +203,7 @@ export type TranslationResult = {
 /**
  * BatchTranslationResult is the result of a batch translation request.
  */
-export type TranslateManyResult = {
-  translations: TranslationResult[];
-  reference: TranslationResultReference[];
-};
+export type TranslateManyResult = Array<TranslationResult | TranslationError>;
 
 /**
  * TranslationResultReference is used to store the reference for a translation result.

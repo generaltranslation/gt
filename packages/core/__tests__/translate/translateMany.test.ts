@@ -19,34 +19,38 @@ describe.sequential('_translateMany', () => {
     apiKey: 'test-api-key',
   };
 
-  const mockTranslateManyResult: TranslateManyResult = {
-    translations: [
-      {
-        translation: 'Hola mundo',
-        reference: {
-          id: 'test-id-1',
-          key: 'test-key-1',
-        },
-      },
-      {
-        translation: 'Adiós mundo',
-        reference: {
-          id: 'test-id-2',
-          key: 'test-key-2',
-        },
-      },
-    ],
-    reference: [
-      {
+  const mockTranslateManyResult: TranslateManyResult = [
+    {
+      translation: 'Hola mundo',
+      reference: {
         id: 'test-id-1',
         key: 'test-key-1',
       },
-      {
+    },
+    {
+      translation: 'Adiós mundo',
+      reference: {
         id: 'test-id-2',
         key: 'test-key-2',
       },
-    ],
-  };
+    },
+    {
+      error: 'Error',
+      code: 500,
+      reference: {
+        id: 'test-id-1',
+        key: 'test-key-1',
+      },
+    },
+    {
+      error: 'Error',
+      code: 500,
+      reference: {
+        id: 'test-id-2',
+        key: 'test-key-2',
+      },
+    },
+  ];
 
   beforeEach(() => {
     vi.clearAllMocks();
