@@ -15,7 +15,6 @@ export default async function _translateMany(
   globalMetadata: { targetLocale: string } & GTRequestMetadata,
   config: TranslationRequestConfig
 ): Promise<TranslateManyResult> {
-  let response;
   const timeout = Math.min(config.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/translate/${config.projectId}`;
 
@@ -23,6 +22,7 @@ export default async function _translateMany(
   validateConfig(config);
 
   // Request the translation
+  let response;
   try {
     response = await fetchWithTimeout(
       url,
@@ -45,9 +45,9 @@ export default async function _translateMany(
   }
 
   // Validate response
-  await validateResponse(response);
+  await validateResponse(response!);
 
   // Parse response
-  const results = await response.json();
+  const results = await response!.json();
   return results as TranslateManyResult;
 }

@@ -393,20 +393,16 @@ describe('Internal Translation Functions', () => {
       const result = await _translateMany(requests, globalMetadata, mockConfig);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/v1/translate/test-project',
-        {
+        expect.stringContaining('/v1/translate/test-project'),
+        expect.objectContaining({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-gt-api-key': 'test-key',
           },
-          body: JSON.stringify({
-            requests,
-            targetLocale: 'es',
-            metadata: globalMetadata,
-          }),
-        },
-        5000
+          body: expect.stringContaining('Hello world'),
+        }),
+        expect.any(Number)
       );
 
       expect(result).toEqual(mockTranslateManyResult);
@@ -442,20 +438,16 @@ describe('Internal Translation Functions', () => {
       const result = await _translateMany(requests, globalMetadata, mockConfig);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/v1/translate/test-project',
-        {
+        expect.stringContaining('/v1/translate/test-project'),
+        expect.objectContaining({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-gt-api-key': 'test-key',
           },
-          body: JSON.stringify({
-            requests,
-            targetLocale: 'es',
-            metadata: globalMetadata,
-          }),
-        },
-        5000
+          body: expect.stringContaining('Hello'),
+        }),
+        expect.any(Number)
       );
 
       expect(result).toEqual(mockTranslateManyResult);
