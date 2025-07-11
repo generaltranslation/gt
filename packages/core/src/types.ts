@@ -1,6 +1,6 @@
 import { LocaleProperties } from './locales/getLocaleProperties';
 
-import { Variable, VariableType } from './_types/variables';
+import { Variable, VariableType } from './types/variables';
 
 import {
   IcuMessage,
@@ -14,8 +14,8 @@ import {
   HTML_CONTENT_PROPS,
   DataFormat,
   Content,
-} from './_types/content';
-import { ActionType, EntryMetadata, Entry } from './_types/entry';
+} from './types/content';
+import { ActionType, EntryMetadata, Entry } from './types/entry';
 
 export {
   IcuMessage,
@@ -162,13 +162,11 @@ export type { CustomMapping } from './locales/customLocaleMapping';
  * @param projectId - The project id of the translation request.
  * @param baseUrl - The base url of the translation request.
  * @param apiKey - The api key of the translation request.
- * @param timeout - Time in ms to wait for the translation to complete.
  */
 export type TranslationRequestConfig = {
   projectId: string;
   baseUrl?: string;
   apiKey?: string;
-  timeout?: number;
 };
 
 /**

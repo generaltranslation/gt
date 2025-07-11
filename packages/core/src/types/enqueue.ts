@@ -58,6 +58,7 @@ export type EnqueueFilesOptions = {
   publish: boolean;
   _versionId: string;
   description: string;
+  timeout?: number;
 };
 
 export type EnqueueFilesResult = {

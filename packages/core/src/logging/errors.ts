@@ -3,8 +3,6 @@ const GT_ERROR_PREFIX = 'GT error:';
 export const translationTimeoutError = (timeout: number) =>
   `${GT_ERROR_PREFIX} Translation request timed out after ${timeout}ms. This has either occured due to the translation of an unusually large request or a translation failure in the API.`;
 
-export const translationMissingAuthError = `${GT_ERROR_PREFIX} Project ID and API key or dev API key are required. Please provide a valid project ID and API key or dev API key.`;
-
 export const translationRequestFailedError = (error: string) =>
   `${GT_ERROR_PREFIX} Translation request failed. Error: ${error}`;
 

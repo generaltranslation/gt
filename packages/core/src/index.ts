@@ -31,7 +31,7 @@ export type {
   FileToTranslate,
   EnqueueFilesOptions,
   EnqueueFilesResult,
-} from './_types/enqueue';
+} from './types/enqueue';
 export type {
   FileTranslationCheck,
   CheckFileTranslationsOptions,
@@ -50,7 +50,7 @@ export type {
   FetchTranslationsOptions,
   FetchTranslationsResult,
 } from './translate/fetchTranslations';
-export type { File } from './_types/file';
+export type { File } from './types/file';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
   LocaleProperties,
@@ -70,7 +70,7 @@ import {
   noProjectIdProvidedError,
 } from './logging/errors';
 import _translate from './translate/translate';
-import { Entry, EntryMetadata } from './_types/entry';
+import { Entry, EntryMetadata } from './types/entry';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
 import _enqueueFiles from './translate/enqueueFiles';
@@ -90,7 +90,7 @@ import _downloadFileBatch, {
   DownloadFileBatchResult,
 } from './translate/downloadFileBatch';
 import _fetchTranslations from './translate/fetchTranslations';
-import { File } from './_types/file';
+import { File } from './types/file';
 import {
   EnqueueEntriesOptions,
   EnqueueEntriesResult,
@@ -98,7 +98,7 @@ import {
   EnqueueFilesResult,
   FileToTranslate,
   Updates,
-} from './_types/enqueue';
+} from './types/enqueue';
 
 // ============================================================ //
 //                        Core Class                            //

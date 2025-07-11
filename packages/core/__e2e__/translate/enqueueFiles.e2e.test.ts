@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { TranslationRequestConfig } from '../../src/types';
-import _enqueueFiles, {
+import _enqueueFiles from '../../src/translate/enqueueFiles';
+import {
   FileToTranslate,
   EnqueueFilesOptions,
-} from '../../src/translate/enqueueFiles';
+} from '../../src/types/enqueue';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
 describe('Enqueue Files E2E Tests', () => {

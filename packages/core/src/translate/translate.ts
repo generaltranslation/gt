@@ -7,18 +7,23 @@ import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { maxTimeout } from 'src/settings/settings';
 
-import { Content } from '../_types/content';
-import { EntryMetadata } from '../_types/entry';
-import validateConfig from './utils/validateConfig';
+import { Content } from '../types/content';
+import { EntryMetadata } from '../types/entry';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
  * @internal
- **/
-
-// Implementation
+ *
+ * Translates a single entry in a single API request.
+ *
+ * @param source - The source content to translate.
+ * @param targetLocale - The target locale to translate to.
+ * @param metadata - The metadata for the translation.
+ * @param config - The configuration for the translation.
+ * @returns The result of the translation.
+ */
 export default async function _translate(
   source: Content,
   targetLocale: string,
@@ -26,11 +31,8 @@ export default async function _translate(
   config: TranslationRequestConfig
 ): Promise<TranslationResult | TranslationError> {
   let response;
-  const timeout = Math.min(config.timeout || maxTimeout, maxTimeout);
+  const timeout = Math.min(metadata.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/translate/${config.projectId}`;
-
-  // Validation
-  validateConfig(config);
 
   // Request the translation
   try {
@@ -56,8 +58,5 @@ export default async function _translate(
 
   // Parse the response
   const results = (await response!.json()) as unknown[];
-  const result = results[0] as TranslationResult | TranslationError;
-
-  // Return the result
-  return result;
+  return results[0] as TranslationResult | TranslationError;
 }

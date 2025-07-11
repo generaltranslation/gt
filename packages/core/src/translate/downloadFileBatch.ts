@@ -8,8 +8,7 @@ import {
   BatchDownloadFile,
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
-} from '../_types/downloadFileBatch';
-import validateConfig from './utils/validateConfig';
+} from '../types/downloadFileBatch';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
@@ -26,14 +25,8 @@ export default async function _downloadFileBatch(
   config: TranslationRequestConfig
 ): Promise<DownloadFileBatchResult> {
   const { projectId, baseUrl } = config;
-  const timeout = Math.min(
-    config.timeout || options.timeout || maxTimeout,
-    maxTimeout
-  );
+  const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${baseUrl || defaultRuntimeApiUrl}/v1/project/translations/files/batch-download`;
-
-  // Validation
-  validateConfig(config);
 
   // Build request body
   const body = {

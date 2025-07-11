@@ -8,7 +8,7 @@ import {
   FetchTranslationsOptions,
   FetchTranslationsResult,
   RetrievedTranslations,
-} from '../_types/fetchTranslations';
+} from '../types/fetchTranslations';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
@@ -25,10 +25,7 @@ export default async function _fetchTranslations(
   config: TranslationRequestConfig
 ): Promise<FetchTranslationsResult> {
   const { projectId, apiKey, baseUrl } = options;
-  const timeout = Math.min(
-    config.timeout || options.timeout || maxTimeout,
-    maxTimeout
-  );
+  const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${baseUrl || config.baseUrl || defaultRuntimeApiUrl}/v1/project/translations/info/${versionId}`;
 
   // Validation - basic config validation
@@ -58,36 +55,9 @@ export default async function _fetchTranslations(
   }
 
   // Validate response
-  await validateResponse(response!);
+  await validateResponse(response);
 
   // Parse response
-  const result = (await response!.json()) as {
-    translations: RetrievedTranslations;
-    versionId: string;
-    projectId: string;
-    metadata?: {
-      localeCount?: number;
-      totalEntries?: number;
-    };
-  };
-
-  // Calculate summary statistics
-  const localeCount = result.translations.length;
-  const totalEntries = result.translations.reduce((total, translation) => {
-    if (
-      typeof translation.translation === 'object' &&
-      translation.translation !== null
-    ) {
-      return total + Object.keys(translation.translation).length;
-    }
-    return total + 1;
-  }, 0);
-
-  return {
-    translations: result.translations,
-    versionId: result.versionId,
-    projectId: result.projectId,
-    localeCount,
-    totalEntries,
-  };
+  const result = await response.json();
+  return result as FetchTranslationsResult;
 }

@@ -9,15 +9,15 @@ import {
   CheckFileTranslationsOptions,
   CheckFileTranslationsResult,
   FileTranslationStatus,
-} from '../_types/checkFileTranslations';
+} from '../types/checkFileTranslations';
+import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
  * @internal
- * Lightweight version of checkFileTranslations that abstracts out only the API fetch request.
  * Checks the translation status of files without downloading them.
  * @param data - Object mapping source paths to file information
  * @param options - The options for the API call
- * @param config - The configuration for the request
+ * @param config - The configuration for the API call
  * @returns The file translation status information
  */
 export default async function _checkFileTranslations(
@@ -25,23 +25,9 @@ export default async function _checkFileTranslations(
   options: CheckFileTranslationsOptions,
   config: TranslationRequestConfig
 ): Promise<CheckFileTranslationsResult> {
-  const { projectId, apiKey, baseUrl, locales } = options;
-  const timeout = Math.min(
-    config.timeout || options.timeout || maxTimeout,
-    maxTimeout
-  );
+  const { projectId, baseUrl, locales } = options;
+  const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${baseUrl || config.baseUrl || defaultRuntimeApiUrl}/v1/project/translations/files/retrieve`;
-
-  // Validation - basic config validation
-  if (!projectId) {
-    throw new Error('Project ID is required');
-  }
-  if (!config.apiKey && !apiKey) {
-    throw new Error('API key is required');
-  }
-  if (!locales || locales.length === 0) {
-    throw new Error('Target locales are required');
-  }
 
   // Build request body
   const body = {
@@ -57,12 +43,7 @@ export default async function _checkFileTranslations(
       url,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...((apiKey || config.apiKey) && {
-            'x-gt-api-key': apiKey || config.apiKey,
-          }),
-        },
+        headers: generateRequestHeaders(config),
         body: JSON.stringify(body),
       },
       timeout

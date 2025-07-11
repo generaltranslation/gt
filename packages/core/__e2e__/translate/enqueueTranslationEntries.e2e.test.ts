@@ -5,7 +5,7 @@ import _enqueueEntries from '../../src/translate/enqueueEntries';
 import {
   Updates,
   EnqueueEntriesOptions,
-} from '../../src/_types/enqueue';
+} from '../../src/types/enqueue';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
 describe('Enqueue Translation Entries E2E Tests', () => {

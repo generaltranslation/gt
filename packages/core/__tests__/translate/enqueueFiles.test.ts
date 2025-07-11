@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _enqueueFiles, {
+import _enqueueFiles from '../../src/translate/enqueueFiles';
+import {
   FileToTranslate,
   EnqueueFilesOptions,
   EnqueueFilesResult,
-} from '../../src/translate/enqueueFiles';
+} from '../../src/types/enqueue';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
 import { TranslationRequestConfig } from '../../src/types';
 
@@ -99,7 +100,6 @@ describe('_enqueueFiles function', () => {
     ];
 
     const options: EnqueueFilesOptions = {
-      projectId: 'test-project',
       targetLocales: ['es', 'fr'],
       sourceLocale: 'en',
       publish: false,
@@ -142,7 +142,6 @@ describe('_enqueueFiles function', () => {
     };
 
     const options: EnqueueFilesOptions = {
-      projectId: 'test-project',
       targetLocales: ['es'],
       sourceLocale: 'en',
       publish: false,
@@ -173,7 +172,6 @@ This is a test markdown file with content.
     };
 
     const options: EnqueueFilesOptions = {
-      projectId: 'test-project',
       targetLocales: ['fr'],
       sourceLocale: 'en',
       publish: false,
@@ -215,7 +213,6 @@ This is a test markdown file with content.
     ];
 
     const options: EnqueueFilesOptions = {
-      projectId: 'test-project',
       targetLocales: ['es', 'fr', 'de'],
       sourceLocale: 'en',
       publish: false,
@@ -244,7 +241,6 @@ This is a test markdown file with content.
     };
 
     const options: EnqueueFilesOptions = {
-      projectId: 'test-project',
       targetLocales: ['es'],
       sourceLocale: 'en',
       publish: true,
@@ -284,7 +280,6 @@ This is a test markdown file with content.
     };
 
     const options: EnqueueFilesOptions = {
-      projectId: 'test-project',
       targetLocales: ['es'],
       sourceLocale: 'en',
       publish: false,
@@ -314,7 +309,6 @@ This is a test markdown file with content.
     mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
 
     const configWithTimeout: TranslationRequestConfig = {
-      projectId: 'test-project',
       apiKey: 'test-key',
       timeout: 10000,
     };
@@ -327,7 +321,6 @@ This is a test markdown file with content.
     };
 
     const options: EnqueueFilesOptions = {
-      projectId: 'test-project',
       targetLocales: ['es'],
       sourceLocale: 'en',
       publish: false,
@@ -354,7 +347,6 @@ This is a test markdown file with content.
     const emptyFiles: FileToTranslate[] = [];
 
     const options: EnqueueFilesOptions = {
-      projectId: 'test-project',
       targetLocales: ['es'],
       sourceLocale: 'en',
       publish: false,
@@ -420,7 +412,6 @@ This is a test markdown file with content.
     ];
 
     const options: EnqueueFilesOptions = {
-      projectId: 'test-project',
       targetLocales: ['es', 'fr'],
       sourceLocale: 'en',
       publish: false,
@@ -444,7 +435,6 @@ This is a test markdown file with content.
     };
 
     const options: EnqueueFilesOptions = {
-      projectId: 'test-project',
       targetLocales: ['es'],
       sourceLocale: 'en',
       publish: false,
@@ -468,7 +458,6 @@ This is a test markdown file with content.
     };
 
     const options: EnqueueFilesOptions = {
-      projectId: 'test-project',
       targetLocales: ['es'],
       sourceLocale: 'en',
       publish: false,
@@ -494,7 +483,6 @@ This is a test markdown file with content.
     };
 
     const options: EnqueueFilesOptions = {
-      projectId: 'test-project',
       targetLocales: ['es'],
       // sourceLocale is optional
       publish: false,

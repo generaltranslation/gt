@@ -130,7 +130,7 @@ describe('_enqueueEntries function', () => {
     ];
 
     const options: EnqueueEntriesOptions = {
-      targetLocales: ['es'],
+      locales: ['es'],
       sourceLocale: 'en',
       dataFormat: 'JSX',
     };
@@ -243,7 +243,7 @@ describe('_enqueueEntries function', () => {
     ];
 
     const options: EnqueueEntriesOptions = {
-      targetLocales: ['es'],
+      locales: ['es'],
       sourceLocale: 'en',
       version: 'custom-version-123',
       description: 'Custom version test',
@@ -299,7 +299,7 @@ describe('_enqueueEntries function', () => {
     ];
 
     const options: EnqueueEntriesOptions = {
-      targetLocales: ['es'],
+      locales: ['es'],
     };
 
     await _enqueueEntries(
@@ -327,7 +327,7 @@ describe('_enqueueEntries function', () => {
     const emptyUpdates: Updates = [];
 
     const options: EnqueueEntriesOptions = {
-      targetLocales: ['es'],
+      locales: ['es'],
       sourceLocale: 'en',
     };
 
@@ -365,7 +365,7 @@ describe('_enqueueEntries function', () => {
     ];
 
     const options: EnqueueEntriesOptions = {
-      targetLocales: ['es'],
+      locales: ['es'],
     };
 
     const configWithoutProjectId: TranslationRequestConfig = {
@@ -388,7 +388,7 @@ describe('_enqueueEntries function', () => {
     ];
 
     const options: EnqueueEntriesOptions = {
-      targetLocales: ['es'],
+      locales: ['es'],
     };
 
     const configWithoutApiKey: TranslationRequestConfig = {
@@ -418,7 +418,7 @@ describe('_enqueueEntries function', () => {
     ];
 
     const options: EnqueueEntriesOptions = {
-      targetLocales: ['es'],
+      locales: ['es'],
     };
 
     await expect(
@@ -440,7 +440,7 @@ describe('_enqueueEntries function', () => {
     ];
 
     const options: EnqueueEntriesOptions = {
-      targetLocales: ['es'],
+      locales: ['es'],
     };
 
     await expect(
