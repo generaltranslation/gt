@@ -34,6 +34,24 @@ export type {
   EnqueueFilesOptions,
   EnqueueFilesResult,
 } from './translate/enqueueFiles';
+export type {
+  FileTranslationCheck,
+  CheckFileTranslationsOptions,
+  CheckFileTranslationsResult,
+} from './translate/checkFileTranslations';
+export type {
+  DownloadFileOptions,
+  DownloadFileResult,
+} from './translate/downloadFile';
+export type {
+  BatchDownloadFile,
+  DownloadFileBatchOptions,
+  DownloadFileBatchResult,
+} from './translate/downloadFileBatch';
+export type {
+  FetchTranslationsOptions,
+  FetchTranslationsResult,
+} from './translate/fetchTranslations';
 export type { File } from './types/File';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
@@ -67,6 +85,24 @@ import _enqueueTranslationEntries, {
   ApiOptions,
   EnqueueTranslationEntriesResult,
 } from './translate/enqueueTranslationEntries';
+import _checkFileTranslations, {
+  FileTranslationCheck,
+  CheckFileTranslationsOptions,
+  CheckFileTranslationsResult,
+} from './translate/checkFileTranslations';
+import _downloadFile, {
+  DownloadFileOptions,
+  DownloadFileResult,
+} from './translate/downloadFile';
+import _downloadFileBatch, {
+  BatchDownloadFile,
+  DownloadFileBatchOptions,
+  DownloadFileBatchResult,
+} from './translate/downloadFileBatch';
+import _fetchTranslations, {
+  FetchTranslationsOptions,
+  FetchTranslationsResult,
+} from './translate/fetchTranslations';
 import { File } from './types/File';
 
 // ============================================================ //
@@ -288,6 +324,134 @@ export class GT {
     // Request the file updates
     return await _enqueueFiles(
       files,
+      mergedOptions,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Checks the translation status of files.
+   *
+   * @param {Object} data - Object mapping source paths to file information.
+   * @param {CheckFileTranslationsOptions} options - Options for checking file translations.
+   * @returns {Promise<CheckFileTranslationsResult>} The file translation status information.
+   */
+  async checkFileTranslations(
+    data: { [key: string]: FileTranslationCheck },
+    options: CheckFileTranslationsOptions = {}
+  ): Promise<CheckFileTranslationsResult> {
+    // Validation
+    if (!this.projectId) {
+      gtInstanceLogger.error(noProjectIdProvidedError('checkFileTranslations'));
+      throw new Error(noProjectIdProvidedError('checkFileTranslations'));
+    }
+
+    // Merge instance settings with options
+    const mergedOptions: CheckFileTranslationsOptions = {
+      baseUrl: this.baseUrl,
+      apiKey: this.apiKey || this.devApiKey,
+      ...options,
+      projectId: this.projectId,
+    };
+
+    return await _checkFileTranslations(
+      data,
+      mergedOptions,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Downloads a single translation file.
+   *
+   * @param {string} translationId - The ID of the translation to download.
+   * @param {DownloadFileOptions} options - Options for downloading the file.
+   * @returns {Promise<DownloadFileResult>} The downloaded file content and metadata.
+   */
+  async downloadFile(
+    translationId: string,
+    options: DownloadFileOptions = {}
+  ): Promise<DownloadFileResult> {
+    // Validation
+    if (!this.projectId) {
+      gtInstanceLogger.error(noProjectIdProvidedError('downloadFile'));
+      throw new Error(noProjectIdProvidedError('downloadFile'));
+    }
+
+    // Merge instance settings with options
+    const mergedOptions: DownloadFileOptions = {
+      baseUrl: this.baseUrl,
+      apiKey: this.apiKey || this.devApiKey,
+      ...options,
+      projectId: this.projectId,
+    };
+
+    return await _downloadFile(
+      translationId,
+      mergedOptions,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Downloads multiple translation files in a batch.
+   *
+   * @param {BatchDownloadFile[]} files - Array of files to download.
+   * @param {DownloadFileBatchOptions} options - Options for the batch download.
+   * @returns {Promise<DownloadFileBatchResult>} The batch download results.
+   */
+  async downloadFileBatch(
+    files: BatchDownloadFile[],
+    options: DownloadFileBatchOptions = {}
+  ): Promise<DownloadFileBatchResult> {
+    // Validation
+    if (!this.projectId) {
+      gtInstanceLogger.error(noProjectIdProvidedError('downloadFileBatch'));
+      throw new Error(noProjectIdProvidedError('downloadFileBatch'));
+    }
+
+    // Merge instance settings with options
+    const mergedOptions: DownloadFileBatchOptions = {
+      baseUrl: this.baseUrl,
+      apiKey: this.apiKey || this.devApiKey,
+      ...options,
+      projectId: this.projectId,
+    };
+
+    return await _downloadFileBatch(
+      files,
+      mergedOptions,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Fetches translation metadata and information.
+   *
+   * @param {string} versionId - The version ID to fetch translations for.
+   * @param {FetchTranslationsOptions} options - Options for fetching translations.
+   * @returns {Promise<FetchTranslationsResult>} The translation metadata and information.
+   */
+  async fetchTranslations(
+    versionId: string,
+    options: FetchTranslationsOptions = {}
+  ): Promise<FetchTranslationsResult> {
+    // Validation
+    if (!this.projectId) {
+      gtInstanceLogger.error(noProjectIdProvidedError('fetchTranslations'));
+      throw new Error(noProjectIdProvidedError('fetchTranslations'));
+    }
+
+    // Merge instance settings with options
+    const mergedOptions: FetchTranslationsOptions = {
+      baseUrl: this.baseUrl,
+      apiKey: this.apiKey || this.devApiKey,
+      ...options,
+      projectId: this.projectId,
+    };
+
+    return await _fetchTranslations(
+      versionId,
       mergedOptions,
       this._getTranslationConfig()
     );
