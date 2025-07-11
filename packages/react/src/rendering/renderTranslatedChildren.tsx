@@ -82,7 +82,7 @@ function renderTranslatedElement({
 
   // fragment (create a valid fragment)
   if (transformation === 'fragment' && targetElement.c) {
-    return React.createElement(sourceElement.type, {
+    return React.createElement(React.Fragment, {
       key: sourceElement.props.key,
       children: renderTranslatedChildren({
         source: sourceProps.children,

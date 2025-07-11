@@ -24,12 +24,6 @@ export const createClientSideTHydrationError = (id: string) =>
   `<T id="${id}"> is used in a client component without a valid saved translation. This can cause hydration errors.` +
   `\n\nTo fix this error, consider using a dictionary with useGT() or pushing translations from the command line in advance.`;
 
-export const createNestedDataGTError = (child: any) =>
-  `General Translation already in use on child with props: ${child.props}. This usually occurs when you nest <T> components within the same file. Remove one of the <T> components to continue.`;
-
-export const createNestedTError = (child: any) =>
-  `General Translation: Nested <T> components. The inner <T> has the id: "${child?.props?.id}".`;
-
 export const renderingError = 'General Translation: Rendering error.';
 
 export const dynamicTranslationError = 'Error fetching batched translations:';

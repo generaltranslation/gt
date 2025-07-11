@@ -270,6 +270,11 @@ export class ReactCLI extends BaseCLI {
         false
       )
       .option(
+        '--suppress-warnings',
+        'Suppress warnings encountered while scanning for <T> tags',
+        false
+      )
+      .option(
         '-t, --translations-dir, --translation-dir <path>',
         'Path to directory where translations will be saved. If this flag is not provided, translations will not be saved locally.'
       )
@@ -329,12 +334,34 @@ export class ReactCLI extends BaseCLI {
 
     // User has to provide a dictionary file
     // will not read from settings.files.resolvedPaths.json
-    const { updates, errors } = await createUpdates(
+    const { updates, errors, warnings } = await createUpdates(
       options,
       options.dictionary,
       this.library === 'gt-next' ? 'gt-next' : 'gt-react',
       false
     );
+
+    if (warnings.length > 0) {
+      if (options.suppressWarnings) {
+        logWarning(
+          chalk.yellow(
+            `CLI tool encountered ${warnings.length} warnings while scanning for translatable content. ${chalk.gray('To view these warnings, re-run without the --suppress-warnings flag')}`
+          )
+        );
+      } else {
+        logWarning(
+          chalk.yellow(
+            `CLI tool encountered ${warnings.length} warnings while scanning for translatable content. ${chalk.gray('To suppress these warnings, re-run with --suppress-warnings')}\n` +
+              warnings
+                .map(
+                  (warning) =>
+                    chalk.yellow('• Warning: ') + chalk.white(warning)
+                )
+                .join('\n')
+          )
+        );
+      }
+    }
 
     if (errors.length > 0) {
       if (options.ignoreErrors) {

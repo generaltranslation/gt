@@ -45,12 +45,33 @@ export async function stageProject(
   settings.timeout = timeout.toString();
 
   // ---- CREATING UPDATES ---- //
-  const { updates, errors } = await createUpdates(
+  const { updates, errors, warnings } = await createUpdates(
     settings,
     settings.dictionary,
     pkg,
     false
   );
+
+  if (warnings.length > 0) {
+    if (settings.suppressWarnings) {
+      logWarning(
+        chalk.yellow(
+          `CLI tool encountered ${warnings.length} warnings while scanning for translatable content. ${chalk.gray('To view these warnings, re-run without the --suppress-warnings flag')}`
+        )
+      );
+    } else {
+      logWarning(
+        chalk.yellow(
+          `CLI tool encountered ${warnings.length} warnings while scanning for translatable content. ${chalk.gray('To suppress these warnings, re-run with --suppress-warnings')}\n` +
+            warnings
+              .map(
+                (warning) => chalk.yellow('• Warning: ') + chalk.white(warning)
+              )
+              .join('\n')
+        )
+      );
+    }
+  }
 
   if (errors.length > 0) {
     if (settings.ignoreErrors) {

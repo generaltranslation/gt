@@ -18,14 +18,22 @@ import { GT_TRANSLATION_FUNCS } from '../jsx/utils/constants.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 
+/**
+ * Creates inline updates for <T> components and translation functions
+ * @param options - The options object
+ * @param pkg - The package name
+ * @param validate - Whether to validate the updates
+ * @returns An object containing the updates, errors, and warnings
+ */
 export default async function createInlineUpdates(
   options: Options,
   pkg: 'gt-react' | 'gt-next',
   validate: boolean
-): Promise<{ updates: Updates; errors: string[] }> {
+): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];
 
   const errors: string[] = [];
+  const warnings: Set<string> = new Set();
 
   // Use the provided app directory or default to the current directory
   const filePatterns = options.src || DEFAULT_SRC_PATTERNS;
@@ -121,7 +129,14 @@ export default async function createInlineUpdates(
     // Parse <T> components
     traverse(ast, {
       JSXElement(path) {
-        parseJSXElement(importAliases, path.node, updates, errors, file);
+        parseJSXElement(
+          importAliases,
+          path.node,
+          updates,
+          errors,
+          warnings,
+          file
+        );
       },
     });
 
@@ -147,5 +162,5 @@ export default async function createInlineUpdates(
     })
   );
 
-  return { updates, errors };
+  return { updates, errors, warnings: [...warnings] };
 }

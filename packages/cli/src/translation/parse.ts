@@ -21,9 +21,10 @@ export async function createUpdates(
   sourceDictionary: string | undefined,
   pkg: 'gt-react' | 'gt-next',
   validate: boolean
-): Promise<{ updates: Updates; errors: string[] }> {
+): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   let updates: Updates = [];
   let errors: string[] = [];
+  let warnings: string[] = [];
 
   // Parse dictionary with esbuildConfig
   if (
@@ -58,9 +59,13 @@ export async function createUpdates(
   }
   // Scan through project for <T> tags
   if (options.inline) {
-    const { updates: newUpdates, errors: newErrors } =
-      await createInlineUpdates(options as any, pkg, validate);
+    const {
+      updates: newUpdates,
+      errors: newErrors,
+      warnings: newWarnings,
+    } = await createInlineUpdates(options as any, pkg, validate);
     errors = [...errors, ...newErrors];
+    warnings = [...warnings, ...newWarnings];
     updates = [...updates, ...newUpdates];
   }
 
@@ -90,5 +95,5 @@ export async function createUpdates(
 
   // Filter out updates with duplicate IDs
   updates = updates.filter((update) => !duplicateIds.has(update.metadata.id));
-  return { updates, errors };
+  return { updates, errors, warnings };
 }

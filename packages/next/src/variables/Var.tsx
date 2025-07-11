@@ -22,7 +22,7 @@ function Var({
 }): React.JSX.Element | null {
   return <>{children}</>;
 }
-
-Var.gtTransformation = 'variable-variable'; // keep this because Var is imported in other functions
+/** @internal _gtt - The GT transformation for the component. */
+Var._gtt = 'variable-variable'; // keep this because Var is imported in other functions
 
 export default Var;

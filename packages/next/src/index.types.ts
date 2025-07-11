@@ -68,7 +68,8 @@ export const GTProvider: typeof _GTProvider = () => {
 export const T: typeof _T = () => {
   throw new Error(typesFileError);
 };
-T.gtTransformation = 'translate';
+/** @internal _gtt - The GT transformation for the component. */
+T._gtt = 'translate';
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
@@ -90,7 +91,8 @@ T.gtTransformation = 'translate';
 export const Currency: typeof _Currency = () => {
   throw new Error(typesFileError);
 };
-Currency.gtTransformation = 'variable-currency';
+/** @internal _gtt - The GT transformation for the component. */
+Currency._gtt = 'variable-currency';
 
 /**
  * The `<DateTime>` component renders a formatted date or time string, allowing customization of the name, default value, and formatting options.
@@ -110,7 +112,8 @@ Currency.gtTransformation = 'variable-currency';
 export const DateTime: typeof _DateTime = () => {
   throw new Error(typesFileError);
 };
-DateTime.gtTransformation = 'variable-datetime';
+/** @internal _gtt - The GT transformation for the component. */
+DateTime._gtt = 'variable-datetime';
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
@@ -132,7 +135,8 @@ DateTime.gtTransformation = 'variable-datetime';
 export const Num: typeof _Num = () => {
   throw new Error(typesFileError);
 };
-Num.gtTransformation = 'variable-number';
+/** @internal _gtt - The GT transformation for the component. */
+Num._gtt = 'variable-number';
 
 /**
  * The `<Var>` component renders a variable value, which can either be passed as `children` or a `value`.
@@ -151,7 +155,8 @@ Num.gtTransformation = 'variable-number';
 export const Var: typeof _Var = () => {
   throw new Error(typesFileError);
 };
-Var.gtTransformation = 'variable-variable';
+/** @internal _gtt - The GT transformation for the component. */
+Var._gtt = 'variable-variable';
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -180,7 +185,8 @@ Var.gtTransformation = 'variable-variable';
 export const Branch: typeof _Branch = () => {
   throw new Error(typesFileError);
 };
-Branch.gtTransformation = 'branch';
+/** @internal _gtt - The GT transformation for the component. */
+Branch._gtt = 'branch';
 
 /**
  * The `<Plural>` component dynamically renders content based on the plural form of the given number (`n`).
@@ -210,7 +216,8 @@ Branch.gtTransformation = 'branch';
 export const Plural: typeof _Plural = () => {
   throw new Error(typesFileError);
 };
-Plural.gtTransformation = 'plural';
+/** @internal _gtt - The GT transformation for the component. */
+Plural._gtt = 'plural';
 
 /**
  * A dropdown component that allows users to select a locale.
