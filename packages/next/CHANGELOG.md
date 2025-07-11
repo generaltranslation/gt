@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.0.2
+
+### Patch Changes
+
+- [#455](https://github.com/generaltranslation/gt/pull/455) [`1c6b822`](https://github.com/generaltranslation/gt/commit/1c6b82204a341dcfdb4fa8a58dc60ca7f68fda5d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: export inline translation options from root in gt-next
+
 ## 6.0.1
 
 ### Patch Changes
