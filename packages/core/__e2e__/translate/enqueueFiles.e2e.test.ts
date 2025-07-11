@@ -12,8 +12,8 @@ describe('enqueueFiles E2E Tests', () => {
 
   beforeAll(() => {
     const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultRuntimeApiUrl;
-    const projectId = process.env.VITE_GT_PROJECT_ID;
-    const apiKey = process.env.VITE_GT_API_KEY;
+    const projectId = process.env.VITE_CI_TEST_GT_PROJECT_ID;
+    const apiKey = process.env.VITE_CI_TEST_GT_API_KEY;
 
     config = {
       baseUrl: runtimeUrl,
