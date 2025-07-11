@@ -350,27 +350,26 @@ describe('translate E2E Tests', () => {
       };
 
       const locales = ['es', 'fr', 'de'];
-      const results: {
-        locale: string;
-        result?: TranslationResult | TranslationError;
-        error?: any;
-      }[] = [];
+      const results: Array<TranslationResult | TranslationError> = [];
 
       for (const locale of locales) {
         try {
           const result = await _translate(source, locale, metadata, config);
-          results.push({ locale, result });
+          results.push(result);
         } catch (error) {
-          results.push({ locale, error });
+          results.push({ error });
         }
       }
 
       expect(results).toHaveLength(locales.length);
 
       // At least some results should be successful (if server is available)
-      for (const { result } of results) {
-        if (result) {
+      for (const result of results) {
+        if ('translation' in result) {
           expect(result).toHaveProperty('reference');
+        } else {
+          expect(result).toHaveProperty('error');
+          expect(result).toHaveProperty('code');
         }
       }
     });

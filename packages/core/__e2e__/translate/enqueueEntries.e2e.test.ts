@@ -1,10 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { TranslationRequestConfig } from '../../src/types';
-import {
-  Updates,
-  EnqueueEntriesOptions,
-  EnqueueEntriesResult,
-} from '../../src/types-dir/enqueue';
+import { Updates, EnqueueEntriesOptions } from '../../src/types-dir/enqueue';
 import _enqueueEntries from '../../src/translate/enqueueEntries';
 import { defaultBaseUrl } from '../../src/settings/settingsUrls';
 

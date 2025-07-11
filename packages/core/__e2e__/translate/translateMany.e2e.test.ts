@@ -1,12 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import {
   TranslationRequestConfig,
-  TranslateManyResult,
   TranslationResult,
   TranslationError,
 } from '../../src/types';
 import { EntryMetadata, Entry } from '../../src/types-dir/entry';
-import { Content } from '../../src/types-dir/content';
 import _translateMany from '../../src/translate/translateMany';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
@@ -56,7 +54,7 @@ describe('translateMany E2E Tests', () => {
         expect(result.length).toBe(entries.length);
 
         // Verify each translation result
-        result.forEach((translationResult, index) => {
+        result.forEach((translationResult) => {
           expect(translationResult).toBeDefined();
           if ('translation' in translationResult) {
             expect(translationResult).toHaveProperty('translation');
@@ -215,11 +213,7 @@ describe('translateMany E2E Tests', () => {
       ];
 
       const locales = ['es', 'fr', 'de'];
-      const results: {
-        locale: string;
-        result?: TranslationResult | TranslationError;
-        error?: any;
-      }[] = [];
+      const results: Array<TranslationResult | TranslationError> = [];
 
       for (const locale of locales) {
         const globalMetadata: { targetLocale: string } & EntryMetadata = {
@@ -230,19 +224,25 @@ describe('translateMany E2E Tests', () => {
 
         try {
           const result = await _translateMany(entries, globalMetadata, config);
-          results.push({ locale, result });
+          results.push(...result);
         } catch (error) {
-          results.push({ locale, error });
+          results.push({ error });
         }
       }
 
-      expect(results).toHaveLength(locales.length);
+      expect(results).toHaveLength(entries.length * locales.length);
 
       // At least some results should be successful (if server is available)
-      for (const { result } of results) {
+      for (const result of results) {
         if (result) {
-          expect(Array.isArray(result)).toBe(true);
-          expect(result.length).toBe(entries.length);
+          expect(result).toBeDefined();
+          if ('translation' in result) {
+            expect(result).toHaveProperty('translation');
+            expect(result).toHaveProperty('reference');
+          } else {
+            expect(result).toHaveProperty('error');
+            expect(result).toHaveProperty('code');
+          }
         }
       }
     });
@@ -404,7 +404,7 @@ describe('translateMany E2E Tests', () => {
         expect(result.length).toBe(entries.length);
 
         // All translations should be successful
-        result.forEach((translationResult, index) => {
+        result.forEach((translationResult) => {
           expect(translationResult).toBeDefined();
           if ('translation' in translationResult) {
             expect(translationResult).toHaveProperty('translation');
