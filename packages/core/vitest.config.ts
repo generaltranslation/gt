@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
+import { loadEnv } from 'vite';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   test: {
     // Enable parallel execution
     pool: 'threads',
@@ -19,12 +20,19 @@ export default defineConfig({
     },
     // Set reasonable timeout for all tests
     testTimeout: 15000,
-    // Faster test discovery
-    isolate: false,
+    // Proper test isolation to prevent mock interference
+    isolate: true,
     // Environment setup
     environment: 'node',
     // Globals for easier test writing
     globals: true,
+    // Load environment variables from .env files
+    // The empty string '' as third parameter loads ALL env vars, not just VITE_ prefixed ones
+    env: {
+      ...loadEnv(mode || 'test', process.cwd(), ''),
+      // Suppress GT logger output during tests for cleaner output
+      _GT_LOG_LEVEL: 'off',
+    },
     // Better reporting
     reporters: [
       [
@@ -35,4 +43,4 @@ export default defineConfig({
       ],
     ],
   },
-});
+}));

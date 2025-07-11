@@ -19,6 +19,5 @@ export type FileMetadata = {
 
 export type File = {
   source: GTRequest[] | string;
-  targetLocale: string;
   fileMetadata: FileMetadata;
 };

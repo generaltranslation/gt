@@ -82,16 +82,14 @@ describe('_translateMany function', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
 
-    const requests: GTRequest[] = [
+    const requests = [
       {
         source: 'Hello world',
-        targetLocale: 'es',
-        requestMetadata: { context: 'greeting' },
+        metadata: { context: 'greeting' },
       },
       {
         source: 'Goodbye world',
-        targetLocale: 'es',
-        requestMetadata: { context: 'farewell' },
+        metadata: { context: 'farewell' },
       },
     ];
 
@@ -131,16 +129,14 @@ describe('_translateMany function', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
 
-    const requests: GTRequest[] = [
+    const requests = [
       {
         source: ['Hello ', { t: 'strong', c: ['world'] }],
-        targetLocale: 'es',
-        requestMetadata: { context: 'greeting', dataFormat: 'JSX' },
+        metadata: { context: 'greeting', dataFormat: 'JSX' },
       },
       {
         source: 'Hello {name}',
-        targetLocale: 'es',
-        requestMetadata: { context: 'greeting', dataFormat: 'ICU' },
+        metadata: { context: 'greeting', dataFormat: 'ICU' },
       },
     ];
 
@@ -186,11 +182,10 @@ describe('_translateMany function', () => {
       timeout: 10000,
     };
 
-    const requests: GTRequest[] = [
+    const requests = [
       {
         source: 'Hello world',
-        targetLocale: 'es',
-        requestMetadata: { context: 'greeting' },
+        metadata: { context: 'greeting' },
       },
     ];
 
@@ -207,11 +202,10 @@ describe('_translateMany function', () => {
     const networkError = new Error('Network error');
     mockFetch.mockRejectedValue(networkError);
 
-    const requests: GTRequest[] = [
+    const requests = [
       {
         source: 'Hello world',
-        targetLocale: 'es',
-        requestMetadata: { context: 'greeting' },
+        metadata: { context: 'greeting' },
       },
     ];
 
@@ -225,11 +219,10 @@ describe('_translateMany function', () => {
     timeoutError.name = 'AbortError';
     mockFetch.mockRejectedValue(timeoutError);
 
-    const requests: GTRequest[] = [
+    const requests = [
       {
         source: 'Hello world',
-        targetLocale: 'es',
-        requestMetadata: { context: 'greeting' },
+        metadata: { context: 'greeting' },
       },
     ];
 
@@ -247,7 +240,7 @@ describe('_translateMany function', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
 
-    const requests: GTRequest[] = [];
+    const requests = [];
 
     const result = await _translateMany(
       requests,

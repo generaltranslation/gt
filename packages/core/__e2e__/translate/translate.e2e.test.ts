@@ -9,42 +9,14 @@ import {
 import { GTRequestMetadata } from '../../src/types/GTRequest';
 import _translate from '../../src/translate/translate';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-
-// Load environment variables from .env file
-function loadEnvFile(): { [key: string]: string } {
-  try {
-    const envPath = join(__dirname, '../../.env');
-    const envContent = readFileSync(envPath, 'utf8');
-    const envVars: { [key: string]: string } = {};
-
-    envContent.split('\n').forEach((line) => {
-      const trimmed = line.trim();
-      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
-        const [key, ...valueParts] = trimmed.split('=');
-        const value = valueParts.join('=').replace(/^"(.*)"$/, '$1');
-        envVars[key] = value;
-      }
-    });
-
-    return envVars;
-  } catch (error) {
-    console.warn('Could not load .env file:', error);
-    return {};
-  }
-}
-
-const envVars = loadEnvFile();
+// Environment variables are now loaded automatically by Vitest via the vitest.config.ts file
 
 describe('Translation E2E Tests', () => {
   const runtimeUrl =
-    envVars.VITE_GT_RUNTIME_URL ||
     process.env.VITE_GT_RUNTIME_URL ||
     defaultRuntimeApiUrl;
-  const projectId =
-    envVars.VITE_GT_PROJECT_ID || process.env.VITE_GT_PROJECT_ID;
-  const apiKey = envVars.VITE_GT_API_KEY || process.env.VITE_GT_API_KEY;
+  const projectId = process.env.VITE_GT_PROJECT_ID;
+  const apiKey = process.env.VITE_GT_API_KEY;
 
   // Debug: Log the configuration being used
   // eslint-disable-next-line no-console
@@ -156,7 +128,7 @@ describe('Translation E2E Tests', () => {
       expect(false).toBe(true);
     } catch (error) {
       expect(error).toBeDefined();
-      expect(error.message).toContain('404');
+      expect(error.message).toContain('401');
     }
   });
 

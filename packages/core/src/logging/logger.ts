@@ -3,7 +3,7 @@
  * Provides structured logging with multiple levels and configurable output
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'off';
 
 export interface LogEntry {
   level: LogLevel;
@@ -37,6 +37,7 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   info: 1,
   warn: 2,
   error: 3,
+  off: 4,
 };
 
 const LOG_COLORS: Record<LogLevel, string> = {
@@ -44,6 +45,7 @@ const LOG_COLORS: Record<LogLevel, string> = {
   info: '\x1b[32m', // Green
   warn: '\x1b[33m', // Yellow
   error: '\x1b[31m', // Red
+  off: '', // No color needed since 'off' level logs are never displayed
 };
 
 const RESET_COLOR = '\x1b[0m';

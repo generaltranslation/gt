@@ -24,6 +24,17 @@ import {
   TranslationRequestConfig,
   TranslationResult,
 } from './types';
+export type {
+  Updates,
+  ApiOptions,
+  EnqueueTranslationEntriesResult,
+} from './translate/enqueueTranslationEntries';
+export type {
+  FileToTranslate,
+  EnqueueFilesOptions,
+  EnqueueFilesResult,
+} from './translate/enqueueFiles';
+export type { File } from './types/File';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
   LocaleProperties,
@@ -46,6 +57,17 @@ import _translate from './translate/translate';
 import { GTRequest, GTRequestMetadata } from './types/GTRequest';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
+import _enqueueFiles, {
+  FileToTranslate,
+  EnqueueFilesOptions,
+  EnqueueFilesResult,
+} from './translate/enqueueFiles';
+import _enqueueTranslationEntries, {
+  Updates,
+  ApiOptions,
+  EnqueueTranslationEntriesResult,
+} from './translate/enqueueTranslationEntries';
+import { File } from './types/File';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -207,6 +229,69 @@ export class GT {
   }
 
   // -------------- Translation Methods -------------- //
+
+  /**
+   * Enqueues translation entries for processing.
+   *
+   * @param {Updates} updates - The translation entries to enqueue.
+   * @param {ApiOptions} options - Options for enqueueing entries.
+   * @param {string} library - The library being used (for context).
+   * @returns {Promise<EnqueueTranslationEntriesResult>} The result of the enqueue operation.
+   */
+  async enqueueTranslationEntries(
+    updates: Updates,
+    options: ApiOptions = {},
+    library: string = 'core'
+  ): Promise<EnqueueTranslationEntriesResult> {
+    // Merge instance settings with options
+    const mergedOptions: ApiOptions = {
+      baseUrl: this.baseUrl,
+      apiKey: this.apiKey || this.devApiKey,
+      projectId: this.projectId,
+      defaultLocale: this.sourceLocale,
+      locales: this.locales,
+      ...options,
+    };
+
+    // Request the translation entry updates
+    return await _enqueueTranslationEntries(
+      updates,
+      mergedOptions,
+      library,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Enqueues files for translation processing.
+   *
+   * @param {FileToTranslate[]} files - Array of files to enqueue for translation.
+   * @param {EnqueueFilesOptions} options - Options for enqueueing files.
+   * @returns {Promise<EnqueueFilesResult>} The result of the enqueue operation.
+   */
+  async enqueueFiles(
+    files: FileToTranslate[],
+    options: EnqueueFilesOptions
+  ): Promise<EnqueueFilesResult> {
+    // Validation
+    if (!this.projectId) {
+      gtInstanceLogger.error(noProjectIdProvidedError('enqueueFiles'));
+      throw new Error(noProjectIdProvidedError('enqueueFiles'));
+    }
+
+    // Merge project ID with options
+    const mergedOptions = {
+      ...options,
+      projectId: this.projectId,
+    };
+
+    // Request the file updates
+    return await _enqueueFiles(
+      files,
+      mergedOptions,
+      this._getTranslationConfig()
+    );
+  }
 
   /**
    * Translates the source content to the target locale.
