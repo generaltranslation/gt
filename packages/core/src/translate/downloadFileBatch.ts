@@ -8,7 +8,7 @@ import {
   BatchDownloadFile,
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
-} from '../types/downloadFileBatch';
+} from '../types-dir/downloadFileBatch';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**

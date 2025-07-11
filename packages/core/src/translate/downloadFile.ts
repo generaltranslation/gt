@@ -4,7 +4,7 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
-import { DownloadFileOptions } from '../types/downloadFile';
+import { DownloadFileOptions } from '../types-dir/downloadFile';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**

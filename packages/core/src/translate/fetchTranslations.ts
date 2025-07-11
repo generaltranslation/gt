@@ -8,7 +8,7 @@ import {
   FetchTranslationsOptions,
   FetchTranslationsResult,
   RetrievedTranslations,
-} from '../types/fetchTranslations';
+} from '../types-dir/fetchTranslations';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
@@ -24,20 +24,9 @@ export default async function _fetchTranslations(
   options: FetchTranslationsOptions,
   config: TranslationRequestConfig
 ): Promise<FetchTranslationsResult> {
-  const { projectId, apiKey, baseUrl } = options;
+  const { baseUrl } = config;
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${baseUrl || config.baseUrl || defaultRuntimeApiUrl}/v1/project/translations/info/${versionId}`;
-
-  // Validation - basic config validation
-  if (!projectId) {
-    throw new Error('Project ID is required');
-  }
-  if (!config.apiKey && !apiKey) {
-    throw new Error('API key is required');
-  }
-  if (!versionId) {
-    throw new Error('Version ID is required');
-  }
+  const url = `${baseUrl || defaultRuntimeApiUrl}/v1/project/translations/info/${versionId}`;
 
   // Request the translation info
   let response;

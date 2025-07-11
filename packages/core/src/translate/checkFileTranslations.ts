@@ -8,8 +8,7 @@ import {
   FileTranslationCheck,
   CheckFileTranslationsOptions,
   CheckFileTranslationsResult,
-  FileTranslationStatus,
-} from '../types/checkFileTranslations';
+} from '../types-dir/checkFileTranslations';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
@@ -53,21 +52,9 @@ export default async function _checkFileTranslations(
   }
 
   // Validate response
-  await validateResponse(response!);
+  await validateResponse(response);
 
   // Parse response
-  const result = (await response!.json()) as {
-    files: FileTranslationStatus[];
-  };
-
-  // Calculate summary statistics
-  const readyFiles = result.files.filter((file) => file.status === 'ready');
-  const allReady = readyFiles.length === result.files.length;
-
-  return {
-    files: result.files,
-    allReady,
-    readyCount: readyFiles.length,
-    totalCount: result.files.length,
-  };
+  const result = await response.json();
+  return result as CheckFileTranslationsResult;
 }

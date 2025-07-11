@@ -1,6 +1,6 @@
 import { LocaleProperties } from './locales/getLocaleProperties';
 
-import { Variable, VariableType } from './types/variables';
+import { Variable, VariableType } from './types-dir/variables';
 
 import {
   IcuMessage,
@@ -14,8 +14,8 @@ import {
   HTML_CONTENT_PROPS,
   DataFormat,
   Content,
-} from './types/content';
-import { ActionType, EntryMetadata, Entry } from './types/entry';
+} from './types-dir/content';
+import { ActionType, EntryMetadata, Entry } from './types-dir/entry';
 
 export {
   IcuMessage,
@@ -36,6 +36,30 @@ export {
   Entry as Entry,
   Content,
 };
+
+export type {
+  FileTranslationCheck,
+  CheckFileTranslationsOptions,
+  CheckFileTranslationsResult,
+} from './types-dir/checkFileTranslations';
+export type {
+  BatchDownloadFile,
+  DownloadFileBatchOptions,
+  DownloadFileBatchResult,
+} from './types-dir/downloadFileBatch';
+export type {
+  FetchTranslationsOptions,
+  FetchTranslationsResult,
+} from './types-dir/fetchTranslations';
+export type {
+  EnqueueEntriesOptions,
+  EnqueueEntriesResult,
+  EnqueueFilesOptions,
+  EnqueueFilesResult,
+  FileToTranslate,
+  Updates,
+} from './types-dir/enqueue';
+export type { DownloadFileOptions } from './types-dir/downloadFile';
 
 /**
  * @deprecated Use {@link Content} instead.

@@ -23,34 +23,24 @@ import {
   TranslationError,
   TranslationRequestConfig,
   TranslationResult,
-} from './types';
-export type {
   Updates,
   EnqueueEntriesOptions,
   EnqueueEntriesResult,
-  FileToTranslate,
   EnqueueFilesOptions,
   EnqueueFilesResult,
-} from './types/enqueue';
-export type {
+  FileToTranslate,
   FileTranslationCheck,
   CheckFileTranslationsOptions,
   CheckFileTranslationsResult,
-} from './translate/checkFileTranslations';
-export type {
-  DownloadFileOptions,
-  DownloadFileResult,
-} from './translate/downloadFile';
-export type {
   BatchDownloadFile,
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
-} from './translate/downloadFileBatch';
-export type {
   FetchTranslationsOptions,
   FetchTranslationsResult,
-} from './translate/fetchTranslations';
-export type { File } from './types/file';
+  DownloadFileOptions,
+  EntryMetadata,
+  Entry,
+} from './types';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
   LocaleProperties,
@@ -70,35 +60,14 @@ import {
   noProjectIdProvidedError,
 } from './logging/errors';
 import _translate from './translate/translate';
-import { Entry, EntryMetadata } from './types/entry';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
 import _enqueueFiles from './translate/enqueueFiles';
 import _enqueueEntries from './translate/enqueueEntries';
-import _checkFileTranslations, {
-  FileTranslationCheck,
-  CheckFileTranslationsOptions,
-  CheckFileTranslationsResult,
-} from './translate/checkFileTranslations';
-import _downloadFile, {
-  DownloadFileOptions,
-  DownloadFileResult,
-} from './translate/downloadFile';
-import _downloadFileBatch, {
-  BatchDownloadFile,
-  DownloadFileBatchOptions,
-  DownloadFileBatchResult,
-} from './translate/downloadFileBatch';
+import _checkFileTranslations from './translate/checkFileTranslations';
+import _downloadFile from './translate/downloadFile';
+import _downloadFileBatch from './translate/downloadFileBatch';
 import _fetchTranslations from './translate/fetchTranslations';
-import { File } from './types/file';
-import {
-  EnqueueEntriesOptions,
-  EnqueueEntriesResult,
-  EnqueueFilesOptions,
-  EnqueueFilesResult,
-  FileToTranslate,
-  Updates,
-} from './types/enqueue';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -397,21 +366,14 @@ export class GT {
   ): Promise<DownloadFileBatchResult> {
     // Validation
     if (!this.projectId) {
-      gtInstanceLogger.error(noProjectIdProvidedError('downloadFileBatch'));
-      throw new Error(noProjectIdProvidedError('downloadFileBatch'));
+      const error = noProjectIdProvidedError('downloadFileBatch');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
     }
-
-    // Merge instance settings with options
-    const mergedOptions: DownloadFileBatchOptions = {
-      baseUrl: this.baseUrl,
-      apiKey: this.apiKey || this.devApiKey,
-      ...options,
-      projectId: this.projectId,
-    };
 
     return await _downloadFileBatch(
       files,
-      mergedOptions,
+      options,
       this._getTranslationConfig()
     );
   }

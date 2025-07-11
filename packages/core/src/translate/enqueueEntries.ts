@@ -8,7 +8,7 @@ import {
   Updates,
   EnqueueEntriesOptions,
   EnqueueEntriesResult,
-} from '../types/enqueue';
+} from '../types-dir/enqueue';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
@@ -36,16 +36,14 @@ export default async function _enqueueEntries(
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultBaseUrl}/v1/project/translations/update`;
 
-  const globalMetadata = {
-    ...(projectId && { projectId }),
-    ...(sourceLocale && { sourceLocale }),
-  };
-
   // Build request body - matches original sendUpdates structure
   const body = {
     updates,
     ...(targetLocales && { locales: targetLocales }),
-    metadata: globalMetadata,
+    metadata: {
+      ...(projectId && { projectId }),
+      ...(sourceLocale && { sourceLocale }),
+    },
     ...(dataFormat && { dataFormat }),
     ...(version && { versionId: version }),
     ...(description && { description }),

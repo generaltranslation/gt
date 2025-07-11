@@ -8,7 +8,7 @@ import {
   FileToTranslate,
   EnqueueFilesOptions,
   EnqueueFilesResult,
-} from '../types/enqueue';
+} from '../types-dir/enqueue';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**

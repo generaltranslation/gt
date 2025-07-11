@@ -12,17 +12,12 @@ export type CheckFileTranslationsOptions = {
   timeout?: number;
 };
 
-export type FileTranslationStatus = {
-  translationId: string;
-  locale: string;
-  fileName: string;
-  status: 'ready' | 'processing' | 'failed';
-  downloadUrl?: string;
-};
-
 export type CheckFileTranslationsResult = {
-  files: FileTranslationStatus[];
-  allReady: boolean;
-  readyCount: number;
-  totalCount: number;
+  files: {
+    translationId: string;
+    locale: string;
+    fileName: string;
+    status: 'ready' | 'processing' | 'failed';
+    downloadUrl?: string;
+  };
 };
