@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../../src/logging/errors', () => ({
-  apiError: vi.fn(() => 'mocked error'),
+  apiError: vi.fn((status: number, statusText: string, error: string) => 
+    `GT error: API returned error status. Status: ${status}, Status Text: ${statusText}, Error: ${error}`),
 }));
 
 vi.mock('../../../src/logging/logger', () => ({
@@ -34,7 +35,7 @@ describe.sequential('validateResponse', () => {
   it('should throw error for failed response with error text', async () => {
     const errorText = 'Invalid API key';
     const expectedErrorMessage =
-      'API Error: 401 Unauthorized - Invalid API key';
+      'GT error: API returned error status. Status: 401, Status Text: Unauthorized, Error: Invalid API key';
 
     const mockResponse = {
       ok: false,
@@ -43,11 +44,8 @@ describe.sequential('validateResponse', () => {
       text: vi.fn().mockResolvedValue(errorText),
     } as unknown as Response;
 
-    vi.mocked(apiError).mockReturnValueOnce(expectedErrorMessage);
 
-    await expect(validateResponse(mockResponse)).rejects.toThrow(
-      expectedErrorMessage
-    );
+    await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
     expect(mockResponse.text).toHaveBeenCalled();
     expect(apiError).toHaveBeenCalledWith(401, 'Unauthorized', errorText);
     expect(fetchLogger.error).toHaveBeenCalledWith(expectedErrorMessage, {
@@ -59,7 +57,7 @@ describe.sequential('validateResponse', () => {
 
   it('should handle 404 not found errors', async () => {
     const errorText = 'Project not found';
-    const expectedErrorMessage = 'API Error: 404 Not Found - Project not found';
+    const expectedErrorMessage = 'GT error: API returned error status. Status: 404, Status Text: Not Found, Error: Project not found';
 
     const mockResponse = {
       ok: false,
@@ -68,18 +66,15 @@ describe.sequential('validateResponse', () => {
       text: vi.fn().mockResolvedValue(errorText),
     } as unknown as Response;
 
-    vi.mocked(apiError).mockReturnValueOnce(expectedErrorMessage);
 
-    await expect(validateResponse(mockResponse)).rejects.toThrow(
-      expectedErrorMessage
-    );
+    await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
     expect(apiError).toHaveBeenCalledWith(404, 'Not Found', errorText);
   });
 
   it('should handle 500 server errors', async () => {
     const errorText = 'Internal server error';
     const expectedErrorMessage =
-      'API Error: 500 Internal Server Error - Internal server error';
+      'GT error: API returned error status. Status: 500, Status Text: Internal Server Error, Error: Internal server error';
 
     const mockResponse = {
       ok: false,
@@ -88,11 +83,8 @@ describe.sequential('validateResponse', () => {
       text: vi.fn().mockResolvedValue(errorText),
     } as unknown as Response;
 
-    vi.mocked(apiError).mockReturnValueOnce(expectedErrorMessage);
 
-    await expect(validateResponse(mockResponse)).rejects.toThrow(
-      expectedErrorMessage
-    );
+    await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
     expect(apiError).toHaveBeenCalledWith(
       500,
       'Internal Server Error',
@@ -102,7 +94,7 @@ describe.sequential('validateResponse', () => {
 
   it('should handle empty error text', async () => {
     const errorText = '';
-    const expectedErrorMessage = 'API Error: 400 Bad Request - ';
+    const expectedErrorMessage = 'GT error: API returned error status. Status: 400, Status Text: Bad Request, Error: ';
 
     const mockResponse = {
       ok: false,
@@ -111,11 +103,8 @@ describe.sequential('validateResponse', () => {
       text: vi.fn().mockResolvedValue(errorText),
     } as unknown as Response;
 
-    vi.mocked(apiError).mockReturnValueOnce(expectedErrorMessage);
 
-    await expect(validateResponse(mockResponse)).rejects.toThrow(
-      expectedErrorMessage
-    );
+    await expect(validateResponse(mockResponse)).rejects.toThrow(errorText);
     expect(apiError).toHaveBeenCalledWith(400, 'Bad Request', errorText);
   });
 

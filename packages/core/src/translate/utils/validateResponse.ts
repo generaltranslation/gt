@@ -14,6 +14,9 @@ export default async function validateResponse(response: Response) {
       statusText: response.statusText,
       error: errorText,
     });
-    throw new Error(errorMessage);
+    const error = new Error(errorMessage);
+    (error as any).code = response.status;
+    (error as any).message = errorText;
+    throw error;
   }
 }

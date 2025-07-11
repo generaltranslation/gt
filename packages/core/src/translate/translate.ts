@@ -56,9 +56,9 @@ export default async function _translate(
   }
 
   // Validate response
-  await validateResponse(response!);
+  await validateResponse(response);
 
   // Parse the response
-  const results = (await response!.json()) as unknown[];
+  const results = (await response.json()) as unknown[];
   return results[0] as TranslationResult | TranslationError;
 }

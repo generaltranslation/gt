@@ -48,9 +48,9 @@ export default async function _translateMany(
   }
 
   // Validate response
-  await validateResponse(response!);
+  await validateResponse(response);
 
   // Parse response
-  const results = await response!.json();
+  const results = await response.json();
   return results as TranslateManyResult;
 }
