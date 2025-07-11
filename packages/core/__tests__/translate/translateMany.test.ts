@@ -66,8 +66,8 @@ describe.sequential('_translateMany', () => {
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
     const requests: Entry[] = [
-      { source: 'Hello world' },
-      { source: 'Goodbye world' },
+      { source: 'Hello world', targetLocale: 'es', requestMetadata: {} },
+      { source: 'Goodbye world', targetLocale: 'es', requestMetadata: {} },
     ];
     const globalMetadata: { targetLocale: string } & EntryMetadata = {
       targetLocale: 'es',
@@ -235,7 +235,9 @@ describe.sequential('_translateMany', () => {
     await _translateMany(requests, globalMetadata, configWithoutUrl);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining('https://runtime2.gtx.dev/v1/translate/test-project'),
+      expect.stringContaining(
+        'https://runtime2.gtx.dev/v1/translate/test-project'
+      ),
       expect.any(Object),
       expect.any(Number)
     );
@@ -253,7 +255,9 @@ describe.sequential('_translateMany', () => {
       targetLocale: 'es',
     };
 
-    await expect(_translateMany(requests, globalMetadata, mockConfig)).rejects.toThrow('Network error');
+    await expect(
+      _translateMany(requests, globalMetadata, mockConfig)
+    ).rejects.toThrow('Network error');
     expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
@@ -272,7 +276,9 @@ describe.sequential('_translateMany', () => {
       targetLocale: 'es',
     };
 
-    await expect(_translateMany(requests, globalMetadata, mockConfig)).rejects.toThrow('Validation failed');
+    await expect(
+      _translateMany(requests, globalMetadata, mockConfig)
+    ).rejects.toThrow('Validation failed');
     expect(validateResponse).toHaveBeenCalledWith(mockResponse);
   });
 
@@ -324,7 +330,9 @@ describe.sequential('_translateMany', () => {
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
-        body: expect.stringContaining('"metadata":{"targetLocale":"es","sourceLocale":"en","context":"greeting","dataFormat":"ICU","actionType":"fast","timeout":5000}'),
+        body: expect.stringContaining(
+          '"metadata":{"targetLocale":"es","sourceLocale":"en","context":"greeting","dataFormat":"ICU","actionType":"fast","timeout":5000}'
+        ),
       }),
       5000
     );

@@ -43,6 +43,6 @@ export type EntryMetadata = {
  */
 export type Entry = {
   source: Content;
-  targetLocale: string;
-  requestMetadata: EntryMetadata;
+  targetLocale?: string;
+  requestMetadata?: EntryMetadata;
 };

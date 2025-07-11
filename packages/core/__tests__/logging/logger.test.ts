@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   Logger,
   ConsoleLogHandler,
-  translationLogger,
+  fetchLogger,
   defaultLogger,
   LogHandler,
   LogEntry,
@@ -262,10 +262,10 @@ describe('Logger', () => {
       const originalConfig = defaultLogger.getConfig();
       defaultLogger.configure({ ...originalConfig, level: 'warn' });
 
-      translationLogger.warn('Translation failed');
+      fetchLogger.warn('Translation failed');
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[translation]')
+        expect.stringContaining('[fetch]')
       );
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Translation failed')
