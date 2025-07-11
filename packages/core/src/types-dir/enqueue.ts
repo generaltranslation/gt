@@ -53,11 +53,11 @@ export interface FileToTranslate {
 }
 
 export type EnqueueFilesOptions = {
+  publish: boolean;
+  description: string;
   sourceLocale: string;
   targetLocales: string[];
-  publish: boolean;
   _versionId: string;
-  description: string;
   timeout?: number;
 };
 

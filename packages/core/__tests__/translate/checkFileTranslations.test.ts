@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _checkFileTranslations, {
-  FileTranslationCheck,
-  CheckFileTranslationsOptions,
-  CheckFileTranslationsResult,
-} from '../../src/translate/checkFileTranslations';
+import _checkFileTranslations from '../../src/translate/checkFileTranslations';
+import { FileTranslationCheck } from '../../src/types-dir/checkFileTranslations';
+import { CheckFileTranslationsOptions } from '../../src/types-dir/checkFileTranslations';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
 import { TranslationRequestConfig } from '../../src/types';
 
@@ -307,48 +305,6 @@ describe('_checkFileTranslations function', () => {
     expect(result.readyCount).toBe(0);
     expect(result.totalCount).toBe(0);
     expect(result.files).toHaveLength(0);
-  });
-
-  it('should throw error when projectId is missing', async () => {
-    const testData: { [key: string]: FileTranslationCheck } = {
-      'src/test.json': {
-        versionId: 'version-123',
-        fileName: 'test.json',
-      },
-    };
-
-    const options: CheckFileTranslationsOptions = {
-      // Missing projectId
-      locales: ['es'],
-    };
-
-    await expect(
-      _checkFileTranslations(testData, options, mockConfig)
-    ).rejects.toThrow('Project ID is required');
-  });
-
-  it('should throw error when apiKey is missing from both options and config', async () => {
-    const testData: { [key: string]: FileTranslationCheck } = {
-      'src/test.json': {
-        versionId: 'version-123',
-        fileName: 'test.json',
-      },
-    };
-
-    const options: CheckFileTranslationsOptions = {
-      projectId: 'test-project',
-      // Missing apiKey
-      locales: ['es'],
-    };
-
-    const configWithoutApiKey: TranslationRequestConfig = {
-      projectId: 'test-project',
-      // Missing apiKey
-    };
-
-    await expect(
-      _checkFileTranslations(testData, options, configWithoutApiKey)
-    ).rejects.toThrow('API key is required');
   });
 
   it('should throw error when locales are missing', async () => {

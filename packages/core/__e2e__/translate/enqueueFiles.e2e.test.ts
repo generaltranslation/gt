@@ -4,7 +4,7 @@ import _enqueueFiles from '../../src/translate/enqueueFiles';
 import {
   FileToTranslate,
   EnqueueFilesOptions,
-} from '../../src/types/enqueue';
+} from '../../src/types-dir/enqueue';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
 describe('Enqueue Files E2E Tests', () => {
@@ -72,10 +72,11 @@ Hello world from markdown.
     try {
       const testFiles = createTestFiles().slice(0, 1); // Use only one file for availability test
       const options: EnqueueFilesOptions = {
-        projectId,
         targetLocales: ['es'],
         sourceLocale: 'en',
         publish: false,
+        description: 'E2E test file upload',
+        _versionId: '1', // Added required property
       };
       await _enqueueFiles(testFiles, options, config);
     } catch {
@@ -88,7 +89,7 @@ Hello world from markdown.
     const testFiles = createTestFiles();
 
     const options: EnqueueFilesOptions = {
-      projectId,
+      _versionId: '1',
       targetLocales: ['es', 'fr'],
       sourceLocale: 'en',
       publish: false,
@@ -124,10 +125,11 @@ Hello world from markdown.
     };
 
     const options: EnqueueFilesOptions = {
-      projectId,
+      _versionId: '1',
       targetLocales: ['es'],
       sourceLocale: 'en',
       publish: false,
+      description: 'E2E test file upload',
     };
 
     try {
@@ -161,10 +163,11 @@ Visit our [website](https://example.com) for more information.
     };
 
     const options: EnqueueFilesOptions = {
-      projectId,
+      _versionId: '1',
       targetLocales: ['fr'],
       sourceLocale: 'en',
       publish: false,
+      description: 'E2E test file upload',
     };
 
     try {
@@ -212,7 +215,7 @@ items:
     ];
 
     const options: EnqueueFilesOptions = {
-      projectId,
+      _versionId: '1',
       targetLocales: ['es', 'fr', 'de'],
       sourceLocale: 'en',
       publish: false,
@@ -242,7 +245,7 @@ items:
     };
 
     const options: EnqueueFilesOptions = {
-      projectId,
+      _versionId: '1',
       targetLocales: ['es'],
       sourceLocale: 'en',
       publish: true,
@@ -272,11 +275,10 @@ items:
 
     const customVersionId = `test-version-${Date.now()}`;
     const options: EnqueueFilesOptions = {
-      projectId,
       targetLocales: ['es'],
       sourceLocale: 'en',
       publish: false,
-      versionId: customVersionId,
+      _versionId: customVersionId,
       description: 'Custom version test',
     };
 
@@ -295,10 +297,11 @@ items:
     const emptyFiles: FileToTranslate[] = [];
 
     const options: EnqueueFilesOptions = {
-      projectId,
+      _versionId: '1',
       targetLocales: ['es'],
       sourceLocale: 'en',
       publish: false,
+      description: 'E2E test file upload',
     };
 
     try {
@@ -326,7 +329,7 @@ items:
     };
 
     const options: EnqueueFilesOptions = {
-      projectId,
+      _versionId: '1',
       targetLocales: ['es'],
       sourceLocale: 'en',
       publish: false,

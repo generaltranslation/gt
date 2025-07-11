@@ -1,8 +1,8 @@
 import { TranslationRequestConfig, TranslateManyResult } from '../types';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
-import { maxTimeout } from 'src/settings/settings';
-import { Entry, EntryMetadata } from 'src/types-dir/entry';
+import { maxTimeout } from '../settings/settings';
+import { Entry, EntryMetadata } from '../types-dir/entry';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import generateRequestHeaders from './utils/generateRequestHeaders';
@@ -48,9 +48,9 @@ export default async function _translateMany(
   }
 
   // Validate response
-  await validateResponse(response);
+  await validateResponse(response!);
 
   // Parse response
-  const results = await response.json();
+  const results = await response!.json();
   return results as TranslateManyResult;
 }

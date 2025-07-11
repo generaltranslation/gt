@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { TranslationRequestConfig } from '../../src/types';
-import _fetchTranslations, {
-  FetchTranslationsOptions,
-} from '../../src/translate/fetchTranslations';
+import _fetchTranslations from '../../src/translate/fetchTranslations';
+import { FetchTranslationsOptions } from '../../src/types-dir/fetchTranslations';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
 describe('Fetch Translations E2E Tests', () => {
@@ -93,10 +92,11 @@ describe('Fetch Translations E2E Tests', () => {
       // Should catch not found error
       expect(error).toBeDefined();
       const errorMessage = error.message || error.toString();
-      const isNotFoundError = errorMessage.includes('404') || 
-                             errorMessage.includes('Not found') ||
-                             errorMessage.includes('not found') ||
-                             errorMessage.includes('does not exist');
+      const isNotFoundError =
+        errorMessage.includes('404') ||
+        errorMessage.includes('Not found') ||
+        errorMessage.includes('not found') ||
+        errorMessage.includes('does not exist');
       expect(isNotFoundError).toBe(true);
     }
   });
@@ -180,7 +180,7 @@ describe('Fetch Translations E2E Tests', () => {
 
     try {
       const result = await _fetchTranslations(testVersionId, options, config);
-      
+
       if (result.translations) {
         // Server may accept any key in dev mode
         expect(true).toBe(true);
@@ -192,12 +192,13 @@ describe('Fetch Translations E2E Tests', () => {
       // Should catch authentication error
       expect(error).toBeDefined();
       const errorMessage = error.message || error.toString();
-      const isAuthError = errorMessage.includes('401') || 
-                         errorMessage.includes('Unauthorized') ||
-                         errorMessage.includes('authentication') ||
-                         errorMessage.includes('Invalid API key') ||
-                         errorMessage.includes('403') ||
-                         errorMessage.includes('Forbidden');
+      const isAuthError =
+        errorMessage.includes('401') ||
+        errorMessage.includes('Unauthorized') ||
+        errorMessage.includes('authentication') ||
+        errorMessage.includes('Invalid API key') ||
+        errorMessage.includes('403') ||
+        errorMessage.includes('Forbidden');
       expect(isAuthError).toBe(true);
     }
   });
@@ -281,9 +282,9 @@ describe('Fetch Translations E2E Tests', () => {
       expect(typeof result.totalEntries).toBe('number');
       expect(result.localeCount).toBeGreaterThanOrEqual(0);
       expect(result.totalEntries).toBeGreaterThanOrEqual(0);
-      
+
       // Validate each translation structure
-      result.translations.forEach(translation => {
+      result.translations.forEach((translation) => {
         expect(typeof translation.locale).toBe('string');
         expect(translation.translation).toBeDefined();
         expect(translation.metadata).toBeDefined();
@@ -305,14 +306,14 @@ describe('Fetch Translations E2E Tests', () => {
     };
 
     try {
-      const promises = testVersionIds.map(versionId => 
+      const promises = testVersionIds.map((versionId) =>
         _fetchTranslations(versionId, options, config)
       );
 
       const results = await Promise.allSettled(promises);
 
       expect(results).toHaveLength(3);
-      results.forEach(result => {
+      results.forEach((result) => {
         if (result.status === 'fulfilled') {
           expect(result.value).toBeDefined();
           expect(Array.isArray(result.value.translations)).toBe(true);

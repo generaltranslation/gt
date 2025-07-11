@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _enqueueFiles from '../../src/translate/enqueueFiles';
-import {
-  FileToTranslate,
-  EnqueueFilesOptions,
-  EnqueueFilesResult,
-} from '../../src/types/enqueue';
+import { FileToTranslate } from '../../src/types-dir/enqueue';
+import { EnqueueFilesOptions } from '../../src/types-dir/enqueue';
+import { EnqueueFilesResult } from '../../src/types-dir/enqueue';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
 import { TranslationRequestConfig } from '../../src/types';
 
@@ -24,10 +22,6 @@ vi.mock('../../src/utils/fetchWithTimeout', () => ({
   default: vi.fn(),
 }));
 
-vi.mock('../../src/translate/utils/validateConfig', () => ({
-  default: vi.fn(),
-}));
-
 vi.mock('../../src/translate/utils/validateResponse', () => ({
   default: vi.fn(),
 }));
@@ -42,15 +36,15 @@ vi.mock('../../src/translate/utils/handleFetchError', () => ({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (global as any).FormData = class FormData {
   private data: Map<string, unknown> = new Map();
-  
+
   append(key: string, value: unknown) {
     this.data.set(key, value);
   }
-  
+
   get(key: string) {
     return this.data.get(key);
   }
-  
+
   has(key: string) {
     return this.data.has(key);
   }
@@ -114,6 +108,7 @@ describe('_enqueueFiles function', () => {
         headers: {
           'x-gt-api-key': 'test-key',
         },
+        // eslint-disable-next-line no-undef
         body: expect.any(FormData),
       },
       5000
@@ -257,6 +252,7 @@ This is a test markdown file with content.
         headers: {
           'x-gt-api-key': 'test-key',
         },
+        // eslint-disable-next-line no-undef
         body: expect.any(FormData),
       }),
       expect.any(Number)
@@ -293,6 +289,7 @@ This is a test markdown file with content.
       expect.any(String),
       expect.objectContaining({
         method: 'POST',
+        // eslint-disable-next-line no-undef
         body: expect.any(FormData),
       }),
       expect.any(Number)
@@ -440,9 +437,9 @@ This is a test markdown file with content.
       publish: false,
     };
 
-    await expect(_enqueueFiles([testFile], options, mockConfig)).rejects.toThrow(
-      'Network error'
-    );
+    await expect(
+      _enqueueFiles([testFile], options, mockConfig)
+    ).rejects.toThrow('Network error');
   });
 
   it('should handle timeout errors', async () => {
@@ -463,7 +460,9 @@ This is a test markdown file with content.
       publish: false,
     };
 
-    await expect(_enqueueFiles([testFile], options, mockConfig)).rejects.toThrow();
+    await expect(
+      _enqueueFiles([testFile], options, mockConfig)
+    ).rejects.toThrow();
   });
 
   it('should handle missing source locale', async () => {

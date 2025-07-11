@@ -5,7 +5,7 @@ import {
 } from '../types';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
-import { maxTimeout } from 'src/settings/settings';
+import { maxTimeout } from '../settings/settings';
 
 import { Content } from '../types-dir/content';
 import { EntryMetadata } from '../types-dir/entry';
@@ -44,7 +44,9 @@ export default async function _translate(
         body: JSON.stringify({
           requests: [{ source }],
           targetLocale,
-          metadata,
+          metadata: {
+            sourceLocale: metadata.sourceLocale,
+          },
         }),
       },
       timeout

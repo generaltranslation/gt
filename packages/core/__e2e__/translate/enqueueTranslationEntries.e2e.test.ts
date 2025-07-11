@@ -2,10 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { hashSource } from '../../src/id/hashSource';
 import { TranslationRequestConfig } from '../../src/types';
 import _enqueueEntries from '../../src/translate/enqueueEntries';
-import {
-  Updates,
-  EnqueueEntriesOptions,
-} from '../../src/types/enqueue';
+import { Updates, EnqueueEntriesOptions } from '../../src/types-dir/enqueue';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
 describe('Enqueue Translation Entries E2E Tests', () => {
@@ -42,7 +39,10 @@ describe('Enqueue Translation Entries E2E Tests', () => {
 
   // Helper function to generate test updates
   const createTestUpdates = (
-    sources: Array<{ source: string | unknown; dataFormat: 'ICU' | 'JSX' | 'I18NEXT' }>
+    sources: Array<{
+      source: string | unknown;
+      dataFormat: 'ICU' | 'JSX' | 'I18NEXT';
+    }>
   ): Updates => {
     return sources.map(({ source, dataFormat }) => {
       const id = `test-id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -94,11 +94,7 @@ describe('Enqueue Translation Entries E2E Tests', () => {
     };
 
     try {
-      const result = await _enqueueEntries(
-        testUpdates,
-        options,
-        config
-      );
+      const result = await _enqueueEntries(testUpdates, options, config);
 
       expect(result).toBeDefined();
       expect(result.versionId).toBeDefined();
@@ -134,12 +130,13 @@ describe('Enqueue Translation Entries E2E Tests', () => {
       // Should catch an authentication error
       expect(error).toBeDefined();
       const errorMessage = error.message || error.toString();
-      const isAuthError = errorMessage.includes('401') || 
-                         errorMessage.includes('Unauthorized') ||
-                         errorMessage.includes('authentication') ||
-                         errorMessage.includes('Invalid API key') ||
-                         errorMessage.includes('403') ||
-                         errorMessage.includes('Forbidden');
+      const isAuthError =
+        errorMessage.includes('401') ||
+        errorMessage.includes('Unauthorized') ||
+        errorMessage.includes('authentication') ||
+        errorMessage.includes('Invalid API key') ||
+        errorMessage.includes('403') ||
+        errorMessage.includes('Forbidden');
       expect(isAuthError).toBe(true);
     }
   });
@@ -156,11 +153,7 @@ describe('Enqueue Translation Entries E2E Tests', () => {
     };
 
     try {
-      const result = await _enqueueEntries(
-        testUpdates,
-        options,
-        config
-      );
+      const result = await _enqueueEntries(testUpdates, options, config);
 
       expect(result).toBeDefined();
       expect(result.versionId).toBeDefined();
@@ -190,11 +183,7 @@ describe('Enqueue Translation Entries E2E Tests', () => {
     };
 
     try {
-      const result = await _enqueueEntries(
-        testUpdates,
-        options,
-        config
-      );
+      const result = await _enqueueEntries(testUpdates, options, config);
 
       expect(result).toBeDefined();
       expect(result.versionId).toBeDefined();
@@ -219,11 +208,7 @@ describe('Enqueue Translation Entries E2E Tests', () => {
     };
 
     try {
-      const result = await _enqueueEntries(
-        testUpdates,
-        options,
-        config
-      );
+      const result = await _enqueueEntries(testUpdates, options, config);
 
       expect(result).toBeDefined();
       expect(result.versionId).toBeDefined();
@@ -243,11 +228,7 @@ describe('Enqueue Translation Entries E2E Tests', () => {
     };
 
     try {
-      const result = await _enqueueEntries(
-        testUpdates,
-        options,
-        config
-      );
+      const result = await _enqueueEntries(testUpdates, options, config);
 
       expect(result).toBeDefined();
       expect(result.versionId).toBeDefined();
@@ -271,11 +252,7 @@ describe('Enqueue Translation Entries E2E Tests', () => {
     };
 
     try {
-      const result = await _enqueueEntries(
-        testUpdates,
-        options,
-        config
-      );
+      const result = await _enqueueEntries(testUpdates, options, config);
 
       expect(result).toBeDefined();
       expect(result.versionId).toBeDefined();

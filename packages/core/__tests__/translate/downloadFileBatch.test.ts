@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _downloadFileBatch, {
-  BatchDownloadFile,
-  DownloadFileBatchOptions,
-  DownloadFileBatchResult,
-} from '../../src/translate/downloadFileBatch';
+import _downloadFileBatch from '../../src/translate/downloadFileBatch';
+import { BatchDownloadFile } from '../../src/types-dir/downloadFileBatch';
+import { DownloadFileBatchOptions } from '../../src/types-dir/downloadFileBatch';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
 import { TranslationRequestConfig } from '../../src/types';
 
@@ -236,9 +234,7 @@ describe('_downloadFileBatch function', () => {
       timeout: 15000,
     };
 
-    const files: BatchDownloadFile[] = [
-      { translationId: 'trans-1' },
-    ];
+    const files: BatchDownloadFile[] = [{ translationId: 'trans-1' }];
 
     const options: DownloadFileBatchOptions = {
       projectId: 'test-project',
@@ -273,11 +269,10 @@ describe('_downloadFileBatch function', () => {
     // First call fails, second succeeds
     mockFetch
       .mockRejectedValueOnce(new Error('Network error'))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .mockResolvedValueOnce(mockResponse as MockResponse as any);
 
-    const files: BatchDownloadFile[] = [
-      { translationId: 'trans-1' },
-    ];
+    const files: BatchDownloadFile[] = [{ translationId: 'trans-1' }];
 
     const options: DownloadFileBatchOptions = {
       projectId: 'test-project',
@@ -343,41 +338,6 @@ describe('_downloadFileBatch function', () => {
     ).rejects.toThrow('Files array is required and must not be empty');
   });
 
-  it('should throw error when projectId is missing', async () => {
-    const files: BatchDownloadFile[] = [
-      { translationId: 'trans-1' },
-    ];
-
-    const options: DownloadFileBatchOptions = {
-      // Missing projectId
-      apiKey: 'test-key',
-    };
-
-    await expect(
-      _downloadFileBatch(files, options, mockConfig)
-    ).rejects.toThrow('Project ID is required');
-  });
-
-  it('should throw error when apiKey is missing from both options and config', async () => {
-    const files: BatchDownloadFile[] = [
-      { translationId: 'trans-1' },
-    ];
-
-    const options: DownloadFileBatchOptions = {
-      projectId: 'test-project',
-      // Missing apiKey
-    };
-
-    const configWithoutApiKey: TranslationRequestConfig = {
-      projectId: 'test-project',
-      // Missing apiKey
-    };
-
-    await expect(
-      _downloadFileBatch(files, options, configWithoutApiKey)
-    ).rejects.toThrow('API key is required');
-  });
-
   it('should handle API key from config when not provided in options', async () => {
     const mockResult = {
       results: [
@@ -397,9 +357,7 @@ describe('_downloadFileBatch function', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
 
-    const files: BatchDownloadFile[] = [
-      { translationId: 'trans-1' },
-    ];
+    const files: BatchDownloadFile[] = [{ translationId: 'trans-1' }];
 
     const options: DownloadFileBatchOptions = {
       projectId: 'test-project',
@@ -439,9 +397,7 @@ describe('_downloadFileBatch function', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
 
-    const files: BatchDownloadFile[] = [
-      { translationId: 'trans-1' },
-    ];
+    const files: BatchDownloadFile[] = [{ translationId: 'trans-1' }];
 
     const options: DownloadFileBatchOptions = {
       projectId: 'test-project',

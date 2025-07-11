@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { TranslationRequestConfig } from '../../src/types';
-import _checkFileTranslations, {
-  FileTranslationCheck,
-  CheckFileTranslationsOptions,
-} from '../../src/translate/checkFileTranslations';
+import _checkFileTranslations from '../../src/translate/checkFileTranslations';
+import { FileTranslationCheck } from '../../src/types-dir/checkFileTranslations';
+import { CheckFileTranslationsOptions } from '../../src/types-dir/checkFileTranslations';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
 describe('Check File Translations E2E Tests', () => {
@@ -224,12 +223,13 @@ describe('Check File Translations E2E Tests', () => {
       // Should catch authentication error
       expect(error).toBeDefined();
       const errorMessage = error.message || error.toString();
-      const isAuthError = errorMessage.includes('401') || 
-                         errorMessage.includes('Unauthorized') ||
-                         errorMessage.includes('authentication') ||
-                         errorMessage.includes('Invalid API key') ||
-                         errorMessage.includes('403') ||
-                         errorMessage.includes('Forbidden');
+      const isAuthError =
+        errorMessage.includes('401') ||
+        errorMessage.includes('Unauthorized') ||
+        errorMessage.includes('authentication') ||
+        errorMessage.includes('Invalid API key') ||
+        errorMessage.includes('403') ||
+        errorMessage.includes('Forbidden');
       expect(isAuthError).toBe(true);
     }
   });

@@ -1,8 +1,8 @@
-import { translationLogger } from 'src/logging/logger';
+import { fetchLogger } from '../../logging/logger';
 import {
   translationRequestFailedError,
   translationTimeoutError,
-} from 'src/logging/errors';
+} from '../../logging/errors';
 
 export default function handleFetchError(
   error: unknown,
@@ -10,12 +10,12 @@ export default function handleFetchError(
 ): never {
   if (error instanceof Error && error.name === 'AbortError') {
     const errorMessage = translationTimeoutError(timeout);
-    translationLogger.error(errorMessage);
+    fetchLogger.error(errorMessage);
     throw new Error(errorMessage);
   }
   const errorMessage = translationRequestFailedError(
     error instanceof Error ? error.message : String(error)
   );
-  translationLogger.error(errorMessage);
+  fetchLogger.error(errorMessage);
   throw error;
 }

@@ -3,7 +3,7 @@ import handleFetchError from '../../../src/translate/utils/handleFetchError';
 
 // Mock the logger
 vi.mock('../../../src/logging/logger', () => ({
-  translationLogger: {
+  fetchLogger: {
     error: vi.fn(),
   },
 }));

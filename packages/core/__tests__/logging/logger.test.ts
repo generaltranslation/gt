@@ -257,7 +257,7 @@ describe('Logger', () => {
   describe('context-specific loggers', () => {
     it('should create translation logger with proper context', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       // Temporarily enable logging for this test by configuring the parent logger
       const originalConfig = defaultLogger.getConfig();
       defaultLogger.configure({ ...originalConfig, level: 'warn' });

@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { TranslationRequestConfig } from '../../src/types';
-import _downloadFileBatch, {
-  BatchDownloadFile,
-  DownloadFileBatchOptions,
-} from '../../src/translate/downloadFileBatch';
+import _downloadFileBatch from '../../src/translate/downloadFileBatch';
+import { BatchDownloadFile } from '../../src/types-dir/downloadFileBatch';
+import { DownloadFileBatchOptions } from '../../src/types-dir/downloadFileBatch';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
 describe('Download File Batch E2E Tests', () => {
@@ -85,7 +84,9 @@ describe('Download File Batch E2E Tests', () => {
       expect(Array.isArray(result.failed)).toBe(true);
       expect(typeof result.successCount).toBe('number');
       expect(typeof result.failureCount).toBe('number');
-      expect(result.successCount + result.failureCount).toBe(result.results.length);
+      expect(result.successCount + result.failureCount).toBe(
+        result.results.length
+      );
       expect(result.results.length).toBe(testFiles.length);
     } catch (error) {
       expect(error).toBeDefined();
@@ -189,7 +190,7 @@ describe('Download File Batch E2E Tests', () => {
   it('should handle large batch of files', async () => {
     const timestamp = Date.now();
     const testFiles: BatchDownloadFile[] = [];
-    
+
     // Generate a larger batch of files
     for (let i = 0; i < 10; i++) {
       testFiles.push({
@@ -245,7 +246,7 @@ describe('Download File Batch E2E Tests', () => {
 
     try {
       const result = await _downloadFileBatch(testFiles, options, config);
-      
+
       if (result.successCount > 0) {
         // Server may accept any key in dev mode
         expect(true).toBe(true);
@@ -258,12 +259,13 @@ describe('Download File Batch E2E Tests', () => {
       // Should catch authentication error
       expect(error).toBeDefined();
       const errorMessage = error.message || error.toString();
-      const isAuthError = errorMessage.includes('401') || 
-                         errorMessage.includes('Unauthorized') ||
-                         errorMessage.includes('authentication') ||
-                         errorMessage.includes('Invalid API key') ||
-                         errorMessage.includes('403') ||
-                         errorMessage.includes('Forbidden');
+      const isAuthError =
+        errorMessage.includes('401') ||
+        errorMessage.includes('Unauthorized') ||
+        errorMessage.includes('authentication') ||
+        errorMessage.includes('Invalid API key') ||
+        errorMessage.includes('403') ||
+        errorMessage.includes('Forbidden');
       expect(isAuthError).toBe(true);
     }
   });
@@ -314,7 +316,9 @@ describe('Download File Batch E2E Tests', () => {
       expect(false).toBe(true); // Should not reach here
     } catch (error) {
       expect(error).toBeDefined();
-      expect(error.message).toContain('Files array is required and must not be empty');
+      expect(error.message).toContain(
+        'Files array is required and must not be empty'
+      );
     }
   });
 

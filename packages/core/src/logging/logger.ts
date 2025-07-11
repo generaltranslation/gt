@@ -342,7 +342,7 @@ export const error = (
 ) => defaultLogger.error(message, context, metadata);
 
 // Create context-specific loggers for different parts of the system
-export const translationLogger = defaultLogger.child('translation');
+export const fetchLogger = defaultLogger.child('fetch');
 export const validationLogger = defaultLogger.child('validation');
 export const formattingLogger = defaultLogger.child('formatting');
 export const localeLogger = defaultLogger.child('locale');

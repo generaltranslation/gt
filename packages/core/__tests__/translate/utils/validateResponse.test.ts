@@ -11,7 +11,7 @@ interface MockResponse {
 
 // Mock the logger
 vi.mock('../../../src/logging/logger', () => ({
-  translationLogger: {
+  fetchLogger: {
     error: vi.fn(),
   },
 }));

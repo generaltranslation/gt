@@ -7,7 +7,6 @@ import { TranslationRequestConfig } from '../types';
 import {
   FetchTranslationsOptions,
   FetchTranslationsResult,
-  RetrievedTranslations,
 } from '../types-dir/fetchTranslations';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 

@@ -11,14 +11,10 @@ import {
   JsxChildren,
   IcuMessage,
 } from '../../src/types';
-import { EntryMetadata, Entry } from '../../src/_types/entry';
+import { EntryMetadata, Entry } from '../../src/types-dir/entry';
 
 // Mock the fetch utilities and validators
 vi.mock('../../src/utils/fetchWithTimeout', () => ({
-  default: vi.fn(),
-}));
-
-vi.mock('../../src/translate/utils/validateConfig', () => ({
   default: vi.fn(),
 }));
 
@@ -44,7 +40,6 @@ describe('Internal Translation Functions', () => {
       projectId: 'test-project',
       apiKey: 'test-key',
       baseUrl: 'https://api.test.com',
-      timeout: 5000,
     };
 
     const mockTranslationResult: TranslationResult = {
@@ -86,10 +81,12 @@ describe('Internal Translation Functions', () => {
           body: JSON.stringify({
             requests: [{ source }],
             targetLocale,
-            metadata,
+            metadata: {
+              sourceLocale: metadata.sourceLocale,
+            },
           }),
         },
-        5000
+        60000
       );
 
       expect(result).toEqual(mockTranslationResult);
@@ -129,10 +126,12 @@ describe('Internal Translation Functions', () => {
           body: JSON.stringify({
             requests: [{ source: jsxSource }],
             targetLocale,
-            metadata,
+            metadata: {
+              sourceLocale: metadata.sourceLocale,
+            },
           }),
         },
-        5000
+        60000
       );
 
       expect(result).toEqual(mockTranslationResult);
@@ -172,10 +171,12 @@ describe('Internal Translation Functions', () => {
           body: JSON.stringify({
             requests: [{ source: icuSource }],
             targetLocale,
-            metadata,
+            metadata: {
+              sourceLocale: metadata.sourceLocale,
+            },
           }),
         },
-        5000
+        60000
       );
 
       expect(result).toEqual(mockTranslationResult);
@@ -204,7 +205,7 @@ describe('Internal Translation Functions', () => {
       );
     });
 
-    it('should handle timeout configuration', async () => {
+    it('should handle timeout configuration from metadata', async () => {
       const mockResponse = {
         ok: true,
         json: vi.fn().mockResolvedValue([mockTranslationResult]),
@@ -213,13 +214,11 @@ describe('Internal Translation Functions', () => {
 
       mockFetch.mockResolvedValue(mockResponse);
 
-      const configWithTimeout: TranslationRequestConfig = {
-        projectId: 'test-project',
-        apiKey: 'test-key',
+      const metadataWithTimeout: EntryMetadata = {
         timeout: 10000,
       };
 
-      await _translate('Hello world', 'es', {}, configWithTimeout);
+      await _translate('Hello world', 'es', metadataWithTimeout, mockConfig);
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
@@ -255,7 +254,9 @@ describe('Internal Translation Functions', () => {
           body: JSON.stringify({
             requests: [{ source: 'Hello world' }],
             targetLocale: 'es',
-            metadata: fullMetadata,
+            metadata: {
+              sourceLocale: fullMetadata.sourceLocale,
+            },
           }),
         }),
         expect.any(Number)
@@ -299,7 +300,9 @@ describe('Internal Translation Functions', () => {
           body: JSON.stringify({
             requests: [{ source: 'Hello world' }],
             targetLocale: 'es',
-            metadata: {},
+            metadata: {
+              sourceLocale: undefined,
+            },
           }),
         }),
         expect.any(Number)
@@ -331,7 +334,6 @@ describe('Internal Translation Functions', () => {
       projectId: 'test-project',
       apiKey: 'test-key',
       baseUrl: 'https://api.test.com',
-      timeout: 5000,
     };
 
     const mockTranslateManyResult: TranslateManyResult = {
@@ -488,7 +490,7 @@ describe('Internal Translation Functions', () => {
       );
     });
 
-    it('should handle timeout configuration', async () => {
+    it('should handle timeout configuration from globalMetadata', async () => {
       const mockResponse = {
         ok: true,
         json: vi.fn().mockResolvedValue(mockTranslateManyResult),
@@ -496,12 +498,6 @@ describe('Internal Translation Functions', () => {
       } as any;
 
       mockFetch.mockResolvedValue(mockResponse);
-
-      const configWithTimeout: TranslationRequestConfig = {
-        projectId: 'test-project',
-        apiKey: 'test-key',
-        timeout: 10000,
-      };
 
       const requests: Entry[] = [
         {
@@ -511,7 +507,14 @@ describe('Internal Translation Functions', () => {
         },
       ];
 
-      await _translateMany(requests, { targetLocale: 'es' }, configWithTimeout);
+      const globalMetadataWithTimeout: {
+        targetLocale: string;
+      } & EntryMetadata = {
+        targetLocale: 'es',
+        timeout: 10000,
+      };
+
+      await _translateMany(requests, globalMetadataWithTimeout, mockConfig);
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),

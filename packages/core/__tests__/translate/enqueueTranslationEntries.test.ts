@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _enqueueEntries from '../../src/translate/enqueueEntries';
-import {
-  Updates,
-  EnqueueEntriesOptions,
-  EnqueueEntriesResult,
-} from '../../src/_types/enqueue';
+import { Updates } from '../../src/types-dir/enqueue';
+import { EnqueueEntriesOptions } from '../../src/types-dir/enqueue';
+import { EnqueueEntriesResult } from '../../src/types-dir/enqueue';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
 import { TranslationRequestConfig } from '../../src/types';
 
@@ -79,11 +77,7 @@ describe('_enqueueEntries function', () => {
       sourceLocale: 'en',
     };
 
-    const result = await _enqueueEntries(
-      testUpdates,
-      options,
-      mockConfig
-    );
+    const result = await _enqueueEntries(testUpdates, options, mockConfig);
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('/v1/project/translations/update'),
@@ -135,11 +129,7 @@ describe('_enqueueEntries function', () => {
       dataFormat: 'JSX',
     };
 
-    const result = await _enqueueEntries(
-      jsxUpdates,
-      options,
-      mockConfig
-    );
+    const result = await _enqueueEntries(jsxUpdates, options, mockConfig);
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.any(String),
@@ -194,11 +184,7 @@ describe('_enqueueEntries function', () => {
       requireApproval: false,
     };
 
-    const result = await _enqueueEntries(
-      mixedUpdates,
-      options,
-      mockConfig
-    );
+    const result = await _enqueueEntries(mixedUpdates, options, mockConfig);
 
     expect(mockFetch).toHaveBeenCalledWith(
       'https://api.test.com/v1/project/translations/update',
@@ -250,11 +236,7 @@ describe('_enqueueEntries function', () => {
       requireApproval: true,
     };
 
-    await _enqueueEntries(
-      testUpdates,
-      options,
-      mockConfig
-    );
+    await _enqueueEntries(testUpdates, options, mockConfig);
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.any(String),
@@ -302,11 +284,7 @@ describe('_enqueueEntries function', () => {
       locales: ['es'],
     };
 
-    await _enqueueEntries(
-      testUpdates,
-      options,
-      configWithTimeout
-    );
+    await _enqueueEntries(testUpdates, options, configWithTimeout);
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.any(String),
@@ -331,11 +309,7 @@ describe('_enqueueEntries function', () => {
       sourceLocale: 'en',
     };
 
-    const result = await _enqueueEntries(
-      emptyUpdates,
-      options,
-      mockConfig
-    );
+    const result = await _enqueueEntries(emptyUpdates, options, mockConfig);
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.any(String),
@@ -353,56 +327,6 @@ describe('_enqueueEntries function', () => {
     );
 
     expect(result).toEqual(mockResult);
-  });
-
-  it('should throw error when projectId is missing', async () => {
-    const testUpdates: Updates = [
-      {
-        source: 'Test',
-        dataFormat: 'ICU',
-        metadata: { id: 'test', hash: 'hash' },
-      },
-    ];
-
-    const options: EnqueueEntriesOptions = {
-      locales: ['es'],
-    };
-
-    const configWithoutProjectId: TranslationRequestConfig = {
-      apiKey: 'test-key',
-      // Missing projectId
-    };
-
-    await expect(
-      _enqueueEntries(testUpdates, options, configWithoutProjectId)
-    ).rejects.toThrow('GT error: Project ID and API key or dev API key are required');
-  });
-
-  it('should throw error when apiKey is missing from both options and config', async () => {
-    const testUpdates: Updates = [
-      {
-        source: 'Test',
-        dataFormat: 'ICU',
-        metadata: { id: 'test', hash: 'hash' },
-      },
-    ];
-
-    const options: EnqueueEntriesOptions = {
-      locales: ['es'],
-    };
-
-    const configWithoutApiKey: TranslationRequestConfig = {
-      projectId: 'test-project',
-      // Missing apiKey
-    };
-
-    await expect(
-      _enqueueEntries(
-        testUpdates,
-        options,
-        configWithoutApiKey
-      )
-    ).rejects.toThrow('GT error: Project ID and API key or dev API key are required');
   });
 
   it('should handle network errors', async () => {

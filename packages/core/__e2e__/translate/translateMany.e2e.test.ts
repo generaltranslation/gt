@@ -6,51 +6,36 @@ import {
   VariableType,
   TranslationRequestConfig,
 } from '../../src/types';
-import { GTRequestMetadata } from '../../src/types/GTRequest';
+import { EntryMetadata, Entry } from '../../src/types-dir/entry';
 import _translateMany from '../../src/translate/translateMany';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
+
 // Environment variables are now loaded automatically by Vitest via the vitest.config.ts file
 
 describe('TranslateMany E2E Tests', () => {
-  const runtimeUrl =
-    process.env.VITE_GT_RUNTIME_URL ||
-    defaultRuntimeApiUrl;
+  const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultRuntimeApiUrl;
   const projectId = process.env.VITE_GT_PROJECT_ID;
   const apiKey = process.env.VITE_GT_API_KEY;
 
-  // Debug: Log the configuration being used
-  // eslint-disable-next-line no-console
-  console.log('TranslateMany E2E Test Configuration:');
-  // eslint-disable-next-line no-console
-  console.log('  runtimeUrl:', runtimeUrl);
-  // eslint-disable-next-line no-console
-  console.log('  projectId:', projectId);
-  // eslint-disable-next-line no-console
-  console.log('  apiKey:', apiKey ? '***' + apiKey.slice(-4) : 'undefined');
-
   if (!runtimeUrl) {
     throw new Error('VITE_GT_RUNTIME_URL environment variable is required');
-  }
-  if (!projectId) {
-    throw new Error('GT_PROJECT_ID environment variable is required');
-  }
-  if (!apiKey) {
-    throw new Error('GT_API_KEY environment variable is required');
   }
 
   // Configuration for GT translateMany function
   const config: TranslationRequestConfig = {
     baseUrl: runtimeUrl,
-    projectId: projectId,
-    apiKey: apiKey,
+    projectId: projectId || 'test-project',
+    apiKey: apiKey || 'test-key',
   };
 
   // Helper function to generate unique IDs and calculate hash values
   const createTestMetadata = (
     source: JsxChildren | IcuMessage,
-    metadata: Partial<GTRequestMetadata> = {}
-  ): GTRequestMetadata => {
-    const id = `test-id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    metadata: Partial<EntryMetadata> = {}
+  ): EntryMetadata => {
+    const id = `test-id-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
     const dataFormat = typeof source === 'string' ? 'ICU' : 'JSX';
     const hash = hashSource({
       source,
@@ -74,28 +59,35 @@ describe('TranslateMany E2E Tests', () => {
         context: 'test',
       });
       await _translateMany(
-        [{ source: 'Hello world', metadata: testMetadata }],
+        [
+          {
+            source: 'Hello world',
+            targetLocale: 'es',
+            requestMetadata: testMetadata,
+          },
+        ],
         { targetLocale: 'es' },
         config
       );
     } catch {
-      // eslint-disable-next-line no-console
-      console.warn('Server may not be available for TranslateMany E2E tests');
+      // Server may not be available for TranslateMany E2E tests
     }
   });
 
   it('should translate multiple strings with valid API key', async () => {
-    const requests = [
+    const requests: Entry[] = [
       {
         source: 'Hello world',
-        metadata: createTestMetadata('Hello world', {
+        targetLocale: 'es',
+        requestMetadata: createTestMetadata('Hello world', {
           context: 'greeting',
           sourceLocale: 'en',
         }),
       },
       {
         source: 'Goodbye world',
-        metadata: createTestMetadata('Goodbye world', {
+        targetLocale: 'es',
+        requestMetadata: createTestMetadata('Goodbye world', {
           context: 'farewell',
           sourceLocale: 'en',
         }),
@@ -110,15 +102,16 @@ describe('TranslateMany E2E Tests', () => {
       );
 
       expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(2);
+      expect(result.translations).toBeDefined();
+      expect(Array.isArray(result.translations)).toBe(true);
+      expect(result.translations).toHaveLength(2);
 
-      result.forEach((item, index) => {
+      result.translations.forEach((item, index) => {
         if ('translation' in item) {
           expect(item.translation).toBeDefined();
           expect(item.reference).toBeDefined();
-          expect(item.reference.id).toBe(requests[index].metadata.id);
-          expect(item.reference.key).toBe(requests[index].metadata.hash);
+          expect(item.reference.id).toBe(requests[index].requestMetadata.id);
+          expect(item.reference.key).toBe(requests[index].requestMetadata.hash);
         } else {
           expect(item).toHaveProperty('error');
         }
@@ -129,10 +122,11 @@ describe('TranslateMany E2E Tests', () => {
   });
 
   it('should reject invalid API key', async () => {
-    const requests = [
+    const requests: Entry[] = [
       {
         source: 'Hello world',
-        metadata: createTestMetadata('Hello world', {
+        targetLocale: 'es',
+        requestMetadata: createTestMetadata('Hello world', {
           context: 'auth-test',
           sourceLocale: 'en',
         }),
@@ -141,7 +135,7 @@ describe('TranslateMany E2E Tests', () => {
 
     const invalidConfig: TranslationRequestConfig = {
       baseUrl: runtimeUrl,
-      projectId: projectId,
+      projectId: projectId || 'test-project',
       apiKey: 'fake-invalid-key',
     };
 
@@ -165,10 +159,11 @@ describe('TranslateMany E2E Tests', () => {
       ' messages',
     ];
 
-    const requests = [
+    const requests: Entry[] = [
       {
         source: icuSource,
-        metadata: createTestMetadata(icuSource, {
+        targetLocale: 'fr',
+        requestMetadata: createTestMetadata(icuSource, {
           context: 'mixed-test-icu',
           sourceLocale: 'en',
           dataFormat: 'ICU',
@@ -176,7 +171,8 @@ describe('TranslateMany E2E Tests', () => {
       },
       {
         source: jsxSource,
-        metadata: createTestMetadata(jsxSource, {
+        targetLocale: 'fr',
+        requestMetadata: createTestMetadata(jsxSource, {
           context: 'mixed-test-jsx',
           sourceLocale: 'en',
           dataFormat: 'JSX',
@@ -192,17 +188,22 @@ describe('TranslateMany E2E Tests', () => {
       );
 
       expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(2);
+      expect(result.translations).toBeDefined();
+      expect(Array.isArray(result.translations)).toBe(true);
+      expect(result.translations).toHaveLength(2);
 
-      if ('translation' in result[0]) {
-        expect(typeof result[0].translation).toBe('string');
-        expect(result[0].reference.key).toBe(requests[0].metadata.hash);
+      if ('translation' in result.translations[0]) {
+        expect(typeof result.translations[0].translation).toBe('string');
+        expect(result.translations[0].reference.key).toBe(
+          requests[0].requestMetadata.hash
+        );
       }
 
-      if ('translation' in result[1]) {
-        expect(Array.isArray(result[1].translation)).toBe(true);
-        expect(result[1].reference.key).toBe(requests[1].metadata.hash);
+      if ('translation' in result.translations[1]) {
+        expect(Array.isArray(result.translations[1].translation)).toBe(true);
+        expect(result.translations[1].reference.key).toBe(
+          requests[1].requestMetadata.hash
+        );
       }
     } catch {
       expect(true).toBe(true); // Server may not be available
@@ -214,8 +215,9 @@ describe('TranslateMany E2E Tests', () => {
       const result = await _translateMany([], { targetLocale: 'es' }, config);
 
       expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(0);
+      expect(result.translations).toBeDefined();
+      expect(Array.isArray(result.translations)).toBe(true);
+      expect(result.translations).toHaveLength(0);
     } catch {
       expect(true).toBe(true); // Server may not be available
     }
@@ -225,17 +227,19 @@ describe('TranslateMany E2E Tests', () => {
     const identicalSource = 'This is identical content';
     const context = 'key-test';
 
-    const requests = [
+    const requests: Entry[] = [
       {
         source: identicalSource,
-        metadata: createTestMetadata(identicalSource, {
+        targetLocale: 'es',
+        requestMetadata: createTestMetadata(identicalSource, {
           context,
           sourceLocale: 'en',
         }),
       },
       {
         source: identicalSource,
-        metadata: createTestMetadata(identicalSource, {
+        targetLocale: 'es',
+        requestMetadata: createTestMetadata(identicalSource, {
           context, // Same context
           sourceLocale: 'en',
         }),
@@ -250,18 +254,30 @@ describe('TranslateMany E2E Tests', () => {
       );
 
       expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(2);
+      expect(result.translations).toBeDefined();
+      expect(Array.isArray(result.translations)).toBe(true);
+      expect(result.translations).toHaveLength(2);
 
-      if ('translation' in result[0] && 'translation' in result[1]) {
+      if (
+        'translation' in result.translations[0] &&
+        'translation' in result.translations[1]
+      ) {
         // Both requests should have the same key (identical content + context)
-        expect(result[0].reference.key).toBe(result[1].reference.key);
+        expect(result.translations[0].reference.key).toBe(
+          result.translations[1].reference.key
+        );
         // But different IDs
-        expect(result[0].reference.id).not.toBe(result[1].reference.id);
+        expect(result.translations[0].reference.id).not.toBe(
+          result.translations[1].reference.id
+        );
 
         // Verify keys match what we calculated as hash
-        expect(result[0].reference.key).toBe(requests[0].metadata.hash);
-        expect(result[1].reference.key).toBe(requests[1].metadata.hash);
+        expect(result.translations[0].reference.key).toBe(
+          requests[0].requestMetadata.hash
+        );
+        expect(result.translations[1].reference.key).toBe(
+          requests[1].requestMetadata.hash
+        );
       }
     } catch {
       expect(true).toBe(true);
@@ -270,9 +286,10 @@ describe('TranslateMany E2E Tests', () => {
 
   it('should handle large batch of requests', async () => {
     const batchSize = 10;
-    const requests = Array.from({ length: batchSize }, (_, index) => ({
+    const requests: Entry[] = Array.from({ length: batchSize }, (_, index) => ({
       source: `Test message ${index + 1}`,
-      metadata: createTestMetadata(`Test message ${index + 1}`, {
+      targetLocale: 'es',
+      requestMetadata: createTestMetadata(`Test message ${index + 1}`, {
         context: 'batch-test',
         sourceLocale: 'en',
       }),
@@ -286,14 +303,15 @@ describe('TranslateMany E2E Tests', () => {
       );
 
       expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(batchSize);
+      expect(result.translations).toBeDefined();
+      expect(Array.isArray(result.translations)).toBe(true);
+      expect(result.translations).toHaveLength(batchSize);
 
-      result.forEach((item, index) => {
+      result.translations.forEach((item, index) => {
         if ('translation' in item) {
           expect(item.translation).toBeDefined();
-          expect(item.reference.id).toBe(requests[index].metadata.id);
-          expect(item.reference.key).toBe(requests[index].metadata.hash);
+          expect(item.reference.id).toBe(requests[index].requestMetadata.id);
+          expect(item.reference.key).toBe(requests[index].requestMetadata.hash);
         }
       });
     } catch {

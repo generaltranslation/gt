@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _downloadFile, {
-  DownloadFileOptions,
-  DownloadFileResult,
-} from '../../src/translate/downloadFile';
+import _downloadFile from '../../src/translate/downloadFile';
+import { DownloadFileOptions } from '../../src/types-dir/downloadFile';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
 import { TranslationRequestConfig } from '../../src/types';
 
@@ -51,7 +49,8 @@ describe('_downloadFile function', () => {
       headers: {
         get: vi.fn((key: string) => {
           if (key === 'content-type') return 'application/json';
-          if (key === 'content-disposition') return 'attachment; filename="test.json"';
+          if (key === 'content-disposition')
+            return 'attachment; filename="test.json"';
           return null;
         }),
       },
@@ -171,6 +170,7 @@ describe('_downloadFile function', () => {
     // Set up the mock sequence
     mockFetch
       .mockRejectedValueOnce(new Error('Network error'))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .mockResolvedValueOnce(mockResponse as MockResponse as any);
 
     const translationId = 'trans-retry-123';
@@ -190,7 +190,7 @@ describe('_downloadFile function', () => {
 
   it('should fail after max retries', async () => {
     const networkError = new Error('Network error');
-    
+
     // Set up the mock for this test
     mockFetch.mockRejectedValue(networkError);
 
@@ -218,7 +218,8 @@ describe('_downloadFile function', () => {
       headers: {
         get: vi.fn((key: string) => {
           if (key === 'content-type') return 'text/html';
-          if (key === 'content-disposition') return 'attachment; filename="page.html"';
+          if (key === 'content-disposition')
+            return 'attachment; filename="page.html"';
           return null;
         }),
       },
@@ -238,35 +239,6 @@ describe('_downloadFile function', () => {
     expect(result.success).toBe(true);
     expect(result.contentType).toBe('text/html');
     expect(result.fileName).toBe('page.html');
-  });
-
-  it('should throw error when projectId is missing', async () => {
-    const translationId = 'trans-123';
-    const options: DownloadFileOptions = {
-      // Missing projectId
-      apiKey: 'test-key',
-    };
-
-    await expect(
-      _downloadFile(translationId, options, mockConfig)
-    ).rejects.toThrow('Project ID is required');
-  });
-
-  it('should throw error when apiKey is missing from both options and config', async () => {
-    const translationId = 'trans-123';
-    const options: DownloadFileOptions = {
-      projectId: 'test-project',
-      // Missing apiKey
-    };
-
-    const configWithoutApiKey: TranslationRequestConfig = {
-      projectId: 'test-project',
-      // Missing apiKey
-    };
-
-    await expect(
-      _downloadFile(translationId, options, configWithoutApiKey)
-    ).rejects.toThrow('API key is required');
   });
 
   it('should throw error when translationId is missing', async () => {

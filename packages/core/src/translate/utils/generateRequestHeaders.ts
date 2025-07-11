@@ -8,6 +8,5 @@ export default function generateRequestHeaders(
     ...(config.apiKey && {
       'x-gt-api-key': config.apiKey,
     }),
-    'x-gt-project-id': config.projectId,
   };
 }

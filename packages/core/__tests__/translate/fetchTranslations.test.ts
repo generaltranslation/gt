@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _fetchTranslations, {
-  FetchTranslationsOptions,
-  FetchTranslationsResult,
-  RetrievedTranslations,
-} from '../../src/translate/fetchTranslations';
+import _fetchTranslations from '../../src/translate/fetchTranslations';
+import { FetchTranslationsOptions } from '../../src/types-dir/fetchTranslations';
+import { RetrievedTranslations } from '../../src/types-dir/fetchTranslations';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
 import { TranslationRequestConfig } from '../../src/types';
 
@@ -285,35 +283,6 @@ describe('_fetchTranslations function', () => {
     expect(result.localeCount).toBe(2);
     expect(result.totalEntries).toBe(2); // Each null/undefined counts as 1
     expect(result.translations).toHaveLength(2);
-  });
-
-  it('should throw error when projectId is missing', async () => {
-    const versionId = 'version-123';
-    const options: FetchTranslationsOptions = {
-      // Missing projectId
-      apiKey: 'test-key',
-    };
-
-    await expect(
-      _fetchTranslations(versionId, options, mockConfig)
-    ).rejects.toThrow('Project ID is required');
-  });
-
-  it('should throw error when apiKey is missing from both options and config', async () => {
-    const versionId = 'version-123';
-    const options: FetchTranslationsOptions = {
-      projectId: 'test-project',
-      // Missing apiKey
-    };
-
-    const configWithoutApiKey: TranslationRequestConfig = {
-      projectId: 'test-project',
-      // Missing apiKey
-    };
-
-    await expect(
-      _fetchTranslations(versionId, options, configWithoutApiKey)
-    ).rejects.toThrow('API key is required');
   });
 
   it('should throw error when versionId is missing', async () => {

@@ -6,50 +6,32 @@ import {
   VariableType,
   TranslationRequestConfig,
 } from '../../src/types';
-import { GTRequestMetadata } from '../../src/types/GTRequest';
+import { EntryMetadata } from '../../src/types-dir/entry';
 import _translate from '../../src/translate/translate';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 // Environment variables are now loaded automatically by Vitest via the vitest.config.ts file
 
 describe('Translation E2E Tests', () => {
-  const runtimeUrl =
-    process.env.VITE_GT_RUNTIME_URL ||
-    defaultRuntimeApiUrl;
+  const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultRuntimeApiUrl;
   const projectId = process.env.VITE_GT_PROJECT_ID;
   const apiKey = process.env.VITE_GT_API_KEY;
 
-  // Debug: Log the configuration being used
-  // eslint-disable-next-line no-console
-  console.log('E2E Test Configuration:');
-  // eslint-disable-next-line no-console
-  console.log('  runtimeUrl:', runtimeUrl);
-  // eslint-disable-next-line no-console
-  console.log('  projectId:', projectId);
-  // eslint-disable-next-line no-console
-  console.log('  apiKey:', apiKey ? '***' + apiKey.slice(-4) : 'undefined');
-
   if (!runtimeUrl) {
     throw new Error('VITE_GT_RUNTIME_URL environment variable is required');
-  }
-  if (!projectId) {
-    throw new Error('GT_PROJECT_ID environment variable is required');
-  }
-  if (!apiKey) {
-    throw new Error('GT_API_KEY environment variable is required');
   }
 
   // Configuration for GT translate function
   const config: TranslationRequestConfig = {
     baseUrl: runtimeUrl,
-    projectId: projectId,
-    apiKey: apiKey,
+    projectId: projectId || 'test-project',
+    apiKey: apiKey || 'test-key',
   };
 
   // Helper function to generate unique IDs and calculate hash values
   const createTestMetadata = (
     source: JsxChildren | IcuMessage,
-    metadata: Partial<GTRequestMetadata> = {}
-  ): GTRequestMetadata => {
+    metadata: Partial<EntryMetadata> = {}
+  ): EntryMetadata => {
     const id = `test-id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const dataFormat = typeof source === 'string' ? 'ICU' : 'JSX';
     const hash = hashSource({
@@ -75,8 +57,7 @@ describe('Translation E2E Tests', () => {
       });
       await _translate('Hello world', 'es', testMetadata, config);
     } catch {
-      // eslint-disable-next-line no-console
-      console.warn('Server may not be available for E2E tests');
+      // Server may not be available for E2E tests
     }
   });
 

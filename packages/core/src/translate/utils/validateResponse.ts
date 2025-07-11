@@ -1,5 +1,5 @@
-import { translationApiError } from 'src/logging/errors';
-import { translationLogger } from 'src/logging/logger';
+import { translationApiError } from '../../logging/errors';
+import { fetchLogger } from '../../logging/logger';
 
 export default async function validateResponse(response: Response) {
   if (!response.ok) {
@@ -9,7 +9,7 @@ export default async function validateResponse(response: Response) {
       response.statusText,
       errorText
     );
-    translationLogger.error(errorMessage, {
+    fetchLogger.error(errorMessage, {
       status: response.status,
       statusText: response.statusText,
       error: errorText,

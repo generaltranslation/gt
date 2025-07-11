@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { TranslationRequestConfig } from '../../src/types';
-import _downloadFile, {
-  DownloadFileOptions,
-} from '../../src/translate/downloadFile';
+import _downloadFile from '../../src/translate/downloadFile';
+import { DownloadFileOptions } from '../../src/types-dir/downloadFile';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
 describe('Download File E2E Tests', () => {
@@ -71,7 +70,7 @@ describe('Download File E2E Tests', () => {
       expect(result).toBeDefined();
       expect(typeof result.success).toBe('boolean');
       expect(result.translationId).toBe(testTranslationId);
-      
+
       if (result.success) {
         expect(result.content).toBeDefined();
         expect(typeof result.content).toBe('string');
@@ -176,7 +175,7 @@ describe('Download File E2E Tests', () => {
 
     try {
       const result = await _downloadFile(testTranslationId, options, config);
-      
+
       if (result.success) {
         // Server may accept any key in dev mode
         expect(true).toBe(true);
@@ -189,12 +188,13 @@ describe('Download File E2E Tests', () => {
       // Should catch authentication error
       expect(error).toBeDefined();
       const errorMessage = error.message || error.toString();
-      const isAuthError = errorMessage.includes('401') || 
-                         errorMessage.includes('Unauthorized') ||
-                         errorMessage.includes('authentication') ||
-                         errorMessage.includes('Invalid API key') ||
-                         errorMessage.includes('403') ||
-                         errorMessage.includes('Forbidden');
+      const isAuthError =
+        errorMessage.includes('401') ||
+        errorMessage.includes('Unauthorized') ||
+        errorMessage.includes('authentication') ||
+        errorMessage.includes('Invalid API key') ||
+        errorMessage.includes('403') ||
+        errorMessage.includes('Forbidden');
       expect(isAuthError).toBe(true);
     }
   });
