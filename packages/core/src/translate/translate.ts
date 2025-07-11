@@ -7,11 +7,12 @@ import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { maxTimeout } from 'src/settings/settings';
 
-import { Content } from '../types/Content';
-import { GTRequestMetadata } from '../types/GTRequest';
+import { Content } from '../_types/content';
+import { EntryMetadata } from '../_types/entry';
 import validateConfig from './utils/validateConfig';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
+import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
  * @internal
@@ -21,7 +22,7 @@ import handleFetchError from './utils/handleFetchError';
 export default async function _translate(
   source: Content,
   targetLocale: string,
-  metadata: GTRequestMetadata = {},
+  metadata: EntryMetadata = {},
   config: TranslationRequestConfig
 ): Promise<TranslationResult | TranslationError> {
   let response;
@@ -37,10 +38,7 @@ export default async function _translate(
       url,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(config.apiKey && { 'x-gt-api-key': config.apiKey }),
-        },
+        headers: generateRequestHeaders(config),
         body: JSON.stringify({
           requests: [{ source }],
           targetLocale,

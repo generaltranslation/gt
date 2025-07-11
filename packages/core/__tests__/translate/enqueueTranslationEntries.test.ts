@@ -1,16 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _enqueueTranslationEntries, {
+import _enqueueEntries from '../../src/translate/enqueueEntries';
+import {
   Updates,
-  ApiOptions,
-  EnqueueTranslationEntriesResult,
-} from '../../src/translate/enqueueTranslationEntries';
+  EnqueueEntriesOptions,
+  EnqueueEntriesResult,
+} from '../../src/_types/enqueue';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
 import { TranslationRequestConfig } from '../../src/types';
 
 // Mock Response interface for testing
 interface MockResponse {
   ok: boolean;
-  json: () => Promise<EnqueueTranslationEntriesResult>;
+  json: () => Promise<EnqueueEntriesResult>;
 }
 
 // Mock the fetch utilities and validators
@@ -28,7 +29,7 @@ vi.mock('../../src/translate/utils/handleFetchError', () => ({
   }),
 }));
 
-describe('_enqueueTranslationEntries function', () => {
+describe('_enqueueEntries function', () => {
   const mockFetch = vi.mocked(fetchWithTimeout);
   const mockConfig: TranslationRequestConfig = {
     projectId: 'test-project',
@@ -37,7 +38,7 @@ describe('_enqueueTranslationEntries function', () => {
     timeout: 5000,
   };
 
-  const mockResult: EnqueueTranslationEntriesResult = {
+  const mockResult: EnqueueEntriesResult = {
     versionId: 'version-123',
     locales: ['es', 'fr'],
     message: 'Updates enqueued successfully',
@@ -73,23 +74,19 @@ describe('_enqueueTranslationEntries function', () => {
       },
     ];
 
-    const options: ApiOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      baseUrl: 'https://api.test.com',
-      locales: ['es', 'fr'],
-      defaultLocale: 'en',
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es', 'fr'],
+      sourceLocale: 'en',
     };
 
-    const result = await _enqueueTranslationEntries(
+    const result = await _enqueueEntries(
       testUpdates,
       options,
-      'test-library',
       mockConfig
     );
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.test.com/v1/project/translations/update',
+      expect.stringContaining('/v1/project/translations/update'),
       {
         method: 'POST',
         headers: {
@@ -105,7 +102,7 @@ describe('_enqueueTranslationEntries function', () => {
           },
         }),
       },
-      5000
+      expect.any(Number)
     );
 
     expect(result).toEqual(mockResult);
@@ -132,18 +129,15 @@ describe('_enqueueTranslationEntries function', () => {
       },
     ];
 
-    const options: ApiOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es'],
-      defaultLocale: 'en',
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es'],
+      sourceLocale: 'en',
       dataFormat: 'JSX',
     };
 
-    const result = await _enqueueTranslationEntries(
+    const result = await _enqueueEntries(
       jsxUpdates,
       options,
-      'test-library',
       mockConfig
     );
 
@@ -193,19 +187,16 @@ describe('_enqueueTranslationEntries function', () => {
       },
     ];
 
-    const options: ApiOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es', 'fr', 'de'],
-      defaultLocale: 'en',
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es', 'fr', 'de'],
+      sourceLocale: 'en',
       description: 'Mixed format test',
       requireApproval: false,
     };
 
-    const result = await _enqueueTranslationEntries(
+    const result = await _enqueueEntries(
       mixedUpdates,
       options,
-      'test-library',
       mockConfig
     );
 
@@ -251,20 +242,17 @@ describe('_enqueueTranslationEntries function', () => {
       },
     ];
 
-    const options: ApiOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es'],
-      defaultLocale: 'en',
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es'],
+      sourceLocale: 'en',
       version: 'custom-version-123',
       description: 'Custom version test',
       requireApproval: true,
     };
 
-    await _enqueueTranslationEntries(
+    await _enqueueEntries(
       testUpdates,
       options,
-      'test-library',
       mockConfig
     );
 
@@ -310,16 +298,13 @@ describe('_enqueueTranslationEntries function', () => {
       },
     ];
 
-    const options: ApiOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es'],
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es'],
     };
 
-    await _enqueueTranslationEntries(
+    await _enqueueEntries(
       testUpdates,
       options,
-      'test-library',
       configWithTimeout
     );
 
@@ -341,17 +326,14 @@ describe('_enqueueTranslationEntries function', () => {
 
     const emptyUpdates: Updates = [];
 
-    const options: ApiOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es'],
-      defaultLocale: 'en',
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es'],
+      sourceLocale: 'en',
     };
 
-    const result = await _enqueueTranslationEntries(
+    const result = await _enqueueEntries(
       emptyUpdates,
       options,
-      'test-library',
       mockConfig
     );
 
@@ -382,15 +364,18 @@ describe('_enqueueTranslationEntries function', () => {
       },
     ];
 
-    const options: ApiOptions = {
-      // Missing projectId
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es'],
+    };
+
+    const configWithoutProjectId: TranslationRequestConfig = {
       apiKey: 'test-key',
-      locales: ['es'],
+      // Missing projectId
     };
 
     await expect(
-      _enqueueTranslationEntries(testUpdates, options, 'test-library', mockConfig)
-    ).rejects.toThrow('Project ID is required');
+      _enqueueEntries(testUpdates, options, configWithoutProjectId)
+    ).rejects.toThrow('GT error: Project ID and API key or dev API key are required');
   });
 
   it('should throw error when apiKey is missing from both options and config', async () => {
@@ -402,10 +387,8 @@ describe('_enqueueTranslationEntries function', () => {
       },
     ];
 
-    const options: ApiOptions = {
-      projectId: 'test-project',
-      // Missing apiKey
-      locales: ['es'],
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es'],
     };
 
     const configWithoutApiKey: TranslationRequestConfig = {
@@ -414,13 +397,12 @@ describe('_enqueueTranslationEntries function', () => {
     };
 
     await expect(
-      _enqueueTranslationEntries(
+      _enqueueEntries(
         testUpdates,
         options,
-        'test-library',
         configWithoutApiKey
       )
-    ).rejects.toThrow('API key is required');
+    ).rejects.toThrow('GT error: Project ID and API key or dev API key are required');
   });
 
   it('should handle network errors', async () => {
@@ -435,14 +417,12 @@ describe('_enqueueTranslationEntries function', () => {
       },
     ];
 
-    const options: ApiOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es'],
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es'],
     };
 
     await expect(
-      _enqueueTranslationEntries(testUpdates, options, 'test-library', mockConfig)
+      _enqueueEntries(testUpdates, options, mockConfig)
     ).rejects.toThrow('Network error');
   });
 
@@ -459,14 +439,12 @@ describe('_enqueueTranslationEntries function', () => {
       },
     ];
 
-    const options: ApiOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es'],
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es'],
     };
 
     await expect(
-      _enqueueTranslationEntries(testUpdates, options, 'test-library', mockConfig)
+      _enqueueEntries(testUpdates, options, mockConfig)
     ).rejects.toThrow();
   });
 });

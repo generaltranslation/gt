@@ -1,6 +1,6 @@
 import { LocaleProperties } from './locales/getLocaleProperties';
 
-import { Variable, VariableType } from './types/Variables';
+import { Variable, VariableType } from './_types/variables';
 
 import {
   IcuMessage,
@@ -14,8 +14,8 @@ import {
   HTML_CONTENT_PROPS,
   DataFormat,
   Content,
-} from './types/Content';
-import { ActionType, GTRequestMetadata, GTRequest } from './types/GTRequest';
+} from './_types/content';
+import { ActionType, EntryMetadata, Entry } from './_types/entry';
 
 export {
   IcuMessage,
@@ -32,8 +32,8 @@ export {
   LocaleProperties,
   DataFormat,
   ActionType as EntryActionType,
-  GTRequestMetadata as EntryMetadata,
-  GTRequest as Entry,
+  EntryMetadata as EntryMetadata,
+  Entry as Entry,
   Content,
 };
 

@@ -26,14 +26,12 @@ import {
 } from './types';
 export type {
   Updates,
-  ApiOptions,
-  EnqueueTranslationEntriesResult,
-} from './translate/enqueueTranslationEntries';
-export type {
+  EnqueueEntriesOptions,
+  EnqueueEntriesResult,
   FileToTranslate,
   EnqueueFilesOptions,
   EnqueueFilesResult,
-} from './translate/enqueueFiles';
+} from './_types/enqueue';
 export type {
   FileTranslationCheck,
   CheckFileTranslationsOptions,
@@ -52,7 +50,7 @@ export type {
   FetchTranslationsOptions,
   FetchTranslationsResult,
 } from './translate/fetchTranslations';
-export type { File } from './types/File';
+export type { File } from './_types/file';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
   LocaleProperties,
@@ -72,19 +70,11 @@ import {
   noProjectIdProvidedError,
 } from './logging/errors';
 import _translate from './translate/translate';
-import { GTRequest, GTRequestMetadata } from './types/GTRequest';
+import { Entry, EntryMetadata } from './_types/entry';
 import { gtInstanceLogger } from './logging/logger';
 import _translateMany from './translate/translateMany';
-import _enqueueFiles, {
-  FileToTranslate,
-  EnqueueFilesOptions,
-  EnqueueFilesResult,
-} from './translate/enqueueFiles';
-import _enqueueTranslationEntries, {
-  Updates,
-  ApiOptions,
-  EnqueueTranslationEntriesResult,
-} from './translate/enqueueTranslationEntries';
+import _enqueueFiles from './translate/enqueueFiles';
+import _enqueueEntries from './translate/enqueueEntries';
 import _checkFileTranslations, {
   FileTranslationCheck,
   CheckFileTranslationsOptions,
@@ -99,11 +89,16 @@ import _downloadFileBatch, {
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
 } from './translate/downloadFileBatch';
-import _fetchTranslations, {
-  FetchTranslationsOptions,
-  FetchTranslationsResult,
-} from './translate/fetchTranslations';
-import { File } from './types/File';
+import _fetchTranslations from './translate/fetchTranslations';
+import { File } from './_types/file';
+import {
+  EnqueueEntriesOptions,
+  EnqueueEntriesResult,
+  EnqueueFilesOptions,
+  EnqueueFilesResult,
+  FileToTranslate,
+  Updates,
+} from './_types/enqueue';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -270,30 +265,25 @@ export class GT {
    * Enqueues translation entries for processing.
    *
    * @param {Updates} updates - The translation entries to enqueue.
-   * @param {ApiOptions} options - Options for enqueueing entries.
+   * @param {EnqueueEntriesOptions} options - Options for enqueueing entries.
    * @param {string} library - The library being used (for context).
    * @returns {Promise<EnqueueTranslationEntriesResult>} The result of the enqueue operation.
    */
   async enqueueTranslationEntries(
     updates: Updates,
-    options: ApiOptions = {},
-    library: string = 'core'
-  ): Promise<EnqueueTranslationEntriesResult> {
+    options: EnqueueEntriesOptions = {}
+  ): Promise<EnqueueEntriesResult> {
     // Merge instance settings with options
-    const mergedOptions: ApiOptions = {
-      baseUrl: this.baseUrl,
-      apiKey: this.apiKey || this.devApiKey,
-      projectId: this.projectId,
-      defaultLocale: this.sourceLocale,
-      locales: this.locales,
+    const mergedOptions: EnqueueEntriesOptions = {
       ...options,
+      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+      targetLocales: options.targetLocales ?? this.locales,
     };
 
     // Request the translation entry updates
-    return await _enqueueTranslationEntries(
+    return await _enqueueEntries(
       updates,
       mergedOptions,
-      library,
       this._getTranslationConfig()
     );
   }
@@ -318,7 +308,8 @@ export class GT {
     // Merge project ID with options
     const mergedOptions = {
       ...options,
-      projectId: this.projectId,
+      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+      targetLocales: options.targetLocales ?? this.locales,
     };
 
     // Request the file updates
@@ -462,7 +453,7 @@ export class GT {
    *
    * @param {Content} source - {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage} The source content to translate.
    * @param {string} targetLocale - string The target locale to translate to.
-   * @param {GTRequestMetadata} metadata - {@link GTRequestMetadata} The metadata for the translation.
+   * @param {EntryMetadata} metadata - {@link EntryMetadata} The metadata for the translation.
    * @returns {Promise<TranslationResult | TranslationError>} The translated content.
    *
    * @example
@@ -489,7 +480,7 @@ export class GT {
   async _translate(
     source: JsxChildren,
     targetLocale: string,
-    metadata?: Omit<GTRequestMetadata, 'dataFormat'> & {
+    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
       dataFormat?: 'JSX';
     }
   ): Promise<TranslationResult | TranslationError>;
@@ -498,7 +489,7 @@ export class GT {
   async _translate(
     source: IcuMessage,
     targetLocale: string,
-    metadata?: Omit<GTRequestMetadata, 'dataFormat'> & {
+    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
       dataFormat?: 'ICU';
     }
   ): Promise<TranslationResult | TranslationError>;
@@ -507,7 +498,7 @@ export class GT {
   async _translate(
     source: I18nextMessage,
     targetLocale: string,
-    metadata?: Omit<GTRequestMetadata, 'dataFormat'> & {
+    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
       dataFormat?: 'I18NEXT';
     }
   ): Promise<TranslationResult | TranslationError>;
@@ -516,7 +507,7 @@ export class GT {
   async _translate(
     source: Content,
     targetLocale: string,
-    metadata?: GTRequestMetadata
+    metadata?: EntryMetadata
   ): Promise<TranslationResult | TranslationError> {
     // Validation
     if (!targetLocale) {
@@ -541,8 +532,8 @@ export class GT {
    * Translates multiple source contents to the target locale.
    * Override global metadata by supplying a metadata object for each request.
    *
-   * @param {GTRequest[]} sources - The source contents to translate.
-   * @param {GTRequestMetadata} globalMetadata - {@link GTRequestMetadata} The metadata for the translation.
+   * @param {Entry[]} sources - The source contents to translate.
+   * @param {EntryMetadata} globalMetadata - {@link EntryMetadata} The metadata for the translation.
    * @returns {Promise<TranslateManyResult>} The translated contents.
    *
    * @example
@@ -559,8 +550,8 @@ export class GT {
    * console.log(result);
    */
   async translateMany(
-    sources: GTRequest[],
-    globalMetadata?: { targetLocale: string } & GTRequestMetadata
+    sources: Entry[],
+    globalMetadata?: { targetLocale: string } & EntryMetadata
   ): Promise<TranslateManyResult> {
     // Validation
     const targetLocale = globalMetadata?.targetLocale || this.targetLocale;

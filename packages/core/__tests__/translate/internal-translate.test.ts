@@ -11,7 +11,7 @@ import {
   JsxChildren,
   IcuMessage,
 } from '../../src/types';
-import { GTRequestMetadata, GTRequest } from '../../src/types/GTRequest';
+import { EntryMetadata, Entry } from '../../src/_types/entry';
 
 // Mock the fetch utilities and validators
 vi.mock('../../src/utils/fetchWithTimeout', () => ({
@@ -66,7 +66,7 @@ describe('Internal Translation Functions', () => {
 
       const source: Content = 'Hello world';
       const targetLocale = 'es';
-      const metadata: GTRequestMetadata = { context: 'greeting' };
+      const metadata: EntryMetadata = { context: 'greeting' };
 
       const result = await _translate(
         source,
@@ -106,7 +106,7 @@ describe('Internal Translation Functions', () => {
 
       const jsxSource: JsxChildren = ['Hello ', { t: 'strong', c: ['world'] }];
       const targetLocale = 'es';
-      const metadata: GTRequestMetadata = {
+      const metadata: EntryMetadata = {
         context: 'greeting',
         dataFormat: 'JSX',
       };
@@ -149,7 +149,7 @@ describe('Internal Translation Functions', () => {
 
       const icuSource: IcuMessage = 'Hello {name}';
       const targetLocale = 'es';
-      const metadata: GTRequestMetadata = {
+      const metadata: EntryMetadata = {
         context: 'greeting',
         dataFormat: 'ICU',
       };
@@ -237,7 +237,7 @@ describe('Internal Translation Functions', () => {
 
       mockFetch.mockResolvedValue(mockResponse);
 
-      const fullMetadata: GTRequestMetadata = {
+      const fullMetadata: EntryMetadata = {
         sourceLocale: 'en',
         context: 'dashboard',
         id: 'welcome-msg',
@@ -372,7 +372,7 @@ describe('Internal Translation Functions', () => {
 
       mockFetch.mockResolvedValue(mockResponse);
 
-      const requests: GTRequest[] = [
+      const requests: Entry[] = [
         {
           source: 'Hello world',
           targetLocale: 'es',
@@ -385,7 +385,7 @@ describe('Internal Translation Functions', () => {
         },
       ];
 
-      const globalMetadata: { targetLocale: string } & GTRequestMetadata = {
+      const globalMetadata: { targetLocale: string } & EntryMetadata = {
         targetLocale: 'es',
         sourceLocale: 'en',
       };
@@ -417,7 +417,7 @@ describe('Internal Translation Functions', () => {
 
       mockFetch.mockResolvedValue(mockResponse);
 
-      const requests: GTRequest[] = [
+      const requests: Entry[] = [
         {
           source: ['Hello ', { t: 'strong', c: ['world'] }],
           targetLocale: 'es',
@@ -430,7 +430,7 @@ describe('Internal Translation Functions', () => {
         },
       ];
 
-      const globalMetadata: { targetLocale: string } & GTRequestMetadata = {
+      const globalMetadata: { targetLocale: string } & EntryMetadata = {
         targetLocale: 'es',
         sourceLocale: 'en',
       };
@@ -467,7 +467,7 @@ describe('Internal Translation Functions', () => {
         apiKey: 'test-key',
       };
 
-      const requests: GTRequest[] = [
+      const requests: Entry[] = [
         {
           source: 'Hello world',
           targetLocale: 'es',
@@ -503,7 +503,7 @@ describe('Internal Translation Functions', () => {
         timeout: 10000,
       };
 
-      const requests: GTRequest[] = [
+      const requests: Entry[] = [
         {
           source: 'Hello world',
           targetLocale: 'es',
@@ -524,7 +524,7 @@ describe('Internal Translation Functions', () => {
       const networkError = new Error('Network error');
       mockFetch.mockRejectedValue(networkError);
 
-      const requests: GTRequest[] = [
+      const requests: Entry[] = [
         {
           source: 'Hello world',
           targetLocale: 'es',
@@ -542,7 +542,7 @@ describe('Internal Translation Functions', () => {
       timeoutError.name = 'AbortError';
       mockFetch.mockRejectedValue(timeoutError);
 
-      const requests: GTRequest[] = [
+      const requests: Entry[] = [
         {
           source: 'Hello world',
           targetLocale: 'es',
@@ -564,7 +564,7 @@ describe('Internal Translation Functions', () => {
 
       mockFetch.mockResolvedValue(mockResponse);
 
-      const requests: GTRequest[] = [];
+      const requests: Entry[] = [];
 
       const result = await _translateMany(
         requests,

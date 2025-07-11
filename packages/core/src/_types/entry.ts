@@ -24,7 +24,7 @@ export type ActionType = 'standard' | 'fast' | string;
  * @param id - The id of the request.
  * @param hash - The hash of the request.
  */
-export type GTRequestMetadata = {
+export type EntryMetadata = {
   context?: string;
   id?: string;
   hash?: string;
@@ -41,8 +41,8 @@ export type GTRequestMetadata = {
  * @param targetLocale - The target locale to translate to.
  * @param requestMetadata - The metadata for the request.
  */
-export type GTRequest = {
+export type Entry = {
   source: Content;
   targetLocale: string;
-  requestMetadata: GTRequestMetadata;
+  requestMetadata: EntryMetadata;
 };

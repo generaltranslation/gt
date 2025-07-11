@@ -1,4 +1,4 @@
-import { Variable } from './Variables';
+import { Variable } from './variables';
 
 /**
  * Map of data-_gt properties to their corresponding React props

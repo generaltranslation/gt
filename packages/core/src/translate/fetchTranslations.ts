@@ -4,34 +4,15 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
-
-// Types for the fetchTranslations function
-export type FetchTranslationsOptions = {
-  projectId?: string;
-  apiKey?: string;
-  baseUrl?: string;
-  timeout?: number;
-};
-
-export type RetrievedTranslation = {
-  locale: string;
-  translation: unknown;
-  metadata: unknown;
-};
-
-export type RetrievedTranslations = RetrievedTranslation[];
-
-export type FetchTranslationsResult = {
-  translations: RetrievedTranslations;
-  versionId: string;
-  projectId: string;
-  localeCount: number;
-  totalEntries: number;
-};
+import {
+  FetchTranslationsOptions,
+  FetchTranslationsResult,
+  RetrievedTranslations,
+} from '../_types/fetchTranslations';
+import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
  * @internal
- * Lightweight version of fetchTranslations that abstracts out only the API fetch request.
  * Fetches translation metadata and information without downloading files.
  * @param versionId - The version ID to fetch translations for
  * @param options - The options for the API call
@@ -44,7 +25,10 @@ export default async function _fetchTranslations(
   config: TranslationRequestConfig
 ): Promise<FetchTranslationsResult> {
   const { projectId, apiKey, baseUrl } = options;
-  const timeout = Math.min(config.timeout || options.timeout || maxTimeout, maxTimeout);
+  const timeout = Math.min(
+    config.timeout || options.timeout || maxTimeout,
+    maxTimeout
+  );
   const url = `${baseUrl || config.baseUrl || defaultRuntimeApiUrl}/v1/project/translations/info/${versionId}`;
 
   // Validation - basic config validation
@@ -65,12 +49,7 @@ export default async function _fetchTranslations(
       url,
       {
         method: 'GET',
-        headers: {
-          ...((apiKey || config.apiKey) && {
-            'x-gt-api-key': apiKey || config.apiKey,
-          }),
-          'x-gt-project-id': projectId,
-        },
+        headers: generateRequestHeaders(config),
       },
       timeout
     );
@@ -95,7 +74,10 @@ export default async function _fetchTranslations(
   // Calculate summary statistics
   const localeCount = result.translations.length;
   const totalEntries = result.translations.reduce((total, translation) => {
-    if (typeof translation.translation === 'object' && translation.translation !== null) {
+    if (
+      typeof translation.translation === 'object' &&
+      translation.translation !== null
+    ) {
       return total + Object.keys(translation.translation).length;
     }
     return total + 1;

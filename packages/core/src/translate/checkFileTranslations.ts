@@ -4,35 +4,12 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
-
-// Types for the checkFileTranslations function
-export type FileTranslationCheck = {
-  versionId: string;
-  fileName: string;
-};
-
-export type CheckFileTranslationsOptions = {
-  projectId?: string;
-  apiKey?: string;
-  baseUrl?: string;
-  locales?: string[];
-  timeout?: number;
-};
-
-export type FileTranslationStatus = {
-  translationId: string;
-  locale: string;
-  fileName: string;
-  status: 'ready' | 'processing' | 'failed';
-  downloadUrl?: string;
-};
-
-export type CheckFileTranslationsResult = {
-  files: FileTranslationStatus[];
-  allReady: boolean;
-  readyCount: number;
-  totalCount: number;
-};
+import {
+  FileTranslationCheck,
+  CheckFileTranslationsOptions,
+  CheckFileTranslationsResult,
+  FileTranslationStatus,
+} from '../_types/checkFileTranslations';
 
 /**
  * @internal
@@ -49,7 +26,10 @@ export default async function _checkFileTranslations(
   config: TranslationRequestConfig
 ): Promise<CheckFileTranslationsResult> {
   const { projectId, apiKey, baseUrl, locales } = options;
-  const timeout = Math.min(config.timeout || options.timeout || maxTimeout, maxTimeout);
+  const timeout = Math.min(
+    config.timeout || options.timeout || maxTimeout,
+    maxTimeout
+  );
   const url = `${baseUrl || config.baseUrl || defaultRuntimeApiUrl}/v1/project/translations/files/retrieve`;
 
   // Validation - basic config validation
@@ -100,7 +80,7 @@ export default async function _checkFileTranslations(
   };
 
   // Calculate summary statistics
-  const readyFiles = result.files.filter(file => file.status === 'ready');
+  const readyFiles = result.files.filter((file) => file.status === 'ready');
   const allReady = readyFiles.length === result.files.length;
 
   return {

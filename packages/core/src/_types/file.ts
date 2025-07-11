@@ -1,4 +1,4 @@
-import { GTRequest } from './GTRequest';
+import { Entry } from './entry';
 
 export type FileFormat =
   | 'GTJSON'
@@ -18,6 +18,6 @@ export type FileMetadata = {
 };
 
 export type File = {
-  source: GTRequest[] | string;
+  source: Entry[] | string;
   fileMetadata: FileMetadata;
 };

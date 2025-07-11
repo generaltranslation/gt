@@ -2,17 +2,18 @@ import { TranslationRequestConfig, TranslateManyResult } from '../types';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { maxTimeout } from 'src/settings/settings';
-import { GTRequest, GTRequestMetadata } from 'src/types/GTRequest';
+import { Entry, EntryMetadata } from 'src/_types/entry';
 import validateConfig from './utils/validateConfig';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
+import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
  * @internal
  */
 export default async function _translateMany(
-  requests: GTRequest[],
-  globalMetadata: { targetLocale: string } & GTRequestMetadata,
+  requests: Entry[],
+  globalMetadata: { targetLocale: string } & EntryMetadata,
   config: TranslationRequestConfig
 ): Promise<TranslateManyResult> {
   const timeout = Math.min(config.timeout || maxTimeout, maxTimeout);
@@ -28,10 +29,7 @@ export default async function _translateMany(
       url,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(config.apiKey && { 'x-gt-api-key': config.apiKey }),
-        },
+        headers: generateRequestHeaders(config),
         body: JSON.stringify({
           requests,
           targetLocale: globalMetadata.targetLocale,

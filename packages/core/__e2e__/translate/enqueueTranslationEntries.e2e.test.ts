@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { hashSource } from '../../src/id/hashSource';
 import { TranslationRequestConfig } from '../../src/types';
-import _enqueueTranslationEntries, {
+import _enqueueEntries from '../../src/translate/enqueueEntries';
+import {
   Updates,
-  ApiOptions,
-} from '../../src/translate/enqueueTranslationEntries';
+  EnqueueEntriesOptions,
+} from '../../src/_types/enqueue';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
 describe('Enqueue Translation Entries E2E Tests', () => {
@@ -32,7 +33,7 @@ describe('Enqueue Translation Entries E2E Tests', () => {
     throw new Error('GT_API_KEY environment variable is required');
   }
 
-  // Configuration for enqueueTranslationEntries function
+  // Configuration for enqueueEntries function
   const config: TranslationRequestConfig = {
     baseUrl: runtimeUrl,
     projectId: projectId,
@@ -69,14 +70,11 @@ describe('Enqueue Translation Entries E2E Tests', () => {
       const testUpdates = createTestUpdates([
         { source: 'Hello world', dataFormat: 'ICU' },
       ]);
-      const options: ApiOptions = {
-        projectId,
-        apiKey,
-        baseUrl: runtimeUrl,
-        locales: ['es'],
-        defaultLocale: 'en',
+      const options: EnqueueEntriesOptions = {
+        targetLocales: ['es'],
+        sourceLocale: 'en',
       };
-      await _enqueueTranslationEntries(testUpdates, options, 'test', config);
+      await _enqueueEntries(testUpdates, options, config);
     } catch {
       // eslint-disable-next-line no-console
       console.warn('Server may not be available for E2E tests');
@@ -89,20 +87,16 @@ describe('Enqueue Translation Entries E2E Tests', () => {
       { source: 'Goodbye world', dataFormat: 'ICU' },
     ]);
 
-    const options: ApiOptions = {
-      projectId,
-      apiKey,
-      baseUrl: runtimeUrl,
-      locales: ['es', 'fr'],
-      defaultLocale: 'en',
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es', 'fr'],
+      sourceLocale: 'en',
       description: 'E2E test updates',
     };
 
     try {
-      const result = await _enqueueTranslationEntries(
+      const result = await _enqueueEntries(
         testUpdates,
         options,
-        'e2e-test',
         config
       );
 
@@ -121,16 +115,19 @@ describe('Enqueue Translation Entries E2E Tests', () => {
       { source: 'Hello world', dataFormat: 'ICU' },
     ]);
 
-    const options: ApiOptions = {
-      projectId,
-      apiKey: 'fake-invalid-key',
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es'],
+      sourceLocale: 'en',
+    };
+
+    const invalidConfig: TranslationRequestConfig = {
       baseUrl: runtimeUrl,
-      locales: ['es'],
-      defaultLocale: 'en',
+      projectId: projectId,
+      apiKey: 'fake-invalid-key',
     };
 
     try {
-      await _enqueueTranslationEntries(testUpdates, options, 'test', config);
+      await _enqueueEntries(testUpdates, options, invalidConfig);
       // Should not reach here if authentication fails
       expect(false).toBe(true);
     } catch (error) {
@@ -152,20 +149,16 @@ describe('Enqueue Translation Entries E2E Tests', () => {
       { source: 'Hello {name}, you have {count} messages', dataFormat: 'ICU' },
     ]);
 
-    const options: ApiOptions = {
-      projectId,
-      apiKey,
-      baseUrl: runtimeUrl,
-      locales: ['es'],
-      defaultLocale: 'en',
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es'],
+      sourceLocale: 'en',
       dataFormat: 'ICU',
     };
 
     try {
-      const result = await _enqueueTranslationEntries(
+      const result = await _enqueueEntries(
         testUpdates,
         options,
-        'test',
         config
       );
 
@@ -190,20 +183,16 @@ describe('Enqueue Translation Entries E2E Tests', () => {
       { source: jsxSource, dataFormat: 'JSX' },
     ]);
 
-    const options: ApiOptions = {
-      projectId,
-      apiKey,
-      baseUrl: runtimeUrl,
-      locales: ['fr'],
-      defaultLocale: 'en',
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['fr'],
+      sourceLocale: 'en',
       dataFormat: 'JSX',
     };
 
     try {
-      const result = await _enqueueTranslationEntries(
+      const result = await _enqueueEntries(
         testUpdates,
         options,
-        'test',
         config
       );
 
@@ -222,21 +211,17 @@ describe('Enqueue Translation Entries E2E Tests', () => {
       { source: ['JSX ', { t: 'em', c: ['content'] }], dataFormat: 'JSX' },
     ]);
 
-    const options: ApiOptions = {
-      projectId,
-      apiKey,
-      baseUrl: runtimeUrl,
-      locales: ['es', 'fr', 'de'],
-      defaultLocale: 'en',
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es', 'fr', 'de'],
+      sourceLocale: 'en',
       description: 'Mixed format test',
       requireApproval: false,
     };
 
     try {
-      const result = await _enqueueTranslationEntries(
+      const result = await _enqueueEntries(
         testUpdates,
         options,
-        'test',
         config
       );
 
@@ -252,19 +237,15 @@ describe('Enqueue Translation Entries E2E Tests', () => {
   it('should handle empty updates array', async () => {
     const testUpdates: Updates = [];
 
-    const options: ApiOptions = {
-      projectId,
-      apiKey,
-      baseUrl: runtimeUrl,
-      locales: ['es'],
-      defaultLocale: 'en',
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es'],
+      sourceLocale: 'en',
     };
 
     try {
-      const result = await _enqueueTranslationEntries(
+      const result = await _enqueueEntries(
         testUpdates,
         options,
-        'test',
         config
       );
 
@@ -281,22 +262,18 @@ describe('Enqueue Translation Entries E2E Tests', () => {
     ]);
 
     const customVersionId = `test-version-${Date.now()}`;
-    const options: ApiOptions = {
-      projectId,
-      apiKey,
-      baseUrl: runtimeUrl,
-      locales: ['es'],
-      defaultLocale: 'en',
+    const options: EnqueueEntriesOptions = {
+      targetLocales: ['es'],
+      sourceLocale: 'en',
       version: customVersionId,
       description: 'Custom version test',
       requireApproval: true,
     };
 
     try {
-      const result = await _enqueueTranslationEntries(
+      const result = await _enqueueEntries(
         testUpdates,
         options,
-        'test',
         config
       );
 

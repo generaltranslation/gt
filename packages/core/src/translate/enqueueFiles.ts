@@ -5,36 +5,12 @@ import { maxTimeout } from '../settings/settings';
 import validateConfig from './utils/validateConfig';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
-
-/**
- * File object structure for enqueueing files
- * @param content - The content of the file
- * @param fileName - The name of the file
- * @param fileFormat - The format of the file (JSON, MDX, MD, etc.)
- * @param dataFormat - The format of the data within the file
- */
-export interface FileToTranslate {
-  content: string;
-  fileName: string;
-  fileFormat: 'GTJSON' | 'JSON' | 'YAML' | 'MDX' | 'MD' | 'TS' | 'JS';
-  dataFormat: 'JSX' | 'ICU' | 'I18NEXT';
-}
-
-export type EnqueueFilesOptions = {
-  sourceLocale?: string;
-  targetLocales: string[];
-  projectId: string;
-  publish?: boolean;
-  versionId?: string;
-  description?: string;
-};
-
-export type EnqueueFilesResult = {
-  data: unknown;
-  locales: string[];
-  translations?: unknown;
-  message?: string;
-};
+import {
+  FileToTranslate,
+  EnqueueFilesOptions,
+  EnqueueFilesResult,
+} from '../_types/enqueue';
+import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
  * @internal
@@ -48,6 +24,9 @@ export default async function _enqueueFiles(
 ): Promise<EnqueueFilesResult> {
   const timeout = Math.min(config.timeout || maxTimeout, maxTimeout);
   const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/project/translations/files/upload`;
+  const { projectId } = config;
+  const { sourceLocale, targetLocales, publish, _versionId, description } =
+    options;
 
   // Validation
   validateConfig(config);
@@ -67,12 +46,12 @@ export default async function _enqueueFiles(
   formData.append('fileCount', String(files.length));
 
   // Add other metadata
-  formData.append('sourceLocale', options.sourceLocale || '');
-  formData.append('targetLocales', JSON.stringify(options.targetLocales));
-  formData.append('projectId', options.projectId);
-  formData.append('publish', String(options.publish || false));
-  formData.append('versionId', options.versionId || '');
-  formData.append('description', options.description || '');
+  formData.append('sourceLocale', sourceLocale || '');
+  formData.append('targetLocales', JSON.stringify(targetLocales));
+  formData.append('projectId', projectId);
+  formData.append('publish', String(publish || false));
+  formData.append('versionId', _versionId || '');
+  formData.append('description', description || '');
 
   // Request the file uploads
   let response;
@@ -81,9 +60,7 @@ export default async function _enqueueFiles(
       url,
       {
         method: 'POST',
-        headers: {
-          ...(config.apiKey && { 'x-gt-api-key': config.apiKey }),
-        },
+        headers: generateRequestHeaders(config),
         body: formData,
       },
       timeout

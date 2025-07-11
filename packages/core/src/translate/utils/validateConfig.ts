@@ -4,7 +4,7 @@ import { translationMissingAuthError } from 'src/logging/errors';
 
 export default function validateConfig(config: TranslationRequestConfig) {
   if (!config.projectId || !config.apiKey) {
-    translationLogger.error('Translation request failed', {
+    translationLogger.error('Invalid config', {
       error: translationMissingAuthError,
     });
     throw new Error(translationMissingAuthError);

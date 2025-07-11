@@ -4,25 +4,11 @@ import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
-
-// Types for the downloadFile function
-export type DownloadFileOptions = {
-  projectId?: string;
-  apiKey?: string;
-  baseUrl?: string;
-  timeout?: number;
-  maxRetries?: number;
-  retryDelay?: number;
-};
-
-export type DownloadFileResult = {
-  success: boolean;
-  content?: string;
-  contentType?: string;
-  fileName?: string;
-  translationId: string;
-  error?: string;
-};
+import {
+  DownloadFileOptions,
+  DownloadFileResult,
+} from '../_types/downloadFile';
+import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
  * @internal
@@ -38,14 +24,17 @@ export default async function _downloadFile(
   options: DownloadFileOptions,
   config: TranslationRequestConfig
 ): Promise<DownloadFileResult> {
-  const { 
-    projectId, 
-    apiKey, 
-    baseUrl, 
-    maxRetries = 3, 
-    retryDelay = 1000 
+  const {
+    projectId,
+    apiKey,
+    baseUrl,
+    maxRetries = 3,
+    retryDelay = 1000,
   } = options;
-  const timeout = Math.min(config.timeout || options.timeout || maxTimeout, maxTimeout);
+  const timeout = Math.min(
+    config.timeout || options.timeout || maxTimeout,
+    maxTimeout
+  );
   const url = `${baseUrl || config.baseUrl || defaultRuntimeApiUrl}/v1/project/translations/files/${translationId}/download`;
 
   // Validation - basic config validation
@@ -61,7 +50,7 @@ export default async function _downloadFile(
 
   // Retry logic
   let lastError: Error | null = null;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       // Request the file download
@@ -71,12 +60,7 @@ export default async function _downloadFile(
           url,
           {
             method: 'GET',
-            headers: {
-              ...((apiKey || config.apiKey) && {
-                'x-gt-api-key': apiKey || config.apiKey,
-              }),
-              'x-gt-project-id': projectId,
-            },
+            headers: generateRequestHeaders(config),
           },
           timeout
         );
@@ -88,12 +72,15 @@ export default async function _downloadFile(
       await validateResponse(response!);
 
       // Get content type and filename from headers
-      const contentType = response!.headers.get('content-type') || 'application/octet-stream';
+      const contentType =
+        response!.headers.get('content-type') || 'application/octet-stream';
       const contentDisposition = response!.headers.get('content-disposition');
       let fileName: string | undefined;
-      
+
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+        );
         if (filenameMatch) {
           fileName = filenameMatch[1].replace(/['"]/g, '');
         }
@@ -109,13 +96,14 @@ export default async function _downloadFile(
         fileName,
         translationId,
       };
-
     } catch (error) {
       lastError = error as Error;
-      
+
       if (attempt < maxRetries) {
         // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+        await new Promise((resolve) =>
+          setTimeout(resolve, retryDelay * attempt)
+        );
       }
     }
   }
