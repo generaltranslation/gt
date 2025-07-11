@@ -1,8 +1,4 @@
 // Types for the downloadFileBatch function
-export type BatchDownloadFile = {
-  translationId: string;
-  fileName?: string;
-};
 
 export type DownloadFileBatchOptions = {
   timeout?: number;

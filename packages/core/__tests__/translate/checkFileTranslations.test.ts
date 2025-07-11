@@ -1,373 +1,417 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _checkFileTranslations from '../../src/translate/checkFileTranslations';
-import { FileTranslationCheck } from '../../src/types-dir/checkFileTranslations';
-import { CheckFileTranslationsOptions } from '../../src/types-dir/checkFileTranslations';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
+import validateResponse from '../../src/translate/utils/validateResponse';
+import handleFetchError from '../../src/translate/utils/handleFetchError';
+import generateRequestHeaders from '../../src/translate/utils/generateRequestHeaders';
 import { TranslationRequestConfig } from '../../src/types';
+import {
+  FileTranslationQuery,
+  CheckFileTranslationsOptions,
+  CheckFileTranslationsResult,
+} from '../../src/types-dir/checkFileTranslations';
 
-// Mock Response interface for testing
-interface MockResponse {
-  ok: boolean;
-  json: () => Promise<{
-    files: Array<{
-      translationId: string;
-      locale: string;
-      fileName: string;
-      status: 'ready' | 'processing' | 'failed';
-      downloadUrl?: string;
-    }>;
-  }>;
-}
+vi.mock('../../src/utils/fetchWithTimeout');
+vi.mock('../../src/translate/utils/validateResponse');
+vi.mock('../../src/translate/utils/handleFetchError');
+vi.mock('../../src/translate/utils/generateRequestHeaders');
 
-// Mock the fetch utilities and validators
-vi.mock('../../src/utils/fetchWithTimeout', () => ({
-  default: vi.fn(),
-}));
-
-vi.mock('../../src/translate/utils/validateResponse', () => ({
-  default: vi.fn(),
-}));
-
-vi.mock('../../src/translate/utils/handleFetchError', () => ({
-  default: vi.fn((error: unknown) => {
-    throw error;
-  }),
-}));
-
-describe('_checkFileTranslations function', () => {
-  const mockFetch = vi.mocked(fetchWithTimeout);
+describe.sequential('_checkFileTranslations', () => {
   const mockConfig: TranslationRequestConfig = {
-    projectId: 'test-project',
-    apiKey: 'test-key',
     baseUrl: 'https://api.test.com',
-    timeout: 5000,
+    projectId: 'test-project',
+    apiKey: 'test-api-key',
+  };
+
+  const mockCheckFileTranslationsResult: CheckFileTranslationsResult = {
+    translations: [
+      {
+        isReady: true,
+        fileName: 'src/components/Button.json',
+        locale: 'es',
+        id: 'translation-1',
+      },
+      {
+        isReady: false,
+        fileName: 'src/pages/Home.json',
+        locale: 'fr',
+        id: 'translation-2',
+      },
+    ],
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.resetAllMocks();
-    mockFetch.mockClear();
+    vi.mocked(generateRequestHeaders).mockReturnValue({
+      'Content-Type': 'application/json',
+      'x-gt-api-key': 'test-api-key',
+      'x-gt-project-id': 'test-project',
+    });
   });
 
-  it('should make correct API call with file translation checks', async () => {
-    const mockResult = {
-      files: [
-        {
-          translationId: 'trans-1',
-          locale: 'es',
-          fileName: 'test.json',
-          status: 'ready' as const,
-          downloadUrl: 'https://example.com/download/trans-1',
-        },
-        {
-          translationId: 'trans-2',
-          locale: 'fr',
-          fileName: 'test.json',
-          status: 'processing' as const,
-        },
-      ],
-    };
-
+  it('should check file translation status successfully', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockCheckFileTranslationsResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const testData: { [key: string]: FileTranslationCheck } = {
-      'src/test.json': {
-        versionId: 'version-123',
-        fileName: 'test.json',
+    const data: FileTranslationQuery[] = [
+      {
+        versionId: 'version-1',
+        fileName: 'src/components/Button.json',
+        locale: 'es',
       },
-    };
+      {
+        versionId: 'version-2',
+        fileName: 'src/pages/Home.json',
+        locale: 'fr',
+      },
+    ];
 
     const options: CheckFileTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      baseUrl: 'https://api.test.com',
-      locales: ['es', 'fr'],
+      timeout: 5000,
     };
 
-    const result = await _checkFileTranslations(testData, options, mockConfig);
+    const result = await _checkFileTranslations(data, options, mockConfig);
 
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
       'https://api.test.com/v1/project/translations/files/retrieve',
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-key',
+          'x-gt-api-key': 'test-api-key',
+          'x-gt-project-id': 'test-project',
         },
-        body: JSON.stringify({
-          data: testData,
-          locales: ['es', 'fr'],
-          projectId: 'test-project',
-        }),
+        body: JSON.stringify({ files: data }),
       },
       5000
     );
-
-    expect(result).toEqual({
-      files: mockResult.files,
-      allReady: false,
-      readyCount: 1,
-      totalCount: 2,
-    });
+    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
+    expect(result).toEqual(mockCheckFileTranslationsResult);
   });
 
-  it('should handle all files ready scenario', async () => {
-    const mockResult = {
-      files: [
-        {
-          translationId: 'trans-1',
-          locale: 'es',
-          fileName: 'test.json',
-          status: 'ready' as const,
-          downloadUrl: 'https://example.com/download/trans-1',
-        },
-        {
-          translationId: 'trans-2',
-          locale: 'fr',
-          fileName: 'test.json',
-          status: 'ready' as const,
-          downloadUrl: 'https://example.com/download/trans-2',
-        },
-      ],
-    };
-
+  it('should use config baseUrl when provided', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockCheckFileTranslationsResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const testData: { [key: string]: FileTranslationCheck } = {
-      'src/test.json': {
-        versionId: 'version-123',
+    const data: FileTranslationQuery[] = [
+      {
+        versionId: 'version-1',
         fileName: 'test.json',
+        locale: 'es',
       },
-    };
+    ];
 
-    const options: CheckFileTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es', 'fr'],
-    };
+    const options: CheckFileTranslationsOptions = {};
 
-    const result = await _checkFileTranslations(testData, options, mockConfig);
+    await _checkFileTranslations(data, options, mockConfig);
 
-    expect(result.allReady).toBe(true);
-    expect(result.readyCount).toBe(2);
-    expect(result.totalCount).toBe(2);
-  });
-
-  it('should handle multiple files with mixed statuses', async () => {
-    const mockResult = {
-      files: [
-        {
-          translationId: 'trans-1',
-          locale: 'es',
-          fileName: 'app.json',
-          status: 'ready' as const,
-          downloadUrl: 'https://example.com/download/trans-1',
-        },
-        {
-          translationId: 'trans-2',
-          locale: 'fr',
-          fileName: 'app.json',
-          status: 'processing' as const,
-        },
-        {
-          translationId: 'trans-3',
-          locale: 'es',
-          fileName: 'common.json',
-          status: 'failed' as const,
-        },
-        {
-          translationId: 'trans-4',
-          locale: 'fr',
-          fileName: 'common.json',
-          status: 'ready' as const,
-          downloadUrl: 'https://example.com/download/trans-4',
-        },
-      ],
-    };
-
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const testData: { [key: string]: FileTranslationCheck } = {
-      'src/app.json': {
-        versionId: 'version-123',
-        fileName: 'app.json',
-      },
-      'src/common.json': {
-        versionId: 'version-123',
-        fileName: 'common.json',
-      },
-    };
-
-    const options: CheckFileTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es', 'fr'],
-    };
-
-    const result = await _checkFileTranslations(testData, options, mockConfig);
-
-    expect(result.allReady).toBe(false);
-    expect(result.readyCount).toBe(2);
-    expect(result.totalCount).toBe(4);
-    expect(result.files).toHaveLength(4);
-  });
-
-  it('should handle timeout configuration from config', async () => {
-    const mockResult = {
-      files: [
-        {
-          translationId: 'trans-1',
-          locale: 'es',
-          fileName: 'test.json',
-          status: 'ready' as const,
-        },
-      ],
-    };
-
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const configWithTimeout: TranslationRequestConfig = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      timeout: 10000,
-    };
-
-    const testData: { [key: string]: FileTranslationCheck } = {
-      'src/test.json': {
-        versionId: 'version-123',
-        fileName: 'test.json',
-      },
-    };
-
-    const options: CheckFileTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es'],
-    };
-
-    await _checkFileTranslations(testData, options, configWithTimeout);
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      'https://api.test.com/v1/project/translations/files/retrieve',
       expect.any(Object),
-      10000
+      expect.any(Number)
     );
   });
 
-  it('should handle empty data object', async () => {
-    const mockResult = {
-      files: [],
+  it('should use default URL when baseUrl not provided in config', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockCheckFileTranslationsResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const configWithoutUrl: TranslationRequestConfig = {
+      projectId: 'test-project',
+      apiKey: 'test-api-key',
+    };
+
+    const data: FileTranslationQuery[] = [
+      {
+        versionId: 'version-1',
+        fileName: 'test.json',
+        locale: 'es',
+      },
+    ];
+
+    const options: CheckFileTranslationsOptions = {};
+
+    await _checkFileTranslations(data, options, configWithoutUrl);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'https://runtime2.gtx.dev/v1/project/translations/files/retrieve'
+      ),
+      expect.any(Object),
+      expect.any(Number)
+    );
+  });
+
+  it('should use default timeout when not specified', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockCheckFileTranslationsResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const data: FileTranslationQuery[] = [
+      {
+        versionId: 'version-1',
+        fileName: 'test.json',
+        locale: 'es',
+      },
+    ];
+
+    const options: CheckFileTranslationsOptions = {};
+
+    await _checkFileTranslations(data, options, mockConfig);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      60000
+    );
+  });
+
+  it('should enforce maximum timeout limit', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockCheckFileTranslationsResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const data: FileTranslationQuery[] = [
+      {
+        versionId: 'version-1',
+        fileName: 'test.json',
+        locale: 'es',
+      },
+    ];
+
+    const options: CheckFileTranslationsOptions = {
+      timeout: 99999,
+    };
+
+    await _checkFileTranslations(data, options, mockConfig);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      60000
+    );
+  });
+
+  it('should handle fetch errors through handleFetchError', async () => {
+    const fetchError = new Error('Network error');
+    vi.mocked(fetchWithTimeout).mockRejectedValue(fetchError);
+    vi.mocked(handleFetchError).mockImplementation(() => {
+      throw fetchError;
+    });
+
+    const data: FileTranslationQuery[] = [
+      {
+        versionId: 'version-1',
+        fileName: 'test.json',
+        locale: 'es',
+      },
+    ];
+
+    const options: CheckFileTranslationsOptions = {};
+
+    await expect(
+      _checkFileTranslations(data, options, mockConfig)
+    ).rejects.toThrow('Network error');
+    expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
+  });
+
+  it('should handle validation errors', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockCheckFileTranslationsResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockImplementationOnce(() => {
+      throw new Error('Validation failed');
+    });
+
+    const data: FileTranslationQuery[] = [
+      {
+        versionId: 'version-1',
+        fileName: 'test.json',
+        locale: 'es',
+      },
+    ];
+
+    const options: CheckFileTranslationsOptions = {};
+
+    await expect(
+      _checkFileTranslations(data, options, mockConfig)
+    ).rejects.toThrow('Validation failed');
+    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
+  });
+
+  it('should handle empty data array', async () => {
+    const emptyResult: CheckFileTranslationsResult = {
+      translations: [],
     };
 
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(emptyResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const testData: { [key: string]: FileTranslationCheck } = {};
+    const data: FileTranslationQuery[] = [];
+    const options: CheckFileTranslationsOptions = {};
 
-    const options: CheckFileTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es'],
-    };
+    const result = await _checkFileTranslations(data, options, mockConfig);
 
-    const result = await _checkFileTranslations(testData, options, mockConfig);
-
-    expect(result.allReady).toBe(true);
-    expect(result.readyCount).toBe(0);
-    expect(result.totalCount).toBe(0);
-    expect(result.files).toHaveLength(0);
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: JSON.stringify({ files: [] }),
+      }),
+      expect.any(Number)
+    );
+    expect(result).toEqual(emptyResult);
   });
 
-  it('should throw error when locales are missing', async () => {
-    const testData: { [key: string]: FileTranslationCheck } = {
-      'src/test.json': {
-        versionId: 'version-123',
-        fileName: 'test.json',
+  it('should include files in request body', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockCheckFileTranslationsResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const data: FileTranslationQuery[] = [
+      {
+        versionId: 'version-1',
+        fileName: 'file1.json',
+        locale: 'es',
       },
-    };
+      {
+        versionId: 'version-2',
+        fileName: 'file2.json',
+        locale: 'fr',
+      },
+    ];
 
-    const options: CheckFileTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      // Missing locales
-    };
+    const options: CheckFileTranslationsOptions = {};
 
-    await expect(
-      _checkFileTranslations(testData, options, mockConfig)
-    ).rejects.toThrow('Target locales are required');
+    await _checkFileTranslations(data, options, mockConfig);
+
+    const requestBody = JSON.parse(
+      vi.mocked(fetchWithTimeout).mock.calls[0][1].body as string
+    );
+    expect(requestBody).toEqual({
+      files: data,
+    });
   });
 
-  it('should handle network errors', async () => {
-    const networkError = new Error('Network error');
-    mockFetch.mockRejectedValue(networkError);
+  it('should handle single file query', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockCheckFileTranslationsResult),
+    } as unknown as Response;
 
-    const testData: { [key: string]: FileTranslationCheck } = {
-      'src/test.json': {
-        versionId: 'version-123',
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const data: FileTranslationQuery[] = [
+      {
+        versionId: 'version-1',
         fileName: 'test.json',
+        locale: 'es',
       },
-    };
+    ];
 
-    const options: CheckFileTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es'],
-    };
+    const options: CheckFileTranslationsOptions = {};
 
-    await expect(
-      _checkFileTranslations(testData, options, mockConfig)
-    ).rejects.toThrow('Network error');
+    await _checkFileTranslations(data, options, mockConfig);
+
+    const requestBody = JSON.parse(
+      vi.mocked(fetchWithTimeout).mock.calls[0][1].body as string
+    );
+    expect(requestBody.files).toHaveLength(1);
+    expect(requestBody.files[0]).toEqual({
+      versionId: 'version-1',
+      fileName: 'test.json',
+      locale: 'es',
+    });
   });
 
-  it('should handle timeout errors', async () => {
-    const timeoutError = new Error('Request timeout');
-    timeoutError.name = 'AbortError';
-    mockFetch.mockRejectedValue(timeoutError);
+  it('should handle multiple locales for different files', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockCheckFileTranslationsResult),
+    } as unknown as Response;
 
-    const testData: { [key: string]: FileTranslationCheck } = {
-      'src/test.json': {
-        versionId: 'version-123',
-        fileName: 'test.json',
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const data: FileTranslationQuery[] = [
+      {
+        versionId: 'version-1',
+        fileName: 'components.json',
+        locale: 'es',
       },
-    };
+      {
+        versionId: 'version-1',
+        fileName: 'components.json',
+        locale: 'fr',
+      },
+      {
+        versionId: 'version-2',
+        fileName: 'pages.json',
+        locale: 'de',
+      },
+    ];
 
     const options: CheckFileTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      locales: ['es'],
+      timeout: 8000,
     };
 
+    const result = await _checkFileTranslations(data, options, mockConfig);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: JSON.stringify({ files: data }),
+      }),
+      8000
+    );
+    expect(result).toEqual(mockCheckFileTranslationsResult);
+  });
+
+  it('should handle JSON parsing errors', async () => {
+    const mockResponse = {
+      json: vi.fn().mockRejectedValue(new Error('Invalid JSON')),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const data: FileTranslationQuery[] = [
+      {
+        versionId: 'version-1',
+        fileName: 'test.json',
+        locale: 'es',
+      },
+    ];
+
+    const options: CheckFileTranslationsOptions = {};
+
     await expect(
-      _checkFileTranslations(testData, options, mockConfig)
-    ).rejects.toThrow();
+      _checkFileTranslations(data, options, mockConfig)
+    ).rejects.toThrow('Invalid JSON');
   });
 });

@@ -1,412 +1,240 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _fetchTranslations from '../../src/translate/fetchTranslations';
-import { FetchTranslationsOptions } from '../../src/types-dir/fetchTranslations';
-import { RetrievedTranslations } from '../../src/types-dir/fetchTranslations';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
+import validateResponse from '../../src/translate/utils/validateResponse';
+import handleFetchError from '../../src/translate/utils/handleFetchError';
+import generateRequestHeaders from '../../src/translate/utils/generateRequestHeaders';
 import { TranslationRequestConfig } from '../../src/types';
+import {
+  FetchTranslationsOptions,
+  FetchTranslationsResult,
+} from '../../src/types-dir/fetchTranslations';
 
-// Mock Response interface for testing
-interface MockResponse {
-  ok: boolean;
-  json: () => Promise<{
-    translations: RetrievedTranslations;
-    versionId: string;
-    projectId: string;
-    metadata?: {
-      localeCount?: number;
-      totalEntries?: number;
-    };
-  }>;
-}
+vi.mock('../../src/utils/fetchWithTimeout');
+vi.mock('../../src/translate/utils/validateResponse');
+vi.mock('../../src/translate/utils/handleFetchError');
+vi.mock('../../src/translate/utils/generateRequestHeaders');
 
-// Mock the fetch utilities and validators
-vi.mock('../../src/utils/fetchWithTimeout', () => ({
-  default: vi.fn(),
-}));
-
-vi.mock('../../src/translate/utils/validateResponse', () => ({
-  default: vi.fn(),
-}));
-
-vi.mock('../../src/translate/utils/handleFetchError', () => ({
-  default: vi.fn((error: unknown) => {
-    throw error;
-  }),
-}));
-
-describe('_fetchTranslations function', () => {
-  const mockFetch = vi.mocked(fetchWithTimeout);
+describe.sequential('_fetchTranslations', () => {
   const mockConfig: TranslationRequestConfig = {
-    projectId: 'test-project',
-    apiKey: 'test-key',
     baseUrl: 'https://api.test.com',
-    timeout: 5000,
+    projectId: 'test-project',
+    apiKey: 'test-api-key',
+  };
+
+  const mockFetchTranslationsResult: FetchTranslationsResult = {
+    versionId: 'version-123',
+    translations: [
+      {
+        id: 'translation-1',
+        key: 'hello_world',
+        status: 'completed',
+        locale: 'es',
+      },
+      {
+        id: 'translation-2',
+        key: 'goodbye_world',
+        status: 'pending',
+        locale: 'es',
+      },
+    ],
+    metadata: {
+      sourceLocale: 'en',
+      targetLocales: ['es', 'fr'],
+      createdAt: '2023-01-01T00:00:00Z',
+    },
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.resetAllMocks();
-    mockFetch.mockClear();
+    vi.mocked(generateRequestHeaders).mockReturnValue({
+      'Content-Type': 'application/json',
+      'x-gt-api-key': 'test-api-key',
+      'x-gt-project-id': 'test-project',
+    });
   });
 
-  it('should make correct API call and fetch translations successfully', async () => {
-    const mockResult = {
-      translations: [
-        {
-          locale: 'es',
-          translation: {
-            greeting: 'Hola mundo',
-            farewell: 'Adiós mundo',
-          },
-          metadata: {
-            completedAt: '2023-01-01T00:00:00Z',
-            status: 'completed',
-          },
-        },
-        {
-          locale: 'fr',
-          translation: {
-            greeting: 'Bonjour le monde',
-            farewell: 'Au revoir le monde',
-          },
-          metadata: {
-            completedAt: '2023-01-01T00:00:00Z',
-            status: 'completed',
-          },
-        },
-      ],
-      versionId: 'version-123',
-      projectId: 'test-project',
-    };
-
+  it('should fetch translation metadata successfully', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockFetchTranslationsResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const versionId = 'version-123';
+    const versionId = 'test-version-id';
     const options: FetchTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      baseUrl: 'https://api.test.com',
+      timeout: 5000,
     };
 
     const result = await _fetchTranslations(versionId, options, mockConfig);
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.test.com/v1/project/translations/info/version-123',
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      'https://api.test.com/v1/project/translations/info/test-version-id',
       {
         method: 'GET',
         headers: {
-          'x-gt-api-key': 'test-key',
+          'Content-Type': 'application/json',
+          'x-gt-api-key': 'test-api-key',
           'x-gt-project-id': 'test-project',
         },
       },
       5000
     );
-
-    expect(result).toEqual({
-      translations: mockResult.translations,
-      versionId: 'version-123',
-      projectId: 'test-project',
-      localeCount: 2,
-      totalEntries: 4, // 2 keys × 2 locales
-    });
+    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
+    expect(result).toEqual(mockFetchTranslationsResult);
   });
 
-  it('should handle translations with different data structures', async () => {
-    const mockResult = {
-      translations: [
-        {
-          locale: 'es',
-          translation: {
-            app: {
-              title: 'Mi Aplicación',
-              buttons: {
-                save: 'Guardar',
-                cancel: 'Cancelar',
-              },
-            },
-            common: {
-              yes: 'Sí',
-              no: 'No',
-            },
-          },
-          metadata: {
-            status: 'completed',
-          },
-        },
-        {
-          locale: 'fr',
-          translation: 'Simple string translation',
-          metadata: {
-            status: 'completed',
-          },
-        },
-      ],
-      versionId: 'version-456',
-      projectId: 'test-project',
-    };
-
+  it('should use default timeout when not specified', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockFetchTranslationsResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const versionId = 'version-456';
-    const options: FetchTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-    };
+    const versionId = 'test-version-id';
+    const options: FetchTranslationsOptions = {};
 
-    const result = await _fetchTranslations(versionId, options, mockConfig);
+    await _fetchTranslations(versionId, options, mockConfig);
 
-    expect(result.localeCount).toBe(2);
-    expect(result.totalEntries).toBe(5); // 4 nested keys + 1 string
-    expect(result.translations).toHaveLength(2);
-  });
-
-  it('should handle empty translations array', async () => {
-    const mockResult = {
-      translations: [],
-      versionId: 'version-empty',
-      projectId: 'test-project',
-    };
-
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const versionId = 'version-empty';
-    const options: FetchTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-    };
-
-    const result = await _fetchTranslations(versionId, options, mockConfig);
-
-    expect(result.localeCount).toBe(0);
-    expect(result.totalEntries).toBe(0);
-    expect(result.translations).toHaveLength(0);
-  });
-
-  it('should handle custom timeout configuration', async () => {
-    const mockResult = {
-      translations: [
-        {
-          locale: 'es',
-          translation: { test: 'prueba' },
-          metadata: {},
-        },
-      ],
-      versionId: 'version-123',
-      projectId: 'test-project',
-    };
-
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const configWithTimeout: TranslationRequestConfig = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      timeout: 15000,
-    };
-
-    const versionId = 'version-123';
-    const options: FetchTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-    };
-
-    await _fetchTranslations(versionId, options, configWithTimeout);
-
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      15000
+      60000
     );
   });
 
-  it('should handle translations with null/undefined values', async () => {
-    const mockResult = {
-      translations: [
-        {
-          locale: 'es',
-          translation: null,
-          metadata: {
-            status: 'empty',
-          },
-        },
-        {
-          locale: 'fr',
-          translation: undefined,
-          metadata: {
-            status: 'empty',
-          },
-        },
-      ],
-      versionId: 'version-null',
-      projectId: 'test-project',
-    };
-
+  it('should enforce maximum timeout limit', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockFetchTranslationsResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const versionId = 'version-null';
+    const versionId = 'test-version-id';
     const options: FetchTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
+      timeout: 99999,
     };
 
-    const result = await _fetchTranslations(versionId, options, mockConfig);
+    await _fetchTranslations(versionId, options, mockConfig);
 
-    expect(result.localeCount).toBe(2);
-    expect(result.totalEntries).toBe(2); // Each null/undefined counts as 1
-    expect(result.translations).toHaveLength(2);
-  });
-
-  it('should throw error when versionId is missing', async () => {
-    const versionId = '';
-    const options: FetchTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-    };
-
-    await expect(
-      _fetchTranslations(versionId, options, mockConfig)
-    ).rejects.toThrow('Version ID is required');
-  });
-
-  it('should handle API key from config when not provided in options', async () => {
-    const mockResult = {
-      translations: [
-        {
-          locale: 'es',
-          translation: { test: 'prueba' },
-          metadata: {},
-        },
-      ],
-      versionId: 'version-123',
-      projectId: 'test-project',
-    };
-
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const versionId = 'version-123';
-    const options: FetchTranslationsOptions = {
-      projectId: 'test-project',
-      // No apiKey in options
-    };
-
-    const result = await _fetchTranslations(versionId, options, mockConfig);
-
-    expect(result.localeCount).toBe(1);
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          'x-gt-api-key': 'test-key', // From config
-        }),
-      }),
+      expect.any(Object),
+      60000
+    );
+  });
+
+  it('should use default URL when baseUrl not provided in config', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockFetchTranslationsResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const configWithoutUrl: TranslationRequestConfig = {
+      projectId: 'test-project',
+      apiKey: 'test-api-key',
+    };
+
+    const versionId = 'test-version-id';
+    const options: FetchTranslationsOptions = {};
+
+    await _fetchTranslations(versionId, options, configWithoutUrl);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.stringContaining('https://runtime2.gtx.dev/v1/project/translations/info/test-version-id'),
+      expect.any(Object),
       expect.any(Number)
     );
   });
 
-  it('should prioritize options apiKey over config apiKey', async () => {
-    const mockResult = {
-      translations: [
-        {
-          locale: 'es',
-          translation: { test: 'prueba' },
-          metadata: {},
-        },
-      ],
-      versionId: 'version-123',
-      projectId: 'test-project',
-    };
+  it('should handle fetch errors through handleFetchError', async () => {
+    const fetchError = new Error('Network error');
+    vi.mocked(fetchWithTimeout).mockRejectedValue(fetchError);
+    vi.mocked(handleFetchError).mockImplementation(() => {
+      throw fetchError;
+    });
 
+    const versionId = 'test-version-id';
+    const options: FetchTranslationsOptions = {};
+
+    await expect(_fetchTranslations(versionId, options, mockConfig)).rejects.toThrow('Network error');
+    expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
+  });
+
+  it('should handle validation errors', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockFetchTranslationsResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockImplementationOnce(() => {
+      throw new Error('Validation failed');
+    });
 
-    const versionId = 'version-123';
-    const options: FetchTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'options-key',
-    };
+    const versionId = 'test-version-id';
+    const options: FetchTranslationsOptions = {};
 
-    const result = await _fetchTranslations(versionId, options, mockConfig);
+    await expect(_fetchTranslations(versionId, options, mockConfig)).rejects.toThrow('Validation failed');
+    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
+  });
 
-    expect(result.localeCount).toBe(1);
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          'x-gt-api-key': 'options-key', // From options, not config
-        }),
-      }),
+  it('should construct correct URL with version ID', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockFetchTranslationsResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const versionId = 'my-special-version-123';
+    const options: FetchTranslationsOptions = {};
+
+    await _fetchTranslations(versionId, options, mockConfig);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      'https://api.test.com/v1/project/translations/info/my-special-version-123',
+      expect.any(Object),
       expect.any(Number)
     );
   });
 
-  it('should handle network errors', async () => {
-    const networkError = new Error('Network error');
-    mockFetch.mockRejectedValue(networkError);
-
-    const versionId = 'version-123';
-    const options: FetchTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
+  it('should handle empty response data', async () => {
+    const emptyResult = {
+      versionId: 'version-123',
+      translations: [],
+      metadata: {},
     };
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(emptyResult),
+    } as unknown as Response;
 
-    await expect(
-      _fetchTranslations(versionId, options, mockConfig)
-    ).rejects.toThrow('Network error');
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const versionId = 'test-version-id';
+    const options: FetchTranslationsOptions = {};
+
+    const result = await _fetchTranslations(versionId, options, mockConfig);
+
+    expect(result).toEqual(emptyResult);
   });
 
-  it('should handle timeout errors', async () => {
-    const timeoutError = new Error('Request timeout');
-    timeoutError.name = 'AbortError';
-    mockFetch.mockRejectedValue(timeoutError);
+  it('should handle JSON parsing errors', async () => {
+    const mockResponse = {
+      json: vi.fn().mockRejectedValue(new Error('Invalid JSON')),
+    } as unknown as Response;
 
-    const versionId = 'version-123';
-    const options: FetchTranslationsOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-    };
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    await expect(
-      _fetchTranslations(versionId, options, mockConfig)
-    ).rejects.toThrow();
+    const versionId = 'test-version-id';
+    const options: FetchTranslationsOptions = {};
+
+    await expect(_fetchTranslations(versionId, options, mockConfig)).rejects.toThrow('Invalid JSON');
   });
 });

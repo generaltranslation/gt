@@ -6,12 +6,8 @@ export const translationTimeoutError = (timeout: number) =>
 export const translationRequestFailedError = (error: string) =>
   `${GT_ERROR_PREFIX} Translation request failed. Error: ${error}`;
 
-export const translationApiError = (
-  status: number,
-  statusText: string,
-  error: string
-) =>
-  `${GT_ERROR_PREFIX} Translation API returned error status. Status: ${status}, Status Text: ${statusText}, Error: ${error}`;
+export const apiError = (status: number, statusText: string, error: string) =>
+  `${GT_ERROR_PREFIX} API returned error status. Status: ${status}, Status Text: ${statusText}, Error: ${error}`;
 
 export const invalidAuthError = `${GT_ERROR_PREFIX} Invalid authentication.`;
 

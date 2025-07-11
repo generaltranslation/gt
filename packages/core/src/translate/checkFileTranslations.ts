@@ -5,9 +5,9 @@ import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
 import {
-  FileTranslationCheck,
   CheckFileTranslationsOptions,
   CheckFileTranslationsResult,
+  FileTranslationQuery,
 } from '../types-dir/checkFileTranslations';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
@@ -20,20 +20,12 @@ import generateRequestHeaders from './utils/generateRequestHeaders';
  * @returns The file translation status information
  */
 export default async function _checkFileTranslations(
-  data: { [key: string]: FileTranslationCheck },
+  data: FileTranslationQuery[],
   options: CheckFileTranslationsOptions,
   config: TranslationRequestConfig
 ): Promise<CheckFileTranslationsResult> {
-  const { projectId, baseUrl, locales } = options;
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${baseUrl || config.baseUrl || defaultRuntimeApiUrl}/v1/project/translations/files/retrieve`;
-
-  // Build request body
-  const body = {
-    data,
-    locales,
-    projectId,
-  };
+  const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/project/translations/files/retrieve`;
 
   // Request the file status
   let response;
@@ -43,7 +35,7 @@ export default async function _checkFileTranslations(
       {
         method: 'POST',
         headers: generateRequestHeaders(config),
-        body: JSON.stringify(body),
+        body: JSON.stringify({ files: data }),
       },
       timeout
     );

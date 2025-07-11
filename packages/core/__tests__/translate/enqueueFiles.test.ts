@@ -1,494 +1,351 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _enqueueFiles from '../../src/translate/enqueueFiles';
-import { FileToTranslate } from '../../src/types-dir/enqueue';
-import { EnqueueFilesOptions } from '../../src/types-dir/enqueue';
-import { EnqueueFilesResult } from '../../src/types-dir/enqueue';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
+import validateResponse from '../../src/translate/utils/validateResponse';
+import handleFetchError from '../../src/translate/utils/handleFetchError';
+import generateRequestHeaders from '../../src/translate/utils/generateRequestHeaders';
 import { TranslationRequestConfig } from '../../src/types';
+import {
+  FileToTranslate,
+  EnqueueFilesOptions,
+  EnqueueFilesResult,
+} from '../../src/types-dir/enqueue';
 
-// Mock Response interface for testing
-interface MockResponse {
-  ok: boolean;
-  json: () => Promise<{
-    data: unknown;
-    message?: string;
-    locales: string[];
-    translations?: unknown;
-  }>;
-}
+vi.mock('../../src/utils/fetchWithTimeout');
+vi.mock('../../src/translate/utils/validateResponse');
+vi.mock('../../src/translate/utils/handleFetchError');
+vi.mock('../../src/translate/utils/generateRequestHeaders');
 
-// Mock the fetch utilities and validators
-vi.mock('../../src/utils/fetchWithTimeout', () => ({
-  default: vi.fn(),
-}));
+// Mock FormData
+global.FormData = class FormData {
+  private data: Map<string, any> = new Map();
 
-vi.mock('../../src/translate/utils/validateResponse', () => ({
-  default: vi.fn(),
-}));
-
-vi.mock('../../src/translate/utils/handleFetchError', () => ({
-  default: vi.fn((error: unknown) => {
-    throw error;
-  }),
-}));
-
-// Mock FormData and Blob for Node.js environment
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(global as any).FormData = class FormData {
-  private data: Map<string, unknown> = new Map();
-
-  append(key: string, value: unknown) {
-    this.data.set(key, value);
+  append(name: string, value: any, filename?: string) {
+    this.data.set(name, value);
   }
 
-  get(key: string) {
-    return this.data.get(key);
+  get(name: string) {
+    return this.data.get(name);
   }
 
-  has(key: string) {
-    return this.data.has(key);
+  has(name: string) {
+    return this.data.has(name);
   }
-};
+} as any;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(global as any).Blob = class Blob {
-  constructor(public content: string[]) {}
-};
+global.Blob = class Blob {
+  constructor(private content: any[]) {}
+} as any;
 
-describe('_enqueueFiles function', () => {
-  const mockFetch = vi.mocked(fetchWithTimeout);
+describe.sequential('_enqueueFiles', () => {
   const mockConfig: TranslationRequestConfig = {
-    projectId: 'test-project',
-    apiKey: 'test-key',
     baseUrl: 'https://api.test.com',
-    timeout: 5000,
+    projectId: 'test-project',
+    apiKey: 'test-api-key',
   };
 
-  const mockResult: EnqueueFilesResult = {
-    data: { uploadId: 'upload-123' },
-    locales: ['es', 'fr'],
+  const mockEnqueueFilesResult: EnqueueFilesResult = {
+    versionId: 'version-123',
+    uploadedFiles: [
+      {
+        fileName: 'test.json',
+        status: 'uploaded',
+        translationId: 'translation-1',
+      },
+    ],
     message: 'Files uploaded successfully',
-    translations: { status: 'processing' },
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(generateRequestHeaders).mockReturnValue({
+      'Content-Type': 'application/json',
+      'x-gt-api-key': 'test-api-key',
+      'x-gt-project-id': 'test-project',
+    });
   });
 
-  it('should make correct API call with basic file upload', async () => {
+  it('should upload files successfully', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const testFiles: FileToTranslate[] = [
+    const files: FileToTranslate[] = [
       {
-        content: JSON.stringify({ greeting: 'Hello world' }),
         fileName: 'test.json',
+        content: '{"hello": "world"}',
         fileFormat: 'JSON',
-        dataFormat: 'I18NEXT',
+        dataFormat: 'JSON',
       },
     ];
 
     const options: EnqueueFilesOptions = {
-      targetLocales: ['es', 'fr'],
       sourceLocale: 'en',
-      publish: false,
+      targetLocales: ['es', 'fr'],
+      publish: true,
+      _versionId: 'version-123',
+      description: 'Test upload',
+      timeout: 5000,
     };
 
-    const result = await _enqueueFiles(testFiles, options, mockConfig);
+    const result = await _enqueueFiles(files, options, mockConfig);
 
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
       'https://api.test.com/v1/project/translations/files/upload',
       {
         method: 'POST',
         headers: {
-          'x-gt-api-key': 'test-key',
+          'Content-Type': 'application/json',
+          'x-gt-api-key': 'test-api-key',
+          'x-gt-project-id': 'test-project',
         },
-        // eslint-disable-next-line no-undef
         body: expect.any(FormData),
       },
       5000
     );
-
-    expect(result).toEqual(mockResult);
+    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
+    expect(result).toEqual(mockEnqueueFilesResult);
   });
 
-  it('should handle JSON files correctly', async () => {
+  it('should handle multiple files', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const jsonFile: FileToTranslate = {
-      content: JSON.stringify({
-        welcome: 'Welcome to our application',
-        buttons: { submit: 'Submit', cancel: 'Cancel' },
-      }),
-      fileName: 'app.json',
-      fileFormat: 'JSON',
-      dataFormat: 'I18NEXT',
-    };
-
-    const options: EnqueueFilesOptions = {
-      targetLocales: ['es'],
-      sourceLocale: 'en',
-      publish: false,
-    };
-
-    const result = await _enqueueFiles([jsonFile], options, mockConfig);
-
-    expect(result).toEqual(mockResult);
-  });
-
-  it('should handle Markdown files correctly', async () => {
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const mdFile: FileToTranslate = {
-      content: `# Welcome
-
-This is a test markdown file with content.
-`,
-      fileName: 'test.md',
-      fileFormat: 'MD',
-      dataFormat: 'ICU',
-    };
-
-    const options: EnqueueFilesOptions = {
-      targetLocales: ['fr'],
-      sourceLocale: 'en',
-      publish: false,
-    };
-
-    const result = await _enqueueFiles([mdFile], options, mockConfig);
-
-    expect(result).toEqual(mockResult);
-  });
-
-  it('should handle multiple files with different formats', async () => {
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const multipleFiles: FileToTranslate[] = [
+    const files: FileToTranslate[] = [
       {
-        content: JSON.stringify({ title: 'Multi-file test' }),
         fileName: 'test1.json',
+        content: '{"hello": "world"}',
         fileFormat: 'JSON',
-        dataFormat: 'I18NEXT',
+        dataFormat: 'JSON',
       },
       {
-        content: `# Multi-file Test\n\nThis is a markdown file.`,
-        fileName: 'test2.md',
-        fileFormat: 'MD',
-        dataFormat: 'ICU',
-      },
-      {
-        content: `title: Multi-file YAML test\ndescription: Testing YAML`,
-        fileName: 'test3.yaml',
-        fileFormat: 'YAML',
+        fileName: 'test2.properties',
+        content: 'hello=world',
+        fileFormat: 'PROPERTIES',
         dataFormat: 'ICU',
       },
     ];
 
     const options: EnqueueFilesOptions = {
-      targetLocales: ['es', 'fr', 'de'],
       sourceLocale: 'en',
+      targetLocales: ['es'],
       publish: false,
-      description: 'Multi-format test',
+      _versionId: 'version-123',
+      description: 'Multi-file upload',
     };
 
-    const result = await _enqueueFiles(multipleFiles, options, mockConfig);
+    await _enqueueFiles(files, options, mockConfig);
 
-    expect(result).toEqual(mockResult);
+    const formDataCall = vi.mocked(fetchWithTimeout).mock.calls[0];
+    const body = formDataCall[1].body as FormData;
+
+    // Verify FormData contains correct file count
+    expect(body.get('fileCount')).toBe('2');
+    
+    // Verify file metadata is properly set
+    expect(body.get('fileName0')).toBe('test1.json');
+    expect(body.get('fileName1')).toBe('test2.properties');
+    expect(body.get('fileFormat0')).toBe('JSON');
+    expect(body.get('fileFormat1')).toBe('PROPERTIES');
   });
 
-  it('should handle publish option correctly', async () => {
+  it('should use default timeout when not specified', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const testFile: FileToTranslate = {
-      content: JSON.stringify({ publishTest: 'This is a publish test' }),
-      fileName: 'publish.json',
-      fileFormat: 'JSON',
-      dataFormat: 'I18NEXT',
-    };
+    const files: FileToTranslate[] = [
+      {
+        fileName: 'test.json',
+        content: '{}',
+        fileFormat: 'JSON',
+        dataFormat: 'JSON',
+      },
+    ];
 
     const options: EnqueueFilesOptions = {
-      targetLocales: ['es'],
       sourceLocale: 'en',
-      publish: true,
-      description: 'Publish test',
-    };
-
-    await _enqueueFiles([testFile], options, mockConfig);
-
-    // Verify that the FormData was created and passed to fetch
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        method: 'POST',
-        headers: {
-          'x-gt-api-key': 'test-key',
-        },
-        // eslint-disable-next-line no-undef
-        body: expect.any(FormData),
-      }),
-      expect.any(Number)
-    );
-  });
-
-  it('should handle version ID and description options', async () => {
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const testFile: FileToTranslate = {
-      content: JSON.stringify({ versionTest: 'This is a version test' }),
-      fileName: 'version.json',
-      fileFormat: 'JSON',
-      dataFormat: 'I18NEXT',
-    };
-
-    const options: EnqueueFilesOptions = {
       targetLocales: ['es'],
-      sourceLocale: 'en',
       publish: false,
-      versionId: 'custom-version-123',
-      description: 'Custom version test',
+      _versionId: 'version-123',
+      description: 'Test',
     };
 
-    await _enqueueFiles([testFile], options, mockConfig);
+    await _enqueueFiles(files, options, mockConfig);
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        method: 'POST',
-        // eslint-disable-next-line no-undef
-        body: expect.any(FormData),
-      }),
-      expect.any(Number)
-    );
-  });
-
-  it('should handle timeout configuration from config', async () => {
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const configWithTimeout: TranslationRequestConfig = {
-      apiKey: 'test-key',
-      timeout: 10000,
-    };
-
-    const testFile: FileToTranslate = {
-      content: JSON.stringify({ timeoutTest: 'Timeout test' }),
-      fileName: 'timeout.json',
-      fileFormat: 'JSON',
-      dataFormat: 'I18NEXT',
-    };
-
-    const options: EnqueueFilesOptions = {
-      targetLocales: ['es'],
-      sourceLocale: 'en',
-      publish: false,
-    };
-
-    await _enqueueFiles([testFile], options, configWithTimeout);
-
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      10000
+      60000
     );
+  });
+
+  it('should enforce maximum timeout limit', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const files: FileToTranslate[] = [
+      {
+        fileName: 'test.json',
+        content: '{}',
+        fileFormat: 'JSON',
+        dataFormat: 'JSON',
+      },
+    ];
+
+    const options: EnqueueFilesOptions = {
+      sourceLocale: 'en',
+      targetLocales: ['es'],
+      publish: false,
+      _versionId: 'version-123',
+      description: 'Test',
+      timeout: 99999,
+    };
+
+    await _enqueueFiles(files, options, mockConfig);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      60000
+    );
+  });
+
+  it('should use default URL when baseUrl not provided in config', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const configWithoutUrl: TranslationRequestConfig = {
+      projectId: 'test-project',
+      apiKey: 'test-api-key',
+    };
+
+    const files: FileToTranslate[] = [
+      {
+        fileName: 'test.json',
+        content: '{}',
+        fileFormat: 'JSON',
+        dataFormat: 'JSON',
+      },
+    ];
+
+    const options: EnqueueFilesOptions = {
+      sourceLocale: 'en',
+      targetLocales: ['es'],
+      publish: false,
+      _versionId: 'version-123',
+      description: 'Test',
+    };
+
+    await _enqueueFiles(files, options, configWithoutUrl);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.stringContaining('https://runtime2.gtx.dev/v1/project/translations/files/upload'),
+      expect.any(Object),
+      expect.any(Number)
+    );
+  });
+
+  it('should handle fetch errors through handleFetchError', async () => {
+    const fetchError = new Error('Network error');
+    vi.mocked(fetchWithTimeout).mockRejectedValue(fetchError);
+    vi.mocked(handleFetchError).mockImplementation(() => {
+      throw fetchError;
+    });
+
+    const files: FileToTranslate[] = [
+      {
+        fileName: 'test.json',
+        content: '{}',
+        fileFormat: 'JSON',
+        dataFormat: 'JSON',
+      },
+    ];
+
+    const options: EnqueueFilesOptions = {
+      sourceLocale: 'en',
+      targetLocales: ['es'],
+      publish: false,
+      _versionId: 'version-123',
+      description: 'Test',
+    };
+
+    await expect(_enqueueFiles(files, options, mockConfig)).rejects.toThrow('Network error');
+    expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
+  });
+
+  it('should handle validation errors', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockImplementationOnce(() => {
+      throw new Error('Validation failed');
+    });
+
+    const files: FileToTranslate[] = [
+      {
+        fileName: 'test.json',
+        content: '{}',
+        fileFormat: 'JSON',
+        dataFormat: 'JSON',
+      },
+    ];
+
+    const options: EnqueueFilesOptions = {
+      sourceLocale: 'en',
+      targetLocales: ['es'],
+      publish: false,
+      _versionId: 'version-123',
+      description: 'Test',
+    };
+
+    await expect(_enqueueFiles(files, options, mockConfig)).rejects.toThrow('Validation failed');
+    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
   });
 
   it('should handle empty files array', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue({ ...mockEnqueueFilesResult, uploadedFiles: [] }),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const emptyFiles: FileToTranslate[] = [];
+    const files: FileToTranslate[] = [];
 
     const options: EnqueueFilesOptions = {
-      targetLocales: ['es'],
       sourceLocale: 'en',
-      publish: false,
-    };
-
-    const result = await _enqueueFiles(emptyFiles, options, mockConfig);
-
-    expect(result).toEqual(mockResult);
-  });
-
-  it('should handle all file formats', async () => {
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const allFormatFiles: FileToTranslate[] = [
-      {
-        content: JSON.stringify({ test: 'JSON test' }),
-        fileName: 'test.json',
-        fileFormat: 'JSON',
-        dataFormat: 'I18NEXT',
-      },
-      {
-        content: `# GTJSON Test\n\nThis is a GTJSON file.`,
-        fileName: 'test.gtjson',
-        fileFormat: 'GTJSON',
-        dataFormat: 'JSX',
-      },
-      {
-        content: `test: YAML test\ndescription: Testing YAML`,
-        fileName: 'test.yaml',
-        fileFormat: 'YAML',
-        dataFormat: 'ICU',
-      },
-      {
-        content: `# MDX Test\n\nThis is an MDX file.`,
-        fileName: 'test.mdx',
-        fileFormat: 'MDX',
-        dataFormat: 'JSX',
-      },
-      {
-        content: `# Markdown Test\n\nThis is a markdown file.`,
-        fileName: 'test.md',
-        fileFormat: 'MD',
-        dataFormat: 'ICU',
-      },
-      {
-        content: `export const test = 'TypeScript test';`,
-        fileName: 'test.ts',
-        fileFormat: 'TS',
-        dataFormat: 'ICU',
-      },
-      {
-        content: `const test = 'JavaScript test';`,
-        fileName: 'test.js',
-        fileFormat: 'JS',
-        dataFormat: 'ICU',
-      },
-    ];
-
-    const options: EnqueueFilesOptions = {
-      targetLocales: ['es', 'fr'],
-      sourceLocale: 'en',
-      publish: false,
-      description: 'All formats test',
-    };
-
-    const result = await _enqueueFiles(allFormatFiles, options, mockConfig);
-
-    expect(result).toEqual(mockResult);
-  });
-
-  it('should handle network errors', async () => {
-    const networkError = new Error('Network error');
-    mockFetch.mockRejectedValue(networkError);
-
-    const testFile: FileToTranslate = {
-      content: JSON.stringify({ test: 'Test' }),
-      fileName: 'test.json',
-      fileFormat: 'JSON',
-      dataFormat: 'I18NEXT',
-    };
-
-    const options: EnqueueFilesOptions = {
       targetLocales: ['es'],
-      sourceLocale: 'en',
       publish: false,
+      _versionId: 'version-123',
+      description: 'Empty test',
     };
 
-    await expect(
-      _enqueueFiles([testFile], options, mockConfig)
-    ).rejects.toThrow('Network error');
-  });
+    const result = await _enqueueFiles(files, options, mockConfig);
 
-  it('should handle timeout errors', async () => {
-    const timeoutError = new Error('Request timeout');
-    timeoutError.name = 'AbortError';
-    mockFetch.mockRejectedValue(timeoutError);
-
-    const testFile: FileToTranslate = {
-      content: JSON.stringify({ test: 'Test' }),
-      fileName: 'test.json',
-      fileFormat: 'JSON',
-      dataFormat: 'I18NEXT',
-    };
-
-    const options: EnqueueFilesOptions = {
-      targetLocales: ['es'],
-      sourceLocale: 'en',
-      publish: false,
-    };
-
-    await expect(
-      _enqueueFiles([testFile], options, mockConfig)
-    ).rejects.toThrow();
-  });
-
-  it('should handle missing source locale', async () => {
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const testFile: FileToTranslate = {
-      content: JSON.stringify({ test: 'Test' }),
-      fileName: 'test.json',
-      fileFormat: 'JSON',
-      dataFormat: 'I18NEXT',
-    };
-
-    const options: EnqueueFilesOptions = {
-      targetLocales: ['es'],
-      // sourceLocale is optional
-      publish: false,
-    };
-
-    const result = await _enqueueFiles([testFile], options, mockConfig);
-
-    expect(result).toEqual(mockResult);
+    const formDataCall = vi.mocked(fetchWithTimeout).mock.calls[0];
+    const body = formDataCall[1].body as FormData;
+    expect(body.get('fileCount')).toBe('0');
+    expect(result.uploadedFiles).toEqual([]);
   });
 });

@@ -5,7 +5,6 @@ import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
 import {
-  BatchDownloadFile,
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
 } from '../types-dir/downloadFileBatch';
@@ -20,22 +19,13 @@ import generateRequestHeaders from './utils/generateRequestHeaders';
  * @returns The batch download results with success/failure tracking
  */
 export default async function _downloadFileBatch(
-  files: BatchDownloadFile[],
+  fileIds: string[],
   options: DownloadFileBatchOptions,
   config: TranslationRequestConfig
 ): Promise<DownloadFileBatchResult> {
-  const { projectId, baseUrl } = config;
+  const { baseUrl } = config;
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
   const url = `${baseUrl || defaultRuntimeApiUrl}/v1/project/translations/files/batch-download`;
-
-  // Build request body
-  const body = {
-    files: files.map((file) => ({
-      translationId: file.translationId,
-      fileName: file.fileName,
-    })),
-    projectId,
-  };
 
   // Request the batch download
   let response;
@@ -45,7 +35,7 @@ export default async function _downloadFileBatch(
       {
         method: 'POST',
         headers: generateRequestHeaders(config),
-        body: JSON.stringify(body),
+        body: JSON.stringify({ fileIds }),
       },
       timeout
     );

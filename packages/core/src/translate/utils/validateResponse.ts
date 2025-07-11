@@ -1,10 +1,10 @@
-import { translationApiError } from '../../logging/errors';
+import { apiError } from '../../logging/errors';
 import { fetchLogger } from '../../logging/logger';
 
 export default async function validateResponse(response: Response) {
   if (!response.ok) {
     const errorText = await response.text();
-    const errorMessage = translationApiError(
+    const errorMessage = apiError(
       response.status,
       response.statusText,
       errorText

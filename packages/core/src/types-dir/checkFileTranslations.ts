@@ -1,23 +1,19 @@
 // Types for the checkFileTranslations function
-export type FileTranslationCheck = {
+export type FileTranslationQuery = {
   versionId: string;
   fileName: string;
+  locale: string;
 };
 
 export type CheckFileTranslationsOptions = {
-  projectId?: string;
-  apiKey?: string;
-  baseUrl?: string;
-  locales?: string[];
   timeout?: number;
 };
 
 export type CheckFileTranslationsResult = {
-  files: {
-    translationId: string;
-    locale: string;
+  translations: {
+    isReady: boolean;
     fileName: string;
-    status: 'ready' | 'processing' | 'failed';
-    downloadUrl?: string;
-  };
+    locale: string;
+    id: string;
+  }[];
 };

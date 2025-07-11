@@ -31,7 +31,7 @@ export default async function _downloadFile(
       url,
       {
         method: 'GET',
-        headers: generateRequestHeaders(config),
+        headers: generateRequestHeaders(config, true),
       },
       timeout
     );

@@ -1,420 +1,291 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _downloadFileBatch from '../../src/translate/downloadFileBatch';
-import { BatchDownloadFile } from '../../src/types-dir/downloadFileBatch';
-import { DownloadFileBatchOptions } from '../../src/types-dir/downloadFileBatch';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
+import validateResponse from '../../src/translate/utils/validateResponse';
+import handleFetchError from '../../src/translate/utils/handleFetchError';
+import generateRequestHeaders from '../../src/translate/utils/generateRequestHeaders';
 import { TranslationRequestConfig } from '../../src/types';
+import {
+  DownloadFileBatchOptions,
+  DownloadFileBatchResult,
+} from '../../src/types-dir/downloadFileBatch';
 
-// Mock Response interface for testing
-interface MockResponse {
-  ok: boolean;
-  json: () => Promise<{
-    results: Array<{
-      translationId: string;
-      fileName?: string;
-      success: boolean;
-      content?: string;
-      contentType?: string;
-      error?: string;
-    }>;
-  }>;
-}
+vi.mock('../../src/utils/fetchWithTimeout');
+vi.mock('../../src/translate/utils/validateResponse');
+vi.mock('../../src/translate/utils/handleFetchError');
+vi.mock('../../src/translate/utils/generateRequestHeaders');
 
-// Mock the fetch utilities and validators
-vi.mock('../../src/utils/fetchWithTimeout', () => ({
-  default: vi.fn(),
-}));
-
-vi.mock('../../src/translate/utils/validateResponse', () => ({
-  default: vi.fn(),
-}));
-
-vi.mock('../../src/translate/utils/handleFetchError', () => ({
-  default: vi.fn((error: unknown) => {
-    throw error;
-  }),
-}));
-
-describe('_downloadFileBatch function', () => {
-  const mockFetch = vi.mocked(fetchWithTimeout);
+describe.sequential('_downloadFileBatch', () => {
   const mockConfig: TranslationRequestConfig = {
-    projectId: 'test-project',
-    apiKey: 'test-key',
     baseUrl: 'https://api.test.com',
-    timeout: 5000,
+    projectId: 'test-project',
+    apiKey: 'test-api-key',
+  };
+
+  const mockDownloadFileBatchResult: DownloadFileBatchResult = {
+    results: [
+      {
+        translationId: 'translation-1',
+        fileName: 'file1.json',
+        success: true,
+        content: 'file content 1',
+        contentType: 'application/json',
+      },
+      {
+        translationId: 'translation-2',
+        fileName: 'file2.json',
+        success: false,
+        error: 'File not found',
+      },
+    ],
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.resetAllMocks();
-    mockFetch.mockClear();
+    vi.mocked(generateRequestHeaders).mockReturnValue({
+      'Content-Type': 'application/json',
+      'x-gt-api-key': 'test-api-key',
+      'x-gt-project-id': 'test-project',
+    });
   });
 
-  it('should make correct API call and download batch successfully', async () => {
-    const mockResult = {
-      results: [
-        {
-          translationId: 'trans-1',
-          fileName: 'app.json',
-          success: true,
-          content: JSON.stringify({ greeting: 'Hello world' }),
-          contentType: 'application/json',
-        },
-        {
-          translationId: 'trans-2',
-          fileName: 'common.json',
-          success: true,
-          content: JSON.stringify({ welcome: 'Welcome' }),
-          contentType: 'application/json',
-        },
-      ],
-    };
-
+  it('should download multiple files in batch successfully', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: BatchDownloadFile[] = [
-      { translationId: 'trans-1', fileName: 'app.json' },
-      { translationId: 'trans-2', fileName: 'common.json' },
-    ];
+    const files: string[] = ['translation-1', 'translation-2'];
 
     const options: DownloadFileBatchOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      baseUrl: 'https://api.test.com',
+      timeout: 5000,
     };
 
     const result = await _downloadFileBatch(files, options, mockConfig);
 
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
       'https://api.test.com/v1/project/translations/files/batch-download',
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-gt-api-key': 'test-key',
+          'x-gt-api-key': 'test-api-key',
           'x-gt-project-id': 'test-project',
         },
         body: JSON.stringify({
-          files: [
-            { translationId: 'trans-1', fileName: 'app.json' },
-            { translationId: 'trans-2', fileName: 'common.json' },
-          ],
-          projectId: 'test-project',
+          fileIds: ['translation-1', 'translation-2'],
         }),
       },
       5000
     );
-
-    expect(result).toEqual({
-      results: mockResult.results,
-      successful: mockResult.results,
-      failed: [],
-      successCount: 2,
-      failureCount: 0,
-    });
+    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
+    expect(result).toEqual(mockDownloadFileBatchResult);
   });
 
-  it('should handle mixed success and failure results', async () => {
-    const mockResult = {
-      results: [
-        {
-          translationId: 'trans-1',
-          fileName: 'app.json',
-          success: true,
-          content: JSON.stringify({ greeting: 'Hello world' }),
-          contentType: 'application/json',
-        },
-        {
-          translationId: 'trans-2',
-          fileName: 'common.json',
-          success: false,
-          error: 'File not found',
-        },
-        {
-          translationId: 'trans-3',
-          fileName: 'errors.json',
-          success: true,
-          content: JSON.stringify({ error: 'Error message' }),
-          contentType: 'application/json',
-        },
-      ],
-    };
-
+  it('should handle single file in batch', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: BatchDownloadFile[] = [
-      { translationId: 'trans-1', fileName: 'app.json' },
-      { translationId: 'trans-2', fileName: 'common.json' },
-      { translationId: 'trans-3', fileName: 'errors.json' },
-    ];
+    const files: string[] = ['translation-1'];
 
-    const options: DownloadFileBatchOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-    };
+    const options: DownloadFileBatchOptions = {};
 
     const result = await _downloadFileBatch(files, options, mockConfig);
 
-    expect(result.successCount).toBe(2);
-    expect(result.failureCount).toBe(1);
-    expect(result.successful).toHaveLength(2);
-    expect(result.failed).toHaveLength(1);
-    expect(result.failed[0].error).toBe('File not found');
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: JSON.stringify({
+          fileIds: ['translation-1'],
+        }),
+      }),
+      60000
+    );
+    expect(result).toEqual(mockDownloadFileBatchResult);
   });
 
-  it('should handle files without fileName', async () => {
-    const mockResult = {
-      results: [
-        {
-          translationId: 'trans-1',
-          success: true,
-          content: 'Hello world',
-          contentType: 'text/plain',
-        },
-      ],
-    };
-
+  it('should use default timeout when not specified', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: BatchDownloadFile[] = [
-      { translationId: 'trans-1' }, // No fileName
-    ];
+    const files: string[] = ['translation-1'];
 
-    const options: DownloadFileBatchOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-    };
+    const options: DownloadFileBatchOptions = {};
 
-    const result = await _downloadFileBatch(files, options, mockConfig);
+    await _downloadFileBatch(files, options, mockConfig);
 
-    expect(result.successCount).toBe(1);
-    expect(result.successful[0].fileName).toBeUndefined();
-  });
-
-  it('should handle custom timeout configuration', async () => {
-    const mockResult = {
-      results: [
-        {
-          translationId: 'trans-1',
-          success: true,
-          content: 'Test content',
-        },
-      ],
-    };
-
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const configWithTimeout: TranslationRequestConfig = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      timeout: 15000,
-    };
-
-    const files: BatchDownloadFile[] = [{ translationId: 'trans-1' }];
-
-    const options: DownloadFileBatchOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-    };
-
-    await _downloadFileBatch(files, options, configWithTimeout);
-
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      15000
+      60000
     );
   });
 
-  it('should retry on failure and eventually succeed', async () => {
-    const mockResult = {
-      results: [
-        {
-          translationId: 'trans-1',
-          success: true,
-          content: 'Success after retry',
-        },
-      ],
-    };
-
+  it('should enforce maximum timeout limit', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+    } as unknown as Response;
 
-    // First call fails, second succeeds
-    mockFetch
-      .mockRejectedValueOnce(new Error('Network error'))
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .mockResolvedValueOnce(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: BatchDownloadFile[] = [{ translationId: 'trans-1' }];
+    const files: string[] = ['translation-1'];
 
     const options: DownloadFileBatchOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      maxRetries: 2,
-      retryDelay: 10, // Short delay for testing
+      timeout: 99999,
     };
 
-    const result = await _downloadFileBatch(files, options, mockConfig);
+    await _downloadFileBatch(files, options, mockConfig);
 
-    expect(result.successCount).toBe(1);
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      60000
+    );
   });
 
-  it('should fail after max retries', async () => {
-    const networkError = new Error('Network error');
-    mockFetch.mockRejectedValue(networkError);
+  it('should use default URL when baseUrl not provided in config', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+    } as unknown as Response;
 
-    const files: BatchDownloadFile[] = [
-      { translationId: 'trans-1', fileName: 'app.json' },
-      { translationId: 'trans-2', fileName: 'common.json' },
-    ];
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const options: DownloadFileBatchOptions = {
+    const configWithoutUrl: TranslationRequestConfig = {
       projectId: 'test-project',
-      apiKey: 'test-key',
-      maxRetries: 2,
-      retryDelay: 10, // Short delay for testing
+      apiKey: 'test-api-key',
     };
 
-    const result = await _downloadFileBatch(files, options, mockConfig);
+    const files: string[] = ['translation-1'];
 
-    expect(result.successCount).toBe(0);
-    expect(result.failureCount).toBe(2);
-    expect(result.failed).toHaveLength(2);
-    expect(result.failed[0].error).toBe('Network error');
-    expect(result.failed[1].error).toBe('Network error');
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    const options: DownloadFileBatchOptions = {};
+
+    await _downloadFileBatch(files, options, configWithoutUrl);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'https://runtime2.gtx.dev/v1/project/translations/files/batch-download'
+      ),
+      expect.any(Object),
+      expect.any(Number)
+    );
+  });
+
+  it('should handle fetch errors through handleFetchError', async () => {
+    const fetchError = new Error('Network error');
+    vi.mocked(fetchWithTimeout).mockRejectedValue(fetchError);
+    vi.mocked(handleFetchError).mockImplementation(() => {
+      throw fetchError;
+    });
+
+    const files: string[] = ['translation-1'];
+
+    const options: DownloadFileBatchOptions = {};
+
+    await expect(
+      _downloadFileBatch(files, options, mockConfig)
+    ).rejects.toThrow('Network error');
+    expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
+  });
+
+  it('should handle validation errors', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockImplementationOnce(() => {
+      throw new Error('Validation failed');
+    });
+
+    const files: string[] = ['translation-1'];
+
+    const options: DownloadFileBatchOptions = {};
+
+    await expect(
+      _downloadFileBatch(files, options, mockConfig)
+    ).rejects.toThrow('Validation failed');
+    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
   });
 
   it('should handle empty files array', async () => {
-    const mockResult = {
+    const emptyResult = {
       results: [],
     };
 
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(emptyResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: BatchDownloadFile[] = [];
+    const files: string[] = [];
 
-    const options: DownloadFileBatchOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-    };
-
-    await expect(
-      _downloadFileBatch(files, options, mockConfig)
-    ).rejects.toThrow('Files array is required and must not be empty');
-  });
-
-  it('should handle API key from config when not provided in options', async () => {
-    const mockResult = {
-      results: [
-        {
-          translationId: 'trans-1',
-          success: true,
-          content: 'Test content',
-        },
-      ],
-    };
-
-    const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const files: BatchDownloadFile[] = [{ translationId: 'trans-1' }];
-
-    const options: DownloadFileBatchOptions = {
-      projectId: 'test-project',
-      // No apiKey in options
-    };
+    const options: DownloadFileBatchOptions = {};
 
     const result = await _downloadFileBatch(files, options, mockConfig);
 
-    expect(result.successCount).toBe(1);
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
-        headers: expect.objectContaining({
-          'x-gt-api-key': 'test-key', // From config
+        body: JSON.stringify({
+          fileIds: [],
         }),
       }),
       expect.any(Number)
     );
+    expect(result).toEqual(emptyResult);
   });
 
-  it('should prioritize options apiKey over config apiKey', async () => {
-    const mockResult = {
-      results: [
-        {
-          translationId: 'trans-1',
-          success: true,
-          content: 'Test content',
-        },
-      ],
-    };
-
+  it('should include fileIds in request body', async () => {
     const mockResponse = {
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockResult),
-    };
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const files: BatchDownloadFile[] = [{ translationId: 'trans-1' }];
+    const files: string[] = ['translation-1'];
 
-    const options: DownloadFileBatchOptions = {
-      projectId: 'test-project',
-      apiKey: 'options-key',
-    };
+    const options: DownloadFileBatchOptions = {};
 
-    const result = await _downloadFileBatch(files, options, mockConfig);
+    await _downloadFileBatch(files, options, mockConfig);
 
-    expect(result.successCount).toBe(1);
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          'x-gt-api-key': 'options-key', // From options, not config
-        }),
-      }),
-      expect.any(Number)
+    const requestBody = JSON.parse(
+      vi.mocked(fetchWithTimeout).mock.calls[0][1].body as string
     );
+    expect(requestBody.fileIds).toEqual(['translation-1']);
+  });
+
+  it('should map fileIds correctly in request body', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockDownloadFileBatchResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const files: string[] = ['trans-id-1', 'trans-id-2'];
+
+    const options: DownloadFileBatchOptions = {};
+
+    await _downloadFileBatch(files, options, mockConfig);
+
+    const requestBody = JSON.parse(
+      vi.mocked(fetchWithTimeout).mock.calls[0][1].body as string
+    );
+    expect(requestBody.fileIds).toEqual(['trans-id-1', 'trans-id-2']);
   });
 });

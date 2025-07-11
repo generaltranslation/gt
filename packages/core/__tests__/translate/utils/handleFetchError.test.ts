@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import handleFetchError from '../../../src/translate/utils/handleFetchError';
+import { fetchLogger } from '../../../src/logging/logger';
+import {
+  translationRequestFailedError,
+  translationTimeoutError,
+} from '../../../src/logging/errors';
 
-// Mock the logger
 vi.mock('../../../src/logging/logger', () => ({
   fetchLogger: {
     error: vi.fn(),
   },
+}));
+
+vi.mock('../../../src/logging/errors', () => ({
+  translationRequestFailedError: vi.fn(),
+  translationTimeoutError: vi.fn(),
 }));
 
 describe('handleFetchError', () => {
@@ -13,51 +22,47 @@ describe('handleFetchError', () => {
     vi.clearAllMocks();
   });
 
-  it('should handle AbortError (timeout)', () => {
-    const abortError = new Error('Request timeout');
-    abortError.name = 'AbortError';
+  it('should handle AbortError as timeout error', () => {
     const timeout = 5000;
+    const abortError = new Error('Request aborted');
+    abortError.name = 'AbortError';
+
+    vi.mocked(translationTimeoutError).mockReturnValue('Timeout after 5000ms');
 
     expect(() => handleFetchError(abortError, timeout)).toThrow(
-      'GT error: Translation request timed out after 5000ms. This has either occured due to the translation of an unusually large request or a translation failure in the API.'
+      'Timeout after 5000ms'
     );
+    expect(translationTimeoutError).toHaveBeenCalledWith(timeout);
+    expect(fetchLogger.error).toHaveBeenCalledWith('Timeout after 5000ms');
   });
 
-  it('should handle generic network error', () => {
-    const networkError = new Error('Network connection failed');
+  it('should handle regular Error objects', () => {
     const timeout = 5000;
+    const error = new Error('Network error');
 
-    expect(() => handleFetchError(networkError, timeout)).toThrow(networkError);
+    vi.mocked(translationRequestFailedError).mockReturnValue(
+      'Request failed: Network error'
+    );
+
+    expect(() => handleFetchError(error, timeout)).toThrow(error);
+    expect(translationRequestFailedError).toHaveBeenCalledWith('Network error');
+    expect(fetchLogger.error).toHaveBeenCalledWith(
+      'Request failed: Network error'
+    );
   });
 
   it('should handle non-Error objects', () => {
-    const stringError = 'String error message';
     const timeout = 5000;
+    const error = 'String error';
 
-    expect(() => handleFetchError(stringError, timeout)).toThrow(stringError);
-  });
-
-  it('should handle different timeout values', () => {
-    const abortError = new Error('Request timeout');
-    abortError.name = 'AbortError';
-    const timeout = 10000;
-
-    expect(() => handleFetchError(abortError, timeout)).toThrow(
-      'GT error: Translation request timed out after 10000ms. This has either occured due to the translation of an unusually large request or a translation failure in the API.'
+    vi.mocked(translationRequestFailedError).mockReturnValue(
+      'Request failed: String error'
     );
-  });
 
-  it('should handle undefined error', () => {
-    const undefinedError = undefined;
-    const timeout = 5000;
-
-    expect(() => handleFetchError(undefinedError, timeout)).toThrow();
-  });
-
-  it('should handle object error', () => {
-    const objectError = { message: 'Object error', code: 500 };
-    const timeout = 5000;
-
-    expect(() => handleFetchError(objectError, timeout)).toThrow();
+    expect(() => handleFetchError(error, timeout)).toThrow(error);
+    expect(translationRequestFailedError).toHaveBeenCalledWith('String error');
+    expect(fetchLogger.error).toHaveBeenCalledWith(
+      'Request failed: String error'
+    );
   });
 });

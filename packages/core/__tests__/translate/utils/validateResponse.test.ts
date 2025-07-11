@@ -1,97 +1,138 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import validateResponse from '../../../src/translate/utils/validateResponse';
 
-// Mock Response type for testing
-interface MockResponse {
-  ok: boolean;
-  status: number;
-  statusText: string;
-  text: () => Promise<string>;
-}
+vi.mock('../../../src/logging/errors', () => ({
+  apiError: vi.fn(() => 'mocked error'),
+}));
 
-// Mock the logger
 vi.mock('../../../src/logging/logger', () => ({
   fetchLogger: {
     error: vi.fn(),
   },
 }));
 
-describe('validateResponse', () => {
+import validateResponse from '../../../src/translate/utils/validateResponse';
+import { apiError } from '../../../src/logging/errors';
+import { fetchLogger } from '../../../src/logging/logger';
+
+describe.sequential('validateResponse', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should pass validation with successful response', async () => {
+  it('should pass validation for successful response', async () => {
     const mockResponse = {
       ok: true,
       status: 200,
       statusText: 'OK',
-      text: vi.fn(),
-    } as MockResponse;
+    } as Response;
 
-    await expect(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      validateResponse(mockResponse as any)
-    ).resolves.not.toThrow();
-    expect(mockResponse.text).not.toHaveBeenCalled();
+    await expect(validateResponse(mockResponse)).resolves.toBeUndefined();
+    expect(apiError).not.toHaveBeenCalled();
+    expect(fetchLogger.error).not.toHaveBeenCalled();
   });
 
-  it('should throw error for 400 Bad Request', async () => {
-    const errorText = 'Invalid request format';
-    const mockResponse = {
-      ok: false,
-      status: 400,
-      statusText: 'Bad Request',
-      text: vi.fn().mockResolvedValue(errorText),
-    } as MockResponse;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await expect(validateResponse(mockResponse as any)).rejects.toThrow(
-      'GT error: Translation API returned error status. Status: 400, Status Text: Bad Request, Error: Invalid request format'
-    );
-  });
-
-  it('should throw error for 401 Unauthorized', async () => {
+  it('should throw error for failed response with error text', async () => {
     const errorText = 'Invalid API key';
+    const expectedErrorMessage =
+      'API Error: 401 Unauthorized - Invalid API key';
+
     const mockResponse = {
       ok: false,
       status: 401,
       statusText: 'Unauthorized',
       text: vi.fn().mockResolvedValue(errorText),
-    } as MockResponse;
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await expect(validateResponse(mockResponse as any)).rejects.toThrow(
-      'GT error: Translation API returned error status. Status: 401, Status Text: Unauthorized, Error: Invalid API key'
+    vi.mocked(apiError).mockReturnValueOnce(expectedErrorMessage);
+
+    await expect(validateResponse(mockResponse)).rejects.toThrow(
+      expectedErrorMessage
     );
+    expect(mockResponse.text).toHaveBeenCalled();
+    expect(apiError).toHaveBeenCalledWith(401, 'Unauthorized', errorText);
+    expect(fetchLogger.error).toHaveBeenCalledWith(expectedErrorMessage, {
+      status: 401,
+      statusText: 'Unauthorized',
+      error: errorText,
+    });
   });
 
-  it('should throw error for 500 Internal Server Error', async () => {
-    const errorText = 'Server error occurred';
+  it('should handle 404 not found errors', async () => {
+    const errorText = 'Project not found';
+    const expectedErrorMessage = 'API Error: 404 Not Found - Project not found';
+
+    const mockResponse = {
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      text: vi.fn().mockResolvedValue(errorText),
+    } as unknown as Response;
+
+    vi.mocked(apiError).mockReturnValueOnce(expectedErrorMessage);
+
+    await expect(validateResponse(mockResponse)).rejects.toThrow(
+      expectedErrorMessage
+    );
+    expect(apiError).toHaveBeenCalledWith(404, 'Not Found', errorText);
+  });
+
+  it('should handle 500 server errors', async () => {
+    const errorText = 'Internal server error';
+    const expectedErrorMessage =
+      'API Error: 500 Internal Server Error - Internal server error';
+
     const mockResponse = {
       ok: false,
       status: 500,
       statusText: 'Internal Server Error',
       text: vi.fn().mockResolvedValue(errorText),
-    } as MockResponse;
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await expect(validateResponse(mockResponse as any)).rejects.toThrow(
-      'GT error: Translation API returned error status. Status: 500, Status Text: Internal Server Error, Error: Server error occurred'
+    vi.mocked(apiError).mockReturnValueOnce(expectedErrorMessage);
+
+    await expect(validateResponse(mockResponse)).rejects.toThrow(
+      expectedErrorMessage
+    );
+    expect(apiError).toHaveBeenCalledWith(
+      500,
+      'Internal Server Error',
+      errorText
     );
   });
 
   it('should handle empty error text', async () => {
+    const errorText = '';
+    const expectedErrorMessage = 'API Error: 400 Bad Request - ';
+
     const mockResponse = {
       ok: false,
-      status: 404,
-      statusText: 'Not Found',
-      text: vi.fn().mockResolvedValue(''),
-    } as MockResponse;
+      status: 400,
+      statusText: 'Bad Request',
+      text: vi.fn().mockResolvedValue(errorText),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await expect(validateResponse(mockResponse as any)).rejects.toThrow(
-      'GT error: Translation API returned error status. Status: 404, Status Text: Not Found, Error: '
+    vi.mocked(apiError).mockReturnValueOnce(expectedErrorMessage);
+
+    await expect(validateResponse(mockResponse)).rejects.toThrow(
+      expectedErrorMessage
     );
+    expect(apiError).toHaveBeenCalledWith(400, 'Bad Request', errorText);
+  });
+
+  it('should handle response.text() rejection', async () => {
+    const mockResponse = {
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      text: vi
+        .fn()
+        .mockRejectedValue(new Error('Failed to read response body')),
+    } as unknown as Response;
+
+    await expect(validateResponse(mockResponse)).rejects.toThrow(
+      'Failed to read response body'
+    );
+    expect(apiError).not.toHaveBeenCalled();
+    expect(fetchLogger.error).not.toHaveBeenCalled();
   });
 });

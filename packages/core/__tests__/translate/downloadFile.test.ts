@@ -1,321 +1,209 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import _downloadFile from '../../src/translate/downloadFile';
-import { DownloadFileOptions } from '../../src/types-dir/downloadFile';
 import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
+import validateResponse from '../../src/translate/utils/validateResponse';
+import handleFetchError from '../../src/translate/utils/handleFetchError';
+import generateRequestHeaders from '../../src/translate/utils/generateRequestHeaders';
 import { TranslationRequestConfig } from '../../src/types';
+import { DownloadFileOptions } from '../../src/types-dir/downloadFile';
 
-// Mock Response interface for testing
-interface MockResponse {
-  ok: boolean;
-  text: () => Promise<string>;
-  headers: {
-    get: (key: string) => string | null;
-  };
-}
+vi.mock('../../src/utils/fetchWithTimeout');
+vi.mock('../../src/translate/utils/validateResponse');
+vi.mock('../../src/translate/utils/handleFetchError');
+vi.mock('../../src/translate/utils/generateRequestHeaders');
 
-// Mock the fetch utilities and validators
-vi.mock('../../src/utils/fetchWithTimeout', () => ({
-  default: vi.fn(),
-}));
-
-vi.mock('../../src/translate/utils/validateResponse', () => ({
-  default: vi.fn(),
-}));
-
-vi.mock('../../src/translate/utils/handleFetchError', () => ({
-  default: vi.fn((error: unknown) => {
-    throw error;
-  }),
-}));
-
-describe('_downloadFile function', () => {
-  const mockFetch = vi.mocked(fetchWithTimeout);
+describe.sequential('_downloadFile', () => {
   const mockConfig: TranslationRequestConfig = {
-    projectId: 'test-project',
-    apiKey: 'test-key',
     baseUrl: 'https://api.test.com',
-    timeout: 5000,
+    projectId: 'test-project',
+    apiKey: 'test-api-key',
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(generateRequestHeaders).mockReturnValue({
+      'Content-Type': 'application/json',
+      'x-gt-api-key': 'test-api-key',
+      'x-gt-project-id': 'test-project',
+    });
   });
 
-  it('should make correct API call and download file successfully', async () => {
-    const mockFileContent = JSON.stringify({ greeting: 'Hello world' });
+  it('should download file content successfully', async () => {
+    const mockArrayBuffer = new ArrayBuffer(8);
     const mockResponse = {
-      ok: true,
-      text: vi.fn().mockResolvedValue(mockFileContent),
-      headers: {
-        get: vi.fn((key: string) => {
-          if (key === 'content-type') return 'application/json';
-          if (key === 'content-disposition')
-            return 'attachment; filename="test.json"';
-          return null;
-        }),
-      },
-    };
+      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const translationId = 'trans-123';
+    const translationId = 'test-translation-id';
     const options: DownloadFileOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      baseUrl: 'https://api.test.com',
+      timeout: 5000,
     };
 
     const result = await _downloadFile(translationId, options, mockConfig);
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.test.com/v1/project/translations/files/trans-123/download',
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      'https://api.test.com/v1/project/translations/files/test-translation-id/download',
       {
         method: 'GET',
         headers: {
-          'x-gt-api-key': 'test-key',
+          'Content-Type': 'application/json',
+          'x-gt-api-key': 'test-api-key',
           'x-gt-project-id': 'test-project',
         },
       },
       5000
     );
-
-    expect(result).toEqual({
-      success: true,
-      content: mockFileContent,
-      contentType: 'application/json',
-      fileName: 'test.json',
-      translationId: 'trans-123',
-    });
+    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
+    expect(result).toBe(mockArrayBuffer);
   });
 
-  it('should handle file without content-disposition header', async () => {
-    const mockFileContent = 'Hello world';
+  it('should use default timeout when not specified', async () => {
+    const mockArrayBuffer = new ArrayBuffer(8);
     const mockResponse = {
-      ok: true,
-      text: vi.fn().mockResolvedValue(mockFileContent),
-      headers: {
-        get: vi.fn((key: string) => {
-          if (key === 'content-type') return 'text/plain';
-          return null;
-        }),
-      },
-    };
+      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const translationId = 'trans-123';
-    const options: DownloadFileOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-    };
+    const translationId = 'test-translation-id';
+    const options: DownloadFileOptions = {};
 
-    const result = await _downloadFile(translationId, options, mockConfig);
+    await _downloadFile(translationId, options, mockConfig);
 
-    expect(result).toEqual({
-      success: true,
-      content: mockFileContent,
-      contentType: 'text/plain',
-      fileName: undefined,
-      translationId: 'trans-123',
-    });
-  });
-
-  it('should handle custom timeout configuration', async () => {
-    const mockFileContent = 'Test content';
-    const mockResponse = {
-      ok: true,
-      text: vi.fn().mockResolvedValue(mockFileContent),
-      headers: {
-        get: vi.fn(() => null),
-      },
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
-
-    const configWithTimeout: TranslationRequestConfig = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      timeout: 10000,
-    };
-
-    const translationId = 'trans-123';
-    const options: DownloadFileOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-    };
-
-    await _downloadFile(translationId, options, configWithTimeout);
-
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      10000
+      60000
     );
   });
 
-  it('should retry on failure and eventually succeed', async () => {
-    // Create fresh mocks for this test
-    const mockFileContent = 'Success after retry';
+  it('should enforce maximum timeout limit', async () => {
+    const mockArrayBuffer = new ArrayBuffer(8);
     const mockResponse = {
-      ok: true,
-      text: vi.fn().mockResolvedValue(mockFileContent),
-      headers: {
-        get: vi.fn(() => null),
-      },
-    };
+      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+    } as unknown as Response;
 
-    // Set up the mock sequence
-    mockFetch
-      .mockRejectedValueOnce(new Error('Network error'))
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .mockResolvedValueOnce(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const translationId = 'trans-retry-123';
+    const translationId = 'test-translation-id';
     const options: DownloadFileOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      maxRetries: 2,
-      retryDelay: 10, // Short delay for testing
+      timeout: 99999,
     };
 
-    const result = await _downloadFile(translationId, options, mockConfig);
+    await _downloadFile(translationId, options, mockConfig);
 
-    expect(result.success).toBe(true);
-    expect(result.content).toBe(mockFileContent);
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      60000
+    );
   });
 
-  it('should fail after max retries', async () => {
-    const networkError = new Error('Network error');
-
-    // Set up the mock for this test
-    mockFetch.mockRejectedValue(networkError);
-
-    const translationId = 'trans-fail-123';
-    const options: DownloadFileOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-      maxRetries: 2,
-      retryDelay: 10, // Short delay for testing
-    };
-
-    const result = await _downloadFile(translationId, options, mockConfig);
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBe('Network error');
-    expect(result.translationId).toBe('trans-fail-123');
-    expect(mockFetch).toHaveBeenCalledTimes(2);
-  });
-
-  it('should handle different content types', async () => {
-    const mockFileContent = '<html><body>Hello</body></html>';
+  it('should use default URL when baseUrl not provided in config', async () => {
+    const mockArrayBuffer = new ArrayBuffer(8);
     const mockResponse = {
-      ok: true,
-      text: vi.fn().mockResolvedValue(mockFileContent),
-      headers: {
-        get: vi.fn((key: string) => {
-          if (key === 'content-type') return 'text/html';
-          if (key === 'content-disposition')
-            return 'attachment; filename="page.html"';
-          return null;
-        }),
-      },
-    };
+      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const translationId = 'trans-html';
-    const options: DownloadFileOptions = {
+    const configWithoutUrl: TranslationRequestConfig = {
       projectId: 'test-project',
-      apiKey: 'test-key',
+      apiKey: 'test-api-key',
     };
 
-    const result = await _downloadFile(translationId, options, mockConfig);
+    const translationId = 'test-translation-id';
+    const options: DownloadFileOptions = {};
 
-    expect(result.success).toBe(true);
-    expect(result.contentType).toBe('text/html');
-    expect(result.fileName).toBe('page.html');
+    await _downloadFile(translationId, options, configWithoutUrl);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'https://runtime2.gtx.dev/v1/project/translations/files/test-translation-id/download'
+      ),
+      expect.any(Object),
+      expect.any(Number)
+    );
   });
 
-  it('should throw error when translationId is missing', async () => {
-    const translationId = '';
-    const options: DownloadFileOptions = {
-      projectId: 'test-project',
-      apiKey: 'test-key',
-    };
+  it('should handle fetch errors through handleFetchError', async () => {
+    const fetchError = new Error('Network error');
+    vi.mocked(fetchWithTimeout).mockRejectedValue(fetchError);
+    vi.mocked(handleFetchError).mockImplementation(() => {
+      throw fetchError;
+    });
+
+    const translationId = 'test-translation-id';
+    const options: DownloadFileOptions = {};
 
     await expect(
       _downloadFile(translationId, options, mockConfig)
-    ).rejects.toThrow('Translation ID is required');
+    ).rejects.toThrow('Network error');
+    expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
-  it('should handle API key from config when not provided in options', async () => {
-    const mockFileContent = 'Test content';
+  it('should handle validation errors', async () => {
+    const mockArrayBuffer = new ArrayBuffer(8);
     const mockResponse = {
-      ok: true,
-      text: vi.fn().mockResolvedValue(mockFileContent),
-      headers: {
-        get: vi.fn(() => null),
-      },
-    };
+      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockImplementationOnce(() => {
+      throw new Error('Validation failed');
+    });
 
-    const translationId = 'trans-123';
-    const options: DownloadFileOptions = {
-      projectId: 'test-project',
-      // No apiKey in options
-    };
+    const translationId = 'test-translation-id';
+    const options: DownloadFileOptions = {};
 
-    const result = await _downloadFile(translationId, options, mockConfig);
+    await expect(
+      _downloadFile(translationId, options, mockConfig)
+    ).rejects.toThrow('Validation failed');
+    expect(validateResponse).toHaveBeenCalledWith(mockResponse);
+  });
 
-    expect(result.success).toBe(true);
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          'x-gt-api-key': 'test-key', // From config
-        }),
-      }),
+  it('should construct correct URL with translation ID', async () => {
+    const mockArrayBuffer = new ArrayBuffer(8);
+    const mockResponse = {
+      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const translationId = 'my-special-translation-123';
+    const options: DownloadFileOptions = {};
+
+    await _downloadFile(translationId, options, mockConfig);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      'https://api.test.com/v1/project/translations/files/my-special-translation-123/download',
+      expect.any(Object),
       expect.any(Number)
     );
   });
 
-  it('should prioritize options apiKey over config apiKey', async () => {
-    const mockFileContent = 'Test content';
+  it('should handle empty ArrayBuffer response', async () => {
+    const mockArrayBuffer = new ArrayBuffer(0);
     const mockResponse = {
-      ok: true,
-      text: vi.fn().mockResolvedValue(mockFileContent),
-      headers: {
-        get: vi.fn(() => null),
-      },
-    };
+      arrayBuffer: vi.fn().mockResolvedValue(mockArrayBuffer),
+    } as unknown as Response;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFetch.mockResolvedValue(mockResponse as MockResponse as any);
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const translationId = 'trans-123';
-    const options: DownloadFileOptions = {
-      projectId: 'test-project',
-      apiKey: 'options-key',
-    };
+    const translationId = 'test-translation-id';
+    const options: DownloadFileOptions = {};
 
     const result = await _downloadFile(translationId, options, mockConfig);
 
-    expect(result.success).toBe(true);
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          'x-gt-api-key': 'options-key', // From options, not config
-        }),
-      }),
-      expect.any(Number)
-    );
+    expect(result).toBe(mockArrayBuffer);
+    expect(result.byteLength).toBe(0);
   });
 });
