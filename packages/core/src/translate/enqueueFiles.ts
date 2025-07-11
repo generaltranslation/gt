@@ -37,7 +37,7 @@ export default async function _enqueueFiles(
   files.forEach((file, index) => {
     formData.append(`file${index}`, new Blob([file.content]), file.fileName);
     formData.append(`fileFormat${index}`, file.fileFormat);
-    formData.append(`fileDataFormat${index}`, file.dataFormat);
+    formData.append(`fileDataFormat${index}`, file.dataFormat || '');
     formData.append(`fileName${index}`, file.fileName);
   });
 

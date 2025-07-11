@@ -49,10 +49,18 @@ describe.sequential('_enqueueEntries', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const updates: Updates = {
-      'hello.world': 'Hello world',
-      'goodbye.world': 'Goodbye world',
-    };
+    const updates: Updates = [
+      {
+        dataFormat: 'ICU',
+        source: 'Hello world',
+        metadata: { key: 'hello.world' },
+      },
+      {
+        dataFormat: 'ICU',
+        source: 'Goodbye world',
+        metadata: { key: 'goodbye.world' },
+      },
+    ];
 
     const options: EnqueueEntriesOptions = {
       sourceLocale: 'en',
@@ -102,9 +110,13 @@ describe.sequential('_enqueueEntries', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const updates: Updates = {
-      'hello.world': 'Hello world',
-    };
+    const updates: Updates = [
+      {
+        dataFormat: 'ICU',
+        source: 'Hello world',
+        metadata: { key: 'hello.world' },
+      },
+    ];
 
     const options: EnqueueEntriesOptions = {
       sourceLocale: 'en',
@@ -136,9 +148,13 @@ describe.sequential('_enqueueEntries', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const updates: Updates = {
-      'hello.world': 'Hello world',
-    };
+    const updates: Updates = [
+      {
+        dataFormat: 'ICU',
+        source: 'Hello world',
+        metadata: { key: 'hello.world' },
+      },
+    ];
 
     const options: EnqueueEntriesOptions = {
       sourceLocale: 'en',
@@ -161,9 +177,13 @@ describe.sequential('_enqueueEntries', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const updates: Updates = {
-      'hello.world': 'Hello world',
-    };
+    const updates: Updates = [
+      {
+        dataFormat: 'ICU',
+        source: 'Hello world',
+        metadata: { key: 'hello.world' },
+      },
+    ];
 
     const options: EnqueueEntriesOptions = {
       sourceLocale: 'en',
@@ -192,9 +212,13 @@ describe.sequential('_enqueueEntries', () => {
       apiKey: 'test-api-key',
     };
 
-    const updates: Updates = {
-      'hello.world': 'Hello world',
-    };
+    const updates: Updates = [
+      {
+        dataFormat: 'ICU',
+        source: 'Hello world',
+        metadata: { key: 'hello.world' },
+      },
+    ];
 
     const options: EnqueueEntriesOptions = {
       sourceLocale: 'en',
@@ -219,9 +243,13 @@ describe.sequential('_enqueueEntries', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const updates: Updates = {
-      'hello.world': 'Hello world',
-    };
+    const updates: Updates = [
+      {
+        dataFormat: 'JSX',
+        source: ['Hello ', { t: 'strong', c: ['world'] }],
+        metadata: { key: 'hello.world' },
+      },
+    ];
 
     const options: EnqueueEntriesOptions = {
       sourceLocale: 'en',
@@ -274,9 +302,13 @@ describe.sequential('_enqueueEntries', () => {
       throw fetchError;
     });
 
-    const updates: Updates = {
-      'hello.world': 'Hello world',
-    };
+    const updates: Updates = [
+      {
+        dataFormat: 'ICU',
+        source: 'Hello world',
+        metadata: { key: 'hello.world' },
+      },
+    ];
 
     const options: EnqueueEntriesOptions = {
       sourceLocale: 'en',
@@ -298,9 +330,13 @@ describe.sequential('_enqueueEntries', () => {
       throw new Error('Validation failed');
     });
 
-    const updates: Updates = {
-      'hello.world': 'Hello world',
-    };
+    const updates: Updates = [
+      {
+        dataFormat: 'ICU',
+        source: 'Hello world',
+        metadata: { key: 'hello.world' },
+      },
+    ];
 
     const options: EnqueueEntriesOptions = {
       sourceLocale: 'en',
@@ -320,7 +356,7 @@ describe.sequential('_enqueueEntries', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const updates: Updates = {};
+    const updates: Updates = [];
 
     const options: EnqueueEntriesOptions = {
       sourceLocale: 'en',
@@ -331,7 +367,41 @@ describe.sequential('_enqueueEntries', () => {
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
-        body: expect.stringContaining('"updates":{}'),
+        body: expect.stringContaining('"updates":[]'),
+      }),
+      expect.any(Number)
+    );
+    expect(result).toEqual(mockEnqueueEntriesResult);
+  });
+
+  it('should handle I18NEXT dataFormat', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockEnqueueEntriesResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const updates: Updates = [
+      {
+        dataFormat: 'I18NEXT',
+        source: 'Hello {{name}}',
+        metadata: { key: 'hello.user', namespace: 'common' },
+      },
+    ];
+
+    const options: EnqueueEntriesOptions = {
+      sourceLocale: 'en',
+      dataFormat: 'I18NEXT',
+      targetLocales: ['es'],
+    };
+
+    const result = await _enqueueEntries(updates, options, mockConfig);
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: expect.stringContaining('"dataFormat":"I18NEXT"'),
       }),
       expect.any(Number)
     );
@@ -346,9 +416,13 @@ describe.sequential('_enqueueEntries', () => {
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
-    const updates: Updates = {
-      'hello.world': 'Hello world',
-    };
+    const updates: Updates = [
+      {
+        dataFormat: 'ICU',
+        source: 'Hello world',
+        metadata: { key: 'hello.world' },
+      },
+    ];
 
     const options: EnqueueEntriesOptions = {
       sourceLocale: 'en',
@@ -357,7 +431,9 @@ describe.sequential('_enqueueEntries', () => {
 
     await _enqueueEntries(updates, options, mockConfig);
 
-    const body = JSON.parse(vi.mocked(fetchWithTimeout).mock.calls[0][1].body);
+    const body = JSON.parse(
+      vi.mocked(fetchWithTimeout).mock.calls[0][1].body as string
+    );
     expect(body).not.toHaveProperty('requireApproval');
   });
 });

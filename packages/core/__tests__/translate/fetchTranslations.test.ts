@@ -23,25 +23,29 @@ describe.sequential('_fetchTranslations', () => {
   };
 
   const mockFetchTranslationsResult: FetchTranslationsResult = {
-    versionId: 'version-123',
-    translations: [
-      {
-        id: 'translation-1',
-        key: 'hello_world',
-        status: 'completed',
-        locale: 'es',
-      },
-      {
-        id: 'translation-2',
-        key: 'goodbye_world',
-        status: 'pending',
-        locale: 'es',
-      },
-    ],
-    metadata: {
-      sourceLocale: 'en',
-      targetLocales: ['es', 'fr'],
-      createdAt: '2023-01-01T00:00:00Z',
+    translations: {
+      versionId: 'version-123',
+      projectId: 'test-project',
+      localeCount: 2,
+      totalEntries: 2,
+      translations: [
+        {
+          locale: 'es',
+          translation: 'Hello world',
+          metadata: {
+            key: 'hello_world',
+            status: 'completed',
+          },
+        },
+        {
+          locale: 'es',
+          translation: 'Goodbye world',
+          metadata: {
+            key: 'goodbye_world',
+            status: 'pending',
+          },
+        },
+      ],
     },
   };
 
@@ -146,7 +150,9 @@ describe.sequential('_fetchTranslations', () => {
     await _fetchTranslations(versionId, options, configWithoutUrl);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining('https://runtime2.gtx.dev/v1/project/translations/info/test-version-id'),
+      expect.stringContaining(
+        'https://runtime2.gtx.dev/v1/project/translations/info/test-version-id'
+      ),
       expect.any(Object),
       expect.any(Number)
     );
@@ -162,7 +168,9 @@ describe.sequential('_fetchTranslations', () => {
     const versionId = 'test-version-id';
     const options: FetchTranslationsOptions = {};
 
-    await expect(_fetchTranslations(versionId, options, mockConfig)).rejects.toThrow('Network error');
+    await expect(
+      _fetchTranslations(versionId, options, mockConfig)
+    ).rejects.toThrow('Network error');
     expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
@@ -179,7 +187,9 @@ describe.sequential('_fetchTranslations', () => {
     const versionId = 'test-version-id';
     const options: FetchTranslationsOptions = {};
 
-    await expect(_fetchTranslations(versionId, options, mockConfig)).rejects.toThrow('Validation failed');
+    await expect(
+      _fetchTranslations(versionId, options, mockConfig)
+    ).rejects.toThrow('Validation failed');
     expect(validateResponse).toHaveBeenCalledWith(mockResponse);
   });
 
@@ -235,6 +245,8 @@ describe.sequential('_fetchTranslations', () => {
     const versionId = 'test-version-id';
     const options: FetchTranslationsOptions = {};
 
-    await expect(_fetchTranslations(versionId, options, mockConfig)).rejects.toThrow('Invalid JSON');
+    await expect(
+      _fetchTranslations(versionId, options, mockConfig)
+    ).rejects.toThrow('Invalid JSON');
   });
 });

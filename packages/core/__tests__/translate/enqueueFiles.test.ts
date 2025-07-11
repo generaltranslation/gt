@@ -45,14 +45,21 @@ describe.sequential('_enqueueFiles', () => {
   };
 
   const mockEnqueueFilesResult: EnqueueFilesResult = {
-    versionId: 'version-123',
-    uploadedFiles: [
-      {
-        fileName: 'test.json',
-        status: 'uploaded',
-        translationId: 'translation-1',
-      },
-    ],
+    data: {
+      versionId: 'version-123',
+      uploadedFiles: [
+        {
+          fileName: 'test.json',
+          status: 'uploaded',
+          translationId: 'translation-1',
+        },
+      ],
+    },
+    locales: ['es', 'fr'],
+    translations: {
+      versionId: 'version-123',
+      status: 'processing',
+    },
     message: 'Files uploaded successfully',
   };
 
@@ -77,8 +84,8 @@ describe.sequential('_enqueueFiles', () => {
       {
         fileName: 'test.json',
         content: '{"hello": "world"}',
-        fileFormat: 'JSON',
-        dataFormat: 'JSON',
+        fileFormat: 'GTJSON',
+        dataFormat: 'JSX',
       },
     ];
 
@@ -123,12 +130,12 @@ describe.sequential('_enqueueFiles', () => {
         fileName: 'test1.json',
         content: '{"hello": "world"}',
         fileFormat: 'JSON',
-        dataFormat: 'JSON',
+        dataFormat: 'JSX',
       },
       {
-        fileName: 'test2.properties',
-        content: 'hello=world',
-        fileFormat: 'PROPERTIES',
+        fileName: 'test2.yaml',
+        content: 'hello: world',
+        fileFormat: 'YAML',
         dataFormat: 'ICU',
       },
     ];
@@ -148,12 +155,14 @@ describe.sequential('_enqueueFiles', () => {
 
     // Verify FormData contains correct file count
     expect(body.get('fileCount')).toBe('2');
-    
+
     // Verify file metadata is properly set
     expect(body.get('fileName0')).toBe('test1.json');
-    expect(body.get('fileName1')).toBe('test2.properties');
+    expect(body.get('fileName1')).toBe('test2.yaml');
     expect(body.get('fileFormat0')).toBe('JSON');
-    expect(body.get('fileFormat1')).toBe('PROPERTIES');
+    expect(body.get('fileFormat1')).toBe('YAML');
+    expect(body.get('fileDataFormat0')).toBe('JSX');
+    expect(body.get('fileDataFormat1')).toBe('ICU');
   });
 
   it('should use default timeout when not specified', async () => {
@@ -169,7 +178,6 @@ describe.sequential('_enqueueFiles', () => {
         fileName: 'test.json',
         content: '{}',
         fileFormat: 'JSON',
-        dataFormat: 'JSON',
       },
     ];
 
@@ -203,7 +211,6 @@ describe.sequential('_enqueueFiles', () => {
         fileName: 'test.json',
         content: '{}',
         fileFormat: 'JSON',
-        dataFormat: 'JSON',
       },
     ];
 
@@ -243,7 +250,6 @@ describe.sequential('_enqueueFiles', () => {
         fileName: 'test.json',
         content: '{}',
         fileFormat: 'JSON',
-        dataFormat: 'JSON',
       },
     ];
 
@@ -258,7 +264,9 @@ describe.sequential('_enqueueFiles', () => {
     await _enqueueFiles(files, options, configWithoutUrl);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining('https://runtime2.gtx.dev/v1/project/translations/files/upload'),
+      expect.stringContaining(
+        'https://runtime2.gtx.dev/v1/project/translations/files/upload'
+      ),
       expect.any(Object),
       expect.any(Number)
     );
@@ -276,7 +284,6 @@ describe.sequential('_enqueueFiles', () => {
         fileName: 'test.json',
         content: '{}',
         fileFormat: 'JSON',
-        dataFormat: 'JSON',
       },
     ];
 
@@ -288,7 +295,9 @@ describe.sequential('_enqueueFiles', () => {
       description: 'Test',
     };
 
-    await expect(_enqueueFiles(files, options, mockConfig)).rejects.toThrow('Network error');
+    await expect(_enqueueFiles(files, options, mockConfig)).rejects.toThrow(
+      'Network error'
+    );
     expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
@@ -307,7 +316,6 @@ describe.sequential('_enqueueFiles', () => {
         fileName: 'test.json',
         content: '{}',
         fileFormat: 'JSON',
-        dataFormat: 'JSON',
       },
     ];
 
@@ -319,13 +327,53 @@ describe.sequential('_enqueueFiles', () => {
       description: 'Test',
     };
 
-    await expect(_enqueueFiles(files, options, mockConfig)).rejects.toThrow('Validation failed');
+    await expect(_enqueueFiles(files, options, mockConfig)).rejects.toThrow(
+      'Validation failed'
+    );
     expect(validateResponse).toHaveBeenCalledWith(mockResponse);
+  });
+
+  it('should handle files without dataFormat', async () => {
+    const mockResponse = {
+      json: vi.fn().mockResolvedValue(mockEnqueueFilesResult),
+    } as unknown as Response;
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
+
+    const files: FileToTranslate[] = [
+      {
+        fileName: 'test.md',
+        content: '# Hello World',
+        fileFormat: 'MD',
+      },
+    ];
+
+    const options: EnqueueFilesOptions = {
+      sourceLocale: 'en',
+      targetLocales: ['es'],
+      publish: false,
+      _versionId: 'version-123',
+      description: 'Test',
+    };
+
+    await _enqueueFiles(files, options, mockConfig);
+
+    const formDataCall = vi.mocked(fetchWithTimeout).mock.calls[0];
+    const body = formDataCall[1].body as FormData;
+
+    // When dataFormat is not provided, it should be empty string
+    expect(body.get('fileDataFormat0')).toBe('');
+    expect(body.get('fileFormat0')).toBe('MD');
+    expect(body.get('fileName0')).toBe('test.md');
   });
 
   it('should handle empty files array', async () => {
     const mockResponse = {
-      json: vi.fn().mockResolvedValue({ ...mockEnqueueFilesResult, uploadedFiles: [] }),
+      json: vi.fn().mockResolvedValue({
+        ...mockEnqueueFilesResult,
+        data: { ...(mockEnqueueFilesResult.data as any), uploadedFiles: [] },
+      }),
     } as unknown as Response;
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse);
@@ -346,6 +394,6 @@ describe.sequential('_enqueueFiles', () => {
     const formDataCall = vi.mocked(fetchWithTimeout).mock.calls[0];
     const body = formDataCall[1].body as FormData;
     expect(body.get('fileCount')).toBe('0');
-    expect(result.uploadedFiles).toEqual([]);
+    expect((result.data as any).uploadedFiles).toEqual([]);
   });
 });

@@ -15,9 +15,11 @@ export type RetrievedTranslation = {
 export type RetrievedTranslations = RetrievedTranslation[];
 
 export type FetchTranslationsResult = {
-  translations: RetrievedTranslations;
-  versionId: string;
-  projectId: string;
-  localeCount: number;
-  totalEntries: number;
+  translations: {
+    translations: RetrievedTranslations;
+    versionId: string;
+    projectId: string;
+    localeCount: number;
+    totalEntries: number;
+  };
 };

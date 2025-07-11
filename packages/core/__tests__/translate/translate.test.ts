@@ -208,7 +208,9 @@ describe.sequential('_translate', () => {
     await _translate('Hello', 'es', {}, configWithoutUrl);
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
-      expect.stringContaining('https://runtime2.gtx.dev/v1/translate/test-project'),
+      expect.stringContaining(
+        'https://runtime2.gtx.dev/v1/translate/test-project'
+      ),
       expect.any(Object),
       expect.any(Number)
     );
@@ -221,7 +223,9 @@ describe.sequential('_translate', () => {
       throw fetchError;
     });
 
-    await expect(_translate('Hello', 'es', {}, mockConfig)).rejects.toThrow('Network error');
+    await expect(_translate('Hello', 'es', {}, mockConfig)).rejects.toThrow(
+      'Network error'
+    );
     expect(handleFetchError).toHaveBeenCalledWith(fetchError, 60000);
   });
 
@@ -236,7 +240,9 @@ describe.sequential('_translate', () => {
       throw new Error('Validation failed');
     });
 
-    await expect(_translate('Hello', 'es', {}, mockConfig)).rejects.toThrow('Validation failed');
+    await expect(_translate('Hello', 'es', {}, mockConfig)).rejects.toThrow(
+      'Validation failed'
+    );
     expect(validateResponse).toHaveBeenCalledWith(mockResponse);
   });
 

@@ -49,7 +49,7 @@ export interface FileToTranslate {
   content: string;
   fileName: string;
   fileFormat: 'GTJSON' | 'JSON' | 'YAML' | 'MDX' | 'MD' | 'TS' | 'JS';
-  dataFormat: 'JSX' | 'ICU' | 'I18NEXT';
+  dataFormat?: 'JSX' | 'ICU' | 'I18NEXT';
 }
 
 export type EnqueueFilesOptions = {
