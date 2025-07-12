@@ -14,7 +14,7 @@ export async function validateProject(
 ): Promise<void> {
   if (files && files.length > 0) {
     // Validate specific files using createInlineUpdates
-    const { errors } = await createInlineUpdates(pkg, true, files);
+    const { errors, updates } = await createInlineUpdates(pkg, true, files);
 
     if (errors.length > 0) {
       logErrorAndExit(
@@ -26,6 +26,9 @@ export async function validateProject(
         )
       );
     }
+    logSuccess(
+      chalk.green(`Success! Found ${updates.length} translatable entries.`)
+    );
     return;
   }
 
