@@ -28,6 +28,14 @@ jobs:
       - name: Run lint
         run: npm run lint
 
+      - name: Debug environment variables
+        env:
+          VITE_CI_TEST_GT_PROJECT_ID: ${{ secrets.VITE_CI_TEST_GT_PROJECT_ID }}
+          VITE_CI_TEST_GT_API_KEY: ${{ secrets.VITE_CI_TEST_GT_API_KEY }}
+        run: |
+          echo "VITE_CI_TEST_GT_PROJECT_ID is set: $([[ -n "$VITE_CI_TEST_GT_PROJECT_ID" ]] && echo "yes" || echo "no")"
+          echo "VITE_CI_TEST_GT_API_KEY is set: $([[ -n "$VITE_CI_TEST_GT_API_KEY" ]] && echo "yes" || echo "no")"
+
       - name: Run tests
         env:
           VITE_CI_TEST_GT_PROJECT_ID: ${{ secrets.VITE_CI_TEST_GT_PROJECT_ID }}
