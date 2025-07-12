@@ -15,7 +15,7 @@ import {
   logMessage,
 } from '../console/logging.js';
 import path from 'node:path';
-import fs from 'node:fs';
+import fs, { readFileSync } from 'node:fs';
 import {
   FilesOptions,
   Settings,
@@ -37,6 +37,7 @@ import { installPackage } from '../utils/installPackage.js';
 import { getPackageManager } from '../utils/packageManager.js';
 import { retrieveCredentials, setCredentials } from '../utils/credentials.js';
 import { areCredentialsSet } from '../utils/credentials.js';
+import { getCLIVersion } from '../utils/packageJson.js';
 
 export type TranslateOptions = {
   config?: string;
@@ -62,6 +63,7 @@ export class BaseCLI {
     additionalModules?: SupportedLibraries[]
   ) {
     this.program = program;
+    this.program.version(getCLIVersion());
     this.library = library;
     this.additionalModules = additionalModules || [];
     this.setupInitCommand();
