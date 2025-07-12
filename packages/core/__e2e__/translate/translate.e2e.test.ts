@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import {
-  TranslationError,
-  TranslationRequestConfig,
-  TranslationResult,
-} from '../../src/types';
+import { TranslationRequestConfig, TranslationResult } from '../../src/types';
 import { EntryMetadata } from '../../src/types-dir/entry';
 import { Content } from '../../src/types-dir/content';
 import _translate from '../../src/translate/translate';

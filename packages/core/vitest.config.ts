@@ -32,6 +32,8 @@ export default defineConfig(({ mode }) => ({
       ...loadEnv(mode || 'test', process.cwd(), ''),
       // Suppress GT logger output during tests for cleaner output
       _GT_LOG_LEVEL: 'off',
+      VITE_CI_TEST_GT_PROJECT_ID: process.env.VITE_CI_TEST_GT_PROJECT_ID,
+      VITE_CI_TEST_GT_API_KEY: process.env.VITE_CI_TEST_GT_API_KEY,
     },
     // Better reporting
     reporters: [
