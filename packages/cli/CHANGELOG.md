@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.3
+
+### Patch Changes
+
+- [#462](https://github.com/generaltranslation/gt/pull/462) [`678e9e7`](https://github.com/generaltranslation/gt/commit/678e9e70dd57a38ee10dcf9deb78cdd5dcfb759b) Thanks [@brian-lou](https://github.com/brian-lou)! - Revert adding version to cli tool
+
 ## 2.0.2
 
 ### Patch Changes
