@@ -24,7 +24,7 @@ describe.sequential('_translate', () => {
     translation: 'Hola mundo',
     reference: {
       id: 'test-id',
-      key: 'test-key',
+      hash: 'test-key',
     },
   };
 

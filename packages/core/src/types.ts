@@ -169,7 +169,7 @@ export type TranslationError = {
   code?: number;
   reference?: {
     id: string;
-    key: string;
+    hash: string;
   };
 };
 
@@ -210,5 +210,5 @@ export type TranslateManyResult = Array<TranslationResult | TranslationError>;
  */
 export type TranslationResultReference = {
   id?: string;
-  key?: string;
+  hash?: string;
 };

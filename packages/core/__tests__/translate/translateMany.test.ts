@@ -24,14 +24,14 @@ describe.sequential('_translateMany', () => {
       translation: 'Hola mundo',
       reference: {
         id: 'test-id-1',
-        key: 'test-key-1',
+        hash: 'test-key-1',
       },
     },
     {
       translation: 'Adiós mundo',
       reference: {
         id: 'test-id-2',
-        key: 'test-key-2',
+        hash: 'test-key-2',
       },
     },
     {
@@ -39,7 +39,7 @@ describe.sequential('_translateMany', () => {
       code: 500,
       reference: {
         id: 'test-id-1',
-        key: 'test-key-1',
+        hash: 'test-key-1',
       },
     },
     {
@@ -47,7 +47,7 @@ describe.sequential('_translateMany', () => {
       code: 500,
       reference: {
         id: 'test-id-2',
-        key: 'test-key-2',
+        hash: 'test-key-2',
       },
     },
   ];

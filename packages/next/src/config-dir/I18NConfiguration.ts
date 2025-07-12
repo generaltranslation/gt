@@ -563,34 +563,18 @@ export default class I18NConfiguration {
         }
       };
 
-      const response = await fetchWithAbort(
-        `${this.runtimeUrl}/v1/runtime/${this.projectId}/server`,
+      const results = await this.gt.translateMany(
+        batch.map((item) => {
+          const { source, metadata, dataFormat } = item;
+          return { source, metadata, dataFormat };
+        }),
         {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(this.apiKey && { 'x-gt-api-key': this.apiKey }),
-            ...(this.devApiKey && { 'x-gt-dev-api-key': this.devApiKey }),
-          },
-          body: JSON.stringify({
-            requests: batch.map((item) => {
-              const { source, metadata, dataFormat } = item;
-              return { source, metadata, dataFormat };
-            }),
-            targetLocale: batch[0].targetLocale,
-            metadata: this.metadata,
-            versionId: this._versionId,
-          }),
-        },
-        this.renderSettings.timeout // Pass the timeout duration in milliseconds
+          ...this.metadata,
+          targetLocale: batch[0].targetLocale,
+        }
       );
 
       // ----- PROCESS RESPONSE ----- //
-
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      const results = await response.json();
       batch.forEach((request, index) => {
         // check if entry is missing
         const result = results[index];
