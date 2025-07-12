@@ -13,13 +13,8 @@ describe('translateMany E2E Tests', () => {
     const apiKey = process.env.VITE_CI_TEST_GT_API_KEY;
 
     // Skip tests if no real credentials are provided
-    console.log('debug: projectId value:', JSON.stringify(projectId));
-    console.log('debug: !projectId:', !projectId);
-
     if (!projectId || !apiKey) {
       console.warn('Skipping e2e tests - no valid credentials provided');
-    } else {
-      console.log('debug: projectId', projectId);
     }
 
     config = {

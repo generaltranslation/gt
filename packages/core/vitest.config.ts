@@ -50,9 +50,13 @@ export default defineConfig(({ mode }) => {
         ...env,
         // Suppress GT logger output during tests for cleaner output
         _GT_LOG_LEVEL: 'off',
-        // Always include CI environment variables if they exist
-        VITE_CI_TEST_GT_PROJECT_ID: process.env.VITE_CI_TEST_GT_PROJECT_ID,
-        VITE_CI_TEST_GT_API_KEY: process.env.VITE_CI_TEST_GT_API_KEY,
+        // Only include CI environment variables if they exist and are not undefined
+        ...(process.env.VITE_CI_TEST_GT_PROJECT_ID && {
+          VITE_CI_TEST_GT_PROJECT_ID: process.env.VITE_CI_TEST_GT_PROJECT_ID,
+        }),
+        ...(process.env.VITE_CI_TEST_GT_API_KEY && {
+          VITE_CI_TEST_GT_API_KEY: process.env.VITE_CI_TEST_GT_API_KEY,
+        }),
       },
       // Better reporting
       reporters: [
