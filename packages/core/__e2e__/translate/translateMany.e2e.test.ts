@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import {
-  TranslationRequestConfig,
-  TranslationResult,
-  TranslationError,
-} from '../../src/types';
+import { TranslationRequestConfig, TranslationResult } from '../../src/types';
 import { EntryMetadata, Entry } from '../../src/types-dir/entry';
 import _translateMany from '../../src/translate/translateMany';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
@@ -22,6 +18,7 @@ describe('translateMany E2E Tests', () => {
     } else {
       console.log('debug: projectId', projectId);
     }
+    console.log('debug: runtimeUrl', runtimeUrl);
 
     config = {
       baseUrl: runtimeUrl,

@@ -4,11 +4,12 @@ import { loadEnv } from 'vite';
 export default defineConfig(({ mode }) => {
   // Load environment variables
   const env = loadEnv(mode || 'test', process.cwd(), '');
-  
+
   // Make CI environment variables available to process.env in tests
   // Only override if CI vars exist (don't overwrite local .env values)
   if (process.env.VITE_CI_TEST_GT_PROJECT_ID) {
-    process.env.VITE_CI_TEST_GT_PROJECT_ID = process.env.VITE_CI_TEST_GT_PROJECT_ID;
+    process.env.VITE_CI_TEST_GT_PROJECT_ID =
+      process.env.VITE_CI_TEST_GT_PROJECT_ID;
   } else if (env.VITE_CI_TEST_GT_PROJECT_ID) {
     process.env.VITE_CI_TEST_GT_PROJECT_ID = env.VITE_CI_TEST_GT_PROJECT_ID;
   }
