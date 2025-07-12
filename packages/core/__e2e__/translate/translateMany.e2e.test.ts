@@ -19,6 +19,8 @@ describe('translateMany E2E Tests', () => {
     // Skip tests if no real credentials are provided
     if (!projectId || !apiKey) {
       console.warn('Skipping e2e tests - no valid credentials provided');
+    } else {
+      console.log('debug: projectId', projectId);
     }
 
     config = {
