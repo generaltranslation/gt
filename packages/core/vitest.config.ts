@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
   // Debug logging for CI
   console.log('=== VITEST CONFIG DEBUG ===');
   console.log('Mode:', mode);
-  console.log('env:', env);
+  console.log('CI environment:', process.env.CI);
   console.log(
     'process.env.VITE_CI_TEST_GT_PROJECT_ID:',
     process.env.VITE_CI_TEST_GT_PROJECT_ID
