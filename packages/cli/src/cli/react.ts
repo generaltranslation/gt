@@ -207,7 +207,7 @@ export class ReactCLI extends BaseCLI {
   }
   protected setupValidateCommand(): void {
     this.program
-      .command('validate')
+      .command('validate [files...]')
       .description(
         'Scans the project for a dictionary and/or <T> tags, and validates the project for errors.'
       )
@@ -231,10 +231,10 @@ export class ReactCLI extends BaseCLI {
         'Include inline <T> tags in addition to dictionary file',
         true
       )
-      .action(async (options: Options) => {
+      .action(async (files: string[], options: Options) => {
         // intro here since we don't want to show the ascii title
         intro(chalk.cyan('Validating project...'));
-        await this.handleValidate(options);
+        await this.handleValidate(options, files);
         endCommand('Done!');
       });
   }
@@ -526,7 +526,10 @@ export class ReactCLI extends BaseCLI {
     }
   }
 
-  protected async handleValidate(initOptions: Options): Promise<void> {
+  protected async handleValidate(
+    initOptions: Options,
+    files?: string[]
+  ): Promise<void> {
     validateConfigExists();
     const settings = await generateSettings(initOptions);
 
@@ -534,6 +537,13 @@ export class ReactCLI extends BaseCLI {
     const options = { ...initOptions, ...settings };
 
     const pkg = this.library === 'gt-next' ? 'gt-next' : 'gt-react';
-    await validateProject(options, pkg);
+
+    if (files && files.length > 0) {
+      // Validate specific files using createInlineUpdates
+      await validateProject(options, pkg, files);
+    } else {
+      // Validate whole project as before
+      await validateProject(options, pkg);
+    }
   }
 }

@@ -18,19 +18,17 @@ import { GT_TRANSLATION_FUNCS } from '../jsx/utils/constants.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 
-export default async function createInlineUpdates(
-  options: Options,
+export async function createInlineUpdates(
   pkg: 'gt-react' | 'gt-next',
-  validate: boolean
+  validate: boolean,
+  filePatterns: string[] | undefined
 ): Promise<{ updates: Updates; errors: string[] }> {
   const updates: Updates = [];
 
   const errors: string[] = [];
 
   // Use the provided app directory or default to the current directory
-  const filePatterns = options.src || DEFAULT_SRC_PATTERNS;
-
-  const files = matchFiles(process.cwd(), filePatterns);
+  const files = matchFiles(process.cwd(), filePatterns || DEFAULT_SRC_PATTERNS);
 
   for (const file of files) {
     const code = await fs.promises.readFile(file, 'utf8');

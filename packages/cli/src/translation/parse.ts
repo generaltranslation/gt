@@ -2,8 +2,8 @@ import { Options, GenerateSourceOptions, Updates } from '../types/index.js';
 import fs from 'fs';
 import { logError } from '../console/logging.js';
 import loadJSON from '../fs/loadJSON.js';
-import createDictionaryUpdates from '../react/parse/createDictionaryUpdates.js';
-import createInlineUpdates from '../react/parse/createInlineUpdates.js';
+import { createDictionaryUpdates } from '../react/parse/createDictionaryUpdates.js';
+import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
 import createESBuildConfig from '../react/config/createESBuildConfig.js';
 import chalk from 'chalk';
 
@@ -59,7 +59,7 @@ export async function createUpdates(
   // Scan through project for <T> tags
   if (options.inline) {
     const { updates: newUpdates, errors: newErrors } =
-      await createInlineUpdates(options as any, pkg, validate);
+      await createInlineUpdates(pkg, validate, options.src);
     errors = [...errors, ...newErrors];
     updates = [...updates, ...newUpdates];
   }
