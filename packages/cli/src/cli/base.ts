@@ -63,7 +63,6 @@ export class BaseCLI {
     additionalModules?: SupportedLibraries[]
   ) {
     this.program = program;
-    this.program.version(getCLIVersion());
     this.library = library;
     this.additionalModules = additionalModules || [];
     this.setupInitCommand();
