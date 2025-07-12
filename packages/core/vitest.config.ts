@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => ({
     // Load environment variables from .env files
     // The empty string '' as third parameter loads ALL env vars, not just VITE_ prefixed ones
     env: {
-      ...loadEnv(mode || 'test', process.cwd(), ''),
+      ...loadEnv(mode || 'test', false, ''),
       // Suppress GT logger output during tests for cleaner output
       _GT_LOG_LEVEL: 'off',
       VITE_CI_TEST_GT_PROJECT_ID: process.env.VITE_CI_TEST_GT_PROJECT_ID,
