@@ -8,6 +8,8 @@ export default defineConfig(({ mode }) => {
   // Debug logging for CI
   console.log('=== VITEST CONFIG DEBUG ===');
   console.log('Mode:', mode);
+  console.log('env:', env);
+  console.log('process.env:', process.env);
   console.log('CI environment:', process.env.CI);
   console.log(
     'process.env.VITE_CI_TEST_GT_PROJECT_ID:',
@@ -27,30 +29,15 @@ export default defineConfig(({ mode }) => {
   );
   console.log('=== END DEBUG ===');
 
-  // Ensure environment variables are available to test code via process.env
-  // Priority: process.env (CI) > env (local .env file)
+  // Get environment variables from either source
   const projectId =
     process.env.VITE_CI_TEST_GT_PROJECT_ID || env.VITE_CI_TEST_GT_PROJECT_ID;
   const apiKey =
     process.env.VITE_CI_TEST_GT_API_KEY || env.VITE_CI_TEST_GT_API_KEY;
 
-  // Set them in process.env so tests can access them
-  if (projectId) {
-    process.env.VITE_CI_TEST_GT_PROJECT_ID = projectId;
-  }
-  if (apiKey) {
-    process.env.VITE_CI_TEST_GT_API_KEY = apiKey;
-  }
-
-  console.log('Final values set in process.env:');
-  console.log(
-    'VITE_CI_TEST_GT_PROJECT_ID:',
-    process.env.VITE_CI_TEST_GT_PROJECT_ID
-  );
-  console.log(
-    'VITE_CI_TEST_GT_API_KEY:',
-    process.env.VITE_CI_TEST_GT_API_KEY ? '[REDACTED]' : undefined
-  );
+  console.log('Values to be passed to test env:');
+  console.log('VITE_CI_TEST_GT_PROJECT_ID:', projectId);
+  console.log('VITE_CI_TEST_GT_API_KEY:', apiKey ? '[REDACTED]' : undefined);
 
   return {
     test: {
@@ -77,19 +64,17 @@ export default defineConfig(({ mode }) => {
       environment: 'node',
       // Globals for easier test writing
       globals: true,
+      // Setup files to run before tests
+      setupFiles: ['./vitest.setup.ts'],
       // Load environment variables from .env files
       // The empty string '' as third parameter loads ALL env vars, not just VITE_ prefixed ones
       env: {
         ...env,
         // Suppress GT logger output during tests for cleaner output
         _GT_LOG_LEVEL: 'off',
-        // Only include CI environment variables if they exist and are not undefined
-        ...(process.env.VITE_CI_TEST_GT_PROJECT_ID && {
-          VITE_CI_TEST_GT_PROJECT_ID: process.env.VITE_CI_TEST_GT_PROJECT_ID,
-        }),
-        ...(process.env.VITE_CI_TEST_GT_API_KEY && {
-          VITE_CI_TEST_GT_API_KEY: process.env.VITE_CI_TEST_GT_API_KEY,
-        }),
+        // Pass environment variables directly to test environment
+        ...(projectId && { VITE_CI_TEST_GT_PROJECT_ID: projectId }),
+        ...(apiKey && { VITE_CI_TEST_GT_API_KEY: apiKey }),
       },
       // Better reporting
       reporters: [
