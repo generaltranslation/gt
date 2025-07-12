@@ -24,7 +24,7 @@ export async function sendUpdates(
   options: ApiOptions,
   library: SupportedLibraries
 ): Promise<{ versionId: string; locales: string[] }> {
-  const { apiKey, projectId, defaultLocale, dataFormat } = options;
+  const { projectId, defaultLocale, dataFormat } = options;
 
   const globalMetadata = {
     ...(projectId && { projectId }),

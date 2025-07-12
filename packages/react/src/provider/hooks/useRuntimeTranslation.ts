@@ -24,6 +24,7 @@ import {
   batchInterval,
 } from '../config/defaultProps';
 import { DataFormat } from 'generaltranslation/types';
+import { GT } from 'generaltranslation';
 
 // Queue to store requested keys between renders.
 type TranslationRequestMetadata = {
@@ -47,8 +48,7 @@ type TranslationRequestQueueItem = (
 };
 
 export default function useRuntimeTranslation({
-  projectId,
-  devApiKey,
+  gt,
   locale,
   versionId,
   defaultLocale,
@@ -58,8 +58,7 @@ export default function useRuntimeTranslation({
   setTranslationsStatus,
   ...globalMetadata
 }: {
-  projectId?: string;
-  devApiKey?: string;
+  gt: GT;
   locale: string;
   versionId?: string;
   defaultLocale?: string;
@@ -83,9 +82,9 @@ export default function useRuntimeTranslation({
 
   // Translation at runtime during development is enabled
   const runtimeTranslationEnabled = !!(
-    projectId &&
+    gt.projectId &&
     runtimeUrl &&
-    devApiKey &&
+    gt.devApiKey &&
     process.env.NODE_ENV === 'development'
   );
 
@@ -116,7 +115,7 @@ export default function useRuntimeTranslation({
 
   globalMetadata = {
     ...globalMetadata,
-    projectId,
+    projectId: gt.projectId,
     sourceLocale: defaultLocale,
   };
 
@@ -243,51 +242,13 @@ export default function useRuntimeTranslation({
         });
 
         // ----- RUNTIME TRANSLATION ----- //
-        const fetchWithAbort = async (
-          url: string,
-          options: RequestInit | undefined,
-          timeout: number | undefined
-        ) => {
-          const controller = new AbortController();
-          const timeoutId =
-            timeout === undefined
-              ? undefined
-              : setTimeout(() => controller.abort(), timeout);
-          try {
-            const res = await fetch(url, {
-              ...options,
-              signal: controller.signal,
-            });
-            return res;
-          } finally {
-            if (timeoutId !== undefined) clearTimeout(timeoutId); // Ensure timeout is cleared
-          }
-        };
-        const response = await fetchWithAbort(
-          `${runtimeUrl}/v1/runtime/${projectId}/client`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(devApiKey && { 'x-gt-dev-api-key': devApiKey }),
-            },
-            body: JSON.stringify({
-              requests,
-              targetLocale,
-              metadata: globalMetadata,
-              versionId,
-            }),
-          },
-          renderSettings.timeout
-        );
 
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
+        const results = await gt.translateMany(requests, {
+          ...globalMetadata,
+          targetLocale: locale,
+        });
 
         // ----- PARSE RESPONSE ----- //
-        const results = (await response.json()) as any[];
-        // don't send another req if one is already in flight
 
         // process each result
         results.forEach((result, index) => {
@@ -310,12 +271,7 @@ export default function useRuntimeTranslation({
           }
 
           // translation failure
-          if (
-            result.error !== undefined &&
-            result.error !== null &&
-            result.code !== undefined &&
-            result.code !== null
-          ) {
+          if ('error' in result) {
             // 0 and '' are falsey
             // log error message
             console.error(
@@ -323,13 +279,13 @@ export default function useRuntimeTranslation({
                 request.metadata.id,
                 request.metadata.hash
               ),
-              result.error
+              result.error || 'An upstream error occurred.'
             );
             // set error in translation object
             newTranslationsStatus[hash] = {
               status: 'error',
-              code: result.code,
-              error: result.error,
+              code: result.code || 500,
+              error: result.error || 'An upstream error occurred.',
             };
             return;
           }
@@ -345,7 +301,7 @@ export default function useRuntimeTranslation({
           newTranslationsStatus[hash] = {
             status: 'error',
             code: 500,
-            error: 'An error occurred.',
+            error: 'An upstream error occurred.',
           };
         });
       } catch (error) {
@@ -380,8 +336,8 @@ export default function useRuntimeTranslation({
     },
     [
       runtimeUrl,
-      projectId,
-      devApiKey,
+      gt.projectId,
+      gt.devApiKey,
       globalMetadata,
       versionId,
       renderSettings.timeout,

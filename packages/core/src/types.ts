@@ -1,27 +1,69 @@
 import { LocaleProperties } from './locales/getLocaleProperties';
 
-export { LocaleProperties };
+import { Variable, VariableType } from './types-dir/variables';
 
-export type Content = string | Array<string | Variable>;
+import {
+  IcuMessage,
+  I18nextMessage,
+  JsxChildren,
+  JsxChild,
+  JsxElement,
+  GTProp,
+  HtmlContentPropKeysRecord,
+  HtmlContentPropValuesRecord,
+  HTML_CONTENT_PROPS,
+  DataFormat,
+  Content,
+} from './types-dir/content';
+import { ActionType, EntryMetadata, Entry } from './types-dir/entry';
+
+export {
+  IcuMessage,
+  I18nextMessage,
+  JsxChildren,
+  JsxChild,
+  JsxElement,
+  GTProp,
+  HtmlContentPropKeysRecord,
+  HtmlContentPropValuesRecord,
+  HTML_CONTENT_PROPS,
+  Variable,
+  VariableType,
+  LocaleProperties,
+  DataFormat,
+  ActionType as EntryActionType,
+  EntryMetadata as EntryMetadata,
+  Entry as Entry,
+  Content,
+};
+
+export type {
+  FileTranslationQuery,
+  CheckFileTranslationsOptions,
+  CheckFileTranslationsResult,
+} from './types-dir/checkFileTranslations';
+export type {
+  DownloadFileBatchOptions,
+  DownloadFileBatchResult,
+} from './types-dir/downloadFileBatch';
+export type {
+  FetchTranslationsOptions,
+  FetchTranslationsResult,
+} from './types-dir/fetchTranslations';
+export type {
+  EnqueueEntriesOptions,
+  EnqueueEntriesResult,
+  EnqueueFilesOptions,
+  EnqueueFilesResult,
+  FileToTranslate,
+  Updates,
+} from './types-dir/enqueue';
+export type { DownloadFileOptions } from './types-dir/downloadFile';
 
 /**
- * Map of data-_gt properties to their corresponding React props
+ * @deprecated Use {@link Content} instead.
  */
-export const HTML_CONTENT_PROPS = {
-  pl: 'placeholder',
-  ti: 'title',
-  alt: 'alt',
-  arl: 'aria-label',
-  arb: 'aria-labelledby',
-  ard: 'aria-describedby',
-} as const;
-
-export type HtmlContentPropKeysRecord = Partial<
-  Record<keyof typeof HTML_CONTENT_PROPS, string>
->;
-export type HtmlContentPropValuesRecord = Partial<
-  Record<(typeof HTML_CONTENT_PROPS)[keyof typeof HTML_CONTENT_PROPS], string>
->;
+export type _Content = string | Array<string | Variable>;
 
 /**
  * Transformations are made from a prefix and a suffix.
@@ -48,25 +90,6 @@ export type VariableTransformationSuffix =
   | 'datetime'
   | 'currency';
 
-/**
- * GTProp is an internal property used to contain data for translating and rendering elements.
- * note, transformations are only read on the server side if they are 'plural' or 'branch'
- */
-export type GTProp = {
-  b?: Record<string, JsxChildren>; // Branches
-  t?: 'p' | 'b'; // Branch Transformation
-} & HtmlContentPropKeysRecord;
-
-export type JsxElement = {
-  t?: string; // tag name
-  i?: number; // id
-  d?: GTProp; // GT data
-  c?: JsxChildren; // children
-};
-
-export type JsxChild = string | JsxElement | Variable;
-export type JsxChildren = JsxChild | JsxChild[];
-
 export type Metadata = {
   context?: string;
   id?: string;
@@ -74,8 +97,6 @@ export type Metadata = {
   actionType?: 'standard' | 'fast' | string;
   [key: string]: any;
 };
-
-export type DataFormat = 'JSX' | 'ICU' | 'I18NEXT';
 
 export type FormatVariables = Record<
   string,
@@ -86,7 +107,7 @@ export type Update =
   | {
       type: 'content';
       data: {
-        source: Content;
+        source: _Content;
         metadata: Metadata;
       };
     }
@@ -102,7 +123,7 @@ export type Request =
   | {
       type: 'content';
       data: {
-        source: Content;
+        source: _Content;
         targetLocale: string;
         metadata: Metadata;
       };
@@ -117,7 +138,7 @@ export type Request =
     };
 
 export type ContentTranslationResult = {
-  translation: Content;
+  translation: _Content;
   locale: string;
   reference?: {
     id: string;
@@ -144,11 +165,11 @@ export type JsxTranslationResult = {
 };
 
 export type TranslationError = {
-  error: string;
-  code: number;
+  error?: string;
+  code?: number;
   reference?: {
     id: string;
-    key: string;
+    hash: string;
   };
 };
 
@@ -156,17 +177,38 @@ export type { CustomMapping } from './locales/customLocaleMapping';
 
 // ----- VARIABLES ----- //
 
-export type VariableType =
-  | 'v' // Variable
-  | 'n' // Number
-  | 'd' // Date
-  | 'c'; // Currency
+// ----- TRANSLATION REQUEST TYPES ----- //
 
 /**
- * Variables are used to store the variable name and type.
+ * TranslationRequestConfig is used to configure the translation request.
+ *
+ * @param projectId - The project id of the translation request.
+ * @param baseUrl - The base url of the translation request.
+ * @param apiKey - The api key of the translation request.
  */
-export type Variable = {
-  k: string;
-  i?: number;
-  v?: VariableType;
+export type TranslationRequestConfig = {
+  projectId: string;
+  baseUrl?: string;
+  apiKey?: string;
+};
+
+/**
+ * TranslationResult is the result of a translation request.
+ */
+export type TranslationResult = {
+  translation: Content;
+  reference: TranslationResultReference;
+};
+
+/**
+ * BatchTranslationResult is the result of a batch translation request.
+ */
+export type TranslateManyResult = Array<TranslationResult | TranslationError>;
+
+/**
+ * TranslationResultReference is used to store the reference for a translation result.
+ */
+export type TranslationResultReference = {
+  id?: string;
+  hash?: string;
 };

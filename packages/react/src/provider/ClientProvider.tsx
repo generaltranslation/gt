@@ -125,8 +125,6 @@ export default function ClientProvider({
     gt,
     locale: locale,
     versionId: _versionId,
-    projectId,
-    devApiKey,
     runtimeUrl,
     setTranslations,
     setTranslationsStatus,

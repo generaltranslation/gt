@@ -1,5 +1,5 @@
 import {
-  Content,
+  _Content,
   ContentTranslationResult,
   TranslationError,
 } from '../../types';
@@ -11,7 +11,7 @@ import { translateContentUrl } from '../../settings/settingsUrls';
  **/
 export default async function _translate(
   gt: { baseUrl: string; apiKey?: string; devApiKey?: string },
-  source: Content,
+  source: _Content,
   targetLocale: string,
   metadata: { [key: string]: any }
 ): Promise<ContentTranslationResult | TranslationError> {

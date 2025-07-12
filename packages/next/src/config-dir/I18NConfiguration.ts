@@ -11,7 +11,7 @@ import {
   createMismatchingHashWarning,
   runtimeTranslationTimeoutWarning,
 } from '../errors/createErrors';
-import { Content, JsxChildren } from 'generaltranslation/internal';
+import { _Content, JsxChildren } from 'generaltranslation/internal';
 import { Translations, TranslationsStatus } from 'gt-react/internal';
 import defaultWithGTConfigProps from './props/defaultWithGTConfigProps';
 import dictionaryManager, { DictionaryManager } from './DictionaryManager';
@@ -51,7 +51,7 @@ type I18NConfigurationParams = {
 type QueueEntry =
   | {
       dataFormat: 'I18NEXT' | 'ICU';
-      source: Content;
+      source: _Content;
       targetLocale: string;
       metadata: { hash: string } & Record<string, any>;
       resolve: (
@@ -429,7 +429,7 @@ export default class I18NConfiguration {
 
   private async _translateContent(
     params: {
-      source: Content;
+      source: _Content;
       targetLocale: string;
       options: { hash: string } & Record<string, any>;
     },
@@ -474,7 +474,7 @@ export default class I18NConfiguration {
    * @returns Translated string
    */
   async translateI18Next(params: {
-    source: Content;
+    source: _Content;
     targetLocale: string;
     options: { hash: string } & Record<string, any>;
   }): Promise<TranslatedChildren> {
@@ -487,7 +487,7 @@ export default class I18NConfiguration {
    * @returns Translated string
    */
   async translateIcu(params: {
-    source: Content;
+    source: _Content;
     targetLocale: string;
     options: { hash: string } & Record<string, any>;
   }): Promise<TranslatedChildren> {
@@ -563,34 +563,18 @@ export default class I18NConfiguration {
         }
       };
 
-      const response = await fetchWithAbort(
-        `${this.runtimeUrl}/v1/runtime/${this.projectId}/server`,
+      const results = await this.gt.translateMany(
+        batch.map((item) => {
+          const { source, metadata, dataFormat } = item;
+          return { source, metadata, dataFormat };
+        }),
         {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(this.apiKey && { 'x-gt-api-key': this.apiKey }),
-            ...(this.devApiKey && { 'x-gt-dev-api-key': this.devApiKey }),
-          },
-          body: JSON.stringify({
-            requests: batch.map((item) => {
-              const { source, metadata, dataFormat } = item;
-              return { source, metadata, dataFormat };
-            }),
-            targetLocale: batch[0].targetLocale,
-            metadata: this.metadata,
-            versionId: this._versionId,
-          }),
-        },
-        this.renderSettings.timeout // Pass the timeout duration in milliseconds
+          ...this.metadata,
+          targetLocale: batch[0].targetLocale,
+        }
       );
 
       // ----- PROCESS RESPONSE ----- //
-
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      const results = await response.json();
       batch.forEach((request, index) => {
         // check if entry is missing
         const result = results[index];
