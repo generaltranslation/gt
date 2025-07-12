@@ -5,13 +5,13 @@ import {
   EnqueueFilesOptions,
 } from '../../src/types-dir/enqueue';
 import _enqueueFiles from '../../src/translate/enqueueFiles';
-import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
+import { defaultBaseUrl } from '../../src/settings/settingsUrls';
 
 describe('enqueueFiles E2E Tests', () => {
   let config: TranslationRequestConfig;
 
   beforeAll(() => {
-    const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultRuntimeApiUrl;
+    const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultBaseUrl;
     const projectId = process.env.VITE_CI_TEST_GT_PROJECT_ID;
     const apiKey = process.env.VITE_CI_TEST_GT_API_KEY;
 
@@ -390,7 +390,7 @@ Email us at support@example.com
     it('should handle custom baseUrl', async () => {
       const customConfig: TranslationRequestConfig = {
         ...config,
-        baseUrl: config.baseUrl || defaultRuntimeApiUrl,
+        baseUrl: config.baseUrl || defaultBaseUrl,
       };
 
       const files: FileToTranslate[] = [

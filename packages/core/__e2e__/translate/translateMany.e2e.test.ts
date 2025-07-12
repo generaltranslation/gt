@@ -2,13 +2,13 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { TranslationRequestConfig, TranslationResult } from '../../src/types';
 import { EntryMetadata, Entry } from '../../src/types-dir/entry';
 import _translateMany from '../../src/translate/translateMany';
-import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
+import { defaultBaseUrl } from '../../src/settings/settingsUrls';
 
 describe('translateMany E2E Tests', () => {
   let config: TranslationRequestConfig;
 
   beforeAll(() => {
-    const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultRuntimeApiUrl;
+    const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultBaseUrl;
     const projectId = process.env.VITE_CI_TEST_GT_PROJECT_ID;
     const apiKey = process.env.VITE_CI_TEST_GT_API_KEY;
 
@@ -18,7 +18,6 @@ describe('translateMany E2E Tests', () => {
     } else {
       console.log('debug: projectId', projectId);
     }
-    console.log('debug: runtimeUrl', runtimeUrl);
 
     config = {
       baseUrl: runtimeUrl,
@@ -238,7 +237,7 @@ describe('translateMany E2E Tests', () => {
     it('should handle config with custom baseUrl', async () => {
       const customConfig: TranslationRequestConfig = {
         ...config,
-        baseUrl: config.baseUrl || defaultRuntimeApiUrl,
+        baseUrl: config.baseUrl || defaultBaseUrl,
       };
 
       const entries: Entry[] = [{ source: 'Test message' }];

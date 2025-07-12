@@ -3,13 +3,13 @@ import { TranslationRequestConfig, TranslationResult } from '../../src/types';
 import { EntryMetadata } from '../../src/types-dir/entry';
 import { Content } from '../../src/types-dir/content';
 import _translate from '../../src/translate/translate';
-import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
+import { defaultBaseUrl } from '../../src/settings/settingsUrls';
 
 describe('translate E2E Tests', () => {
   let config: TranslationRequestConfig;
 
   beforeAll(() => {
-    const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultRuntimeApiUrl;
+    const runtimeUrl = process.env.VITE_GT_RUNTIME_URL || defaultBaseUrl;
     const projectId = process.env.VITE_CI_TEST_GT_PROJECT_ID;
     const apiKey = process.env.VITE_CI_TEST_GT_API_KEY;
 
@@ -207,7 +207,7 @@ describe('translate E2E Tests', () => {
     it('should handle config with custom baseUrl', async () => {
       const customConfig: TranslationRequestConfig = {
         ...config,
-        baseUrl: config.baseUrl || defaultRuntimeApiUrl,
+        baseUrl: config.baseUrl || defaultBaseUrl,
       };
 
       const source: Content = 'Test message';
