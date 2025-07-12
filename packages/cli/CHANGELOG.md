@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.2
+
+### Patch Changes
+
+- [#458](https://github.com/generaltranslation/gt/pull/458) [`aff4b95`](https://github.com/generaltranslation/gt/commit/aff4b95f582ec9fcb28f1395d2eba907c93e4e31) Thanks [@brian-lou](https://github.com/brian-lou)! - Add individual file support to validate
+
 ## 2.0.1
 
 ### Patch Changes
