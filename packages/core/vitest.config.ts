@@ -5,19 +5,52 @@ export default defineConfig(({ mode }) => {
   // Load environment variables
   const env = loadEnv(mode || 'test', process.cwd(), '');
 
-  // Make CI environment variables available to process.env in tests
-  // Only override if CI vars exist (don't overwrite local .env values)
-  if (process.env.VITE_CI_TEST_GT_PROJECT_ID) {
-    process.env.VITE_CI_TEST_GT_PROJECT_ID =
-      process.env.VITE_CI_TEST_GT_PROJECT_ID;
-  } else if (env.VITE_CI_TEST_GT_PROJECT_ID) {
-    process.env.VITE_CI_TEST_GT_PROJECT_ID = env.VITE_CI_TEST_GT_PROJECT_ID;
+  // Debug logging for CI
+  console.log('=== VITEST CONFIG DEBUG ===');
+  console.log('Mode:', mode);
+  console.log('CI environment:', process.env.CI);
+  console.log(
+    'process.env.VITE_CI_TEST_GT_PROJECT_ID:',
+    process.env.VITE_CI_TEST_GT_PROJECT_ID
+  );
+  console.log(
+    'process.env.VITE_CI_TEST_GT_API_KEY:',
+    process.env.VITE_CI_TEST_GT_API_KEY ? '[REDACTED]' : undefined
+  );
+  console.log(
+    'env.VITE_CI_TEST_GT_PROJECT_ID:',
+    env.VITE_CI_TEST_GT_PROJECT_ID
+  );
+  console.log(
+    'env.VITE_CI_TEST_GT_API_KEY:',
+    env.VITE_CI_TEST_GT_API_KEY ? '[REDACTED]' : undefined
+  );
+  console.log('=== END DEBUG ===');
+
+  // Ensure environment variables are available to test code via process.env
+  // Priority: process.env (CI) > env (local .env file)
+  const projectId =
+    process.env.VITE_CI_TEST_GT_PROJECT_ID || env.VITE_CI_TEST_GT_PROJECT_ID;
+  const apiKey =
+    process.env.VITE_CI_TEST_GT_API_KEY || env.VITE_CI_TEST_GT_API_KEY;
+
+  // Set them in process.env so tests can access them
+  if (projectId) {
+    process.env.VITE_CI_TEST_GT_PROJECT_ID = projectId;
   }
-  if (process.env.VITE_CI_TEST_GT_API_KEY) {
-    process.env.VITE_CI_TEST_GT_API_KEY = process.env.VITE_CI_TEST_GT_API_KEY;
-  } else if (env.VITE_CI_TEST_GT_API_KEY) {
-    process.env.VITE_CI_TEST_GT_API_KEY = env.VITE_CI_TEST_GT_API_KEY;
+  if (apiKey) {
+    process.env.VITE_CI_TEST_GT_API_KEY = apiKey;
   }
+
+  console.log('Final values set in process.env:');
+  console.log(
+    'VITE_CI_TEST_GT_PROJECT_ID:',
+    process.env.VITE_CI_TEST_GT_PROJECT_ID
+  );
+  console.log(
+    'VITE_CI_TEST_GT_API_KEY:',
+    process.env.VITE_CI_TEST_GT_API_KEY ? '[REDACTED]' : undefined
+  );
 
   return {
     test: {
