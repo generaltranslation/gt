@@ -112,8 +112,8 @@ export async function createInlineUpdates(
     });
 
     // Process translation functions asynchronously
-    for (const { localName: name, path } of translationPaths) {
-      parseStrings(name, path, updates, errors, file);
+    for (const { localName: name, originalName, path } of translationPaths) {
+      parseStrings(name, originalName, path, updates, errors, file);
     }
 
     // Parse <T> components
@@ -124,11 +124,12 @@ export async function createInlineUpdates(
     });
 
     // Extra validation (for Locadex)
-    if (validate) {
-      for (const { localName: name, path, originalName } of translationPaths) {
-        validateStringFunction(name, path, updates, errors, file, originalName);
-      }
-    }
+    // Done in parseStrings() atm
+    // if (validate) {
+    //   for (const { localName: name, path, originalName } of translationPaths) {
+    //     validateStringFunction(name, path, updates, errors, file, originalName);
+    //   }
+    // }
   }
 
   // Post-process to add a hash to each update
