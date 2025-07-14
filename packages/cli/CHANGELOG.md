@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.5
+
+### Patch Changes
+
+- [#467](https://github.com/generaltranslation/gt/pull/467) [`e043f07`](https://github.com/generaltranslation/gt/commit/e043f07decb426c2b275b67ad955b4ddca7d20ee) Thanks [@brian-lou](https://github.com/brian-lou)! - Add async errors for useGT/getGT to translate
+
 ## 2.0.4
 
 ### Patch Changes
