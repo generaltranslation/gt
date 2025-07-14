@@ -5,37 +5,11 @@ export default defineConfig(({ mode }) => {
   // Load environment variables
   const env = loadEnv(mode || 'test', process.cwd(), '');
 
-  // Debug logging for CI
-  console.log('=== VITEST CONFIG DEBUG ===');
-  console.log('Mode:', mode);
-  console.log('CI environment:', process.env.CI);
-  console.log(
-    'process.env.VITE_CI_TEST_GT_PROJECT_ID:',
-    process.env.VITE_CI_TEST_GT_PROJECT_ID
-  );
-  console.log(
-    'process.env.VITE_CI_TEST_GT_API_KEY:',
-    process.env.VITE_CI_TEST_GT_API_KEY ? '[REDACTED]' : undefined
-  );
-  console.log(
-    'env.VITE_CI_TEST_GT_PROJECT_ID:',
-    env.VITE_CI_TEST_GT_PROJECT_ID
-  );
-  console.log(
-    'env.VITE_CI_TEST_GT_API_KEY:',
-    env.VITE_CI_TEST_GT_API_KEY ? '[REDACTED]' : undefined
-  );
-  console.log('=== END DEBUG ===');
-
   // Get environment variables from either source
   const projectId =
     process.env.VITE_CI_TEST_GT_PROJECT_ID || env.VITE_CI_TEST_GT_PROJECT_ID;
   const apiKey =
     process.env.VITE_CI_TEST_GT_API_KEY || env.VITE_CI_TEST_GT_API_KEY;
-
-  console.log('Values to be passed to test env:');
-  console.log('VITE_CI_TEST_GT_PROJECT_ID:', projectId);
-  console.log('VITE_CI_TEST_GT_API_KEY:', apiKey ? '[REDACTED]' : undefined);
 
   return {
     test: {
