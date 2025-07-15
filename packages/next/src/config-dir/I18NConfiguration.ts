@@ -568,7 +568,7 @@ export default class I18NConfiguration {
 
         const hash = request.metadata.hash;
         if (result && typeof result === 'object') {
-          if ('translation' in result && result.translation) {
+          if ('translation' in result) {
             // record translations
             if (this._translationManager) {
               this._translationManager.setTranslations(
@@ -591,7 +591,7 @@ export default class I18NConfiguration {
               );
             }
             return request.resolve(result.translation);
-          } else if ('error' in result && result.error) {
+          } else if ('error' in result) {
             errorMsg = result.error || errorMsg;
             errorCode = result.code || errorCode;
           }

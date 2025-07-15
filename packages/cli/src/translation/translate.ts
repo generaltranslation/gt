@@ -25,12 +25,7 @@ export async function translate(
     process.exit(1);
   }
 
-  const translations = await fetchTranslations(
-    settings.baseUrl,
-    settings.projectId,
-    settings.apiKey,
-    versionId
-  );
+  const translations = await fetchTranslations(versionId);
 
   // Save translations to local directory if files.gt.output is provided
   if (settings.files && isUsingLocalTranslations(settings)) {

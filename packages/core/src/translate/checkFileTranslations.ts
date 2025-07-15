@@ -1,4 +1,4 @@
-import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
+import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
@@ -21,11 +21,11 @@ import generateRequestHeaders from './utils/generateRequestHeaders';
  */
 export default async function _checkFileTranslations(
   data: FileTranslationQuery[],
-  options: CheckFileTranslationsOptions,
+  options: CheckFileTranslationsOptions = {},
   config: TranslationRequestConfig
 ): Promise<CheckFileTranslationsResult> {
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/project/translations/files/retrieve`;
+  const url = `${config.baseUrl || defaultBaseUrl}/v1/project/translations/files/retrieve`;
 
   // Request the file status
   let response;

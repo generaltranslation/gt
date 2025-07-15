@@ -1,8 +1,9 @@
 import { DataFormat, JsxChildren } from './content';
+import { CompletedFileTranslationData, FileFormat } from './file';
 
 // Types for the enqueueTranslationEntries function
 export type Updates = ({
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
 } & (
   | {
       dataFormat: 'JSX';
@@ -18,26 +19,6 @@ export type Updates = ({
     }
 ))[];
 
-// ApiOptions type that matches sendUpdates interface more closely
-export type EnqueueEntriesOptions = {
-  timeout?: number;
-  sourceLocale?: string;
-  targetLocales?: string[];
-  dataFormat?: DataFormat;
-  version?: string;
-  description?: string;
-  requireApproval?: boolean;
-};
-
-export type EnqueueEntriesResult = {
-  versionId: string;
-  locales: string[];
-  message?: string;
-  projectSettings?: {
-    cdnEnabled: boolean;
-  };
-};
-
 /**
  * File object structure for enqueueing files
  * @param content - The content of the file
@@ -48,22 +29,25 @@ export type EnqueueEntriesResult = {
 export interface FileToTranslate {
   content: string;
   fileName: string;
-  fileFormat: 'GTJSON' | 'JSON' | 'YAML' | 'MDX' | 'MD' | 'TS' | 'JS';
-  dataFormat?: 'JSX' | 'ICU' | 'I18NEXT';
+  fileFormat: FileFormat;
+  dataFormat?: DataFormat;
 }
 
 export type EnqueueFilesOptions = {
   publish: boolean;
-  description: string;
-  sourceLocale: string;
+  description?: string;
+  sourceLocale?: string;
   targetLocales: string[];
-  _versionId: string;
+  _versionId?: string;
   timeout?: number;
 };
 
+export type RequiredEnqueueFilesOptions = EnqueueFilesOptions &
+  Required<Pick<EnqueueFilesOptions, 'sourceLocale'>>;
+
 export type EnqueueFilesResult = {
-  data: unknown;
+  translations: CompletedFileTranslationData[];
+  data: Record<string, { fileName: string; versionId: string }>;
   locales: string[];
-  translations?: unknown;
-  message?: string;
+  message: string;
 };

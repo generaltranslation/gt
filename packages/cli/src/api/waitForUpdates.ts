@@ -1,11 +1,8 @@
 import chalk from 'chalk';
-import {
-  createOraSpinner,
-  createSpinner,
-  logErrorAndExit,
-} from '../console/logging.js';
+import { createOraSpinner, logErrorAndExit } from '../console/logging.js';
 import { getLocaleProperties } from 'generaltranslation';
-import { getAuthHeaders } from '../utils/headers.js';
+import { gt } from '../utils/gt.js';
+import { TranslationStatusResult } from '../../../core/dist/types-dir/translationStatus.js';
 
 /**
  * Waits for translations to be deployed to the General Translation API
@@ -30,64 +27,57 @@ export const waitForUpdates = async (
   spinner.start('Waiting for translation...');
 
   const checkDeployment = async () => {
+    let data: TranslationStatusResult | undefined;
     try {
-      const response = await fetch(
-        `${baseUrl}/v1/project/translations/status/${encodeURIComponent(
-          versionId
-        )}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            ...getAuthHeaders(projectId, apiKey),
-          },
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        const { availableLocales, locales, localesWaitingForApproval } = data;
-        if (localesWaitingForApproval.length > 0) {
-          spinner.stop();
-          logErrorAndExit(
-            `Error! ${localesWaitingForApproval.length} translations are waiting for approval:\n${localesWaitingForApproval
-              .map((locale: string) => {
-                const localeProperties = getLocaleProperties(locale);
-                return `${localeProperties.name} (${localeProperties.code})`;
-              })
-              .join(
-                '\n'
-              )}\nPlease approve these locales in the General Translation dashboard, then re-run the command.`
-          );
-        }
-        if (availableLocales) {
-          availableLocales.forEach((locale: string) => {
-            if (!availableLocales.includes(locale)) {
-              availableLocales.push(locale);
-            }
-          });
-          const newSuffixText = [
-            chalk.green(`[${availableLocales.length}/${locales.length}]`) +
-              ` translations completed`,
-            ...availableLocales.map((locale: string) => {
-              const localeProperties = getLocaleProperties(locale);
-              return `Translation completed for ${chalk.green(
-                localeProperties.name
-              )} (${chalk.green(localeProperties.code)})`;
-            }),
-          ];
-
-          spinner.text = newSuffixText.join('\n');
-        }
-        if (
-          locales.every((locale: string) => availableLocales.includes(locale))
-        ) {
-          return true;
-        }
-      }
-      return false;
-    } catch (error) {
+      // get translation status
+      data = await gt.checkTranslationStatus(versionId);
+    } catch {
       return false;
     }
+
+    // check if any locales are waiting for approval
+    const { availableLocales, locales, localesWaitingForApproval } = data;
+    if (localesWaitingForApproval.length > 0) {
+      spinner.stop();
+      logErrorAndExit(
+        `Error! ${localesWaitingForApproval.length} translations are waiting for approval:\n${localesWaitingForApproval
+          .map((locale: string) => {
+            const localeProperties = getLocaleProperties(locale);
+            return `${localeProperties.name} (${localeProperties.code})`;
+          })
+          .join(
+            '\n'
+          )}\nPlease approve these locales in the General Translation dashboard, then re-run the command.`
+      );
+    }
+
+    // check if all locales are available
+    if (availableLocales) {
+      availableLocales.forEach((locale: string) => {
+        if (!availableLocales.includes(locale)) {
+          availableLocales.push(locale);
+        }
+      });
+      const newSuffixText = [
+        chalk.green(`[${availableLocales.length}/${locales.length}]`) +
+          ` translations completed`,
+        ...availableLocales.map((locale: string) => {
+          const localeProperties = getLocaleProperties(locale);
+          return `Translation completed for ${chalk.green(
+            localeProperties.name
+          )} (${chalk.green(localeProperties.code)})`;
+        }),
+      ];
+
+      spinner.text = newSuffixText.join('\n');
+    }
+
+    // check if all locales are available
+    if (locales.every((locale: string) => availableLocales.includes(locale))) {
+      return true;
+    }
+
+    return false;
   };
 
   // Calculate time until next 5-second interval since startTime

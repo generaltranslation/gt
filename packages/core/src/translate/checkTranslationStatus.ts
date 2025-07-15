@@ -5,35 +5,36 @@ import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import { TranslationRequestConfig } from '../types';
 import {
-  FetchTranslationsOptions,
-  FetchTranslationsResult,
-} from '../types-dir/fetchTranslations';
+  CheckTranslationStatusOptions,
+  TranslationStatusResult,
+} from '../types-dir/translationStatus';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
  * @internal
- * Fetches translation metadata and information without downloading files.
- * @param versionId - The version ID to fetch translations for
+ * Checks the translation status of a version.
+ * @param versionId - The ID of the version to check
  * @param options - The options for the API call
  * @param config - The configuration for the request
- * @returns The translation metadata and information
+ * @returns The translation status of the version
  */
-export default async function _fetchTranslations(
+export default async function _checkTranslationStatus(
   versionId: string,
-  options: FetchTranslationsOptions,
+  options: CheckTranslationStatusOptions,
   config: TranslationRequestConfig
-): Promise<FetchTranslationsResult> {
+): Promise<TranslationStatusResult> {
+  const { baseUrl } = config;
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultBaseUrl}/v1/project/translations/info/${versionId}`;
+  const url = `${baseUrl || defaultBaseUrl}/v1/project/translations/status/${encodeURIComponent(versionId)}`;
 
-  // Request the translation info
+  // Request the file download
   let response;
   try {
     response = await fetchWithTimeout(
       url,
       {
         method: 'GET',
-        headers: generateRequestHeaders(config),
+        headers: generateRequestHeaders(config, true),
       },
       timeout
     );
@@ -44,7 +45,6 @@ export default async function _fetchTranslations(
   // Validate response
   await validateResponse(response);
 
-  // Parse response
   const result = await response.json();
-  return result as FetchTranslationsResult;
+  return result as TranslationStatusResult;
 }

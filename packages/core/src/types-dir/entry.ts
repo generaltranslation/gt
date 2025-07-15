@@ -1,10 +1,11 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Content,
   DataFormat,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   JsxChildren,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   IcuMessage,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   I18nextMessage,
 } from '../types';
 

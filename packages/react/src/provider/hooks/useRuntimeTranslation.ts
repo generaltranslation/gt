@@ -211,10 +211,7 @@ export default function useRuntimeTranslation({
 
   // Send a request to the runtime server
   const sendBatchRequest = useCallback(
-    async (
-      batchRequests: Map<string, TranslationRequestQueueItem>,
-      targetLocale: string
-    ) => {
+    async (batchRequests: Map<string, TranslationRequestQueueItem>) => {
       if (requestQueueRef.current.size === 0) {
         return [{}, {}];
       }
@@ -333,6 +330,7 @@ export default function useRuntimeTranslation({
       runtimeUrl,
       gt.projectId,
       gt.devApiKey,
+      locale,
       globalMetadata,
       versionId,
       renderSettings.timeout,
@@ -361,10 +359,8 @@ export default function useRuntimeTranslation({
         );
         (async () => {
           // Update the translation result
-          const [batchResult, batchStatus] = await sendBatchRequest(
-            batchRequests,
-            locale
-          );
+          const [batchResult, batchStatus] =
+            await sendBatchRequest(batchRequests);
           if (storeResults) {
             setTranslations((prev) => ({
               ...(prev || {}),

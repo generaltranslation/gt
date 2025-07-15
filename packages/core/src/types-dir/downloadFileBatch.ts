@@ -13,13 +13,14 @@ export type BatchDownloadResult = {
   error?: string;
 };
 
+type File = {
+  id: string;
+  fileName: string;
+  data: string;
+  metadata: any;
+};
+
 export type DownloadFileBatchResult = {
-  results: Array<{
-    translationId: string;
-    fileName?: string;
-    success: boolean;
-    content?: string;
-    contentType?: string;
-    error?: string;
-  }>;
+  files: File[];
+  count: number;
 };

@@ -1,3 +1,5 @@
+import { CompletedFileTranslationData } from './file';
+
 // Types for the checkFileTranslations function
 export type FileTranslationQuery = {
   versionId: string;
@@ -10,10 +12,5 @@ export type CheckFileTranslationsOptions = {
 };
 
 export type CheckFileTranslationsResult = {
-  translations: {
-    isReady: boolean;
-    fileName: string;
-    locale: string;
-    id: string;
-  }[];
+  translations: CompletedFileTranslationData[];
 };

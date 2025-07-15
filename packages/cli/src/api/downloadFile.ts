@@ -1,13 +1,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logError } from '../console/logging.js';
-import { getAuthHeaders } from '../utils/headers.js';
+import { gt } from '../utils/gt.js';
 
-// Helper function to download a file
+/**
+ * Downloads a file from the API and saves it to a local directory
+ * @param translationId - The ID of the translation to download
+ * @param outputPath - The path to save the file to
+ * @param maxRetries - The maximum number of retries to attempt
+ * @param retryDelay - The delay between retries in milliseconds
+ */
 export async function downloadFile(
-  baseUrl: string,
-  projectId: string,
-  apiKey: string,
   translationId: string,
   outputPath: string,
   maxRetries = 3,
@@ -17,44 +20,21 @@ export async function downloadFile(
 
   while (retries <= maxRetries) {
     try {
-      const downloadResponse = await fetch(
-        `${baseUrl}/v1/project/translations/files/${translationId}/download`,
-        {
-          method: 'GET',
-          headers: {
-            ...getAuthHeaders(projectId, apiKey),
-          },
-        }
-      );
+      // Get the file data as an ArrayBuffer
+      const fileData = await gt.downloadFile(translationId);
 
-      if (downloadResponse.ok) {
-        // Ensure the directory exists
-        const dir = path.dirname(outputPath);
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
-        }
-
-        // Get the file data as an ArrayBuffer
-        const fileData = await downloadResponse.arrayBuffer();
-
-        // Write the file to disk
-        await fs.promises.writeFile(outputPath, Buffer.from(fileData));
-
-        return true;
+      // Ensure the directory exists
+      const dir = path.dirname(outputPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
       }
 
-      // If we get here, the response was not OK
-      if (retries >= maxRetries) {
-        logError(
-          `Failed to download file ${outputPath}. Status: ${downloadResponse.status} after ${maxRetries + 1} attempts.`
-        );
-        return false;
-      }
+      // Write the file to disk
+      await fs.promises.writeFile(outputPath, Buffer.from(fileData));
 
-      // Increment retry counter and wait before next attempt
-      retries++;
-      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      return true;
     } catch (error) {
+      // If we've retried too many times, log an error and return false
       if (retries >= maxRetries) {
         logError(
           `Error downloading file ${outputPath} after ${maxRetries + 1} attempts: ` +
@@ -63,6 +43,7 @@ export async function downloadFile(
         return false;
       }
 
+      // Increment retry counter and wait before next attempt
       retries++;
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }

@@ -47,7 +47,7 @@ import _getLocaleEmoji from './locales/getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
 import { _getLocaleName } from './locales/getLocaleName';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
-import { defaultBaseUrl, JsxChildren, libraryDefaultLocale } from './internal';
+import { JsxChildren, libraryDefaultLocale } from './internal';
 import _isSameDialect from './locales/isSameDialect';
 import _isSupersetLocale from './locales/isSupersetLocale';
 import {
@@ -69,6 +69,12 @@ import _downloadFile from './translate/downloadFile';
 import _downloadFileBatch from './translate/downloadFileBatch';
 import _fetchTranslations from './translate/fetchTranslations';
 import { FileTranslationQuery } from './types-dir/checkFileTranslations';
+import { RequiredEnqueueFilesOptions } from './types-dir/enqueueFiles';
+import {
+  CheckTranslationStatusOptions,
+  TranslationStatusResult,
+} from './types-dir/translationStatus';
+import _checkTranslationStatus from './translate/checkTranslationStatus';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -112,7 +118,7 @@ type GTConstructorParams = {
  */
 export class GT {
   /** Base URL for the translation service API */
-  baseUrl: string;
+  baseUrl?: string;
 
   /** Project ID for the translation service */
   projectId?: string;
@@ -133,7 +139,7 @@ export class GT {
   locales?: string[];
 
   /** Array of locales used for rendering variables */
-  _renderingLocales: string[];
+  _renderingLocales: string[] = [];
 
   /** Custom mapping for locale codes to their names */
   customMapping?: CustomMapping;
@@ -153,7 +159,18 @@ export class GT {
    *   locales: ['en-US', 'es-ES', 'fr-FR']
    * });
    */
-  constructor({
+  constructor(params: GTConstructorParams = {}) {
+    // Read environment
+    if (typeof process !== 'undefined') {
+      this.apiKey ||= process.env?.GT_API_KEY;
+      this.devApiKey ||= process.env?.GT_DEV_API_KEY;
+      this.projectId ||= process.env?.GT_PROJECT_ID;
+    }
+    // Set up config
+    this.setConfig(params);
+  }
+
+  setConfig({
     apiKey,
     devApiKey,
     sourceLocale,
@@ -161,28 +178,20 @@ export class GT {
     locales,
     projectId,
     customMapping,
-    baseUrl = defaultBaseUrl,
-  }: GTConstructorParams = {}) {
+    baseUrl,
+  }: GTConstructorParams) {
     // ----- Environment properties ----- //
-    this.apiKey = apiKey;
-    this.devApiKey = devApiKey;
-    this.projectId = projectId;
-    if (typeof process !== 'undefined') {
-      this.apiKey ||= process.env?.GT_API_KEY;
-      this.devApiKey ||= process.env?.GT_DEV_API_KEY;
-      this.projectId ||= process.env?.GT_PROJECT_ID;
-    }
+    if (apiKey) this.apiKey = apiKey;
+    if (devApiKey) this.devApiKey = devApiKey;
+    if (projectId) this.projectId = projectId;
 
     // ----- Standardize locales ----- //
-
-    this._renderingLocales = [];
 
     // source locale
     if (sourceLocale) {
       this.sourceLocale = _standardizeLocale(sourceLocale);
       if (!_isValidLocale(this.sourceLocale))
         throw new Error(invalidLocaleError(this.sourceLocale));
-      this._renderingLocales.push(this.sourceLocale);
     }
 
     // target locale
@@ -190,8 +199,13 @@ export class GT {
       this.targetLocale = _standardizeLocale(targetLocale);
       if (!_isValidLocale(this.targetLocale))
         throw new Error(invalidLocaleError(this.targetLocale));
-      this._renderingLocales.push(this.targetLocale);
     }
+
+    // rendering locales
+    this._renderingLocales = [];
+    if (this.sourceLocale) this._renderingLocales.push(this.sourceLocale);
+    if (this.targetLocale) this._renderingLocales.push(this.targetLocale);
+    this._renderingLocales.push(libraryDefaultLocale);
 
     // locales
     if (locales) {
@@ -211,12 +225,9 @@ export class GT {
       this.locales = result;
     }
 
-    // fallback ordered array of locales
-    this._renderingLocales.push(libraryDefaultLocale);
-
     // ----- Other properties ----- //
-    this.baseUrl = baseUrl;
-    this.customMapping = customMapping;
+    if (baseUrl) this.baseUrl = baseUrl;
+    if (customMapping) this.customMapping = customMapping;
   }
 
   // -------------- Private Methods -------------- //
@@ -262,8 +273,22 @@ export class GT {
    *   targetLocale: 'es-ES',
    *   locales: ['en-US', 'es-ES', 'fr-FR']
    * });
+   *
+   * const result = await gt.enqueueEntries([
+   *   {
+   *     content: 'Hello, world!',
+   *     fileName: 'Button.tsx',
+   *     fileFormat: 'TS',
+   *     dataFormat: 'JSX',
+   *   },
+   * ], {
+   *   sourceLocale: 'en-US',
+   *   targetLocales: ['es-ES', 'fr-FR'],
+   *   publish: true,
+   *   description: 'Translations for the Button component',
+   * });
    */
-  async enqueueTranslationEntries(
+  async enqueueEntries(
     updates: Updates,
     options: EnqueueEntriesOptions = {}
   ): Promise<EnqueueEntriesResult> {
@@ -274,7 +299,6 @@ export class GT {
     const mergedOptions: EnqueueEntriesOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale,
-      targetLocales: options.targetLocales ?? this.locales,
     };
 
     // Request the translation entry updates
@@ -298,6 +322,20 @@ export class GT {
    *   targetLocale: 'es-ES',
    *   locales: ['en-US', 'es-ES', 'fr-FR']
    * });
+   *
+   * const result = await gt.enqueueFiles([
+   *   {
+   *     content: 'Hello, world!',
+   *     fileName: 'Button.tsx',
+   *     fileFormat: 'TS',
+   *     dataFormat: 'JSX',
+   *   },
+   * ], {
+   *   sourceLocale: 'en-US',
+   *   targetLocales: ['es-ES', 'fr-FR'],
+   *   publish: true,
+   *   description: 'Translations for the Button component',
+   * });
    */
   async enqueueFiles(
     files: FileToTranslate[],
@@ -310,13 +348,19 @@ export class GT {
     const mergedOptions: EnqueueFilesOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale,
-      targetLocales: options.targetLocales ?? this.locales,
     };
+
+    // Require source locale
+    if (!mergedOptions.sourceLocale) {
+      const error = noSourceLocaleProvidedError('enqueueFiles');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
 
     // Request the file updates
     return await _enqueueFiles(
       files,
-      mergedOptions,
+      mergedOptions as RequiredEnqueueFilesOptions,
       this._getTranslationConfig()
     );
   }
@@ -333,6 +377,13 @@ export class GT {
    *   sourceLocale: 'en-US',
    *   targetLocale: 'es-ES',
    *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.checkFileTranslations([
+   *   { sourcePath: 'src/components/Button.tsx', locale: 'es-ES' },
+   *   { sourcePath: 'src/components/Input.tsx', locale: 'fr-FR' },
+   * ], {
+   *   timeout: 10000,
    * });
    *
    */
@@ -352,6 +403,39 @@ export class GT {
   }
 
   /**
+   * Checks the translation status of a version.
+   *
+   * @param {string} versionId - The ID of the version to check.
+   * @param {CheckTranslationStatusOptions} options - Options for checking the translation status.
+   * @returns {Promise<TranslationStatusResult>} The translation status of the version.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.checkTranslationStatus('1234567890', {
+   *   timeout: 10000,
+   * });
+   */
+  async checkTranslationStatus(
+    versionId: string,
+    options: CheckTranslationStatusOptions = {}
+  ): Promise<TranslationStatusResult> {
+    // Validation
+    this._validateAuth('checkTranslationStatus');
+
+    // Request the translation status
+    return await _checkTranslationStatus(
+      versionId,
+      options,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
    * Downloads a single translation file.
    *
    * @param {string} translationId - The ID of the translation to download.
@@ -363,6 +447,10 @@ export class GT {
    *   sourceLocale: 'en-US',
    *   targetLocale: 'es-ES',
    *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.downloadFile('1234567890', {
+   *   timeout: 10000,
    * });
    */
   async downloadFile(
@@ -393,6 +481,9 @@ export class GT {
    *   locales: ['en-US', 'es-ES', 'fr-FR']
    * });
    *
+   * const result = await gt.downloadFileBatch(['1234567890', '1234567891'], {
+   *   timeout: 10000,
+   * });
    */
   async downloadFileBatch(
     fileIds: string[],
@@ -424,7 +515,6 @@ export class GT {
    * });
    *
    * const result = await gt.fetchTranslations('1234567890');
-   * console.log(result);
    */
   async fetchTranslations(
     versionId: string,
@@ -457,7 +547,6 @@ export class GT {
    * });
    *
    * const result = await gt.translate('Hello, world!', 'es-ES');
-   * console.log(result);
    *
    * @example
    * const gt = new GT({
@@ -467,7 +556,6 @@ export class GT {
    * });
    *
    * const result = await gt.translate('Hello, world!', 'es-ES', { context: 'A formal greeting'});
-   * console.log(result);
    */
   // Overload for JSX content
   async _translate(
@@ -533,7 +621,6 @@ export class GT {
    *   { source: 'Hello, world!' },
    *   { source: 'Goodbye, world!' },
    * ], { targetLocale: 'es-ES' });
-   * console.log(result);
    */
   async translateMany(
     sources: Entry[],

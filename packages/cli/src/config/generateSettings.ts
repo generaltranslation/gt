@@ -18,6 +18,7 @@ import { resolveProjectId } from '../fs/utils.js';
 import path from 'node:path';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
+import { gt } from '../utils/gt.js';
 
 export const DEFAULT_SRC_PATTERNS = [
   'src/**/*.{js,jsx,ts,tsx}',
@@ -137,5 +138,14 @@ export async function generateSettings(
     });
   }
   validateSettings(mergedOptions);
+
+  // Set up GT instance
+  gt.setConfig({
+    projectId: mergedOptions.projectId,
+    apiKey: mergedOptions.apiKey,
+    baseUrl: mergedOptions.baseUrl,
+    sourceLocale: mergedOptions.defaultLocale,
+  });
+
   return mergedOptions;
 }

@@ -8,7 +8,7 @@ import {
   Updates,
   EnqueueEntriesOptions,
   EnqueueEntriesResult,
-} from '../types-dir/enqueue';
+} from '../types-dir/enqueueEntries';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
@@ -69,18 +69,9 @@ export default async function _enqueueEntries(
   }
 
   // Validate response
-  await validateResponse(response!);
+  await validateResponse(response);
 
   // Parse response
-  const { versionId, message, locales, projectSettings } =
-    (await response!.json()) as {
-      versionId: string;
-      message?: string;
-      locales: string[];
-      projectSettings?: {
-        cdnEnabled: boolean;
-      };
-    };
-
-  return { versionId, locales, message, projectSettings };
+  const result = await response.json();
+  return result as EnqueueEntriesResult;
 }

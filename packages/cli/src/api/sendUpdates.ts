@@ -4,7 +4,7 @@ import { Settings, SupportedLibraries, Updates } from '../types/index.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { DataFormat } from '../types/data.js';
 import { isUsingLocalTranslations } from '../config/utils.js';
-import { getAuthHeaders } from '../utils/headers.js';
+import { gt } from '../utils/gt.js';
 
 type ApiOptions = Settings & {
   timeout: string;
@@ -24,51 +24,20 @@ export async function sendUpdates(
   options: ApiOptions,
   library: SupportedLibraries
 ): Promise<{ versionId: string; locales: string[] }> {
-  const { projectId, defaultLocale, dataFormat } = options;
-
-  const globalMetadata = {
-    ...(projectId && { projectId }),
-    ...(defaultLocale && { sourceLocale: defaultLocale }),
-  };
-
-  // If additionalLocales is provided, additionalLocales + project.current_locales will be translated
-  // If not, then options.locales will be translated
-  // If neither, then project.current_locales will be translated
-  const body = {
-    updates,
-    ...(options.locales && { locales: options.locales }),
-    metadata: globalMetadata,
-    ...(dataFormat && { dataFormat }),
-    ...(options.version && { versionId: options.version }),
-    ...(options.description && { description: options.description }),
-    ...(options.requireApproval && {
-      requireApproval: options.requireApproval,
-    }),
-  };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+  const { timeout, ...optionsWithoutTimeout } = options;
 
   const spinner = createSpinner('dots');
   spinner.start(`Sending ${library} updates to General Translation API...`);
 
   try {
-    const response = await fetch(
-      `${options.baseUrl}/v1/project/translations/update`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(options.projectId, options.apiKey),
-        },
-        body: JSON.stringify(body),
-      }
+    const responseData = await gt.enqueueEntries(
+      updates,
+      optionsWithoutTimeout
     );
 
-    if (!response.ok) {
-      spinner.stop(chalk.red(await response.text()));
-      process.exit(1);
-    }
+    const { versionId, message, locales, projectSettings } = responseData;
 
-    const { versionId, message, locales, projectSettings } =
-      await response.json();
     spinner.stop(chalk.green('Sent updates'));
     logSuccess(message);
 

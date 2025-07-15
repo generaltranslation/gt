@@ -44,9 +44,7 @@ export default async function _translate(
         body: JSON.stringify({
           requests: [{ source }],
           targetLocale,
-          metadata: {
-            sourceLocale: metadata.sourceLocale,
-          },
+          metadata,
         }),
       },
       timeout

@@ -1,14 +1,14 @@
 import { TranslationRequestConfig } from '../types';
-import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
+import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';
 import {
   FileToTranslate,
-  EnqueueFilesOptions,
   EnqueueFilesResult,
-} from '../types-dir/enqueue';
+  RequiredEnqueueFilesOptions,
+} from '../types-dir/enqueueFiles';
 import generateRequestHeaders from './utils/generateRequestHeaders';
 
 /**
@@ -21,11 +21,11 @@ import generateRequestHeaders from './utils/generateRequestHeaders';
  */
 export default async function _enqueueFiles(
   files: FileToTranslate[],
-  options: EnqueueFilesOptions,
+  options: RequiredEnqueueFilesOptions,
   config: TranslationRequestConfig
 ): Promise<EnqueueFilesResult> {
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${config.baseUrl || defaultRuntimeApiUrl}/v1/project/translations/files/upload`;
+  const url = `${config.baseUrl || defaultBaseUrl}/v1/project/translations/files/upload`;
   const { projectId } = config;
   const { sourceLocale, targetLocales, publish, _versionId, description } =
     options;
@@ -49,8 +49,8 @@ export default async function _enqueueFiles(
   formData.append('targetLocales', JSON.stringify(targetLocales));
   formData.append('projectId', projectId);
   formData.append('publish', String(publish));
-  formData.append('versionId', _versionId);
-  formData.append('description', description);
+  formData.append('versionId', _versionId || '');
+  formData.append('description', description || '');
 
   // Request the file uploads
   let response;

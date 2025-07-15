@@ -49,16 +49,25 @@ export type {
 export type {
   FetchTranslationsOptions,
   FetchTranslationsResult,
+  RetrievedTranslations,
 } from './types-dir/fetchTranslations';
 export type {
-  EnqueueEntriesOptions,
-  EnqueueEntriesResult,
   EnqueueFilesOptions,
   EnqueueFilesResult,
   FileToTranslate,
   Updates,
-} from './types-dir/enqueue';
+} from './types-dir/enqueueFiles';
+export type {
+  EnqueueEntriesOptions,
+  EnqueueEntriesResult,
+} from './types-dir/enqueueEntries';
 export type { DownloadFileOptions } from './types-dir/downloadFile';
+export type {
+  FileFormat,
+  CompletedFileTranslationData,
+} from './types-dir/file';
+export type { TranslateManyResult } from './types-dir/translateMany';
+export type { TranslationResult } from './types-dir/translate';
 
 /**
  * @deprecated Use {@link Content} instead.
@@ -190,25 +199,4 @@ export type TranslationRequestConfig = {
   projectId: string;
   baseUrl?: string;
   apiKey?: string;
-};
-
-/**
- * TranslationResult is the result of a translation request.
- */
-export type TranslationResult = {
-  translation: Content;
-  reference: TranslationResultReference;
-};
-
-/**
- * BatchTranslationResult is the result of a batch translation request.
- */
-export type TranslateManyResult = Array<TranslationResult | TranslationError>;
-
-/**
- * TranslationResultReference is used to store the reference for a translation result.
- */
-export type TranslationResultReference = {
-  id?: string;
-  hash?: string;
 };

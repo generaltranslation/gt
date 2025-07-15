@@ -283,13 +283,7 @@ async function processInitialTranslations(
     } else if (batchFiles.length === 1) {
       // For a single file, use the original downloadFile method
       const file = batchFiles[0];
-      const result = await downloadFile(
-        options.baseUrl,
-        options.projectId,
-        options.apiKey,
-        file.translationId,
-        file.outputPath
-      );
+      const result = await downloadFile(file.translationId, file.outputPath);
 
       if (result) {
         downloadStatus.downloaded.add(file.fileLocale);

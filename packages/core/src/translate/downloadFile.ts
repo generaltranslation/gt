@@ -1,4 +1,4 @@
-import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
+import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
@@ -22,7 +22,7 @@ export default async function _downloadFile(
 ): Promise<ArrayBuffer> {
   const { baseUrl } = config;
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${baseUrl || defaultRuntimeApiUrl}/v1/project/translations/files/${translationId}/download`;
+  const url = `${baseUrl || defaultBaseUrl}/v1/project/translations/files/${translationId}/download`;
 
   // Request the file download
   let response;

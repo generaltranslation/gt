@@ -1,4 +1,4 @@
-import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
+import { defaultBaseUrl } from '../settings/settingsUrls';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
@@ -23,9 +23,8 @@ export default async function _downloadFileBatch(
   options: DownloadFileBatchOptions,
   config: TranslationRequestConfig
 ): Promise<DownloadFileBatchResult> {
-  const { baseUrl } = config;
   const timeout = Math.min(options.timeout || maxTimeout, maxTimeout);
-  const url = `${baseUrl || defaultRuntimeApiUrl}/v1/project/translations/files/batch-download`;
+  const url = `${config.baseUrl || defaultBaseUrl}/v1/project/translations/files/batch-download`;
 
   // Request the batch download
   let response;

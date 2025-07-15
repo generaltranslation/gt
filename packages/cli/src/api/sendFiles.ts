@@ -1,22 +1,8 @@
 import chalk from 'chalk';
 import { createSpinner, logMessage, logSuccess } from '../console/logging.js';
 import { Settings } from '../types/index.js';
-import { FileFormat, DataFormat } from '../types/data.js';
-import { getAuthHeaders } from '../utils/headers.js';
-
-/**
- * File object structure
- * @param content - The content of the file
- * @param fileName - The name of the file
- * @param fileExtension - The format of the file (JSON, MDX, MD, etc.)
- * @param dataFormat - The format of the data within the file
- */
-export interface FileToTranslate {
-  content: string;
-  fileName: string;
-  fileFormat: FileFormat;
-  dataFormat: DataFormat;
-}
+import { gt } from '../utils/gt.js';
+import { FileToTranslate } from 'generaltranslation/types';
 
 type ApiOptions = Settings & {
   publish: boolean;
@@ -42,44 +28,14 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
   );
 
   try {
-    // Create form data
-    const formData = new FormData();
-    // Add each file to the form data
-    files.forEach((file, index) => {
-      formData.append(`file${index}`, new Blob([file.content]), file.fileName);
-      formData.append(`fileFormat${index}`, file.fileFormat);
-      formData.append(`fileDataFormat${index}`, file.dataFormat);
-      formData.append(`fileName${index}`, file.fileName);
+    // Send the files to the API
+    const responseData = await gt.enqueueFiles(files, {
+      publish: options.publish,
+      description: options.description,
+      sourceLocale: options.defaultLocale,
+      targetLocales: options.locales,
+      _versionId: options._versionId,
     });
-
-    // Add number of files
-    formData.append('fileCount', String(files.length));
-
-    // Add other metadata
-    formData.append('sourceLocale', options.defaultLocale);
-    formData.append('targetLocales', JSON.stringify(options.locales));
-    formData.append('projectId', options.projectId);
-    formData.append('publish', String(options.publish));
-    formData.append('versionId', options._versionId || '');
-    formData.append('description', options.description || '');
-
-    const response = await fetch(
-      `${options.baseUrl}/v1/project/translations/files/upload`,
-      {
-        method: 'POST',
-        headers: {
-          ...getAuthHeaders(options.projectId, options.apiKey),
-        },
-        body: formData,
-      }
-    );
-
-    if (!response.ok) {
-      spinner.stop(chalk.red(await response.text()));
-      process.exit(1);
-    }
-
-    const responseData = await response.json();
 
     // Handle version ID response (for async processing)
     const { data, message, locales, translations } = responseData;
