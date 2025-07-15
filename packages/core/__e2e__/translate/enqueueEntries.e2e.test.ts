@@ -2,13 +2,13 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { TranslationRequestConfig } from '../../src/types';
 import { Updates, EnqueueEntriesOptions } from '../../src/types-dir/enqueue';
 import _enqueueEntries from '../../src/translate/enqueueEntries';
-import { defaultBaseUrl } from '../../src/settings/settingsUrls';
+import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 
 describe('enqueueEntries E2E Tests', () => {
   let config: TranslationRequestConfig;
 
   beforeAll(() => {
-    const baseUrl = process.env.VITE_GT_BASE_URL || defaultBaseUrl;
+    const baseUrl = process.env.VITE_GT_BASE_URL || defaultRuntimeApiUrl;
     const projectId = process.env.VITE_CI_TEST_GT_PROJECT_ID;
     const apiKey = process.env.VITE_CI_TEST_GT_API_KEY;
 
@@ -323,7 +323,7 @@ describe('enqueueEntries E2E Tests', () => {
     it('should handle custom baseUrl', async () => {
       const customConfig: TranslationRequestConfig = {
         ...config,
-        baseUrl: config.baseUrl || defaultBaseUrl,
+        baseUrl: config.baseUrl || defaultRuntimeApiUrl,
       };
 
       const updates: Updates = [

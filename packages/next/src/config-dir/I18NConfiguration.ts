@@ -546,22 +546,6 @@ export default class I18NConfiguration {
     this._activeRequests++;
     try {
       // ----- TRANSLATION REQUEST WITH ABORT CONTROLLER ----- //
-      const fetchWithAbort = async (
-        url: string,
-        options: RequestInit | undefined,
-        timeout: number | undefined
-      ) => {
-        const controller = new AbortController();
-        const timeoutId =
-          timeout === undefined
-            ? undefined
-            : setTimeout(() => controller.abort(), timeout);
-        try {
-          return await fetch(url, { ...options, signal: controller.signal });
-        } finally {
-          if (timeoutId !== undefined) clearTimeout(timeoutId); // Ensure timeout is cleared
-        }
-      };
 
       const results = await this.gt.translateMany(
         batch.map((item) => {
@@ -600,7 +584,10 @@ export default class I18NConfiguration {
             // check for mismatching ids or hashes
             if (result.reference.hash !== hash) {
               console.warn(
-                createMismatchingHashWarning(hash, result.reference.hash)
+                createMismatchingHashWarning(
+                  hash,
+                  result.reference?.hash || 'unknown hash'
+                )
               );
             }
             return request.resolve(result.translation);

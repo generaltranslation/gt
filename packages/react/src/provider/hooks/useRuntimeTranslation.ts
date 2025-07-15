@@ -256,14 +256,9 @@ export default function useRuntimeTranslation({
           const hash = request.metadata.hash; // identical to reference hash
 
           // translation received
-          if (
-            'translation' in result &&
-            result.translation &&
-            result.reference
-          ) {
-            const { translation } = result;
+          if ('translation' in result) {
             // set translation
-            newTranslations[hash] = translation;
+            newTranslations[hash] = result.translation;
             newTranslationsStatus[hash] = {
               status: 'success',
             };
