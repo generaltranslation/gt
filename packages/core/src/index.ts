@@ -587,11 +587,18 @@ export class GT {
   // Implementation
   async _translate(
     source: Content,
-    targetLocale: string,
+    targetLocale: string | undefined = this.targetLocale,
     metadata?: EntryMetadata
   ): Promise<TranslationResult | TranslationError> {
     // Validation
     this._validateAuth('translate');
+
+    // Require target locale
+    if (!targetLocale) {
+      const error = noTargetLocaleProvidedError('translate');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
 
     // Request the translation
     return await _translate(

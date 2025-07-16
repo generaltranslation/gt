@@ -24,7 +24,7 @@ export type TypedResult =
 /**
  * RequestError is a type that represents an error that occurred during a translation request.
  */
-export type RequestError = {
+export type TranslationError = {
   error: string;
   code: number;
   reference?: TranslationResultReference;
@@ -38,4 +38,4 @@ export type RequestSuccess = TypedResult & {
   reference: TranslationResultReference;
 };
 
-export type TranslationResult = RequestSuccess | RequestError;
+export type TranslationResult = RequestSuccess | TranslationError;

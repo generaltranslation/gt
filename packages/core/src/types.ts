@@ -67,7 +67,11 @@ export type {
   CompletedFileTranslationData,
 } from './types-dir/file';
 export type { TranslateManyResult } from './types-dir/translateMany';
-export type { TranslationResult } from './types-dir/translate';
+export type {
+  TranslationResult,
+  TranslationError,
+  TranslationResultReference,
+} from './types-dir/translate';
 
 /**
  * @deprecated Use {@link Content} instead.
@@ -146,6 +150,9 @@ export type Request =
       };
     };
 
+/**
+ * @deprecated Use {@link TranslationResult} instead.
+ */
 export type ContentTranslationResult = {
   translation: _Content;
   locale: string;
@@ -155,6 +162,9 @@ export type ContentTranslationResult = {
   };
 };
 
+/**
+ * @deprecated Use {@link TranslationResult} instead.
+ */
 export type IcuTranslationResult = {
   translation: string;
   locale: string;
@@ -164,21 +174,15 @@ export type IcuTranslationResult = {
   };
 };
 
+/**
+ * @deprecated Use {@link TranslationResult} instead.
+ */
 export type JsxTranslationResult = {
   translation: JsxChildren;
   locale: string;
   reference?: {
     id: string;
     key: string;
-  };
-};
-
-export type TranslationError = {
-  error?: string;
-  code?: number;
-  reference?: {
-    id: string;
-    hash: string;
   };
 };
 
