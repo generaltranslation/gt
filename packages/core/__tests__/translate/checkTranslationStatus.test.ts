@@ -51,7 +51,11 @@ describe.sequential('_checkTranslationStatus', () => {
       timeout: 5000,
     };
 
-    const result = await _checkTranslationStatus(versionId, options, mockConfig);
+    const result = await _checkTranslationStatus(
+      versionId,
+      options,
+      mockConfig
+    );
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       'https://api.test.com/v1/project/translations/status/version-123',
@@ -247,7 +251,11 @@ describe.sequential('_checkTranslationStatus', () => {
     const versionId = 'version-123';
     const options: CheckTranslationStatusOptions = {};
 
-    const result = await _checkTranslationStatus(versionId, options, mockConfig);
+    const result = await _checkTranslationStatus(
+      versionId,
+      options,
+      mockConfig
+    );
 
     expect(result).toEqual(emptyResult);
   });
@@ -270,7 +278,11 @@ describe.sequential('_checkTranslationStatus', () => {
     const versionId = 'version-123';
     const options: CheckTranslationStatusOptions = {};
 
-    const result = await _checkTranslationStatus(versionId, options, mockConfig);
+    const result = await _checkTranslationStatus(
+      versionId,
+      options,
+      mockConfig
+    );
 
     expect(result).toEqual(resultWithApproval);
   });
