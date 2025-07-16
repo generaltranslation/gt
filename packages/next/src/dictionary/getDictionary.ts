@@ -4,7 +4,7 @@ import {
   getDictionaryEntry as getEntry,
 } from 'gt-react/internal';
 import { customLoadDictionaryWarning } from '../errors/createErrors';
-import resolveDictionaryLoader from '../loaders/resolveDictionary';
+import resolveDictionaryLoader from '../loaders/resolveDictionaryLoader';
 import defaultWithGTConfigProps from '../config-dir/props/defaultWithGTConfigProps';
 import { getLocaleProperties } from 'generaltranslation';
 
