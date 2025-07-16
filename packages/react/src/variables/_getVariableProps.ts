@@ -45,9 +45,7 @@ export default function getVariableProps(
         ...(typeof props.currency !== 'undefined' && {
           currency: props.currency,
         }),
-        ...(typeof props.options !== 'undefined' && {
-          options: props.options,
-        }),
+        ...(typeof props.options !== 'undefined' && props.options),
       };
       if (Object.keys(variableOptions).length) return variableOptions;
       if (typeof props['data-_gt-variable-options'] === 'string')
