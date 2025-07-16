@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.0.3
+
+### Patch Changes
+
+- [#474](https://github.com/generaltranslation/gt/pull/474) [`7f0920d`](https://github.com/generaltranslation/gt/commit/7f0920d378dd077a4ca14910a16c3e38cfa77dae) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: <T> functions stripping variables their options see: https://github.com/generaltranslation/gt/issues/472
+
+- Updated dependencies [[`7f0920d`](https://github.com/generaltranslation/gt/commit/7f0920d378dd077a4ca14910a16c3e38cfa77dae)]:
+  - gt-react@10.0.2
+
 ## 6.0.2
 
 ### Patch Changes
