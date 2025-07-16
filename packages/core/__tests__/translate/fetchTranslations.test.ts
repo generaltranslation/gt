@@ -23,30 +23,16 @@ describe.sequential('_fetchTranslations', () => {
   };
 
   const mockFetchTranslationsResult: FetchTranslationsResult = {
-    translations: {
-      versionId: 'version-123',
-      projectId: 'test-project',
-      localeCount: 2,
-      totalEntries: 2,
-      translations: [
-        {
-          locale: 'es',
-          translation: 'Hello world',
-          metadata: {
-            key: 'hello_world',
-            status: 'completed',
-          },
-        },
-        {
-          locale: 'es',
-          translation: 'Goodbye world',
-          metadata: {
-            key: 'goodbye_world',
-            status: 'pending',
-          },
-        },
-      ],
-    },
+    translations: [
+      {
+        locale: 'es',
+        translation: 'Hello world',
+      },
+      {
+        locale: 'fr',
+        translation: 'Bonjour le monde',
+      },
+    ],
   };
 
   beforeEach(() => {
@@ -151,7 +137,7 @@ describe.sequential('_fetchTranslations', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'https://runtime2.gtx.dev/v1/project/translations/info/test-version-id'
+        'https://api2.gtx.dev/v1/project/translations/info/test-version-id'
       ),
       expect.any(Object),
       expect.any(Number)

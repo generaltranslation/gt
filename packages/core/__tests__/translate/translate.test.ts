@@ -22,6 +22,8 @@ describe.sequential('_translate', () => {
 
   const mockTranslationResult: TranslationResult = {
     translation: 'Hola mundo',
+    dataFormat: 'ICU',
+    locale: 'es',
     reference: {
       id: 'test-id',
       hash: 'test-key',
@@ -63,9 +65,7 @@ describe.sequential('_translate', () => {
         body: JSON.stringify({
           requests: [{ source }],
           targetLocale,
-          metadata: {
-            sourceLocale: undefined,
-          },
+          metadata,
         }),
       },
       60000
@@ -106,9 +106,7 @@ describe.sequential('_translate', () => {
         body: JSON.stringify({
           requests: [{ source }],
           targetLocale,
-          metadata: {
-            sourceLocale: undefined,
-          },
+          metadata,
         }),
       },
       60000

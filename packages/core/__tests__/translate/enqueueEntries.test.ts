@@ -9,7 +9,7 @@ import {
   Updates,
   EnqueueEntriesOptions,
   EnqueueEntriesResult,
-} from '../../src/types-dir/enqueue';
+} from '../../src/types-dir/enqueueEntries';
 
 vi.mock('../../src/utils/fetchWithTimeout');
 vi.mock('../../src/translate/utils/validateResponse');
@@ -29,6 +29,7 @@ describe.sequential('_enqueueEntries', () => {
     message: 'Entries uploaded successfully',
     projectSettings: {
       cdnEnabled: true,
+      requireApproval: false,
     },
   };
 

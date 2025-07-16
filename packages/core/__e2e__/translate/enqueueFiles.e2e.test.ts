@@ -3,7 +3,7 @@ import { TranslationRequestConfig } from '../../src/types';
 import {
   FileToTranslate,
   EnqueueFilesOptions,
-} from '../../src/types-dir/enqueue';
+} from '../../src/types-dir/enqueueFiles';
 import _enqueueFiles from '../../src/translate/enqueueFiles';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
 

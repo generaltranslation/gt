@@ -9,7 +9,7 @@ import {
   FileToTranslate,
   EnqueueFilesOptions,
   EnqueueFilesResult,
-} from '../../src/types-dir/enqueue';
+} from '../../src/types-dir/enqueueFiles';
 
 vi.mock('../../src/utils/fetchWithTimeout');
 vi.mock('../../src/translate/utils/validateResponse');
@@ -45,21 +45,25 @@ describe.sequential('_enqueueFiles', () => {
   };
 
   const mockEnqueueFilesResult: EnqueueFilesResult = {
+    translations: [
+      {
+        locale: 'es',
+        metadata: {},
+        fileId: 'file-1',
+        fileName: 'test.json',
+        versionId: 'version-123',
+        id: 'translation-1',
+        isReady: true,
+        downloadUrl: 'https://example.com/download/1',
+      },
+    ],
     data: {
-      versionId: 'version-123',
-      uploadedFiles: [
-        {
-          fileName: 'test.json',
-          status: 'uploaded',
-          translationId: 'translation-1',
-        },
-      ],
+      'test.json': {
+        fileName: 'test.json',
+        versionId: 'version-123',
+      },
     },
     locales: ['es', 'fr'],
-    translations: {
-      versionId: 'version-123',
-      status: 'processing',
-    },
     message: 'Files uploaded successfully',
   };
 
@@ -265,7 +269,7 @@ describe.sequential('_enqueueFiles', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'https://runtime2.gtx.dev/v1/project/translations/files/upload'
+        'https://api2.gtx.dev/v1/project/translations/files/upload'
       ),
       expect.any(Object),
       expect.any(Number)

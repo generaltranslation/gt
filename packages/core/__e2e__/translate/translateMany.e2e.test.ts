@@ -58,12 +58,20 @@ describe('translateMany E2E Tests', () => {
         expect(translationResult).toBeDefined();
         expect('translation' in translationResult).toBe(true);
         if ('translation' in translationResult) {
+          expect(translationResult.locale).toBeDefined();
+          expect(translationResult.dataFormat).toBeDefined();
+        }
+        if ('translation' in translationResult) {
           expect(translationResult).toHaveProperty('translation');
           expect(translationResult).toHaveProperty('reference');
+          expect(translationResult).toHaveProperty('locale');
+          expect(translationResult).toHaveProperty('dataFormat');
           expect(typeof translationResult.translation).toBe('string');
+          expect(translationResult.locale).toBe('es');
           // Reference may have id, key, or hash depending on API response
           expect(translationResult.reference).toBeDefined();
           expect(typeof translationResult.reference).toBe('object');
+          expect(translationResult.reference.hash).toBeDefined();
         }
       });
     });
@@ -101,12 +109,16 @@ describe('translateMany E2E Tests', () => {
       expect('translation' in jsxTranslation).toBe(true);
       if ('translation' in jsxTranslation) {
         expect(Array.isArray(jsxTranslation.translation)).toBe(true);
+        expect(jsxTranslation.dataFormat).toBe('JSX');
+        expect(jsxTranslation.locale).toBe('fr');
       }
 
       const icuTranslation = result[2];
       expect('translation' in icuTranslation).toBe(true);
       if ('translation' in icuTranslation) {
         expect(typeof icuTranslation.translation).toBe('string');
+        expect(icuTranslation.dataFormat).toBeDefined();
+        expect(icuTranslation.locale).toBe('fr');
         // Should preserve ICU format
         expect(icuTranslation.translation).toContain('{');
         expect(icuTranslation.translation).toContain('}');
@@ -154,6 +166,10 @@ describe('translateMany E2E Tests', () => {
       result.forEach((translationResult) => {
         expect(translationResult).toBeDefined();
         expect('translation' in translationResult).toBe(true);
+        if ('translation' in translationResult) {
+          expect(translationResult.locale).toBeDefined();
+          expect(translationResult.dataFormat).toBeDefined();
+        }
         expect(translationResult).toHaveProperty('reference');
         // Reference may have id, key, or hash depending on API response
         expect(translationResult.reference).toBeDefined();
@@ -186,6 +202,10 @@ describe('translateMany E2E Tests', () => {
       // All should be successful translations
       result.forEach((translationResult) => {
         expect('translation' in translationResult).toBe(true);
+        if ('translation' in translationResult) {
+          expect(translationResult.locale).toBeDefined();
+          expect(translationResult.dataFormat).toBeDefined();
+        }
       });
     });
 
@@ -213,6 +233,10 @@ describe('translateMany E2E Tests', () => {
 
         result.forEach((translationResult) => {
           expect('translation' in translationResult).toBe(true);
+          if ('translation' in translationResult) {
+            expect(translationResult.locale).toBeDefined();
+            expect(translationResult.dataFormat).toBeDefined();
+          }
           expect(translationResult).toHaveProperty('reference');
         });
 
@@ -364,6 +388,10 @@ describe('translateMany E2E Tests', () => {
       result.forEach((translationResult) => {
         expect(translationResult).toBeDefined();
         expect('translation' in translationResult).toBe(true);
+        if ('translation' in translationResult) {
+          expect(translationResult.locale).toBeDefined();
+          expect(translationResult.dataFormat).toBeDefined();
+        }
         expect(translationResult).toHaveProperty('translation');
         expect(translationResult).toHaveProperty('reference');
       });

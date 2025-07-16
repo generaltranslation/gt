@@ -23,21 +23,21 @@ describe.sequential('_downloadFileBatch', () => {
   };
 
   const mockDownloadFileBatchResult: DownloadFileBatchResult = {
-    results: [
+    files: [
       {
-        translationId: 'translation-1',
+        id: 'translation-1',
         fileName: 'file1.json',
-        success: true,
-        content: 'file content 1',
-        contentType: 'application/json',
+        data: 'file content 1',
+        metadata: { contentType: 'application/json' },
       },
       {
-        translationId: 'translation-2',
+        id: 'translation-2',
         fileName: 'file2.json',
-        success: false,
-        error: 'File not found',
+        data: '',
+        metadata: { error: 'File not found' },
       },
     ],
+    count: 2,
   };
 
   beforeEach(() => {
@@ -175,7 +175,7 @@ describe.sequential('_downloadFileBatch', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'https://runtime2.gtx.dev/v1/project/translations/files/batch-download'
+        'https://api2.gtx.dev/v1/project/translations/files/batch-download'
       ),
       expect.any(Object),
       expect.any(Number)
@@ -220,8 +220,9 @@ describe.sequential('_downloadFileBatch', () => {
   });
 
   it('should handle empty files array', async () => {
-    const emptyResult = {
-      results: [],
+    const emptyResult: DownloadFileBatchResult = {
+      files: [],
+      count: 0,
     };
 
     const mockResponse = {

@@ -125,7 +125,7 @@ describe.sequential('_downloadFile', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'https://runtime2.gtx.dev/v1/project/translations/files/test-translation-id/download'
+        'https://api2.gtx.dev/v1/project/translations/files/test-translation-id/download'
       ),
       expect.any(Object),
       expect.any(Number)

@@ -30,12 +30,20 @@ describe.sequential('_checkFileTranslations', () => {
         fileName: 'src/components/Button.json',
         locale: 'es',
         id: 'translation-1',
+        fileId: 'file-1',
+        versionId: 'version-1',
+        metadata: {},
+        downloadUrl: 'https://example.com/download/1',
       },
       {
         isReady: false,
         fileName: 'src/pages/Home.json',
         locale: 'fr',
         id: 'translation-2',
+        fileId: 'file-2',
+        versionId: 'version-2',
+        metadata: {},
+        downloadUrl: 'https://example.com/download/2',
       },
     ],
   };
@@ -147,7 +155,7 @@ describe.sequential('_checkFileTranslations', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'https://runtime2.gtx.dev/v1/project/translations/files/retrieve'
+        'https://api2.gtx.dev/v1/project/translations/files/retrieve'
       ),
       expect.any(Object),
       expect.any(Number)

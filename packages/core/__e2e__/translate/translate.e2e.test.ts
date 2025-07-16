@@ -42,12 +42,19 @@ describe('translate E2E Tests', () => {
       // Should always be a successful translation result
       expect('translation' in result).toBe(true);
       if ('translation' in result) {
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBeDefined();
+      }
+      if ('translation' in result) {
         expect(result.translation).toBeDefined();
         expect(typeof result.translation).toBe('string');
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBeDefined();
       }
       // Reference may have id, key, or hash depending on API response
       expect(result.reference).toBeDefined();
       expect(typeof result.reference).toBe('object');
+      expect(result.reference.hash).toBeDefined();
     });
 
     it('should translate ICU message format', async () => {
@@ -66,8 +73,14 @@ describe('translate E2E Tests', () => {
       // Should always be a successful translation result
       expect('translation' in result).toBe(true);
       if ('translation' in result) {
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBeDefined();
+      }
+      if ('translation' in result) {
         expect(result.translation).toBeDefined();
         expect(typeof result.translation).toBe('string');
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBeDefined();
         // Should preserve ICU placeholder format
         expect(result.translation).toContain('{');
         expect(result.translation).toContain('}');
@@ -92,8 +105,14 @@ describe('translate E2E Tests', () => {
       // Should always be a successful translation result
       expect('translation' in result).toBe(true);
       if ('translation' in result) {
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBeDefined();
+      }
+      if ('translation' in result) {
         expect(result.translation).toBeDefined();
         expect(Array.isArray(result.translation)).toBe(true);
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBe('JSX');
 
         if (Array.isArray(result.translation)) {
           expect(result.translation.length).toBeGreaterThan(0);
@@ -135,8 +154,14 @@ describe('translate E2E Tests', () => {
       // Should always be a successful translation result
       expect('translation' in result).toBe(true);
       if ('translation' in result) {
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBeDefined();
+      }
+      if ('translation' in result) {
         expect(result.translation).toBeDefined();
         expect(Array.isArray(result.translation)).toBe(true);
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBe('JSX');
 
         // Should preserve nested structure (actual structure may vary)
         if (Array.isArray(result.translation)) {
@@ -165,9 +190,18 @@ describe('translate E2E Tests', () => {
 
       // Should always be a successful translation result
       expect('translation' in result).toBe(true);
+      if ('translation' in result) {
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBeDefined();
+      }
+      if ('translation' in result) {
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBeDefined();
+      }
       // Reference may have id, key, or hash depending on API response
       expect(result.reference).toBeDefined();
       expect(typeof result.reference).toBe('object');
+      expect(result.reference.hash).toBeDefined();
     });
 
     it('should handle metadata with custom timeout', async () => {
@@ -186,6 +220,10 @@ describe('translate E2E Tests', () => {
 
       // Should always be a successful translation result
       expect('translation' in result).toBe(true);
+      if ('translation' in result) {
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBeDefined();
+      }
     });
 
     it('should handle empty metadata', async () => {
@@ -200,6 +238,10 @@ describe('translate E2E Tests', () => {
 
       // Should always be a successful translation result
       expect('translation' in result).toBe(true);
+      if ('translation' in result) {
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBeDefined();
+      }
     });
   });
 
@@ -229,6 +271,10 @@ describe('translate E2E Tests', () => {
 
       // Should always be a successful translation result
       expect('translation' in result).toBe(true);
+      if ('translation' in result) {
+        expect(result.locale).toBe(targetLocale);
+        expect(result.dataFormat).toBeDefined();
+      }
     });
 
     // Note: Test for config without baseUrl requires valid API credentials
@@ -258,16 +304,15 @@ describe('translate E2E Tests', () => {
           invalidConfig
         );
 
-        // If not thrown, should be a TranslationError
+        // If not thrown, should be a RequestError
         expect(result).toBeDefined();
         expect('error' in result).toBe(true);
 
-        // error and code properties are optional in TranslationError
+        // error and code properties are required in RequestError
         if ('error' in result) {
           expect(typeof result.error).toBe('string');
-        }
-        if ('code' in result) {
           expect(typeof result.code).toBe('number');
+          expect(result.error.length).toBeGreaterThan(0);
         }
       } catch (error) {
         // Thrown errors are also expected for invalid credentials
