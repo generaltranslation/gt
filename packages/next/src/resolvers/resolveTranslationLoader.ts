@@ -20,7 +20,7 @@ export default function resolveTranslationLoader(): CustomLoader | undefined {
   // Get custom loader
   customLoadTranslations =
     customLoadTranslationsConfig?.default ||
-    customLoadTranslationsConfig?.getLocalTranslation;
+    customLoadTranslationsConfig?.loadTranslations;
 
   // Check: custom loader is exported
   if (!customLoadTranslations) {

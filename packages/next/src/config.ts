@@ -16,6 +16,7 @@ import {
 } from './errors/createErrors';
 import { getSupportedLocale } from '@generaltranslation/supported-locales';
 import { getLocaleProperties, standardizeLocale } from 'generaltranslation';
+import { turboConfigStable } from './plugin/getTurboConfigStable';
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -221,12 +222,6 @@ export function withGTConfig(
       ? mergedConfig.loadTranslationsPath
       : resolveConfigFilepath('loadTranslations');
 
-  // // Resolve getLocale path
-  // const resolvedGetLocalePath =
-  //   typeof mergedConfig.getLocalePath === 'string'
-  //     ? mergedConfig.getLocalePath
-  //     : resolveConfigFilepath('getLocale', ['.ts', '.js']);
-
   // ----------- LOCALE STANDARDIZATION ----------- //
 
   // Check if using Services
@@ -293,12 +288,6 @@ export function withGTConfig(
 
   // Resolve getLocale path
   const customLocaleEnabled = false;
-  // if (resolvedGetLocalePath) {
-  //   if (!fs.existsSync(path.resolve(resolvedGetLocalePath))) {
-  //     throw new Error(unresolvedGetLocaleBuildError(resolvedGetLocalePath));
-  //   }
-  //   customLocaleEnabled = true;
-  // }
 
   // Check: projectId is not required for remote infrastructure, but warn if missing for dev, nothing for prod
   if (
@@ -343,7 +332,48 @@ export function withGTConfig(
   }
 
   // ---------- STORE CONFIGURATIONS ---------- //
+  const turboPackEnabled = process.env.TURBOPACK === '1';
   const I18NConfigParams = JSON.stringify(mergedConfig);
+
+  const turboAliases = {
+    'gt-next/_dictionary': resolvedDictionaryFilePath || '',
+    'gt-next/_load-translations': customLoadTranslationsPath || '',
+    'gt-next/_load-dictionary': customLoadDictionaryPath || '',
+  };
+
+  // experimental.turbo is deprecated in next@15.3.0.
+  // Check for experimental.turbo. If we write to turbopack field, experimental fields will be ignored.
+  // Yet, if there are other resolveAlias fields, we don't want to be ignored either.
+  let turboConfig = {};
+  if (turboPackEnabled) {
+    if (
+      turboConfigStable &&
+      (!nextConfig.experimental?.turbo || nextConfig.turbopack?.resolveAlias)
+    ) {
+      turboConfig = {
+        turbopack: {
+          ...nextConfig.turbopack,
+          resolveAlias: {
+            ...nextConfig.turbopack?.resolveAlias,
+            ...turboAliases,
+          },
+        },
+      };
+    } else {
+      turboConfig = {
+        experimental: {
+          ...nextConfig.experimental,
+          turbo: {
+            ...nextConfig.experimental?.turbo,
+            resolveAlias: {
+              ...nextConfig.experimental?.turbo?.resolveAlias,
+              ...turboAliases,
+            },
+          },
+        },
+      };
+    }
+  }
 
   return {
     ...nextConfig,
@@ -369,33 +399,14 @@ export function withGTConfig(
       _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED:
         customLocaleEnabled.toString(),
     },
-    experimental: {
-      ...nextConfig.experimental,
-      // Only include turbo config if Turbopack is enabled or already configured
-      ...(process.env.TURBOPACK === '1' || nextConfig.experimental?.turbo
-        ? {
-            turbo: {
-              ...(nextConfig.experimental?.turbo || {}),
-              resolveAlias: {
-                ...(nextConfig.experimental?.turbo?.resolveAlias || {}),
-                'gt-next/_dictionary': resolvedDictionaryFilePath || '',
-                'gt-next/_load-translations': customLoadTranslationsPath || '',
-                'gt-next/_load-dictionary': customLoadDictionaryPath || '',
-                // 'gt-next/_request': resolvedGetLocalePath || '',
-              },
-            },
-          }
-        : {}),
-    },
+    ...turboConfig,
     webpack: function webpack(
       ...[webpackConfig, options]: Parameters<
         NonNullable<NextConfig['webpack']>
       >
     ) {
       // Only apply webpack aliases if we're using webpack (not Turbopack)
-      const isTurbopack =
-        (options as any)?.turbo || process.env.TURBOPACK === '1';
-      if (!isTurbopack) {
+      if (!turboPackEnabled) {
         // Disable cache in dev bc people might move around loadTranslations() and loadDictionary() files
         if (process.env.NODE_ENV === 'development') {
           webpackConfig.cache = false;
@@ -414,12 +425,6 @@ export function withGTConfig(
           webpackConfig.resolve.alias[`gt-next/_load-dictionary`] =
             path.resolve(webpackConfig.context, customLoadDictionaryPath);
         }
-        // if (resolvedGetLocalePath) {
-        //   webpackConfig.resolve.alias[`gt-next/_request`] = path.resolve(
-        //     webpackConfig.context,
-        //     resolvedGetLocalePath
-        //   );
-        // }
       }
       if (typeof nextConfig?.webpack === 'function') {
         return nextConfig.webpack(webpackConfig, options);
