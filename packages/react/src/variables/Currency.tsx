@@ -32,7 +32,7 @@ function Currency({
   options?: Intl.NumberFormatOptions;
 }): React.JSX.Element | null {
   const context = useContext(GTContext);
-  if (!children) return null;
+  if (children == null) return null;
   const gt = context?.gt || new GT();
   let renderedValue: string | number =
     typeof children === 'string' ? parseFloat(children) : children;

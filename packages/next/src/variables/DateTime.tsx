@@ -28,7 +28,7 @@ function DateTime({
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
   locales?: string[];
 }): React.JSX.Element | null {
-  if (!children) return null;
+  if (children == null) return null;
   if (!locales) {
     locales = [useLocale(), getI18NConfig().getDefaultLocale()];
   }
