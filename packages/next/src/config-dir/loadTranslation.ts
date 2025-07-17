@@ -3,7 +3,7 @@ import {
   customLoadTranslationsError,
   remoteTranslationsError,
 } from '../errors/createErrors';
-import resolveTranslationLoader from '../loaders/resolveTranslationLoader';
+import resolveTranslationLoader from '../resolvers/resolveTranslationLoader';
 
 type RemoteLoadTranslationsInput = {
   targetLocale: string;
