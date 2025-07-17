@@ -1,5 +1,11 @@
 # gt-next
 
+## 6.0.5
+
+### Patch Changes
+
+- [#473](https://github.com/generaltranslation/gt/pull/473) [`398cbd9`](https://github.com/generaltranslation/gt/commit/398cbd972593a6579198cc143ce6c5b9d4fcc322) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: support for deprecation of experiemental config for turbo and resolving non default exports for loadTranslations() and loadDictionary()
+
 ## 6.0.4
 
 ### Patch Changes
