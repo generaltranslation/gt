@@ -30,7 +30,7 @@ function DateTime({
   options?: Intl.DateTimeFormatOptions; // Optional formatting options for the date
 }): React.JSX.Element | null {
   const context = useContext(GTContext);
-  if (!children) return null;
+  if (children == null) return null;
   const gt = context?.gt || new GT();
 
   if (!locales) {
