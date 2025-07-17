@@ -1,5 +1,14 @@
 # gt-next
 
+## 6.0.4
+
+### Patch Changes
+
+- [#477](https://github.com/generaltranslation/gt/pull/477) [`26c6e2c`](https://github.com/generaltranslation/gt/commit/26c6e2ced7c8f8df7b1efa50a56ceb4d6e7f47bc) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: variable components returning null when passed children that were falsey
+
+- Updated dependencies [[`26c6e2c`](https://github.com/generaltranslation/gt/commit/26c6e2ced7c8f8df7b1efa50a56ceb4d6e7f47bc)]:
+  - gt-react@10.0.3
+
 ## 6.0.3
 
 ### Patch Changes
