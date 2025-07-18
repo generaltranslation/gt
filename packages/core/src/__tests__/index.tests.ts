@@ -1,21 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GT } from '../src/index';
-import _translate from '../src/translate/translate';
-import _translateMany from '../src/translate/translateMany';
+import { GT } from '../index';
+import _translate from '../translate/translate';
+import _translateMany from '../translate/translateMany';
 import {
   TranslationResult,
   TranslateManyResult,
   Content,
   JsxChildren,
-} from '../src/types';
-import { GTRequestMetadata, GTRequest } from '../src/types/GTRequest';
+} from '../types';
+import { EntryMetadata, Entry } from '../types-dir/entry';
 
 // Mock the internal translate functions
-vi.mock('../../src/translate/translate', () => ({
+vi.mock('../translate/translate', () => ({
   default: vi.fn(),
 }));
 
-vi.mock('../../src/translate/translateMany', () => ({
+vi.mock('../translate/translateMany', () => ({
   default: vi.fn(),
 }));
 
@@ -30,8 +30,10 @@ describe('GT Translation Methods', () => {
       translation: 'Hola mundo',
       reference: {
         id: 'test-id',
-        key: 'test-key',
+        hash: 'test-key',
       },
+      locale: 'es',
+      dataFormat: 'ICU',
     };
 
     beforeEach(() => {
@@ -212,34 +214,26 @@ describe('GT Translation Methods', () => {
 
   describe('translateMany method', () => {
     let gt: GT;
-    const mockTranslateManyResult: TranslateManyResult = {
-      translations: [
-        {
-          translation: 'Hola mundo',
-          reference: {
-            id: 'test-id-1',
-            key: 'test-key-1',
-          },
-        },
-        {
-          translation: 'Adiós mundo',
-          reference: {
-            id: 'test-id-2',
-            key: 'test-key-2',
-          },
-        },
-      ],
-      reference: [
-        {
+    const mockTranslateManyResult: TranslateManyResult = [
+      {
+        translation: 'Hola mundo',
+        reference: {
           id: 'test-id-1',
-          key: 'test-key-1',
+          hash: 'test-key-1',
         },
-        {
+        locale: 'es',
+        dataFormat: 'ICU',
+      },
+      {
+        translation: 'Adiós mundo',
+        reference: {
           id: 'test-id-2',
-          key: 'test-key-2',
+          hash: 'test-key-2',
         },
-      ],
-    };
+        locale: 'es',
+        dataFormat: 'ICU',
+      },
+    ];
 
     beforeEach(() => {
       gt = new GT({
@@ -254,7 +248,7 @@ describe('GT Translation Methods', () => {
       const mockTranslateMany = vi.mocked(_translateMany);
       mockTranslateMany.mockResolvedValue(mockTranslateManyResult);
 
-      const requests: GTRequest[] = [
+      const requests: Entry[] = [
         {
           source: 'Hello world',
           targetLocale: 'es',
@@ -267,7 +261,7 @@ describe('GT Translation Methods', () => {
         },
       ];
 
-      const globalMetadata: { targetLocale: string } & GTRequestMetadata = {
+      const globalMetadata: { targetLocale: string } & EntryMetadata = {
         targetLocale: 'es',
         sourceLocale: 'en',
       };
@@ -286,7 +280,7 @@ describe('GT Translation Methods', () => {
       const mockTranslateMany = vi.mocked(_translateMany);
       mockTranslateMany.mockResolvedValue(mockTranslateManyResult);
 
-      const requests: GTRequest[] = [
+      const requests: Entry[] = [
         {
           source: 'Hello world',
           targetLocale: 'es',
@@ -315,7 +309,7 @@ describe('GT Translation Methods', () => {
         baseUrl: 'https://api.test.com',
       });
 
-      const requests: GTRequest[] = [
+      const requests: Entry[] = [
         {
           source: 'Hello world',
           targetLocale: 'es',
@@ -334,7 +328,7 @@ describe('GT Translation Methods', () => {
         baseUrl: 'https://api.test.com',
       });
 
-      const requests: GTRequest[] = [
+      const requests: Entry[] = [
         {
           source: 'Hello world',
           targetLocale: 'es',
@@ -353,7 +347,7 @@ describe('GT Translation Methods', () => {
       const mockTranslateMany = vi.mocked(_translateMany);
       mockTranslateMany.mockResolvedValue(mockTranslateManyResult);
 
-      const requests: GTRequest[] = [
+      const requests: Entry[] = [
         {
           source: [
             'Welcome ',
@@ -390,7 +384,7 @@ describe('GT Translation Methods', () => {
       const error = new Error('Translation service unavailable');
       mockTranslateMany.mockRejectedValue(error);
 
-      const requests: GTRequest[] = [
+      const requests: Entry[] = [
         {
           source: 'Hello world',
           targetLocale: 'es',

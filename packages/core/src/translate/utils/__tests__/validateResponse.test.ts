@@ -1,21 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../../src/logging/errors', () => ({
+vi.mock('../../../logging/errors', () => ({
   apiError: vi.fn(
     (status: number, statusText: string, error: string) =>
       `GT error: API returned error status. Status: ${status}, Status Text: ${statusText}, Error: ${error}`
   ),
 }));
 
-vi.mock('../../../src/logging/logger', () => ({
+vi.mock('../../../logging/logger', () => ({
   fetchLogger: {
     error: vi.fn(),
   },
 }));
 
-import validateResponse from '../../../src/translate/utils/validateResponse';
-import { apiError } from '../../../src/logging/errors';
-import { fetchLogger } from '../../../src/logging/logger';
+import validateResponse from '../validateResponse';
+import { apiError } from '../../../logging/errors';
+import { fetchLogger } from '../../../logging/logger';
 
 describe.sequential('validateResponse', () => {
   beforeEach(() => {

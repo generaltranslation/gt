@@ -1,18 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import handleFetchError from '../../../src/translate/utils/handleFetchError';
-import { fetchLogger } from '../../../src/logging/logger';
+import handleFetchError from '../handleFetchError';
+import { fetchLogger } from '../../../logging/logger';
 import {
   translationRequestFailedError,
   translationTimeoutError,
-} from '../../../src/logging/errors';
+} from '../../../logging/errors';
 
-vi.mock('../../../src/logging/logger', () => ({
+vi.mock('../../../logging/logger', () => ({
   fetchLogger: {
     error: vi.fn(),
   },
 }));
 
-vi.mock('../../../src/logging/errors', () => ({
+vi.mock('../../../logging/errors', () => ({
   translationRequestFailedError: vi.fn(),
   translationTimeoutError: vi.fn(),
 }));

@@ -54,7 +54,7 @@ describe('translate E2E Tests', () => {
       // Reference may have id, key, or hash depending on API response
       expect(result.reference).toBeDefined();
       expect(typeof result.reference).toBe('object');
-      expect(result.reference.hash).toBeDefined();
+      expect(result.reference?.hash).toBeDefined();
     });
 
     it('should translate ICU message format', async () => {
@@ -201,7 +201,7 @@ describe('translate E2E Tests', () => {
       // Reference may have id, key, or hash depending on API response
       expect(result.reference).toBeDefined();
       expect(typeof result.reference).toBe('object');
-      expect(result.reference.hash).toBeDefined();
+      expect(result.reference?.hash).toBeDefined();
     });
 
     it('should handle metadata with custom timeout', async () => {

@@ -6,7 +6,7 @@ import {
   defaultLogger,
   LogHandler,
   LogEntry,
-} from '../../src/logging/logger';
+} from '../logger';
 
 describe('Logger', () => {
   let originalEnv: string | undefined;

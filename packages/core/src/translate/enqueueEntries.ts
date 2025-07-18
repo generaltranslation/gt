@@ -1,5 +1,5 @@
 import { defaultBaseUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
+import fetchWithTimeout from './utils/fetchWithTimeout';
 import { maxTimeout } from '../settings/settings';
 import validateResponse from './utils/validateResponse';
 import handleFetchError from './utils/handleFetchError';

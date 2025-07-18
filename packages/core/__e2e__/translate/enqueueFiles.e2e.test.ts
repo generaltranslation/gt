@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { TranslationRequestConfig } from '../../src/types';
 import {
   FileToTranslate,
-  EnqueueFilesOptions,
+  RequiredEnqueueFilesOptions,
 } from '../../src/types-dir/enqueueFiles';
 import _enqueueFiles from '../../src/translate/enqueueFiles';
 import { defaultRuntimeApiUrl } from '../../src/settings/settingsUrls';
@@ -37,7 +37,7 @@ describe('enqueueFiles E2E Tests', () => {
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['es', 'fr'],
         publish: false,
@@ -81,7 +81,7 @@ button_cancel: "Cancel Operation"
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['es'],
         publish: true,
@@ -125,7 +125,7 @@ This is a comprehensive guide to using our application.
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['fr', 'de'],
         publish: false,
@@ -191,7 +191,7 @@ Email us at support@example.com
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['es', 'fr', 'de'],
         publish: false,
@@ -232,7 +232,7 @@ Email us at support@example.com
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['es'],
         publish: false,
@@ -266,7 +266,7 @@ Email us at support@example.com
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['es'],
         publish: true,
@@ -296,7 +296,7 @@ Email us at support@example.com
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['fr'],
         publish: false,
@@ -328,7 +328,7 @@ Email us at support@example.com
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['es', 'fr', 'de', 'it', 'pt'],
         publish: false,
@@ -368,7 +368,7 @@ Email us at support@example.com
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['es'],
         publish: false,
@@ -403,7 +403,7 @@ Email us at support@example.com
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['es'],
         publish: false,
@@ -440,7 +440,7 @@ Email us at support@example.com
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['es'],
         publish: false,
@@ -470,7 +470,7 @@ Email us at support@example.com
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['es'],
         publish: false,
@@ -492,7 +492,7 @@ Email us at support@example.com
     it('should handle empty files array', async () => {
       const files: FileToTranslate[] = [];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['es'],
         publish: false,
@@ -534,12 +534,11 @@ Email us at support@example.com
               },
             },
           }),
-          fileFormat: 'GTJSON',
-          dataFormat: 'ICU',
+          fileFormat: 'JSON',
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['es'],
         publish: false,
@@ -583,7 +582,7 @@ Welcome to our interactive documentation!
         },
       ];
 
-      const options: EnqueueFilesOptions = {
+      const options: RequiredEnqueueFilesOptions = {
         sourceLocale: 'en',
         targetLocales: ['fr'],
         publish: false,

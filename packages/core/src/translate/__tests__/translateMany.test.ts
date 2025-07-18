@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _translateMany from '../../src/translate/translateMany';
-import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
-import validateResponse from '../../src/translate/utils/validateResponse';
-import handleFetchError from '../../src/translate/utils/handleFetchError';
-import generateRequestHeaders from '../../src/translate/utils/generateRequestHeaders';
-import { TranslationRequestConfig, TranslateManyResult } from '../../src/types';
-import { Entry, EntryMetadata } from '../../src/types-dir/entry';
+import _translateMany from '../translateMany';
+import fetchWithTimeout from '../utils/fetchWithTimeout';
+import validateResponse from '../utils/validateResponse';
+import handleFetchError from '../utils/handleFetchError';
+import generateRequestHeaders from '../utils/generateRequestHeaders';
+import { TranslationRequestConfig, TranslateManyResult } from '../../types';
+import { Entry, EntryMetadata } from '../../types-dir/entry';
 
-vi.mock('../../src/utils/fetchWithTimeout');
-vi.mock('../../src/translate/utils/validateResponse');
-vi.mock('../../src/translate/utils/handleFetchError');
-vi.mock('../../src/translate/utils/generateRequestHeaders');
+vi.mock('../utils/fetchWithTimeout');
+vi.mock('../utils/validateResponse');
+vi.mock('../utils/handleFetchError');
+vi.mock('../utils/generateRequestHeaders');
 
 describe.sequential('_translateMany', () => {
   const mockConfig: TranslationRequestConfig = {
@@ -26,6 +26,8 @@ describe.sequential('_translateMany', () => {
         id: 'test-id-1',
         hash: 'test-key-1',
       },
+      locale: 'es',
+      dataFormat: 'ICU',
     },
     {
       translation: 'Adiós mundo',
@@ -33,6 +35,8 @@ describe.sequential('_translateMany', () => {
         id: 'test-id-2',
         hash: 'test-key-2',
       },
+      locale: 'es',
+      dataFormat: 'ICU',
     },
     {
       error: 'Error',

@@ -1,20 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _enqueueFiles from '../../src/translate/enqueueFiles';
-import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
-import validateResponse from '../../src/translate/utils/validateResponse';
-import handleFetchError from '../../src/translate/utils/handleFetchError';
-import generateRequestHeaders from '../../src/translate/utils/generateRequestHeaders';
-import { TranslationRequestConfig } from '../../src/types';
+import _enqueueFiles from '../enqueueFiles';
+import fetchWithTimeout from '../utils/fetchWithTimeout';
+import validateResponse from '../utils/validateResponse';
+import handleFetchError from '../utils/handleFetchError';
+import generateRequestHeaders from '../utils/generateRequestHeaders';
+import { TranslationRequestConfig } from '../../types';
 import {
   FileToTranslate,
-  EnqueueFilesOptions,
   EnqueueFilesResult,
-} from '../../src/types-dir/enqueueFiles';
+  RequiredEnqueueFilesOptions,
+} from '../../types-dir/enqueueFiles';
 
-vi.mock('../../src/utils/fetchWithTimeout');
-vi.mock('../../src/translate/utils/validateResponse');
-vi.mock('../../src/translate/utils/handleFetchError');
-vi.mock('../../src/translate/utils/generateRequestHeaders');
+vi.mock('../utils/fetchWithTimeout');
+vi.mock('../utils/validateResponse');
+vi.mock('../utils/handleFetchError');
+vi.mock('../utils/generateRequestHeaders');
 
 // Mock FormData
 global.FormData = class FormData {
@@ -88,12 +88,11 @@ describe.sequential('_enqueueFiles', () => {
       {
         fileName: 'test.json',
         content: '{"hello": "world"}',
-        fileFormat: 'GTJSON',
-        dataFormat: 'JSX',
+        fileFormat: 'JSON',
       },
     ];
 
-    const options: EnqueueFilesOptions = {
+    const options: RequiredEnqueueFilesOptions = {
       sourceLocale: 'en',
       targetLocales: ['es', 'fr'],
       publish: true,
@@ -144,7 +143,7 @@ describe.sequential('_enqueueFiles', () => {
       },
     ];
 
-    const options: EnqueueFilesOptions = {
+    const options: RequiredEnqueueFilesOptions = {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
@@ -185,7 +184,7 @@ describe.sequential('_enqueueFiles', () => {
       },
     ];
 
-    const options: EnqueueFilesOptions = {
+    const options: RequiredEnqueueFilesOptions = {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
@@ -218,7 +217,7 @@ describe.sequential('_enqueueFiles', () => {
       },
     ];
 
-    const options: EnqueueFilesOptions = {
+    const options: RequiredEnqueueFilesOptions = {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
@@ -257,7 +256,7 @@ describe.sequential('_enqueueFiles', () => {
       },
     ];
 
-    const options: EnqueueFilesOptions = {
+    const options: RequiredEnqueueFilesOptions = {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
@@ -291,7 +290,7 @@ describe.sequential('_enqueueFiles', () => {
       },
     ];
 
-    const options: EnqueueFilesOptions = {
+    const options: RequiredEnqueueFilesOptions = {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
@@ -323,7 +322,7 @@ describe.sequential('_enqueueFiles', () => {
       },
     ];
 
-    const options: EnqueueFilesOptions = {
+    const options: RequiredEnqueueFilesOptions = {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
@@ -353,7 +352,7 @@ describe.sequential('_enqueueFiles', () => {
       },
     ];
 
-    const options: EnqueueFilesOptions = {
+    const options: RequiredEnqueueFilesOptions = {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,
@@ -385,7 +384,7 @@ describe.sequential('_enqueueFiles', () => {
 
     const files: FileToTranslate[] = [];
 
-    const options: EnqueueFilesOptions = {
+    const options: RequiredEnqueueFilesOptions = {
       sourceLocale: 'en',
       targetLocales: ['es'],
       publish: false,

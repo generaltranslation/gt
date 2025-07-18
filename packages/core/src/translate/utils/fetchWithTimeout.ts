@@ -1,5 +1,5 @@
-import { translationTimeoutError } from '../logging/errors';
-import { maxTimeout } from '../settings/settings';
+import { translationTimeoutError } from '../../logging/errors';
+import { maxTimeout } from '../../settings/settings';
 
 /**
  * @internal

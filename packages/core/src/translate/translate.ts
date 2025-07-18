@@ -4,7 +4,7 @@ import {
   TranslationResult,
 } from '../types';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
+import fetchWithTimeout from './utils/fetchWithTimeout';
 import { maxTimeout } from '../settings/settings';
 
 import { Content } from '../types-dir/content';

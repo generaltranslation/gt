@@ -1,6 +1,6 @@
 import { TranslationRequestConfig, TranslateManyResult } from '../types';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
+import fetchWithTimeout from './utils/fetchWithTimeout';
 import { maxTimeout } from '../settings/settings';
 import { Entry, EntryMetadata } from '../types-dir/entry';
 import validateResponse from './utils/validateResponse';

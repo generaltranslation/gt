@@ -19,7 +19,7 @@ import {
 export type ActionType = 'standard' | 'fast' | string;
 
 /**
- * GTRequestMetadata is the metadata for a GTRequest.
+ * EntryMetadata is the metadata for a GTRequest.
  *
  * @param context - The context of the request.
  * @param id - The id of the request.

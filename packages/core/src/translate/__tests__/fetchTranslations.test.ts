@@ -1,19 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import _fetchTranslations from '../../src/translate/fetchTranslations';
-import fetchWithTimeout from '../../src/utils/fetchWithTimeout';
-import validateResponse from '../../src/translate/utils/validateResponse';
-import handleFetchError from '../../src/translate/utils/handleFetchError';
-import generateRequestHeaders from '../../src/translate/utils/generateRequestHeaders';
-import { TranslationRequestConfig } from '../../src/types';
+import _fetchTranslations from '../fetchTranslations';
+import fetchWithTimeout from '../utils/fetchWithTimeout';
+import validateResponse from '../utils/validateResponse';
+import handleFetchError from '../utils/handleFetchError';
+import generateRequestHeaders from '../utils/generateRequestHeaders';
+import { TranslationRequestConfig } from '../../types';
 import {
   FetchTranslationsOptions,
   FetchTranslationsResult,
-} from '../../src/types-dir/fetchTranslations';
+} from '../../types-dir/fetchTranslations';
 
-vi.mock('../../src/utils/fetchWithTimeout');
-vi.mock('../../src/translate/utils/validateResponse');
-vi.mock('../../src/translate/utils/handleFetchError');
-vi.mock('../../src/translate/utils/generateRequestHeaders');
+vi.mock('../utils/fetchWithTimeout');
+vi.mock('../utils/validateResponse');
+vi.mock('../utils/handleFetchError');
+vi.mock('../utils/generateRequestHeaders');
 
 describe.sequential('_fetchTranslations', () => {
   const mockConfig: TranslationRequestConfig = {
