@@ -2,11 +2,20 @@ import chalk from 'chalk';
 import { createSpinner, logMessage, logSuccess } from '../console/logging.js';
 import { Settings } from '../types/index.js';
 import { gt } from '../utils/gt.js';
-import { FileToTranslate } from 'generaltranslation/types';
+import {
+  CompletedFileTranslationData,
+  FileToTranslate,
+} from 'generaltranslation/types';
 
-type ApiOptions = Settings & {
+export type ApiOptions = Settings & {
   publish: boolean;
   wait: boolean;
+};
+
+export type SendFilesResult = {
+  data: Record<string, { fileName: string; versionId: string }>;
+  locales: string[];
+  translations: CompletedFileTranslationData[];
 };
 
 /**
@@ -24,7 +33,7 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
 
   const spinner = createSpinner('dots');
   spinner.start(
-    `Sending ${files.length} file${files.length > 1 ? 's' : ''} to General Translation API...`
+    `Sending ${files.length} file${files.length !== 1 ? 's' : ''} to General Translation API...`
   );
 
   try {

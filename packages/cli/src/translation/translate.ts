@@ -12,14 +12,7 @@ export async function translate(
   const startTime = Date.now();
   const timeout = parseInt(settings.timeout) * 1000;
 
-  const result = await waitForUpdates(
-    settings.projectId,
-    settings.apiKey,
-    settings.baseUrl,
-    versionId,
-    startTime,
-    timeout
-  );
+  const result = await waitForUpdates(versionId, startTime, timeout);
 
   if (!result) {
     process.exit(1);

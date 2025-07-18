@@ -6,11 +6,16 @@ import { DataFormat } from '../types/data.js';
 import { isUsingLocalTranslations } from '../config/utils.js';
 import { gt } from '../utils/gt.js';
 
-type ApiOptions = Settings & {
+export type ApiOptions = Settings & {
   timeout: string;
   dataFormat: DataFormat;
   description?: string;
   requireApproval?: boolean;
+};
+
+export type SendUpdatesResult = {
+  versionId: string;
+  locales: string[];
 };
 
 /**
@@ -23,18 +28,19 @@ export async function sendUpdates(
   updates: Updates,
   options: ApiOptions,
   library: SupportedLibraries
-): Promise<{ versionId: string; locales: string[] }> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  const { timeout, ...optionsWithoutTimeout } = options;
-
+): Promise<SendUpdatesResult> {
   const spinner = createSpinner('dots');
   spinner.start(`Sending ${library} updates to General Translation API...`);
 
   try {
-    const responseData = await gt.enqueueEntries(
-      updates,
-      optionsWithoutTimeout
-    );
+    const responseData = await gt.enqueueEntries(updates, {
+      sourceLocale: options.defaultLocale,
+      targetLocales: options.locales,
+      dataFormat: options.dataFormat,
+      version: options.version,
+      description: options.description,
+      requireApproval: options.requireApproval,
+    });
 
     const { versionId, message, locales, projectSettings } = responseData;
 

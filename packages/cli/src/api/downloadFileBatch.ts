@@ -3,6 +3,15 @@ import * as path from 'path';
 import { logError, logWarning } from '../console/logging.js';
 import { gt } from '../utils/gt.js';
 
+export type BatchedFiles = Array<{
+  translationId: string;
+  outputPath: string;
+}>;
+
+export type DownloadFileBatchResult = {
+  successful: string[];
+  failed: string[];
+};
 /**
  * Downloads multiple translation files in a single batch request
  * @param files - Array of files to download with their output paths
@@ -11,16 +20,10 @@ import { gt } from '../utils/gt.js';
  * @returns Object containing successful and failed file IDs
  */
 export async function downloadFileBatch(
-  baseUrl: string,
-  projectId: string,
-  apiKey: string,
-  files: Array<{
-    translationId: string;
-    outputPath: string;
-  }>,
+  files: BatchedFiles,
   maxRetries = 3,
   retryDelay = 1000
-): Promise<{ successful: string[]; failed: string[] }> {
+): Promise<DownloadFileBatchResult> {
   let retries = 0;
   const fileIds = files.map((file) => file.translationId);
   const result = { successful: [] as string[], failed: [] as string[] };

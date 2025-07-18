@@ -16,6 +16,7 @@ import {
   Content,
 } from './types-dir/content';
 import { ActionType, EntryMetadata, Entry } from './types-dir/entry';
+export type { TranslationStatusResult } from './types-dir/translationStatus';
 
 export {
   IcuMessage,

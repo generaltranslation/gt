@@ -262,9 +262,6 @@ async function processInitialTranslations(
     // Use batch download if there are multiple files
     if (batchFiles.length > 1) {
       const batchResult = await downloadFileBatch(
-        options.baseUrl,
-        options.projectId,
-        options.apiKey,
         batchFiles.map(({ translationId, outputPath }: any) => ({
           translationId,
           outputPath,

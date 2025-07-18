@@ -294,9 +294,6 @@ async function checkTranslationDeployment(
       // Use batch download if there are multiple files
       if (batchFiles.length > 1) {
         const batchResult = await downloadFileBatch(
-          baseUrl,
-          projectId,
-          apiKey,
           batchFiles.map(({ translationId, outputPath }: any) => ({
             translationId,
             outputPath,

@@ -2,12 +2,10 @@ import chalk from 'chalk';
 import { createOraSpinner, logErrorAndExit } from '../console/logging.js';
 import { getLocaleProperties } from 'generaltranslation';
 import { gt } from '../utils/gt.js';
-import { TranslationStatusResult } from '../../../core/dist/types-dir/translationStatus.js';
+import { TranslationStatusResult } from 'generaltranslation/types';
 
 /**
  * Waits for translations to be deployed to the General Translation API
- * @param apiKey - The API key for the General Translation API
- * @param baseUrl - The base URL for the General Translation API
  * @param versionId - The version ID of the project
  * @param locales - The locales to wait for
  * @param startTime - The start time of the wait
@@ -15,9 +13,6 @@ import { TranslationStatusResult } from '../../../core/dist/types-dir/translatio
  * @returns True if all translations are deployed, false otherwise
  */
 export const waitForUpdates = async (
-  projectId: string,
-  apiKey: string,
-  baseUrl: string,
   versionId: string,
   startTime: number,
   timeoutDuration: number
