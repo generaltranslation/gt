@@ -29,6 +29,47 @@ vi.mock('../../console/logging.js', () => ({
 }));
 
 describe('downloadFile', () => {
+  // Common mock data factories
+  const createMockArrayBuffer = (size: number = 8) => new ArrayBuffer(size);
+
+  const setupFileSystemMocks = (
+    options: {
+      dirExists?: boolean;
+      writeFileError?: Error;
+      mkdirError?: Error;
+    } = {}
+  ) => {
+    const { dirExists = true, writeFileError, mkdirError } = options;
+
+    vi.mocked(path.dirname).mockReturnValue('/output/dir');
+    vi.mocked(fs.existsSync).mockReturnValue(dirExists);
+
+    if (writeFileError) {
+      vi.mocked(fs.promises.writeFile).mockRejectedValue(writeFileError);
+    } else {
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+    }
+
+    if (mkdirError) {
+      vi.mocked(fs.mkdirSync).mockImplementationOnce(() => {
+        throw mkdirError;
+      });
+    } else {
+      vi.mocked(fs.mkdirSync).mockReturnValue('/output/dir');
+    }
+  };
+
+  const setupSuccessfulDownload = (arrayBufferSize: number = 8) => {
+    const mockArrayBuffer = createMockArrayBuffer(arrayBufferSize);
+    vi.mocked(gt.downloadFile).mockResolvedValue(mockArrayBuffer);
+    setupFileSystemMocks();
+    return mockArrayBuffer;
+  };
+
+  const setupFakeTimers = () => {
+    vi.useFakeTimers();
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -39,12 +80,7 @@ describe('downloadFile', () => {
   });
 
   it('should download file successfully', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
-
-    vi.mocked(gt.downloadFile).mockResolvedValue(mockArrayBuffer);
-    vi.mocked(path.dirname).mockReturnValue('/output/dir');
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+    setupSuccessfulDownload();
 
     const result = await downloadFile(
       'translation-123',
@@ -61,12 +97,9 @@ describe('downloadFile', () => {
   });
 
   it('should create directory if it does not exist', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
-
+    const mockArrayBuffer = createMockArrayBuffer();
     vi.mocked(gt.downloadFile).mockResolvedValue(mockArrayBuffer);
-    vi.mocked(path.dirname).mockReturnValue('/output/dir');
-    vi.mocked(fs.existsSync).mockReturnValue(false);
-    vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+    setupFileSystemMocks({ dirExists: false });
 
     const result = await downloadFile(
       'translation-123',
@@ -80,18 +113,12 @@ describe('downloadFile', () => {
   });
 
   it('should retry on failure and succeed on second attempt', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
-
+    const mockArrayBuffer = createMockArrayBuffer();
     vi.mocked(gt.downloadFile)
       .mockRejectedValueOnce(new Error('Network error'))
       .mockResolvedValueOnce(mockArrayBuffer);
-
-    vi.mocked(path.dirname).mockReturnValue('/output/dir');
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-    // Use fake timers to control retry timing
-    vi.useFakeTimers();
+    setupFileSystemMocks();
+    setupFakeTimers();
 
     const downloadPromise = downloadFile(
       'translation-123',
@@ -109,11 +136,8 @@ describe('downloadFile', () => {
 
   it('should return false after max retries', async () => {
     const error = new Error('Network error');
-
     vi.mocked(gt.downloadFile).mockRejectedValue(error);
-
-    // Use fake timers to speed up the test
-    vi.useFakeTimers();
+    setupFakeTimers();
 
     const downloadPromise = downloadFile(
       'translation-123',
@@ -136,11 +160,8 @@ describe('downloadFile', () => {
 
   it('should use default retry parameters', async () => {
     const error = new Error('Network error');
-
     vi.mocked(gt.downloadFile).mockRejectedValue(error);
-
-    // Use fake timers to speed up the test
-    vi.useFakeTimers();
+    setupFakeTimers();
 
     const downloadPromise = downloadFile(
       'translation-123',
@@ -157,17 +178,15 @@ describe('downloadFile', () => {
   });
 
   it('should handle file write errors and retry', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
-
+    const mockArrayBuffer = createMockArrayBuffer();
     vi.mocked(gt.downloadFile).mockResolvedValue(mockArrayBuffer);
+
     vi.mocked(path.dirname).mockReturnValue('/output/dir');
     vi.mocked(fs.existsSync).mockReturnValue(true);
     vi.mocked(fs.promises.writeFile)
       .mockRejectedValueOnce(new Error('Write error'))
       .mockResolvedValueOnce(undefined);
-
-    // Use fake timers to control retry timing
-    vi.useFakeTimers();
+    setupFakeTimers();
 
     const downloadPromise = downloadFile(
       'translation-123',
@@ -185,9 +204,9 @@ describe('downloadFile', () => {
   });
 
   it('should handle directory creation errors and retry', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
-
+    const mockArrayBuffer = createMockArrayBuffer();
     vi.mocked(gt.downloadFile).mockResolvedValue(mockArrayBuffer);
+
     vi.mocked(path.dirname).mockReturnValue('/output/dir');
     vi.mocked(fs.existsSync).mockReturnValue(false);
     vi.mocked(fs.mkdirSync)
@@ -198,9 +217,7 @@ describe('downloadFile', () => {
         return '/output/dir';
       });
     vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-    // Use fake timers to control retry timing
-    vi.useFakeTimers();
+    setupFakeTimers();
 
     const downloadPromise = downloadFile(
       'translation-123',
@@ -218,12 +235,7 @@ describe('downloadFile', () => {
   });
 
   it('should handle empty file content', async () => {
-    const mockArrayBuffer = new ArrayBuffer(0);
-
-    vi.mocked(gt.downloadFile).mockResolvedValue(mockArrayBuffer);
-    vi.mocked(path.dirname).mockReturnValue('/output/dir');
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+    setupSuccessfulDownload(0);
 
     const result = await downloadFile(
       'translation-123',
@@ -238,12 +250,7 @@ describe('downloadFile', () => {
   });
 
   it('should handle special characters in translation ID', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
-
-    vi.mocked(gt.downloadFile).mockResolvedValue(mockArrayBuffer);
-    vi.mocked(path.dirname).mockReturnValue('/output/dir');
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+    setupSuccessfulDownload();
 
     const result = await downloadFile(
       'translation-123-special_chars',
@@ -257,9 +264,9 @@ describe('downloadFile', () => {
   });
 
   it('should handle nested directory creation', async () => {
-    const mockArrayBuffer = new ArrayBuffer(8);
-
+    const mockArrayBuffer = createMockArrayBuffer();
     vi.mocked(gt.downloadFile).mockResolvedValue(mockArrayBuffer);
+
     vi.mocked(path.dirname).mockReturnValue('/output/deeply/nested/dir');
     vi.mocked(fs.existsSync).mockReturnValue(false);
     vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
@@ -277,11 +284,8 @@ describe('downloadFile', () => {
 
   it('should handle API errors gracefully', async () => {
     const apiError = new Error('API Error');
-
     vi.mocked(gt.downloadFile).mockRejectedValue(apiError);
-
-    // Use fake timers to speed up the test
-    vi.useFakeTimers();
+    setupFakeTimers();
 
     const downloadPromise = downloadFile(
       'translation-123',

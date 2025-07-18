@@ -32,6 +32,74 @@ vi.mock('../../console/logging.js', () => ({
 }));
 
 describe('downloadFileBatch', () => {
+  // Common mock data factories
+  const createMockResponseData = (
+    overrides: Partial<CoreDownloadFileBatchResult> = {}
+  ): CoreDownloadFileBatchResult => {
+    const defaultFiles = [
+      {
+        id: 'translation-1',
+        data: 'content1',
+        fileName: 'file1.json',
+        metadata: {},
+      },
+      {
+        id: 'translation-2',
+        data: 'content2',
+        fileName: 'file2.json',
+        metadata: {},
+      },
+    ];
+
+    return {
+      files: defaultFiles,
+      count: defaultFiles.length,
+      ...overrides,
+    };
+  };
+
+  const createBatchedFiles = (
+    count: number = 2,
+    overrides: Partial<BatchedFiles[0]> = {}
+  ): BatchedFiles => {
+    return Array.from({ length: count }, (_, i) => ({
+      translationId: `translation-${i + 1}`,
+      outputPath: `/output/file${i + 1}.json`,
+      ...overrides,
+    }));
+  };
+
+  const setupFileSystemMocks = (
+    options: {
+      dirExists?: boolean;
+      writeFileError?: Error;
+      mkdirError?: Error;
+    } = {}
+  ) => {
+    const { dirExists = true, writeFileError, mkdirError } = options;
+
+    vi.mocked(path.dirname).mockReturnValue('/output');
+    vi.mocked(fs.existsSync).mockReturnValue(dirExists);
+
+    if (writeFileError) {
+      vi.mocked(fs.promises.writeFile).mockRejectedValue(writeFileError);
+    } else {
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+    }
+
+    if (mkdirError) {
+      vi.mocked(fs.mkdirSync).mockImplementation(() => {
+        throw mkdirError;
+      });
+    } else {
+      vi.mocked(fs.mkdirSync).mockReturnValue('/output');
+    }
+  };
+
+  const setupFakeTimers = () => {
+    vi.useFakeTimers();
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -42,33 +110,11 @@ describe('downloadFileBatch', () => {
   });
 
   it('should download multiple files successfully', async () => {
-    const mockResponseData: CoreDownloadFileBatchResult = {
-      files: [
-        {
-          id: 'translation-1',
-          data: 'content1',
-          fileName: 'file1.json',
-          metadata: {},
-        },
-        {
-          id: 'translation-2',
-          data: 'content2',
-          fileName: 'file2.json',
-          metadata: {},
-        },
-      ],
-      count: 2,
-    };
-
-    const files: BatchedFiles = [
-      { translationId: 'translation-1', outputPath: '/output/file1.json' },
-      { translationId: 'translation-2', outputPath: '/output/file2.json' },
-    ];
+    const mockResponseData = createMockResponseData();
+    const files = createBatchedFiles();
 
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
-    vi.mocked(path.dirname).mockReturnValue('/output');
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+    setupFileSystemMocks();
 
     const result = await downloadFileBatch(files);
 
@@ -91,7 +137,7 @@ describe('downloadFileBatch', () => {
   });
 
   it('should create directories if they do not exist', async () => {
-    const mockResponseData: CoreDownloadFileBatchResult = {
+    const mockResponseData = createMockResponseData({
       files: [
         {
           id: 'translation-1',
@@ -101,11 +147,10 @@ describe('downloadFileBatch', () => {
         },
       ],
       count: 1,
-    };
-
-    const files: BatchedFiles = [
-      { translationId: 'translation-1', outputPath: '/output/dir/file1.json' },
-    ];
+    });
+    const files = createBatchedFiles(1, {
+      outputPath: '/output/dir/file1.json',
+    });
 
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
     vi.mocked(path.dirname).mockReturnValue('/output/dir');
@@ -121,28 +166,8 @@ describe('downloadFileBatch', () => {
   });
 
   it('should handle file write errors', async () => {
-    const mockResponseData: CoreDownloadFileBatchResult = {
-      files: [
-        {
-          id: 'translation-1',
-          data: 'content1',
-          fileName: 'file1.json',
-          metadata: {},
-        },
-        {
-          id: 'translation-2',
-          data: 'content2',
-          fileName: 'file2.json',
-          metadata: {},
-        },
-      ],
-      count: 1,
-    };
-
-    const files: BatchedFiles = [
-      { translationId: 'translation-1', outputPath: '/output/file1.json' },
-      { translationId: 'translation-2', outputPath: '/output/file2.json' },
-    ];
+    const mockResponseData = createMockResponseData({ count: 1 });
+    const files = createBatchedFiles();
 
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
     vi.mocked(path.dirname).mockReturnValue('/output');
@@ -163,7 +188,7 @@ describe('downloadFileBatch', () => {
   });
 
   it('should handle missing output path', async () => {
-    const mockResponseData: CoreDownloadFileBatchResult = {
+    const mockResponseData = createMockResponseData({
       files: [
         {
           id: 'translation-1',
@@ -178,17 +203,11 @@ describe('downloadFileBatch', () => {
           metadata: {},
         },
       ],
-      count: 2,
-    };
-
-    const files: BatchedFiles = [
-      { translationId: 'translation-1', outputPath: '/output/file1.json' },
-    ];
+    });
+    const files = createBatchedFiles(1);
 
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
-    vi.mocked(path.dirname).mockReturnValue('/output');
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+    setupFileSystemMocks();
 
     const result = await downloadFileBatch(files);
 
@@ -202,7 +221,7 @@ describe('downloadFileBatch', () => {
   });
 
   it('should mark files as failed if not in response', async () => {
-    const mockResponseData: CoreDownloadFileBatchResult = {
+    const mockResponseData = createMockResponseData({
       files: [
         {
           id: 'translation-1',
@@ -210,20 +229,12 @@ describe('downloadFileBatch', () => {
           fileName: 'file1.json',
           metadata: {},
         },
-        // translation-2 is missing from response
       ],
-      count: 2,
-    };
-
-    const files: BatchedFiles = [
-      { translationId: 'translation-1', outputPath: '/output/file1.json' },
-      { translationId: 'translation-2', outputPath: '/output/file2.json' },
-    ];
+    });
+    const files = createBatchedFiles();
 
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
-    vi.mocked(path.dirname).mockReturnValue('/output');
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+    setupFileSystemMocks();
 
     const result = await downloadFileBatch(files);
 
@@ -234,7 +245,7 @@ describe('downloadFileBatch', () => {
   });
 
   it('should retry on failure and succeed on second attempt', async () => {
-    const mockResponseData: CoreDownloadFileBatchResult = {
+    const mockResponseData = createMockResponseData({
       files: [
         {
           id: 'translation-1',
@@ -244,21 +255,14 @@ describe('downloadFileBatch', () => {
         },
       ],
       count: 1,
-    };
-
-    const files: BatchedFiles = [
-      { translationId: 'translation-1', outputPath: '/output/file1.json' },
-    ];
+    });
+    const files = createBatchedFiles(1);
 
     vi.mocked(gt.downloadFileBatch)
       .mockRejectedValueOnce(new Error('Network error'))
       .mockResolvedValueOnce(mockResponseData);
-    vi.mocked(path.dirname).mockReturnValue('/output');
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
-
-    // Use fake timers to control retry timing
-    vi.useFakeTimers();
+    setupFileSystemMocks();
+    setupFakeTimers();
 
     const downloadPromise = downloadFileBatch(files);
 
@@ -273,16 +277,10 @@ describe('downloadFileBatch', () => {
 
   it('should return all files as failed after max retries', async () => {
     const error = new Error('Network error');
-
-    const files: BatchedFiles = [
-      { translationId: 'translation-1', outputPath: '/output/file1.json' },
-      { translationId: 'translation-2', outputPath: '/output/file2.json' },
-    ];
+    const files = createBatchedFiles();
 
     vi.mocked(gt.downloadFileBatch).mockRejectedValue(error);
-
-    // Use fake timers to speed up the test
-    vi.useFakeTimers();
+    setupFakeTimers();
 
     const downloadPromise = downloadFileBatch(
       files,
@@ -307,15 +305,10 @@ describe('downloadFileBatch', () => {
 
   it('should use default retry parameters', async () => {
     const error = new Error('Network error');
-
-    const files: BatchedFiles = [
-      { translationId: 'translation-1', outputPath: '/output/file1.json' },
-    ];
+    const files = createBatchedFiles(1);
 
     vi.mocked(gt.downloadFileBatch).mockRejectedValue(error);
-
-    // Use fake timers to speed up the test
-    vi.useFakeTimers();
+    setupFakeTimers();
 
     const downloadPromise = downloadFileBatch(files);
 
@@ -329,10 +322,10 @@ describe('downloadFileBatch', () => {
   });
 
   it('should handle empty files array', async () => {
-    const mockResponseData: CoreDownloadFileBatchResult = {
+    const mockResponseData = createMockResponseData({
       files: [],
       count: 0,
-    };
+    });
 
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
 
@@ -346,7 +339,7 @@ describe('downloadFileBatch', () => {
   });
 
   it('should handle single file', async () => {
-    const mockResponseData: CoreDownloadFileBatchResult = {
+    const mockResponseData = createMockResponseData({
       files: [
         {
           id: 'translation-1',
@@ -356,16 +349,11 @@ describe('downloadFileBatch', () => {
         },
       ],
       count: 1,
-    };
-
-    const files: BatchedFiles = [
-      { translationId: 'translation-1', outputPath: '/output/file1.json' },
-    ];
+    });
+    const files = createBatchedFiles(1);
 
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
-    vi.mocked(path.dirname).mockReturnValue('/output');
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+    setupFileSystemMocks();
 
     const result = await downloadFileBatch(files);
 
@@ -376,7 +364,7 @@ describe('downloadFileBatch', () => {
   });
 
   it('should handle directory creation errors', async () => {
-    const mockResponseData: CoreDownloadFileBatchResult = {
+    const mockResponseData = createMockResponseData({
       files: [
         {
           id: 'translation-1',
@@ -386,17 +374,16 @@ describe('downloadFileBatch', () => {
         },
       ],
       count: 1,
-    };
-
-    const files: BatchedFiles = [
-      { translationId: 'translation-1', outputPath: '/output/dir/file1.json' },
-    ];
+    });
+    const files = createBatchedFiles(1, {
+      outputPath: '/output/dir/file1.json',
+    });
 
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
     vi.mocked(path.dirname).mockReturnValue('/output/dir');
-    vi.mocked(fs.existsSync).mockReturnValue(false);
-    vi.mocked(fs.mkdirSync).mockImplementation(() => {
-      throw new Error('Permission denied');
+    setupFileSystemMocks({
+      dirExists: false,
+      mkdirError: new Error('Permission denied'),
     });
 
     const result = await downloadFileBatch(files);
@@ -412,15 +399,10 @@ describe('downloadFileBatch', () => {
 
   it('should respect custom retry delay', async () => {
     const error = new Error('Network error');
-
-    const files: BatchedFiles = [
-      { translationId: 'translation-1', outputPath: '/output/file1.json' },
-    ];
+    const files = createBatchedFiles(1);
 
     vi.mocked(gt.downloadFileBatch).mockRejectedValue(error);
-
-    // Use fake timers to control timing
-    vi.useFakeTimers();
+    setupFakeTimers();
 
     const downloadPromise = downloadFileBatch(
       files,

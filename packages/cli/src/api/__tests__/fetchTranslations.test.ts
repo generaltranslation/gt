@@ -19,25 +19,30 @@ vi.mock('../../console/logging.js', () => ({
 }));
 
 describe('fetchTranslations', () => {
+  // Common mock data factories
+  const createMockTranslations = (count: number = 2): RetrievedTranslations => {
+    return Array.from({ length: count }, (_, i) => ({
+      locale: i === 0 ? 'es' : 'fr',
+      translation: { hello: i === 0 ? 'hola' : 'bonjour' },
+    }));
+  };
+
+  const createMockFetchResult = (
+    overrides: Partial<FetchTranslationsResult> = {}
+  ): FetchTranslationsResult => ({
+    translations: createMockTranslations(),
+    ...overrides,
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('should fetch translations successfully', async () => {
-    const mockTranslations: RetrievedTranslations = [
-      {
-        locale: 'es',
-        translation: { hello: 'hola' },
-      },
-      {
-        locale: 'fr',
-        translation: { hello: 'bonjour' },
-      },
-    ];
-
-    const mockResult: FetchTranslationsResult = {
+    const mockTranslations = createMockTranslations();
+    const mockResult = createMockFetchResult({
       translations: mockTranslations,
-    };
+    });
 
     vi.mocked(gt.fetchTranslations).mockResolvedValue(mockResult);
 
@@ -62,9 +67,7 @@ describe('fetchTranslations', () => {
   });
 
   it('should handle empty translations array', async () => {
-    const mockResult: FetchTranslationsResult = {
-      translations: [],
-    };
+    const mockResult = createMockFetchResult({ translations: [] });
 
     vi.mocked(gt.fetchTranslations).mockResolvedValue(mockResult);
 
@@ -100,14 +103,9 @@ describe('fetchTranslations', () => {
   });
 
   it('should handle different version ID formats', async () => {
-    const mockResult: FetchTranslationsResult = {
-      translations: [
-        {
-          locale: 'es',
-          translation: {},
-        },
-      ],
-    };
+    const mockResult = createMockFetchResult({
+      translations: createMockTranslations(1),
+    });
 
     vi.mocked(gt.fetchTranslations).mockResolvedValue(mockResult);
 
@@ -127,20 +125,10 @@ describe('fetchTranslations', () => {
   });
 
   it('should handle translations with partial data', async () => {
-    const mockTranslations: RetrievedTranslations = [
-      {
-        locale: 'es',
-        translation: { hello: 'hola' },
-      },
-      {
-        locale: 'fr',
-        translation: { hello: 'bonjour' },
-      },
-    ];
-
-    const mockResult: FetchTranslationsResult = {
+    const mockTranslations = createMockTranslations();
+    const mockResult = createMockFetchResult({
       translations: mockTranslations,
-    };
+    });
 
     vi.mocked(gt.fetchTranslations).mockResolvedValue(mockResult);
 
@@ -150,17 +138,10 @@ describe('fetchTranslations', () => {
   });
 
   it('should handle very large translations array', async () => {
-    const mockTranslations: RetrievedTranslations = Array.from(
-      { length: 1000 },
-      (_, i) => ({
-        locale: 'es',
-        translation: { key: `value${i}` },
-      })
-    );
-
-    const mockResult: FetchTranslationsResult = {
+    const mockTranslations = createMockTranslations(1000);
+    const mockResult = createMockFetchResult({
       translations: mockTranslations,
-    };
+    });
 
     vi.mocked(gt.fetchTranslations).mockResolvedValue(mockResult);
 
@@ -168,13 +149,11 @@ describe('fetchTranslations', () => {
 
     expect(result).toHaveLength(1000);
     expect(result[0].locale).toBe('es');
-    expect(result[999].locale).toBe('es');
+    expect(result[999].locale).toBe('fr');
   });
 
   it('should handle empty string version ID', async () => {
-    const mockResult: FetchTranslationsResult = {
-      translations: [],
-    };
+    const mockResult = createMockFetchResult({ translations: [] });
 
     vi.mocked(gt.fetchTranslations).mockResolvedValue(mockResult);
 

@@ -42,6 +42,68 @@ describe('sendUpdates', () => {
     stop: vi.fn(),
   };
 
+  // Common mock data factories
+  const createMockUpdates = (
+    overrides: Partial<Updates[0]>[] = []
+  ): Updates => {
+    const defaultUpdate = {
+      dataFormat: 'I18NEXT' as const,
+      source: 'Hello world',
+      metadata: { context: 'greeting' },
+    };
+
+    return overrides.length > 0
+      ? (overrides.map((override) => ({
+          ...defaultUpdate,
+          ...override,
+        })) as Updates)
+      : ([defaultUpdate] as Updates);
+  };
+
+  const createMockApiOptions = (
+    overrides: Partial<ApiOptions> = {}
+  ): ApiOptions => ({
+    defaultLocale: 'en',
+    locales: ['es', 'fr'],
+    dataFormat: 'I18NEXT' as const,
+    timeout: '30000',
+    config: '/path/to/config.json',
+    baseUrl: 'https://api.generaltranslation.com',
+    dashboardUrl: 'https://dashboard.generaltranslation.com',
+    apiKey: '1234567890',
+    projectId: '1234567890',
+    stageTranslations: false,
+    src: ['src'],
+    files: {
+      resolvedPaths: {},
+      placeholderPaths: {},
+      transformPaths: {},
+    },
+    ...overrides,
+  });
+
+  const createMockEnqueueResponse = (
+    overrides: Partial<EnqueueEntriesResult> = {}
+  ): EnqueueEntriesResult => ({
+    versionId: 'version-456',
+    message: 'Updates sent successfully',
+    locales: ['es', 'fr'],
+    projectSettings: {
+      cdnEnabled: false,
+      requireApproval: false,
+    },
+    ...overrides,
+  });
+
+  const createMockEnqueueOptions = (
+    overrides: Partial<EnqueueEntriesOptions> = {}
+  ): EnqueueEntriesOptions => ({
+    sourceLocale: 'en',
+    targetLocales: ['es', 'fr'],
+    dataFormat: 'I18NEXT',
+    ...overrides,
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(createSpinner).mockReturnValue(
@@ -52,59 +114,28 @@ describe('sendUpdates', () => {
   });
 
   it('should send updates successfully', async () => {
-    const mockUpdates = [
+    const mockUpdates = createMockUpdates([
+      { metadata: { context: 'greeting' } },
       {
-        dataFormat: 'I18NEXT' as const,
-        source: 'Hello world',
-        metadata: { context: 'greeting' },
-      },
-      {
-        dataFormat: 'ICU' as const,
+        dataFormat: 'ICU',
         source: 'Goodbye world',
         metadata: { context: 'farewell' },
       },
-    ];
+    ]);
 
-    const mockOptions: ApiOptions = {
-      defaultLocale: 'en',
-      locales: ['es', 'fr'],
+    const mockOptions = createMockApiOptions({
       description: 'Test updates',
       requireApproval: false,
-      dataFormat: 'I18NEXT' as const,
-      timeout: '30000',
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
       version: '1.0.0',
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
+    });
 
-    const mockResponse = {
-      versionId: 'version-456',
-      message: 'Updates sent successfully',
-      locales: ['es', 'fr'],
-      projectSettings: {
-        cdnEnabled: false,
-        requireApproval: false,
-      },
-    };
+    const mockResponse = createMockEnqueueResponse();
 
-    const mockEnqueueEntriesOptions: EnqueueEntriesOptions = {
-      sourceLocale: 'en',
-      targetLocales: ['es', 'fr'],
+    const mockEnqueueEntriesOptions = createMockEnqueueOptions({
       description: 'Test updates',
-      dataFormat: 'I18NEXT',
       version: '1.0.0',
       requireApproval: false,
-    };
+    });
 
     vi.mocked(gt.enqueueEntries).mockResolvedValue(mockResponse);
 
@@ -138,32 +169,8 @@ describe('sendUpdates', () => {
   });
 
   it('should handle API errors', async () => {
-    const mockUpdates: Updates = [
-      {
-        dataFormat: 'I18NEXT' as const,
-        source: 'Hello world',
-        metadata: {},
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      defaultLocale: 'en',
-      locales: ['es'],
-      timeout: '30000',
-      dataFormat: 'I18NEXT' as const,
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
+    const mockUpdates = createMockUpdates();
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
 
     const error = new Error('API Error');
     vi.mocked(gt.enqueueEntries).mockRejectedValue(error);
@@ -179,54 +186,24 @@ describe('sendUpdates', () => {
   });
 
   it('should exclude timeout from options passed to API', async () => {
-    const mockUpdates: Updates = [
-      {
-        dataFormat: 'I18NEXT' as const,
-        source: 'Hello world',
-        metadata: {},
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      defaultLocale: 'en',
+    const mockUpdates = createMockUpdates();
+    const mockOptions = createMockApiOptions({
       locales: ['es'],
-      timeout: '30000',
-      dataFormat: 'I18NEXT' as const,
       description: 'Test',
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
       version: '1.0.0',
       requireApproval: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
+    });
 
-    const mockResponse: EnqueueEntriesResult = {
-      versionId: 'version-456',
-      message: 'Updates sent successfully',
+    const mockResponse = createMockEnqueueResponse({
       locales: ['es'],
-      projectSettings: {
-        cdnEnabled: false,
-        requireApproval: false,
-      },
-    };
+    });
 
-    const mockEnqueueEntriesOptions: EnqueueEntriesOptions = {
-      sourceLocale: 'en',
+    const mockEnqueueEntriesOptions = createMockEnqueueOptions({
       targetLocales: ['es'],
-      dataFormat: 'I18NEXT',
       description: 'Test',
       version: '1.0.0',
       requireApproval: false,
-    };
+    });
 
     vi.mocked(gt.enqueueEntries).mockResolvedValue(mockResponse);
 
@@ -239,42 +216,12 @@ describe('sendUpdates', () => {
   });
 
   it('should warn when using local translations with CDN enabled', async () => {
-    const mockUpdates: Updates = [
-      {
-        dataFormat: 'I18NEXT' as const,
-        source: 'Hello world',
-        metadata: {},
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      defaultLocale: 'en',
+    const mockUpdates = createMockUpdates();
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockResponse = createMockEnqueueResponse({
       locales: ['es'],
-      timeout: '30000',
-      dataFormat: 'I18NEXT' as const,
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
-
-    const mockResponse: EnqueueEntriesResult = {
-      versionId: 'version-456',
-      message: 'Updates sent successfully',
-      locales: ['es'],
-      projectSettings: {
-        cdnEnabled: true,
-        requireApproval: false,
-      },
-    };
+      projectSettings: { cdnEnabled: true, requireApproval: false },
+    });
 
     vi.mocked(gt.enqueueEntries).mockResolvedValue(mockResponse);
     vi.mocked(isUsingLocalTranslations).mockReturnValue(true);
@@ -289,42 +236,12 @@ describe('sendUpdates', () => {
   });
 
   it('should warn when not using local translations and CDN is disabled', async () => {
-    const mockUpdates: Updates = [
-      {
-        dataFormat: 'I18NEXT' as const,
-        source: 'Hello world',
-        metadata: {},
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      defaultLocale: 'en',
+    const mockUpdates = createMockUpdates();
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockResponse = createMockEnqueueResponse({
       locales: ['es'],
-      timeout: '30000',
-      dataFormat: 'I18NEXT' as const,
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
-
-    const mockResponse: EnqueueEntriesResult = {
-      versionId: 'version-456',
-      message: 'Updates sent successfully',
-      locales: ['es'],
-      projectSettings: {
-        cdnEnabled: false,
-        requireApproval: false,
-      },
-    };
+      projectSettings: { cdnEnabled: false, requireApproval: false },
+    });
 
     vi.mocked(gt.enqueueEntries).mockResolvedValue(mockResponse);
     vi.mocked(isUsingLocalTranslations).mockReturnValue(false);
@@ -339,42 +256,12 @@ describe('sendUpdates', () => {
   });
 
   it('should not warn when configurations are consistent', async () => {
-    const mockUpdates: Updates = [
-      {
-        dataFormat: 'I18NEXT' as const,
-        source: 'Hello world',
-        metadata: {},
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      defaultLocale: 'en',
+    const mockUpdates = createMockUpdates();
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockResponse = createMockEnqueueResponse({
       locales: ['es'],
-      dataFormat: 'I18NEXT' as const,
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      timeout: '30000',
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
-
-    const mockResponse: EnqueueEntriesResult = {
-      versionId: 'version-456',
-      message: 'Updates sent successfully',
-      locales: ['es'],
-      projectSettings: {
-        cdnEnabled: true,
-        requireApproval: false,
-      },
-    };
+      projectSettings: { cdnEnabled: true, requireApproval: false },
+    });
 
     vi.mocked(gt.enqueueEntries).mockResolvedValue(mockResponse);
     vi.mocked(isUsingLocalTranslations).mockReturnValue(false);
@@ -385,43 +272,13 @@ describe('sendUpdates', () => {
   });
 
   it('should not update config if config path is not provided', async () => {
-    const mockUpdates: Updates = [
-      {
-        dataFormat: 'I18NEXT' as const,
-        source: 'Hello world',
-        metadata: {},
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      defaultLocale: 'en',
+    const mockUpdates = createMockUpdates();
+    const mockOptions = createMockApiOptions({
       config: '',
       locales: ['es'],
-      timeout: '30000',
-      dataFormat: 'I18NEXT' as const,
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-      // No config path provided
-    };
+    });
 
-    const mockResponse: EnqueueEntriesResult = {
-      versionId: 'version-456',
-      message: 'Updates sent successfully',
-      locales: ['es'],
-      projectSettings: {
-        cdnEnabled: false,
-        requireApproval: false,
-      },
-    };
+    const mockResponse = createMockEnqueueResponse({ locales: ['es'] });
 
     vi.mocked(gt.enqueueEntries).mockResolvedValue(mockResponse);
 
@@ -432,35 +289,11 @@ describe('sendUpdates', () => {
 
   it('should handle empty updates array', async () => {
     const mockUpdates: Updates = [];
-
-    const mockOptions: ApiOptions = {
-      defaultLocale: 'en',
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockResponse = createMockEnqueueResponse({
       locales: ['es'],
-      timeout: '30000',
-      dataFormat: 'I18NEXT' as const,
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '123467890',
-      projectId: '123467890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
-
-    const mockResponse: EnqueueEntriesResult = {
-      versionId: 'version-456',
       message: 'No updates to send',
-      locales: ['es'],
-      projectSettings: {
-        cdnEnabled: false,
-        requireApproval: false,
-      },
-    };
+    });
 
     vi.mocked(gt.enqueueEntries).mockResolvedValue(mockResponse);
 
@@ -474,42 +307,9 @@ describe('sendUpdates', () => {
   });
 
   it('should handle different supported libraries', async () => {
-    const mockUpdates: Updates = [
-      {
-        dataFormat: 'I18NEXT' as const,
-        source: 'Hello world',
-        metadata: {},
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      defaultLocale: 'en',
-      locales: ['es'],
-      timeout: '30000',
-      dataFormat: 'I18NEXT' as const,
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '123467890',
-      projectId: '123467890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
-
-    const mockResponse = {
-      versionId: 'version-456',
-      message: 'Updates sent successfully',
-      locales: ['es'],
-      projectSettings: {
-        cdnEnabled: false,
-        requireApproval: false,
-      },
-    };
+    const mockUpdates = createMockUpdates();
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockResponse = createMockEnqueueResponse({ locales: ['es'] });
 
     vi.mocked(gt.enqueueEntries).mockResolvedValue(mockResponse);
 
@@ -521,32 +321,8 @@ describe('sendUpdates', () => {
   });
 
   it('should handle network timeout errors', async () => {
-    const mockUpdates = [
-      {
-        dataFormat: 'I18NEXT' as const,
-        source: 'Hello world',
-        metadata: {},
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      defaultLocale: 'en',
-      locales: ['es'],
-      timeout: '30000',
-      dataFormat: 'I18NEXT' as const,
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
+    const mockUpdates = createMockUpdates();
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
 
     const timeoutError = new Error('Network timeout');
     vi.mocked(gt.enqueueEntries).mockRejectedValue(timeoutError);
@@ -561,32 +337,8 @@ describe('sendUpdates', () => {
   });
 
   it('should handle authentication errors', async () => {
-    const mockUpdates = [
-      {
-        dataFormat: 'I18NEXT' as const,
-        source: 'Hello world',
-        metadata: {},
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      defaultLocale: 'en',
-      locales: ['es'],
-      timeout: '30000',
-      dataFormat: 'I18NEXT' as const,
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
+    const mockUpdates = createMockUpdates();
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
 
     const authError = new Error('Unauthorized');
     vi.mocked(gt.enqueueEntries).mockRejectedValue(authError);
@@ -601,42 +353,9 @@ describe('sendUpdates', () => {
   });
 
   it('should call updateConfig when config path is provided', async () => {
-    const mockUpdates = [
-      {
-        dataFormat: 'I18NEXT' as const,
-        source: 'Hello world',
-        metadata: {},
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      defaultLocale: 'en',
-      locales: ['es'],
-      timeout: '30000',
-      dataFormat: 'I18NEXT' as const,
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
-
-    const mockResponse = {
-      versionId: 'version-456',
-      message: 'Updates sent successfully',
-      locales: ['es'],
-      projectSettings: {
-        cdnEnabled: false,
-        requireApproval: false,
-      },
-    };
+    const mockUpdates = createMockUpdates();
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockResponse = createMockEnqueueResponse({ locales: ['es'] });
 
     vi.mocked(gt.enqueueEntries).mockResolvedValue(mockResponse);
     vi.mocked(updateConfig).mockResolvedValue(undefined);

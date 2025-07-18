@@ -36,10 +36,7 @@ export default defineConfig(({ mode }) => {
       environment: 'node',
       // Globals for easier test writing
       globals: true,
-      // Setup files to run before tests
-      setupFiles: ['./vitest.setup.ts'],
       // Load environment variables from .env files
-      // The empty string '' as third parameter loads ALL env vars, not just VITE_ prefixed ones
       env: {
         ...env,
         // Suppress GT logger output during tests for cleaner output

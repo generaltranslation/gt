@@ -4,6 +4,14 @@ import { getLocaleProperties } from 'generaltranslation';
 import { downloadFile } from './downloadFile.js';
 import { downloadFileBatch } from './downloadFileBatch.js';
 import { gt } from '../utils/gt.js';
+
+export type CheckFileTranslationData = {
+  [key: string]: {
+    versionId: string;
+    fileName: string;
+  };
+};
+
 /**
  * Checks the status of translations for a given version ID
  * @param apiKey - The API key for the General Translation API

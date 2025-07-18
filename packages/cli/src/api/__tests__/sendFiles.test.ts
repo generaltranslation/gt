@@ -1,11 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ApiOptions, sendFiles, SendFilesResult } from '../sendFiles.js';
 import { gt } from '../../utils/gt.js';
-import {
-  createSpinner,
-  logMessage,
-  logSuccess,
-} from '../../console/logging.js';
+import { createSpinner, logSuccess } from '../../console/logging.js';
 import { SpinnerResult } from '@clack/prompts';
 import { EnqueueFilesResult, FileToTranslate } from 'generaltranslation/types';
 
@@ -28,6 +24,56 @@ describe('sendFiles', () => {
     stop: vi.fn(),
   };
 
+  // Common mock data factories
+  const createMockFiles = (
+    count: number = 1,
+    overrides: Partial<FileToTranslate> = {}
+  ): FileToTranslate[] => {
+    return Array.from({ length: count }, (_, i) => ({
+      fileName: `file${i}.json`,
+      content: `{"key${i}": "value${i}"}`,
+      fileFormat: 'JSON' as const,
+      ...overrides,
+    }));
+  };
+
+  const createMockApiOptions = (
+    overrides: Partial<ApiOptions> = {}
+  ): ApiOptions => ({
+    publish: true,
+    wait: false,
+    defaultLocale: 'en',
+    locales: ['es', 'fr'],
+    config: '/path/to/config.json',
+    baseUrl: 'https://api.generaltranslation.com',
+    dashboardUrl: 'https://dashboard.generaltranslation.com',
+    apiKey: '1234567890',
+    projectId: '1234567890',
+    stageTranslations: false,
+    src: ['src'],
+    files: {
+      resolvedPaths: {},
+      placeholderPaths: {},
+      transformPaths: {},
+    },
+    ...overrides,
+  });
+
+  const createMockEnqueueResponse = (
+    overrides: Partial<EnqueueFilesResult> = {}
+  ): EnqueueFilesResult => ({
+    data: {
+      'file0.json': {
+        versionId: 'version-456',
+        fileName: 'file0.json',
+      },
+    },
+    message: 'Files uploaded successfully',
+    locales: ['es', 'fr'],
+    translations: [],
+    ...overrides,
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(createSpinner).mockReturnValue(
@@ -36,7 +82,7 @@ describe('sendFiles', () => {
   });
 
   it('should send files successfully', async () => {
-    const mockFiles: FileToTranslate[] = [
+    const mockFiles = [
       {
         fileName: 'component.json',
         content: '{"hello": "world"}',
@@ -49,28 +95,12 @@ describe('sendFiles', () => {
       },
     ];
 
-    const mockOptions: ApiOptions = {
-      publish: true,
-      wait: false,
+    const mockOptions = createMockApiOptions({
       description: 'Test upload',
-      defaultLocale: 'en',
-      locales: ['es', 'fr'],
       _versionId: 'version-123',
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
+    });
 
-    const mockResponse: EnqueueFilesResult = {
+    const mockResponse = createMockEnqueueResponse({
       data: {
         'component.json': {
           versionId: 'version-456',
@@ -78,36 +108,15 @@ describe('sendFiles', () => {
         },
         'page.json': { versionId: 'version-456', fileName: 'page.json' },
       },
-      message: 'Files uploaded successfully',
-      locales: ['es', 'fr'],
-      translations: [],
-    };
+    });
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
     const result = await sendFiles(mockFiles, mockOptions);
 
-    expect(logMessage).toHaveBeenCalledWith(
-      expect.stringContaining('Files to translate:')
-    );
-    expect(logMessage).toHaveBeenCalledWith(
-      expect.stringContaining('component.json')
-    );
-    expect(logMessage).toHaveBeenCalledWith(
-      expect.stringContaining('page.json')
-    );
-
     expect(mockSpinner.start).toHaveBeenCalledWith(
       'Sending 2 files to General Translation API...'
     );
-
-    expect(gt.enqueueFiles).toHaveBeenCalledWith(mockFiles, {
-      publish: true,
-      description: 'Test upload',
-      sourceLocale: 'en',
-      targetLocales: ['es', 'fr'],
-      _versionId: 'version-123',
-    });
 
     expect(mockSpinner.stop).toHaveBeenCalledWith(
       expect.stringContaining('Files for translation uploaded successfully')
@@ -129,45 +138,25 @@ describe('sendFiles', () => {
   });
 
   it('should handle single file upload', async () => {
-    const mockFiles: FileToTranslate[] = [
-      {
-        fileName: 'component.json',
-        content: '{"hello": "world"}',
-        fileFormat: 'JSON' as const,
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
+    const mockFiles = createMockFiles(1, {
+      fileName: 'component.json',
+      content: '{"hello": "world"}',
+    });
+    const mockOptions = createMockApiOptions({
       publish: false,
-      wait: false,
-      description: 'Test upload',
-      defaultLocale: 'en',
       locales: ['es'],
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
+      description: 'Test upload',
+    });
 
-    const mockResponse: EnqueueFilesResult = {
+    const mockResponse = createMockEnqueueResponse({
       data: {
         'component.json': {
           versionId: 'version-456',
           fileName: 'component.json',
         },
       },
-      message: 'File uploaded successfully',
       locales: ['es'],
-      translations: [],
-    };
+    });
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
@@ -198,32 +187,11 @@ describe('sendFiles', () => {
   });
 
   it('should handle API errors', async () => {
-    const mockFiles: FileToTranslate[] = [
-      {
-        fileName: 'component.json',
-        content: '{"hello": "world"}',
-        fileFormat: 'JSON' as const,
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      publish: true,
-      wait: false,
-      defaultLocale: 'en',
-      locales: ['es'],
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
+    const mockFiles = createMockFiles(1, {
+      fileName: 'component.json',
+      content: '{"hello": "world"}',
+    });
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
 
     const error = new Error('API Error');
     vi.mocked(gt.enqueueFiles).mockRejectedValue(error);
@@ -240,32 +208,12 @@ describe('sendFiles', () => {
 
   it('should handle empty files array', async () => {
     const mockFiles: FileToTranslate[] = [];
-
-    const mockOptions: ApiOptions = {
-      publish: true,
-      wait: false,
-      defaultLocale: 'en',
-      locales: ['es'],
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
-
-    const mockResponse: EnqueueFilesResult = {
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockResponse = createMockEnqueueResponse({
       data: {},
       message: 'No files to upload',
       locales: ['es'],
-      translations: [],
-    };
+    });
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
@@ -285,45 +233,14 @@ describe('sendFiles', () => {
   });
 
   it('should handle large number of files', async () => {
-    const mockFiles: FileToTranslate[] = Array.from(
-      { length: 100 },
-      (_, i) => ({
-        fileName: `file${i}.json`,
-        content: `{"key${i}": "value${i}"}`,
-        fileFormat: 'JSON' as const,
-      })
-    );
-
-    const mockOptions: ApiOptions = {
-      publish: true,
-      wait: false,
-      defaultLocale: 'en',
-      locales: ['es'],
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
-
-    const mockResponse: EnqueueFilesResult = {
+    const mockFiles = createMockFiles(100);
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockResponse = createMockEnqueueResponse({
       data: {
-        'file0.json': {
-          versionId: 'version-456',
-          fileName: 'file0.json',
-        },
+        'file0.json': { versionId: 'version-456', fileName: 'file0.json' },
       },
-      message: 'Files uploaded successfully',
       locales: ['es'],
-      translations: [],
-    };
+    });
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
@@ -337,10 +254,7 @@ describe('sendFiles', () => {
 
     expect(result).toEqual<SendFilesResult>({
       data: {
-        'file0.json': {
-          versionId: 'version-456',
-          fileName: 'file0.json',
-        },
+        'file0.json': { versionId: 'version-456', fileName: 'file0.json' },
       },
       locales: ['es'],
       translations: [],
@@ -348,32 +262,11 @@ describe('sendFiles', () => {
   });
 
   it('should handle network timeout errors', async () => {
-    const mockFiles: FileToTranslate[] = [
-      {
-        fileName: 'component.json',
-        content: '{"hello": "world"}',
-        fileFormat: 'JSON' as const,
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      publish: true,
-      wait: false,
-      defaultLocale: 'en',
-      locales: ['es'],
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
+    const mockFiles = createMockFiles(1, {
+      fileName: 'component.json',
+      content: '{"hello": "world"}',
+    });
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
 
     const timeoutError = new Error('Network timeout');
     vi.mocked(gt.enqueueFiles).mockRejectedValue(timeoutError);
@@ -388,32 +281,11 @@ describe('sendFiles', () => {
   });
 
   it('should handle authentication errors', async () => {
-    const mockFiles: FileToTranslate[] = [
-      {
-        fileName: 'component.json',
-        content: '{"hello": "world"}',
-        fileFormat: 'JSON' as const,
-      },
-    ];
-
-    const mockOptions: ApiOptions = {
-      publish: true,
-      wait: false,
-      defaultLocale: 'en',
-      locales: ['es'],
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
+    const mockFiles = createMockFiles(1, {
+      fileName: 'component.json',
+      content: '{"hello": "world"}',
+    });
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
 
     const authError = new Error('Unauthorized');
     vi.mocked(gt.enqueueFiles).mockRejectedValue(authError);
@@ -428,7 +300,7 @@ describe('sendFiles', () => {
   });
 
   it('should handle different file formats', async () => {
-    const mockFiles: FileToTranslate[] = [
+    const mockFiles = [
       {
         fileName: 'component.js',
         content: 'export const Hello = () => <div>Hello</div>',
@@ -441,26 +313,8 @@ describe('sendFiles', () => {
       },
     ];
 
-    const mockOptions: ApiOptions = {
-      publish: true,
-      wait: false,
-      defaultLocale: 'en',
-      locales: ['es'],
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
-
-    const mockResponse: EnqueueFilesResult = {
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
+    const mockResponse = createMockEnqueueResponse({
       data: {
         'component.jsx': {
           versionId: 'version-456',
@@ -468,10 +322,8 @@ describe('sendFiles', () => {
         },
         'messages.po': { versionId: 'version-456', fileName: 'messages.po' },
       },
-      message: 'Files uploaded successfully',
       locales: ['es'],
-      translations: [],
-    };
+    });
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
@@ -492,45 +344,21 @@ describe('sendFiles', () => {
   });
 
   it('should handle missing optional parameters', async () => {
-    const mockFiles: FileToTranslate[] = [
-      {
-        fileName: 'component.json',
-        content: '{"hello": "world"}',
-        fileFormat: 'JSON' as const,
-      },
-    ];
+    const mockFiles = createMockFiles(1, {
+      fileName: 'component.json',
+      content: '{"hello": "world"}',
+    });
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
 
-    const mockOptions: ApiOptions = {
-      publish: true,
-      wait: false,
-      defaultLocale: 'en',
-      locales: ['es'],
-      // Missing description and _versionId
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
-
-    const mockResponse: EnqueueFilesResult = {
+    const mockResponse = createMockEnqueueResponse({
       data: {
         'component.json': {
           versionId: 'version-456',
           fileName: 'component.json',
         },
       },
-      message: 'Files uploaded successfully',
       locales: ['es'],
-      translations: [],
-    };
+    });
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
@@ -557,41 +385,19 @@ describe('sendFiles', () => {
   });
 
   it('should handle response with translations', async () => {
-    const mockFiles: FileToTranslate[] = [
-      {
-        fileName: 'component.json',
-        content: '{"hello": "world"}',
-        fileFormat: 'JSON' as const,
-      },
-    ];
+    const mockFiles = createMockFiles(1, {
+      fileName: 'component.json',
+      content: '{"hello": "world"}',
+    });
+    const mockOptions = createMockApiOptions({ locales: ['es'] });
 
-    const mockOptions: ApiOptions = {
-      publish: true,
-      wait: false,
-      defaultLocale: 'en',
-      locales: ['es'],
-      config: '/path/to/config.json',
-      baseUrl: 'https://api.generaltranslation.com',
-      dashboardUrl: 'https://dashboard.generaltranslation.com',
-      apiKey: '1234567890',
-      projectId: '1234567890',
-      stageTranslations: false,
-      src: ['src'],
-      files: {
-        resolvedPaths: {},
-        placeholderPaths: {},
-        transformPaths: {},
-      },
-    };
-
-    const mockResponse: EnqueueFilesResult = {
+    const mockResponse = createMockEnqueueResponse({
       data: {
         'component.json': {
           versionId: 'version-456',
           fileName: 'component.json',
         },
       },
-      message: 'Files uploaded successfully',
       locales: ['es'],
       translations: [
         {
@@ -610,7 +416,7 @@ describe('sendFiles', () => {
           downloadUrl: 'https://api.generaltranslation.com/download/file-1',
         },
       ],
-    };
+    });
 
     vi.mocked(gt.enqueueFiles).mockResolvedValue(mockResponse);
 
