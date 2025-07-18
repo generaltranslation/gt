@@ -16,7 +16,7 @@
     "lint": "eslint \"src/**/*.{js,ts}\" \"./__e2e__/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" \"./__e2e__/**/*.{js,ts}\" \"./**/__tests__/**/*.{js,ts}\" --fix",
     "test": "vitest run --config=./vitest.config.ts",
-    "test:watch": "vitest",
+    "test:watch": "vitest --config=./vitest.config.ts",
     "release": "npm run build:clean && npm publish",
     "release:alpha": "npm run build:clean && npm publish --tag alpha",
     "release:beta": "npm run build:clean && npm publish --tag beta",

@@ -45,7 +45,6 @@ export default defineConfig(({ mode }) => {
         ...(projectId && { VITE_CI_TEST_GT_PROJECT_ID: projectId }),
         ...(apiKey && { VITE_CI_TEST_GT_API_KEY: apiKey }),
       },
-      // Better reporting
       reporters: [
         [
           'default',
