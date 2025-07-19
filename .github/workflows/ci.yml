@@ -28,11 +28,14 @@ jobs:
       - name: Run lint
         run: npm run lint
 
+      - name: Build packages
+        run: npm run build
+
+      - name: Link packages
+        run: ./scripts/linkPackages.sh
+
       - name: Run tests
         env:
           VITE_CI_TEST_GT_PROJECT_ID: ${{ secrets.VITE_CI_TEST_GT_PROJECT_ID }}
           VITE_CI_TEST_GT_API_KEY: ${{ secrets.VITE_CI_TEST_GT_API_KEY }}
-        run: cd packages/core && npm run build && npm link && cd ../cli && npm link generaltranslation && cd ../.. && npm run test
-
-      - name: Build packages
-        run: npm run build
+        run: npm run test
