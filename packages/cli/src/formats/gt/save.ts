@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { RetrievedTranslations } from '../../types/api.js';
+import { RetrievedTranslations } from 'generaltranslation/types';
 import { ResolvedFiles } from '../../types/index.js';
 import { DataFormat } from '../../types/data.js';
 import { logError } from '../../console/logging.js';

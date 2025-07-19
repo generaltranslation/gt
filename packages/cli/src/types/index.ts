@@ -1,20 +1,7 @@
 import { JsxChildren } from 'generaltranslation/internal';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 
-export type Updates = ({ metadata: Record<string, any> } & (
-  | {
-      dataFormat: 'JSX';
-      source: JsxChildren;
-    }
-  | {
-      dataFormat: 'ICU';
-      source: string;
-    }
-  | {
-      dataFormat: 'I18NEXT';
-      source: string;
-    }
-))[];
+export type { Updates } from 'generaltranslation/types';
 
 export type Options = {
   config: string;

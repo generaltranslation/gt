@@ -3,7 +3,15 @@ import { createOraSpinner, logError } from '../console/logging.js';
 import { getLocaleProperties } from 'generaltranslation';
 import { downloadFile } from './downloadFile.js';
 import { downloadFileBatch } from './downloadFileBatch.js';
-import { getAuthHeaders } from '../utils/headers.js';
+import { gt } from '../utils/gt.js';
+
+export type CheckFileTranslationData = {
+  [key: string]: {
+    versionId: string;
+    fileName: string;
+  };
+};
+
 /**
  * Checks the status of translations for a given version ID
  * @param apiKey - The API key for the General Translation API
@@ -267,100 +275,76 @@ async function checkTranslationDeployment(
       return true;
     }
 
-    const response = await fetch(
-      `${baseUrl}/v1/project/translations/files/retrieve`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(projectId, apiKey),
-        },
-        body: JSON.stringify({ files: currentQueryData }),
-      }
+    // Check for translations
+    const responseData = await gt.checkFileTranslations(currentQueryData);
+    const translations = responseData.translations || [];
+
+    // Filter for ready translations
+    const readyTranslations = translations.filter(
+      (translation: any) => translation.isReady && translation.fileName
     );
 
-    if (response.ok) {
-      const responseData = await response.json();
-      const translations = responseData.translations || [];
+    if (readyTranslations.length > 0) {
+      // Prepare batch download data
+      const batchFiles = readyTranslations.map((translation: any) => {
+        const locale = translation.locale;
+        const fileName = translation.fileName;
+        const translationId = translation.id;
+        const outputPath = resolveOutputPath(fileName, locale);
 
-      // Filter for ready translations
-      const readyTranslations = translations.filter(
-        (translation: any) => translation.isReady && translation.fileName
-      );
+        return {
+          translationId,
+          outputPath,
+          fileLocale: `${fileName}:${locale}`,
+        };
+      });
 
-      if (readyTranslations.length > 0) {
-        // Prepare batch download data
-        const batchFiles = readyTranslations.map((translation: any) => {
-          const locale = translation.locale;
-          const fileName = translation.fileName;
-          const translationId = translation.id;
-          const outputPath = resolveOutputPath(fileName, locale);
-
-          return {
+      // Use batch download if there are multiple files
+      if (batchFiles.length > 1) {
+        const batchResult = await downloadFileBatch(
+          batchFiles.map(({ translationId, outputPath }: any) => ({
             translationId,
             outputPath,
-            fileLocale: `${fileName}:${locale}`,
-          };
-        });
+          }))
+        );
 
-        // Use batch download if there are multiple files
-        if (batchFiles.length > 1) {
-          const batchResult = await downloadFileBatch(
-            baseUrl,
-            projectId,
-            apiKey,
-            batchFiles.map(({ translationId, outputPath }: any) => ({
-              translationId,
-              outputPath,
-            }))
-          );
-
-          // Process results
-          batchFiles.forEach((file: any) => {
-            const { translationId, fileLocale } = file;
-            if (batchResult.successful.includes(translationId)) {
-              downloadStatus.downloaded.add(fileLocale);
-            } else if (batchResult.failed.includes(translationId)) {
-              downloadStatus.failed.add(fileLocale);
-            }
-          });
-        } else if (batchFiles.length === 1) {
-          // For a single file, use the original downloadFile method
-          const file = batchFiles[0];
-          const result = await downloadFile(
-            baseUrl,
-            projectId,
-            apiKey,
-            file.translationId,
-            file.outputPath
-          );
-
-          if (result) {
-            downloadStatus.downloaded.add(file.fileLocale);
-          } else {
-            downloadStatus.failed.add(file.fileLocale);
+        // Process results
+        batchFiles.forEach((file: any) => {
+          const { translationId, fileLocale } = file;
+          if (batchResult.successful.includes(translationId)) {
+            downloadStatus.downloaded.add(fileLocale);
+          } else if (batchResult.failed.includes(translationId)) {
+            downloadStatus.failed.add(fileLocale);
           }
+        });
+      } else if (batchFiles.length === 1) {
+        // For a single file, use the original downloadFile method
+        const file = batchFiles[0];
+        const result = await downloadFile(file.translationId, file.outputPath);
+
+        if (result) {
+          downloadStatus.downloaded.add(file.fileLocale);
+        } else {
+          downloadStatus.failed.add(file.fileLocale);
         }
       }
-
-      // Force a refresh of the spinner display
-      const statusText = generateStatusSuffixText(
-        downloadStatus,
-        fileQueryData
-      );
-
-      // Clear and reapply the suffix to force a refresh
-      spinner.text = statusText;
     }
+
+    // Force a refresh of the spinner display
+    const statusText = generateStatusSuffixText(downloadStatus, fileQueryData);
+
+    // Clear and reapply the suffix to force a refresh
+    spinner.text = statusText;
+
+    // If all files have been downloaded, we're done
     if (
       downloadStatus.downloaded.size + downloadStatus.failed.size ===
       fileQueryData.length
     ) {
       return true;
     }
-    return false;
   } catch (error) {
     logError(chalk.red('Error checking translation status: ') + error);
-    return false;
   }
+  return false;
 }

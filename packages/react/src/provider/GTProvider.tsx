@@ -156,11 +156,10 @@ export default function GTProvider({
     registerJsxForTranslation,
     runtimeTranslationEnabled,
   } = useRuntimeTranslation({
+    gt,
     locale,
     versionId: _versionId,
-    projectId,
     defaultLocale,
-    devApiKey,
     runtimeUrl,
     renderSettings,
     setTranslations,
