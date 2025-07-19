@@ -4,6 +4,7 @@ import { gt } from '../../utils/gt.js';
 import { createOraSpinner, logErrorAndExit } from '../../console/logging.js';
 import { Ora } from 'ora';
 import { TranslationStatusResult } from 'generaltranslation/types';
+import { getLocaleProperties } from 'generaltranslation';
 
 // Mock dependencies
 vi.mock('../../utils/gt.js', () => ({
@@ -15,6 +16,10 @@ vi.mock('../../utils/gt.js', () => ({
 vi.mock('../../console/logging.js', () => ({
   createOraSpinner: vi.fn(),
   logErrorAndExit: vi.fn(),
+}));
+
+vi.mock('generaltranslation', () => ({
+  getLocaleProperties: vi.fn(),
 }));
 
 describe('waitForUpdates', () => {
@@ -31,6 +36,55 @@ describe('waitForUpdates', () => {
     vi.mocked(createOraSpinner).mockResolvedValue(mockSpinner);
     vi.mocked(logErrorAndExit).mockImplementation(() => {
       throw new Error('Exit called');
+    });
+
+    // Mock getLocaleProperties with realistic locale data
+    vi.mocked(getLocaleProperties).mockImplementation((locale: string) => {
+      const localeMap: Record<string, { name: string; code: string }> = {
+        es: { name: 'Spanish', code: 'es' },
+        fr: { name: 'French', code: 'fr' },
+        de: { name: 'German', code: 'de' },
+        en: { name: 'English', code: 'en' },
+        it: { name: 'Italian', code: 'it' },
+        pt: { name: 'Portuguese', code: 'pt' },
+      };
+
+      const localeInfo = localeMap[locale] || { name: locale, code: locale };
+
+      return {
+        code: localeInfo.code,
+        name: localeInfo.name,
+        englishName: localeInfo.name,
+        nativeName: localeInfo.name,
+        direction: 'ltr' as const,
+        family: 'Indo-European',
+        script: 'Latin',
+        languageCode: locale,
+        languageName: localeInfo.name,
+        nativeLanguageName: localeInfo.name,
+        nameWithRegionCode: `${localeInfo.name} (${locale.toUpperCase()})`,
+        regionCode: locale.toUpperCase(),
+        regionName: locale,
+        nativeNameWithRegionCode: `${localeInfo.name} (${locale.toUpperCase()})`,
+        nativeRegionName: locale,
+        scriptCode: 'Latn',
+        scriptName: 'Latin',
+        nativeScriptName: 'Latin',
+        maximizedCode: locale,
+        maximizedName: localeInfo.name,
+        nativeMaximizedName: localeInfo.name,
+        nativeMaximizedNameWithRegionCode: `${localeInfo.name} (${locale.toUpperCase()})`,
+        minimizedCode: locale,
+        minimizedName: localeInfo.name,
+        nativeMinimizedName: localeInfo.name,
+        nativeMinimizedNameWithRegionCode: `${localeInfo.name} (${locale.toUpperCase()})`,
+        emoji: '',
+        emojiRegionCode: '',
+        emojiRegionName: '',
+        emojiNativeName: '',
+        emojiNativeRegionName: '',
+        emojiNativeRegionCode: '',
+      };
     });
   });
 

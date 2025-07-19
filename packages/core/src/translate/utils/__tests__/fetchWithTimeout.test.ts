@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fetchWithTimeout from '../fetchWithTimeout.js';
 import { maxTimeout } from '../../../settings/settings.js';
+import { getLocaleProperties } from 'generaltranslation';
 
 // Mock dependencies
 const mockTranslationTimeoutError = vi.hoisted(() => vi.fn());
@@ -10,6 +11,10 @@ vi.mock('../../../logging/errors.js', () => ({
 
 vi.mock('../../../settings/settings.js', () => ({
   maxTimeout: 60000,
+}));
+
+vi.mock('generaltranslation', () => ({
+  getLocaleProperties: vi.fn(),
 }));
 
 // Mock global fetch
@@ -49,6 +54,42 @@ describe('fetchWithTimeout', () => {
     vi.clearAllMocks();
     mockTranslationTimeoutError.mockReturnValue('Mocked timeout error');
     global.fetch = mockFetch;
+
+    // Mock getLocaleProperties
+    vi.mocked(getLocaleProperties).mockImplementation((locale: string) => ({
+      code: locale,
+      name: locale,
+      englishName: locale,
+      nativeName: locale,
+      direction: 'ltr' as const,
+      family: 'Mock Family',
+      script: 'Latin',
+      languageCode: locale,
+      languageName: locale,
+      nativeLanguageName: locale,
+      nameWithRegionCode: locale,
+      regionCode: locale.toUpperCase(),
+      regionName: locale,
+      nativeNameWithRegionCode: locale,
+      nativeRegionName: locale,
+      scriptCode: 'Latn',
+      scriptName: 'Latin',
+      nativeScriptName: 'Latin',
+      maximizedCode: locale,
+      maximizedName: locale,
+      nativeMaximizedName: locale,
+      nativeMaximizedNameWithRegionCode: locale,
+      minimizedCode: locale,
+      minimizedName: locale,
+      nativeMinimizedName: locale,
+      nativeMinimizedNameWithRegionCode: locale,
+      emoji: '',
+      emojiRegionCode: '',
+      emojiRegionName: '',
+      emojiNativeName: '',
+      emojiNativeRegionName: '',
+      emojiNativeRegionCode: '',
+    }));
   });
 
   afterEach(() => {
