@@ -11,6 +11,7 @@ import {
   CheckFileTranslationsResult,
   CompletedFileTranslationData,
 } from 'generaltranslation/types';
+import { getLocaleProperties } from 'generaltranslation';
 
 // Mock dependencies
 vi.mock('../../utils/gt.js', () => ({
@@ -30,6 +31,10 @@ vi.mock('../downloadFileBatch.js', () => ({
 vi.mock('../../console/logging.js', () => ({
   createOraSpinner: vi.fn(),
   logError: vi.fn(),
+}));
+
+vi.mock('generaltranslation', () => ({
+  getLocaleProperties: vi.fn(),
 }));
 
 describe('checkFileTranslations', () => {
@@ -79,6 +84,68 @@ describe('checkFileTranslations', () => {
     translations,
   });
 
+  const createMockLocaleProperties = (locale: string) => {
+    const localeMap: Record<
+      string,
+      { name: string; nativeName: string; region: string; nativeRegion: string }
+    > = {
+      es: {
+        name: 'Spanish',
+        nativeName: 'Español',
+        region: 'Spain',
+        nativeRegion: 'España',
+      },
+      fr: {
+        name: 'French',
+        nativeName: 'Français',
+        region: 'France',
+        nativeRegion: 'France',
+      },
+    };
+
+    const localeInfo = localeMap[locale] || {
+      name: locale,
+      nativeName: locale,
+      region: locale,
+      nativeRegion: locale,
+    };
+
+    return {
+      code: locale,
+      name: localeInfo.name,
+      englishName: localeInfo.name,
+      nativeName: localeInfo.nativeName,
+      direction: 'ltr' as const,
+      family: 'Indo-European',
+      script: 'Latin',
+      languageCode: locale,
+      languageName: localeInfo.name,
+      nativeLanguageName: localeInfo.nativeName,
+      nameWithRegionCode: `${localeInfo.name} (${locale.toUpperCase()})`,
+      regionCode: locale.toUpperCase(),
+      regionName: localeInfo.region,
+      nativeNameWithRegionCode: `${localeInfo.nativeName} (${locale.toUpperCase()})`,
+      nativeRegionName: localeInfo.nativeRegion,
+      scriptCode: 'Latn',
+      scriptName: 'Latin',
+      nativeScriptName: 'Latn',
+      maximizedCode: locale,
+      maximizedName: localeInfo.name,
+      nativeMaximizedName: localeInfo.nativeName,
+      nativeMaximizedNameWithRegionCode: `${localeInfo.nativeName} (${locale.toUpperCase()})`,
+      minimizedCode: locale,
+      minimizedName: localeInfo.name,
+      nativeMinimizedName: localeInfo.nativeName,
+      nativeMinimizedNameWithRegionCode: `${localeInfo.nativeName} (${locale.toUpperCase()})`,
+      emoji: '',
+      emojiRegionCode: '',
+      emojiRegionName: '',
+      emojiNativeName: '',
+      emojiNativeRegionName: '',
+      emojiNativeRegionCode: '',
+    };
+  };
+
   let mockSpinner: Ora;
   let mockDownloadStatus: ReturnType<typeof createMockDownloadStatus>;
   let mockResolveOutputPath: ReturnType<typeof createMockResolveOutputPath>;
@@ -89,6 +156,11 @@ describe('checkFileTranslations', () => {
     mockDownloadStatus = createMockDownloadStatus();
     mockResolveOutputPath = createMockResolveOutputPath();
     vi.mocked(createOraSpinner).mockResolvedValue(mockSpinner);
+
+    // Mock getLocaleProperties using the factory function
+    vi.mocked(getLocaleProperties).mockImplementation(
+      createMockLocaleProperties
+    );
   });
 
   it('should handle empty data', async () => {
