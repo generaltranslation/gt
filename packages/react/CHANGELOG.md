@@ -1,5 +1,17 @@
 # gt-react
 
+## 10.0.3
+
+### Patch Changes
+
+- [#477](https://github.com/generaltranslation/gt/pull/477) [`26c6e2c`](https://github.com/generaltranslation/gt/commit/26c6e2ced7c8f8df7b1efa50a56ceb4d6e7f47bc) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: variable components returning null when passed children that were falsey
+
+## 10.0.2
+
+### Patch Changes
+
+- [#474](https://github.com/generaltranslation/gt/pull/474) [`7f0920d`](https://github.com/generaltranslation/gt/commit/7f0920d378dd077a4ca14910a16c3e38cfa77dae) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: <T> functions stripping variables their options see: https://github.com/generaltranslation/gt/issues/472
+
 ## 10.0.1
 
 ### Patch Changes

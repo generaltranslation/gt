@@ -9,7 +9,7 @@ import { hashSource } from 'generaltranslation/id';
 import getEntryAndMetadata from '../utils/getEntryAndMetadata.js';
 import { logError } from '../../console/logging.js';
 
-export default async function createDictionaryUpdates(
+export async function createDictionaryUpdates(
   dictionaryPath: string,
   esbuildConfig?: BuildOptions
 ): Promise<Updates> {

@@ -11,6 +11,9 @@ export const customLoadTranslationsError = (locale: string = '') =>
 export const customLoadDictionaryWarning = (locale: string = '') =>
   `gt-next Warning: fetching locally stored translation dictionary. If you are using a custom loadDictionary("${locale}"), make sure it is correctly implemented.`;
 
+export const createUnresolvedNextVersionError = (error: Error) =>
+  `gt-next Error: Unable to resolve next version. ${error.message}`;
+
 export const createStringTranslationError = (
   string: string,
   id?: string,
@@ -33,9 +36,9 @@ export const createDictionarySubsetError = (id: string, functionName: string) =>
 
 export const dictionaryDisabledError = `gt-next Error: You are trying to use a dictionary, but you have not added the withGTConfig() plugin to your app. You must add withGTConfig() to use dictionaries. For more information, visit generaltranslation.com/docs`;
 
-export const unresolvedCustomLoadDictionaryError = `gt-next Error: loadDictionary() could not be resolved. This usually means that the file was found, but the loadDictionary() function itself was not exported.`;
+export const unresolvedCustomLoadDictionaryError = `gt-next Error: loadDictionary() was resolved by plug-in but could not be resolved at run time. This usually means that the file was found, but the loadDictionary() function itself could not be resolved.`;
 
-export const unresolvedCustomLoadTranslationsError = `gt-next Error: loadTranslations() could not be resolved. This usually means that the file was found, but the loadTranslations() function itself was not exported.`;
+export const unresolvedCustomLoadTranslationsError = `gt-next Error: loadTranslations() was resolved by plug-in but could not be resolved at run time. This usually means that the file was found, but the loadTranslations() function itself could not be resolved.`;
 
 export const unresolvedLoadDictionaryBuildError = (path: string) =>
   `gt-next Error: File defining loadDictionary() could not be resolved at ${path}`;

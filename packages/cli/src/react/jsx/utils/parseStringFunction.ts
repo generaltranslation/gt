@@ -7,6 +7,8 @@ import {
   warnNonStaticExpressionSync,
   warnNonStringSync,
   warnTemplateLiteralSync,
+  warnAsyncUseGT,
+  warnSyncGetGT,
 } from '../../../console/index.js';
 import generateModule from '@babel/generator';
 import traverseModule from '@babel/traverse';
@@ -507,6 +509,7 @@ function findFunctionInFile(
  */
 export function parseStrings(
   importName: string,
+  originalName: string,
   path: NodePath,
   updates: Updates,
   errors: string[],
@@ -523,11 +526,31 @@ export function parseStrings(
     if (callExpr) {
       // Get the parent, handling both await and non-await cases
       const parentPath = callExpr.parentPath;
+
+      const parentFunction = refPath.getFunctionParent();
+      const asyncScope = parentFunction?.node.async;
+      if (asyncScope && originalName === 'useGT') {
+        errors.push(
+          warnAsyncUseGT(
+            file,
+            `${refPath.node.loc?.start?.line}:${refPath.node.loc?.start?.column}`
+          )
+        );
+        return;
+      } else if (!asyncScope && originalName === 'getGT') {
+        errors.push(
+          warnSyncGetGT(
+            file,
+            `${refPath.node.loc?.start?.line}:${refPath.node.loc?.start?.column}`
+          )
+        );
+        return;
+      }
+
       const effectiveParent =
         parentPath?.node.type === 'AwaitExpression'
           ? parentPath.parentPath
           : parentPath;
-
       if (
         effectiveParent &&
         effectiveParent.node.type === 'VariableDeclarator' &&

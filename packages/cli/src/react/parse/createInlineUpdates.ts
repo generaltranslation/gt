@@ -13,22 +13,14 @@ import { parseJSXElement } from '../jsx/utils/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { extractImportName } from '../jsx/utils/parseAst.js';
 import { logError } from '../../console/logging.js';
-import { validateStringFunction } from '../jsx/utils/validateStringFunction.js';
 import { GT_TRANSLATION_FUNCS } from '../jsx/utils/constants.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 
-/**
- * Creates inline updates for <T> components and translation functions
- * @param options - The options object
- * @param pkg - The package name
- * @param validate - Whether to validate the updates
- * @returns An object containing the updates, errors, and warnings
- */
-export default async function createInlineUpdates(
-  options: Options,
+export async function createInlineUpdates(
   pkg: 'gt-react' | 'gt-next',
-  validate: boolean
+  validate: boolean,
+  filePatterns: string[] | undefined
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];
 
@@ -36,9 +28,7 @@ export default async function createInlineUpdates(
   const warnings: Set<string> = new Set();
 
   // Use the provided app directory or default to the current directory
-  const filePatterns = options.src || DEFAULT_SRC_PATTERNS;
-
-  const files = matchFiles(process.cwd(), filePatterns);
+  const files = matchFiles(process.cwd(), filePatterns || DEFAULT_SRC_PATTERNS);
 
   for (const file of files) {
     const code = await fs.promises.readFile(file, 'utf8');
@@ -122,8 +112,8 @@ export default async function createInlineUpdates(
     });
 
     // Process translation functions asynchronously
-    for (const { localName: name, path } of translationPaths) {
-      parseStrings(name, path, updates, errors, file);
+    for (const { localName: name, originalName, path } of translationPaths) {
+      parseStrings(name, originalName, path, updates, errors, file);
     }
 
     // Parse <T> components
@@ -141,11 +131,12 @@ export default async function createInlineUpdates(
     });
 
     // Extra validation (for Locadex)
-    if (validate) {
-      for (const { localName: name, path, originalName } of translationPaths) {
-        validateStringFunction(name, path, updates, errors, file, originalName);
-      }
-    }
+    // Done in parseStrings() atm
+    // if (validate) {
+    //   for (const { localName: name, path, originalName } of translationPaths) {
+    //     validateStringFunction(name, path, updates, errors, file, originalName);
+    //   }
+    // }
   }
 
   // Post-process to add a hash to each update

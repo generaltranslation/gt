@@ -20,7 +20,7 @@ export default function resolveDictionaryLoader(): CustomLoader | undefined {
   // Get custom loader
   customLoadDictionary =
     customLoadDictionaryConfig?.default ||
-    customLoadDictionaryConfig?.getLocalDictionary;
+    customLoadDictionaryConfig?.loadDictionary;
 
   // Check: custom loader is exported
   if (!customLoadDictionary) {

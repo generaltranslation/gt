@@ -21,6 +21,11 @@ import {
   gtProviderUseClientError,
   txUseClientError,
 } from './errors/createErrors';
+import {
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
+} from 'gt-react';
 
 // Mock <GTProvider> which throws an error
 export function GTProvider() {
@@ -48,4 +53,7 @@ export {
   useDefaultLocale,
   useGTClass,
   useLocaleProperties,
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
 };

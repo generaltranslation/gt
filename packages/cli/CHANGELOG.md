@@ -1,5 +1,31 @@
 # gtx-cli
 
+## 2.0.5
+
+### Patch Changes
+
+- [#467](https://github.com/generaltranslation/gt/pull/467) [`e043f07`](https://github.com/generaltranslation/gt/commit/e043f07decb426c2b275b67ad955b4ddca7d20ee) Thanks [@brian-lou](https://github.com/brian-lou)! - Add async errors for useGT/getGT to translate
+
+## 2.0.4
+
+### Patch Changes
+
+- [#464](https://github.com/generaltranslation/gt/pull/464) [`a10331c`](https://github.com/generaltranslation/gt/commit/a10331c6854d60f3328d4ce6c307acc0c28e8ef4) Thanks [@brian-lou](https://github.com/brian-lou)! - Add success message for validate
+
+- [#464](https://github.com/generaltranslation/gt/pull/464) [`a10331c`](https://github.com/generaltranslation/gt/commit/a10331c6854d60f3328d4ce6c307acc0c28e8ef4) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix glob pattern for validate files
+
+## 2.0.3
+
+### Patch Changes
+
+- [#462](https://github.com/generaltranslation/gt/pull/462) [`678e9e7`](https://github.com/generaltranslation/gt/commit/678e9e70dd57a38ee10dcf9deb78cdd5dcfb759b) Thanks [@brian-lou](https://github.com/brian-lou)! - Revert adding version to cli tool
+
+## 2.0.2
+
+### Patch Changes
+
+- [#458](https://github.com/generaltranslation/gt/pull/458) [`aff4b95`](https://github.com/generaltranslation/gt/commit/aff4b95f582ec9fcb28f1395d2eba907c93e4e31) Thanks [@brian-lou](https://github.com/brian-lou)! - Add individual file support to validate
+
 ## 2.0.1
 
 ### Patch Changes
