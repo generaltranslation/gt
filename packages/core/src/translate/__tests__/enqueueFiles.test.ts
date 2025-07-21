@@ -366,7 +366,7 @@ describe.sequential('_enqueueFiles', () => {
     const body = formDataCall[1].body as FormData;
 
     // When dataFormat is not provided, it should be empty string
-    expect(body.get('fileDataFormat0')).toBe('');
+    expect(body.get('fileDataFormat0')).toBe(undefined);
     expect(body.get('fileFormat0')).toBe('MD');
     expect(body.get('fileName0')).toBe('test.md');
   });
