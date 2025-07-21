@@ -20,14 +20,19 @@ export default async function fetchWithTimeout(
   const signal = controller.signal;
 
   timeout = Math.min(timeout || maxTimeout, maxTimeout);
-  if (timeout) setTimeout(() => controller.abort(), timeout);
+  const timeoutId = timeout
+    ? setTimeout(() => controller.abort(), timeout)
+    : null;
 
   try {
-    return await fetch(url, { ...options, signal });
+    const response = await fetch(url, { ...options, signal });
+    return response;
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       throw translationTimeoutError(timeout);
     }
     throw error;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 }

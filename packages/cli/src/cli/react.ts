@@ -11,6 +11,7 @@ import {
   endCommand,
   logError,
   logErrorAndExit,
+  logMessage,
   logStep,
   logSuccess,
   logWarning,
@@ -33,8 +34,6 @@ import updateConfig from '../fs/config/updateConfig.js';
 import { validateConfigExists } from '../config/validateSettings.js';
 import { validateProject } from '../translation/validate.js';
 import { intro } from '@clack/prompts';
-import localizeStaticUrls from '../utils/localizeStaticUrls.js';
-import flattenJsonFiles from '../utils/flattenJsonFiles.js';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';

@@ -13,6 +13,7 @@ import {
   createSpinner,
   logError,
   logSuccess,
+  logMessage,
 } from '../../console/logging.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
@@ -26,8 +27,6 @@ import { downloadFileBatch } from '../../api/downloadFileBatch.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { TranslateOptions } from '../../cli/base.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
-import localizeStaticUrls from '../../utils/localizeStaticUrls.js';
-import flattenJsonFiles from '../../utils/flattenJsonFiles.js';
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 /**
@@ -158,16 +157,6 @@ export async function translateFiles(
       (sourcePath, locale) => fileMapping[locale][sourcePath],
       downloadStatus // Pass the already downloaded files to avoid duplicate requests
     );
-
-    // Localize static urls (/docs -> /[locale]/docs)
-    if (options.experimentalLocalizeStaticUrls) {
-      await localizeStaticUrls(options);
-    }
-
-    // Flatten json files into a single file
-    if (options.experimentalFlattenJsonFiles) {
-      await flattenJsonFiles(options);
-    }
   } catch (error) {
     logErrorAndExit(`Error translating files: ${error}`);
   }

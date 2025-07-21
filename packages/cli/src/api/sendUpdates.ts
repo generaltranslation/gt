@@ -1,5 +1,10 @@
 import chalk from 'chalk';
-import { createSpinner, logSuccess, logWarning } from '../console/logging.js';
+import {
+  createSpinner,
+  logMessage,
+  logSuccess,
+  logWarning,
+} from '../console/logging.js';
 import { Settings, SupportedLibraries, Updates } from '../types/index.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { DataFormat } from '../types/data.js';
