@@ -117,6 +117,9 @@ export type FormatVariables = Record<
   string | number | boolean | null | undefined | Date
 >;
 
+/**
+ * @deprecated This type is deprecated and will be removed in a future version.
+ */
 export type Update =
   | {
       type: 'content';
@@ -133,6 +136,9 @@ export type Update =
       };
     };
 
+/**
+ * @deprecated This type is deprecated and will be removed in a future version.
+ */
 export type Request =
   | {
       type: 'content';
