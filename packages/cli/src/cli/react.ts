@@ -17,7 +17,7 @@ import {
   promptConfirm,
 } from '../console/logging.js';
 import loadJSON from '../fs/loadJSON.js';
-import findFilepath, { findFilepaths } from '../fs/findFilepath.js';
+import findFilepath from '../fs/findFilepath.js';
 import chalk from 'chalk';
 import { formatFiles } from '../hooks/postProcess.js';
 import { BaseCLI } from './base.js';
@@ -540,16 +540,6 @@ export class ReactCLI extends BaseCLI {
         process.exit(1);
       }
       await translate(options, settings._versionId);
-    }
-
-    // Localize static urls (/docs -> /[locale]/docs)
-    if (options.experimentalLocalizeStaticUrls) {
-      await localizeStaticUrls(options);
-    }
-
-    // Flatten json files into a single file
-    if (options.experimentalFlattenJsonFiles) {
-      await flattenJsonFiles(options);
     }
   }
 

@@ -2,7 +2,12 @@ import { createFileMapping } from '../formats/files/translate.js';
 import fs from 'node:fs';
 import { Settings, Options } from '../types/index.js';
 
-export default async function flattenJsonFiles(settings: Settings & Options) {
+export default async function flattenJsonFiles(
+  settings: Omit<
+    Settings & Options,
+    'ignoreErrors' | 'suppressWarnings' | 'timeout'
+  >
+) {
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&

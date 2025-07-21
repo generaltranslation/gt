@@ -45,6 +45,9 @@ export type TranslateOptions = {
   apiKey?: string;
   projectId?: string;
   dryRun: boolean;
+  experimentalLocalizeStaticUrls?: boolean;
+  experimentalHideDefaultLocale?: boolean;
+  experimentalFlattenJsonFiles?: boolean;
 };
 
 export type LoginOptions = {
@@ -106,6 +109,22 @@ export class BaseCLI {
       .option(
         '--dry-run',
         'Dry run, does not send updates to General Translation API',
+        false
+      )
+
+      .option(
+        '--experimental-localize-static-urls',
+        'Triggering this will run a script after the cli tool that localizes all urls in content files. Currently only supported for md and mdx files.',
+        false
+      )
+      .option(
+        '--experimental-hide-default-locale',
+        'When localizing static locales, hide the default locale from the path',
+        false
+      )
+      .option(
+        '--experimental-flatten-json-files',
+        'Triggering this will flatten the json files into a single file. This is useful for projects that have a lot of json files.',
         false
       )
       .action(async (initOptions: TranslateOptions) => {
