@@ -15,7 +15,12 @@ import { createFileMapping } from '../formats/files/translate.js';
  * - Support more file types
  * - Support more complex paths
  */
-export default async function localizeStaticUrls(settings: Settings & Options) {
+export default async function localizeStaticUrls(
+  settings: Omit<
+    Settings & Options,
+    'ignoreErrors' | 'suppressWarnings' | 'timeout'
+  >
+) {
   if (
     !settings.files ||
     (Object.keys(settings.files.placeholderPaths).length === 1 &&

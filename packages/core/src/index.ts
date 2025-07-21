@@ -637,7 +637,8 @@ export class GT {
     this._validateAuth('translateMany');
 
     // Require target locale
-    if (!this.targetLocale) {
+    const targetLocale = globalMetadata?.targetLocale || this.targetLocale;
+    if (!targetLocale) {
       const error = noTargetLocaleProvidedError('translateMany');
       gtInstanceLogger.error(error);
       throw new Error(error);
@@ -646,7 +647,7 @@ export class GT {
     // Request the translation
     return await _translateMany(
       sources,
-      { ...globalMetadata, targetLocale: this.targetLocale },
+      { ...globalMetadata, targetLocale },
       this._getTranslationConfig()
     );
   }

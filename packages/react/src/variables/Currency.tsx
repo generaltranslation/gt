@@ -1,7 +1,6 @@
 import React, { useContext } from 'react';
 import { GT } from 'generaltranslation';
 import { GTContext } from '../provider/GTContext';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
@@ -33,7 +32,7 @@ function Currency({
   options?: Intl.NumberFormatOptions;
 }): React.JSX.Element | null {
   const context = useContext(GTContext);
-  if (!children) return null;
+  if (children == null) return null;
   const gt = context?.gt || new GT();
   let renderedValue: string | number =
     typeof children === 'string' ? parseFloat(children) : children;

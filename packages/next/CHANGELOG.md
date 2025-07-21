@@ -1,5 +1,35 @@
 # gt-next
 
+## 6.0.5
+
+### Patch Changes
+
+- [#473](https://github.com/generaltranslation/gt/pull/473) [`398cbd9`](https://github.com/generaltranslation/gt/commit/398cbd972593a6579198cc143ce6c5b9d4fcc322) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: support for deprecation of experiemental config for turbo and resolving non default exports for loadTranslations() and loadDictionary()
+
+## 6.0.4
+
+### Patch Changes
+
+- [#477](https://github.com/generaltranslation/gt/pull/477) [`26c6e2c`](https://github.com/generaltranslation/gt/commit/26c6e2ced7c8f8df7b1efa50a56ceb4d6e7f47bc) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: variable components returning null when passed children that were falsey
+
+- Updated dependencies [[`26c6e2c`](https://github.com/generaltranslation/gt/commit/26c6e2ced7c8f8df7b1efa50a56ceb4d6e7f47bc)]:
+  - gt-react@10.0.3
+
+## 6.0.3
+
+### Patch Changes
+
+- [#474](https://github.com/generaltranslation/gt/pull/474) [`7f0920d`](https://github.com/generaltranslation/gt/commit/7f0920d378dd077a4ca14910a16c3e38cfa77dae) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: <T> functions stripping variables their options see: https://github.com/generaltranslation/gt/issues/472
+
+- Updated dependencies [[`7f0920d`](https://github.com/generaltranslation/gt/commit/7f0920d378dd077a4ca14910a16c3e38cfa77dae)]:
+  - gt-react@10.0.2
+
+## 6.0.2
+
+### Patch Changes
+
+- [#455](https://github.com/generaltranslation/gt/pull/455) [`1c6b822`](https://github.com/generaltranslation/gt/commit/1c6b82204a341dcfdb4fa8a58dc60ca7f68fda5d) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: export inline translation options from root in gt-next
+
 ## 6.0.1
 
 ### Patch Changes

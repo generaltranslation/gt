@@ -13,6 +13,7 @@ import {
   createSpinner,
   logError,
   logSuccess,
+  logMessage,
 } from '../../console/logging.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';

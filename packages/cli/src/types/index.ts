@@ -1,4 +1,3 @@
-import { JsxChildren } from 'generaltranslation/internal';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 
 export type { Updates } from 'generaltranslation/types';

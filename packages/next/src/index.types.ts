@@ -17,6 +17,11 @@ import {
   Plural as _Plural,
   LocaleSelector as _LocaleSelector,
 } from 'gt-react/client';
+import {
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
+} from 'gt-react';
 
 /**
  * Provides General Translation context to its children, which can then access `useGT`, `useLocale`, and `useDefaultLocale`.
@@ -328,4 +333,10 @@ export const useGTClass: typeof _useGTClass = () => {
  */
 export const useLocaleProperties: typeof _useLocaleProperties = () => {
   throw new Error(typesFileError);
+};
+
+export {
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
 };

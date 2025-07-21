@@ -11,13 +11,14 @@ import {
   endCommand,
   logError,
   logErrorAndExit,
+  logMessage,
   logStep,
   logSuccess,
   logWarning,
   promptConfirm,
 } from '../console/logging.js';
 import loadJSON from '../fs/loadJSON.js';
-import findFilepath, { findFilepaths } from '../fs/findFilepath.js';
+import findFilepath from '../fs/findFilepath.js';
 import chalk from 'chalk';
 import { formatFiles } from '../hooks/postProcess.js';
 import { BaseCLI } from './base.js';
@@ -33,8 +34,6 @@ import updateConfig from '../fs/config/updateConfig.js';
 import { validateConfigExists } from '../config/validateSettings.js';
 import { validateProject } from '../translation/validate.js';
 import { intro } from '@clack/prompts';
-import localizeStaticUrls from '../utils/localizeStaticUrls.js';
-import flattenJsonFiles from '../utils/flattenJsonFiles.js';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
@@ -207,7 +206,7 @@ export class ReactCLI extends BaseCLI {
   }
   protected setupValidateCommand(): void {
     this.program
-      .command('validate')
+      .command('validate [files...]')
       .description(
         'Scans the project for a dictionary and/or <T> tags, and validates the project for errors.'
       )
@@ -231,10 +230,10 @@ export class ReactCLI extends BaseCLI {
         'Include inline <T> tags in addition to dictionary file',
         true
       )
-      .action(async (options: Options) => {
+      .action(async (files: string[], options: Options) => {
         // intro here since we don't want to show the ascii title
         intro(chalk.cyan('Validating project...'));
-        await this.handleValidate(options);
+        await this.handleValidate(options, files);
         endCommand('Done!');
       });
   }
@@ -541,19 +540,12 @@ export class ReactCLI extends BaseCLI {
       }
       await translate(options, settings._versionId);
     }
-
-    // Localize static urls (/docs -> /[locale]/docs)
-    if (options.experimentalLocalizeStaticUrls) {
-      await localizeStaticUrls(options);
-    }
-
-    // Flatten json files into a single file
-    if (options.experimentalFlattenJsonFiles) {
-      await flattenJsonFiles(options);
-    }
   }
 
-  protected async handleValidate(initOptions: Options): Promise<void> {
+  protected async handleValidate(
+    initOptions: Options,
+    files?: string[]
+  ): Promise<void> {
     validateConfigExists();
     const settings = await generateSettings(initOptions);
 
@@ -561,6 +553,13 @@ export class ReactCLI extends BaseCLI {
     const options = { ...initOptions, ...settings };
 
     const pkg = this.library === 'gt-next' ? 'gt-next' : 'gt-react';
-    await validateProject(options, pkg);
+
+    if (files && files.length > 0) {
+      // Validate specific files using createInlineUpdates
+      await validateProject(options, pkg, files);
+    } else {
+      // Validate whole project as before
+      await validateProject(options, pkg);
+    }
   }
 }

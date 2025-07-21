@@ -1,5 +1,9 @@
 import chalk from 'chalk';
-import { createOraSpinner, logErrorAndExit } from '../console/logging.js';
+import {
+  createOraSpinner,
+  logErrorAndExit,
+  logMessage,
+} from '../console/logging.js';
 import { getLocaleProperties } from 'generaltranslation';
 import { gt } from '../utils/gt.js';
 import { TranslationStatusResult } from 'generaltranslation/types';

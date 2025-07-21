@@ -11,6 +11,11 @@ import { useGT } from './server-dir/buildtime/getGT';
 import { useTranslations } from './server-dir/buildtime/getTranslations';
 import { useLocale } from './request/getLocale';
 import getI18NConfig from './config-dir/getI18NConfig';
+import {
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
+} from 'gt-react';
 
 export { LocaleSelector } from './index.client';
 
@@ -43,4 +48,7 @@ export {
   useGT,
   useTranslations,
   useLocale,
+  DictionaryTranslationOptions,
+  InlineTranslationOptions,
+  RuntimeTranslationOptions,
 };
