@@ -60,7 +60,7 @@ export function _formatNum({
  *
  * @param {Object} params - The parameters for the date formatting.
  * @param {Date} params.value - The date to format.
- * @param {string | string[]} [params.locales='en']] - The locales to use for formatting.
+ * @param {string | string[]} [params.locales='en'] - The locales to use for formatting.
  * @param {Intl.DateTimeFormatOptions} [params.options={}] - Additional options for date formatting.
  *
  * @returns {string} The formatted date.

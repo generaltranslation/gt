@@ -34,7 +34,7 @@ function DateTime({
   const gt = context?.gt || new GT();
 
   if (!locales) {
-    locales ||= [];
+    locales = [];
     if (context?.locale) locales.push(context.locale);
     if (context?.defaultLocale) locales.push(context.defaultLocale);
   }
