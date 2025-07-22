@@ -130,4 +130,13 @@ export type Settings = {
   description?: string;
   src: string[]; // list of glob patterns for gt-next and gt-react
   framework?: SupportedFrameworks;
+  options?: ExperimentalOptions;
+};
+
+type ExperimentalOptions = {
+  preset?: 'mintlify' | 'fumadocs' | 'nextra' | 'astro';
+  flattenJsonFiles?: boolean;
+  hideDefaultLocale?: boolean;
+  localizeStaticUrls?: boolean;
+  [key: string]: any;
 };
