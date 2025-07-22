@@ -40,10 +40,10 @@ export type EntryMetadata = {
  *
  * @param source - The source content to translate.
  * @param targetLocale - The target locale to translate to.
- * @param requestMetadata - The metadata for the request.
+ * @param metadata - The metadata for the request.
  */
 export type Entry = {
   source: Content;
   targetLocale?: string;
-  requestMetadata?: EntryMetadata;
+  metadata?: EntryMetadata;
 };

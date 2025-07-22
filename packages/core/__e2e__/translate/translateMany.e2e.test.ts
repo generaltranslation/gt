@@ -29,15 +29,15 @@ describe('translateMany E2E Tests', () => {
       const entries: Entry[] = [
         {
           source: 'Hello world',
-          requestMetadata: { context: 'greeting-1' },
+          metadata: { context: 'greeting-1' },
         },
         {
           source: 'Good morning',
-          requestMetadata: { context: 'greeting-2' },
+          metadata: { context: 'greeting-2' },
         },
         {
           source: 'Welcome back',
-          requestMetadata: { context: 'greeting-3' },
+          metadata: { context: 'greeting-3' },
         },
       ];
 
@@ -80,15 +80,15 @@ describe('translateMany E2E Tests', () => {
       const entries: Entry[] = [
         {
           source: 'Simple text message',
-          requestMetadata: { context: 'simple-text' },
+          metadata: { context: 'simple-text' },
         },
         {
           source: ['Welcome ', { t: 'strong', c: ['John'] }],
-          requestMetadata: { context: 'jsx-content', dataFormat: 'JSX' },
+          metadata: { context: 'jsx-content', dataFormat: 'JSX' },
         },
         {
           source: 'Hello {name}, you have {count} messages',
-          requestMetadata: { context: 'icu-message', dataFormat: 'ICU' },
+          metadata: { context: 'icu-message', dataFormat: 'ICU' },
         },
       ];
 
@@ -129,21 +129,21 @@ describe('translateMany E2E Tests', () => {
       const entries: Entry[] = [
         {
           source: 'Save changes',
-          requestMetadata: {
+          metadata: {
             context: 'button-save',
             actionType: 'fast',
           },
         },
         {
           source: 'Delete item',
-          requestMetadata: {
+          metadata: {
             context: 'button-delete',
             actionType: 'standard',
           },
         },
         {
           source: 'Cancel operation',
-          requestMetadata: {
+          metadata: {
             context: 'button-cancel',
             dataFormat: 'ICU',
           },
@@ -367,7 +367,7 @@ describe('translateMany E2E Tests', () => {
     it('should handle large batch of translations', async () => {
       const entries: Entry[] = Array.from({ length: 10 }, (_, i) => ({
         source: `Message ${i + 1}`,
-        requestMetadata: {
+        metadata: {
           context: `batch-message-${i + 1}`,
         },
       }));

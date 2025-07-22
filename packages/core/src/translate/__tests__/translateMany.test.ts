@@ -74,8 +74,8 @@ describe.sequential('_translateMany', () => {
     vi.mocked(validateResponse).mockResolvedValue(undefined);
 
     const requests: Entry[] = [
-      { source: 'Hello world', targetLocale: 'es', requestMetadata: {} },
-      { source: 'Goodbye world', targetLocale: 'es', requestMetadata: {} },
+      { source: 'Hello world', targetLocale: 'es', metadata: {} },
+      { source: 'Goodbye world', targetLocale: 'es', metadata: {} },
     ];
     const globalMetadata: { targetLocale: string } & EntryMetadata = {
       targetLocale: 'es',
