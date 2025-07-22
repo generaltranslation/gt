@@ -1,5 +1,14 @@
 # gt-react
 
+## 10.0.4
+
+### Patch Changes
+
+- [#444](https://github.com/generaltranslation/gt/pull/444) [`c206a11`](https://github.com/generaltranslation/gt/commit/c206a1158516a0d815b1570d77e6dd62acdcedc4) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add translation interface for generaltranslation
+
+- Updated dependencies [[`c206a11`](https://github.com/generaltranslation/gt/commit/c206a1158516a0d815b1570d77e6dd62acdcedc4)]:
+  - generaltranslation@7.1.0
+
 ## 10.0.3
 
 ### Patch Changes
