@@ -252,12 +252,12 @@ describe('GT Translation Methods', () => {
         {
           source: 'Hello world',
           targetLocale: 'es',
-          requestMetadata: { context: 'greeting' },
+          metadata: { context: 'greeting' },
         },
         {
           source: 'Goodbye world',
           targetLocale: 'es',
-          requestMetadata: { context: 'farewell' },
+          metadata: { context: 'farewell' },
         },
       ];
 
@@ -284,7 +284,7 @@ describe('GT Translation Methods', () => {
         {
           source: 'Hello world',
           targetLocale: 'es',
-          requestMetadata: { context: 'greeting' },
+          metadata: { context: 'greeting' },
         },
       ];
 
@@ -313,7 +313,7 @@ describe('GT Translation Methods', () => {
         {
           source: 'Hello world',
           targetLocale: 'es',
-          requestMetadata: { context: 'greeting' },
+          metadata: { context: 'greeting' },
         },
       ];
 
@@ -332,7 +332,7 @@ describe('GT Translation Methods', () => {
         {
           source: 'Hello world',
           targetLocale: 'es',
-          requestMetadata: { context: 'greeting' },
+          metadata: { context: 'greeting' },
         },
       ];
 
@@ -357,12 +357,12 @@ describe('GT Translation Methods', () => {
             },
           ],
           targetLocale: 'es',
-          requestMetadata: { context: 'greeting', dataFormat: 'JSX' },
+          metadata: { context: 'greeting', dataFormat: 'JSX' },
         },
         {
           source: 'Hello {name}',
           targetLocale: 'es',
-          requestMetadata: { context: 'greeting', dataFormat: 'ICU' },
+          metadata: { context: 'greeting', dataFormat: 'ICU' },
         },
       ];
 
@@ -388,7 +388,7 @@ describe('GT Translation Methods', () => {
         {
           source: 'Hello world',
           targetLocale: 'es',
-          requestMetadata: { context: 'greeting' },
+          metadata: { context: 'greeting' },
         },
       ];
 

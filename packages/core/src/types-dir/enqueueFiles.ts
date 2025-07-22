@@ -7,7 +7,7 @@ export type Updates = ({
 } & (
   | {
       dataFormat: 'JSX';
-      source: JsxChildren; // JsxChildren from generaltranslation/internal
+      source: JsxChildren;
     }
   | {
       dataFormat: 'ICU';
