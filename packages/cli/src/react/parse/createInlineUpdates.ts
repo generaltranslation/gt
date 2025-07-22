@@ -13,7 +13,6 @@ import { parseJSXElement } from '../jsx/utils/parseJsx.js';
 import { parseStrings } from '../jsx/utils/parseStringFunction.js';
 import { extractImportName } from '../jsx/utils/parseAst.js';
 import { logError } from '../../console/logging.js';
-import { validateStringFunction } from '../jsx/utils/validateStringFunction.js';
 import { GT_TRANSLATION_FUNCS } from '../jsx/utils/constants.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
@@ -22,10 +21,11 @@ export async function createInlineUpdates(
   pkg: 'gt-react' | 'gt-next',
   validate: boolean,
   filePatterns: string[] | undefined
-): Promise<{ updates: Updates; errors: string[] }> {
+): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];
 
   const errors: string[] = [];
+  const warnings: Set<string> = new Set();
 
   // Use the provided app directory or default to the current directory
   const files = matchFiles(process.cwd(), filePatterns || DEFAULT_SRC_PATTERNS);
@@ -119,7 +119,14 @@ export async function createInlineUpdates(
     // Parse <T> components
     traverse(ast, {
       JSXElement(path) {
-        parseJSXElement(importAliases, path.node, updates, errors, file);
+        parseJSXElement(
+          importAliases,
+          path.node,
+          updates,
+          errors,
+          warnings,
+          file
+        );
       },
     });
 
@@ -146,5 +153,5 @@ export async function createInlineUpdates(
     })
   );
 
-  return { updates, errors };
+  return { updates, errors, warnings: [...warnings] };
 }

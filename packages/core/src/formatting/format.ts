@@ -1,7 +1,10 @@
-import { FormatVariables } from '../types';
+import { FormatVariables, I18nextMessage } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../internal';
 import IntlMessageFormat from 'intl-messageformat';
+import { formatI18nextWarning, formatJsxWarning } from '../logging/warnings';
+import { formattingLogger } from '../logging/logger';
+import { JsxChildren } from '../types';
 
 /**
  * Formats a message according to the specified locales and options.
@@ -57,7 +60,7 @@ export function _formatNum({
  *
  * @param {Object} params - The parameters for the date formatting.
  * @param {Date} params.value - The date to format.
- * @param {string | string[]} [params.locales='en']] - The locales to use for formatting.
+ * @param {string | string[]} [params.locales='en'] - The locales to use for formatting.
  * @param {Intl.DateTimeFormatOptions} [params.options={}] - Additional options for date formatting.
  *
  * @returns {string} The formatted date.
@@ -174,4 +177,42 @@ export function _formatRelativeTime({
       ...options,
     })
     .format(value, unit);
+}
+
+/**
+ * @experimental This function is not currently supported but will be implemented in a future version.
+ * Use {@link _formatMessage} for current ICU message format support.
+ * Formats an I18next message according to the specified locales and options.
+ *
+ * @param message - The I18next message to format.
+ * @param variables - The variables to use for formatting.
+ * @returns The formatted I18next message.
+ * @internal
+ */
+export function _formatI18next(
+  message: I18nextMessage,
+  // eslint-disable-next-line no-unused-vars
+  _variables: FormatVariables = {}
+): string {
+  formattingLogger.warn(formatI18nextWarning);
+  return message;
+}
+
+/**
+ * @experimental This function is not currently supported but will be implemented in a future version.
+ * Use {@link _formatMessage} for current ICU message format support.
+ * Formats a JSX message according to the specified locales and options.
+ *
+ * @param message - The JSX message to format.
+ * @param variables - The variables to use for formatting.
+ * @returns The formatted JSX message.
+ * @internal
+ */
+export function _formatJsx(
+  message: JsxChildren,
+  // eslint-disable-next-line no-unused-vars
+  _variables: FormatVariables = {}
+): JsxChildren {
+  formattingLogger.warn(formatJsxWarning);
+  return message;
 }

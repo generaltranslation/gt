@@ -1,20 +1,6 @@
-import { JsxChildren } from 'generaltranslation/internal';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 
-export type Updates = ({ metadata: Record<string, any> } & (
-  | {
-      dataFormat: 'JSX';
-      source: JsxChildren;
-    }
-  | {
-      dataFormat: 'ICU';
-      source: string;
-    }
-  | {
-      dataFormat: 'I18NEXT';
-      source: string;
-    }
-))[];
+export type { Updates } from 'generaltranslation/types';
 
 export type Options = {
   config: string;
@@ -29,6 +15,7 @@ export type Options = {
   baseUrl: string;
   inline?: boolean;
   ignoreErrors: boolean;
+  suppressWarnings: boolean;
   dryRun: boolean;
   timeout: string;
   stageTranslations?: boolean;
@@ -59,6 +46,7 @@ export type GenerateSourceOptions = {
   jsconfig?: string;
   inline?: boolean;
   ignoreErrors: boolean;
+  suppressWarnings: boolean;
 };
 
 export type Framework = 'gt-next' | 'gt-react';

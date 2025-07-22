@@ -12,25 +12,13 @@ export async function translate(
   const startTime = Date.now();
   const timeout = parseInt(settings.timeout) * 1000;
 
-  const result = await waitForUpdates(
-    settings.projectId,
-    settings.apiKey,
-    settings.baseUrl,
-    versionId,
-    startTime,
-    timeout
-  );
+  const result = await waitForUpdates(versionId, startTime, timeout);
 
   if (!result) {
     process.exit(1);
   }
 
-  const translations = await fetchTranslations(
-    settings.baseUrl,
-    settings.projectId,
-    settings.apiKey,
-    versionId
-  );
+  const translations = await fetchTranslations(versionId);
 
   // Save translations to local directory if files.gt.output is provided
   if (settings.files && isUsingLocalTranslations(settings)) {

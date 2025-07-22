@@ -13,7 +13,32 @@ import {
   _formatDateTime,
   _formatMessage,
 } from './formatting/format';
-import { CustomMapping, FormatVariables } from './types';
+import {
+  Content,
+  CustomMapping,
+  FormatVariables,
+  I18nextMessage,
+  IcuMessage,
+  TranslateManyResult,
+  TranslationError,
+  TranslationRequestConfig,
+  TranslationResult,
+  Updates,
+  EnqueueEntriesOptions,
+  EnqueueEntriesResult,
+  EnqueueFilesOptions,
+  EnqueueFilesResult,
+  FileToTranslate,
+  CheckFileTranslationsOptions,
+  CheckFileTranslationsResult,
+  DownloadFileBatchOptions,
+  DownloadFileBatchResult,
+  FetchTranslationsOptions,
+  FetchTranslationsResult,
+  DownloadFileOptions,
+  EntryMetadata,
+  Entry,
+} from './types';
 import _isSameLanguage from './locales/isSameLanguage';
 import _getLocaleProperties, {
   LocaleProperties,
@@ -22,7 +47,7 @@ import _getLocaleEmoji from './locales/getLocaleEmoji';
 import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
 import { _getLocaleName } from './locales/getLocaleName';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
-import { defaultBaseUrl, libraryDefaultLocale } from './internal';
+import { JsxChildren, libraryDefaultLocale } from './internal';
 import _isSameDialect from './locales/isSameDialect';
 import _isSupersetLocale from './locales/isSupersetLocale';
 import {
@@ -30,7 +55,26 @@ import {
   noTargetLocaleProvidedError,
   invalidLocaleError,
   invalidLocalesError,
-} from './settings/errors';
+  noProjectIdProvidedError,
+  noApiKeyProvidedError,
+  invalidAuthError,
+} from './logging/errors';
+import _translate from './translate/translate';
+import { gtInstanceLogger } from './logging/logger';
+import _translateMany from './translate/translateMany';
+import _enqueueFiles from './translate/enqueueFiles';
+import _enqueueEntries from './translate/enqueueEntries';
+import _checkFileTranslations from './translate/checkFileTranslations';
+import _downloadFile from './translate/downloadFile';
+import _downloadFileBatch from './translate/downloadFileBatch';
+import _fetchTranslations from './translate/fetchTranslations';
+import { FileTranslationQuery } from './types-dir/checkFileTranslations';
+import { RequiredEnqueueFilesOptions } from './types-dir/enqueueFiles';
+import {
+  CheckTranslationStatusOptions,
+  TranslationStatusResult,
+} from './types-dir/translationStatus';
+import _checkTranslationStatus from './translate/checkTranslationStatus';
 
 // ============================================================ //
 //                        Core Class                            //
@@ -74,7 +118,7 @@ type GTConstructorParams = {
  */
 export class GT {
   /** Base URL for the translation service API */
-  baseUrl: string;
+  baseUrl?: string;
 
   /** Project ID for the translation service */
   projectId?: string;
@@ -95,7 +139,7 @@ export class GT {
   locales?: string[];
 
   /** Array of locales used for rendering variables */
-  _renderingLocales: string[];
+  _renderingLocales: string[] = [];
 
   /** Custom mapping for locale codes to their names */
   customMapping?: CustomMapping;
@@ -115,7 +159,18 @@ export class GT {
    *   locales: ['en-US', 'es-ES', 'fr-FR']
    * });
    */
-  constructor({
+  constructor(params: GTConstructorParams = {}) {
+    // Read environment
+    if (typeof process !== 'undefined') {
+      this.apiKey ||= process.env?.GT_API_KEY;
+      this.devApiKey ||= process.env?.GT_DEV_API_KEY;
+      this.projectId ||= process.env?.GT_PROJECT_ID;
+    }
+    // Set up config
+    this.setConfig(params);
+  }
+
+  setConfig({
     apiKey,
     devApiKey,
     sourceLocale,
@@ -123,28 +178,20 @@ export class GT {
     locales,
     projectId,
     customMapping,
-    baseUrl = defaultBaseUrl,
-  }: GTConstructorParams = {}) {
+    baseUrl,
+  }: GTConstructorParams) {
     // ----- Environment properties ----- //
-    this.apiKey = apiKey;
-    this.devApiKey = devApiKey;
-    this.projectId = projectId;
-    if (typeof process !== 'undefined') {
-      this.apiKey ||= process.env?.GT_API_KEY;
-      this.devApiKey ||= process.env?.GT_DEV_API_KEY;
-      this.projectId ||= process.env?.GT_PROJECT_ID;
-    }
+    if (apiKey) this.apiKey = apiKey;
+    if (devApiKey) this.devApiKey = devApiKey;
+    if (projectId) this.projectId = projectId;
 
     // ----- Standardize locales ----- //
-
-    this._renderingLocales = [];
 
     // source locale
     if (sourceLocale) {
       this.sourceLocale = _standardizeLocale(sourceLocale);
       if (!_isValidLocale(this.sourceLocale))
         throw new Error(invalidLocaleError(this.sourceLocale));
-      this._renderingLocales.push(this.sourceLocale);
     }
 
     // target locale
@@ -152,8 +199,13 @@ export class GT {
       this.targetLocale = _standardizeLocale(targetLocale);
       if (!_isValidLocale(this.targetLocale))
         throw new Error(invalidLocaleError(this.targetLocale));
-      this._renderingLocales.push(this.targetLocale);
     }
+
+    // rendering locales
+    this._renderingLocales = [];
+    if (this.sourceLocale) this._renderingLocales.push(this.sourceLocale);
+    if (this.targetLocale) this._renderingLocales.push(this.targetLocale);
+    this._renderingLocales.push(libraryDefaultLocale);
 
     // locales
     if (locales) {
@@ -173,18 +225,432 @@ export class GT {
       this.locales = result;
     }
 
-    // fallback ordered array of locales
-    this._renderingLocales.push(libraryDefaultLocale);
-
     // ----- Other properties ----- //
-    this.baseUrl = baseUrl;
-    this.customMapping = customMapping;
+    if (baseUrl) this.baseUrl = baseUrl;
+    if (customMapping) this.customMapping = customMapping;
   }
 
-  // -------------- Translation methods -------------- //
-  translatef() {}
+  // -------------- Private Methods -------------- //
 
-  mtranslatef() {}
+  private _getTranslationConfig(): TranslationRequestConfig {
+    return {
+      baseUrl: this.baseUrl,
+      apiKey: this.apiKey || this.devApiKey,
+      projectId: this.projectId || '',
+    };
+  }
+
+  private _validateAuth(functionName: string) {
+    const errors: string[] = [];
+    if (!this.apiKey && !this.devApiKey) {
+      const error = noApiKeyProvidedError(functionName);
+      gtInstanceLogger.error(error);
+      errors.push(error);
+    }
+    if (!this.projectId) {
+      const error = noProjectIdProvidedError(functionName);
+      gtInstanceLogger.error(error);
+      errors.push(error);
+    }
+    if (errors.length) {
+      throw new Error(noProjectIdProvidedError(functionName));
+    }
+  }
+
+  // -------------- Translation Methods -------------- //
+
+  /**
+   * Enqueues translation entries for processing.
+   *
+   * @param {Updates} updates - The translation entries to enqueue.
+   * @param {EnqueueEntriesOptions} options - Options for enqueueing entries.
+   * @param {string} library - The library being used (for context).
+   * @returns {Promise<EnqueueTranslationEntriesResult>} The result of the enqueue operation.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.enqueueEntries([
+   *   {
+   *     content: 'Hello, world!',
+   *     fileName: 'Button.tsx',
+   *     fileFormat: 'TS',
+   *     dataFormat: 'JSX',
+   *   },
+   * ], {
+   *   sourceLocale: 'en-US',
+   *   targetLocales: ['es-ES', 'fr-FR'],
+   *   publish: true,
+   *   description: 'Translations for the Button component',
+   * });
+   */
+  async enqueueEntries(
+    updates: Updates,
+    options: EnqueueEntriesOptions = {}
+  ): Promise<EnqueueEntriesResult> {
+    // Validation
+    this._validateAuth('enqueueTranslationEntries');
+
+    // Merge instance settings with options
+    const mergedOptions: EnqueueEntriesOptions = {
+      ...options,
+      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+    };
+
+    // Request the translation entry updates
+    return await _enqueueEntries(
+      updates,
+      mergedOptions,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Enqueues files for translation processing.
+   *
+   * @param {FileToTranslate[]} files - Array of files to enqueue for translation.
+   * @param {EnqueueFilesOptions} options - Options for enqueueing files.
+   * @returns {Promise<EnqueueFilesResult>} The result of the enqueue operation.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.enqueueFiles([
+   *   {
+   *     content: 'Hello, world!',
+   *     fileName: 'Button.tsx',
+   *     fileFormat: 'TS',
+   *     dataFormat: 'JSX',
+   *   },
+   * ], {
+   *   sourceLocale: 'en-US',
+   *   targetLocales: ['es-ES', 'fr-FR'],
+   *   publish: true,
+   *   description: 'Translations for the Button component',
+   * });
+   */
+  async enqueueFiles(
+    files: FileToTranslate[],
+    options: EnqueueFilesOptions
+  ): Promise<EnqueueFilesResult> {
+    // Validation
+    this._validateAuth('enqueueFiles');
+
+    // Merge instance settings with options
+    const mergedOptions: EnqueueFilesOptions = {
+      ...options,
+      sourceLocale: options.sourceLocale ?? this.sourceLocale,
+    };
+
+    // Require source locale
+    if (!mergedOptions.sourceLocale) {
+      const error = noSourceLocaleProvidedError('enqueueFiles');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    // Request the file updates
+    return await _enqueueFiles(
+      files,
+      mergedOptions as RequiredEnqueueFilesOptions,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Checks the translation status of files.
+   *
+   * @param {Object} data - Object mapping source paths to file information.
+   * @param {CheckFileTranslationsOptions} options - Options for checking file translations.
+   * @returns {Promise<CheckFileTranslationsResult>} The file translation status information.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.checkFileTranslations([
+   *   { sourcePath: 'src/components/Button.tsx', locale: 'es-ES' },
+   *   { sourcePath: 'src/components/Input.tsx', locale: 'fr-FR' },
+   * ], {
+   *   timeout: 10000,
+   * });
+   *
+   */
+  async checkFileTranslations(
+    data: FileTranslationQuery[],
+    options: CheckFileTranslationsOptions = {}
+  ): Promise<CheckFileTranslationsResult> {
+    // Validation
+    this._validateAuth('checkFileTranslations');
+
+    // Request the file translation status
+    return await _checkFileTranslations(
+      data,
+      options,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Checks the translation status of a version.
+   *
+   * @param {string} versionId - The ID of the version to check.
+   * @param {CheckTranslationStatusOptions} options - Options for checking the translation status.
+   * @returns {Promise<TranslationStatusResult>} The translation status of the version.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.checkTranslationStatus('1234567890', {
+   *   timeout: 10000,
+   * });
+   */
+  async checkTranslationStatus(
+    versionId: string,
+    options: CheckTranslationStatusOptions = {}
+  ): Promise<TranslationStatusResult> {
+    // Validation
+    this._validateAuth('checkTranslationStatus');
+
+    // Request the translation status
+    return await _checkTranslationStatus(
+      versionId,
+      options,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Downloads a single translation file.
+   *
+   * @param {string} translationId - The ID of the translation to download.
+   * @param {DownloadFileOptions} options - Options for downloading the file.
+   * @returns {Promise<DownloadFileResult>} The downloaded file content and metadata.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.downloadFile('1234567890', {
+   *   timeout: 10000,
+   * });
+   */
+  async downloadFile(
+    translationId: string,
+    options: DownloadFileOptions = {}
+  ): Promise<ArrayBuffer> {
+    // Validation
+    this._validateAuth('downloadFile');
+
+    return await _downloadFile(
+      translationId,
+      options,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Downloads multiple translation files in a batch.
+   *
+   * @param {string[]} fileIds - Array of file IDs to download.
+   * @param {DownloadFileBatchOptions} options - Options for the batch download.
+   * @returns {Promise<DownloadFileBatchResult>} The batch download results.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.downloadFileBatch(['1234567890', '1234567891'], {
+   *   timeout: 10000,
+   * });
+   */
+  async downloadFileBatch(
+    fileIds: string[],
+    options: DownloadFileBatchOptions = {}
+  ): Promise<DownloadFileBatchResult> {
+    // Validation
+    this._validateAuth('downloadFileBatch');
+
+    // Request the batch download
+    return await _downloadFileBatch(
+      fileIds,
+      options,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Fetches translation metadata and information.
+   *
+   * @param {string} versionId - The version ID to fetch translations for.
+   * @param {FetchTranslationsOptions} options - Options for fetching translations.
+   * @returns {Promise<FetchTranslationsResult>} The translation metadata and information.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.fetchTranslations('1234567890');
+   */
+  async fetchTranslations(
+    versionId: string,
+    options: FetchTranslationsOptions = {}
+  ): Promise<FetchTranslationsResult> {
+    // Validation
+    this._validateAuth('fetchTranslations');
+
+    // Request the translation metadata
+    return await _fetchTranslations(
+      versionId,
+      options,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Translates the source content to the target locale.
+   *
+   * @param {Content} source - {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage} The source content to translate.
+   * @param {string} targetLocale - string The target locale to translate to.
+   * @param {EntryMetadata} metadata - {@link EntryMetadata} The metadata for the translation.
+   * @returns {Promise<TranslationResult | TranslationError>} The translated content.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.translate('Hello, world!', 'es-ES');
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.translate('Hello, world!', 'es-ES', { context: 'A formal greeting'});
+   */
+  // Overload for JSX content
+  async _translate(
+    source: JsxChildren,
+    targetLocale: string,
+    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
+      dataFormat?: 'JSX';
+    }
+  ): Promise<TranslationResult | TranslationError>;
+
+  // Overload for ICU content
+  async _translate(
+    source: IcuMessage,
+    targetLocale: string,
+    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
+      dataFormat?: 'ICU';
+    }
+  ): Promise<TranslationResult | TranslationError>;
+
+  // Overload for I18next content
+  async _translate(
+    source: I18nextMessage,
+    targetLocale: string,
+    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
+      dataFormat?: 'I18NEXT';
+    }
+  ): Promise<TranslationResult | TranslationError>;
+
+  // Implementation
+  async _translate(
+    source: Content,
+    targetLocale: string | undefined = this.targetLocale,
+    metadata?: EntryMetadata
+  ): Promise<TranslationResult | TranslationError> {
+    // Validation
+    this._validateAuth('translate');
+
+    // Require target locale
+    if (!targetLocale) {
+      const error = noTargetLocaleProvidedError('translate');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    // Request the translation
+    return await _translate(
+      source,
+      targetLocale,
+      metadata,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Translates multiple source contents to the target locale.
+   * Override global metadata by supplying a metadata object for each request.
+   *
+   * @param {Entry[]} sources - The source contents to translate.
+   * @param {EntryMetadata} globalMetadata - {@link EntryMetadata} The metadata for the translation.
+   * @returns {Promise<TranslateManyResult>} The translated contents.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.translateMany([
+   *   { source: 'Hello, world!' },
+   *   { source: 'Goodbye, world!' },
+   * ], { targetLocale: 'es-ES' });
+   */
+  async translateMany(
+    sources: Entry[],
+    globalMetadata?: { targetLocale: string } & EntryMetadata
+  ): Promise<TranslateManyResult> {
+    // Validation
+    this._validateAuth('translateMany');
+
+    // Require target locale
+    const targetLocale = globalMetadata?.targetLocale || this.targetLocale;
+    if (!targetLocale) {
+      const error = noTargetLocaleProvidedError('translateMany');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    // Request the translation
+    return await _translateMany(
+      sources,
+      { ...globalMetadata, targetLocale },
+      this._getTranslationConfig()
+    );
+  }
 
   // -------------- Formatting -------------- //
 

@@ -37,6 +37,7 @@ export function buildJSXTree(
   unwrappedExpressions: string[],
   updates: Updates,
   errors: string[],
+  warnings: Set<string>,
   file: string,
   insideT: boolean
 ):
@@ -91,14 +92,13 @@ export function buildJSXTree(
     const componentType = importAliases[typeName ?? ''];
 
     if (componentType === 'T' && insideT) {
-      // Add error: No nested <T> components are allowed
-      errors.push(
+      // Add warning: Nested <T> components are allowed, but they are advised against
+      warnings.add(
         warnNestedTComponent(
           file,
           `${element.loc?.start?.line}:${element.loc?.start?.column}`
         )
       );
-      return null;
     }
 
     // If this JSXElement is one of the recognized variable components,
@@ -135,6 +135,7 @@ export function buildJSXTree(
               unwrappedExpressions,
               updates,
               errors,
+              warnings,
               file,
               true
             );
@@ -145,7 +146,7 @@ export function buildJSXTree(
     });
 
     if (elementIsVariable) {
-      parseJSXElement(importAliases, element, updates, errors, file);
+      parseJSXElement(importAliases, element, updates, errors, warnings, file);
       return {
         // if componentType is undefined, use typeName
         // Basically, if componentType is not a GT component, use typeName such as <div>
@@ -162,6 +163,7 @@ export function buildJSXTree(
           unwrappedExpressions,
           updates,
           errors,
+          warnings,
           file,
           true
         )
@@ -191,6 +193,7 @@ export function buildJSXTree(
           unwrappedExpressions,
           updates,
           errors,
+          warnings,
           file,
           true
         )
@@ -236,6 +239,7 @@ export function parseJSXElement(
   node: t.JSXElement,
   updates: Updates,
   errors: string[],
+  warnings: Set<string>,
   file: string
 ) {
   const openingElement = node.openingElement;
@@ -246,6 +250,7 @@ export function parseJSXElement(
     return;
   }
   const componentErrors: string[] = [];
+  const componentWarnings: Set<string> = new Set();
   const metadata: Metadata = {};
 
   // We'll track this flag to know if any unwrapped {variable} is found in children
@@ -302,6 +307,7 @@ export function parseJSXElement(
     unwrappedExpressions,
     updates,
     componentErrors,
+    componentWarnings,
     file,
     false
   );
@@ -311,6 +317,10 @@ export function parseJSXElement(
     jsxTree = treeResult.props?.children;
   } else {
     jsxTree = treeResult;
+  }
+
+  if (componentWarnings.size > 0) {
+    componentWarnings.forEach((warning) => warnings.add(warning));
   }
 
   if (componentErrors.length > 0) {

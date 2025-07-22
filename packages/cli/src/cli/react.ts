@@ -11,13 +11,14 @@ import {
   endCommand,
   logError,
   logErrorAndExit,
+  logMessage,
   logStep,
   logSuccess,
   logWarning,
   promptConfirm,
 } from '../console/logging.js';
 import loadJSON from '../fs/loadJSON.js';
-import findFilepath, { findFilepaths } from '../fs/findFilepath.js';
+import findFilepath from '../fs/findFilepath.js';
 import chalk from 'chalk';
 import { formatFiles } from '../hooks/postProcess.js';
 import { BaseCLI } from './base.js';
@@ -33,8 +34,6 @@ import updateConfig from '../fs/config/updateConfig.js';
 import { validateConfigExists } from '../config/validateSettings.js';
 import { validateProject } from '../translation/validate.js';
 import { intro } from '@clack/prompts';
-import localizeStaticUrls from '../utils/localizeStaticUrls.js';
-import flattenJsonFiles from '../utils/flattenJsonFiles.js';
 
 const DEFAULT_TIMEOUT = 600;
 const pkg = 'gt-react';
@@ -270,6 +269,11 @@ export class ReactCLI extends BaseCLI {
         false
       )
       .option(
+        '--suppress-warnings',
+        'Suppress warnings encountered while scanning for <T> tags',
+        false
+      )
+      .option(
         '-t, --translations-dir, --translation-dir <path>',
         'Path to directory where translations will be saved. If this flag is not provided, translations will not be saved locally.'
       )
@@ -329,12 +333,34 @@ export class ReactCLI extends BaseCLI {
 
     // User has to provide a dictionary file
     // will not read from settings.files.resolvedPaths.json
-    const { updates, errors } = await createUpdates(
+    const { updates, errors, warnings } = await createUpdates(
       options,
       options.dictionary,
       this.library === 'gt-next' ? 'gt-next' : 'gt-react',
       false
     );
+
+    if (warnings.length > 0) {
+      if (options.suppressWarnings) {
+        logWarning(
+          chalk.yellow(
+            `CLI tool encountered ${warnings.length} warnings while scanning for translatable content. ${chalk.gray('To view these warnings, re-run without the --suppress-warnings flag')}`
+          )
+        );
+      } else {
+        logWarning(
+          chalk.yellow(
+            `CLI tool encountered ${warnings.length} warnings while scanning for translatable content. ${chalk.gray('To suppress these warnings, re-run with --suppress-warnings')}\n` +
+              warnings
+                .map(
+                  (warning) =>
+                    chalk.yellow('• Warning: ') + chalk.white(warning)
+                )
+                .join('\n')
+          )
+        );
+      }
+    }
 
     if (errors.length > 0) {
       if (options.ignoreErrors) {
@@ -513,16 +539,6 @@ export class ReactCLI extends BaseCLI {
         process.exit(1);
       }
       await translate(options, settings._versionId);
-    }
-
-    // Localize static urls (/docs -> /[locale]/docs)
-    if (options.experimentalLocalizeStaticUrls) {
-      await localizeStaticUrls(options);
-    }
-
-    // Flatten json files into a single file
-    if (options.experimentalFlattenJsonFiles) {
-      await flattenJsonFiles(options);
     }
   }
 
