@@ -1,0 +1,15 @@
+{
+  "test": "test1",
+  "array": [
+    {
+      "/navigation/languages/1/global/anchors/2/anchor": "test2",
+      "$..[?(@.length >= 0)]": ["test3", "test4"]
+    }
+  ],
+  "fake_array": {
+    "0": {
+      "/navigation/languages/1/global/anchors/2/anchor": "test2",
+      "$..[?(@.length >= 0)]": ["test3", "test4"]
+    }
+  }
+}
