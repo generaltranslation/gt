@@ -58,7 +58,7 @@ export function resolveFiles(
 
   // Process GT files
   if (files.gt?.output) {
-    placeholderResult.gt = files.gt.output;
+    placeholderResult.gt = path.resolve(cwd, files.gt.output);
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {

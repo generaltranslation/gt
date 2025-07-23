@@ -13,13 +13,11 @@ import {
   createSpinner,
   logError,
   logSuccess,
-  logMessage,
 } from '../../console/logging.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
-import { flattenJsonDictionary } from '../../react/utils/flattenDictionary.js';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types/index.js';
-import { FileFormat, DataFormat } from '../../types/data.js';
+import { FileFormat, DataFormat, FileToTranslate } from '../../types/data.js';
 import path from 'node:path';
 import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile.js';
@@ -27,6 +25,8 @@ import { downloadFileBatch } from '../../api/downloadFileBatch.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { TranslateOptions } from '../../cli/base.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
+import { parseJson } from '../json/parseJson.js';
+
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 /**
@@ -46,7 +46,8 @@ export async function translateFiles(
   options: Settings & TranslateOptions
 ): Promise<void> {
   // Collect all files to translate
-  const allFiles = [];
+  const allFiles: FileToTranslate[] = [];
+  const additionalOptions = options.options || {};
 
   // Process JSON files
   if (filePaths.json) {
@@ -56,14 +57,12 @@ export async function translateFiles(
 
     const jsonFiles = filePaths.json.map((filePath) => {
       const content = readFile(filePath);
-      const json = JSON.parse(content);
 
-      // Just to validate the JSON is valid
-      flattenJsonDictionary(json);
+      const parsedJson = parseJson(content, filePath, additionalOptions);
 
       const relativePath = getRelative(filePath);
       return {
-        content,
+        content: parsedJson,
         fileName: relativePath,
         fileFormat: 'JSON' as FileFormat,
         dataFormat,

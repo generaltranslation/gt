@@ -119,9 +119,9 @@ export type Settings = {
   locales: string[];
   files:
     | {
-        resolvedPaths: ResolvedFiles; // resolved paths for the default locale
-        placeholderPaths: ResolvedFiles; // placeholder paths for all locales containing [locale]
-        transformPaths: TransformFiles; // transform paths for all locales containing [locale]
+        resolvedPaths: ResolvedFiles; // Absolute resolved paths for the default locale
+        placeholderPaths: ResolvedFiles; // Absolute placeholder paths for all locales containing [locale]
+        transformPaths: TransformFiles; // Absolute transform paths for all locales containing [locale]
       }
     | undefined;
   stageTranslations: boolean; // if true, always stage the project during translate command
@@ -130,17 +130,17 @@ export type Settings = {
   description?: string;
   src: string[]; // list of glob patterns for gt-next and gt-react
   framework?: SupportedFrameworks;
-  options?: ExperimentalOptions;
+  options?: AdditionalOptions;
 };
 
-type ExperimentalOptions = {
+export type AdditionalOptions = {
   preset?: 'mintlify' | 'fumadocs' | 'nextra' | 'astro';
   flattenJsonFiles?: boolean;
   hideDefaultLocale?: boolean;
   localizeStaticUrls?: boolean;
   jsonSchema?: {
     [fileGlob: string]: {
-      compositeFile?: boolean; // if true, translated files will be merged into a single file
+      compositeFile?: boolean; // if true, translated files will be merged into a single file. Only used for reconciliation.
       include?: {
         // object of values denoted by json paths to include
         [jsonPath: string]: string;

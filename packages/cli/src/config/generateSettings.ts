@@ -126,6 +126,9 @@ export async function generateSettings(
     ? resolveFiles(mergedOptions.files, mergedOptions.defaultLocale, cwd)
     : undefined;
 
+  // Add additional options if provided
+  mergedOptions.options = mergedOptions.options || {};
+
   // if there's no existing config file, creates one
   // does not include the API key to avoid exposing it
   if (!fs.existsSync(mergedOptions.config)) {
