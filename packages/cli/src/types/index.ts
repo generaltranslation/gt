@@ -138,5 +138,20 @@ type ExperimentalOptions = {
   flattenJsonFiles?: boolean;
   hideDefaultLocale?: boolean;
   localizeStaticUrls?: boolean;
-  [key: string]: any;
+  jsonSchema?: {
+    [fileGlob: string]: {
+      compositeFile?: boolean; // if true, translated files will be merged into a single file
+      include?: {
+        // object of values denoted by json paths to include
+        [jsonPath: string]: string;
+      };
+      transform?: {
+        // only used if compositeFile is true; keyPaths help reconciliate translated content
+        [keyPath: string]: {
+          type: 'value' | 'key';
+          localeProperty?: string; // specific locale property to use for the key, ex: localeCode, languageName, emoji, etc.
+        };
+      };
+    };
+  };
 };
