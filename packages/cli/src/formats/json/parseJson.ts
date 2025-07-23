@@ -32,14 +32,21 @@ export function parseJson(
 
   const jsonSchema = options.jsonSchema[matchingGlob];
   if (jsonSchema && jsonSchema.include) {
-    const extractedJson = {};
-    const jsonPaths = Object.keys(jsonSchema.include);
+    const extractedJson: Record<string, any> = {};
+    const jsonPaths = jsonSchema.include;
     for (const jsonPath of jsonPaths) {
-      const extractedJson = JSONPath({
+      const results = JSONPath({
         json,
         path: jsonPath,
+        resultType: 'all',
+        flatten: true,
+        wrap: true,
       });
-      extractedJson[jsonPath] = extractedJson;
+      for (const result of results) {
+        if (typeof result.value === 'string') {
+          extractedJson[result.pointer] = result.value;
+        }
+      }
     }
     return JSON.stringify(extractedJson);
   } else {
