@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.1.2
+
+### Patch Changes
+
+- [#490](https://github.com/generaltranslation/gt/pull/490) [`03b3367`](https://github.com/generaltranslation/gt/commit/03b3367e98b155a21a723f0a645999f3efb40d18) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add internal header when necessary
+
 ## 7.1.1
 
 ### Patch Changes
