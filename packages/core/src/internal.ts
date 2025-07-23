@@ -20,3 +20,38 @@ export {
   isVariable,
   minifyVariableType,
 };
+
+// backwards compatability
+export {
+  getNewJsxChild,
+  getNewJsxChildren,
+  getNewJsxElement,
+  getNewBranchType,
+  getNewVariableType,
+  getNewVariableObject,
+  getNewGTProp,
+  getOldJsxChild,
+  getOldJsxChildren,
+  getOldJsxElement,
+  getOldBranchType,
+  getOldVariableType,
+  getOldVariableObject,
+  getOldGTProp,
+} from './backwards-compatability/dataConversion';
+export type {
+  OldJsxChild,
+  OldJsxChildren,
+  OldBranchType,
+  OldJsxElement,
+  OldVariableObject,
+  OldVariableType,
+} from './backwards-compatability/oldTypes';
+export type {
+  isOldVariableObject,
+  isNewVariableObject,
+  isOldJsxChildren,
+} from './backwards-compatability/typeChecking';
+export {
+  oldHashJsxChildren,
+  oldHashString,
+} from './backwards-compatability/oldHashJsxChildren';

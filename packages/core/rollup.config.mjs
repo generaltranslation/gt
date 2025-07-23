@@ -97,6 +97,7 @@ export default [
       commonjs(),
       terser(),
     ],
+    external: ['crypto-js', 'fast-json-stable-stringify'], // External dependencies not bundled in
   },
 
   // TypeScript declarations for the internal module
