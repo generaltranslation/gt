@@ -605,6 +605,199 @@ describe('parseJson', () => {
     });
   });
 
+  describe('Locale Properties', () => {
+    it('should handle different locale properties for object type', () => {
+      const json = JSON.stringify({
+        translations: {
+          'English': { title: 'English Title' },
+          'Français': { title: 'Titre Français' }
+        }
+      });
+      
+      const result = parseJson(
+        json,
+        path.join(__dirname, '../__mocks__', 'test.json'),
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.translations': {
+                  type: 'object',
+                  include: ['$.title'],
+                  localeProperty: 'name',
+                },
+              },
+            },
+          },
+        },
+        'en'
+      );
+      
+      const parsed = JSON.parse(result);
+      expect(parsed["/translations"]["/title"]).toBe('English Title');
+    });
+
+    it('should handle different locale properties for array type', () => {
+      const json = JSON.stringify({
+        items: [
+          { lang: 'English', title: 'English Title' },
+          { lang: 'Français', title: 'Titre Français' }
+        ]
+      });
+      
+      const result = parseJson(
+        json,
+        path.join(__dirname, '../__mocks__', 'test.json'),
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.items': {
+                  type: 'array',
+                  include: ['$.title'],
+                  key: '$.lang',
+                  localeProperty: 'name',
+                },
+              },
+            },
+          },
+        },
+        'en'
+      );
+      
+      const parsed = JSON.parse(result);
+      expect(parsed["/items"]["/title"]).toBe('English Title');
+    });
+
+    it('should use default localeProperty (code) when not specified', () => {
+      const json = JSON.stringify({
+        translations: {
+          'en': { title: 'English Title' },
+          'fr': { title: 'Titre Français' }
+        }
+      });
+      
+      const result = parseJson(
+        json,
+        path.join(__dirname, '../__mocks__', 'test.json'),
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.translations': {
+                  type: 'object',
+                  include: ['$.title'],
+                },
+              },
+            },
+          },
+        },
+        'en'
+      );
+      
+      const parsed = JSON.parse(result);
+      expect(parsed["/translations"]["/title"]).toBe('English Title');
+    });
+  });
+
+  describe('Real-world Scenarios', () => {
+    it('should handle navigation structure like test_file1.json', () => {
+      const json = readFileSync(
+        path.join(__dirname, '../__mocks__', 'test_file1.json'),
+        'utf8'
+      );
+      
+      const result = parseJson(
+        json,
+        path.join(__dirname, '../__mocks__', 'test_file1.json'),
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.navigation.languages': {
+                  type: 'array',
+                  include: ['$.global.anchors[*].anchor', '$.tabs[*].tab'],
+                  key: '$.language',
+                },
+              },
+            },
+          },
+        },
+        'en'
+      );
+      
+      expect(result).toBeDefined();
+      const parsed = JSON.parse(result);
+      expect(parsed["/navigation/languages"]).toBeDefined();
+      
+      // Should extract anchor text
+      expect(parsed["/navigation/languages"]["/global/anchors/0/anchor"]).toBe('Announcements');
+      expect(parsed["/navigation/languages"]["/global/anchors/1/anchor"]).toBe('Status');
+      
+      // Should extract tab names
+      expect(parsed["/navigation/languages"]["/tabs/0/tab"]).toBe('Introduction');
+      expect(parsed["/navigation/languages"]["/tabs/1/tab"]).toBe('Features');
+    });
+
+    it('should handle deeply nested JSON paths', () => {
+      const json = JSON.stringify({
+        deep: {
+          nesting: {
+            structure: {
+              en: { content: 'English content', meta: { author: 'John' } },
+              fr: { content: 'Contenu français', meta: { author: 'Jean' } }
+            }
+          }
+        }
+      });
+      
+      const result = parseJson(
+        json,
+        path.join(__dirname, '../__mocks__', 'test.json'),
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.deep.nesting.structure': {
+                  type: 'object',
+                  include: ['$.content', '$.meta.author'],
+                },
+              },
+            },
+          },
+        },
+        'en'
+      );
+      
+      const parsed = JSON.parse(result);
+      expect(parsed["/deep/nesting/structure"]["/content"]).toBe('English content');
+      expect(parsed["/deep/nesting/structure"]["/meta/author"]).toBe('John');
+    });
+
+    it('should handle multiple file glob patterns', () => {
+      const json = JSON.stringify({ content: 'test content' });
+      
+      // Test that more specific patterns take precedence
+      const result = parseJson(
+        json,
+        path.join(__dirname, '../__mocks__', 'specific-config.json'),
+        {
+          jsonSchema: {
+            '**/*.json': {
+              include: ['$.content'],
+            },
+            '**/specific-*.json': {
+              include: ['$..*'], // More inclusive for specific files
+            },
+          },
+        }
+      );
+      
+      const parsed = JSON.parse(result);
+      expect(parsed["/content"]).toBe('test content');
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle empty objects', () => {
       const json = JSON.stringify({});
