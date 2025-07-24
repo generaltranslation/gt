@@ -76,7 +76,6 @@ export function parseJson(
         exit(1);
       }
       const { sourceItem, keyPointer } = matchingItem;
-
       // Get the fields to translate from the includes
       let itemsToTranslate: any = [];
       for (const include of sourceObjectOptions.include) {

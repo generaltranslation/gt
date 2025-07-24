@@ -179,7 +179,7 @@ describe('mergeJson', () => {
       );
 
       expect(result).toHaveLength(1);
-      expect(result[0]).toBe('"{\\"translated\\":\\"contenido\\"}"');
+      expect(result[0]).toBe('{"translated":"contenido"}');
     });
 
     it('should return stringified translated content when no jsonSchema option provided', () => {
@@ -200,7 +200,7 @@ describe('mergeJson', () => {
       );
 
       expect(result).toHaveLength(1);
-      expect(result[0]).toBe('"{\\"translated\\":\\"contenido\\"}"');
+      expect(result[0]).toBe('{"translated":"contenido"}');
     });
   });
 

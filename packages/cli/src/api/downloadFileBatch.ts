@@ -73,7 +73,7 @@ export async function downloadFileBatch(
               if (originalContent) {
                 data = mergeJson(
                   originalContent,
-                  file.fileName,
+                  outputPath,
                   options.options,
                   [
                     {

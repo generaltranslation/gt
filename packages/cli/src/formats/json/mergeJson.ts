@@ -24,9 +24,7 @@ export function mergeJson(
 ): string[] {
   const jsonSchema = validateJsonSchema(options, filePath);
   if (!jsonSchema) {
-    return targets.map((target) =>
-      JSON.stringify(target.translatedContent, null, 2)
-    );
+    return targets.map((target) => target.translatedContent);
   }
 
   let originalJson: any;
