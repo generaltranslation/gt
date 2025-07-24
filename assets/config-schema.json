@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://generaltranslation.com/docs/config-schema.json",
+  "$id": "https://assets.gtx.dev/config-schema.json",
   "title": "General Translation Configuration",
   "description": "Configuration schema for gt.config.json files used by General Translation CLI",
   "type": "object",
@@ -274,6 +274,112 @@
       },
       "additionalProperties": false
     }
+  },
+  "options": {
+    "type": "object",
+    "description": "Additional configuration options",
+    "properties": {
+      "jsonSchema": {
+        "type": "object",
+        "description": "JSON schema configuration for specific file globs",
+        "patternProperties": {
+          ".*": {
+            "type": "object",
+            "description": "JSON schema options for files matching this glob pattern",
+            "properties": {
+              "preset": {
+                "type": "string",
+                "enum": ["mintlify"],
+                "description": "Preset configuration to use"
+              },
+              "include": {
+                "type": "array",
+                "description": "Array of JSONPaths to include (mutually exclusive with composite)",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "composite": {
+                "type": "object",
+                "description": "Composite configuration (mutually exclusive with include)",
+                "patternProperties": {
+                  ".*": {
+                    "type": "object",
+                    "description": "Source object options for this JSONPath",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["array", "object"],
+                        "description": "Type of the source object"
+                      },
+                      "include": {
+                        "type": "array",
+                        "description": "Array of relative JSONPaths to include in the translated JSON",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "key": {
+                        "type": "string",
+                        "description": "Relative JSONPath to the key to distinguish between source and target locales (required for array type)"
+                      },
+                      "localeProperty": {
+                        "type": "string",
+                        "description": "Specific locale property to use for the key for target locales",
+                        "default": "code"
+                      },
+                      "transform": {
+                        "type": "object",
+                        "description": "Optional config for transforming specific fields in the source item",
+                        "patternProperties": {
+                          ".*": {
+                            "type": "object",
+                            "description": "Transform configuration for this JSONPath",
+                            "properties": {
+                              "match": {
+                                "type": "string",
+                                "description": "Regex to match strings to replace"
+                              },
+                              "replace": {
+                                "type": "string",
+                                "description": "String or regex pattern to replace the match with"
+                              }
+                            },
+                            "required": ["replace"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": ["type", "include"],
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "oneOf": [
+              {
+                "required": ["include"],
+                "not": {
+                  "required": ["composite"]
+                }
+              },
+              {
+                "required": ["composite"],
+                "not": {
+                  "required": ["include"]
+                }
+              }
+            ],
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "additionalProperties": false
   },
   "required": ["defaultLocale", "locales"],
   "additionalProperties": true,

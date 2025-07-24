@@ -134,9 +134,7 @@ export type Settings = {
 };
 
 export type AdditionalOptions = {
-  flattenJsonFiles?: boolean;
-  hideDefaultLocale?: boolean;
-  localizeStaticUrls?: boolean;
+  // Optional schema to follow while translating JSON files
   jsonSchema?: {
     [fileGlob: string]: JsonSchema;
   };

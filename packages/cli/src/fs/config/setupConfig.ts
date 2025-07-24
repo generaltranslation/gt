@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { displayCreatedConfigFile } from '../../console/logging.js';
 import { FilesOptions, SupportedFrameworks } from '../../types/index.js';
 import { logError } from '../../console/logging.js';
+import { GT_CONFIG_SCHEMA_URL } from '../../utils/constants.js';
 
 /**
  * Checks if the config file exists.
@@ -40,6 +41,7 @@ export async function createOrUpdateConfig(
 
     // merge old and new content
     const mergedContent = {
+      $schema: GT_CONFIG_SCHEMA_URL,
       ...oldContent,
       ...newContent,
     };
