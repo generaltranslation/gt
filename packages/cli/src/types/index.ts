@@ -134,7 +134,6 @@ export type Settings = {
 };
 
 export type AdditionalOptions = {
-  preset?: 'mintlify' | 'fumadocs' | 'nextra' | 'astro';
   flattenJsonFiles?: boolean;
   hideDefaultLocale?: boolean;
   localizeStaticUrls?: boolean;
@@ -144,6 +143,8 @@ export type AdditionalOptions = {
 };
 
 export type JsonSchema = {
+  preset?: 'mintlify';
+
   // exactly 1 of include or composite must be provided; not both
 
   // specify include if file is not composite

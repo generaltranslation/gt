@@ -19,6 +19,7 @@ import path from 'node:path';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
 import { gt } from '../utils/gt.js';
+import { generatePreset } from './optionPresets.js';
 
 export const DEFAULT_SRC_PATTERNS = [
   'src/**/*.{js,jsx,ts,tsx}',
@@ -127,7 +128,17 @@ export async function generateSettings(
     : undefined;
 
   // Add additional options if provided
-  mergedOptions.options = mergedOptions.options || {};
+  if (mergedOptions.options && mergedOptions.options.jsonSchema) {
+    for (const fileGlob of Object.keys(mergedOptions.options.jsonSchema)) {
+      const jsonSchema = mergedOptions.options.jsonSchema[fileGlob];
+      if (jsonSchema.preset) {
+        mergedOptions.options.jsonSchema[fileGlob] = {
+          ...generatePreset(jsonSchema.preset),
+          ...jsonSchema,
+        };
+      }
+    }
+  }
 
   // if there's no existing config file, creates one
   // does not include the API key to avoid exposing it
