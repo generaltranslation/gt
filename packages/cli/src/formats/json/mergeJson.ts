@@ -22,13 +22,19 @@ export function mergeJson(
   }[],
   defaultLocale: string
 ): string[] {
-  const originalJson = JSON.parse(originalContent);
-
   const jsonSchema = validateJsonSchema(options, filePath);
   if (!jsonSchema) {
     return targets.map((target) =>
       JSON.stringify(target.translatedContent, null, 2)
     );
+  }
+
+  let originalJson: any;
+  try {
+    originalJson = JSON.parse(originalContent);
+  } catch (error) {
+    logError(`Invalid JSON file: ${filePath}`);
+    exit(1);
   }
 
   // Handle include

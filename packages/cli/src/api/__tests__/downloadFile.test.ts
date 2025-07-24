@@ -4,6 +4,7 @@ import { gt } from '../../utils/gt.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logError } from '../../console/logging.js';
+import { createMockSettings } from '../__mocks__/settings.js';
 
 // Mock dependencies
 vi.mock('../../utils/gt.js', () => ({
@@ -84,14 +85,16 @@ describe('downloadFile', () => {
 
     const result = await downloadFile(
       'translation-123',
-      '/output/dir/file.json'
+      '/output/dir/file.json',
+      'en',
+      createMockSettings()
     );
 
     expect(gt.downloadFile).toHaveBeenCalledWith('translation-123');
     expect(path.dirname).toHaveBeenCalledWith('/output/dir/file.json');
     expect(fs.promises.writeFile).toHaveBeenCalledWith(
       '/output/dir/file.json',
-      expect.any(Buffer)
+      expect.any(String)
     );
     expect(result).toBe(true);
   });
@@ -103,7 +106,9 @@ describe('downloadFile', () => {
 
     const result = await downloadFile(
       'translation-123',
-      '/output/dir/file.json'
+      '/output/dir/file.json',
+      'en',
+      createMockSettings()
     );
 
     expect(fs.mkdirSync).toHaveBeenCalledWith('/output/dir', {
@@ -122,7 +127,9 @@ describe('downloadFile', () => {
 
     const downloadPromise = downloadFile(
       'translation-123',
-      '/output/dir/file.json'
+      '/output/dir/file.json',
+      'en',
+      createMockSettings()
     );
 
     // Fast-forward through the retry delay
@@ -142,8 +149,8 @@ describe('downloadFile', () => {
     const downloadPromise = downloadFile(
       'translation-123',
       '/output/dir/file.json',
-      2,
-      100
+      'en',
+      createMockSettings()
     );
 
     // Fast-forward through all retry delays
@@ -165,7 +172,9 @@ describe('downloadFile', () => {
 
     const downloadPromise = downloadFile(
       'translation-123',
-      '/output/dir/file.json'
+      '/output/dir/file.json',
+      'en',
+      createMockSettings()
     );
 
     // Fast-forward through all retry delays (default: 3 retries with 1000ms delay)
@@ -190,7 +199,9 @@ describe('downloadFile', () => {
 
     const downloadPromise = downloadFile(
       'translation-123',
-      '/output/dir/file.json'
+      '/output/dir/file.json',
+      'en',
+      createMockSettings()
     );
 
     // Fast-forward through the retry delay
@@ -221,7 +232,9 @@ describe('downloadFile', () => {
 
     const downloadPromise = downloadFile(
       'translation-123',
-      '/output/dir/file.json'
+      '/output/dir/file.json',
+      'en',
+      createMockSettings()
     );
 
     // Fast-forward through the retry delay
@@ -239,13 +252,15 @@ describe('downloadFile', () => {
 
     const result = await downloadFile(
       'translation-123',
-      '/output/dir/file.json'
+      '/output/dir/file.json',
+      'en',
+      createMockSettings()
     );
 
     expect(result).toBe(true);
     expect(fs.promises.writeFile).toHaveBeenCalledWith(
       '/output/dir/file.json',
-      expect.any(Buffer)
+      expect.any(String)
     );
   });
 
@@ -254,7 +269,9 @@ describe('downloadFile', () => {
 
     const result = await downloadFile(
       'translation-123-special_chars',
-      '/output/dir/file.json'
+      '/output/dir/file.json',
+      'en',
+      createMockSettings()
     );
 
     expect(gt.downloadFile).toHaveBeenCalledWith(
@@ -273,7 +290,9 @@ describe('downloadFile', () => {
 
     const result = await downloadFile(
       'translation-123',
-      '/output/deeply/nested/dir/file.json'
+      '/output/deeply/nested/dir/file.json',
+      'en',
+      createMockSettings()
     );
 
     expect(fs.mkdirSync).toHaveBeenCalledWith('/output/deeply/nested/dir', {
@@ -290,8 +309,8 @@ describe('downloadFile', () => {
     const downloadPromise = downloadFile(
       'translation-123',
       '/output/dir/file.json',
-      1,
-      100
+      'en',
+      createMockSettings()
     );
 
     // Fast-forward through retry delays

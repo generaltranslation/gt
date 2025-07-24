@@ -4,6 +4,7 @@ import { getLocaleProperties } from 'generaltranslation';
 import { downloadFile } from './downloadFile.js';
 import { downloadFileBatch } from './downloadFileBatch.js';
 import { gt } from '../utils/gt.js';
+import { Settings } from '../types/index.js';
 
 export type CheckFileTranslationData = {
   [key: string]: {
@@ -23,9 +24,6 @@ export type CheckFileTranslationData = {
  * @returns True if all translations are deployed, false otherwise
  */
 export async function checkFileTranslations(
-  projectId: string,
-  apiKey: string,
-  baseUrl: string,
   data: {
     [key: string]: {
       versionId: string;
@@ -35,7 +33,8 @@ export async function checkFileTranslations(
   locales: string[],
   timeoutDuration: number,
   resolveOutputPath: (sourcePath: string, locale: string) => string,
-  downloadStatus: { downloaded: Set<string>; failed: Set<string> }
+  downloadStatus: { downloaded: Set<string>; failed: Set<string> },
+  options: Settings
 ) {
   const startTime = Date.now();
   console.log();
@@ -47,13 +46,11 @@ export async function checkFileTranslations(
 
   // Do first check immediately
   const initialCheck = await checkTranslationDeployment(
-    baseUrl,
-    projectId,
-    apiKey,
     fileQueryData,
     downloadStatus,
     spinner,
-    resolveOutputPath
+    resolveOutputPath,
+    options
   );
 
   if (initialCheck) {
@@ -73,13 +70,11 @@ export async function checkFileTranslations(
     setTimeout(() => {
       intervalCheck = setInterval(async () => {
         const isDeployed = await checkTranslationDeployment(
-          baseUrl,
-          projectId,
-          apiKey,
           fileQueryData,
           downloadStatus,
           spinner,
-          resolveOutputPath
+          resolveOutputPath,
+          options
         );
         const elapsed = Date.now() - startTime;
 
@@ -254,13 +249,11 @@ function generateStatusSuffixText(
  * Checks translation status and downloads ready files
  */
 async function checkTranslationDeployment(
-  baseUrl: string,
-  projectId: string,
-  apiKey: string,
   fileQueryData: { versionId: string; fileName: string; locale: string }[],
   downloadStatus: { downloaded: Set<string>; failed: Set<string> },
   spinner: Awaited<ReturnType<typeof createOraSpinner>>,
-  resolveOutputPath: (sourcePath: string, locale: string) => string
+  resolveOutputPath: (sourcePath: string, locale: string) => string,
+  options: Settings
 ): Promise<boolean> {
   try {
     // Only query for files that haven't been downloaded yet
@@ -295,6 +288,7 @@ async function checkTranslationDeployment(
         return {
           translationId,
           outputPath,
+          locale,
           fileLocale: `${fileName}:${locale}`,
         };
       });
@@ -302,10 +296,12 @@ async function checkTranslationDeployment(
       // Use batch download if there are multiple files
       if (batchFiles.length > 1) {
         const batchResult = await downloadFileBatch(
-          batchFiles.map(({ translationId, outputPath }: any) => ({
+          batchFiles.map(({ translationId, outputPath, locale }: any) => ({
             translationId,
             outputPath,
-          }))
+            locale,
+          })),
+          options
         );
 
         // Process results
@@ -320,7 +316,12 @@ async function checkTranslationDeployment(
       } else if (batchFiles.length === 1) {
         // For a single file, use the original downloadFile method
         const file = batchFiles[0];
-        const result = await downloadFile(file.translationId, file.outputPath);
+        const result = await downloadFile(
+          file.translationId,
+          file.outputPath,
+          file.locale,
+          options
+        );
 
         if (result) {
           downloadStatus.downloaded.add(file.fileLocale);

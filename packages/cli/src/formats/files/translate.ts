@@ -152,14 +152,12 @@ export async function translateFiles(
 
     // Check for remaining translations
     await checkFileTranslations(
-      options.projectId,
-      options.apiKey,
-      options.baseUrl,
       data,
       locales,
       600,
       (sourcePath, locale) => fileMapping[locale][sourcePath],
-      downloadStatus // Pass the already downloaded files to avoid duplicate requests
+      downloadStatus, // Pass the already downloaded files to avoid duplicate requests
+      options
     );
   } catch (error) {
     logErrorAndExit(`Error translating files: ${error}`);
@@ -256,6 +254,7 @@ async function processInitialTranslations(
           translationId: id,
           outputPath,
           fileLocale: `${fileName}:${locale}`,
+          locale,
         };
       })
       .filter(Boolean);
@@ -267,10 +266,12 @@ async function processInitialTranslations(
     // Use batch download if there are multiple files
     if (batchFiles.length > 1) {
       const batchResult = await downloadFileBatch(
-        batchFiles.map(({ translationId, outputPath }: any) => ({
+        batchFiles.map(({ translationId, outputPath, locale }: any) => ({
           translationId,
           outputPath,
-        }))
+          locale,
+        })),
+        options
       );
 
       // Process results
@@ -285,7 +286,12 @@ async function processInitialTranslations(
     } else if (batchFiles.length === 1) {
       // For a single file, use the original downloadFile method
       const file = batchFiles[0];
-      const result = await downloadFile(file.translationId, file.outputPath);
+      const result = await downloadFile(
+        file.translationId,
+        file.outputPath,
+        file.locale,
+        options
+      );
 
       if (result) {
         downloadStatus.downloaded.add(file.fileLocale);

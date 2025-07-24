@@ -6,6 +6,7 @@ import * as path from 'path';
 import { logError, logWarning } from '../../console/logging.js';
 import { DownloadFileBatchResult } from '../downloadFileBatch.js';
 import { DownloadFileBatchResult as CoreDownloadFileBatchResult } from 'generaltranslation/types';
+import { createMockSettings } from '../__mocks__/settings.js';
 
 // Mock dependencies
 vi.mock('../../utils/gt.js', () => ({
@@ -65,6 +66,7 @@ describe('downloadFileBatch', () => {
     return Array.from({ length: count }, (_, i) => ({
       translationId: `translation-${i + 1}`,
       outputPath: `/output/file${i + 1}.json`,
+      locale: 'en',
       ...overrides,
     }));
   };
@@ -116,7 +118,7 @@ describe('downloadFileBatch', () => {
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
     setupFileSystemMocks();
 
-    const result = await downloadFileBatch(files);
+    const result = await downloadFileBatch(files, createMockSettings());
 
     expect(gt.downloadFileBatch).toHaveBeenCalledWith([
       'translation-1',
@@ -157,7 +159,7 @@ describe('downloadFileBatch', () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
     vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
 
-    const result = await downloadFileBatch(files);
+    const result = await downloadFileBatch(files, createMockSettings());
 
     expect(fs.mkdirSync).toHaveBeenCalledWith('/output/dir', {
       recursive: true,
@@ -176,7 +178,7 @@ describe('downloadFileBatch', () => {
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error('Write error'));
 
-    const result = await downloadFileBatch(files);
+    const result = await downloadFileBatch(files, createMockSettings());
 
     expect(logError).toHaveBeenCalledWith(
       'Error saving file translation-2: Error: Write error'
@@ -209,7 +211,7 @@ describe('downloadFileBatch', () => {
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
     setupFileSystemMocks();
 
-    const result = await downloadFileBatch(files);
+    const result = await downloadFileBatch(files, createMockSettings());
 
     expect(logWarning).toHaveBeenCalledWith(
       'No output path found for file: translation-unknown'
@@ -236,7 +238,7 @@ describe('downloadFileBatch', () => {
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
     setupFileSystemMocks();
 
-    const result = await downloadFileBatch(files);
+    const result = await downloadFileBatch(files, createMockSettings());
 
     expect(result).toEqual<DownloadFileBatchResult>({
       successful: ['translation-1'],
@@ -264,7 +266,7 @@ describe('downloadFileBatch', () => {
     setupFileSystemMocks();
     setupFakeTimers();
 
-    const downloadPromise = downloadFileBatch(files);
+    const downloadPromise = downloadFileBatch(files, createMockSettings());
 
     // Fast-forward through the retry delay
     await vi.advanceTimersByTimeAsync(1000);
@@ -282,11 +284,7 @@ describe('downloadFileBatch', () => {
     vi.mocked(gt.downloadFileBatch).mockRejectedValue(error);
     setupFakeTimers();
 
-    const downloadPromise = downloadFileBatch(
-      files,
-      2, // maxRetries
-      100 // retryDelay
-    );
+    const downloadPromise = downloadFileBatch(files, createMockSettings());
 
     // Fast-forward through all retry delays
     await vi.advanceTimersByTimeAsync(300);
@@ -310,7 +308,7 @@ describe('downloadFileBatch', () => {
     vi.mocked(gt.downloadFileBatch).mockRejectedValue(error);
     setupFakeTimers();
 
-    const downloadPromise = downloadFileBatch(files);
+    const downloadPromise = downloadFileBatch(files, createMockSettings());
 
     // Fast-forward through all retry delays (default: 3 retries with 1000ms delay)
     await vi.advanceTimersByTimeAsync(4000);
@@ -329,7 +327,7 @@ describe('downloadFileBatch', () => {
 
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
 
-    const result = await downloadFileBatch([]);
+    const result = await downloadFileBatch([], createMockSettings());
 
     expect(gt.downloadFileBatch).toHaveBeenCalledWith([]);
     expect(result).toEqual<DownloadFileBatchResult>({
@@ -355,7 +353,7 @@ describe('downloadFileBatch', () => {
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
     setupFileSystemMocks();
 
-    const result = await downloadFileBatch(files);
+    const result = await downloadFileBatch(files, createMockSettings());
 
     expect(result).toEqual<DownloadFileBatchResult>({
       successful: ['translation-1'],
@@ -386,7 +384,7 @@ describe('downloadFileBatch', () => {
       mkdirError: new Error('Permission denied'),
     });
 
-    const result = await downloadFileBatch(files);
+    const result = await downloadFileBatch(files, createMockSettings());
 
     expect(logError).toHaveBeenCalledWith(
       'Error saving file translation-1: Error: Permission denied'
@@ -404,11 +402,7 @@ describe('downloadFileBatch', () => {
     vi.mocked(gt.downloadFileBatch).mockRejectedValue(error);
     setupFakeTimers();
 
-    const downloadPromise = downloadFileBatch(
-      files,
-      1, // maxRetries
-      200 // retryDelay
-    );
+    const downloadPromise = downloadFileBatch(files, createMockSettings());
 
     // Fast-forward through the retry delay
     await vi.advanceTimersByTimeAsync(250);

@@ -6,8 +6,6 @@ import {
   findMatchingItemArray,
   findMatchingItemObject,
   generateSourceObjectPointers,
-  getSourceObjectOptionsArray,
-  getSourceObjectOptionsObject,
   validateJsonSchema,
 } from './utils.js';
 
@@ -18,11 +16,16 @@ export function parseJson(
   options: AdditionalOptions,
   defaultLocale: string
 ): string {
-  const json = JSON.parse(content);
-
   const jsonSchema = validateJsonSchema(options, filePath);
   if (!jsonSchema) {
     return content;
+  }
+  let json: any;
+  try {
+    json = JSON.parse(content);
+  } catch (error) {
+    logError(`Invalid JSON file: ${filePath}`);
+    exit(1);
   }
 
   // Handle include
