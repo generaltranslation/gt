@@ -153,43 +153,45 @@ export type AdditionalOptions = {
         // content in the source and target locales
         // This value is denoted as the "sourceObject"
         // Array elements or object sub-elements are denoted as "sourceItem"
-        [sourceObjectPath: string]: {
-          type: 'array' | 'object'; // type of the sourceObject;
-          // array if the sourceObject is an array
-          // -> We will simply add duplicated sourceItems for each locale
-          // object if the sourceObject is an object
-          // -> We will duplicate the sourceItem for each locale and set the corresponding
-          // key with the locale property
-          // In both cases, we search the sourceObject for the key that matches the source locale
-
-          // Below, relative JSONPaths are relative to the sourceItem root, NOT the sourceObject
-
-          include: string[]; // array of relative JSONPaths to include in the translated JSON
-
-          // if type is array, there must be a key property in the array element
-          // corresponding value should be a locale code
-          key?: string; // relative jsonPath to the key to use to distinguish between source and target locales
-          // if type is object, the key is simply the JSON key for the sourceItem - this is unnecessary in this case
-
-          localeProperty?: string; // specific locale property to use for the key for target locales, default 'code'
-          // ex: code, name, nativeName, languageCode, languageName, etc. (values returned by getLocaleProperties)
-
-          // optional config for mutating specific fields in the sourceItem
-          // for example, helpful for handling urls with locale-specific paths
-          mutate?: {
-            // relative jsonPath to content to mutate
-            [sourceItemPath: string]: {
-              match?: string; // regex to match strings to replace
-              replace?: string; // regex pattern to replace the match with
-              // Special placeholders:
-              // {locale} -> will be replaced with the locale code
-              // {localeCode} -> will be replaced with the locale code
-              // {localeName} -> will be replaced with the locale name
-              // {<localeProperty>} -> will be replaced with the locale property value
-            };
-          };
-        };
+        [sourceObjectPath: string]: SourceObjectOptions;
       };
+    };
+  };
+};
+
+export type SourceObjectOptions = {
+  type: 'array' | 'object'; // type of the sourceObject;
+  // array if the sourceObject is an array
+  // -> We will simply add duplicated sourceItems for each locale
+  // object if the sourceObject is an object
+  // -> We will duplicate the sourceItem for each locale and set the corresponding
+  // key with the locale property
+  // In both cases, we search the sourceObject for the key that matches the source locale
+
+  // Below, relative JSONPaths are relative to the sourceItem root, NOT the sourceObject
+
+  include: string[]; // array of relative JSONPaths to include in the translated JSON
+
+  // if type is array, there must be a key property in the array element
+  // corresponding value should be a locale code
+  key?: string; // relative jsonPath to the key to use to distinguish between source and target locales
+  // if type is object, the key is simply the JSON key for the sourceItem - this is unnecessary in this case
+
+  localeProperty?: string; // specific locale property to use for the key for target locales, default 'code'
+  // ex: code, name, nativeName, languageCode, languageName, etc. (values returned by getLocaleProperties)
+
+  // optional config for mutating specific fields in the sourceItem
+  // for example, helpful for handling urls with locale-specific paths
+  mutate?: {
+    // relative jsonPath to content to mutate
+    [sourceItemPath: string]: {
+      match?: string; // regex to match strings to replace
+      replace?: string; // regex pattern to replace the match with
+      // Special placeholders:
+      // {locale} -> will be replaced with the locale code
+      // {localeCode} -> will be replaced with the locale code
+      // {localeName} -> will be replaced with the locale name
+      // {<localeProperty>} -> will be replaced with the locale property value
     };
   };
 };
