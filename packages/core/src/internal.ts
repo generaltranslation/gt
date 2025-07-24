@@ -45,8 +45,9 @@ export type {
   OldJsxElement,
   OldVariableObject,
   OldVariableType,
+  OldGTProp,
 } from './backwards-compatability/oldTypes';
-export type {
+export {
   isOldVariableObject,
   isNewVariableObject,
   isOldJsxChildren,
