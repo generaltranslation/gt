@@ -20,7 +20,12 @@ export function findMatchingItemArray(
   sourceObjectOptions: SourceObjectOptions,
   sourceObjectPointer: string,
   sourceObjectValue: any
-): { sourceItem: any; keyParentProperty: string; index: number } | null {
+): {
+  sourceItem: any;
+  keyParentProperty: string;
+  itemIndex: number;
+  keyPointer: string;
+} | null {
   const { identifyingLocaleProperty, localeKeyJsonPath } =
     getSourceObjectOptionsArray(
       locale,
@@ -59,7 +64,8 @@ export function findMatchingItemArray(
     return {
       sourceItem: item,
       keyParentProperty: keyCandidates[0].parentProperty,
-      index,
+      itemIndex: index,
+      keyPointer: keyCandidates[0].pointer,
     };
   }
   return null;
@@ -70,7 +76,7 @@ export function findMatchingItemObject(
   sourceObjectPointer: string,
   sourceObjectOptions: SourceObjectOptions,
   sourceObjectValue: any
-): { sourceItem: any; keyParentProperty: string } | null {
+): { sourceItem: any | undefined; keyParentProperty: string } {
   const { identifyingLocaleProperty } = getSourceObjectOptionsObject(
     locale,
     sourceObjectPointer,
@@ -84,7 +90,10 @@ export function findMatchingItemObject(
       keyParentProperty: identifyingLocaleProperty,
     };
   }
-  return null;
+  return {
+    sourceItem: undefined,
+    keyParentProperty: identifyingLocaleProperty,
+  };
 }
 
 export function getIdentifyingLocaleProperty(

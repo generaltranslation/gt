@@ -72,7 +72,7 @@ export function parseJson(
         );
         exit(1);
       }
-      const { sourceItem, keyParentProperty } = matchingItem;
+      const { sourceItem, keyPointer } = matchingItem;
 
       // Get the fields to translate from the includes
       let itemsToTranslate: any = [];
@@ -93,8 +93,8 @@ export function parseJson(
       itemsToTranslate = Object.fromEntries(
         itemsToTranslate
           .filter(
-            (item: { parentProperty: string; value: any }) =>
-              item.parentProperty !== keyParentProperty
+            (item: { pointer: string; value: any }) =>
+              item.pointer !== keyPointer
           )
           .map((item: { pointer: string; value: string }) => [
             item.pointer,
@@ -122,7 +122,7 @@ export function parseJson(
         sourceObjectValue
       );
       // Validate source item exists
-      if (!matchingItem) {
+      if (!matchingItem.sourceItem) {
         logError(
           `Source item not found at path: ${sourceObjectPointer}. You must specify a source item where its key matches the default locale`
         );

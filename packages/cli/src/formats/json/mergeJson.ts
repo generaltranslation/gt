@@ -5,6 +5,7 @@ import {
   findMatchingItemArray,
   findMatchingItemObject,
   generateSourceObjectPointers,
+  getSourceObjectOptionsArray,
   validateJsonSchema,
 } from './utils.js';
 
@@ -33,10 +34,13 @@ export function mergeJson(
     for (const target of targets) {
       // Must clone the original JSON to avoid mutations
       const mergedJson = structuredClone(originalJson);
+      const translatedJson = JSON.parse(target.translatedContent);
       for (const [jsonPointer, translatedValue] of Object.entries(
-        target.translatedContent
+        translatedJson
       )) {
         try {
+          const value = JSONPointer.get(mergedJson, jsonPointer);
+          if (!value) continue;
           JSONPointer.set(mergedJson, jsonPointer, translatedValue);
         } catch (error) {}
       }
@@ -89,8 +93,10 @@ export function mergeJson(
         );
         exit(1);
       }
-      const { sourceItem: defaultLocaleSourceItem, index: defaultLocaleIndex } =
-        matchingDefaultLocaleItem;
+      const {
+        sourceItem: defaultLocaleSourceItem,
+        keyPointer: defaultLocaleKeyPointer,
+      } = matchingDefaultLocaleItem;
 
       // For each target:
       // 1. Validate that the targetJson has a jsonPointer for the current sourceObjectPointer
@@ -116,21 +122,34 @@ export function mergeJson(
         );
         // If the target locale has a matching source item, use it to mutate the source item
         // Otherwise, fallback to the default locale source item
-        const mutateSourceItem = structuredClone(
-          matchingTargetItem
-            ? matchingTargetItem.sourceItem
-            : defaultLocaleSourceItem
-        );
+        const mutateSourceItem = structuredClone(defaultLocaleSourceItem);
         const mutateSourceItemIndex = matchingTargetItem
-          ? matchingTargetItem.index
-          : defaultLocaleIndex;
+          ? matchingTargetItem.itemIndex
+          : undefined;
+        const mutateSourceItemKeyPointer = defaultLocaleKeyPointer;
+        const { identifyingLocaleProperty: targetLocaleKeyProperty } =
+          getSourceObjectOptionsArray(
+            target.targetLocale,
+            sourceObjectPointer,
+            sourceObjectOptions
+          );
 
         // 3. Override the source item with the translated values
+        JSONPointer.set(
+          mutateSourceItem,
+          mutateSourceItemKeyPointer,
+          targetLocaleKeyProperty
+        );
         for (const [
           translatedKeyJsonPointer,
           translatedValue,
         ] of Object.entries(targetJson[sourceObjectPointer] || {})) {
           try {
+            const value = JSONPointer.get(
+              mutateSourceItem,
+              translatedKeyJsonPointer
+            );
+            if (!value) continue;
             JSONPointer.set(
               mutateSourceItem,
               translatedKeyJsonPointer,
@@ -142,7 +161,11 @@ export function mergeJson(
         // TODO: Implement this
 
         // 5. Merge the source item with the original JSON
-        sourceObjectValue[mutateSourceItemIndex] = mutateSourceItem;
+        if (mutateSourceItemIndex) {
+          sourceObjectValue[mutateSourceItemIndex] = mutateSourceItem;
+        } else {
+          sourceObjectValue.push(mutateSourceItem);
+        }
       }
       JSONPointer.set(mergedJson, sourceObjectPointer, sourceObjectValue);
     } else {
@@ -161,16 +184,13 @@ export function mergeJson(
         sourceObjectValue
       );
       // Validate source item exists
-      if (!matchingDefaultLocaleItem) {
+      if (!matchingDefaultLocaleItem.sourceItem) {
         logError(
           `Source item not found at path: ${sourceObjectPointer}. You must specify a source item where its key matches the default locale`
         );
         exit(1);
       }
-      const {
-        sourceItem: defaultLocaleSourceItem,
-        keyParentProperty: defaultLocaleKeyParentProperty,
-      } = matchingDefaultLocaleItem;
+      const { sourceItem: defaultLocaleSourceItem } = matchingDefaultLocaleItem;
 
       // For each target:
       // 1. Validate that the targetJson has a jsonPointer for the current sourceObjectPointer
@@ -196,14 +216,8 @@ export function mergeJson(
         );
         // If the target locale has a matching source item, use it to mutate the source item
         // Otherwise, fallback to the default locale source item
-        const mutateSourceItem = structuredClone(
-          matchingTargetItem
-            ? matchingTargetItem.sourceItem
-            : defaultLocaleSourceItem
-        );
-        const mutateSourceItemKey = matchingTargetItem
-          ? matchingTargetItem.keyParentProperty
-          : defaultLocaleKeyParentProperty;
+        const mutateSourceItem = structuredClone(defaultLocaleSourceItem);
+        const mutateSourceItemKey = matchingTargetItem.keyParentProperty;
 
         // 3. Override the source item with the translated values
         for (const [
@@ -211,6 +225,11 @@ export function mergeJson(
           translatedValue,
         ] of Object.entries(targetJson[sourceObjectPointer] || {})) {
           try {
+            const value = JSONPointer.get(
+              mutateSourceItem,
+              translatedKeyJsonPointer
+            );
+            if (!value) continue;
             JSONPointer.set(
               mutateSourceItem,
               translatedKeyJsonPointer,
