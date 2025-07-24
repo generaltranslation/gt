@@ -30,8 +30,6 @@ export function parseJson(
 ): string {
   const json = JSON.parse(content);
   if (!options.jsonSchema) {
-    // Validate the JSON is valid -> Only nested objects are allowed, no arrays
-    flattenJsonDictionary(json);
     return content;
   }
 
@@ -41,16 +39,12 @@ export function parseJson(
     isMatch(path.relative(process.cwd(), filePath), fileGlob)
   );
   if (!matchingGlob) {
-    // Validate the JSON is valid -> Only nested objects are allowed, no arrays
-    // TODO: allow arrays
-    flattenJsonDictionary(json);
     return content;
   }
 
   // Check for JSON schema for this file
   const jsonSchema = options.jsonSchema[matchingGlob];
   if (!jsonSchema || (!jsonSchema.include && !jsonSchema.composite)) {
-    flattenJsonDictionary(json);
     return content;
   }
 
