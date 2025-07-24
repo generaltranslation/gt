@@ -33,7 +33,8 @@ describe('parseJson', () => {
             include: ['$..*'],
           },
         },
-      }
+      },
+      'en'
     );
     expect(result).toBeDefined();
     expect(result).toBe(
@@ -87,20 +88,26 @@ describe('parseJson', () => {
                 include: ['$..*'],
               },
             },
-          }
+          },
+          'en'
         );
       }).toThrow();
     });
 
     it('should throw error for empty JSON content', () => {
       expect(() => {
-        parseJson('', path.join(__dirname, '../__mocks__', 'test.json'), {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$..*'],
+        parseJson(
+          '',
+          path.join(__dirname, '../__mocks__', 'test.json'),
+          {
+            jsonSchema: {
+              '**/*.json': {
+                include: ['$..*'],
+              },
             },
           },
-        });
+          'en'
+        );
       }).toThrow();
     });
 
@@ -108,47 +115,28 @@ describe('parseJson', () => {
       const json = JSON.stringify({ test: 'value' });
 
       expect(() => {
-        parseJson(json, path.join(__dirname, '../__mocks__', 'test.json'), {
-          jsonSchema: {
-            '**/*.json': {
-              include: ['$..*'],
-              composite: {
-                '$.test': {
-                  type: 'object',
-                  include: ['$..*'],
+        parseJson(
+          json,
+          path.join(__dirname, '../__mocks__', 'test.json'),
+          {
+            jsonSchema: {
+              '**/*.json': {
+                include: ['$..*'],
+                composite: {
+                  '$.test': {
+                    type: 'object',
+                    include: ['$..*'],
+                  },
                 },
               },
             },
           },
-        });
+          'en'
+        );
       }).toThrow('Process exit called');
 
       expect(mockLogError).toHaveBeenCalledWith(
         'include and composite cannot be used together in the same JSON schema'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
-    });
-
-    it('should exit when defaultLocale is missing for composite schemas', () => {
-      const json = JSON.stringify({ test: { en: 'value' } });
-
-      expect(() => {
-        parseJson(json, path.join(__dirname, '../__mocks__', 'test.json'), {
-          jsonSchema: {
-            '**/*.json': {
-              composite: {
-                '$.test': {
-                  type: 'object',
-                  include: ['$..*'],
-                },
-              },
-            },
-          },
-        }); // No defaultLocale parameter
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'defaultLocale is required for composite JSON schemas'
       );
       expect(mockExit).toHaveBeenCalledWith(1);
     });
@@ -297,7 +285,7 @@ describe('parseJson', () => {
       }).toThrow('Process exit called');
 
       expect(mockLogError).toHaveBeenCalledWith(
-        'Source item not found at path: /test. You must specify a source item that contains a key matching the source locale'
+        'Matching sourceItem not found at path: /test for locale: en. Please check your JSON schema'
       );
       expect(mockExit).toHaveBeenCalledWith(1);
     });
@@ -326,7 +314,7 @@ describe('parseJson', () => {
       }).toThrow('Process exit called');
 
       expect(mockLogError).toHaveBeenCalledWith(
-        'Source item not found at path: /test. You must specify a source item where its key matches the source locale'
+        'Source item not found at path: /test. You must specify a source item where its key matches the default locale'
       );
       expect(mockExit).toHaveBeenCalledWith(1);
     });
@@ -358,7 +346,7 @@ describe('parseJson', () => {
       }).toThrow('Process exit called');
 
       expect(mockLogError).toHaveBeenCalledWith(
-        'Source object key is not unique at path: /test'
+        'Source item at path: /test has multiple matching keys with path: $..locale'
       );
       expect(mockExit).toHaveBeenCalledWith(1);
     });
@@ -367,13 +355,18 @@ describe('parseJson', () => {
   describe('Schema Pattern Matching', () => {
     it('should return original content when no schema matches file path', () => {
       const json = JSON.stringify({ test: 'value' });
-      const result = parseJson(json, '/different/path/file.txt', {
-        jsonSchema: {
-          '**/*.json': {
-            include: ['$..*'],
+      const result = parseJson(
+        json,
+        '/different/path/file.txt',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              include: ['$..*'],
+            },
           },
         },
-      });
+        'en'
+      );
 
       expect(result).toBe(json);
     });
@@ -383,7 +376,8 @@ describe('parseJson', () => {
       const result = parseJson(
         json,
         path.join(__dirname, '../__mocks__', 'test.json'),
-        {}
+        {},
+        'en'
       );
 
       expect(result).toBe(json);
@@ -391,17 +385,23 @@ describe('parseJson', () => {
 
     it('should return original content when schema has no include or composite', () => {
       const json = JSON.stringify({ test: 'value' });
-      const result = parseJson(
-        json,
-        path.join(__dirname, '../__mocks__', 'test.json'),
-        {
-          jsonSchema: {
-            '**/*.json': {},
+      const result = expect(() => {
+        parseJson(
+          json,
+          path.join(__dirname, '../__mocks__', 'test.json'),
+          {
+            jsonSchema: {
+              '**/*.json': {},
+            },
           },
-        }
-      );
+          'en'
+        );
+      }).toThrow('Process exit called');
 
-      expect(result).toBe(json);
+      expect(mockLogError).toHaveBeenCalledWith(
+        'No include or composite property found in JSON schema'
+      );
+      expect(mockExit).toHaveBeenCalledWith(1);
     });
 
     it('should match specific file patterns', () => {
@@ -415,7 +415,8 @@ describe('parseJson', () => {
               include: ['$.test'],
             },
           },
-        }
+        },
+        'en'
       );
 
       expect(result).toBe('{"\/test":"value"}');
@@ -589,7 +590,8 @@ describe('parseJson', () => {
               include: ['$.level1.level2.target', '$.array[*]'],
             },
           },
-        }
+        },
+        'en'
       );
 
       const parsed = JSON.parse(result);
@@ -617,7 +619,8 @@ describe('parseJson', () => {
               include: ['$.items.*'],
             },
           },
-        }
+        },
+        'en'
       );
 
       const parsed = JSON.parse(result);
@@ -820,7 +823,8 @@ describe('parseJson', () => {
               include: ['$..*'], // More inclusive for specific files
             },
           },
-        }
+        },
+        'en'
       );
 
       const parsed = JSON.parse(result);
@@ -840,7 +844,8 @@ describe('parseJson', () => {
               include: ['$..*'],
             },
           },
-        }
+        },
+        'en'
       );
 
       expect(result).toBe('{}');
@@ -857,7 +862,8 @@ describe('parseJson', () => {
               include: ['$..*'],
             },
           },
-        }
+        },
+        'en'
       );
 
       const parsed = JSON.parse(result);
@@ -878,7 +884,8 @@ describe('parseJson', () => {
               include: ['$.mixed[*]'],
             },
           },
-        }
+        },
+        'en'
       );
 
       const parsed = JSON.parse(result);
@@ -902,7 +909,8 @@ describe('parseJson', () => {
               include: ['$.data.*'],
             },
           },
-        }
+        },
+        'en'
       );
       const end = Date.now();
 
@@ -930,7 +938,8 @@ describe('parseJson', () => {
               include: ['$..*'],
             },
           },
-        }
+        },
+        'en'
       );
 
       const parsed = JSON.parse(result);
@@ -960,7 +969,8 @@ describe('parseJson', () => {
               include: ['$..*'],
             },
           },
-        }
+        },
+        'en'
       );
 
       const parsed = JSON.parse(result);
@@ -999,7 +1009,7 @@ describe('parseJson', () => {
       }).toThrow('Process exit called');
 
       expect(mockLogError).toHaveBeenCalledWith(
-        'Source item not found at path: /emptyObject. You must specify a source item where its key matches the source locale'
+        'Source item not found at path: /emptyObject. You must specify a source item where its key matches the default locale'
       );
       expect(mockExit).toHaveBeenCalledWith(1);
     });
@@ -1020,7 +1030,8 @@ describe('parseJson', () => {
               include: ['$..*'],
             },
           },
-        }
+        },
+        'en'
       );
 
       expect(result).toBe(originalJson);

@@ -139,23 +139,25 @@ export type AdditionalOptions = {
   hideDefaultLocale?: boolean;
   localizeStaticUrls?: boolean;
   jsonSchema?: {
-    [fileGlob: string]: {
-      // exactly 1 of include or composite must be provided; not both
+    [fileGlob: string]: JsonSchema;
+  };
+};
 
-      // specify include if file is not composite
-      // multiple target JSONs will be created for each locale,
-      // with the only differing content being the specified JSONPath values
-      include?: string[]; // array of JSONPaths to include
+export type JsonSchema = {
+  // exactly 1 of include or composite must be provided; not both
 
-      // specify composite if no new JSONs should be created
-      composite?: {
-        // The sourceObjectPath is a JSONPath to the array or object containing
-        // content in the source and target locales
-        // This value is denoted as the "sourceObject"
-        // Array elements or object sub-elements are denoted as "sourceItem"
-        [sourceObjectPath: string]: SourceObjectOptions;
-      };
-    };
+  // specify include if file is not composite
+  // multiple target JSONs will be created for each locale,
+  // with the only differing content being the specified JSONPath values
+  include?: string[]; // array of JSONPaths to include
+
+  // specify composite if no new JSONs should be created
+  composite?: {
+    // The sourceObjectPath is a JSONPath to the array or object containing
+    // content in the source and target locales
+    // This value is denoted as the "sourceObject"
+    // Array elements or object sub-elements are denoted as "sourceItem"
+    [sourceObjectPath: string]: SourceObjectOptions;
   };
 };
 
