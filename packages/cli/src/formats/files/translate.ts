@@ -58,7 +58,12 @@ export async function translateFiles(
     const jsonFiles = filePaths.json.map((filePath) => {
       const content = readFile(filePath);
 
-      const parsedJson = parseJson(content, filePath, additionalOptions);
+      const parsedJson = parseJson(
+        content,
+        filePath,
+        additionalOptions,
+        options.defaultLocale
+      );
 
       const relativePath = getRelative(filePath);
       return {

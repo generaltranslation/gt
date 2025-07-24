@@ -7,7 +7,7 @@ import { flattenJson, flattenJsonWithStringFilter } from './flattenJson.js';
 import { getLocaleProperties } from 'generaltranslation';
 import { LocaleProperties } from 'generaltranslation/types';
 import { JSONPath } from 'jsonpath-plus';
-import { logError } from '../../console/logging.js';
+import { exit, logError } from '../../console/logging.js';
 
 // Parse a JSON file according to a JSON schema
 export function parseJson(
@@ -41,7 +41,7 @@ export function parseJson(
     logError(
       'include and composite cannot be used together in the same JSON schema'
     );
-    process.exit(1);
+    exit(1);
   }
 
   // Handle include
@@ -53,7 +53,7 @@ export function parseJson(
   // Handle composite
   if (!defaultLocale) {
     logError('defaultLocale is required for composite JSON schemas');
-    process.exit(1);
+    exit(1);
   }
 
   // Construct lvl 1
@@ -89,7 +89,7 @@ export function parseJson(
       logError(
         `Source object options localeProperty is not a valid locale property at path: ${sourceObjectPointer}`
       );
-      process.exit(1);
+      exit(1);
     }
 
     // Find the default locale in each source item in each sourceObjectValue
@@ -100,7 +100,7 @@ export function parseJson(
         logError(
           `Source object value is not an array at path: ${sourceObjectPointer}`
         );
-        process.exit(1);
+        exit(1);
       }
 
       // Validate key
@@ -109,7 +109,7 @@ export function parseJson(
         logError(
           `Source object options key is required for array at path: ${sourceObjectPointer}`
         );
-        process.exit(1);
+        exit(1);
       }
 
       // Use the json pointer key to locate the source item
@@ -124,11 +124,16 @@ export function parseJson(
           flatten: true,
           wrap: true,
         });
-        if (keyCandidates.length !== 1) {
+        if (!keyCandidates) {
+          logError(
+            `No source item found at path: ${sourceObjectPointer} with key: ${jsonPathKey}`
+          );
+          exit(1);
+        } else if (keyCandidates.length !== 1) {
           logError(
             `Source object key is not unique at path: ${sourceObjectPointer}`
           );
-          process.exit(1);
+          exit(1);
         }
 
         // Validate the key is the identifying locale property
@@ -148,20 +153,24 @@ export function parseJson(
         logError(
           `Source item not found at path: ${sourceObjectPointer}. You must specify a source item that contains a key matching the source locale`
         );
-        process.exit(1);
+        exit(1);
       }
 
       // Get the fields to translate from the includes
       let itemsToTranslate: any = [];
       for (const include of sourceObjectOptions.include) {
-        const matchingItems = JSONPath({
-          json: sourceItem,
-          path: include,
-          resultType: 'all',
-          flatten: true,
-          wrap: true,
-        });
-        itemsToTranslate.push(...matchingItems);
+        try {
+          const matchingItems = JSONPath({
+            json: sourceItem,
+            path: include,
+            resultType: 'all',
+            flatten: true,
+            wrap: true,
+          });
+          if (matchingItems) {
+            itemsToTranslate.push(...matchingItems);
+          }
+        } catch (error) {}
       }
       itemsToTranslate = Object.fromEntries(
         itemsToTranslate
@@ -184,7 +193,7 @@ export function parseJson(
         logError(
           `Source object value is not an object at path: ${sourceObjectPointer}`
         );
-        process.exit(1);
+        exit(1);
       }
 
       // Validate no key
@@ -193,7 +202,7 @@ export function parseJson(
         logError(
           `Source object options key is not allowed for object at path: ${sourceObjectPointer}`
         );
-        process.exit(1);
+        exit(1);
       }
 
       // Locate the source item
@@ -210,7 +219,7 @@ export function parseJson(
         logError(
           `Source item not found at path: ${sourceObjectPointer}. You must specify a source item where its key matches the source locale`
         );
-        process.exit(1);
+        exit(1);
       }
 
       // Get the fields to translate from the includes

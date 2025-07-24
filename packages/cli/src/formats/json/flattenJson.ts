@@ -1,4 +1,5 @@
 import { JSONPath } from 'jsonpath-plus';
+import { logError } from '../../console/logging.js';
 
 /**
  * Flattens a JSON object according to a list of JSON paths.
@@ -12,16 +13,23 @@ export function flattenJson(
 ): Record<string, any> {
   const extractedJson: Record<string, any> = {};
   for (const jsonPath of jsonPaths) {
-    const results = JSONPath({
-      json,
-      path: jsonPath,
-      resultType: 'all',
-      flatten: true,
-      wrap: true,
-    });
-    results.forEach((result: { pointer: string; value: any }) => {
-      extractedJson[result.pointer] = result.value;
-    });
+    try {
+      const results = JSONPath({
+        json,
+        path: jsonPath,
+        resultType: 'all',
+        flatten: true,
+        wrap: true,
+      });
+      if (!results || results.length === 0) {
+        continue;
+      }
+      results.forEach((result: { pointer: string; value: any }) => {
+        extractedJson[result.pointer] = result.value;
+      });
+    } catch (error) {
+      logError(`Error with JSONPath pattern: ${jsonPath}`);
+    }
   }
   return extractedJson;
 }
@@ -38,18 +46,25 @@ export function flattenJsonWithStringFilter(
 ): Record<string, any> {
   const extractedJson: Record<string, any> = {};
   for (const jsonPath of jsonPaths) {
-    const results = JSONPath({
-      json,
-      path: jsonPath,
-      resultType: 'all',
-      flatten: true,
-      wrap: true,
-    });
-    results.forEach((result: { pointer: string; value: any }) => {
-      if (typeof result.value === 'string') {
-        extractedJson[result.pointer] = result.value;
+    try {
+      const results = JSONPath({
+        json,
+        path: jsonPath,
+        resultType: 'all',
+        flatten: true,
+        wrap: true,
+      });
+      if (!results || results.length === 0) {
+        continue;
       }
-    });
+      results.forEach((result: { pointer: string; value: any }) => {
+        if (typeof result.value === 'string') {
+          extractedJson[result.pointer] = result.value;
+        }
+      });
+    } catch (error) {
+      logError(`Error with JSONPath pattern: ${jsonPath}`);
+    }
   }
   return extractedJson;
 }
