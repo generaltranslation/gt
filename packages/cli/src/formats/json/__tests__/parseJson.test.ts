@@ -37,14 +37,24 @@ describe('parseJson', () => {
         jsonSchema: {
           '**/*.json': {
             composite: {
-              '/object': {
+              '$.object': {
                 type: 'object',
                 include: ['$..*'],
+              },
+              '$.array': {
+                type: 'array',
+                include: ['$.*'],
+                key: '$.locale',
               },
             },
           },
         },
-      }
+      },
+      'en'
+    );
+    expect(result).toBeDefined();
+    expect(result).toBe(
+      '{"/object":{"/key1":"value1","/key2":"value2","/key3":"value3"},"/array":{"/key1":"value1","/key2":"value2","/key3":"value3"}}'
     );
   });
 });

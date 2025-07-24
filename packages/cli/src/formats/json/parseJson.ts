@@ -4,10 +4,10 @@ import { AdditionalOptions } from '../../types/index.js';
 import { flattenJsonDictionary } from '../../react/utils/flattenDictionary.js';
 const { isMatch } = micromatch;
 
-import { JSONPath } from 'jsonpath-plus';
 import { flattenJson, flattenJsonWithStringFilter } from './flattenJson.js';
 import { getLocaleProperties } from 'generaltranslation';
 import { LocaleProperties } from 'generaltranslation/types';
+import { JSONPath } from 'jsonpath-plus';
 
 type SourceObjectOptions = {
   type: 'array' | 'object';
@@ -83,7 +83,6 @@ export function parseJson(
     },
     {}
   );
-
   // Construct lvl 2
   const sourceObjectsToTranslate: Record<string, Record<string, string>> = {};
   for (const [
@@ -122,12 +121,16 @@ export function parseJson(
 
       // Use the json pointer key to locate the source item
       let sourceItem: any = null;
-      let sourceItemKeyPointer: string | null = null;
+      let keyParentProperty: string | null = null;
       for (const item of sourceObjectValue) {
         // Get the key candidates
-        const keyCandidates = Object.entries(
-          flattenJsonWithStringFilter(item, [jsonPathKey])
-        );
+        const keyCandidates = JSONPath({
+          json: item,
+          path: jsonPathKey,
+          resultType: 'all',
+          flatten: true,
+          wrap: true,
+        });
         if (keyCandidates.length !== 1) {
           throw new Error(
             `Source object key is not unique at path: ${sourceObjectPointer}`
@@ -137,13 +140,12 @@ export function parseJson(
         // Validate the key is the identifying locale property
         if (
           !keyCandidates[0] ||
-          identifyingLocaleProperty !== keyCandidates[0][1].value
+          identifyingLocaleProperty !== keyCandidates[0].value
         ) {
           continue;
         }
         sourceItem = item;
-        // TODO: Check if the includes path contains the pointer, and throw an error if it does!
-        sourceItemKeyPointer = keyCandidates[0][0];
+        keyParentProperty = keyCandidates[0].parentProperty;
         break;
       }
 
@@ -155,9 +157,27 @@ export function parseJson(
       }
 
       // Get the fields to translate from the includes
-      const itemsToTranslate = flattenJsonWithStringFilter(
-        sourceItem,
-        sourceObjectOptions.include
+      let itemsToTranslate: any = [];
+      for (const include of sourceObjectOptions.include) {
+        const matchingItems = JSONPath({
+          json: sourceItem,
+          path: include,
+          resultType: 'all',
+          flatten: true,
+          wrap: true,
+        });
+        itemsToTranslate.push(...matchingItems);
+      }
+      itemsToTranslate = Object.fromEntries(
+        itemsToTranslate
+          .filter(
+            (item: { parentProperty: string; value: any }) =>
+              item.parentProperty !== keyParentProperty
+          )
+          .map((item: { pointer: string; value: string }) => [
+            item.pointer,
+            item.value,
+          ])
       );
 
       // Add the items to translate to the result
