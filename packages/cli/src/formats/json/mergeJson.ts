@@ -8,6 +8,9 @@ import {
   getSourceObjectOptionsArray,
   validateJsonSchema,
 } from './utils.js';
+import { JSONPath } from 'jsonpath-plus';
+import { getLocaleProperties } from 'generaltranslation';
+import { LocaleProperties } from 'generaltranslation/types';
 
 export function mergeJson(
   originalContent: string,
@@ -158,7 +161,12 @@ export function mergeJson(
           } catch (error) {}
         }
         // 4. Apply additional mutations to the sourceItem
-        // TODO: Implement this
+        applyTransformations(
+          mutateSourceItem,
+          sourceObjectOptions.transform,
+          target.targetLocale,
+          defaultLocale
+        );
 
         // 5. Merge the source item with the original JSON
         if (mutateSourceItemIndex) {
@@ -238,7 +246,12 @@ export function mergeJson(
           } catch (error) {}
         }
         // 4. Apply additional mutations to the sourceItem
-        // TODO: Implement this
+        applyTransformations(
+          mutateSourceItem,
+          sourceObjectOptions.transform,
+          target.targetLocale,
+          defaultLocale
+        );
 
         // 5. Merge the source item with the original JSON
         sourceObjectValue[mutateSourceItemKey] = mutateSourceItem;
@@ -247,4 +260,99 @@ export function mergeJson(
     }
   }
   return [JSON.stringify(mergedJson, null, 2)];
+}
+
+// helper function to replace locale placeholders in a string
+// with the corresponding locale properties
+// ex: {locale} -> will be replaced with the locale code
+// ex: {localeName} -> will be replaced with the locale name
+function replaceLocalePlaceholders(
+  string: string,
+  localeProperties: LocaleProperties
+): string {
+  return string.replace(/\{(\w+)\}/g, (match, property) => {
+    // Handle common aliases
+    if (property === 'locale' || property === 'localeCode') {
+      return localeProperties.code;
+    }
+    if (property === 'localeName') {
+      return localeProperties.name;
+    }
+    if (property === 'localeNativeName') {
+      return localeProperties.nativeName;
+    }
+    // Check if the property exists in localeProperties
+    if (property in localeProperties) {
+      return localeProperties[property as keyof typeof localeProperties];
+    }
+    // Return the original placeholder if property not found
+    return match;
+  });
+}
+
+// apply transformations to the sourceItem in-place
+function applyTransformations(
+  sourceItem: any,
+  transform: SourceObjectOptions['transform'],
+  targetLocale: string,
+  defaultLocale: string
+): void {
+  if (!transform) return;
+
+  const targetLocaleProperties = getLocaleProperties(targetLocale);
+  const defaultLocaleProperties = getLocaleProperties(defaultLocale);
+
+  for (const [transformPath, transformOptions] of Object.entries(transform)) {
+    if (
+      !transformOptions.replace ||
+      typeof transformOptions.replace !== 'string'
+    ) {
+      continue;
+    }
+    const results = JSONPath({
+      json: sourceItem,
+      path: transformPath,
+      resultType: 'all',
+      flatten: true,
+      wrap: true,
+    });
+    if (!results || results.length === 0) {
+      continue;
+    }
+    results.forEach((result: { pointer: string; value: any }) => {
+      if (typeof result.value !== 'string') {
+        return;
+      }
+      // Replace locale placeholders in the replace string
+      let replaceString = transformOptions.replace;
+
+      // Replace all locale property placeholders
+      replaceString = replaceLocalePlaceholders(
+        replaceString,
+        targetLocaleProperties
+      );
+
+      if (
+        transformOptions.match &&
+        typeof transformOptions.match === 'string'
+      ) {
+        // Replace locale placeholders in the match string using defaultLocale properties
+        let matchString = transformOptions.match;
+        matchString = replaceLocalePlaceholders(
+          matchString,
+          defaultLocaleProperties
+        );
+
+        result.value = result.value.replace(
+          new RegExp(matchString, 'g'),
+          replaceString
+        );
+      } else {
+        result.value = replaceString;
+      }
+
+      // Update the actual sourceItem using JSONPointer
+      JSONPointer.set(sourceItem, result.pointer, result.value);
+    });
+  }
 }

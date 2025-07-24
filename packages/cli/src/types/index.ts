@@ -182,18 +182,18 @@ export type SourceObjectOptions = {
   localeProperty?: string; // specific locale property to use for the key for target locales, default 'code'
   // ex: code, name, nativeName, languageCode, languageName, etc. (values returned by getLocaleProperties)
 
-  // optional config for mutating specific fields in the sourceItem
+  // optional config for transforming specific fields in the sourceItem
   // for example, helpful for handling urls with locale-specific paths
-  mutate?: {
+  transform?: {
     // relative jsonPath to content to mutate
-    [sourceItemPath: string]: {
+    [transformPath: string]: {
       match?: string; // regex to match strings to replace
-      replace?: string; // regex pattern to replace the match with
+      replace: string; // string or regex pattern to replace the match with
       // Special placeholders:
+      // -> if used in the match string, they will be replaced with the corresponding default locale property value
+      // -> if used in the replace string, they will be replaced with the corresponding target locale property value
       // {locale} -> will be replaced with the locale code
-      // {localeCode} -> will be replaced with the locale code
-      // {localeName} -> will be replaced with the locale name
-      // {<localeProperty>} -> will be replaced with the locale property value
+      // And any other property from getLocaleProperties()
     };
   };
 };
