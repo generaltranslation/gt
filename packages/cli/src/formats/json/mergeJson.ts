@@ -291,7 +291,7 @@ function replaceLocalePlaceholders(
 }
 
 // apply transformations to the sourceItem in-place
-function applyTransformations(
+export function applyTransformations(
   sourceItem: any,
   transform: SourceObjectOptions['transform'],
   targetLocale: string,

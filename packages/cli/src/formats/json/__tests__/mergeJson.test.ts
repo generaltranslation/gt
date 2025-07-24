@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mergeJson } from '../mergeJson';
+import { mergeJson, applyTransformations } from '../mergeJson';
 import { readFileSync } from 'fs';
 import path from 'path';
 import { logError, logWarning, exit } from '../../../console/logging.js';
@@ -1236,6 +1236,443 @@ describe('mergeJson', () => {
       const parsed = JSON.parse(result[0]);
       expect(parsed.title).toBe('Título Español');
       // Should not crash due to invalid JSON pointer
+    });
+  });
+
+  describe('applyTransformations', () => {
+    it('should apply basic string replacement transformation', () => {
+      const sourceItem = {
+        title: 'Welcome to our app',
+        description: 'This is a great app',
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.title': {
+            replace: 'Bienvenido a nuestra aplicación',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.title).toBe('Bienvenido a nuestra aplicación');
+      expect(sourceItem.description).toBe('This is a great app'); // unchanged
+    });
+
+    it('should apply match and replace transformation', () => {
+      const sourceItem = {
+        url: 'https://example.com/en/page',
+        link: 'Visit our en site',
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.url': {
+            match: '/en/',
+            replace: '/es/',
+          },
+          '$.link': {
+            match: 'en site',
+            replace: 'sitio es',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.url).toBe('https://example.com/es/page');
+      expect(sourceItem.link).toBe('Visit our sitio es');
+    });
+
+    it('should replace locale placeholders in replace string', () => {
+      const sourceItem = {
+        message: 'Hello World',
+        url: 'test.com',
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.message': {
+            replace: 'Hola from {locale}',
+          },
+          '$.url': {
+            replace: '{locale}.example.com',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.message).toBe('Hola from es');
+      expect(sourceItem.url).toBe('es.example.com');
+    });
+
+    it('should replace locale name placeholders', () => {
+      const sourceItem = {
+        title: 'Page Title',
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.title': {
+            replace: 'Página en {localeName}',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.title).toBe('Página en Spanish');
+    });
+
+    it('should replace locale native name placeholders', () => {
+      const sourceItem = {
+        title: 'Page Title',
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.title': {
+            replace: 'Página en {localeNativeName}',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.title).toBe('Página en español');
+    });
+
+    it('should replace locale placeholders in match string using default locale', () => {
+      const sourceItem = {
+        url: 'https://example.com/en/page',
+        path: '/en/docs',
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.url': {
+            match: '/{locale}/',
+            replace: '/es/',
+          },
+          '$.path': {
+            match: '/{localeCode}/',
+            replace: '/es/',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.url).toBe('https://example.com/es/page');
+      expect(sourceItem.path).toBe('/es/docs');
+    });
+
+    it('should handle nested JSONPath expressions', () => {
+      const sourceItem = {
+        metadata: {
+          info: {
+            locale: 'en',
+            name: 'English Name',
+          },
+        },
+        config: {
+          settings: {
+            language: 'English',
+          },
+        },
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.metadata.info.locale': {
+            replace: 'es',
+          },
+          '$.metadata.info.name': {
+            replace: 'Nombre Español',
+          },
+          '$.config.settings.language': {
+            replace: 'Español',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.metadata.info.locale).toBe('es');
+      expect(sourceItem.metadata.info.name).toBe('Nombre Español');
+      expect(sourceItem.config.settings.language).toBe('Español');
+    });
+
+    it('should handle wildcard JSONPath expressions', () => {
+      const sourceItem = {
+        buttons: [
+          { text: 'Save', url: '/en/save' },
+          { text: 'Cancel', url: '/en/cancel' },
+        ],
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.buttons[*].url': {
+            match: '/en/',
+            replace: '/es/',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.buttons[0].url).toBe('/es/save');
+      expect(sourceItem.buttons[1].url).toBe('/es/cancel');
+      expect(sourceItem.buttons[0].text).toBe('Save'); // unchanged
+      expect(sourceItem.buttons[1].text).toBe('Cancel'); // unchanged
+    });
+
+    it('should handle recursive JSONPath expressions', () => {
+      const sourceItem = {
+        navigation: {
+          main: {
+            links: [
+              { href: '/en/home', label: 'Home' },
+              { href: '/en/about', label: 'About' },
+            ],
+          },
+          footer: {
+            links: [{ href: '/en/contact', label: 'Contact' }],
+          },
+        },
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$..links[*].href': {
+            match: '/en/',
+            replace: '/es/',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.navigation.main.links[0].href).toBe('/es/home');
+      expect(sourceItem.navigation.main.links[1].href).toBe('/es/about');
+      expect(sourceItem.navigation.footer.links[0].href).toBe('/es/contact');
+    });
+
+    it('should skip transformation when replace is not a string', () => {
+      const sourceItem = {
+        title: 'Original Title',
+        count: 42,
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.title': {
+            replace: null as any,
+          },
+          '$.count': {
+            replace: 100 as any,
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.title).toBe('Original Title'); // unchanged
+      expect(sourceItem.count).toBe(42); // unchanged
+    });
+
+    it('should skip transformation when path does not match any values', () => {
+      const sourceItem = {
+        title: 'Original Title',
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.nonexistent': {
+            replace: 'New Value',
+          },
+          '$.also.missing': {
+            replace: 'Another Value',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.title).toBe('Original Title'); // unchanged
+    });
+
+    it('should skip transformation when target value is not a string', () => {
+      const sourceItem = {
+        title: 'String Title',
+        count: 42,
+        enabled: true,
+        config: { setting: 'value' },
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.title': {
+            replace: 'Título',
+          },
+          '$.count': {
+            replace: 'Cuarenta y dos',
+          },
+          '$.enabled': {
+            replace: 'verdadero',
+          },
+          '$.config': {
+            replace: 'configuración',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.title).toBe('Título'); // changed (string)
+      expect(sourceItem.count).toBe(42); // unchanged (number)
+      expect(sourceItem.enabled).toBe(true); // unchanged (boolean)
+      expect(sourceItem.config).toEqual({ setting: 'value' }); // unchanged (object)
+    });
+
+    it('should handle global regex replacement', () => {
+      const sourceItem = {
+        text: 'The en language is en and en again',
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.text': {
+            match: 'en',
+            replace: 'es',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.text).toBe('The es language is es and es again');
+    });
+
+    it('should handle empty transform object', () => {
+      const sourceItem = {
+        title: 'Original Title',
+      };
+
+      applyTransformations(sourceItem, {}, 'es', 'en');
+
+      expect(sourceItem.title).toBe('Original Title'); // unchanged
+    });
+
+    it('should handle undefined transform', () => {
+      const sourceItem = {
+        title: 'Original Title',
+      };
+
+      applyTransformations(sourceItem, undefined, 'es', 'en');
+
+      expect(sourceItem.title).toBe('Original Title'); // unchanged
+    });
+
+    it('should handle complex locale placeholder combinations', () => {
+      const sourceItem = {
+        message: 'Page in default language',
+        url: 'example.com/path',
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.message': {
+            replace: 'Página en {localeName} ({locale})',
+          },
+          '$.url': {
+            match: 'example.com',
+            replace: '{locale}.example.com',
+          },
+        },
+        'fr',
+        'en'
+      );
+
+      expect(sourceItem.message).toBe('Página en French (fr)');
+      expect(sourceItem.url).toBe('fr.example.com/path');
+    });
+
+    it('should preserve unknown placeholder format', () => {
+      const sourceItem = {
+        text: 'Hello {unknownProperty}',
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.text': {
+            replace: 'Hola {unknownProperty} from {locale}',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.text).toBe('Hola {unknownProperty} from es');
+    });
+
+    it('should handle match string with locale placeholders from default locale', () => {
+      const sourceItem = {
+        url: 'https://example.com/en/docs/English',
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.url': {
+            match: '/{locale}/docs/{localeName}',
+            replace: '/es/documentos/Español',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      expect(sourceItem.url).toBe('https://example.com/es/documentos/Español');
+    });
+
+    it('should apply multiple transformations to same field', () => {
+      const sourceItem = {
+        path: '/en/docs/tutorial/en/',
+      };
+
+      applyTransformations(
+        sourceItem,
+        {
+          '$.path': {
+            match: '/en/',
+            replace: '/es/',
+          },
+        },
+        'es',
+        'en'
+      );
+
+      // Should replace all occurrences due to global flag
+      expect(sourceItem.path).toBe('/es/docs/tutorial/es/');
     });
   });
 });
