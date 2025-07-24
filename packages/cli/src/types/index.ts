@@ -168,10 +168,10 @@ export type AdditionalOptions = {
 
           // if type is array, there must be a key property in the array element
           // corresponding value should be a locale code
-          key?: string; // relative jsonPointer to the key to use to distinguish between source and target locales
+          key?: string; // relative jsonPath to the key to use to distinguish between source and target locales
           // if type is object, the key is simply the JSON key for the sourceItem - this is unnecessary in this case
 
-          localeProperty: string; // specific locale property to use for the key for target locales, default 'code'
+          localeProperty?: string; // specific locale property to use for the key for target locales, default 'code'
           // ex: code, name, nativeName, languageCode, languageName, etc. (values returned by getLocaleProperties)
 
           // optional config for mutating specific fields in the sourceItem

@@ -1,29 +1,55 @@
-import { JSONObject, JSONArray } from '../../types/data/json.js';
 import { JSONPath } from 'jsonpath-plus';
-import jsonpointer from 'jsonpointer';
 
-// Parse a JSON file according to a JSON schema
-export function flattenJson(json: JSONObject | JSONArray): JSONObject {
-  const flattenedJson: JSONObject = {};
-  const results = JSONPath({
-    json,
-    path: '$..[?(@.length >= 0)]',
-    resultType: 'all',
-    flatten: true,
-    wrap: true,
-  });
-  for (const result of results) {
-    if (result.value && typeof result.value === 'string') {
-      flattenedJson[result.pointer] = result.value;
-    }
+/**
+ * Flattens a JSON object according to a list of JSON paths.
+ * @param json - The JSON object to flatten
+ * @param jsonPaths - The list of JSON paths to flatten
+ * @returns A mapping of json pointers to their values
+ */
+export function flattenJson(
+  json: any,
+  jsonPaths: string[]
+): Record<string, any> {
+  const extractedJson: Record<string, any> = {};
+  for (const jsonPath of jsonPaths) {
+    const results = JSONPath({
+      json,
+      path: jsonPath,
+      resultType: 'all',
+      flatten: true,
+      wrap: true,
+    });
+    results.forEach((result: { pointer: string; value: any }) => {
+      extractedJson[result.pointer] = result.value;
+    });
   }
-  return flattenedJson;
+  return extractedJson;
 }
 
-export function unflattenJson(json: JSONObject): JSONObject {
-  const unflattenedJson: JSONObject = {};
-  for (const key in json) {
-    jsonpointer.set(unflattenedJson, key, json[key]);
+/**
+ * Flattens a JSON object according to a list of JSON paths, only including strings
+ * @param json - The JSON object to flatten
+ * @param jsonPaths - The list of JSON paths to flatten
+ * @returns A mapping of json pointers to their values
+ */
+export function flattenJsonWithStringFilter(
+  json: any,
+  jsonPaths: string[]
+): Record<string, any> {
+  const extractedJson: Record<string, any> = {};
+  for (const jsonPath of jsonPaths) {
+    const results = JSONPath({
+      json,
+      path: jsonPath,
+      resultType: 'all',
+      flatten: true,
+      wrap: true,
+    });
+    results.forEach((result: { pointer: string; value: any }) => {
+      if (typeof result.value === 'string') {
+        extractedJson[result.pointer] = result.value;
+      }
+    });
   }
-  return unflattenedJson;
+  return extractedJson;
 }

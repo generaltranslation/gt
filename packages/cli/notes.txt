@@ -1,0 +1,74 @@
+
+
+PARSING:
+
+Input: JSON + schema
+Output: 2lvl JSON file
+
+
+* include
+- validation make sure that its either composite or include
+- extract all the paths
+- separate into a depth 1 json, json pointer -> entries
+- saving: (mostly implemented)
+  - copy source
+  - overwrite specified entries with new ones
+  - directly write to file
+
+* composite
+- (1) Obtain all source objects in json
+- source composite paths are depth one json (user specifies a JSON path,
+  converts to a bunch of JSON pointers at top level for each matching pointer)
+
+- (2) Get source items for JSON file
+- For each source object, get source item
+- Arrays:
+  - Iterate thru array, find key corresp. to default locale
+  - validation, key is array only
+- Objects:
+  - Iterate find object where the key corresp. to default locale
+
+- (3) Process each source item
+- For each source item, get list of matching strings as defined by the include array
+  - level 2
+  - (similar to step 1)
+
+- (4) Construct JSON
+- 2 levels deep:
+  - 1: JSON pointer for sourceObjectPath
+  - 2: JSON (relative) pointer for translatable strings
+
+
+
+MERGING:
+
+* Not composite: 
+- Clone source
+- Override with pointer values
+- save
+
+
+* Composite
+
+(1) Get source object
+- use level 1 json pointer
+
+(2) For each source object
+- delete all array elements ("Source Items") that are not source locale
+- create n new source items, by cloning source item
+- for each new source item
+  - Arrays & Objects:
+      - overwrite values in source using the relative json pointers from the translatable strings (from translated json lvl 2)
+      - key:
+        - use key json pointer, replace with specified locale property
+      - mutate:
+        - for each JSON path in mutate property
+          - get a list of mutable strings (json pointer, string)
+          - for each mutable strings item
+            - replace regex placeholders {locale} with target locale property
+      - Array: append
+      - Object: new key/value (key is locale property)
+
+
+
+

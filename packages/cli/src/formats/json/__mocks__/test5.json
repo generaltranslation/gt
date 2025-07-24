@@ -1,0 +1,28 @@
+{
+  "object": {
+    "en": {
+      "key1": "value1",
+      "key2": "value2",
+      "key3": "value3"
+    },
+    "fr": {
+      "key1": "value1",
+      "key2": "value2",
+      "key3": "value3"
+    }
+  },
+  "array": [
+    {
+      "locale": "en",
+      "key1": "value1",
+      "key2": "value2",
+      "key3": "value3"
+    },
+    {
+      "locale": "fr",
+      "key1": "value1",
+      "key2": "value2",
+      "key3": "value3"
+    }
+  ]
+}
