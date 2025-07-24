@@ -1,5 +1,15 @@
 # gt-next
 
+## 6.0.7
+
+### Patch Changes
+
+- [#487](https://github.com/generaltranslation/gt/pull/487) [`984cf09`](https://github.com/generaltranslation/gt/commit/984cf098fea9d42f5619e95b78ad289c32e3b4d2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: metadata field
+
+- Updated dependencies [[`984cf09`](https://github.com/generaltranslation/gt/commit/984cf098fea9d42f5619e95b78ad289c32e3b4d2)]:
+  - generaltranslation@7.1.1
+  - gt-react@10.0.5
+
 ## 6.0.6
 
 ### Patch Changes

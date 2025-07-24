@@ -1,5 +1,23 @@
 # generaltranslation
 
+## 7.1.3
+
+### Patch Changes
+
+- [#493](https://github.com/generaltranslation/gt/pull/493) [`b922f0f`](https://github.com/generaltranslation/gt/commit/b922f0f955e616d53d0964b420191a0f8c07a343) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: backwards compatability
+
+## 7.1.2
+
+### Patch Changes
+
+- [#490](https://github.com/generaltranslation/gt/pull/490) [`03b3367`](https://github.com/generaltranslation/gt/commit/03b3367e98b155a21a723f0a645999f3efb40d18) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: add internal header when necessary
+
+## 7.1.1
+
+### Patch Changes
+
+- [#487](https://github.com/generaltranslation/gt/pull/487) [`984cf09`](https://github.com/generaltranslation/gt/commit/984cf098fea9d42f5619e95b78ad289c32e3b4d2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: metadata field
+
 ## 7.1.0
 
 ### Minor Changes
