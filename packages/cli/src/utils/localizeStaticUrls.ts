@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import { Options, Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/translate.js';
+import { logError } from '../console/logging.js';
 
 /**
  * Localizes static urls in content files.
@@ -37,6 +38,16 @@ export default async function localizeStaticUrls(
     settings.locales
   );
 
+  if (
+    settings.options?.urlPattern &&
+    !settings.options?.urlPattern.includes('[locale]')
+  ) {
+    logError(
+      'Failed to localize static urls: URL pattern must include "[locale]" to denote the location of the locale'
+    );
+    return;
+  }
+
   // Process all file types at once with a single call
   await Promise.all(
     Object.entries(fileMapping).map(async ([locale, filesMap]) => {
@@ -66,13 +77,13 @@ export default async function localizeStaticUrls(
   );
 }
 
-// Assumption: we will be seeing localized paths in the source files: (docs/en/ -> docs/ja/)
+// Naive find and replace, in the future, construct an AST
 function localizeStaticUrlsForFile(
   file: string,
   defaultLocale: string,
   targetLocale: string,
   hideDefaultLocale: boolean,
-  pattern: string = '/docs/[locale]' // eg /docs/[locale] or /[locale]
+  pattern: string = '/[locale]' // eg /docs/[locale] or /[locale]
 ): string {
   if (!pattern.startsWith('/')) {
     pattern = '/' + pattern;
