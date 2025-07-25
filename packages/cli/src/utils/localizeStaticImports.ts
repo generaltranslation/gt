@@ -1,9 +1,10 @@
 import * as fs from 'fs';
 import { Options, Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/translate.js';
+import { logError } from '../console/logging.js';
 
 /**
- * Localizes static urls in content files.
+ * Localizes static imports in content files.
  * Currently only supported for md and mdx files. (/docs/ -> /[locale]/docs/)
  * @param settings - The settings object containing the project configuration.
  * @returns void
@@ -15,7 +16,7 @@ import { createFileMapping } from '../formats/files/translate.js';
  * - Support more file types
  * - Support more complex paths
  */
-export default async function localizeStaticUrls(
+export default async function localizeStaticImports(
   settings: Omit<
     Settings & Options,
     'ignoreErrors' | 'suppressWarnings' | 'timeout'
@@ -51,12 +52,12 @@ export default async function localizeStaticUrls(
           // Get file content
           const fileContent = fs.readFileSync(filePath, 'utf8');
           // Localize the file
-          const localizedFile = localizeStaticUrlsForFile(
+          const localizedFile = localizeStaticImportsForFile(
             fileContent,
             settings.defaultLocale,
             locale,
-            settings.experimentalHideDefaultLocale || false,
-            settings.options?.docsUrlPattern
+            settings.options?.docsHideDefaultLocaleImport || false,
+            settings.options?.docsImportPattern
           );
           // Write the localized file to the target path
           await fs.promises.writeFile(filePath, localizedFile);
@@ -67,7 +68,7 @@ export default async function localizeStaticUrls(
 }
 
 // Naive find and replace, in the future, construct an AST
-function localizeStaticUrlsForFile(
+function localizeStaticImportsForFile(
   file: string,
   defaultLocale: string,
   targetLocale: string,
@@ -82,12 +83,18 @@ function localizeStaticUrlsForFile(
   const patternHead = pattern.split('[locale]')[0];
   let regex;
   if (hideDefaultLocale) {
-    // Match complete markdown links: `](/docs/...)` or `](/docs)`
-    regex = new RegExp(`\\]\\(${patternHead}(?:/([^)]*))?\\)`, 'g');
-  } else {
-    // Match complete markdown links with default locale: `](/docs/${defaultLocale}/...)` or `](/docs/${defaultLocale})`
+    const trimmedPatternHead = patternHead.endsWith('/')
+      ? patternHead.slice(0, -1)
+      : patternHead;
+    // Match complete markdown links: `import { Foo } from '@/docs/[locale]/foo.md'`
     regex = new RegExp(
-      `\\]\\(${patternHead}${defaultLocale}(?:/([^)]*))?\\)`,
+      `import\\s+(.*?)\\s+from\\s+(["'])${trimmedPatternHead}(.*?)\\2`,
+      'g'
+    );
+  } else {
+    // Match complete markdown links with default locale: `import { Foo } from '@/docs/${defaultLocale}/foo.md'`
+    regex = new RegExp(
+      `import\\s+(.*?)\\s+from\\s+(["'])${patternHead}${defaultLocale}(.*?)\\2`,
       'g'
     );
   }
@@ -96,28 +103,40 @@ function localizeStaticUrlsForFile(
   if (!matches) {
     return file;
   }
+
   // 2. Replace the default locale with the target locale in all matched instances
-  const localizedFile = file.replace(regex, (match, pathContent) => {
-    if (hideDefaultLocale) {
-      // For hideDefaultLocale, check if path already has target locale
-      if (pathContent) {
-        if (
-          pathContent.startsWith(`${targetLocale}/`) ||
-          pathContent === targetLocale
-        ) {
-          return match; // Already localized
+  const localizedFile = file.replace(
+    regex,
+    (match, bindings, quoteType, pathContent) => {
+      // get the quote type
+      quoteType = match.match(/["']/)?.[0] || '"';
+      if (!quoteType) {
+        logError(
+          `Failed to localize static imports: Import pattern must include quotes in ${pattern}`
+        );
+        return match;
+      }
+      if (hideDefaultLocale) {
+        // For hideDefaultLocale, check if path already has target locale
+        if (pathContent) {
+          if (
+            pathContent.startsWith(`${targetLocale}/`) ||
+            pathContent === targetLocale
+          ) {
+            return match; // Already localized
+          }
         }
+        // Add target locale to the path
+        if (!pathContent || pathContent === '') {
+          return `import ${bindings} from ${quoteType}${patternHead}${targetLocale}${quoteType}`;
+        }
+        return `import ${bindings} from ${quoteType}${patternHead}${targetLocale}${pathContent}${quoteType}`;
+      } else {
+        // For non-hideDefaultLocale, replace defaultLocale with targetLocale
+        // pathContent contains everything after the default locale (no leading slash if present)
+        return `import ${bindings} from ${quoteType}${patternHead}${targetLocale}${pathContent}${quoteType}`;
       }
-      // Add target locale to the path
-      if (!pathContent || pathContent === '') {
-        return `](${patternHead}${targetLocale})`;
-      }
-      return `](${patternHead}${targetLocale}/${pathContent})`;
-    } else {
-      // For non-hideDefaultLocale, replace defaultLocale with targetLocale
-      // pathContent contains everything after the default locale (no leading slash if present)
-      return `](${patternHead}${targetLocale}${pathContent ? '/' + pathContent : ''})`;
     }
-  });
+  );
   return localizedFile;
 }

@@ -198,6 +198,11 @@ export class ReactCLI extends BaseCLI {
         'Triggering this will flatten the json files into a single file. This is useful for projects that have a lot of json files.',
         false
       )
+      .option(
+        '--experimental-localize-static-imports',
+        'Triggering this will run a script after the cli tool that localizes all static imports in content files. Currently only supported for md and mdx files.',
+        false
+      )
       .action(async (options: Options) => {
         displayHeader('Translating project...');
         await this.handleTranslate(options);

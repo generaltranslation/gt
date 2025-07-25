@@ -39,6 +39,7 @@ import { retrieveCredentials, setCredentials } from '../utils/credentials.js';
 import { areCredentialsSet } from '../utils/credentials.js';
 import localizeStaticUrls from '../utils/localizeStaticUrls.js';
 import flattenJsonFiles from '../utils/flattenJsonFiles.js';
+import localizeStaticImports from '../utils/localizeStaticImports.js';
 
 export type TranslateOptions = {
   config?: string;
@@ -50,6 +51,7 @@ export type TranslateOptions = {
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
+  experimentalLocalizeStaticImports?: boolean;
 };
 
 export type LoginOptions = {
@@ -126,6 +128,11 @@ export class BaseCLI {
       .option(
         '--experimental-flatten-json-files',
         'Triggering this will flatten the json files into a single file. This is useful for projects that have a lot of json files.',
+        false
+      )
+      .option(
+        '--experimental-localize-static-imports',
+        'Triggering this will run a script after the cli tool that localizes all static imports in content files. Currently only supported for md and mdx files.',
         false
       )
       .action(async (initOptions: TranslateOptions) => {
@@ -325,6 +332,11 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
     // Localize static urls (/docs -> /[locale]/docs)
     if (settings.experimentalLocalizeStaticUrls) {
       await localizeStaticUrls(settings);
+    }
+
+    // Localize static imports (/docs -> /[locale]/docs)
+    if (settings.experimentalLocalizeStaticImports) {
+      await localizeStaticImports(settings);
     }
 
     // Flatten json files into a single file

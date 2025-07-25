@@ -90,6 +90,15 @@ export async function generateSettings(
     );
   }
 
+  if (
+    options.options?.docsImportPattern &&
+    !options.options?.docsImportPattern.includes('[locale]')
+  ) {
+    logErrorAndExit(
+      'Failed to localize static imports: Import pattern must include "[locale]" to denote the location of the locale'
+    );
+  }
+
   // merge options
   const mergedOptions = { ...gtConfig, ...options };
 

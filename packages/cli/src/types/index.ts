@@ -22,6 +22,7 @@ export type Options = {
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
+  experimentalLocalizeStaticImports?: boolean;
 };
 
 export type WrapOptions = {
@@ -139,6 +140,8 @@ export type AdditionalOptions = {
     [fileGlob: string]: JsonSchema;
   };
   docsUrlPattern?: string; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files
+  docsImportPattern?: string; // eg /docs/[locale]/foo.md or /[locale]/foo.md for localizing static imports in markdown files
+  docsHideDefaultLocaleImport?: boolean; // if true, hide the default locale in the import path
 };
 
 export type JsonSchema = {
