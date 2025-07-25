@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.9
+
+### Patch Changes
+
+- [#497](https://github.com/generaltranslation/gt/pull/497) [`0f44ba0`](https://github.com/generaltranslation/gt/commit/0f44ba0eb1b31f339a43854efe4c64ca2df7e4ca) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add customizability for localize static url
+
 ## 2.0.8
 
 ### Patch Changes
