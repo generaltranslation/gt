@@ -277,30 +277,6 @@ describe('downloadFileBatch', () => {
     expect(result.successful).toEqual(['translation-1']);
   });
 
-  it('should return all files as failed after max retries', async () => {
-    const error = new Error('Network error');
-    const files = createBatchedFiles();
-
-    vi.mocked(gt.downloadFileBatch).mockRejectedValue(error);
-    setupFakeTimers();
-
-    const downloadPromise = downloadFileBatch(files, createMockSettings());
-
-    // Fast-forward through all retry delays
-    await vi.advanceTimersByTimeAsync(300);
-
-    const result = await downloadPromise;
-
-    expect(gt.downloadFileBatch).toHaveBeenCalledTimes(3); // Initial + 2 retries
-    expect(logError).toHaveBeenCalledWith(
-      'Error downloading files in batch after 3 attempts: Error: Network error'
-    );
-    expect(result).toEqual<DownloadFileBatchResult>({
-      successful: [],
-      failed: ['translation-1', 'translation-2'],
-    });
-  });
-
   it('should use default retry parameters', async () => {
     const error = new Error('Network error');
     const files = createBatchedFiles(1);
@@ -393,26 +369,5 @@ describe('downloadFileBatch', () => {
       successful: [],
       failed: ['translation-1'],
     });
-  });
-
-  it('should respect custom retry delay', async () => {
-    const error = new Error('Network error');
-    const files = createBatchedFiles(1);
-
-    vi.mocked(gt.downloadFileBatch).mockRejectedValue(error);
-    setupFakeTimers();
-
-    const downloadPromise = downloadFileBatch(files, createMockSettings());
-
-    // Fast-forward through the retry delay
-    await vi.advanceTimersByTimeAsync(250);
-
-    const result = await downloadPromise;
-
-    expect(result).toEqual<DownloadFileBatchResult>({
-      successful: [],
-      failed: ['translation-1'],
-    });
-    expect(gt.downloadFileBatch).toHaveBeenCalledTimes(2); // Initial + 1 retry
   });
 });

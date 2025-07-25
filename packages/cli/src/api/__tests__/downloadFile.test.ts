@@ -143,14 +143,19 @@ describe('downloadFile', () => {
 
   it('should return false after max retries', async () => {
     const error = new Error('Network error');
-    vi.mocked(gt.downloadFile).mockRejectedValue(error);
+    vi.mocked(gt.downloadFile)
+      .mockRejectedValue(error)
+      .mockRejectedValue(error)
+      .mockRejectedValue(error);
     setupFakeTimers();
 
     const downloadPromise = downloadFile(
       'translation-123',
       '/output/dir/file.json',
       'en',
-      createMockSettings()
+      createMockSettings(),
+      2,
+      100
     );
 
     // Fast-forward through all retry delays
@@ -310,7 +315,8 @@ describe('downloadFile', () => {
       'translation-123',
       '/output/dir/file.json',
       'en',
-      createMockSettings()
+      createMockSettings(),
+      0
     );
 
     // Fast-forward through retry delays
