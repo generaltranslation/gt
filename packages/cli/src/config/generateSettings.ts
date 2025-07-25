@@ -99,6 +99,16 @@ export async function generateSettings(
     );
   }
 
+  if (options.options?.copyFiles) {
+    for (const file of options.options.copyFiles) {
+      if (!file.includes('[locale]')) {
+        logErrorAndExit(
+          'Failed to copy files: File path must include "[locale]" to denote the location of the locale'
+        );
+      }
+    }
+  }
+
   // merge options
   const mergedOptions = { ...gtConfig, ...options };
 
