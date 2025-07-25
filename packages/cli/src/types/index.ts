@@ -22,6 +22,7 @@ export type Options = {
   experimentalLocalizeStaticUrls?: boolean;
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
+  experimentalLocalizeStaticImports?: boolean;
 };
 
 export type WrapOptions = {
@@ -139,6 +140,9 @@ export type AdditionalOptions = {
     [fileGlob: string]: JsonSchema;
   };
   docsUrlPattern?: string; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files
+  docsImportPattern?: string; // eg /docs/[locale]/foo.md or /[locale]/foo.md for localizing static imports in markdown files
+  docsHideDefaultLocaleImport?: boolean; // if true, hide the default locale in the import path
+  copyFiles?: string[]; // array of files to copy to the target locale
 };
 
 export type JsonSchema = {
@@ -184,16 +188,18 @@ export type SourceObjectOptions = {
 
   // optional config for transforming specific fields in the sourceItem
   // for example, helpful for handling urls with locale-specific paths
-  transform?: {
-    // relative jsonPath to content to mutate
-    [transformPath: string]: {
-      match?: string; // regex to match strings to replace
-      replace: string; // string or regex pattern to replace the match with
-      // Special placeholders:
-      // -> if used in the match string, they will be replaced with the corresponding default locale property value
-      // -> if used in the replace string, they will be replaced with the corresponding target locale property value
-      // {locale} -> will be replaced with the locale code
-      // And any other property from getLocaleProperties()
-    };
+  transform?: TransformOptions;
+};
+
+export type TransformOptions = {
+  // relative jsonPath to content to mutate
+  [transformPath: string]: {
+    match?: string; // regex to match strings to replace
+    replace: string; // string or regex pattern to replace the match with
+    // Special placeholders:
+    // -> if used in the match string, they will be replaced with the corresponding default locale property value
+    // -> if used in the replace string, they will be replaced with the corresponding target locale property value
+    // {locale} -> will be replaced with the locale code
+    // And any other property from getLocaleProperties()
   };
 };

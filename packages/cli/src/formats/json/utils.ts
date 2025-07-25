@@ -56,7 +56,7 @@ export function findMatchingItemArray(
 
     // Validate the key is the identifying locale property
     if (
-      !keyCandidates[0] ||
+      !keyCandidates.length ||
       identifyingLocaleProperty !== keyCandidates[0].value
     ) {
       continue;
