@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.0.8
+
+### Patch Changes
+
+- [#495](https://github.com/generaltranslation/gt/pull/495) [`a7eca74`](https://github.com/generaltranslation/gt/commit/a7eca74677356b392c7c1a431f664c8e28adbf0c) Thanks [@brian-lou](https://github.com/brian-lou)! - Add support for translating arbitrary JSON files (all strings). Add support for partially translating JSON files via jsonSchema config setting. Add support for composite JSON files (where there is a single JSON containing data for all translated languages). Add support for preset jsonSchemas.
+
+- Updated dependencies [[`a7eca74`](https://github.com/generaltranslation/gt/commit/a7eca74677356b392c7c1a431f664c8e28adbf0c)]:
+  - generaltranslation@7.1.4
+
 ## 2.0.7
 
 ### Patch Changes
