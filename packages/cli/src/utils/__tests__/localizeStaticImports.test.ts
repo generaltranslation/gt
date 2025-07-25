@@ -4,8 +4,8 @@ import localizeStaticImports from '../localizeStaticImports';
 
 // Mock fs module
 vi.mock('fs', () => ({
-  readFileSync: vi.fn(),
   promises: {
+    readFile: vi.fn(),
     writeFile: vi.fn(),
   },
 }));
@@ -71,7 +71,7 @@ describe('localizeStaticImports', () => {
       const mockFileContent = `import Component from '/components/en/special-component.mdx'`;
 
       vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
-      vi.mocked(fs.readFileSync).mockReturnValue(mockFileContent);
+      vi.mocked(fs.promises.readFile).mockResolvedValue(mockFileContent);
       vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
 
       const settings = {
@@ -96,7 +96,7 @@ describe('localizeStaticImports', () => {
         {},
         ['en', 'ja']
       );
-      expect(fs.readFileSync).toHaveBeenCalledTimes(2); // Only md/mdx files
+      expect(fs.promises.readFile).toHaveBeenCalledTimes(2); // Only md/mdx files
       expect(fs.promises.writeFile).toHaveBeenCalledTimes(2);
     });
   });
@@ -107,7 +107,7 @@ describe('localizeStaticImports', () => {
         const fileContent = `import Component from '/components/en/special-component.mdx'`;
         const expected = `import Component from '/components/ja/special-component.mdx'`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -139,7 +139,7 @@ describe('localizeStaticImports', () => {
         const fileContent = `import Component from "/components/en/special-component.mdx"`;
         const expected = `import Component from "/components/ja/special-component.mdx"`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -181,7 +181,7 @@ const text = 'Some other content'
 import Component3 from '/components/ja/component3.mdx'
 `;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -213,7 +213,7 @@ import Component3 from '/components/ja/component3.mdx'
         const fileContent = `import Component from '/components/en/special-component.mdx'`;
         const expected = `import Component from '/components/ja/special-component.mdx'`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -245,7 +245,7 @@ import Component3 from '/components/ja/component3.mdx'
         const fileContent = `import Component from '/docs/en/advanced/guide.mdx'`;
         const expected = `import Component from '/docs/ja/advanced/guide.mdx'`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -279,7 +279,7 @@ import Component3 from '/components/ja/component3.mdx'
         const fileContent = `import Component from '/components/special-component.mdx'`;
         const expected = `import Component from '/components/ja/special-component.mdx'`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -311,7 +311,7 @@ import Component3 from '/components/ja/component3.mdx'
         const fileContent = `import Component from '/components'`;
         const expected = `import Component from '/components/ja'`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -349,7 +349,7 @@ export default function Component() {}
 `;
         const expected = fileContent; // Should remain unchanged
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -387,7 +387,7 @@ import Component1 from '/components/ja/component1.mdx'
 import Component2 from "/components/ja/component2.mdx"
 `;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -425,7 +425,7 @@ import { Button, Card } from '/ui/ja/components.mdx'
 import { Table as DataTable } from '/ui/ja/table.mdx'
 `;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -457,7 +457,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const fileContent = `import Component from '/components/en'`;
         const expected = `import Component from '/components/ja'`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -506,7 +506,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         ];
 
         for (const { locale, expected } of testLocales) {
-          vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
           vi.mocked(fs.promises.writeFile).mockImplementation(
             (path, content) => {
               expect(content).toBe(expected);
@@ -543,7 +543,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const fileContent = `import Component from '/components/fr/special-component.mdx'`;
         const expected = `import Component from '/components/ja/special-component.mdx'`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -577,7 +577,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const fileContent = `import Component from '/en/special-component.mdx'`;
         const expected = `import Component from '/ja/special-component.mdx'`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -609,7 +609,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const fileContent = `import Component from '/special-component.mdx'`;
         const expected = `import Component from '/ja/special-component.mdx'`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -641,7 +641,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const fileContent = `import Component from '/en/components/special-component.mdx'`;
         const expected = `import Component from '/ja/components/special-component.mdx'`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -673,7 +673,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const fileContent = `import Component from '/en/special-component.mdx'`;
         const expected = `import Component from '/ja/special-component.mdx'`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();
@@ -702,7 +702,7 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         const fileContent = `import Component from '/en/special-component.mdx'`;
         const expected = `import Component from '/ja/special-component.mdx'`;
 
-        vi.mocked(fs.readFileSync).mockReturnValue(fileContent);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
         vi.mocked(fs.promises.writeFile).mockImplementation((path, content) => {
           expect(content).toBe(expected);
           return Promise.resolve();

@@ -49,7 +49,7 @@ export default async function localizeStaticUrls(
       await Promise.all(
         targetFiles.map(async (filePath) => {
           // Get file content
-          const fileContent = fs.readFileSync(filePath, 'utf8');
+          const fileContent = await fs.promises.readFile(filePath, 'utf8');
           // Localize the file
           const localizedFile = localizeStaticUrlsForFile(
             fileContent,
