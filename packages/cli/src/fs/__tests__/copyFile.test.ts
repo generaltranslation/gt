@@ -10,6 +10,7 @@ vi.mock('node:fs', () => ({
       mkdir: vi.fn(),
       copyFile: vi.fn(),
     },
+    existsSync: vi.fn(),
   },
 }));
 
@@ -20,6 +21,13 @@ vi.mock('node:path', () => ({
     dirname: vi.fn(),
   },
 }));
+
+// Mock logging module
+vi.mock('../../console/logging.js', () => ({
+  logError: vi.fn(),
+}));
+
+import { logError } from '../../console/logging.js';
 
 describe('copyFile', () => {
   beforeEach(() => {
@@ -91,6 +99,7 @@ describe('copyFile', () => {
       });
 
       // Mock fs operations to resolve successfully
+      vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.promises.mkdir).mockResolvedValue(undefined);
       vi.mocked(fs.promises.copyFile).mockResolvedValue(undefined);
     });
@@ -321,6 +330,7 @@ describe('copyFile', () => {
     });
 
     it('should propagate mkdir errors', async () => {
+      vi.mocked(fs.existsSync).mockReturnValue(true);
       const mkdirError = new Error('Permission denied');
       vi.mocked(fs.promises.mkdir).mockRejectedValue(mkdirError);
 
@@ -339,6 +349,7 @@ describe('copyFile', () => {
 
     it('should propagate copyFile errors', async () => {
       vi.mocked(fs.promises.mkdir).mockResolvedValue(undefined);
+      vi.mocked(fs.existsSync).mockReturnValue(true);
 
       const copyError = new Error('Source file not found');
       vi.mocked(fs.promises.copyFile).mockRejectedValue(copyError);
@@ -355,6 +366,104 @@ describe('copyFile', () => {
         'Source file not found'
       );
     });
+
+    it('should log error when source file does not exist', async () => {
+      vi.mocked(fs.existsSync).mockReturnValue(false);
+      vi.mocked(fs.promises.mkdir).mockResolvedValue(undefined);
+      vi.mocked(fs.promises.copyFile).mockResolvedValue(undefined);
+
+      const settings = {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        options: {
+          copyFiles: ['assets/[locale]/config.json'],
+        },
+      };
+
+      await copyFile(settings as any);
+
+      // Should log error for missing source file
+      expect(vi.mocked(logError)).toHaveBeenCalledWith(
+        'Failed to copy files: File path does not exist: /project/assets/en/config.json'
+      );
+
+      // Should NOT attempt mkdir or copy operations when source file doesn't exist
+      expect(fs.promises.mkdir).not.toHaveBeenCalled();
+      expect(fs.promises.copyFile).not.toHaveBeenCalled();
+    });
+
+    it('should log error for each missing source file when multiple files are configured and skip all copying', async () => {
+      vi.mocked(fs.existsSync).mockReturnValue(false);
+      vi.mocked(fs.promises.mkdir).mockResolvedValue(undefined);
+      vi.mocked(fs.promises.copyFile).mockResolvedValue(undefined);
+
+      const settings = {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        options: {
+          copyFiles: [
+            'assets/[locale]/config.json',
+            'public/[locale]/manifest.json',
+          ],
+        },
+      };
+
+      await copyFile(settings as any);
+
+      // Should log error for each missing source file
+      expect(vi.mocked(logError)).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(logError)).toHaveBeenCalledWith(
+        'Failed to copy files: File path does not exist: /project/assets/en/config.json'
+      );
+      expect(vi.mocked(logError)).toHaveBeenCalledWith(
+        'Failed to copy files: File path does not exist: /project/public/en/manifest.json'
+      );
+
+      // Should NOT attempt any operations when all source files are missing
+      expect(fs.promises.mkdir).not.toHaveBeenCalled();
+      expect(fs.promises.copyFile).not.toHaveBeenCalled();
+    });
+
+    it('should handle mixed scenario with some files existing and some missing', async () => {
+      // Mock existsSync to return false for first file, true for second
+      vi.mocked(fs.existsSync)
+        .mockReturnValueOnce(false) // assets/en/config.json missing
+        .mockReturnValueOnce(true); // public/en/manifest.json exists
+
+      vi.mocked(fs.promises.mkdir).mockResolvedValue(undefined);
+      vi.mocked(fs.promises.copyFile).mockResolvedValue(undefined);
+
+      const settings = {
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        options: {
+          copyFiles: [
+            'assets/[locale]/config.json',
+            'public/[locale]/manifest.json',
+          ],
+        },
+      };
+
+      await copyFile(settings as any);
+
+      // Should only log error for the missing file
+      expect(vi.mocked(logError)).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(logError)).toHaveBeenCalledWith(
+        'Failed to copy files: File path does not exist: /project/assets/en/config.json'
+      );
+
+      // Should only attempt to copy the existing file
+      expect(fs.promises.mkdir).toHaveBeenCalledTimes(1);
+      expect(fs.promises.mkdir).toHaveBeenCalledWith('/project/public/fr', {
+        recursive: true,
+      });
+
+      expect(fs.promises.copyFile).toHaveBeenCalledTimes(1);
+      expect(fs.promises.copyFile).toHaveBeenCalledWith(
+        '/project/public/en/manifest.json',
+        '/project/public/fr/manifest.json'
+      );
+    });
   });
 
   describe('edge cases', () => {
@@ -366,6 +475,7 @@ describe('copyFile', () => {
         const parts = filePath.split('/');
         return parts.slice(0, -1).join('/');
       });
+      vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.promises.mkdir).mockResolvedValue(undefined);
       vi.mocked(fs.promises.copyFile).mockResolvedValue(undefined);
     });

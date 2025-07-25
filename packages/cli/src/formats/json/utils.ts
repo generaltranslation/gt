@@ -33,6 +33,12 @@ export function findMatchingItemArray(
       sourceObjectOptions
     );
   // Use the json pointer key to locate the source item
+  const matchingItems: {
+    sourceItem: any;
+    keyParentProperty: string;
+    itemIndex: number;
+    keyPointer: string;
+  }[] = [];
   for (const [index, item] of sourceObjectValue.entries()) {
     // Get the key candidates
     const keyCandidates = JSONPath({
@@ -47,7 +53,7 @@ export function findMatchingItemArray(
         `Source item at path: ${sourceObjectPointer} does not have a key value at path: ${localeKeyJsonPath}`
       );
       exit(1);
-    } else if (keyCandidates.length !== 1) {
+    } else if (keyCandidates.length > 1) {
       logError(
         `Source item at path: ${sourceObjectPointer} has multiple matching keys with path: ${localeKeyJsonPath}`
       );
@@ -56,11 +62,17 @@ export function findMatchingItemArray(
 
     // Validate the key is the identifying locale property
     if (
-      !keyCandidates[0] ||
+      !keyCandidates.length ||
       identifyingLocaleProperty !== keyCandidates[0].value
     ) {
       continue;
     }
+    // matchingItems.push({
+    //   sourceItem: item,
+    //   keyParentProperty: keyCandidates[0].parentProperty,
+    //   itemIndex: index,
+    //   keyPointer: keyCandidates[0].pointer,
+    // });
     return {
       sourceItem: item,
       keyParentProperty: keyCandidates[0].parentProperty,

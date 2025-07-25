@@ -23,6 +23,21 @@ export function generatePreset(preset: string): JsonSchema {
               },
             },
           },
+          '$.redirects': {
+            type: 'array',
+            key: '$.language',
+            include: [],
+            transform: {
+              '$.source': {
+                match: '^/{locale}/(.*)$',
+                replace: '/{locale}/$1',
+              },
+              '$.destination': {
+                match: '^/{locale}/(.*)$',
+                replace: '/{locale}/$1',
+              },
+            },
+          },
         },
       };
     default:
