@@ -81,6 +81,15 @@ export async function generateSettings(
     );
   }
 
+  if (
+    options.options?.docsUrlPattern &&
+    !options.options?.docsUrlPattern.includes('[locale]')
+  ) {
+    logErrorAndExit(
+      'Failed to localize static urls: URL pattern must include "[locale]" to denote the location of the locale'
+    );
+  }
+
   // merge options
   const mergedOptions = { ...gtConfig, ...options };
 

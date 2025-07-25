@@ -38,16 +38,6 @@ export default async function localizeStaticUrls(
     settings.locales
   );
 
-  if (
-    settings.options?.urlPattern &&
-    !settings.options?.urlPattern.includes('[locale]')
-  ) {
-    logError(
-      'Failed to localize static urls: URL pattern must include "[locale]" to denote the location of the locale'
-    );
-    return;
-  }
-
   // Process all file types at once with a single call
   await Promise.all(
     Object.entries(fileMapping).map(async ([locale, filesMap]) => {
@@ -67,7 +57,7 @@ export default async function localizeStaticUrls(
             settings.defaultLocale,
             locale,
             settings.experimentalHideDefaultLocale || false,
-            settings.options?.urlPattern
+            settings.options?.docsUrlPattern
           );
           // Write the localized file to the target path
           await fs.promises.writeFile(filePath, localizedFile);
