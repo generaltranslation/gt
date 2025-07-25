@@ -3,18 +3,21 @@ import { JsonSchema } from '../types/index.js';
 export function generatePreset(preset: string): JsonSchema {
   switch (preset) {
     case 'mintlify':
+      // https://mintlify.com/docs/navigation
       return {
         composite: {
           '$.navigation.languages': {
             type: 'array',
             key: '$.language',
             include: [
-              '$.tabs[*].tab',
-              '$.tabs[*].global.anchors[*].anchor',
-              '$.tabs[*].groups[*]..group',
+              '$..group',
+              '$..tab',
+              '$..item',
+              '$..anchor',
+              '$..dropdown',
             ],
             transform: {
-              '$.tabs[*].groups[*]..pages[*]': {
+              '$..pages[*]': {
                 match: '^{locale}/(.*)$',
                 replace: '{locale}/$1',
               },
