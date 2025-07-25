@@ -47,7 +47,7 @@ export function findMatchingItemArray(
         `Source item at path: ${sourceObjectPointer} does not have a key value at path: ${localeKeyJsonPath}`
       );
       exit(1);
-    } else if (keyCandidates.length > 1) {
+    } else if (keyCandidates.length !== 1) {
       logError(
         `Source item at path: ${sourceObjectPointer} has multiple matching keys with path: ${localeKeyJsonPath}`
       );
