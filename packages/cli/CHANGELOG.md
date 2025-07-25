@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.10
+
+### Patch Changes
+
+- [#499](https://github.com/generaltranslation/gt/pull/499) [`0793ef7`](https://github.com/generaltranslation/gt/commit/0793ef7f0d5b391805d072ff0c251fe43fa58b29) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add localization for imports
+
 ## 2.0.9
 
 ### Patch Changes
