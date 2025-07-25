@@ -12,6 +12,7 @@ import {
   CompletedFileTranslationData,
 } from 'generaltranslation/types';
 import { getLocaleProperties } from 'generaltranslation';
+import { createMockSettings } from '../__mocks__/settings.js';
 
 // Mock dependencies
 vi.mock('../../utils/gt.js', () => ({
@@ -167,14 +168,12 @@ describe('checkFileTranslations', () => {
     const mockData = {};
 
     const result = await checkFileTranslations(
-      'project-123',
-      'api-key',
-      'https://api.test.com',
       mockData,
       ['es', 'fr'],
       30000,
       mockResolveOutputPath,
-      mockDownloadStatus
+      mockDownloadStatus,
+      createMockSettings()
     );
 
     expect(mockSpinner.start).toHaveBeenCalledWith(
@@ -196,14 +195,12 @@ describe('checkFileTranslations', () => {
     vi.mocked(downloadFile).mockResolvedValue(true);
 
     await checkFileTranslations(
-      'project-123',
-      'api-key',
-      'https://api.test.com',
       mockData,
       ['es'],
       30000,
       mockResolveOutputPath,
-      mockDownloadStatus
+      mockDownloadStatus,
+      createMockSettings()
     );
 
     expect(mockSpinner.start).toHaveBeenCalledWith(
@@ -220,19 +217,19 @@ describe('checkFileTranslations', () => {
     vi.mocked(downloadFile).mockResolvedValue(true);
 
     const result = await checkFileTranslations(
-      'project-123',
-      'api-key',
-      'https://api.test.com',
       mockData,
       ['es'],
       30000,
       mockResolveOutputPath,
-      mockDownloadStatus
+      mockDownloadStatus,
+      createMockSettings()
     );
 
     expect(downloadFile).toHaveBeenCalledWith(
       'translation-1',
-      '/output/file1.json_es.json'
+      '/output/file1.json_es.json',
+      'es',
+      createMockSettings()
     );
     expect(result).toBe(true);
   });
@@ -250,14 +247,12 @@ describe('checkFileTranslations', () => {
     vi.mocked(downloadFile).mockResolvedValue(true);
 
     await checkFileTranslations(
-      'project-123',
-      'api-key',
-      'https://api.test.com',
       mockData,
       ['es'],
       30000,
       mockResolveOutputPath,
-      mockDownloadStatus
+      mockDownloadStatus,
+      createMockSettings()
     );
 
     expect(gt.checkFileTranslations).toHaveBeenCalledWith([

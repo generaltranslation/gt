@@ -26,12 +26,12 @@ export type Updates = ({
  * @param fileFormat - The format of the file (JSON, MDX, MD, etc.)
  * @param dataFormat - The format of the data within the file
  */
-export interface FileToTranslate {
+export type FileToTranslate = {
   content: string;
   fileName: string;
   fileFormat: FileFormat;
   dataFormat?: DataFormat;
-}
+};
 
 export type EnqueueFilesOptions = {
   publish: boolean;

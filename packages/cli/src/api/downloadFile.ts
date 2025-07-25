@@ -2,6 +2,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logError } from '../console/logging.js';
 import { gt } from '../utils/gt.js';
+import { Settings } from '../types/index.js';
+import { validateJsonSchema } from '../formats/json/utils.js';
+import { mergeJson } from '../formats/json/mergeJson.js';
+import { TextDecoder } from 'node:util';
 
 /**
  * Downloads a file from the API and saves it to a local directory
@@ -13,6 +17,8 @@ import { gt } from '../utils/gt.js';
 export async function downloadFile(
   translationId: string,
   outputPath: string,
+  locale: string,
+  options: Settings,
   maxRetries = 3,
   retryDelay = 1000
 ) {
@@ -29,8 +35,30 @@ export async function downloadFile(
         fs.mkdirSync(dir, { recursive: true });
       }
 
+      let data = new TextDecoder().decode(fileData);
+      if (options.options?.jsonSchema && locale) {
+        const jsonSchema = validateJsonSchema(options.options, outputPath);
+        if (jsonSchema) {
+          const originalContent = fs.readFileSync(outputPath, 'utf8');
+          if (originalContent) {
+            data = mergeJson(
+              originalContent,
+              outputPath,
+              options.options,
+              [
+                {
+                  translatedContent: data,
+                  targetLocale: locale,
+                },
+              ],
+              options.defaultLocale
+            )[0];
+          }
+        }
+      }
+
       // Write the file to disk
-      await fs.promises.writeFile(outputPath, Buffer.from(fileData));
+      await fs.promises.writeFile(outputPath, data);
 
       return true;
     } catch (error) {

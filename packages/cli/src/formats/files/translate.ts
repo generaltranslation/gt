@@ -13,13 +13,11 @@ import {
   createSpinner,
   logError,
   logSuccess,
-  logMessage,
 } from '../../console/logging.js';
 import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
-import { flattenJsonDictionary } from '../../react/utils/flattenDictionary.js';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types/index.js';
-import { FileFormat, DataFormat } from '../../types/data.js';
+import { FileFormat, DataFormat, FileToTranslate } from '../../types/data.js';
 import path from 'node:path';
 import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile.js';
@@ -27,6 +25,8 @@ import { downloadFileBatch } from '../../api/downloadFileBatch.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { TranslateOptions } from '../../cli/base.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
+import { parseJson } from '../json/parseJson.js';
+
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
 /**
@@ -46,7 +46,8 @@ export async function translateFiles(
   options: Settings & TranslateOptions
 ): Promise<void> {
   // Collect all files to translate
-  const allFiles = [];
+  const allFiles: FileToTranslate[] = [];
+  const additionalOptions = options.options || {};
 
   // Process JSON files
   if (filePaths.json) {
@@ -56,14 +57,17 @@ export async function translateFiles(
 
     const jsonFiles = filePaths.json.map((filePath) => {
       const content = readFile(filePath);
-      const json = JSON.parse(content);
 
-      // Just to validate the JSON is valid
-      flattenJsonDictionary(json);
+      const parsedJson = parseJson(
+        content,
+        filePath,
+        additionalOptions,
+        options.defaultLocale
+      );
 
       const relativePath = getRelative(filePath);
       return {
-        content,
+        content: parsedJson,
         fileName: relativePath,
         fileFormat: 'JSON' as FileFormat,
         dataFormat,
@@ -148,14 +152,12 @@ export async function translateFiles(
 
     // Check for remaining translations
     await checkFileTranslations(
-      options.projectId,
-      options.apiKey,
-      options.baseUrl,
       data,
       locales,
       600,
       (sourcePath, locale) => fileMapping[locale][sourcePath],
-      downloadStatus // Pass the already downloaded files to avoid duplicate requests
+      downloadStatus, // Pass the already downloaded files to avoid duplicate requests
+      options
     );
   } catch (error) {
     logErrorAndExit(`Error translating files: ${error}`);
@@ -252,6 +254,7 @@ async function processInitialTranslations(
           translationId: id,
           outputPath,
           fileLocale: `${fileName}:${locale}`,
+          locale,
         };
       })
       .filter(Boolean);
@@ -263,10 +266,12 @@ async function processInitialTranslations(
     // Use batch download if there are multiple files
     if (batchFiles.length > 1) {
       const batchResult = await downloadFileBatch(
-        batchFiles.map(({ translationId, outputPath }: any) => ({
+        batchFiles.map(({ translationId, outputPath, locale }: any) => ({
           translationId,
           outputPath,
-        }))
+          locale,
+        })),
+        options
       );
 
       // Process results
@@ -281,7 +286,12 @@ async function processInitialTranslations(
     } else if (batchFiles.length === 1) {
       // For a single file, use the original downloadFile method
       const file = batchFiles[0];
-      const result = await downloadFile(file.translationId, file.outputPath);
+      const result = await downloadFile(
+        file.translationId,
+        file.outputPath,
+        file.locale,
+        options
+      );
 
       if (result) {
         downloadStatus.downloaded.add(file.fileLocale);

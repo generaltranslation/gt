@@ -1,0 +1,217 @@
+{
+  "name": "Test Json 1",
+  "navigation": {
+    "languages": [
+      {
+        "language": "en",
+        "global": {
+          "anchors": [
+            {
+              "anchor": "Announcements",
+              "icon": "newspaper"
+            },
+            {
+              "anchor": "Status",
+              "icon": "signal"
+            },
+            {
+              "anchor": "Feature requests",
+              "icon": "rocket"
+            }
+          ]
+        },
+        "tabs": [
+          {
+            "tab": "Introduction",
+            "pages": [
+              "en/introduction/welcome",
+              "en/introduction/plans-and-credit-limits",
+              "en/introduction/faq",
+              "en/introduction/getting-started"
+            ]
+          },
+          {
+            "tab": "Features",
+            "pages": [
+              "en/features/modes",
+              "en/features/visual-edit",
+              "en/features/code-mode",
+              "en/features/knowledge",
+              "en/features/collaboration",
+              "en/features/deploy",
+              "en/features/analytics",
+              "en/features/custom-domain",
+              "en/features/security",
+              "en/features/labs",
+              "en/features/launched",
+              "en/features/figma-to-lovable"
+            ]
+          },
+          {
+            "tab": "Integrations",
+            "pages": [
+              "en/integrations/introduction",
+              "en/integrations/github",
+              "en/integrations/supabase",
+              "en/integrations/stripe",
+              "en/integrations/resend",
+              "en/integrations/clerk",
+              "en/integrations/make",
+              "en/integrations/replicate",
+              "en/integrations/ai",
+              "en/integrations/21stdev"
+            ]
+          },
+          {
+            "tab": "Tips & tricks",
+            "pages": [
+              "en/tips-tricks/best-practice",
+              "en/tips-tricks/troubleshooting",
+              "en/tips-tricks/using-images",
+              "en/tips-tricks/using-videos",
+              "en/tips-tricks/custom-fonts",
+              "en/tips-tricks/npm-packages",
+              "en/tips-tricks/seo",
+              "en/tips-tricks/chrome-extensions",
+              "en/tips-tricks/from-idea-to-app",
+              "en/tips-tricks/community",
+              "en/tips-tricks/support-policy"
+            ]
+          },
+          {
+            "tab": "Prompt Engineering",
+            "pages": [
+              "en/prompting/prompting-one",
+              "en/prompting/prompting-library",
+              "en/prompting/prompting-debugging",
+              "en/prompting/prompt-integrations"
+            ]
+          },
+          {
+            "tab": "Use Cases",
+            "pages": [
+              "en/use-case/inspiration",
+              "en/use-case/video-tutorials",
+              "en/use-case/landing-page",
+              "en/use-case/prototype",
+              "en/use-case/saas"
+            ]
+          },
+          {
+            "tab": "Glossary",
+            "pages": ["en/glossary"]
+          },
+          {
+            "tab": "Changelog",
+            "pages": ["en/changelog"]
+          }
+        ]
+      },
+      {
+        "language": "pt-BR",
+        "global": {
+          "anchors": [
+            {
+              "anchor": "Anúncios",
+              "icon": "newspaper"
+            },
+            {
+              "anchor": "Status",
+              "icon": "signal"
+            },
+            {
+              "anchor": "Solicitações de funcionalidades",
+              "icon": "rocket"
+            }
+          ]
+        },
+        "tabs": [
+          {
+            "tab": "Introdução",
+            "pages": [
+              "pt-BR/introduction/welcome",
+              "pt-BR/introduction/plans-and-credit-limits",
+              "pt-BR/introduction/faq",
+              "pt-BR/introduction/getting-started"
+            ]
+          },
+          {
+            "tab": "Funcionalidades",
+            "pages": [
+              "pt-BR/features/modes",
+              "pt-BR/features/visual-edit",
+              "pt-BR/features/code-mode",
+              "pt-BR/features/knowledge",
+              "pt-BR/features/collaboration",
+              "pt-BR/features/deploy",
+              "pt-BR/features/analytics",
+              "pt-BR/features/custom-domain",
+              "pt-BR/features/security",
+              "pt-BR/features/labs",
+              "pt-BR/features/launched",
+              "pt-BR/features/figma-to-lovable"
+            ]
+          },
+          {
+            "tab": "Integrações",
+            "pages": [
+              "pt-BR/integrations/introduction",
+              "pt-BR/integrations/github",
+              "pt-BR/integrations/supabase",
+              "pt-BR/integrations/stripe",
+              "pt-BR/integrations/resend",
+              "pt-BR/integrations/clerk",
+              "pt-BR/integrations/make",
+              "pt-BR/integrations/replicate",
+              "pt-BR/integrations/ai",
+              "pt-BR/integrations/21stdev"
+            ]
+          },
+          {
+            "tab": "Dicas e truques",
+            "pages": [
+              "pt-BR/tips-tricks/best-practice",
+              "pt-BR/tips-tricks/troubleshooting",
+              "pt-BR/tips-tricks/using-images",
+              "pt-BR/tips-tricks/using-videos",
+              "pt-BR/tips-tricks/custom-fonts",
+              "pt-BR/tips-tricks/npm-packages",
+              "pt-BR/tips-tricks/seo",
+              "pt-BR/tips-tricks/chrome-extensions",
+              "pt-BR/tips-tricks/from-idea-to-app",
+              "pt-BR/tips-tricks/community",
+              "pt-BR/tips-tricks/support-policy"
+            ]
+          },
+          {
+            "tab": "Engenharia de Prompts",
+            "pages": [
+              "pt-BR/prompting/prompting-one",
+              "pt-BR/prompting/prompting-library",
+              "pt-BR/prompting/prompting-debugging",
+              "pt-BR/prompting/prompt-integrations"
+            ]
+          },
+          {
+            "tab": "Casos de Uso",
+            "pages": [
+              "pt-BR/use-case/inspiration",
+              "pt-BR/use-case/video-tutorials",
+              "pt-BR/use-case/landing-page",
+              "pt-BR/use-case/prototype",
+              "pt-BR/use-case/saas"
+            ]
+          },
+          {
+            "tab": "Glossário",
+            "pages": ["pt-BR/glossary"]
+          },
+          {
+            "tab": "Registro de alterações",
+            "pages": ["pt-BR/changelog"]
+          }
+        ]
+      }
+    ]
+  }
+}

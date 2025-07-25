@@ -33,9 +33,13 @@ export function logMessage(message: string) {
   log.message(message, { symbol: chalk.cyan('~') });
 }
 
-export function logErrorAndExit(message: string) {
+export function logErrorAndExit(message: string): never {
   log.error(message);
-  process.exit(1);
+  exit(1);
+}
+
+export function exit(code: number): never {
+  process.exit(code);
 }
 
 // Clack prompts

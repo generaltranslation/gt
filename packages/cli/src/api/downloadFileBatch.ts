@@ -2,10 +2,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logError, logWarning } from '../console/logging.js';
 import { gt } from '../utils/gt.js';
+import { Settings } from '../types/index.js';
+import { validateJsonSchema } from '../formats/json/utils.js';
+import { mergeJson } from '../formats/json/mergeJson.js';
 
 export type BatchedFiles = Array<{
   translationId: string;
   outputPath: string;
+  locale: string;
 }>;
 
 export type DownloadFileBatchResult = {
@@ -21,6 +25,7 @@ export type DownloadFileBatchResult = {
  */
 export async function downloadFileBatch(
   files: BatchedFiles,
+  options: Settings,
   maxRetries = 3,
   retryDelay = 1000
 ): Promise<DownloadFileBatchResult> {
@@ -31,6 +36,9 @@ export async function downloadFileBatch(
   // Create a map of translationId to outputPath for easier lookup
   const outputPathMap = new Map(
     files.map((file) => [file.translationId, file.outputPath])
+  );
+  const localeMap = new Map(
+    files.map((file) => [file.translationId, file.locale])
   );
 
   while (retries <= maxRetries) {
@@ -44,6 +52,7 @@ export async function downloadFileBatch(
         try {
           const translationId = file.id;
           const outputPath = outputPathMap.get(translationId);
+          const locale = localeMap.get(translationId);
 
           if (!outputPath) {
             logWarning(`No output path found for file: ${translationId}`);
@@ -56,9 +65,30 @@ export async function downloadFileBatch(
           if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
           }
+          let data = file.data;
+          if (options.options?.jsonSchema && locale) {
+            const jsonSchema = validateJsonSchema(options.options, outputPath);
+            if (jsonSchema) {
+              const originalContent = fs.readFileSync(outputPath, 'utf8');
+              if (originalContent) {
+                data = mergeJson(
+                  originalContent,
+                  outputPath,
+                  options.options,
+                  [
+                    {
+                      translatedContent: file.data,
+                      targetLocale: locale,
+                    },
+                  ],
+                  options.defaultLocale
+                )[0];
+              }
+            }
+          }
 
           // Write the file to disk
-          await fs.promises.writeFile(outputPath, file.data);
+          await fs.promises.writeFile(outputPath, data);
 
           result.successful.push(translationId);
         } catch (error) {
@@ -78,20 +108,6 @@ export async function downloadFileBatch(
       }
 
       return result;
-
-      // // If we get here, the response was not OK
-      // if (retries >= maxRetries) {
-      //   logError(
-      //     `Failed to download files in batch. Status: ${response.status} after ${maxRetries + 1} attempts.`
-      //   );
-      //   // Mark all files as failed
-      //   result.failed = [...fileIds];
-      //   return result;
-      // }
-
-      // // Increment retry counter and wait before next attempt
-      // retries++;
-      // await new Promise((resolve) => setTimeout(resolve, retryDelay));
     } catch (error) {
       // If we've retried too many times, log an error and return false
       if (retries >= maxRetries) {
