@@ -138,6 +138,7 @@ export type AdditionalOptions = {
   jsonSchema?: {
     [fileGlob: string]: JsonSchema;
   };
+  docsUrlPattern?: string; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files
 };
 
 export type JsonSchema = {
