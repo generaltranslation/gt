@@ -33,12 +33,6 @@ export function findMatchingItemArray(
       sourceObjectOptions
     );
   // Use the json pointer key to locate the source item
-  const matchingItems: {
-    sourceItem: any;
-    keyParentProperty: string;
-    itemIndex: number;
-    keyPointer: string;
-  }[] = [];
   for (const [index, item] of sourceObjectValue.entries()) {
     // Get the key candidates
     const keyCandidates = JSONPath({
@@ -67,12 +61,6 @@ export function findMatchingItemArray(
     ) {
       continue;
     }
-    // matchingItems.push({
-    //   sourceItem: item,
-    //   keyParentProperty: keyCandidates[0].parentProperty,
-    //   itemIndex: index,
-    //   keyPointer: keyCandidates[0].pointer,
-    // });
     return {
       sourceItem: item,
       keyParentProperty: keyCandidates[0].parentProperty,
