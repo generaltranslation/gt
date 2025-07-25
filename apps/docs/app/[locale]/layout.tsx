@@ -11,6 +11,7 @@ import { getLocaleProperties } from 'generaltranslation';
 import { SiGithub } from '@icons-pack/react-simple-icons';
 import { PostHogProvider } from '@/components/analytics/PostHogProvider';
 import AnalyticsBanner from '@/components/analytics/AnalyticsBanner';
+import { TranslatedSeparator } from '@/components/TranslatedSeparator';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -66,6 +67,14 @@ export default async function Layout({
     name: capitalize(getLocaleProperties(locale, locale).languageName),
     locale: locale,
   }));
+  const translations = {
+    en: (await import('@/content/ui.en.json')).default,
+    zh: (await import('@/content/ui.zh.json')).default,
+    de: (await import('@/content/ui.de.json')).default,
+    fr: (await import('@/content/ui.fr.json')).default,
+    es: (await import('@/content/ui.es.json')).default,
+    ja: (await import('@/content/ui.ja.json')).default,
+  }[locale];
   return (
     <html lang={locale} className={inter.className} suppressHydrationWarning>
       <body suppressHydrationWarning>
@@ -75,18 +84,14 @@ export default async function Layout({
               i18n={{
                 locale: locale,
                 locales: locales,
-                translations: {
-                  en: (await import('@/content/ui.en.json')).default,
-                  zh: (await import('@/content/ui.zh.json')).default,
-                  de: (await import('@/content/ui.de.json')).default,
-                  fr: (await import('@/content/ui.fr.json')).default,
-                  es: (await import('@/content/ui.es.json')).default,
-                  ja: (await import('@/content/ui.ja.json')).default,
-                }[locale],
+                translations: translations,
               }}
             >
               <DocsLayout
                 sidebar={{
+                  components: {
+                    Separator: TranslatedSeparator,
+                  },
                   tabs: {
                     transform(option, node) {
                       const meta = source.getNodeMeta(node);
@@ -121,7 +126,7 @@ export default async function Layout({
                         <div className="px-4 py-2 mb-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-100/20">
                           <h3 className="font-semibold text-sm flex items-center gap-2">
                             <SiGithub />
-                            Star us on GitHub!
+                            {translations?.starOnGithub || 'Star us on GitHub!'}
                           </h3>
                         </div>
                       </a>

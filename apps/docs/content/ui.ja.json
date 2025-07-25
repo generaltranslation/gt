@@ -11,5 +11,19 @@
   "editOnGithub": "GitHubで編集",
   "dashboard": "ダッシュボード",
   "blog": "ブログ",
-  "docs": "ドキュメント"
+  "docs": "ドキュメント",
+  "starOnGithub": "GitHubでスターをつけてください！",
+  "features": "機能",
+  "platform": "プラットフォーム",
+  "reference": "リファレンス",
+  "gettingStarted": "はじめに",
+  "advanced": "上級",
+  "guides": "ガイド",
+  "technicalConcepts": "技術的概念",
+  "api": "API",
+  "tutorials": "チュートリアル",
+  "client": "クライアント",
+  "server": "サーバー",
+  "commands": "コマンド",
+  "supportedFormats": "サポートされるフォーマット"
 }

@@ -11,5 +11,19 @@
   "editOnGithub": "在 GitHub 上编辑",
   "dashboard": "仪表盘",
   "blog": "博客",
-  "docs": "文档"
+  "docs": "文档",
+  "starOnGithub": "在 GitHub 上给我们点星！",
+  "features": "功能",
+  "platform": "平台",
+  "reference": "参考",
+  "gettingStarted": "开始使用",
+  "advanced": "高级",
+  "guides": "指南",
+  "technicalConcepts": "技术概念",
+  "api": "API",
+  "tutorials": "教程",
+  "client": "客户端",
+  "server": "服务器",
+  "commands": "命令",
+  "supportedFormats": "支持的格式"
 }
