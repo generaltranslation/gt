@@ -15,7 +15,7 @@ import {
   logMessage,
 } from '../console/logging.js';
 import path from 'node:path';
-import fs, { readFileSync } from 'node:fs';
+import fs from 'node:fs';
 import {
   FilesOptions,
   Settings,
@@ -40,6 +40,7 @@ import { areCredentialsSet } from '../utils/credentials.js';
 import localizeStaticUrls from '../utils/localizeStaticUrls.js';
 import flattenJsonFiles from '../utils/flattenJsonFiles.js';
 import localizeStaticImports from '../utils/localizeStaticImports.js';
+import copyFile from '../fs/copyFile.js';
 
 export type TranslateOptions = {
   config?: string;
@@ -342,6 +343,11 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
     // Flatten json files into a single file
     if (settings.experimentalFlattenJsonFiles) {
       await flattenJsonFiles(settings);
+    }
+
+    // Copy files to the target locale
+    if (settings.options?.copyFiles) {
+      await copyFile(settings);
     }
   }
 
