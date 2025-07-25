@@ -55,7 +55,8 @@ export default async function localizeStaticUrls(
             fileContent,
             settings.defaultLocale,
             locale,
-            settings.experimentalHideDefaultLocale || false
+            settings.experimentalHideDefaultLocale || false,
+            settings.options?.urlPattern
           );
           // Write the localized file to the target path
           await fs.promises.writeFile(filePath, localizedFile);
@@ -70,16 +71,25 @@ function localizeStaticUrlsForFile(
   file: string,
   defaultLocale: string,
   targetLocale: string,
-  hideDefaultLocale: boolean
+  hideDefaultLocale: boolean,
+  pattern: string = '/docs/[locale]' // eg /docs/[locale] or /[locale]
 ): string {
+  if (!pattern.startsWith('/')) {
+    pattern = '/' + pattern;
+  }
+
   // 1. Search for all instances of:
+  const patternHead = pattern.split('[locale]')[0];
   let regex;
   if (hideDefaultLocale) {
     // Match complete markdown links: `](/docs/...)` or `](/docs)`
-    regex = new RegExp(`\\]\\(/docs(?:/([^)]*))?\\)`, 'g');
+    regex = new RegExp(`\\]\\(${patternHead}(?:/([^)]*))?\\)`, 'g');
   } else {
     // Match complete markdown links with default locale: `](/docs/${defaultLocale}/...)` or `](/docs/${defaultLocale})`
-    regex = new RegExp(`\\]\\(/docs/${defaultLocale}(?:/([^)]*))?\\)`, 'g');
+    regex = new RegExp(
+      `\\]\\(${patternHead}${defaultLocale}(?:/([^)]*))?\\)`,
+      'g'
+    );
   }
   const matches = file.match(regex);
 
@@ -100,13 +110,13 @@ function localizeStaticUrlsForFile(
       }
       // Add target locale to the path
       if (!pathContent || pathContent === '') {
-        return `](/docs/${targetLocale})`;
+        return `](${patternHead}${targetLocale})`;
       }
-      return `](/docs/${targetLocale}/${pathContent})`;
+      return `](${patternHead}${targetLocale}/${pathContent})`;
     } else {
       // For non-hideDefaultLocale, replace defaultLocale with targetLocale
       // pathContent contains everything after the default locale (no leading slash if present)
-      return `](/docs/${targetLocale}${pathContent ? '/' + pathContent : ''})`;
+      return `](${patternHead}${targetLocale}${pathContent ? '/' + pathContent : ''})`;
     }
   });
   return localizedFile;

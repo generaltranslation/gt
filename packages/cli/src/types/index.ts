@@ -138,6 +138,7 @@ export type AdditionalOptions = {
   jsonSchema?: {
     [fileGlob: string]: JsonSchema;
   };
+  urlPattern?: string; // eg /docs/[locale] or /[locale]
 };
 
 export type JsonSchema = {
