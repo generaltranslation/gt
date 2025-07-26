@@ -87,14 +87,19 @@ function localizeStaticUrlsForFile(
 
   // 1. Search for all instances of:
   const patternHead = pattern.split('[locale]')[0];
+  // Escape special regex characters and remove trailing slash if present
+  const escapedPatternHead = patternHead
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\/$/, '');
+
   let regex;
   if (hideDefaultLocale) {
     // Match complete markdown links: `](/docs/...)` or `](/docs)`
-    regex = new RegExp(`\\]\\(${patternHead}(?:/([^)]*))?\\)`, 'g');
+    regex = new RegExp(`\\]\\(${escapedPatternHead}(?:/([^)]*))?\\)`, 'g');
   } else {
     // Match complete markdown links with default locale: `](/docs/${defaultLocale}/...)` or `](/docs/${defaultLocale})`
     regex = new RegExp(
-      `\\]\\(${patternHead}${defaultLocale}(?:/([^)]*))?\\)`,
+      `\\]\\(${escapedPatternHead}/${defaultLocale}(?:/([^)]*))?\\)`,
       'g'
     );
   }
