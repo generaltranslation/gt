@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.11
+
+### Patch Changes
+
+- [#501](https://github.com/generaltranslation/gt/pull/501) [`d353c84`](https://github.com/generaltranslation/gt/commit/d353c84aaa159dbc77cff3ac29953adef4c64597) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add localization for href
+
 ## 2.0.10
 
 ### Patch Changes
