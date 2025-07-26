@@ -20,7 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from '@babel/parser';
 import { createMatchPath, loadConfig } from 'tsconfig-paths';
-import * as resolve from 'resolve';
+import resolve from 'resolve';
 
 /**
  * Processes a single translation function call (e.g., t('hello world', { id: 'greeting' })).
@@ -405,7 +405,6 @@ function resolveImportPath(
       }
     }
   }
-
   // 2. Fallback to Node.js resolution (handles relative paths and node_modules)
   try {
     return resolve.sync(importPath, { basedir, extensions });
