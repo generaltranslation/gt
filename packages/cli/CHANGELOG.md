@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.12
+
+### Patch Changes
+
+- [#503](https://github.com/generaltranslation/gt/pull/503) [`9549d88`](https://github.com/generaltranslation/gt/commit/9549d88485af4dc57fb19847016d53aa3375b380) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix path resolution mechanism for useGT/getGT usage scanning
+
 ## 2.0.11
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.0.11",
+  "version": "2.0.12",
   "main": "dist/index.js",
   "bin": "dist/main.js",
   "files": [
