@@ -221,8 +221,10 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '/title': 'Nouveau Titre',
-              '/desc': 'Nouvelle Description',
+              '$[0]': {
+                '/title': 'Nouveau Titre',
+                '/desc': 'Nouvelle Description',
+              },
             },
           }),
           targetLocale: 'fr',
@@ -272,7 +274,7 @@ describe('mergeJson', () => {
       expect(frenchItem.desc).toBe('Nouvelle Description');
     });
 
-    it('should use existing target locale item when available', () => {
+    it('should overwrite existing target locale item when available', () => {
       const originalContent = JSON.stringify({
         items: [
           { locale: 'en', title: 'English Title' },
@@ -284,7 +286,9 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '/title': 'Titre Français Traduit',
+              '$[0]': {
+                '/title': 'Titre Français Traduit',
+              },
             },
           }),
           targetLocale: 'fr',
@@ -316,6 +320,61 @@ describe('mergeJson', () => {
       expect(frenchItem.title).toBe('Titre Français Traduit');
     });
 
+    it('should overwrite multiple target locale items when available', () => {
+      const originalContent = JSON.stringify({
+        items: [
+          { locale: 'en', title: 'English Title' },
+          { locale: 'fr', title: 'Titre Français Original' },
+          { locale: 'en', title: 'English Phrase' },
+          { locale: 'fr', title: 'Titre Français Phrase1' },
+        ],
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/items': {
+              '$[0]': {
+                '/title': 'Titre Français Traduit',
+              },
+              '$[2]': {
+                '/title': 'Titre Français Phrase2',
+              },
+            },
+          }),
+          targetLocale: 'fr',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'test.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.items': {
+                  type: 'array',
+                  include: ['$.title'],
+                  key: '$.locale',
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en'
+      );
+
+      const parsed = JSON.parse(result[0]);
+      const frenchItems = parsed.items.filter(
+        (item: any) => item.locale === 'fr'
+      );
+      expect(frenchItems).toHaveLength(2);
+      expect(frenchItems[0].title).toBe('Titre Français Traduit');
+      expect(frenchItems[1].title).toBe('Titre Français Phrase2');
+    });
+
     it('should handle nested key paths in array type', () => {
       const originalContent = JSON.stringify({
         items: [
@@ -328,7 +387,9 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '/title': 'Titre Français',
+              '$[0]': {
+                '/title': 'Titre Français',
+              },
             },
           }),
           targetLocale: 'fr',
@@ -762,7 +823,7 @@ describe('mergeJson', () => {
       }).toThrow('Process exit called');
 
       expect(mockLogError).toHaveBeenCalledWith(
-        'Matching sourceItem not found at path: /items for locale: en. Please check your JSON schema'
+        'Matching sourceItems not found at path: /items for locale: en. Please check your JSON schema'
       );
       expect(mockExit).toHaveBeenCalledWith(1);
     });
@@ -806,6 +867,32 @@ describe('mergeJson', () => {
 
       expect(mockLogError).toHaveBeenCalledWith(
         'Source item not found at path: /translations. You must specify a source item where its key matches the default locale'
+      );
+      expect(mockExit).toHaveBeenCalledWith(1);
+    });
+
+    it('should exit with error for invalid JSON file', () => {
+      const malformedJson = '{ "key": value }';
+      const targets = [{ translatedContent: '{}', targetLocale: 'es' }];
+
+      expect(() => {
+        mergeJson(
+          malformedJson,
+          'invalid.json',
+          {
+            jsonSchema: {
+              '**/*.json': {
+                include: ['$..*'],
+              },
+            },
+          },
+          targets,
+          'en'
+        );
+      }).toThrow('Process exit called');
+
+      expect(mockLogError).toHaveBeenCalledWith(
+        'Invalid JSON file: invalid.json'
       );
       expect(mockExit).toHaveBeenCalledWith(1);
     });
@@ -865,6 +952,102 @@ describe('mergeJson', () => {
         );
       }).toThrow();
     });
+
+    it('should exit when array index is not present in source json', () => {
+      const originalContent = JSON.stringify({
+        items: [{ locale: 'en', title: 'English Title' }],
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/items': {
+              '$[0]': { '/title': 'Título Español' },
+              '$[1]': { '/title': 'Another Item' }, // This index doesn't exist in source
+            },
+          }),
+          targetLocale: 'es',
+        },
+      ];
+
+      expect(() => {
+        mergeJson(
+          originalContent,
+          'test.json',
+          {
+            jsonSchema: {
+              '**/*.json': {
+                composite: {
+                  '$.items': {
+                    type: 'array',
+                    include: ['$.title'],
+                    key: '$.locale',
+                  },
+                },
+              },
+            },
+          },
+          targets,
+          'en'
+        );
+      }).toThrow('Process exit called');
+
+      expect(mockLogError).toHaveBeenCalledWith(
+        'Array index $[1] is not present in the source json. It is possible that the source json has been modified since the translation was generated.'
+      );
+      expect(mockExit).toHaveBeenCalledWith(1);
+    });
+
+    it('should exit when items to add is less than items to remove', () => {
+      const originalContent = JSON.stringify({
+        items: [
+          { locale: 'en', title: 'English Title 1' },
+          { locale: 'es', title: 'Spanish Title 1' },
+          { locale: 'es', title: 'Spanish Title 2' },
+        ],
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/items': {
+              '$[0]': { '/title': 'Updated Spanish Title' },
+              // Only providing 1 translated item but there are 2 Spanish items in source (indices 1 and 2)
+              // This creates a scenario where items to add (1) < items to remove (2)
+              // Using $[0] which corresponds to the English item at index 0
+            },
+          }),
+          targetLocale: 'es',
+        },
+      ];
+
+      expect(() => {
+        mergeJson(
+          originalContent,
+          'test.json',
+          {
+            jsonSchema: {
+              '**/*.json': {
+                composite: {
+                  '$.items': {
+                    type: 'array',
+                    include: ['$.title'],
+                    key: '$.locale',
+                  },
+                },
+              },
+            },
+          },
+          targets,
+          'en'
+        );
+      }).toThrow('Process exit called');
+
+      expect(mockLogError).toHaveBeenCalledWith(
+        'Items to add is less than items to remove at path: /items. Please check your JSON schema key field.'
+      );
+      expect(mockExit).toHaveBeenCalledWith(1);
+    });
   });
 
   describe('Real-world Scenarios', () => {
@@ -878,10 +1061,12 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/navigation/languages': {
-              '/global/anchors/0/anchor': 'Anuncios',
-              '/global/anchors/1/anchor': 'Estado',
-              '/tabs/0/tab': 'Introducción',
-              '/tabs/1/tab': 'Características',
+              '$[0]': {
+                '/global/anchors/0/anchor': 'Anuncios',
+                '/global/anchors/1/anchor': 'Estado',
+                '/tabs/0/tab': 'Introducción',
+                '/tabs/1/tab': 'Características',
+              },
             },
           }),
           targetLocale: 'es',
@@ -938,8 +1123,10 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '/title': 'Título Español',
-              '/desc': 'Descripción Española',
+              '$[0]': {
+                '/title': 'Título Español',
+                '/desc': 'Descripción Española',
+              },
             },
           }),
           targetLocale: 'es',
@@ -947,8 +1134,10 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '/title': 'Titre Français',
-              '/desc': 'Description Française',
+              '$[0]': {
+                '/title': 'Titre Français',
+                '/desc': 'Description Française',
+              },
             },
           }),
           targetLocale: 'fr',
@@ -956,8 +1145,10 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '/title': 'Deutscher Titel',
-              '/desc': 'Deutsche Beschreibung',
+              '$[0]': {
+                '/title': 'Deutscher Titel',
+                '/desc': 'Deutsche Beschreibung',
+              },
             },
           }),
           targetLocale: 'de',
@@ -1021,7 +1212,9 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '/title': 'Título Español',
+              '$[0]': {
+                '/title': 'Título Español',
+              },
             },
           }),
           targetLocale: 'es',
@@ -1170,8 +1363,10 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '/message':
-                'Mensaje con "comillas", \'apostrofes\', y\nnuevas líneas\tcon tabs',
+              '$[0]': {
+                '/message':
+                  'Mensaje con "comillas", \'apostrofes\', y\nnuevas líneas\tcon tabs',
+              },
             },
           }),
           targetLocale: 'es',

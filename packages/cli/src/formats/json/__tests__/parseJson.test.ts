@@ -70,11 +70,35 @@ describe('parseJson', () => {
     );
     expect(result).toBeDefined();
     expect(result).toBe(
-      '{"/object":{"/key1":"value1","/key2":"value2","/key3":"value3"},"/array":{"/key1":"value1","/key2":"value2","/key3":"value3"}}'
+      '{"/object":{"/key1":"value1","/key2":"value2","/key3":"value3"},"/array":{"$[0]":{"/key1":"value1","/key2":"value2","/key3":"value3"}}}'
     );
   });
 
   describe('Error Handling', () => {
+    it('should exit with error for invalid JSON file', () => {
+      const malformedJson = '{ "key": value }';
+
+      expect(() => {
+        parseJson(
+          malformedJson,
+          path.join(__dirname, '../__mocks__', 'invalid.json'),
+          {
+            jsonSchema: {
+              '**/*.json': {
+                include: ['$..*'],
+              },
+            },
+          },
+          'en'
+        );
+      }).toThrow('Process exit called');
+
+      expect(mockLogError).toHaveBeenCalledWith(
+        `Invalid JSON file: ${path.join(__dirname, '../__mocks__', 'invalid.json')}`
+      );
+      expect(mockExit).toHaveBeenCalledWith(1);
+    });
+
     it('should throw error for malformed JSON', () => {
       const malformedJson = '{ "key": value }';
 
@@ -424,6 +448,68 @@ describe('parseJson', () => {
   });
 
   describe('Array Type Composite Schemas', () => {
+    it('should handle multiple array items with same locale', () => {
+      const json = JSON.stringify({
+        redirects: [
+          {
+            locale: 'en',
+            source: '/en/ai-review',
+            destination: '/en/agent/modes#agent',
+          },
+          {
+            locale: 'en',
+            source: '/en/background-agents',
+            destination: '/en/background-agent',
+          },
+          {
+            locale: 'fr',
+            source: '/fr/ai-review',
+            destination: '/fr/agent/modes#agent',
+          },
+        ],
+      });
+
+      const result = parseJson(
+        json,
+        path.join(__dirname, '../__mocks__', 'test.json'),
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.redirects': {
+                  type: 'array',
+                  include: ['$.source', '$.destination'],
+                  key: '$.locale',
+                },
+              },
+            },
+          },
+        },
+        'en'
+      );
+
+      const parsed = JSON.parse(result);
+      expect(parsed['/redirects']).toBeDefined();
+
+      // Should have multiple entries for 'en' locale
+      const redirectKeys = Object.keys(parsed['/redirects']);
+      const enRedirects = redirectKeys.filter((key) => key.startsWith('$['));
+      expect(enRedirects.length).toBeGreaterThan(1);
+
+      // Should capture both English redirect entries
+      expect(
+        enRedirects.some(
+          (key) => parsed['/redirects'][key]['/source'] === '/en/ai-review'
+        )
+      ).toBe(true);
+      expect(
+        enRedirects.some(
+          (key) =>
+            parsed['/redirects'][key]['/source'] === '/en/background-agents'
+        )
+      ).toBe(true);
+    });
+
     it('should handle array composite schema with valid key', () => {
       const json = JSON.stringify({
         items: [
@@ -458,8 +544,9 @@ describe('parseJson', () => {
       expect(result).toBeDefined();
       const parsed = JSON.parse(result);
       expect(parsed['/items']).toBeDefined();
-      expect(parsed['/items']['/title']).toBe('English Title');
-      expect(parsed['/items']['/desc']).toBe('English Description');
+      expect(parsed['/items']['$[0]']).toBeDefined();
+      expect(parsed['/items']['$[0]']['/title']).toBe('English Title');
+      expect(parsed['/items']['$[0]']['/desc']).toBe('English Description');
     });
 
     it('should handle array with nested key path', () => {
@@ -490,7 +577,7 @@ describe('parseJson', () => {
       );
 
       const parsed = JSON.parse(result);
-      expect(parsed['/items']['/title']).toBe('English Title');
+      expect(parsed['/items']['$[0]']['/title']).toBe('English Title');
     });
   });
 
@@ -691,7 +778,42 @@ describe('parseJson', () => {
       );
 
       const parsed = JSON.parse(result);
-      expect(parsed['/items']['/title']).toBe('English Title');
+      expect(parsed['/items']['$[0]']['/title']).toBe('English Title');
+    });
+
+    it('should handle multiple different locale entries for array type with same key', () => {
+      const json = JSON.stringify({
+        items: [
+          { lang: 'English', title: 'English Title' },
+          { lang: 'Français', title: 'Titre Français' },
+          { lang: 'English', title: 'English Title 2' },
+          { lang: 'Français', title: 'Titre Français 2' },
+        ],
+      });
+
+      const result = parseJson(
+        json,
+        path.join(__dirname, '../__mocks__', 'test.json'),
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.items': {
+                  type: 'array',
+                  include: ['$.title'],
+                  key: '$.lang',
+                  localeProperty: 'name',
+                },
+              },
+            },
+          },
+        },
+        'en'
+      );
+
+      const parsed = JSON.parse(result);
+      expect(parsed['/items']['$[0]']['/title']).toBe('English Title');
+      expect(parsed['/items']['$[2]']['/title']).toBe('English Title 2');
     });
 
     it('should use default localeProperty (code) when not specified', () => {
@@ -755,19 +877,22 @@ describe('parseJson', () => {
       const parsed = JSON.parse(result);
       expect(parsed['/navigation/languages']).toBeDefined();
 
-      // Should extract anchor text
-      expect(parsed['/navigation/languages']['/global/anchors/0/anchor']).toBe(
-        'Announcements'
-      );
-      expect(parsed['/navigation/languages']['/global/anchors/1/anchor']).toBe(
-        'Status'
-      );
+      // Should extract anchor text (first matching item with 'en' locale)
+      const firstMatch = Object.keys(parsed['/navigation/languages'])[0];
+      expect(
+        parsed['/navigation/languages'][firstMatch]['/global/anchors/0/anchor']
+      ).toBe('Announcements');
+      expect(
+        parsed['/navigation/languages'][firstMatch]['/global/anchors/1/anchor']
+      ).toBe('Status');
 
       // Should extract tab names
-      expect(parsed['/navigation/languages']['/tabs/0/tab']).toBe(
+      expect(parsed['/navigation/languages'][firstMatch]['/tabs/0/tab']).toBe(
         'Introduction'
       );
-      expect(parsed['/navigation/languages']['/tabs/1/tab']).toBe('Features');
+      expect(parsed['/navigation/languages'][firstMatch]['/tabs/1/tab']).toBe(
+        'Features'
+      );
     });
 
     it('should handle deeply nested JSON paths', () => {

@@ -30,7 +30,7 @@ export function mergeJson(
   let originalJson: any;
   try {
     originalJson = JSON.parse(originalContent);
-  } catch (error) {
+  } catch {
     logError(`Invalid JSON file: ${filePath}`);
     exit(1);
   }
@@ -88,29 +88,37 @@ export function mergeJson(
 
       // Get source item for default locale
 
-      const matchingDefaultLocaleItem = findMatchingItemArray(
+      const matchingDefaultLocaleItems = findMatchingItemArray(
         defaultLocale,
         sourceObjectOptions,
         sourceObjectPointer,
         sourceObjectValue
       );
-      if (!matchingDefaultLocaleItem) {
+      if (!Object.keys(matchingDefaultLocaleItems).length) {
         logError(
-          `Matching sourceItem not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Please check your JSON schema`
+          `Matching sourceItems not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Please check your JSON schema`
         );
         exit(1);
       }
-      const {
-        sourceItem: defaultLocaleSourceItem,
-        keyPointer: defaultLocaleKeyPointer,
-      } = matchingDefaultLocaleItem;
 
+      const matchingDefaultLocaleItemKeys = new Set(
+        Object.keys(matchingDefaultLocaleItems)
+      );
+
+      // NEW
       // For each target:
       // 1. Validate that the targetJson has a jsonPointer for the current sourceObjectPointer
-      // 2. If it does, find the source item for the target locale
-      // 3. Override the source item with the translated values
-      // 4. Apply additional mutations to the sourceItem
-      // 5. Merge the source item with the original JSON
+      // 2. Track all array indecies to remove (will be overwritten)
+      // For each target item:
+      //  2. Validate that all the array indecies are still present in the source json
+      //  3. Override the source item with the translated values
+      //  4. Apply additional mutations to the sourceItem
+      //  5. Track all items to add
+      // 6. Check that items to add is >= items to remove
+      // 6. Remove all items for the target locale (they can be identified by the key)
+      // 7. Merge the source items with the original JSON
+      const indicidesToRemove = new Set<number>();
+      const itemsToAdd: any[] = [];
       for (const target of targets) {
         const targetJson = JSON.parse(target.translatedContent);
         // 1. Validate that the targetJson has a jsonPointer for the current sourceObjectPointer
@@ -120,66 +128,100 @@ export function mergeJson(
           );
           continue;
         }
-        // 2. Find the source item for the target locale
-        const matchingTargetItem = findMatchingItemArray(
+        const targetItems = targetJson[sourceObjectPointer];
+
+        // 2. Track all array indecies to remove (will be overwritten)
+        const matchingTargetItems = findMatchingItemArray(
           target.targetLocale,
           sourceObjectOptions,
           sourceObjectPointer,
           sourceObjectValue
         );
-        // If the target locale has a matching source item, use it to mutate the source item
-        // Otherwise, fallback to the default locale source item
-        const mutateSourceItem = structuredClone(defaultLocaleSourceItem);
-        const mutateSourceItemIndex = matchingTargetItem
-          ? matchingTargetItem.itemIndex
-          : undefined;
-        const mutateSourceItemKeyPointer = defaultLocaleKeyPointer;
-        const { identifyingLocaleProperty: targetLocaleKeyProperty } =
-          getSourceObjectOptionsArray(
+        Object.values(matchingTargetItems).forEach(({ index }) =>
+          indicidesToRemove.add(index)
+        );
+
+        for (const [sourceItemPointer, targetItem] of Object.entries(
+          targetItems
+        )) {
+          // 3. Validate that all the array indecies are still present in the source json
+          if (!matchingDefaultLocaleItemKeys.has(sourceItemPointer)) {
+            logError(
+              `Array index ${sourceItemPointer} is not present in the source json. It is possible that the source json has been modified since the translation was generated.`
+            );
+            exit(1);
+          }
+
+          // 4. Override the source item with the translated values
+          const defaultLocaleSourceItem =
+            matchingDefaultLocaleItems[sourceItemPointer].sourceItem;
+          const defaultLocaleKeyPointer =
+            matchingDefaultLocaleItems[sourceItemPointer].keyPointer;
+          const mutatedSourceItem = structuredClone(defaultLocaleSourceItem);
+          const { identifyingLocaleProperty: targetLocaleKeyProperty } =
+            getSourceObjectOptionsArray(
+              target.targetLocale,
+              sourceObjectPointer,
+              sourceObjectOptions
+            );
+          JSONPointer.set(
+            mutatedSourceItem,
+            defaultLocaleKeyPointer,
+            targetLocaleKeyProperty
+          );
+          for (const [
+            translatedKeyJsonPointer,
+            translatedValue,
+          ] of Object.entries(targetItem || {})) {
+            try {
+              const value = JSONPointer.get(
+                mutatedSourceItem,
+                translatedKeyJsonPointer
+              );
+              if (!value) continue;
+              JSONPointer.set(
+                mutatedSourceItem,
+                translatedKeyJsonPointer,
+                translatedValue
+              );
+            } catch {
+              /* empty */
+            }
+          }
+
+          // 5. Apply additional mutations to the sourceItem
+          applyTransformations(
+            mutatedSourceItem,
+            sourceObjectOptions.transform,
             target.targetLocale,
-            sourceObjectPointer,
-            sourceObjectOptions
+            defaultLocale
           );
 
-        // 3. Override the source item with the translated values
-        JSONPointer.set(
-          mutateSourceItem,
-          mutateSourceItemKeyPointer,
-          targetLocaleKeyProperty
-        );
-        for (const [
-          translatedKeyJsonPointer,
-          translatedValue,
-        ] of Object.entries(targetJson[sourceObjectPointer] || {})) {
-          try {
-            const value = JSONPointer.get(
-              mutateSourceItem,
-              translatedKeyJsonPointer
-            );
-            if (!value) continue;
-            JSONPointer.set(
-              mutateSourceItem,
-              translatedKeyJsonPointer,
-              translatedValue
-            );
-          } catch (error) {}
-        }
-        // 4. Apply additional mutations to the sourceItem
-        applyTransformations(
-          mutateSourceItem,
-          sourceObjectOptions.transform,
-          target.targetLocale,
-          defaultLocale
-        );
-
-        // 5. Merge the source item with the original JSON
-        if (mutateSourceItemIndex) {
-          sourceObjectValue[mutateSourceItemIndex] = mutateSourceItem;
-        } else {
-          sourceObjectValue.push(mutateSourceItem);
+          itemsToAdd.push(mutatedSourceItem);
         }
       }
-      JSONPointer.set(mergedJson, sourceObjectPointer, sourceObjectValue);
+
+      // 6. Check that items to add is >= items to remove (if this happens, something is very wrong)
+      if (itemsToAdd.length < indicidesToRemove.size) {
+        logError(
+          `Items to add is less than items to remove at path: ${sourceObjectPointer}. Please check your JSON schema key field.`
+        );
+        exit(1);
+      }
+
+      // 7. Remove all items for the target locale (they can be identified by the key)
+      const filteredSourceObjectValue = sourceObjectValue.filter(
+        (_, index: number) => !indicidesToRemove.has(index)
+      );
+
+      // 8. Add all items to the original JSON
+      filteredSourceObjectValue.push(...itemsToAdd);
+
+      JSONPointer.set(
+        mergedJson,
+        sourceObjectPointer,
+        filteredSourceObjectValue
+      );
     } else {
       // Validate type
       if (typeof sourceObjectValue !== 'object' || sourceObjectValue === null) {
@@ -219,6 +261,7 @@ export function mergeJson(
           );
           continue;
         }
+
         // 2. Find the source item for the target locale
         const matchingTargetItem = findMatchingItemObject(
           target.targetLocale,
@@ -247,7 +290,9 @@ export function mergeJson(
               translatedKeyJsonPointer,
               translatedValue
             );
-          } catch (error) {}
+          } catch {
+            /* empty */
+          }
         }
         // 4. Apply additional mutations to the sourceItem
         applyTransformations(
@@ -294,7 +339,13 @@ function replaceLocalePlaceholders(
   });
 }
 
-// apply transformations to the sourceItem in-place
+/**
+ * Apply transformations to the sourceItem in-place
+ * @param sourceItem - The source item to apply transformations to
+ * @param transform - The transformations to apply
+ * @param targetLocale - The target locale
+ * @param defaultLocale - The default locale
+ */
 export function applyTransformations(
   sourceItem: any,
   transform: SourceObjectOptions['transform'],
