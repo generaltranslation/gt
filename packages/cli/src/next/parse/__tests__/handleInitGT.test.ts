@@ -715,6 +715,72 @@ export default nextConfig;
       );
     });
 
+    it('should use ES6 imports for .ts files with es6 module setting', async () => {
+      const filepath = '/test/next.config.ts';
+      const { errors, warnings, filesUpdated } = createTestArrays();
+      const tsconfigJson = createMockTsConfigJson({
+        compilerOptions: { module: 'es6' },
+      });
+
+      const code = `
+const nextConfig = {
+  // config here
+};
+
+export default nextConfig;
+`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+
+      await handleInitGT(
+        filepath,
+        errors,
+        warnings,
+        filesUpdated,
+        undefined,
+        tsconfigJson
+      );
+
+      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
+        filepath,
+        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
+      );
+    });
+
+    it('should use ES6 imports for .ts files with nodenext module setting', async () => {
+      const filepath = '/test/next.config.ts';
+      const { errors, warnings, filesUpdated } = createTestArrays();
+      const tsconfigJson = createMockTsConfigJson({
+        compilerOptions: { module: 'nodenext' },
+      });
+
+      const code = `
+const nextConfig = {
+  // config here
+};
+
+export default nextConfig;
+`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+
+      await handleInitGT(
+        filepath,
+        errors,
+        warnings,
+        filesUpdated,
+        undefined,
+        tsconfigJson
+      );
+
+      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
+        filepath,
+        expect.stringContaining('import { withGTConfig } from "gt-next/config"')
+      );
+    });
+
     it('should default to ES6 imports for other file extensions', async () => {
       const filepath = '/test/next.config.mjs';
       const { errors, warnings, filesUpdated } = createTestArrays();

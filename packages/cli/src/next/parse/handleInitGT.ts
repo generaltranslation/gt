@@ -69,7 +69,11 @@ export async function handleInitGT(
         } else if (
           moduleSetting === 'esnext' ||
           moduleSetting === 'es2022' ||
-          moduleSetting === 'node16'
+          moduleSetting === 'es2020' ||
+          moduleSetting === 'es2015' ||
+          moduleSetting === 'es6' ||
+          moduleSetting === 'node16' ||
+          moduleSetting === 'nodenext'
         ) {
           needsCJS = false;
         } else {
