@@ -49,7 +49,9 @@ export function mergeJson(
           const value = JSONPointer.get(mergedJson, jsonPointer);
           if (!value) continue;
           JSONPointer.set(mergedJson, jsonPointer, translatedValue);
-        } catch (error) {}
+        } catch {
+          /* empty */
+        }
       }
       output.push(JSON.stringify(mergedJson, null, 2));
     }
@@ -94,10 +96,10 @@ export function mergeJson(
         sourceObjectValue
       );
       if (!Object.keys(matchingDefaultLocaleItems).length) {
-        logError(
-          `Matching sourceItems not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Please check your JSON schema`
+        logWarning(
+          `Matching sourceItems not found at path: ${sourceObjectPointer}. Please check your JSON file includes the key field. Skipping this target`
         );
-        exit(1);
+        continue;
       }
 
       const matchingDefaultLocaleItemKeys = new Set(
