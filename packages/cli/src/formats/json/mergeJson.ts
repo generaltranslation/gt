@@ -116,7 +116,7 @@ export function mergeJson(
       //   8. Track all items to add
       // 9. Check that items to add is >= items to remove
       // 10. Remove all items for the target locale (they can be identified by the key)
-      const indicidesToRemove = new Set<number>();
+      const indiciesToRemove = new Set<number>();
       const itemsToAdd: any[] = [];
       for (const target of targets) {
         const targetJson = JSON.parse(target.translatedContent);
@@ -135,7 +135,7 @@ export function mergeJson(
           sourceObjectValue
         );
         Object.values(targetItemsToRemove).forEach(({ index }) =>
-          indicidesToRemove.add(index)
+          indiciesToRemove.add(index)
         );
 
         // 3. Merge matchingDefaultLocaleItems and targetItems
@@ -212,7 +212,7 @@ export function mergeJson(
       }
 
       // 8. Check that items to add is >= items to remove (if this happens, something is very wrong)
-      if (itemsToAdd.length < indicidesToRemove.size) {
+      if (itemsToAdd.length < indiciesToRemove.size) {
         logError(
           `Items to add is less than items to remove at path: ${sourceObjectPointer}. Please check your JSON schema key field.`
         );
@@ -221,7 +221,7 @@ export function mergeJson(
 
       // 9. Remove all items for the target locale (they can be identified by the key)
       const filteredSourceObjectValue = sourceObjectValue.filter(
-        (_, index: number) => !indicidesToRemove.has(index)
+        (_, index: number) => !indiciesToRemove.has(index)
       );
 
       // 10. Add all items to the original JSON
