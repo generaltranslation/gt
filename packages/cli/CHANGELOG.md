@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.14
+
+### Patch Changes
+
+- [#508](https://github.com/generaltranslation/gt/pull/508) [`5375e2c`](https://github.com/generaltranslation/gt/commit/5375e2c1b17fba3ca52291e7d79f8d78a585ed49) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add zh-Hans and zh-Hant
+
 ## 2.0.13
 
 ### Patch Changes
