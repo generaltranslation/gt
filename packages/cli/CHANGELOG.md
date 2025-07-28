@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.15
+
+### Patch Changes
+
+- [#510](https://github.com/generaltranslation/gt/pull/510) [`e69c23b`](https://github.com/generaltranslation/gt/commit/e69c23bb55062e91804f52379e231626573df30f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: backwards compatability
+
 ## 2.0.14
 
 ### Patch Changes
