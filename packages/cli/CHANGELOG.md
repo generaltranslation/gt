@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.13
+
+### Patch Changes
+
+- [#505](https://github.com/generaltranslation/gt/pull/505) [`e8c5650`](https://github.com/generaltranslation/gt/commit/e8c5650c163119301d2f9d6b946c0ed8383c57e1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: json translation for composite arrays where there are multiple default locale items
+
 ## 2.0.12
 
 ### Patch Changes
