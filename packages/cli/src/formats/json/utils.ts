@@ -20,12 +20,15 @@ export function findMatchingItemArray(
   sourceObjectOptions: SourceObjectOptions,
   sourceObjectPointer: string,
   sourceObjectValue: any
-): {
-  sourceItem: any;
-  keyParentProperty: string;
-  itemIndex: number;
-  keyPointer: string;
-} | null {
+): Record<
+  string,
+  {
+    sourceItem: any;
+    keyParentProperty: string;
+    keyPointer: string;
+    index: number;
+  }
+> {
   const { identifyingLocaleProperty, localeKeyJsonPath } =
     getSourceObjectOptionsArray(
       locale,
@@ -33,6 +36,15 @@ export function findMatchingItemArray(
       sourceObjectOptions
     );
   // Use the json pointer key to locate the source item
+  const matchingItems: Record<
+    string,
+    {
+      sourceItem: any;
+      keyParentProperty: string;
+      keyPointer: string;
+      index: number;
+    }
+  > = {};
   for (const [index, item] of sourceObjectValue.entries()) {
     // Get the key candidates
     const keyCandidates = JSONPath({
@@ -47,28 +59,28 @@ export function findMatchingItemArray(
         `Source item at path: ${sourceObjectPointer} does not have a key value at path: ${localeKeyJsonPath}`
       );
       exit(1);
-    } else if (keyCandidates.length !== 1) {
+    } else if (keyCandidates.length === 0) {
+      // If no key candidates, skip the item
+      continue;
+    } else if (keyCandidates.length > 1) {
+      // If multiple key candidates, exit with an error
       logError(
         `Source item at path: ${sourceObjectPointer} has multiple matching keys with path: ${localeKeyJsonPath}`
       );
       exit(1);
-    }
-
-    // Validate the key is the identifying locale property
-    if (
-      !keyCandidates.length ||
-      identifyingLocaleProperty !== keyCandidates[0].value
-    ) {
+    } else if (identifyingLocaleProperty !== keyCandidates[0].value) {
+      // Validate the key is the identifying locale property
       continue;
     }
-    return {
+    // Map the index to the source item
+    matchingItems[`/${index}`] = {
       sourceItem: item,
       keyParentProperty: keyCandidates[0].parentProperty,
-      itemIndex: index,
       keyPointer: keyCandidates[0].pointer,
+      index,
     };
   }
-  return null;
+  return matchingItems;
 }
 
 export function findMatchingItemObject(
@@ -96,6 +108,13 @@ export function findMatchingItemObject(
   };
 }
 
+/**
+ * Get the identifying locale property for an object
+ * @param locale - The locale to get the identifying locale property for
+ * @param sourceObjectPointer - The path to the source object
+ * @param sourceObjectOptions - The source object options
+ * @returns The identifying locale property
+ */
 export function getIdentifyingLocaleProperty(
   locale: string,
   sourceObjectPointer: string,
@@ -114,6 +133,13 @@ export function getIdentifyingLocaleProperty(
   return identifyingLocaleProperty;
 }
 
+/**
+ * Get the identifying locale property and the json path to the key for an array
+ * @param locale - The locale to get the identifying locale property for
+ * @param sourceObjectPointer - The path to the source object
+ * @param sourceObjectOptions - The source object options
+ * @returns The identifying locale property and the json path to the key
+ */
 export function getSourceObjectOptionsArray(
   locale: string,
   sourceObjectPointer: string,
@@ -154,8 +180,13 @@ export function getSourceObjectOptionsObject(
   return { identifyingLocaleProperty };
 }
 
-// Generate a mapping of sourceObjectPointer to SourceObjectOptions
-// where the sourceObjectPointer is a jsonpointer to the array or object containing
+/**
+ * Generate a mapping of sourceObjectPointer to SourceObjectOptions
+ * where the sourceObjectPointer is a jsonpointer to the array or object containing
+ * @param jsonSchema - The json schema to generate the mapping from
+ * @param originalJson - The original json to generate the mapping from
+ * @returns A mapping of sourceObjectPointer to SourceObjectOptions
+ */
 export function generateSourceObjectPointers(
   jsonSchema: {
     [sourceObjectPath: string]: SourceObjectOptions;

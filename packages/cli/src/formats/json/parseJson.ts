@@ -20,10 +20,11 @@ export function parseJson(
   if (!jsonSchema) {
     return content;
   }
+
   let json: any;
   try {
     json = JSON.parse(content);
-  } catch (error) {
+  } catch {
     logError(`Invalid JSON file: ${filePath}`);
     exit(1);
   }
@@ -47,11 +48,19 @@ export function parseJson(
   > = generateSourceObjectPointers(jsonSchema.composite, json);
 
   // Construct lvl 2
-  const sourceObjectsToTranslate: Record<string, Record<string, string>> = {};
+  const sourceObjectsToTranslate: Record<
+    string,
+    Record<string, Record<string, string>>
+  > = {};
   for (const [
     sourceObjectPointer,
     { sourceObjectValue, sourceObjectOptions },
   ] of Object.entries(sourceObjectPointers)) {
+    // Skip if no includes
+    if (!sourceObjectOptions.include.length) {
+      continue;
+    }
+
     // Find the default locale in each source item in each sourceObjectValue
     // Array: use key field
     if (sourceObjectOptions.type === 'array') {
@@ -62,50 +71,60 @@ export function parseJson(
         );
         exit(1);
       }
-      // Validate localeProperty
-      const matchingItem = findMatchingItemArray(
+
+      // Find matching source items
+      const matchingItems = findMatchingItemArray(
         defaultLocale,
         sourceObjectOptions,
         sourceObjectPointer,
         sourceObjectValue
       );
-      if (!matchingItem) {
+      if (!Object.keys(matchingItems).length) {
         logError(
           `Matching sourceItem not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Please check your JSON schema`
         );
         exit(1);
       }
-      const { sourceItem, keyPointer } = matchingItem;
-      // Get the fields to translate from the includes
-      let itemsToTranslate: any = [];
-      for (const include of sourceObjectOptions.include) {
-        try {
-          const matchingItems = JSONPath({
-            json: sourceItem,
-            path: include,
-            resultType: 'all',
-            flatten: true,
-            wrap: true,
-          });
-          if (matchingItems) {
-            itemsToTranslate.push(...matchingItems);
+      // Construct lvl 3
+      const sourceItemsToTranslate: Record<string, Record<string, string>> = {};
+      for (const [arrayPointer, matchingItem] of Object.entries(
+        matchingItems
+      )) {
+        const { sourceItem, keyPointer } = matchingItem;
+        // Get the fields to translate from the includes
+        const matchingItemsToTranslate: any[] = [];
+        for (const include of sourceObjectOptions.include) {
+          try {
+            const matchingItems = JSONPath({
+              json: sourceItem,
+              path: include,
+              resultType: 'all',
+              flatten: true,
+              wrap: true,
+            });
+            if (matchingItems) {
+              matchingItemsToTranslate.push(...matchingItems);
+            }
+          } catch {
+            /* empty */
           }
-        } catch (error) {}
+        }
+        // Filter out the key pointer
+        sourceItemsToTranslate[arrayPointer] = Object.fromEntries(
+          matchingItemsToTranslate
+            .filter(
+              (item: { pointer: string; value: any }) =>
+                item.pointer !== keyPointer
+            )
+            .map((item: { pointer: string; value: string }) => [
+              item.pointer,
+              item.value,
+            ])
+        );
       }
-      itemsToTranslate = Object.fromEntries(
-        itemsToTranslate
-          .filter(
-            (item: { pointer: string; value: any }) =>
-              item.pointer !== keyPointer
-          )
-          .map((item: { pointer: string; value: string }) => [
-            item.pointer,
-            item.value,
-          ])
-      );
 
       // Add the items to translate to the result
-      sourceObjectsToTranslate[sourceObjectPointer] = itemsToTranslate;
+      sourceObjectsToTranslate[sourceObjectPointer] = sourceItemsToTranslate;
     } else {
       // Object: use the key in this object with the matching locale property
       // Validate type
