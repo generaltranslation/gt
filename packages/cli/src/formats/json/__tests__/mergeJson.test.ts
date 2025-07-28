@@ -221,7 +221,7 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '$[0]': {
+              '/0': {
                 '/title': 'Nouveau Titre',
                 '/desc': 'Nouvelle Description',
               },
@@ -286,7 +286,7 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '$[0]': {
+              '/0': {
                 '/title': 'Titre Français Traduit',
               },
             },
@@ -334,10 +334,10 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '$[0]': {
+              '/0': {
                 '/title': 'Titre Français Traduit',
               },
-              '$[2]': {
+              '/2': {
                 '/title': 'Titre Français Phrase2',
               },
             },
@@ -387,7 +387,7 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '$[0]': {
+              '/0': {
                 '/title': 'Titre Français',
               },
             },
@@ -443,7 +443,7 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/different/path': {
-              '$[0]': {
+              '/0': {
                 '/title': 'Título Español',
               },
             },
@@ -1071,8 +1071,8 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '$[0]': { '/title': 'Título Español' },
-              '$[1]': { '/title': 'Another Item' }, // This index doesn't exist in source
+              '/0': { '/title': 'Título Español' },
+              '/1': { '/title': 'Another Item' }, // This index doesn't exist in source
             },
           }),
           targetLocale: 'es',
@@ -1102,7 +1102,7 @@ describe('mergeJson', () => {
       }).toThrow('Process exit called');
 
       expect(mockLogError).toHaveBeenCalledWith(
-        'Array index $[1] is not present in the source json. It is possible that the source json has been modified since the translation was generated.'
+        'Array index /1 is not present in the source json. It is possible that the source json has been modified since the translation was generated.'
       );
       expect(mockExit).toHaveBeenCalledWith(1);
     });
@@ -1120,10 +1120,10 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '$[0]': { '/title': 'Updated Spanish Title' },
+              '/0': { '/title': 'Updated Spanish Title' },
               // Only providing 1 translated item but there are 2 Spanish items in source (indices 1 and 2)
               // This creates a scenario where items to add (1) < items to remove (2)
-              // Using $[0] which corresponds to the English item at index 0
+              // Using /0 which corresponds to the English item at index 0
             },
           }),
           targetLocale: 'es',
@@ -1277,7 +1277,7 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/navigation/languages': {
-              '$[0]': {
+              '/0': {
                 '/global/anchors/0/anchor': 'Anuncios',
                 '/global/anchors/1/anchor': 'Estado',
                 '/tabs/0/tab': 'Introducción',
@@ -1339,7 +1339,7 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '$[0]': {
+              '/0': {
                 '/title': 'Título Español',
                 '/desc': 'Descripción Española',
               },
@@ -1350,7 +1350,7 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '$[0]': {
+              '/0': {
                 '/title': 'Titre Français',
                 '/desc': 'Description Française',
               },
@@ -1361,7 +1361,7 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '$[0]': {
+              '/0': {
                 '/title': 'Deutscher Titel',
                 '/desc': 'Deutsche Beschreibung',
               },
@@ -1428,7 +1428,7 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '$[0]': {
+              '/0': {
                 '/title': 'Título Español',
               },
             },
@@ -1728,18 +1728,18 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/languagesWithTranslations': {
-              '$[0]': {
+              '/0': {
                 '/translation': 'hola',
               },
             },
             '/redirectsWithTranslations': {
-              '$[1]': {
+              '/1': {
                 '/translation': 'hola',
               },
-              '$[2]': {
+              '/2': {
                 '/translation': 'hola',
               },
-              '$[3]': {
+              '/3': {
                 '/translation': 'hola',
               },
             },
@@ -2004,18 +2004,18 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/redirectsWithTranslations': {
-              '$[0]': {
+              '/0': {
                 '/translation': 'hola',
               },
             },
             '/languagesWithTranslations': {
-              '$[1]': {
+              '/1': {
                 '/translation': 'hola',
               },
-              '$[2]': {
+              '/2': {
                 '/translation': 'hola',
               },
-              '$[3]': {
+              '/3': {
                 '/translation': 'hola',
               },
             },
@@ -2225,7 +2225,7 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/items': {
-              '$[0]': {
+              '/0': {
                 '/message':
                   'Mensaje con "comillas", \'apostrofes\', y\nnuevas líneas\tcon tabs',
               },

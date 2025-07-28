@@ -70,7 +70,7 @@ describe('parseJson', () => {
     );
     expect(result).toBeDefined();
     expect(result).toBe(
-      '{"/object":{"/key1":"value1","/key2":"value2","/key3":"value3"},"/array":{"$[0]":{"/key1":"value1","/key2":"value2","/key3":"value3"}}}'
+      '{"/object":{"/key1":"value1","/key2":"value2","/key3":"value3"},"/array":{"/0":{"/key1":"value1","/key2":"value2","/key3":"value3"}}}'
     );
   });
 
@@ -493,7 +493,7 @@ describe('parseJson', () => {
 
       // Should have multiple entries for 'en' locale
       const redirectKeys = Object.keys(parsed['/redirects']);
-      const enRedirects = redirectKeys.filter((key) => key.startsWith('$['));
+      const enRedirects = redirectKeys.filter((key) => key.startsWith('/'));
       expect(enRedirects.length).toBeGreaterThan(1);
 
       // Should capture both English redirect entries
@@ -544,9 +544,9 @@ describe('parseJson', () => {
       expect(result).toBeDefined();
       const parsed = JSON.parse(result);
       expect(parsed['/items']).toBeDefined();
-      expect(parsed['/items']['$[0]']).toBeDefined();
-      expect(parsed['/items']['$[0]']['/title']).toBe('English Title');
-      expect(parsed['/items']['$[0]']['/desc']).toBe('English Description');
+      expect(parsed['/items']['/0']).toBeDefined();
+      expect(parsed['/items']['/0']['/title']).toBe('English Title');
+      expect(parsed['/items']['/0']['/desc']).toBe('English Description');
     });
 
     it('should handle array with nested key path', () => {
@@ -577,7 +577,7 @@ describe('parseJson', () => {
       );
 
       const parsed = JSON.parse(result);
-      expect(parsed['/items']['$[0]']['/title']).toBe('English Title');
+      expect(parsed['/items']['/0']['/title']).toBe('English Title');
     });
 
     it('should not include transformations for array items', () => {
@@ -885,7 +885,7 @@ describe('parseJson', () => {
       );
 
       const parsed = JSON.parse(result);
-      expect(parsed['/items']['$[0]']['/title']).toBe('English Title');
+      expect(parsed['/items']['/0']['/title']).toBe('English Title');
     });
 
     it('should handle multiple different locale entries for array type with same key', () => {
@@ -919,8 +919,8 @@ describe('parseJson', () => {
       );
 
       const parsed = JSON.parse(result);
-      expect(parsed['/items']['$[0]']['/title']).toBe('English Title');
-      expect(parsed['/items']['$[2]']['/title']).toBe('English Title 2');
+      expect(parsed['/items']['/0']['/title']).toBe('English Title');
+      expect(parsed['/items']['/2']['/title']).toBe('English Title 2');
     });
 
     it('should use default localeProperty (code) when not specified', () => {

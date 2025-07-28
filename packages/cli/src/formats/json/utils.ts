@@ -73,7 +73,7 @@ export function findMatchingItemArray(
       continue;
     }
     // Map the index to the source item
-    matchingItems[`$[${index}]`] = {
+    matchingItems[`/${index}`] = {
       sourceItem: item,
       keyParentProperty: keyCandidates[0].parentProperty,
       keyPointer: keyCandidates[0].pointer,
