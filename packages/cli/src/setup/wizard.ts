@@ -159,7 +159,13 @@ Please let us know what you would like to see supported at https://github.com/ge
 
     if (addWithGTConfig) {
       // Add the withGTConfig() function to the next.config.js file
-      await handleInitGT(nextConfigPath, errors, warnings, filesUpdated);
+      await handleInitGT(
+        nextConfigPath,
+        errors,
+        warnings,
+        filesUpdated,
+        packageJson
+      );
       logStep(
         chalk.green(`Added withGTConfig() to your ${nextConfigPath} file.`)
       );

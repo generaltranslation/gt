@@ -14,7 +14,8 @@ export async function handleInitGT(
   filepath: string,
   errors: string[],
   warnings: string[],
-  filesUpdated: string[]
+  filesUpdated: string[],
+  packageJson?: { type?: string }
 ) {
   const code = await fs.promises.readFile(filepath, 'utf8');
 
@@ -27,7 +28,9 @@ export async function handleInitGT(
       createParenthesizedExpressions: true,
     });
 
-    const needsCJS = filepath.endsWith('.js');
+    // Determine if we need CommonJS based on file extension AND package.json type
+    // If package.json has "type": "module", .js files are treated as ES modules
+    const needsCJS = filepath.endsWith('.js') && packageJson?.type !== 'module';
 
     // Check if withGTConfig or initGT is already imported/required
     let hasGTConfig = false;
