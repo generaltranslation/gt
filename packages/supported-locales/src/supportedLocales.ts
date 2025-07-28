@@ -135,6 +135,8 @@ const supportedLocales = {
     // Chinese
     'zh',
     'zh-CN', // China
+    'zh-Hans', // Simplified Chinese
+    'zh-Hant', // Traditional Chinese
     'zh-HK', // Hong Kong
     'zh-SG', // Singapore
     'zh-TW', // Taiwan
