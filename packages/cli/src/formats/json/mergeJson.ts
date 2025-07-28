@@ -87,7 +87,6 @@ export function mergeJson(
       }
 
       // Get source item for default locale
-
       const matchingDefaultLocaleItems = findMatchingItemArray(
         defaultLocale,
         sourceObjectOptions,
@@ -105,46 +104,57 @@ export function mergeJson(
         Object.keys(matchingDefaultLocaleItems)
       );
 
-      // NEW
       // For each target:
-      // 1. Validate that the targetJson has a jsonPointer for the current sourceObjectPointer
+      // 1. Get the target items
       // 2. Track all array indecies to remove (will be overwritten)
+      // 3. Merge matchingDefaultLocaleItems and targetItems
+      // 4. Validate that the mergedItems is not empty
       // For each target item:
-      //  2. Validate that all the array indecies are still present in the source json
-      //  3. Override the source item with the translated values
-      //  4. Apply additional mutations to the sourceItem
-      //  5. Track all items to add
-      // 6. Check that items to add is >= items to remove
-      // 6. Remove all items for the target locale (they can be identified by the key)
-      // 7. Merge the source items with the original JSON
+      //   5. Validate that all the array indecies are still present in the source json
+      //   6. Override the source item with the translated values
+      //   7. Apply additional mutations to the sourceItem
+      //   8. Track all items to add
+      // 9. Check that items to add is >= items to remove
+      // 10. Remove all items for the target locale (they can be identified by the key)
       const indicidesToRemove = new Set<number>();
       const itemsToAdd: any[] = [];
       for (const target of targets) {
         const targetJson = JSON.parse(target.translatedContent);
-        // 1. Validate that the targetJson has a jsonPointer for the current sourceObjectPointer
-        if (!targetJson[sourceObjectPointer]) {
-          logWarning(
-            `Translated JSON for locale: ${target.targetLocale} does not have a valid sourceObjectPointer: ${sourceObjectPointer}. Skipping this target`
-          );
-          continue;
+        let targetItems = targetJson[sourceObjectPointer];
+        // 1. Get the target items
+        if (!targetItems) {
+          // If no translation can be found, a transformation may need to happen still
+          targetItems = {};
         }
-        const targetItems = targetJson[sourceObjectPointer];
 
         // 2. Track all array indecies to remove (will be overwritten)
-        const matchingTargetItems = findMatchingItemArray(
+        const targetItemsToRemove = findMatchingItemArray(
           target.targetLocale,
           sourceObjectOptions,
           sourceObjectPointer,
           sourceObjectValue
         );
-        Object.values(matchingTargetItems).forEach(({ index }) =>
+        Object.values(targetItemsToRemove).forEach(({ index }) =>
           indicidesToRemove.add(index)
         );
 
+        // 3. Merge matchingDefaultLocaleItems and targetItems
+        const mergedItems = {
+          ...(sourceObjectOptions.transform ? matchingDefaultLocaleItems : {}),
+          ...targetItems,
+        };
+        // 4. Validate that the mergedItems is not empty
+        if (Object.keys(mergedItems).length === 0) {
+          logWarning(
+            `Translated JSON for locale: ${target.targetLocale} does not have a valid sourceObjectPointer: ${sourceObjectPointer}. Skipping this target`
+          );
+          continue;
+        }
+
         for (const [sourceItemPointer, targetItem] of Object.entries(
-          targetItems
+          mergedItems
         )) {
-          // 3. Validate that all the array indecies are still present in the source json
+          // 5. Validate that all the array indecies are still present in the source json
           if (!matchingDefaultLocaleItemKeys.has(sourceItemPointer)) {
             logError(
               `Array index ${sourceItemPointer} is not present in the source json. It is possible that the source json has been modified since the translation was generated.`
@@ -152,7 +162,7 @@ export function mergeJson(
             exit(1);
           }
 
-          // 4. Override the source item with the translated values
+          // 6. Override the source item with the translated values
           const defaultLocaleSourceItem =
             matchingDefaultLocaleItems[sourceItemPointer].sourceItem;
           const defaultLocaleKeyPointer =
@@ -189,7 +199,7 @@ export function mergeJson(
             }
           }
 
-          // 5. Apply additional mutations to the sourceItem
+          // 7. Apply additional mutations to the sourceItem
           applyTransformations(
             mutatedSourceItem,
             sourceObjectOptions.transform,
@@ -201,7 +211,7 @@ export function mergeJson(
         }
       }
 
-      // 6. Check that items to add is >= items to remove (if this happens, something is very wrong)
+      // 8. Check that items to add is >= items to remove (if this happens, something is very wrong)
       if (itemsToAdd.length < indicidesToRemove.size) {
         logError(
           `Items to add is less than items to remove at path: ${sourceObjectPointer}. Please check your JSON schema key field.`
@@ -209,12 +219,12 @@ export function mergeJson(
         exit(1);
       }
 
-      // 7. Remove all items for the target locale (they can be identified by the key)
+      // 9. Remove all items for the target locale (they can be identified by the key)
       const filteredSourceObjectValue = sourceObjectValue.filter(
         (_, index: number) => !indicidesToRemove.has(index)
       );
 
-      // 8. Add all items to the original JSON
+      // 10. Add all items to the original JSON
       filteredSourceObjectValue.push(...itemsToAdd);
 
       JSONPointer.set(
@@ -247,19 +257,19 @@ export function mergeJson(
       const { sourceItem: defaultLocaleSourceItem } = matchingDefaultLocaleItem;
 
       // For each target:
-      // 1. Validate that the targetJson has a jsonPointer for the current sourceObjectPointer
-      // 2. If it does, find the source item for the target locale
-      // 3. Override the source item with the translated values
-      // 4. Apply additional mutations to the sourceItem
-      // 5. Merge the source item with the original JSON
+      // 1. Get the target items
+      // 2. Find the source item for the target locale
+      // 3. Merge the target items with the source item
+      // 4. Validate that the mergedItems is not empty
+      // 5. Override the source item with the translated values
+      // 6. Apply additional mutations to the sourceItem
+      // 7. Merge the source item with the original JSON (if the source item is not a new item)
       for (const target of targets) {
         const targetJson = JSON.parse(target.translatedContent);
-        // 1. Validate that the targetJson has a jsonPointer for the current sourceObjectPointer
-        if (!targetJson[sourceObjectPointer]) {
-          logWarning(
-            `Translated JSON for locale: ${target.targetLocale} does not have a valid sourceObjectPointer: ${sourceObjectPointer}. Skipping this target`
-          );
-          continue;
+        // 1. Get the target items
+        let targetItems = targetJson[sourceObjectPointer];
+        if (!targetItems) {
+          targetItems = {};
         }
 
         // 2. Find the source item for the target locale
@@ -274,11 +284,25 @@ export function mergeJson(
         const mutateSourceItem = structuredClone(defaultLocaleSourceItem);
         const mutateSourceItemKey = matchingTargetItem.keyParentProperty;
 
-        // 3. Override the source item with the translated values
+        // 3. Merge the target items with the source item (if there are transformations to perform)
+        const mergedItems = {
+          ...(sourceObjectOptions.transform ? defaultLocaleSourceItem : {}),
+          ...targetItems,
+        };
+
+        // 4. Validate that the mergedItems is not empty
+        if (Object.keys(mergedItems).length === 0) {
+          logWarning(
+            `Translated JSON for locale: ${target.targetLocale} does not have a valid sourceObjectPointer: ${sourceObjectPointer}. Skipping this target`
+          );
+          continue;
+        }
+
+        // 5. Override the source item with the translated values
         for (const [
           translatedKeyJsonPointer,
           translatedValue,
-        ] of Object.entries(targetJson[sourceObjectPointer] || {})) {
+        ] of Object.entries(mergedItems || {})) {
           try {
             const value = JSONPointer.get(
               mutateSourceItem,
@@ -294,7 +318,7 @@ export function mergeJson(
             /* empty */
           }
         }
-        // 4. Apply additional mutations to the sourceItem
+        // 6. Apply additional mutations to the sourceItem
         applyTransformations(
           mutateSourceItem,
           sourceObjectOptions.transform,
@@ -302,7 +326,7 @@ export function mergeJson(
           defaultLocale
         );
 
-        // 5. Merge the source item with the original JSON
+        // 7. Merge the source item with the original JSON
         sourceObjectValue[mutateSourceItemKey] = mutateSourceItem;
       }
       JSONPointer.set(mergedJson, sourceObjectPointer, sourceObjectValue);

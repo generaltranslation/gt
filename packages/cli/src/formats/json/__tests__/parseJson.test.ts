@@ -579,6 +579,113 @@ describe('parseJson', () => {
       const parsed = JSON.parse(result);
       expect(parsed['/items']['$[0]']['/title']).toBe('English Title');
     });
+
+    it('should not include transformations for array items', () => {
+      const json = JSON.stringify({
+        redirects: [
+          {
+            // decoy
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+          },
+          {
+            language: 'en',
+            source: '/en/path-1',
+            destination: '/en/path-1#section-1',
+          },
+          {
+            language: 'en',
+            source: '/en/path-2',
+            destination: '/en/path-2#section-2',
+          },
+          {
+            language: 'en',
+            source: '/en/path-3',
+            destination: '/en/path-3#section-3',
+          },
+        ],
+      });
+
+      const result = parseJson(
+        json,
+        path.join(__dirname, '../__mocks__', 'test.json'),
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.redirects': {
+                  type: 'array',
+                  include: [],
+                  key: '$.language',
+                  transform: {
+                    '$.source': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                    '$.destination': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        'en'
+      );
+
+      expect(result).toBeDefined();
+      const parsed = JSON.parse(result);
+      expect(parsed).toEqual({});
+    });
+
+    it('should not include transformations for object items', () => {
+      const json = JSON.stringify({
+        redirects: {
+          decoy: {
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+          },
+          en: {
+            source: '/en/path-1',
+            destination: '/en/path-1#section-1',
+          },
+        },
+      });
+
+      const result = parseJson(
+        json,
+        path.join(__dirname, '../__mocks__', 'test.json'),
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.redirects': {
+                  type: 'object',
+                  include: [],
+                  transform: {
+                    '$.source': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                    '$.destination': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        'en'
+      );
+
+      expect(result).toBeDefined();
+      const parsed = JSON.parse(result);
+      expect(parsed).toEqual({});
+    });
   });
 
   describe('Object Type Composite Schemas', () => {

@@ -59,18 +59,17 @@ export function findMatchingItemArray(
         `Source item at path: ${sourceObjectPointer} does not have a key value at path: ${localeKeyJsonPath}`
       );
       exit(1);
-    } else if (keyCandidates.length !== 1) {
+    } else if (keyCandidates.length === 0) {
+      // If no key candidates, skip the item
+      continue;
+    } else if (keyCandidates.length > 1) {
+      // If multiple key candidates, exit with an error
       logError(
         `Source item at path: ${sourceObjectPointer} has multiple matching keys with path: ${localeKeyJsonPath}`
       );
       exit(1);
-    }
-
-    // Validate the key is the identifying locale property
-    if (
-      !keyCandidates.length ||
-      identifyingLocaleProperty !== keyCandidates[0].value
-    ) {
+    } else if (identifyingLocaleProperty !== keyCandidates[0].value) {
+      // Validate the key is the identifying locale property
       continue;
     }
     // Map the index to the source item
@@ -181,8 +180,13 @@ export function getSourceObjectOptionsObject(
   return { identifyingLocaleProperty };
 }
 
-// Generate a mapping of sourceObjectPointer to SourceObjectOptions
-// where the sourceObjectPointer is a jsonpointer to the array or object containing
+/**
+ * Generate a mapping of sourceObjectPointer to SourceObjectOptions
+ * where the sourceObjectPointer is a jsonpointer to the array or object containing
+ * @param jsonSchema - The json schema to generate the mapping from
+ * @param originalJson - The original json to generate the mapping from
+ * @returns A mapping of sourceObjectPointer to SourceObjectOptions
+ */
 export function generateSourceObjectPointers(
   jsonSchema: {
     [sourceObjectPath: string]: SourceObjectOptions;

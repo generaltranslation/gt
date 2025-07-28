@@ -434,7 +434,7 @@ describe('mergeJson', () => {
       expect(frenchItem.meta.locale).toBe('fr');
     });
 
-    it('should skip target when translated content missing sourceObjectPointer', () => {
+    it('should skip target when there is no transform and translated content missing sourceObjectPointer for array', () => {
       const originalContent = JSON.stringify({
         items: [{ locale: 'en', title: 'English Title' }],
       });
@@ -443,7 +443,9 @@ describe('mergeJson', () => {
         {
           translatedContent: JSON.stringify({
             '/different/path': {
-              '/title': 'Título Español',
+              '$[0]': {
+                '/title': 'Título Español',
+              },
             },
           }),
           targetLocale: 'es',
@@ -673,6 +675,113 @@ describe('mergeJson', () => {
 
       const parsed = JSON.parse(result[0]);
       expect(parsed.translations.en.title).toBe('English Title'); // Unchanged
+    });
+
+    it('should handle transformations for array targets', () => {
+      const originalContent = JSON.stringify({
+        redirects: [
+          {
+            // decoy
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+          },
+          {
+            language: 'en',
+            source: '/en/path-1',
+            destination: '/en/path-1#section-1',
+          },
+          {
+            language: 'en',
+            source: '/en/path-2',
+            destination: '/en/path-2#section-2',
+          },
+          {
+            language: 'en',
+            source: '/en/path-3',
+            destination: '/en/path-3#section-3',
+          },
+        ],
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({}),
+          targetLocale: 'es',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'test.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.redirects': {
+                  type: 'array',
+                  key: '$.language',
+                  include: [],
+                  transform: {
+                    '$.source': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                    '$.destination': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en'
+      );
+
+      const parsed = JSON.parse(result[0]);
+      expect(parsed).toBeDefined();
+      const expected = {
+        redirects: [
+          {
+            // decoy
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+          },
+          {
+            language: 'en',
+            source: '/en/path-1',
+            destination: '/en/path-1#section-1',
+          },
+          {
+            language: 'en',
+            source: '/en/path-2',
+            destination: '/en/path-2#section-2',
+          },
+          {
+            language: 'en',
+            source: '/en/path-3',
+            destination: '/en/path-3#section-3',
+          },
+          {
+            language: 'es',
+            source: '/es/path-1',
+            destination: '/es/path-1#section-1',
+          },
+          {
+            language: 'es',
+            source: '/es/path-2',
+            destination: '/es/path-2#section-2',
+          },
+          {
+            language: 'es',
+            source: '/es/path-3',
+            destination: '/es/path-3#section-3',
+          },
+        ],
+      };
+      expect(JSON.stringify(parsed)).toEqual(JSON.stringify(expected));
     });
   });
 
@@ -1048,6 +1157,113 @@ describe('mergeJson', () => {
       );
       expect(mockExit).toHaveBeenCalledWith(1);
     });
+
+    it('should call logWarning when there is no transform and translated content for array', () => {
+      const originalContent = JSON.stringify({
+        redirects: [
+          {
+            language: 'en',
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+          },
+        ],
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({}),
+          targetLocale: 'es',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'test.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.redirects': {
+                  type: 'array',
+                  key: '$.language',
+                  include: [],
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en'
+      );
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        `Translated JSON for locale: es does not have a valid sourceObjectPointer: /redirects. Skipping this target`
+      );
+
+      const parsed = JSON.parse(result[0]);
+      expect(parsed).toBeDefined();
+      const expected = {
+        redirects: [
+          {
+            language: 'en',
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+          },
+        ],
+      };
+      expect(JSON.stringify(parsed)).toEqual(JSON.stringify(expected));
+    });
+
+    it('should call logWarning when there is no transform and translated content for object', () => {
+      const originalContent = JSON.stringify({
+        translations: {
+          en: {
+            title: 'English Title',
+          },
+        },
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({}),
+          targetLocale: 'es',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'test.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.translations': {
+                  type: 'object',
+                  include: [],
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en'
+      );
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        `Translated JSON for locale: es does not have a valid sourceObjectPointer: /translations. Skipping this target`
+      );
+
+      const parsed = JSON.parse(result[0]);
+      expect(parsed).toBeDefined();
+      const expected = {
+        translations: {
+          en: {
+            title: 'English Title',
+          },
+        },
+      };
+      expect(JSON.stringify(parsed)).toEqual(JSON.stringify(expected));
+    });
   });
 
   describe('Real-world Scenarios', () => {
@@ -1251,6 +1467,652 @@ describe('mergeJson', () => {
       expect(englishItem.metadata.author).toBe('John Doe');
       expect(englishItem.settings.published).toBe(true);
       expect(englishItem.settings.priority).toBe(5);
+    });
+
+    it('should handle transformation only for array targets', () => {
+      const originalContent = JSON.stringify({
+        languages: [
+          {
+            language: 'en',
+            tabs: [
+              {
+                pages: ['en/link-1/', 'en/link-2/'],
+              },
+              {
+                pages: ['en/link-3/', 'en/link-4/'],
+              },
+            ],
+          },
+        ],
+        redirects: [
+          {
+            // decoy
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+          },
+          {
+            language: 'en',
+            source: '/en/path-1',
+            destination: '/en/path-1#section-1',
+          },
+          {
+            language: 'en',
+            source: '/en/path-2',
+            destination: '/en/path-2#section-2',
+          },
+          {
+            language: 'en',
+            source: '/en/path-3',
+            destination: '/en/path-3#section-3',
+          },
+        ],
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({}),
+          targetLocale: 'es',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'test.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.languages': {
+                  type: 'array',
+                  key: '$.language',
+                  include: [
+                    '$..group',
+                    '$..tab',
+                    '$..item',
+                    '$..anchor',
+                    '$..dropdown',
+                  ],
+                  transform: {
+                    '$..pages[*]': {
+                      match: '^{locale}/(.*)$',
+                      replace: '{locale}/$1',
+                    },
+                  },
+                },
+                '$.redirects': {
+                  type: 'array',
+                  key: '$.language',
+                  include: [],
+                  transform: {
+                    '$.source': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                    '$.destination': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en'
+      );
+
+      const parsed = JSON.parse(result[0]);
+      expect(parsed).toBeDefined();
+      const expected = {
+        languages: [
+          {
+            language: 'en',
+            tabs: [
+              {
+                pages: ['en/link-1/', 'en/link-2/'],
+              },
+              {
+                pages: ['en/link-3/', 'en/link-4/'],
+              },
+            ],
+          },
+          {
+            language: 'es',
+            tabs: [
+              {
+                pages: ['es/link-1/', 'es/link-2/'],
+              },
+              {
+                pages: ['es/link-3/', 'es/link-4/'],
+              },
+            ],
+          },
+        ],
+        redirects: [
+          {
+            // decoy
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+          },
+          {
+            language: 'en',
+            source: '/en/path-1',
+            destination: '/en/path-1#section-1',
+          },
+          {
+            language: 'en',
+            source: '/en/path-2',
+            destination: '/en/path-2#section-2',
+          },
+          {
+            language: 'en',
+            source: '/en/path-3',
+            destination: '/en/path-3#section-3',
+          },
+          {
+            language: 'es',
+            source: '/es/path-1',
+            destination: '/es/path-1#section-1',
+          },
+          {
+            language: 'es',
+            source: '/es/path-2',
+            destination: '/es/path-2#section-2',
+          },
+          {
+            language: 'es',
+            source: '/es/path-3',
+            destination: '/es/path-3#section-3',
+          },
+        ],
+      };
+
+      expect(JSON.stringify(parsed, null, 2)).toEqual(
+        JSON.stringify(expected, null, 2)
+      );
+    });
+
+    it('should handle transformation and translation insertion for array targets', () => {
+      const originalContent = JSON.stringify({
+        languages: [
+          {
+            language: 'en',
+            tabs: [
+              {
+                pages: ['en/link-1/', 'en/link-2/'],
+              },
+              {
+                pages: ['en/link-3/', 'en/link-4/'],
+              },
+            ],
+          },
+        ],
+        languagesWithTranslations: [
+          {
+            language: 'en',
+            translation: 'hello',
+            tabs: [
+              {
+                pages: ['en/link-1/', 'en/link-2/'],
+              },
+              {
+                pages: ['en/link-3/', 'en/link-4/'],
+              },
+            ],
+          },
+          // decoy
+          {
+            translation: 'hello',
+            tabs: [
+              {
+                pages: ['en/link-1/', 'en/link-2/'],
+              },
+              {
+                pages: ['en/link-3/', 'en/link-4/'],
+              },
+            ],
+          },
+        ],
+        redirects: [
+          {
+            // decoy
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+          },
+          {
+            language: 'en',
+            source: '/en/path-1',
+            destination: '/en/path-1#section-1',
+          },
+          {
+            language: 'en',
+            source: '/en/path-2',
+            destination: '/en/path-2#section-2',
+          },
+          {
+            language: 'en',
+            source: '/en/path-3',
+            destination: '/en/path-3#section-3',
+          },
+        ],
+        redirectsWithTranslations: [
+          // decoy
+          {
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+            translation: 'hello',
+          },
+          {
+            language: 'en',
+            translation: 'hello',
+            source: '/en/path-1',
+            destination: '/en/path-1#section-1',
+          },
+          {
+            language: 'en',
+            translation: 'hello',
+            source: '/en/path-2',
+            destination: '/en/path-2#section-2',
+          },
+          {
+            language: 'en',
+            translation: 'hello',
+            source: '/en/path-3',
+            destination: '/en/path-3#section-3',
+          },
+        ],
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/languagesWithTranslations': {
+              '$[0]': {
+                '/translation': 'hola',
+              },
+            },
+            '/redirectsWithTranslations': {
+              '$[1]': {
+                '/translation': 'hola',
+              },
+              '$[2]': {
+                '/translation': 'hola',
+              },
+              '$[3]': {
+                '/translation': 'hola',
+              },
+            },
+          }),
+          targetLocale: 'es',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'test.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.languages': {
+                  type: 'array',
+                  key: '$.language',
+                  include: [
+                    '$..group',
+                    '$..tab',
+                    '$..item',
+                    '$..anchor',
+                    '$..dropdown',
+                  ],
+                  transform: {
+                    '$..pages[*]': {
+                      match: '^{locale}/(.*)$',
+                      replace: '{locale}/$1',
+                    },
+                  },
+                },
+                '$.redirects': {
+                  type: 'array',
+                  key: '$.language',
+                  include: [],
+                  transform: {
+                    '$.source': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                    '$.destination': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                  },
+                },
+                '$.languagesWithTranslations': {
+                  type: 'array',
+                  key: '$.language',
+                  include: ['$..translation'],
+                  transform: {
+                    '$..pages[*]': {
+                      match: '^{locale}/(.*)$',
+                      replace: '{locale}/$1',
+                    },
+                  },
+                },
+                '$.redirectsWithTranslations': {
+                  type: 'array',
+                  key: '$.language',
+                  include: ['$..translation'],
+                  transform: {
+                    '$.source': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                    '$.destination': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en'
+      );
+
+      const parsed = JSON.parse(result[0]);
+      expect(parsed).toBeDefined();
+      const expected = {
+        languages: [
+          {
+            language: 'en',
+            tabs: [
+              {
+                pages: ['en/link-1/', 'en/link-2/'],
+              },
+              {
+                pages: ['en/link-3/', 'en/link-4/'],
+              },
+            ],
+          },
+          {
+            language: 'es',
+            tabs: [
+              {
+                pages: ['es/link-1/', 'es/link-2/'],
+              },
+              {
+                pages: ['es/link-3/', 'es/link-4/'],
+              },
+            ],
+          },
+        ],
+        languagesWithTranslations: [
+          {
+            language: 'en',
+            translation: 'hello',
+            tabs: [
+              {
+                pages: ['en/link-1/', 'en/link-2/'],
+              },
+              {
+                pages: ['en/link-3/', 'en/link-4/'],
+              },
+            ],
+          },
+          // decoy
+          {
+            translation: 'hello',
+            tabs: [
+              {
+                pages: ['en/link-1/', 'en/link-2/'],
+              },
+              {
+                pages: ['en/link-3/', 'en/link-4/'],
+              },
+            ],
+          },
+          {
+            language: 'es',
+            translation: 'hola',
+            tabs: [
+              {
+                pages: ['es/link-1/', 'es/link-2/'],
+              },
+              {
+                pages: ['es/link-3/', 'es/link-4/'],
+              },
+            ],
+          },
+        ],
+        redirects: [
+          {
+            // decoy
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+          },
+          {
+            language: 'en',
+            source: '/en/path-1',
+            destination: '/en/path-1#section-1',
+          },
+          {
+            language: 'en',
+            source: '/en/path-2',
+            destination: '/en/path-2#section-2',
+          },
+          {
+            language: 'en',
+            source: '/en/path-3',
+            destination: '/en/path-3#section-3',
+          },
+          {
+            language: 'es',
+            source: '/es/path-1',
+            destination: '/es/path-1#section-1',
+          },
+          {
+            language: 'es',
+            source: '/es/path-2',
+            destination: '/es/path-2#section-2',
+          },
+          {
+            language: 'es',
+            source: '/es/path-3',
+            destination: '/es/path-3#section-3',
+          },
+        ],
+        redirectsWithTranslations: [
+          {
+            // decoy
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+            translation: 'hello',
+          },
+          {
+            language: 'en',
+            translation: 'hello',
+            source: '/en/path-1',
+            destination: '/en/path-1#section-1',
+          },
+          {
+            language: 'en',
+            translation: 'hello',
+            source: '/en/path-2',
+            destination: '/en/path-2#section-2',
+          },
+          {
+            language: 'en',
+            translation: 'hello',
+            source: '/en/path-3',
+            destination: '/en/path-3#section-3',
+          },
+          {
+            language: 'es',
+            translation: 'hola',
+            source: '/es/path-1',
+            destination: '/es/path-1#section-1',
+          },
+          {
+            language: 'es',
+            translation: 'hola',
+            source: '/es/path-2',
+            destination: '/es/path-2#section-2',
+          },
+          {
+            language: 'es',
+            translation: 'hola',
+            source: '/es/path-3',
+            destination: '/es/path-3#section-3',
+          },
+        ],
+      };
+
+      expect(JSON.stringify(parsed)).toEqual(
+        JSON.stringify(JSON.parse(JSON.stringify(expected)))
+      );
+    });
+
+    it('should handle transformation only for object targets', () => {
+      const originalContent = JSON.stringify({
+        languages: {
+          en: {
+            tabs: [
+              {
+                pages: ['en/link-1/', 'en/link-2/'],
+              },
+              {
+                pages: ['en/link-3/', 'en/link-4/'],
+              },
+            ],
+          },
+        },
+        redirects: {
+          decoy: {
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+          },
+          en: {
+            source: '/en/path-1',
+            destination: '/en/path-1#section-1',
+          },
+        },
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/redirectsWithTranslations': {
+              '$[0]': {
+                '/translation': 'hola',
+              },
+            },
+            '/languagesWithTranslations': {
+              '$[1]': {
+                '/translation': 'hola',
+              },
+              '$[2]': {
+                '/translation': 'hola',
+              },
+              '$[3]': {
+                '/translation': 'hola',
+              },
+            },
+          }),
+          targetLocale: 'es',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'test.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.languages': {
+                  type: 'object',
+                  include: [
+                    '$..group',
+                    '$..tab',
+                    '$..item',
+                    '$..anchor',
+                    '$..dropdown',
+                  ],
+                  transform: {
+                    '$..pages[*]': {
+                      match: '^{locale}/(.*)$',
+                      replace: '{locale}/$1',
+                    },
+                  },
+                },
+                '$.redirects': {
+                  type: 'object',
+                  include: [],
+                  transform: {
+                    '$.source': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                    '$.destination': {
+                      match: '^/{locale}/(.*)$',
+                      replace: '/{locale}/$1',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en'
+      );
+
+      const parsed = JSON.parse(result[0]);
+      expect(parsed).toBeDefined();
+      const expected = {
+        languages: {
+          en: {
+            tabs: [
+              {
+                pages: ['en/link-1/', 'en/link-2/'],
+              },
+              {
+                pages: ['en/link-3/', 'en/link-4/'],
+              },
+            ],
+          },
+          es: {
+            tabs: [
+              {
+                pages: ['es/link-1/', 'es/link-2/'],
+              },
+              {
+                pages: ['es/link-3/', 'es/link-4/'],
+              },
+            ],
+          },
+        },
+        redirects: {
+          decoy: {
+            source: '/en/path-0',
+            destination: '/en/path-0#section-0',
+          },
+          en: {
+            source: '/en/path-1',
+            destination: '/en/path-1#section-1',
+          },
+          es: {
+            source: '/es/path-1',
+            destination: '/es/path-1#section-1',
+          },
+        },
+      };
+
+      expect(JSON.stringify(parsed, null, 2)).toEqual(
+        JSON.stringify(JSON.parse(JSON.stringify(expected)), null, 2)
+      );
     });
   });
 

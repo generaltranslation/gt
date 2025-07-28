@@ -20,6 +20,7 @@ export function parseJson(
   if (!jsonSchema) {
     return content;
   }
+
   let json: any;
   try {
     json = JSON.parse(content);
@@ -55,6 +56,11 @@ export function parseJson(
     sourceObjectPointer,
     { sourceObjectValue, sourceObjectOptions },
   ] of Object.entries(sourceObjectPointers)) {
+    // Skip if no includes
+    if (!sourceObjectOptions.include.length) {
+      continue;
+    }
+
     // Find the default locale in each source item in each sourceObjectValue
     // Array: use key field
     if (sourceObjectOptions.type === 'array') {
@@ -79,7 +85,6 @@ export function parseJson(
         );
         exit(1);
       }
-
       // Construct lvl 3
       const sourceItemsToTranslate: Record<string, Record<string, string>> = {};
       for (const [arrayPointer, matchingItem] of Object.entries(
