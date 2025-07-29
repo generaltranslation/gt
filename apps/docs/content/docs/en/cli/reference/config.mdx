@@ -125,6 +125,14 @@ The pattern is the same as the `include` pattern, with the exception that the `[
 }
 ```
 
+If you want to exclude files from translation for all locales, you can use the `[locales]` placeholder instead of `[locale]`.
+
+```json
+{
+  "exclude": ["docs/[locales]/exclude/**/*.json"]
+}
+```
+
 ### `transform`
 
 If used, the value of the `transform` key should be a string defining a remapping of the file name. It should contain a wildcard `*` that will be replaced with the original file name (anything before the first `.`).

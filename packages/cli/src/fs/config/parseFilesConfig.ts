@@ -46,6 +46,7 @@ export function resolveLocaleFiles(
 export function resolveFiles(
   files: FilesOptions,
   locale: string,
+  locales: string[],
   cwd: string
 ): {
   resolvedPaths: ResolvedFiles;
@@ -79,6 +80,7 @@ export function resolveFiles(
         files[fileType].include,
         files[fileType]?.exclude || [],
         locale,
+        locales,
         transformPaths[fileType] || undefined
       );
       result[fileType] = filePaths.resolvedPaths;
@@ -94,11 +96,12 @@ export function resolveFiles(
 }
 
 // Helper function to expand glob patterns
-function expandGlobPatterns(
+export function expandGlobPatterns(
   cwd: string,
   includePatterns: string[],
   excludePatterns: string[],
   locale: string,
+  locales: string[],
   transformPatterns?: TransformOption | string
 ): {
   resolvedPaths: string[];
@@ -137,8 +140,19 @@ function expandGlobPatterns(
     const absolutePattern = path.resolve(cwd, expandedPattern);
 
     // Prepare exclude patterns with locale replaced
-    const expandedExcludePatterns = excludePatterns.map((p) =>
-      path.resolve(cwd, p.replace(/\[locale\]/g, locale))
+    const expandedExcludePatterns = Array.from(
+      new Set(
+        excludePatterns.flatMap((p) =>
+          locales.map((targetLocale) =>
+            path.resolve(
+              cwd,
+              p
+                .replace(/\[locale\]/g, locale)
+                .replace(/\[locales\]/g, targetLocale)
+            )
+          )
+        )
+      )
     );
 
     // Use fast-glob to find all matching files, excluding the patterns
