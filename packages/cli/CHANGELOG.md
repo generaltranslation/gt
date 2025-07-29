@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.17
+
+### Patch Changes
+
+- [#514](https://github.com/generaltranslation/gt/pull/514) [`4beab58`](https://github.com/generaltranslation/gt/commit/4beab58142fa014bed5dbfc0acab03a1d1536b05) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix jsonSchema conflict with transform option
+
 ## 2.0.16
 
 ### Patch Changes
