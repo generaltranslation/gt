@@ -19,6 +19,7 @@ import { wrapContentNext } from '../next/parse/wrapContent.js';
 import { getPackageManager } from '../utils/packageManager.js';
 import { installPackage } from '../utils/installPackage.js';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
+import { loadConfig } from '../fs/config/loadConfig.js';
 
 export async function handleSetupReactCommand(
   options: SetupOptions
@@ -158,8 +159,19 @@ Please let us know what you would like to see supported at https://github.com/ge
     );
 
     if (addWithGTConfig) {
+      // Read tsconfig.json if it exists
+      const tsconfigPath = findFilepath(['tsconfig.json']);
+      const tsconfigJson = tsconfigPath ? loadConfig(tsconfigPath) : undefined;
+
       // Add the withGTConfig() function to the next.config.js file
-      await handleInitGT(nextConfigPath, errors, warnings, filesUpdated);
+      await handleInitGT(
+        nextConfigPath,
+        errors,
+        warnings,
+        filesUpdated,
+        packageJson,
+        tsconfigJson
+      );
       logStep(
         chalk.green(`Added withGTConfig() to your ${nextConfigPath} file.`)
       );

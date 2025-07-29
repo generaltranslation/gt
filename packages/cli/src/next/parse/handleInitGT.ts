@@ -14,7 +14,9 @@ export async function handleInitGT(
   filepath: string,
   errors: string[],
   warnings: string[],
-  filesUpdated: string[]
+  filesUpdated: string[],
+  packageJson?: { type?: string },
+  tsconfigJson?: { compilerOptions?: { module?: string } }
 ) {
   const code = await fs.promises.readFile(filepath, 'utf8');
 
@@ -27,7 +29,66 @@ export async function handleInitGT(
       createParenthesizedExpressions: true,
     });
 
-    const needsCJS = filepath.endsWith('.js');
+    // Analyze the actual file content to determine module system
+    let hasES6Imports = false;
+    let hasCommonJSRequire = false;
+
+    traverse(ast, {
+      ImportDeclaration() {
+        hasES6Imports = true;
+      },
+      CallExpression(path) {
+        if (t.isIdentifier(path.node.callee, { name: 'require' })) {
+          hasCommonJSRequire = true;
+        }
+      },
+    });
+
+    // Determine if we need CommonJS based on actual file content and fallback to config-based logic
+    let needsCJS = false;
+
+    if (hasES6Imports && !hasCommonJSRequire) {
+      // File uses ES6 imports, so we should use ES6 imports
+      needsCJS = false;
+    } else if (hasCommonJSRequire && !hasES6Imports) {
+      // File uses CommonJS require, so we should use CommonJS require
+      needsCJS = true;
+    } else if (hasES6Imports && hasCommonJSRequire) {
+      // Mixed usage - this is unusual but we'll default to ES6 imports
+      warnings.push(
+        `Mixed ES6 imports and CommonJS require detected in ${filepath}. Defaulting to ES6 imports.`
+      );
+      needsCJS = false;
+    } else {
+      // No imports/requires found, fall back to configuration-based logic
+      if (filepath.endsWith('.ts') || filepath.endsWith('.tsx')) {
+        // For TypeScript files, check tsconfig.json compilerOptions.module
+        const moduleSetting = tsconfigJson?.compilerOptions?.module;
+        if (moduleSetting === 'commonjs' || moduleSetting === 'node') {
+          needsCJS = true;
+        } else if (
+          moduleSetting === 'esnext' ||
+          moduleSetting === 'es2022' ||
+          moduleSetting === 'es2020' ||
+          moduleSetting === 'es2015' ||
+          moduleSetting === 'es6' ||
+          moduleSetting === 'node16' ||
+          moduleSetting === 'nodenext'
+        ) {
+          needsCJS = false;
+        } else {
+          // Default to ESM for TypeScript files if no module setting is specified
+          needsCJS = false;
+        }
+      } else if (filepath.endsWith('.js')) {
+        // For JavaScript files, check package.json type
+        // If package.json has "type": "module", .js files are treated as ES modules
+        needsCJS = packageJson?.type !== 'module';
+      } else {
+        // For other file extensions, default to ESM
+        needsCJS = false;
+      }
+    }
 
     // Check if withGTConfig or initGT is already imported/required
     let hasGTConfig = false;
@@ -45,17 +106,56 @@ export async function handleInitGT(
       },
       VariableDeclaration(path) {
         path.node.declarations.forEach((dec) => {
-          if (
-            t.isVariableDeclarator(dec) &&
-            t.isCallExpression(dec.init) &&
-            t.isIdentifier(dec.init.callee, { name: 'require' }) &&
-            t.isStringLiteral(dec.init.arguments[0], {
-              value: 'gt-next/config',
-            })
-          ) {
-            if (t.isIdentifier(dec.id, { name: 'withGTConfig' }))
-              hasGTConfig = true;
-            if (t.isIdentifier(dec.id, { name: 'initGT' })) hasInitGT = true;
+          if (t.isVariableDeclarator(dec)) {
+            // Handle destructuring: const { withGTConfig } = require('gt-next/config')
+            if (
+              t.isCallExpression(dec.init) &&
+              t.isIdentifier(dec.init.callee, { name: 'require' }) &&
+              t.isStringLiteral(dec.init.arguments[0], {
+                value: 'gt-next/config',
+              })
+            ) {
+              // Handle simple assignment: const withGTConfig = require(...)
+              if (t.isIdentifier(dec.id, { name: 'withGTConfig' }))
+                hasGTConfig = true;
+              if (t.isIdentifier(dec.id, { name: 'initGT' })) hasInitGT = true;
+
+              // Handle destructuring: const { withGTConfig } = require(...)
+              if (t.isObjectPattern(dec.id)) {
+                dec.id.properties.forEach((prop) => {
+                  if (
+                    t.isObjectProperty(prop) &&
+                    t.isIdentifier(prop.key) &&
+                    t.isIdentifier(prop.value)
+                  ) {
+                    if (prop.key.name === 'withGTConfig') hasGTConfig = true;
+                    if (prop.key.name === 'initGT') hasInitGT = true;
+                  }
+                });
+              }
+            }
+            // Handle member access: const withGTConfig = require('gt-next/config').withGTConfig
+            else if (
+              t.isMemberExpression(dec.init) &&
+              t.isCallExpression(dec.init.object) &&
+              t.isIdentifier(dec.init.object.callee, { name: 'require' }) &&
+              t.isStringLiteral(dec.init.object.arguments[0], {
+                value: 'gt-next/config',
+              })
+            ) {
+              if (
+                t.isIdentifier(dec.id, { name: 'withGTConfig' }) &&
+                t.isIdentifier(dec.init.property, { name: 'withGTConfig' })
+              ) {
+                hasGTConfig = true;
+              }
+              if (
+                t.isIdentifier(dec.id, { name: 'initGT' }) &&
+                t.isIdentifier(dec.init.property, { name: 'initGT' })
+              ) {
+                hasInitGT = true;
+              }
+            }
           }
         });
       },
