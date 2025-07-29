@@ -1,5 +1,5 @@
 import { standardizeLocale } from 'generaltranslation';
-import { DictionaryObject } from 'gt-react/internal';
+import { Dictionary } from 'gt-react/internal';
 import resolveDictionaryLoader from '../resolvers/resolveDictionaryLoader';
 import { customLoadDictionaryWarning } from '../errors/createErrors';
 
@@ -7,7 +7,7 @@ import { customLoadDictionaryWarning } from '../errors/createErrors';
  * Manages Dictionary
  */
 export class DictionaryManager {
-  private dictionaryMap: Map<string, DictionaryObject>;
+  private dictionaryMap: Map<string, Dictionary>;
 
   /**
    * Creates an instance of TranslationManager.
@@ -17,36 +17,12 @@ export class DictionaryManager {
     this.dictionaryMap = new Map();
   }
 
-  // flatten object helper function
-  _flattenObject(
-    obj: Record<string, any>,
-    parentKey: string = '',
-    result: Record<string, any> = {}
-  ): Record<string, any> {
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        const newKey = parentKey ? `${parentKey}.${key}` : key;
-        const value = obj[key];
-        if (
-          value !== null &&
-          typeof value === 'object' &&
-          !Array.isArray(value)
-        ) {
-          this._flattenObject(value, newKey, result);
-        } else {
-          result[newKey] = value;
-        }
-      }
-    }
-    return result;
-  }
-
   /**
    * Retrieves dictionary for a given locale from bundle.
    * @param {string} locale - The locale code.
-   * @returns {Promise<DictionaryObject | undefined>} The dictionary data or undefined if not found.
+   * @returns {Promise<Dictionary | undefined>} The dictionary data or undefined if not found.
    */
-  async getDictionary(locale: string): Promise<DictionaryObject | undefined> {
+  async getDictionary(locale: string): Promise<Dictionary | undefined> {
     const reference =
       process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true'
         ? standardizeLocale(locale)
@@ -60,7 +36,8 @@ export class DictionaryManager {
     const customLoadDictionary = resolveDictionaryLoader();
     if (customLoadDictionary) {
       try {
-        result = this._flattenObject(await customLoadDictionary(reference));
+        result = await customLoadDictionary(reference);
+        if (!result) return undefined;
         this.dictionaryMap.set(reference, result);
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {

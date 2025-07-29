@@ -117,7 +117,19 @@ export async function getTranslations(
     // ---------- DICTIONARY TRANSLATIONS ---------- //
 
     // Get dictionaryTranslation
-    const dictionaryTranslation = dictionaryTranslations?.[id];
+    const dictionaryTranslation = getDictionaryEntry(
+      dictionaryTranslations || {},
+      id
+    );
+
+    // Check: invalid entry
+    if (
+      !isValidDictionaryEntry(dictionaryTranslation) ||
+      typeof dictionaryTranslation !== 'string'
+    ) {
+      console.warn(createInvalidDictionaryEntryWarning(id));
+      return renderContent(entry, [defaultLocale]);
+    }
 
     // Render dictionaryTranslation
     if (dictionaryTranslation) {

@@ -6,6 +6,7 @@ import {
   defaultRenderSettings,
   DictionaryObject,
   defaultLocaleCookieName,
+  Dictionary,
 } from 'gt-react/internal';
 import {
   createMismatchingHashWarning,
@@ -389,7 +390,7 @@ export default class I18NConfiguration {
    */
   async getDictionaryTranslations(
     locale: string
-  ): Promise<DictionaryObject | undefined> {
+  ): Promise<Dictionary | undefined> {
     return await this._dictionaryManager?.getDictionary(locale);
   }
 

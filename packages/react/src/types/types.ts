@@ -69,9 +69,15 @@ export type TranslationsStatus = {
 // ----- DICTIONARY ----- //
 
 // a user defined dict (e.g. a user provided translation)
+/**
+ * @deprecated use {@link Dictionary}
+ */
 export type DictionaryContent = string;
 
 // maps dict ids to dict content
+/**
+ * @deprecated use {@link Dictionary}
+ */
 export type DictionaryObject = {
   [id: string]: DictionaryContent;
 };
