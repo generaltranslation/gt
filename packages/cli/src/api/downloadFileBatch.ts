@@ -60,7 +60,7 @@ export async function downloadFileBatch(
           const locale = localeMap.get(translationId);
 
           if (!outputPath || !inputPath) {
-            logWarning(`No output path found for file: ${translationId}`);
+            logWarning(`No input/output path found for file: ${translationId}`);
             result.failed.push(translationId);
             continue;
           }
