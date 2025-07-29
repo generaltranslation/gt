@@ -9,6 +9,7 @@ import { mergeJson } from '../formats/json/mergeJson.js';
 export type BatchedFiles = Array<{
   translationId: string;
   outputPath: string;
+  inputPath: string;
   locale: string;
 }>;
 
@@ -37,6 +38,9 @@ export async function downloadFileBatch(
   const outputPathMap = new Map(
     files.map((file) => [file.translationId, file.outputPath])
   );
+  const inputPathMap = new Map(
+    files.map((file) => [file.translationId, file.inputPath])
+  );
   const localeMap = new Map(
     files.map((file) => [file.translationId, file.locale])
   );
@@ -52,9 +56,10 @@ export async function downloadFileBatch(
         try {
           const translationId = file.id;
           const outputPath = outputPathMap.get(translationId);
+          const inputPath = inputPathMap.get(translationId);
           const locale = localeMap.get(translationId);
 
-          if (!outputPath) {
+          if (!outputPath || !inputPath) {
             logWarning(`No output path found for file: ${translationId}`);
             result.failed.push(translationId);
             continue;
@@ -67,13 +72,13 @@ export async function downloadFileBatch(
           }
           let data = file.data;
           if (options.options?.jsonSchema && locale) {
-            const jsonSchema = validateJsonSchema(options.options, outputPath);
+            const jsonSchema = validateJsonSchema(options.options, inputPath);
             if (jsonSchema) {
-              const originalContent = fs.readFileSync(outputPath, 'utf8');
+              const originalContent = fs.readFileSync(inputPath, 'utf8');
               if (originalContent) {
                 data = mergeJson(
                   originalContent,
-                  outputPath,
+                  inputPath,
                   options.options,
                   [
                     {

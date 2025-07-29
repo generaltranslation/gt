@@ -66,6 +66,7 @@ describe('downloadFileBatch', () => {
     return Array.from({ length: count }, (_, i) => ({
       translationId: `translation-${i + 1}`,
       outputPath: `/output/file${i + 1}.json`,
+      inputPath: `/input/file${i + 1}.json`,
       locale: 'en',
       ...overrides,
     }));

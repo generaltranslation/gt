@@ -204,6 +204,7 @@ async function processInitialTranslations(
         return {
           translationId: id,
           outputPath,
+          inputPath: fileName,
           fileLocale: `${fileName}:${locale}`,
           locale,
         };
@@ -217,11 +218,14 @@ async function processInitialTranslations(
     // Use batch download if there are multiple files
     if (batchFiles.length > 1) {
       const batchResult = await downloadFileBatch(
-        batchFiles.map(({ translationId, outputPath, locale }: any) => ({
-          translationId,
-          outputPath,
-          locale,
-        })),
+        batchFiles.map(
+          ({ translationId, outputPath, inputPath, locale }: any) => ({
+            translationId,
+            outputPath,
+            inputPath,
+            locale,
+          })
+        ),
         options
       );
 
@@ -240,6 +244,7 @@ async function processInitialTranslations(
       const result = await downloadFile(
         file.translationId,
         file.outputPath,
+        file.inputPath,
         file.locale,
         options
       );
