@@ -1,6 +1,5 @@
 import { AdditionalOptions, YamlSchema } from '../../types/index.js';
-import { logError } from '../../console/logging.js';
-import { exit } from '../../console/logging.js';
+import { logError, exit } from '../../console/logging.js';
 import micromatch from 'micromatch';
 const { isMatch } = micromatch;
 import path from 'path';

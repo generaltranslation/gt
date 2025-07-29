@@ -50,7 +50,7 @@ export default function mergeYaml(
     )) {
       try {
         // Try to get the value - if this succeeds, the pointer exists
-        if (!JSONPointer.get(mergedYaml, jsonPointer)) {
+        if (JSONPointer.get(mergedYaml, jsonPointer) == null) {
           continue;
         }
         // Set the new value regardless of what the current value is (including null/falsy)
@@ -60,6 +60,10 @@ export default function mergeYaml(
       }
     }
     output.push(YAML.stringify(mergedYaml));
+  }
+
+  if (!output.length) {
+    return [originalContent];
   }
 
   return output;

@@ -39,6 +39,7 @@ export async function downloadFile(
       }
 
       let data = new TextDecoder().decode(fileData);
+
       if (options.options?.jsonSchema && locale) {
         const jsonSchema = validateJsonSchema(options.options, outputPath);
         if (jsonSchema) {

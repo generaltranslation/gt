@@ -148,6 +148,7 @@ export type AdditionalOptions = {
   jsonSchema?: {
     [fileGlob: string]: JsonSchema;
   };
+  // Optional schema to follow while translating YAML files
   yamlSchema?: {
     [fileGlob: string]: YamlSchema;
   };

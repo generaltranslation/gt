@@ -487,7 +487,8 @@ settings:
         targets
       );
 
-      expect(result).toHaveLength(0);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe('test: "value"');
     });
 
     it('should handle empty translated content object', () => {
