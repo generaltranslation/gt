@@ -110,7 +110,7 @@ export type FilesOptions = {
   [K in SupportedFileExtension]?: {
     include: string[];
     exclude?: string[];
-    transform?: string;
+    transform?: string | TransformOption;
   };
 } & {
   gt?: {

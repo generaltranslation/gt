@@ -152,7 +152,12 @@ export async function generateSettings(
 
   // Resolve all glob patterns in the files object
   mergedOptions.files = mergedOptions.files
-    ? resolveFiles(mergedOptions.files, mergedOptions.defaultLocale, cwd)
+    ? resolveFiles(
+        mergedOptions.files,
+        mergedOptions.defaultLocale,
+        mergedOptions.locales,
+        cwd
+      )
     : undefined;
 
   // Add additional options if provided
