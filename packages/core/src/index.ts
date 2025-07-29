@@ -253,7 +253,7 @@ export class GT {
       errors.push(error);
     }
     if (errors.length) {
-      throw new Error(noProjectIdProvidedError(functionName));
+      throw new Error(errors.join('\n'));
     }
   }
 

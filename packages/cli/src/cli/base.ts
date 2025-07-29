@@ -41,7 +41,14 @@ import localizeStaticUrls from '../utils/localizeStaticUrls.js';
 import flattenJsonFiles from '../utils/flattenJsonFiles.js';
 import localizeStaticImports from '../utils/localizeStaticImports.js';
 import copyFile from '../fs/copyFile.js';
+import { upload } from '../formats/files/upload.js';
 
+export type UploadOptions = {
+  config?: string;
+  apiKey?: string;
+  projectId?: string;
+  defaultLocale?: string;
+};
 export type TranslateOptions = {
   config?: string;
   defaultLocale?: string;
@@ -75,6 +82,7 @@ export class BaseCLI {
     this.setupInitCommand();
     this.setupConfigureCommand();
     this.setupSetupCommand();
+    this.setupUploadCommand();
     this.setupLoginCommand();
   }
   // Init is never called in a child class
@@ -143,6 +151,36 @@ export class BaseCLI {
         const options = { ...initOptions, ...settings };
 
         await this.handleGenericTranslate(options);
+        endCommand('Done!');
+      });
+  }
+  protected setupUploadCommand(): void {
+    this.program
+      .command('upload')
+      .description(
+        'Upload source files and translations to the General Translation platform'
+      )
+      .option(
+        '-c, --config <path>',
+        'Filepath to config file, by default gt.config.json',
+        findFilepath(['gt.config.json'])
+      )
+      .option(
+        '--api-key <key>',
+        'API key for General Translation cloud service'
+      )
+      .option('--project-id <id>', 'Project ID for the translation service')
+      .option(
+        '--default-language, --default-locale <locale>',
+        'Default locale (e.g., en)'
+      )
+      .action(async (initOptions: UploadOptions) => {
+        displayHeader('Starting upload...');
+        const settings = await generateSettings(initOptions);
+
+        const options = { ...initOptions, ...settings };
+
+        await this.handleUploadCommand(options);
         endCommand('Done!');
       });
   }
@@ -289,6 +327,42 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
           "Done! Take advantage of all of General Translation's features by signing up for a free account! https://generaltranslation.com/signup"
         );
       });
+  }
+
+  protected async handleUploadCommand(
+    settings: Settings & UploadOptions
+  ): Promise<void> {
+    // dataFormat for JSONs
+    let dataFormat: DataFormat;
+    if (this.library === 'next-intl') {
+      dataFormat = 'ICU';
+    } else if (this.library === 'i18next') {
+      if (this.additionalModules.includes('i18next-icu')) {
+        dataFormat = 'ICU';
+      } else {
+        dataFormat = 'I18NEXT';
+      }
+    } else {
+      dataFormat = 'JSX';
+    }
+
+    if (!settings.files) {
+      return;
+    }
+    const {
+      resolvedPaths: sourceFiles,
+      placeholderPaths,
+      transformPaths,
+    } = settings.files;
+
+    // Process all file types at once with a single call
+    await upload(
+      sourceFiles,
+      placeholderPaths,
+      transformPaths,
+      dataFormat,
+      settings
+    );
   }
 
   protected async handleGenericTranslate(
