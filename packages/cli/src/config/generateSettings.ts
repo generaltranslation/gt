@@ -156,14 +156,27 @@ export async function generateSettings(
     : undefined;
 
   // Add additional options if provided
-  if (mergedOptions.options && mergedOptions.options.jsonSchema) {
-    for (const fileGlob of Object.keys(mergedOptions.options.jsonSchema)) {
-      const jsonSchema = mergedOptions.options.jsonSchema[fileGlob];
-      if (jsonSchema.preset) {
-        mergedOptions.options.jsonSchema[fileGlob] = {
-          ...generatePreset(jsonSchema.preset),
-          ...jsonSchema,
-        };
+  if (mergedOptions.options) {
+    if (mergedOptions.options.jsonSchema) {
+      for (const fileGlob of Object.keys(mergedOptions.options.jsonSchema)) {
+        const jsonSchema = mergedOptions.options.jsonSchema[fileGlob];
+        if (jsonSchema.preset) {
+          mergedOptions.options.jsonSchema[fileGlob] = {
+            ...generatePreset(jsonSchema.preset, 'json'),
+            ...jsonSchema,
+          };
+        }
+      }
+    }
+    if (mergedOptions.options.yamlSchema) {
+      for (const fileGlob of Object.keys(mergedOptions.options.yamlSchema)) {
+        const yamlSchema = mergedOptions.options.yamlSchema[fileGlob];
+        if (yamlSchema.preset) {
+          mergedOptions.options.yamlSchema[fileGlob] = {
+            ...generatePreset(yamlSchema.preset, 'yaml'),
+            ...yamlSchema,
+          };
+        }
       }
     }
   }

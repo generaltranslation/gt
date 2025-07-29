@@ -4,6 +4,7 @@ export const SUPPORTED_FILE_EXTENSIONS = [
   'md',
   'ts',
   'js',
+  'yaml',
 ] as const;
 
 export const FILE_EXT_TO_EXT_LABEL = {
@@ -12,4 +13,5 @@ export const FILE_EXT_TO_EXT_LABEL = {
   md: 'Markdown',
   ts: 'TypeScript',
   js: 'JavaScript',
+  yaml: 'YAML',
 };

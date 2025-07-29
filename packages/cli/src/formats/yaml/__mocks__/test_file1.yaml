@@ -1,0 +1,21 @@
+title: "Sample YAML Title"
+description: "This is a sample YAML file"
+metadata:
+  author: "John Doe"
+  version: "1.0.0"
+  tags:
+    - development
+    - testing
+    - yaml
+content:
+  sections:
+    - name: "Introduction"
+      body: "Welcome to our application"
+    - name: "Features"
+      body: "Here are the main features"
+  sidebar:
+    links:
+      - text: "Home"
+        url: "/home"
+      - text: "About"
+        url: "/about"

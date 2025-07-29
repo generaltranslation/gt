@@ -1,46 +1,60 @@
-import { JsonSchema } from '../types/index.js';
+import { JsonSchema, YamlSchema } from '../types/index.js';
 
-export function generatePreset(preset: string): JsonSchema {
-  switch (preset) {
-    case 'mintlify':
-      // https://mintlify.com/docs/navigation
-      return {
-        composite: {
-          '$.navigation.languages': {
-            type: 'array',
-            key: '$.language',
-            include: [
-              '$..group',
-              '$..tab',
-              '$..item',
-              '$..anchor',
-              '$..dropdown',
-            ],
-            transform: {
-              '$..pages[*]': {
-                match: '^{locale}/(.*)$',
-                replace: '{locale}/$1',
+export function generatePreset(
+  preset: string,
+  type: 'json' | 'yaml'
+): JsonSchema | YamlSchema {
+  if (type === 'json') {
+    switch (preset) {
+      case 'mintlify':
+        // https://mintlify.com/docs/navigation
+        return {
+          composite: {
+            '$.navigation.languages': {
+              type: 'array',
+              key: '$.language',
+              include: [
+                '$..group',
+                '$..tab',
+                '$..item',
+                '$..anchor',
+                '$..dropdown',
+              ],
+              transform: {
+                '$..pages[*]': {
+                  match: '^{locale}/(.*)$',
+                  replace: '{locale}/$1',
+                },
+              },
+            },
+            '$.redirects': {
+              type: 'array',
+              key: '$.language',
+              include: [],
+              transform: {
+                '$.source': {
+                  match: '^/{locale}/(.*)$',
+                  replace: '/{locale}/$1',
+                },
+                '$.destination': {
+                  match: '^/{locale}/(.*)$',
+                  replace: '/{locale}/$1',
+                },
               },
             },
           },
-          '$.redirects': {
-            type: 'array',
-            key: '$.language',
-            include: [],
-            transform: {
-              '$.source': {
-                match: '^/{locale}/(.*)$',
-                replace: '/{locale}/$1',
-              },
-              '$.destination': {
-                match: '^/{locale}/(.*)$',
-                replace: '/{locale}/$1',
-              },
-            },
-          },
-        },
-      };
-    default:
-      return {};
+        };
+      default:
+        return {};
+    }
+  } else {
+    switch (preset) {
+      case 'mintlify':
+        return {
+          include: ['$..summary', '$..description'],
+        };
+      default:
+        return {};
+    }
   }
 }

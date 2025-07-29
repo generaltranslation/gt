@@ -1,0 +1,8 @@
+name: "Simple Test"
+items:
+  - "item1"
+  - "item2"
+  - "item3"
+nested:
+  deep:
+    value: "found me"

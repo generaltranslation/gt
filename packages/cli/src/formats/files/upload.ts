@@ -23,6 +23,7 @@ import { parseJson } from '../json/parseJson.js';
 import { FileUpload, uploadFiles } from '../../api/uploadFiles.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { createFileMapping } from './fileMapping.js';
+import parseYaml from '../yaml/parseYaml.js';
 
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
@@ -74,8 +75,30 @@ export async function upload(
     allFiles.push(...jsonFiles);
   }
 
+  // Process YAML files
+  if (filePaths.yaml) {
+    if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
+      logErrorAndExit(noSupportedFormatError);
+    }
+
+    const yamlFiles = filePaths.yaml.map((filePath) => {
+      const content = readFile(filePath);
+      const parsedYaml = parseYaml(content, filePath, additionalOptions);
+
+      const relativePath = getRelative(filePath);
+      return {
+        content: parsedYaml,
+        fileName: relativePath,
+        fileFormat: 'JSON' as FileFormat, // Translate as a JSON file
+        dataFormat,
+        locale: options.defaultLocale,
+      };
+    });
+    allFiles.push(...yamlFiles);
+  }
+
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (fileType === 'json') continue;
+    if (fileType === 'json' || fileType === 'yaml') continue;
     if (filePaths[fileType]) {
       const files = filePaths[fileType].map((filePath) => {
         const content = readFile(filePath);

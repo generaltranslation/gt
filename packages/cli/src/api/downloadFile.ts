@@ -6,6 +6,8 @@ import { Settings } from '../types/index.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
 import { mergeJson } from '../formats/json/mergeJson.js';
 import { TextDecoder } from 'node:util';
+import mergeYaml from '../formats/yaml/mergeYaml.js';
+import { validateYamlSchema } from '../formats/yaml/utils.js';
 
 /**
  * Downloads a file from the API and saves it to a local directory
@@ -54,6 +56,21 @@ export async function downloadFile(
               ],
               options.defaultLocale
             )[0];
+          }
+        }
+      }
+
+      if (options.options?.yamlSchema && locale) {
+        const yamlSchema = validateYamlSchema(options.options, outputPath);
+        if (yamlSchema) {
+          const originalContent = fs.readFileSync(outputPath, 'utf8');
+          if (originalContent) {
+            data = mergeYaml(originalContent, outputPath, options.options, [
+              {
+                translatedContent: data,
+                targetLocale: locale,
+              },
+            ])[0];
           }
         }
       }
