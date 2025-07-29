@@ -10,11 +10,11 @@ import {
 } from './utils.js';
 import { JSONPath } from 'jsonpath-plus';
 import { getLocaleProperties } from 'generaltranslation';
-import { LocaleProperties } from 'generaltranslation/types';
+import { replaceLocalePlaceholders } from '../utils.js';
 
 export function mergeJson(
   originalContent: string,
-  filePath: string,
+  inputPath: string,
   options: AdditionalOptions,
   targets: {
     translatedContent: string;
@@ -22,7 +22,7 @@ export function mergeJson(
   }[],
   defaultLocale: string
 ): string[] {
-  const jsonSchema = validateJsonSchema(options, filePath);
+  const jsonSchema = validateJsonSchema(options, inputPath);
   if (!jsonSchema) {
     return targets.map((target) => target.translatedContent);
   }
@@ -31,7 +31,7 @@ export function mergeJson(
   try {
     originalJson = JSON.parse(originalContent);
   } catch {
-    logError(`Invalid JSON file: ${filePath}`);
+    logError(`Invalid JSON file: ${inputPath}`);
     exit(1);
   }
 
@@ -49,7 +49,9 @@ export function mergeJson(
           const value = JSONPointer.get(mergedJson, jsonPointer);
           if (!value) continue;
           JSONPointer.set(mergedJson, jsonPointer, translatedValue);
-        } catch (error) {}
+        } catch {
+          /* empty */
+        }
       }
       output.push(JSON.stringify(mergedJson, null, 2));
     }
@@ -94,10 +96,10 @@ export function mergeJson(
         sourceObjectValue
       );
       if (!Object.keys(matchingDefaultLocaleItems).length) {
-        logError(
-          `Matching sourceItems not found at path: ${sourceObjectPointer} for locale: ${defaultLocale}. Please check your JSON schema`
+        logWarning(
+          `Matching sourceItems not found at path: ${sourceObjectPointer}. Please check your JSON file includes the key field. Skipping this target`
         );
-        exit(1);
+        continue;
       }
 
       const matchingDefaultLocaleItemKeys = new Set(
@@ -333,34 +335,6 @@ export function mergeJson(
     }
   }
   return [JSON.stringify(mergedJson, null, 2)];
-}
-
-// helper function to replace locale placeholders in a string
-// with the corresponding locale properties
-// ex: {locale} -> will be replaced with the locale code
-// ex: {localeName} -> will be replaced with the locale name
-function replaceLocalePlaceholders(
-  string: string,
-  localeProperties: LocaleProperties
-): string {
-  return string.replace(/\{(\w+)\}/g, (match, property) => {
-    // Handle common aliases
-    if (property === 'locale' || property === 'localeCode') {
-      return localeProperties.code;
-    }
-    if (property === 'localeName') {
-      return localeProperties.name;
-    }
-    if (property === 'localeNativeName') {
-      return localeProperties.nativeName;
-    }
-    // Check if the property exists in localeProperties
-    if (property in localeProperties) {
-      return localeProperties[property as keyof typeof localeProperties];
-    }
-    // Return the original placeholder if property not found
-    return match;
-  });
 }
 
 /**

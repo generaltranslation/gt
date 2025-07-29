@@ -1,5 +1,29 @@
 # gtx-cli
 
+## 2.0.17
+
+### Patch Changes
+
+- [#514](https://github.com/generaltranslation/gt/pull/514) [`4beab58`](https://github.com/generaltranslation/gt/commit/4beab58142fa014bed5dbfc0acab03a1d1536b05) Thanks [@brian-lou](https://github.com/brian-lou)! - Fix jsonSchema conflict with transform option
+
+## 2.0.16
+
+### Patch Changes
+
+- [#512](https://github.com/generaltranslation/gt/pull/512) [`7c01ee8`](https://github.com/generaltranslation/gt/commit/7c01ee8af1e882d222fc3b0224b17f459ec5243b) Thanks [@brian-lou](https://github.com/brian-lou)! - Add new CLI command 'upload', add additional transform options for file translations
+
+## 2.0.15
+
+### Patch Changes
+
+- [#510](https://github.com/generaltranslation/gt/pull/510) [`e69c23b`](https://github.com/generaltranslation/gt/commit/e69c23bb55062e91804f52379e231626573df30f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: backwards compatability
+
+## 2.0.14
+
+### Patch Changes
+
+- [#508](https://github.com/generaltranslation/gt/pull/508) [`5375e2c`](https://github.com/generaltranslation/gt/commit/5375e2c1b17fba3ca52291e7d79f8d78a585ed49) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add zh-Hans and zh-Hant
+
 ## 2.0.13
 
 ### Patch Changes

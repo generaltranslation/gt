@@ -910,7 +910,7 @@ describe('mergeJson', () => {
       ];
 
       expect(() => {
-        mergeJson(
+        const result = mergeJson(
           originalContent,
           'test.json',
           {
@@ -929,12 +929,12 @@ describe('mergeJson', () => {
           targets,
           'en' // default locale 'en' not found in array
         );
-      }).toThrow('Process exit called');
-
-      expect(mockLogError).toHaveBeenCalledWith(
-        'Matching sourceItems not found at path: /items for locale: en. Please check your JSON schema'
-      );
-      expect(mockExit).toHaveBeenCalledWith(1);
+        expect(result).toBeDefined();
+        expect(result).toBe(originalContent);
+        expect(mockLogWarning).toHaveBeenCalledWith(
+          'Matching sourceItems not found at path: /items. Please check your JSON file includes the key field. Skipping this target'
+        );
+      });
     });
 
     it('should exit when default locale source item not found in object', () => {

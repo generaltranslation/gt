@@ -66,6 +66,7 @@ describe('downloadFileBatch', () => {
     return Array.from({ length: count }, (_, i) => ({
       translationId: `translation-${i + 1}`,
       outputPath: `/output/file${i + 1}.json`,
+      inputPath: `/input/file${i + 1}.json`,
       locale: 'en',
       ...overrides,
     }));
@@ -214,7 +215,7 @@ describe('downloadFileBatch', () => {
     const result = await downloadFileBatch(files, createMockSettings());
 
     expect(logWarning).toHaveBeenCalledWith(
-      'No output path found for file: translation-unknown'
+      'No input/output path found for file: translation-unknown'
     );
     expect(result).toEqual<DownloadFileBatchResult>({
       successful: ['translation-1'],

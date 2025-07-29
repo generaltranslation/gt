@@ -1,4 +1,4 @@
-import { createFileMapping } from '../formats/files/translate.js';
+import { createFileMapping } from '../formats/files/fileMapping.js';
 import fs from 'node:fs';
 import { Settings, Options } from '../types/index.js';
 
@@ -21,7 +21,8 @@ export default async function flattenJsonFiles(
     sourceFiles,
     settings.files.placeholderPaths,
     settings.files.transformPaths,
-    settings.locales
+    settings.locales,
+    settings.defaultLocale
   );
 
   await Promise.all(

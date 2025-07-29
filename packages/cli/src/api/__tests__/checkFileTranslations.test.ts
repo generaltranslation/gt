@@ -228,6 +228,7 @@ describe('checkFileTranslations', () => {
     expect(downloadFile).toHaveBeenCalledWith(
       'translation-1',
       '/output/file1.json_es.json',
+      'file1.json',
       'es',
       createMockSettings()
     );

@@ -86,6 +86,7 @@ describe('downloadFile', () => {
     const result = await downloadFile(
       'translation-123',
       '/output/dir/file.json',
+      '/input/dir/file.json',
       'en',
       createMockSettings()
     );
@@ -107,6 +108,7 @@ describe('downloadFile', () => {
     const result = await downloadFile(
       'translation-123',
       '/output/dir/file.json',
+      '/input/dir/file.json',
       'en',
       createMockSettings()
     );
@@ -128,6 +130,7 @@ describe('downloadFile', () => {
     const downloadPromise = downloadFile(
       'translation-123',
       '/output/dir/file.json',
+      '/input/dir/file.json',
       'en',
       createMockSettings()
     );
@@ -152,6 +155,7 @@ describe('downloadFile', () => {
     const downloadPromise = downloadFile(
       'translation-123',
       '/output/dir/file.json',
+      '/input/dir/file.json',
       'en',
       createMockSettings(),
       2,
@@ -178,6 +182,7 @@ describe('downloadFile', () => {
     const downloadPromise = downloadFile(
       'translation-123',
       '/output/dir/file.json',
+      '/input/dir/file.json',
       'en',
       createMockSettings()
     );
@@ -205,6 +210,7 @@ describe('downloadFile', () => {
     const downloadPromise = downloadFile(
       'translation-123',
       '/output/dir/file.json',
+      '/input/dir/file.json',
       'en',
       createMockSettings()
     );
@@ -238,6 +244,7 @@ describe('downloadFile', () => {
     const downloadPromise = downloadFile(
       'translation-123',
       '/output/dir/file.json',
+      '/input/dir/file.json',
       'en',
       createMockSettings()
     );
@@ -258,8 +265,10 @@ describe('downloadFile', () => {
     const result = await downloadFile(
       'translation-123',
       '/output/dir/file.json',
+      '/input/dir/file.json',
       'en',
-      createMockSettings()
+      createMockSettings(),
+      0
     );
 
     expect(result).toBe(true);
@@ -275,6 +284,7 @@ describe('downloadFile', () => {
     const result = await downloadFile(
       'translation-123-special_chars',
       '/output/dir/file.json',
+      '/input/dir/file.json',
       'en',
       createMockSettings()
     );
@@ -296,6 +306,7 @@ describe('downloadFile', () => {
     const result = await downloadFile(
       'translation-123',
       '/output/deeply/nested/dir/file.json',
+      '/input/dir/file.json',
       'en',
       createMockSettings()
     );
@@ -314,6 +325,7 @@ describe('downloadFile', () => {
     const downloadPromise = downloadFile(
       'translation-123',
       '/output/dir/file.json',
+      '/input/dir/file.json',
       'en',
       createMockSettings(),
       0

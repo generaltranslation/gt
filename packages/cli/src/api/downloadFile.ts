@@ -17,6 +17,7 @@ import { TextDecoder } from 'node:util';
 export async function downloadFile(
   translationId: string,
   outputPath: string,
+  inputPath: string,
   locale: string,
   options: Settings,
   maxRetries = 3,
@@ -43,7 +44,7 @@ export async function downloadFile(
           if (originalContent) {
             data = mergeJson(
               originalContent,
-              outputPath,
+              inputPath,
               options.options,
               [
                 {
