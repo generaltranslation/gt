@@ -3,6 +3,7 @@ import {
   FilesOptions,
   ResolvedFiles,
   TransformFiles,
+  TransformOption,
 } from '../../types/index.js';
 import fg from 'fast-glob';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
@@ -63,11 +64,13 @@ export function resolveFiles(
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
     // ==== TRANSFORMS ==== //
+    const transform = files[fileType]?.transform;
     if (
-      files[fileType]?.transform &&
-      !Array.isArray(files[fileType].transform)
+      transform &&
+      !Array.isArray(transform) &&
+      (typeof transform === 'string' || typeof transform === 'object')
     ) {
-      transformPaths[fileType] = files[fileType].transform;
+      transformPaths[fileType] = transform;
     }
     // ==== PLACEHOLDERS ==== //
     if (files[fileType]?.include) {
@@ -96,7 +99,7 @@ function expandGlobPatterns(
   includePatterns: string[],
   excludePatterns: string[],
   locale: string,
-  transformPatterns?: string
+  transformPatterns?: TransformOption | string
 ): {
   resolvedPaths: string[];
   placeholderPaths: string[];

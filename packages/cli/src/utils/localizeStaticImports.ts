@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { Options, Settings } from '../types/index.js';
-import { createFileMapping } from '../formats/files/translate.js';
+import { createFileMapping } from '../formats/files/fileMapping.js';
 import { logError } from '../console/logging.js';
 
 /**
@@ -35,7 +35,8 @@ export default async function localizeStaticImports(
     sourceFiles,
     settings.files.placeholderPaths,
     settings.files.transformPaths,
-    settings.locales
+    settings.locales,
+    settings.defaultLocale
   );
 
   // Process all file types at once with a single call

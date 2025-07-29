@@ -91,9 +91,18 @@ export type ResolvedFiles = {
   gt?: string; // Output glob: /path/[locale].json
 };
 
-// Update TransformFiles similarly
+export type TransformOption = {
+  match?: string; // regex to match strings, supports capture groups
+  replace: string; // string or regex pattern to replace the match with
+  // Special placeholders:
+  // -> if used in the match string, they will be replaced with the corresponding default locale property value
+  // -> if used in the replace string, they will be replaced with the corresponding target locale property value
+  // {locale} -> will be replaced with the locale code
+  // And any other property from getLocaleProperties()
+};
+
 export type TransformFiles = {
-  [K in SupportedFileExtension]?: string;
+  [K in SupportedFileExtension]?: TransformOption | string; // if a string, only transform the file name
 };
 
 // Update FilesOptions to fix the error
@@ -193,13 +202,5 @@ export type SourceObjectOptions = {
 
 export type TransformOptions = {
   // relative jsonPath to content to mutate
-  [transformPath: string]: {
-    match?: string; // regex to match strings to replace
-    replace: string; // string or regex pattern to replace the match with
-    // Special placeholders:
-    // -> if used in the match string, they will be replaced with the corresponding default locale property value
-    // -> if used in the replace string, they will be replaced with the corresponding target locale property value
-    // {locale} -> will be replaced with the locale code
-    // And any other property from getLocaleProperties()
-  };
+  [transformPath: string]: TransformOption;
 };

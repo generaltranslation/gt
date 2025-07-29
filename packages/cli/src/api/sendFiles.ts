@@ -1,11 +1,5 @@
 import chalk from 'chalk';
-import {
-  createSpinner,
-  exit,
-  logErrorAndExit,
-  logMessage,
-  logSuccess,
-} from '../console/logging.js';
+import { createSpinner, logMessage, logSuccess } from '../console/logging.js';
 import { Settings } from '../types/index.js';
 import { gt } from '../utils/gt.js';
 import {
@@ -60,6 +54,6 @@ export async function sendFiles(files: FileToTranslate[], options: ApiOptions) {
     return { data, locales, translations };
   } catch (error) {
     spinner.stop(chalk.red('Failed to send files for translation'));
-    exit(1);
+    throw error;
   }
 }

@@ -1,8 +1,5 @@
-import { checkFileTranslations } from '../../api/checkFileTranslations.js';
-import { sendFiles } from '../../api/sendFiles.js';
 import {
   noSupportedFormatError,
-  noLocalesError,
   noDefaultLocaleError,
   noApiKeyError,
   noProjectIdError,
@@ -12,13 +9,10 @@ import {
   logErrorAndExit,
   createSpinner,
   logError,
-  logSuccess,
 } from '../../console/logging.js';
-import { resolveLocaleFiles } from '../../fs/config/parseFilesConfig.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types/index.js';
-import { FileFormat, DataFormat, FileToTranslate } from '../../types/data.js';
-import path from 'node:path';
+import { FileFormat, DataFormat } from '../../types/data.js';
 import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile.js';
 import { downloadFileBatch } from '../../api/downloadFileBatch.js';
@@ -28,6 +22,7 @@ import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../json/parseJson.js';
 import { FileUpload, uploadFiles } from '../../api/uploadFiles.js';
 import { existsSync, readFileSync } from 'node:fs';
+import { createFileMapping } from './fileMapping.js';
 
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
@@ -124,7 +119,8 @@ export async function upload(
     filePaths,
     placeholderPaths,
     transformPaths,
-    locales
+    locales,
+    options.defaultLocale
   );
 
   // construct object
@@ -166,60 +162,6 @@ export async function upload(
   } catch (error) {
     logErrorAndExit(`Error uploading files: ${error}`);
   }
-}
-
-/**
- * Creates a mapping between source files and their translated counterparts for each locale
- * @param filePaths - Resolved file paths for different file types
- * @param placeholderPaths - Placeholder paths for translated files
- * @param transformPaths - Transform paths for file naming
- * @param locales - List of locales to create a mapping for
- * @returns A mapping between source files and their translated counterparts for each locale, in the form of relative paths
- */
-export function createFileMapping(
-  filePaths: ResolvedFiles,
-  placeholderPaths: ResolvedFiles,
-  transformPaths: TransformFiles,
-  locales: string[]
-): Record<string, Record<string, string>> {
-  const fileMapping: Record<string, Record<string, string>> = {};
-
-  for (const locale of locales) {
-    const translatedPaths = resolveLocaleFiles(placeholderPaths, locale);
-    const localeMapping: Record<string, string> = {};
-
-    // Process each file type
-    for (const typeIndex of SUPPORTED_FILE_EXTENSIONS) {
-      if (!filePaths[typeIndex] || !translatedPaths[typeIndex]) continue;
-
-      const sourcePaths = filePaths[typeIndex];
-      let translatedFiles = translatedPaths[typeIndex];
-      if (!translatedFiles) continue;
-
-      const transformPath = transformPaths[typeIndex];
-      if (transformPath) {
-        translatedFiles = translatedFiles.map((filePath) => {
-          const directory = path.dirname(filePath);
-          const fileName = path.basename(filePath);
-          const baseName = fileName.split('.')[0];
-          const transformedFileName = transformPath
-            .replace('*', baseName)
-            .replace('[locale]', locale);
-          return path.join(directory, transformedFileName);
-        });
-      }
-
-      for (let i = 0; i < sourcePaths.length; i++) {
-        const sourceFile = getRelative(sourcePaths[i]);
-        const translatedFile = getRelative(translatedFiles[i]);
-        localeMapping[sourceFile] = translatedFile;
-      }
-    }
-
-    fileMapping[locale] = localeMapping;
-  }
-
-  return fileMapping;
 }
 
 /**
