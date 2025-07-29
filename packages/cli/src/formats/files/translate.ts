@@ -25,6 +25,7 @@ import { TranslateOptions } from '../../cli/base.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../json/parseJson.js';
 import { createFileMapping } from './fileMapping.js';
+import parseYaml from '../yaml/parseYaml.js';
 
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
 
@@ -75,8 +76,29 @@ export async function translateFiles(
     allFiles.push(...jsonFiles);
   }
 
+  // Process YAML files
+  if (filePaths.yaml) {
+    if (!SUPPORTED_DATA_FORMATS.includes(dataFormat)) {
+      logErrorAndExit(noSupportedFormatError);
+    }
+
+    const yamlFiles = filePaths.yaml.map((filePath) => {
+      const content = readFile(filePath);
+      const parsedYaml = parseYaml(content, filePath, additionalOptions);
+
+      const relativePath = getRelative(filePath);
+      return {
+        content: parsedYaml,
+        fileName: relativePath,
+        fileFormat: 'JSON' as FileFormat, // Translate as a JSON file
+        dataFormat,
+      };
+    });
+    allFiles.push(...yamlFiles);
+  }
+
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (fileType === 'json') continue;
+    if (fileType === 'json' || fileType === 'yaml') continue;
     if (filePaths[fileType]) {
       const files = filePaths[fileType].map((filePath) => {
         const content = readFile(filePath);

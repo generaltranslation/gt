@@ -4,7 +4,9 @@ import { logError, logWarning } from '../console/logging.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
+import { validateYamlSchema } from '../formats/yaml/utils.js';
 import { mergeJson } from '../formats/json/mergeJson.js';
+import mergeYaml from '../formats/yaml/mergeYaml.js';
 
 export type BatchedFiles = Array<{
   translationId: string;
@@ -88,6 +90,21 @@ export async function downloadFileBatch(
                   ],
                   options.defaultLocale
                 )[0];
+              }
+            }
+          }
+
+          if (options.options?.yamlSchema && locale) {
+            const yamlSchema = validateYamlSchema(options.options, inputPath);
+            if (yamlSchema) {
+              const originalContent = fs.readFileSync(inputPath, 'utf8');
+              if (originalContent) {
+                data = mergeYaml(originalContent, inputPath, options.options, [
+                  {
+                    translatedContent: file.data,
+                    targetLocale: locale,
+                  },
+                ])[0];
               }
             }
           }

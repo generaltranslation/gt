@@ -148,6 +148,10 @@ export type AdditionalOptions = {
   jsonSchema?: {
     [fileGlob: string]: JsonSchema;
   };
+  // Optional schema to follow while translating YAML files
+  yamlSchema?: {
+    [fileGlob: string]: YamlSchema;
+  };
   docsUrlPattern?: string; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files
   docsImportPattern?: string; // eg /docs/[locale]/foo.md or /[locale]/foo.md for localizing static imports in markdown files
   docsHideDefaultLocaleImport?: boolean; // if true, hide the default locale in the import path
@@ -172,6 +176,11 @@ export type JsonSchema = {
     // Array elements or object sub-elements are denoted as "sourceItem"
     [sourceObjectPath: string]: SourceObjectOptions;
   };
+};
+
+export type YamlSchema = {
+  preset?: 'mintlify';
+  include?: string[];
 };
 
 export type SourceObjectOptions = {
