@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.16
+
+### Patch Changes
+
+- [#512](https://github.com/generaltranslation/gt/pull/512) [`7c01ee8`](https://github.com/generaltranslation/gt/commit/7c01ee8af1e882d222fc3b0224b17f459ec5243b) Thanks [@brian-lou](https://github.com/brian-lou)! - Add new CLI command 'upload', add additional transform options for file translations
+
 ## 2.0.15
 
 ### Patch Changes
