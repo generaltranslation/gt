@@ -41,6 +41,7 @@ import localizeStaticUrls from '../utils/localizeStaticUrls.js';
 import flattenJsonFiles from '../utils/flattenJsonFiles.js';
 import localizeStaticImports from '../utils/localizeStaticImports.js';
 import copyFile from '../fs/copyFile.js';
+import generateRedirects from '../utils/generateRedirects.js';
 
 export type TranslateOptions = {
   config?: string;
@@ -128,7 +129,7 @@ export class BaseCLI {
       )
       .option(
         '--experimental-flatten-json-files',
-        'Triggering this will flatten the json files into a single file. This is useful for projects that have a lot of json files.',
+        'Triggering this will flatten the json files into a single file.',
         false
       )
       .option(
@@ -348,6 +349,14 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
     // Copy files to the target locale
     if (settings.options?.copyFiles) {
       await copyFile(settings);
+    }
+
+    // Generate redirects
+    if (settings.options?.generateRedirects) {
+      generateRedirects(
+        settings.options.generateRedirects,
+        settings.defaultLocale
+      );
     }
   }
 
