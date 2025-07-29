@@ -1,5 +1,13 @@
 # gtx-cli
 
+## 2.0.18
+
+### Patch Changes
+
+- [#507](https://github.com/generaltranslation/gt/pull/507) [`8f80795`](https://github.com/generaltranslation/gt/commit/8f80795daf862f769be728c044d48e5e28d7b126) Thanks [@SamEggert](https://github.com/SamEggert)! - Setup wizard detects and matches your module system when modifying the next.config
+
+- [#517](https://github.com/generaltranslation/gt/pull/517) [`452da1e`](https://github.com/generaltranslation/gt/commit/452da1e1f0f6d7825b82bc66fb5d3dd6e7a6ad92) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add support for yaml
+
 ## 2.0.17
 
 ### Patch Changes
