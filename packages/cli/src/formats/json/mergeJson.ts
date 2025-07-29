@@ -14,7 +14,7 @@ import { replaceLocalePlaceholders } from '../utils.js';
 
 export function mergeJson(
   originalContent: string,
-  filePath: string,
+  inputPath: string,
   options: AdditionalOptions,
   targets: {
     translatedContent: string;
@@ -22,7 +22,7 @@ export function mergeJson(
   }[],
   defaultLocale: string
 ): string[] {
-  const jsonSchema = validateJsonSchema(options, filePath);
+  const jsonSchema = validateJsonSchema(options, inputPath);
   if (!jsonSchema) {
     return targets.map((target) => target.translatedContent);
   }
@@ -31,7 +31,7 @@ export function mergeJson(
   try {
     originalJson = JSON.parse(originalContent);
   } catch {
-    logError(`Invalid JSON file: ${filePath}`);
+    logError(`Invalid JSON file: ${inputPath}`);
     exit(1);
   }
 
