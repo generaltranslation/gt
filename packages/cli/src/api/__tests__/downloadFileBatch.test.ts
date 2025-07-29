@@ -215,7 +215,7 @@ describe('downloadFileBatch', () => {
     const result = await downloadFileBatch(files, createMockSettings());
 
     expect(logWarning).toHaveBeenCalledWith(
-      'No output path found for file: translation-unknown'
+      'No input/output path found for file: translation-unknown'
     );
     expect(result).toEqual<DownloadFileBatchResult>({
       successful: ['translation-1'],
