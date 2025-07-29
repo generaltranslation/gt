@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.19
+
+### Patch Changes
+
+- [#519](https://github.com/generaltranslation/gt/pull/519) [`2ba4848`](https://github.com/generaltranslation/gt/commit/2ba48486603ef5e8e4026d89dc36311ce6505b81) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: exclude files with the [locales] tag
+
 ## 2.0.18
 
 ### Patch Changes
