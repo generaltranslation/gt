@@ -1,8 +1,5 @@
-import { checkFileTranslations } from '../../api/checkFileTranslations.js';
-import { sendFiles } from '../../api/sendFiles.js';
 import {
   noSupportedFormatError,
-  noLocalesError,
   noDefaultLocaleError,
   noApiKeyError,
   noProjectIdError,
@@ -12,18 +9,19 @@ import {
   logErrorAndExit,
   createSpinner,
   logError,
-  logSuccess,
 } from '../../console/logging.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
 import { ResolvedFiles, Settings, TransformFiles } from '../../types/index.js';
-import { FileFormat, DataFormat, FileToTranslate } from '../../types/data.js';
+import { FileFormat, DataFormat } from '../../types/data.js';
 import chalk from 'chalk';
 import { downloadFile } from '../../api/downloadFile.js';
 import { downloadFileBatch } from '../../api/downloadFileBatch.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
-import { TranslateOptions } from '../../cli/base.js';
+import { UploadOptions } from '../../cli/base.js';
 import sanitizeFileContent from '../../utils/sanitizeFileContent.js';
 import { parseJson } from '../json/parseJson.js';
+import { FileUpload, uploadFiles } from '../../api/uploadFiles.js';
+import { existsSync, readFileSync } from 'node:fs';
 import { createFileMapping } from './fileMapping.js';
 
 const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
@@ -37,15 +35,15 @@ const SUPPORTED_DATA_FORMATS = ['JSX', 'ICU', 'I18NEXT'];
  * @param options - Translation options including API settings
  * @returns Promise that resolves when translation is complete
  */
-export async function translateFiles(
+export async function upload(
   filePaths: ResolvedFiles,
   placeholderPaths: ResolvedFiles,
   transformPaths: TransformFiles,
   dataFormat: DataFormat = 'JSX',
-  options: Settings & TranslateOptions
+  options: Settings & UploadOptions
 ): Promise<void> {
   // Collect all files to translate
-  const allFiles: FileToTranslate[] = [];
+  const allFiles: FileUpload[] = [];
   const additionalOptions = options.options || {};
 
   // Process JSON files
@@ -70,6 +68,7 @@ export async function translateFiles(
         fileName: relativePath,
         fileFormat: 'JSON' as FileFormat,
         dataFormat,
+        locale: options.defaultLocale,
       };
     });
     allFiles.push(...jsonFiles);
@@ -87,6 +86,7 @@ export async function translateFiles(
           fileName: relativePath,
           fileFormat: fileType.toUpperCase() as FileFormat,
           dataFormat,
+          locale: options.defaultLocale,
         };
       });
       allFiles.push(...files);
@@ -95,22 +95,11 @@ export async function translateFiles(
 
   if (allFiles.length === 0) {
     logError(
-      'No files to translate were found. Please check your configuration and try again.'
-    );
-    return;
-  }
-  if (options.dryRun) {
-    const fileNames = allFiles.map((file) => `- ${file.fileName}`).join('\n');
-    logSuccess(
-      `Dry run: No files were sent to General Translation. Found files:\n${fileNames}`
+      'No files to upload were found. Please check your configuration and try again.'
     );
     return;
   }
 
-  // Validate required settings are present
-  if (!options.locales) {
-    logErrorAndExit(noLocalesError);
-  }
   if (!options.defaultLocale) {
     logErrorAndExit(noDefaultLocaleError);
   }
@@ -124,43 +113,54 @@ export async function translateFiles(
     logErrorAndExit(noProjectIdError);
   }
 
+  const locales = options.locales || [];
+  // Create file mapping for all file types
+  const fileMapping = createFileMapping(
+    filePaths,
+    placeholderPaths,
+    transformPaths,
+    locales,
+    options.defaultLocale
+  );
+
+  // construct object
+  const uploadData = allFiles.map((file) => {
+    const encodedContent = Buffer.from(file.content).toString('base64');
+    const sourceFile: FileUpload = {
+      content: encodedContent,
+      fileName: file.fileName,
+      fileFormat: file.fileFormat,
+      dataFormat: file.dataFormat,
+      locale: file.locale,
+    };
+
+    const translations: FileUpload[] = [];
+    for (const locale of locales) {
+      const translatedFileName = fileMapping[locale][file.fileName];
+      if (translatedFileName && existsSync(translatedFileName)) {
+        const translatedContent = readFileSync(translatedFileName, 'utf8');
+        const encodedTranslatedContent =
+          Buffer.from(translatedContent).toString('base64');
+        translations.push({
+          content: encodedTranslatedContent,
+          fileName: translatedFileName,
+          fileFormat: file.fileFormat,
+          dataFormat: file.dataFormat,
+          locale,
+        });
+      }
+    }
+    return {
+      source: sourceFile,
+      translations,
+    };
+  });
+
   try {
     // Send all files in a single API call
-    const response = await sendFiles(allFiles, {
-      ...options,
-      publish: false,
-      wait: true,
-    });
-
-    const { data, locales, translations } = response;
-
-    // Create file mapping for all file types
-    const fileMapping = createFileMapping(
-      filePaths,
-      placeholderPaths,
-      transformPaths,
-      locales,
-      options.defaultLocale
-    );
-
-    // Process any translations that were already completed and returned with the initial response
-    const downloadStatus = await processInitialTranslations(
-      translations,
-      fileMapping,
-      options
-    );
-
-    // Check for remaining translations
-    await checkFileTranslations(
-      data,
-      locales,
-      600,
-      (sourcePath, locale) => fileMapping[locale][sourcePath],
-      downloadStatus, // Pass the already downloaded files to avoid duplicate requests
-      options
-    );
+    const response = await uploadFiles(uploadData, options);
   } catch (error) {
-    logErrorAndExit(`Error translating files: ${error}`);
+    logErrorAndExit(`Error uploading files: ${error}`);
   }
 }
 

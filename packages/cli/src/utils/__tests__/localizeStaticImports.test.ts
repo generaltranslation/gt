@@ -11,7 +11,7 @@ vi.mock('fs', () => ({
 }));
 
 // Mock other dependencies
-vi.mock('../../formats/files/translate.js', () => ({
+vi.mock('../../formats/files/fileMapping.js', () => ({
   createFileMapping: vi.fn(),
 }));
 
@@ -20,7 +20,7 @@ vi.mock('../../console/logging.js', () => ({
   logErrorAndExit: vi.fn(),
 }));
 
-import { createFileMapping } from '../../formats/files/translate.js';
+import { createFileMapping } from '../../formats/files/fileMapping.js';
 
 describe('localizeStaticImports', () => {
   beforeEach(() => {
@@ -94,7 +94,8 @@ describe('localizeStaticImports', () => {
         ['file1', 'file2'],
         { docs: '/docs' },
         {},
-        ['en', 'ja']
+        ['en', 'ja'],
+        'en'
       );
       expect(fs.promises.readFile).toHaveBeenCalledTimes(2); // Only md/mdx files
       expect(fs.promises.writeFile).toHaveBeenCalledTimes(2);
