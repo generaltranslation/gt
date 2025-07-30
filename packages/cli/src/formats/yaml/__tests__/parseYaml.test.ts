@@ -37,13 +37,15 @@ describe('parseYaml', () => {
       }
     );
     expect(result).toBeDefined();
+    const { content: resultContent, fileFormat } = result;
 
     // parseYaml returns JSON.stringify of the flattened result
-    const parsedResult = JSON.parse(result);
+    const parsedResult = JSON.parse(resultContent);
     expect(parsedResult['/title']).toBe('Sample YAML Title');
     expect(parsedResult['/description']).toBe('This is a sample YAML file');
     expect(parsedResult['/content/sections/0/name']).toBe('Introduction');
     expect(parsedResult['/content/sections/1/name']).toBe('Features');
+    expect(fileFormat).toBe('JSON');
   });
 
   it('should parse a simple YAML file with nested paths', () => {
@@ -63,14 +65,15 @@ describe('parseYaml', () => {
       }
     );
     expect(result).toBeDefined();
-
+    const { content: resultContent, fileFormat } = result;
     // parseYaml returns JSON.stringify of the flattened result
-    const parsedResult = JSON.parse(result);
+    const parsedResult = JSON.parse(resultContent);
     expect(parsedResult['/name']).toBe('Simple Test');
     expect(parsedResult['/items/0']).toBe('item1');
     expect(parsedResult['/items/1']).toBe('item2');
     expect(parsedResult['/items/2']).toBe('item3');
     expect(parsedResult['/nested/deep/value']).toBe('found me');
+    expect(fileFormat).toBe('JSON');
   });
 
   it('should handle wildcard includes', () => {
@@ -93,14 +96,15 @@ config:
     });
 
     expect(result).toBeDefined();
-
+    const { content: resultContent, fileFormat } = result;
     // parseYaml returns JSON.stringify of the flattened result using flattenJsonWithStringFilter
     // which only includes string values, not booleans
-    const parsedResult = JSON.parse(result);
+    const parsedResult = JSON.parse(resultContent);
     expect(parsedResult['/config/settings/theme']).toBe('dark');
     expect(parsedResult['/config/settings/language']).toBe('en');
     // notifications is boolean so it's filtered out by flattenJsonWithStringFilter
     expect(parsedResult['/config/settings/notifications']).toBeUndefined();
+    expect(fileFormat).toBe('JSON');
   });
 
   it('should handle recursive includes', () => {
@@ -126,12 +130,13 @@ navigation:
     });
 
     expect(result).toBeDefined();
-
+    const { content: resultContent, fileFormat } = result;
     // parseYaml returns JSON.stringify of the flattened result
-    const parsedResult = JSON.parse(result);
+    const parsedResult = JSON.parse(resultContent);
     expect(parsedResult['/navigation/main/links/0/text']).toBe('Home');
     expect(parsedResult['/navigation/main/links/1/text']).toBe('About');
     expect(parsedResult['/navigation/footer/links/0/text']).toBe('Contact');
+    expect(fileFormat).toBe('JSON');
   });
 
   describe('Error Handling', () => {
@@ -213,7 +218,10 @@ title: "Start"
         },
       });
 
-      expect(result).toBe(yaml);
+      expect(result).toBeDefined();
+      const { content: resultContent, fileFormat } = result;
+      expect(resultContent).toBe(yaml);
+      expect(fileFormat).toBe('YAML');
     });
 
     it('should return original content when no yamlSchema option provided', () => {
@@ -224,7 +232,10 @@ title: "Start"
         {}
       );
 
-      expect(result).toBe(yaml);
+      expect(result).toBeDefined();
+      const { content: resultContent, fileFormat } = result;
+      expect(resultContent).toBe(yaml);
+      expect(fileFormat).toBe('YAML');
     });
 
     it('should match specific file patterns', () => {
@@ -242,8 +253,10 @@ title: "Start"
       );
 
       expect(result).toBeDefined();
-      const parsedResult = JSON.parse(result);
+      const { content: resultContent, fileFormat } = result;
+      const parsedResult = JSON.parse(resultContent);
       expect(parsedResult['/title']).toBe('Specific Content');
+      expect(fileFormat).toBe('JSON');
     });
   });
 
@@ -273,11 +286,13 @@ array:
       );
 
       expect(result).toBeDefined();
-      const parsedResult = JSON.parse(result);
+      const { content: resultContent, fileFormat } = result;
+      const parsedResult = JSON.parse(resultContent);
       expect(parsedResult['/level1/level2/target']).toBe('found');
       expect(parsedResult['/array/0']).toBe('item1');
       expect(parsedResult['/array/1']).toBe('item2');
       expect(parsedResult['/level1/level2/ignore']).toBeUndefined();
+      expect(fileFormat).toBe('JSON');
     });
 
     it('should handle array wildcard includes', () => {
@@ -300,10 +315,12 @@ items:
         }
       );
 
-      const parsedResult = JSON.parse(result);
+      const { content: resultContent, fileFormat } = result;
+      const parsedResult = JSON.parse(resultContent);
       expect(parsedResult['/items/item1']).toBe('value1');
       expect(parsedResult['/items/item2']).toBe('value2');
       expect(parsedResult['/items/item3']).toBe('value3');
+      expect(fileFormat).toBe('JSON');
     });
   });
 
@@ -323,7 +340,9 @@ items:
       );
 
       expect(result).toBeDefined();
-      expect(result.trim()).toBe('{}');
+      const { content: resultContent, fileFormat } = result;
+      expect(resultContent.trim()).toBe('{}');
+      expect(fileFormat).toBe('JSON');
     });
 
     it('should handle null values in YAML', () => {
@@ -344,8 +363,12 @@ valid: "value"
       );
 
       expect(result).toBeDefined();
-      const parsedResult = result.split('\n').filter((line) => line.trim());
+      const { content: resultContent, fileFormat } = result;
+      const parsedResult = resultContent
+        .split('\n')
+        .filter((line) => line.trim());
       expect(parsedResult.some((line) => line.includes('value'))).toBe(true);
+      expect(fileFormat).toBe('JSON');
     });
 
     it('should handle arrays with mixed types', () => {
@@ -369,8 +392,10 @@ mixed:
         }
       );
 
-      const parsedResult = JSON.parse(result);
+      const { content: resultContent, fileFormat } = result;
+      const parsedResult = JSON.parse(resultContent);
       expect(parsedResult['/mixed/1']).toBe('string');
+      expect(fileFormat).toBe('JSON');
     });
 
     it('should handle special YAML characters properly', () => {
@@ -393,9 +418,11 @@ special: "Special chars: @#$%"
       );
 
       expect(result).toBeDefined();
-      const parsedResult = JSON.parse(result);
+      const { content: resultContent, fileFormat } = result;
+      const parsedResult = JSON.parse(resultContent);
       expect(parsedResult['/quotes']).toBe('Text with quotes and apostrophes');
       expect(parsedResult['/unicode']).toBe('Unicode: éñ中');
+      expect(fileFormat).toBe('JSON');
     });
 
     it('should handle YAML edge cases with special keys', () => {
@@ -420,13 +447,15 @@ special: "Special chars: @#$%"
         }
       );
 
-      const parsedResult = JSON.parse(result);
+      const { content: resultContent, fileFormat } = result;
+      const parsedResult = JSON.parse(resultContent);
       expect(parsedResult['/weird-key']).toBe('value1');
       expect(parsedResult['/123']).toBe('value2');
       expect(parsedResult['/']).toBe('empty key');
       expect(parsedResult['/$special']).toBe('dollar sign');
       expect(parsedResult['/@attribute']).toBe('at sign');
       expect(parsedResult['/space key']).toBe('space value');
+      expect(fileFormat).toBe('JSON');
     });
 
     it('should preserve original formatting for non-matching files', () => {
@@ -445,7 +474,10 @@ description: "Content"`;
         }
       );
 
-      expect(result).toBe(originalYaml);
+      expect(result).toBeDefined();
+      const { content: resultContent, fileFormat } = result;
+      expect(resultContent).toBe(originalYaml);
+      expect(fileFormat).toBe('YAML');
     });
   });
 
@@ -480,12 +512,14 @@ database:
         },
       });
 
-      const parsedResult = JSON.parse(result);
+      const { content: resultContent, fileFormat } = result;
+      const parsedResult = JSON.parse(resultContent);
       expect(parsedResult['/app/name']).toBe('My Application');
       expect(parsedResult['/app/settings/theme']).toBe('dark');
       expect(parsedResult['/app/settings/features/0']).toBe('authentication');
       expect(parsedResult['/app/settings/features/1']).toBe('notifications');
       expect(parsedResult['/app/settings/features/2']).toBe('analytics');
+      expect(fileFormat).toBe('JSON');
     });
 
     it('should handle deeply nested YAML paths', () => {
@@ -517,7 +551,8 @@ deep:
         }
       );
 
-      const parsedResult = JSON.parse(result);
+      const { content: resultContent, fileFormat } = result;
+      const parsedResult = JSON.parse(resultContent);
       expect(parsedResult['/deep/nesting/structure/content']).toBe(
         'English content'
       );
@@ -528,6 +563,7 @@ deep:
       expect(parsedResult['/deep/nesting/structure/meta/tags/1']).toBe(
         'documentation'
       );
+      expect(fileFormat).toBe('JSON');
     });
 
     it('should handle multiple file glob patterns', () => {
@@ -550,8 +586,10 @@ deep:
       );
 
       expect(result).toBeDefined();
-      const parsedResult = JSON.parse(result);
+      const { content: resultContent, fileFormat } = result;
+      const parsedResult = JSON.parse(resultContent);
       expect(parsedResult['/content']).toBe('test content');
+      expect(fileFormat).toBe('JSON');
     });
   });
 });

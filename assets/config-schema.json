@@ -98,7 +98,6 @@
             "output": {
               "type": "string",
               "description": "Output path pattern with [locale] placeholder for saving translations locally",
-              "pattern": ".*\\[locale\\].*",
               "examples": [
                 "public/i18n/[locale].json",
                 "translations/[locale].json"
@@ -116,8 +115,7 @@
               "type": "array",
               "description": "Array of glob patterns that match the JSON files you want to translate",
               "items": {
-                "type": "string",
-                "pattern": ".*\\[locale\\].*"
+                "type": "string"
               },
               "minItems": 1,
               "examples": [
@@ -128,15 +126,13 @@
               "type": "array",
               "description": "Array of glob patterns that match the JSON files you want to exclude from translation",
               "items": {
-                "type": "string",
-                "pattern": ".*\\[locale\\].*"
+                "type": "string"
               },
               "examples": [["content/[locale]/exclude/**/*.json"]]
             },
             "transform": {
               "type": "string",
               "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
-              "pattern": ".*\\*.*\\[locale\\].*",
               "examples": ["*.[locale].json", "*-[locale].json"]
             }
           },
@@ -151,8 +147,7 @@
               "type": "array",
               "description": "Array of glob patterns that match the MDX files you want to translate",
               "items": {
-                "type": "string",
-                "pattern": ".*\\[locale\\].*"
+                "type": "string"
               },
               "minItems": 1,
               "examples": [["content/docs/[locale]/**/*.mdx"]]
@@ -168,7 +163,6 @@
             "transform": {
               "type": "string",
               "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
-              "pattern": ".*\\*.*\\[locale\\].*",
               "examples": ["*.[locale].mdx"]
             }
           },
@@ -183,8 +177,7 @@
               "type": "array",
               "description": "Array of glob patterns that match the Markdown files you want to translate",
               "items": {
-                "type": "string",
-                "pattern": ".*\\[locale\\].*"
+                "type": "string"
               },
               "minItems": 1,
               "examples": [["docs/[locale]/**/*.md"]]
@@ -200,7 +193,6 @@
             "transform": {
               "type": "string",
               "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
-              "pattern": ".*\\*.*\\[locale\\].*",
               "examples": ["*.[locale].md"]
             }
           },
@@ -215,8 +207,7 @@
               "type": "array",
               "description": "Array of glob patterns that match the JavaScript files you want to translate",
               "items": {
-                "type": "string",
-                "pattern": ".*\\[locale\\].*"
+                "type": "string"
               },
               "minItems": 1,
               "examples": [["scripts/[locale]/**/*.js"]]
@@ -232,7 +223,6 @@
             "transform": {
               "type": "string",
               "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
-              "pattern": ".*\\*.*\\[locale\\].*",
               "examples": ["*.[locale].js"]
             }
           },
@@ -247,8 +237,7 @@
               "type": "array",
               "description": "Array of glob patterns that match the TypeScript files you want to translate",
               "items": {
-                "type": "string",
-                "pattern": ".*\\[locale\\].*"
+                "type": "string"
               },
               "minItems": 1,
               "examples": [["scripts/[locale]/**/*.ts"]]
@@ -264,8 +253,37 @@
             "transform": {
               "type": "string",
               "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
-              "pattern": ".*\\*.*\\[locale\\].*",
               "examples": ["*.[locale].ts"]
+            }
+          },
+          "required": ["include"],
+          "additionalProperties": false
+        },
+        "yaml": {
+          "type": "object",
+          "description": "YAML files configuration",
+          "properties": {
+            "include": {
+              "type": "array",
+              "description": "Array of glob patterns that match the YAML files you want to translate",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "examples": [["config/[locale]/**/*.yaml", "data/[locale]/**/*.yml"]]
+            },
+            "exclude": {
+              "type": "array",
+              "description": "Array of glob patterns that match the YAML files you want to exclude from translation",
+              "items": {
+                "type": "string",
+                "pattern": ".*\\[locale\\].*"
+              }
+            },
+            "transform": {
+              "type": "string",
+              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
+              "examples": ["*.[locale].yaml", "*-[locale].yml"]
             }
           },
           "required": ["include"],
@@ -377,6 +395,75 @@
           }
         },
         "additionalProperties": false
+      },
+      "yamlSchema": {
+        "type": "object",
+        "description": "YAML schema configuration for specific file globs",
+        "patternProperties": {
+          ".*": {
+            "type": "object",
+            "description": "YAML schema options for files matching this glob pattern",
+            "properties": {
+              "preset": {
+                "type": "string",
+                "enum": ["mintlify"],
+                "description": "Preset configuration to use"
+              },
+              "include": {
+                "type": "array",
+                "description": "Array of YAML paths to include for translation",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "docsUrlPattern": {
+        "type": "string",
+        "description": "Pattern for localizing static URLs in markdown files (e.g., '/docs/[locale]' or '/[locale]')",
+        "examples": ["/docs/[locale]", "/[locale]"]
+      },
+      "docsImportPattern": {
+        "type": "string", 
+        "description": "Pattern for localizing static imports in markdown files (e.g., '/docs/[locale]/foo.md' or '/[locale]/foo.md')",
+        "examples": ["/docs/[locale]/foo.md", "/[locale]/foo.md"]
+      },
+      "docsHideDefaultLocaleImport": {
+        "type": "boolean",
+        "description": "If true, hide the default locale in the import path",
+        "default": false
+      },
+      "copyFiles": {
+        "type": "array",
+        "description": "Array of files to copy to the target locale",
+        "items": {
+          "type": "string"
+        },
+        "examples": [["static/images/**/*.png", "public/assets/**/*.pdf"]]
+      },
+      "experimentalLocalizeStaticImports": {
+        "type": "boolean",
+        "description": "Inserts locale in static import paths in md/mdx files",
+        "default": false
+      },
+      "experimentalLocalizeStaticUrls": {
+        "type": "boolean", 
+        "description": "Inserts locale in static url paths in md/mdx files",
+        "default": false
+      },
+      "experimentalHideDefaultLocale": {
+        "type": "boolean",
+        "description": "Hides the default locale in the import path",
+        "default": false
+      },
+      "experimentalFlattenJsonFiles": {
+        "type": "boolean",
+        "description": "Flattens JSON files into a single file",
+        "default": false
       }
     },
     "additionalProperties": false
