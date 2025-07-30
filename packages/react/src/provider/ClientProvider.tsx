@@ -14,6 +14,7 @@ export default function ClientProvider({
   children,
   dictionary,
   initialTranslations,
+  initialTranslationsStatus,
   locale: _locale,
   _versionId,
   defaultLocale,
@@ -52,7 +53,9 @@ export default function ClientProvider({
   );
 
   const [translationsStatus, setTranslationsStatus] =
-    useState<TranslationsStatus | null>(null);
+    useState<TranslationsStatus | null>(
+      devApiKey ? null : initialTranslationsStatus
+    );
 
   // ----- LOCALE STATE ----- //
 
