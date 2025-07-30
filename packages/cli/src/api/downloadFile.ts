@@ -41,9 +41,9 @@ export async function downloadFile(
       let data = new TextDecoder().decode(fileData);
 
       if (options.options?.jsonSchema && locale) {
-        const jsonSchema = validateJsonSchema(options.options, outputPath);
+        const jsonSchema = validateJsonSchema(options.options, inputPath);
         if (jsonSchema) {
-          const originalContent = fs.readFileSync(outputPath, 'utf8');
+          const originalContent = fs.readFileSync(inputPath, 'utf8');
           if (originalContent) {
             data = mergeJson(
               originalContent,
@@ -62,11 +62,11 @@ export async function downloadFile(
       }
 
       if (options.options?.yamlSchema && locale) {
-        const yamlSchema = validateYamlSchema(options.options, outputPath);
+        const yamlSchema = validateYamlSchema(options.options, inputPath);
         if (yamlSchema) {
-          const originalContent = fs.readFileSync(outputPath, 'utf8');
+          const originalContent = fs.readFileSync(inputPath, 'utf8');
           if (originalContent) {
-            data = mergeYaml(originalContent, outputPath, options.options, [
+            data = mergeYaml(originalContent, inputPath, options.options, [
               {
                 translatedContent: data,
                 targetLocale: locale,

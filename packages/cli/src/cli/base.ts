@@ -487,6 +487,7 @@ See the docs for more information: https://generaltranslation.com/docs/react/tut
         { value: 'mdx', label: FILE_EXT_TO_EXT_LABEL.mdx },
         { value: 'ts', label: FILE_EXT_TO_EXT_LABEL.ts },
         { value: 'js', label: FILE_EXT_TO_EXT_LABEL.js },
+        { value: 'yaml', label: FILE_EXT_TO_EXT_LABEL.yaml },
       ],
       required: !isUsingGT,
     });

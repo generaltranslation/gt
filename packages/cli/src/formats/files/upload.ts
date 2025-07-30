@@ -83,13 +83,17 @@ export async function upload(
 
     const yamlFiles = filePaths.yaml.map((filePath) => {
       const content = readFile(filePath);
-      const parsedYaml = parseYaml(content, filePath, additionalOptions);
+      const { content: parsedYaml, fileFormat } = parseYaml(
+        content,
+        filePath,
+        additionalOptions
+      );
 
       const relativePath = getRelative(filePath);
       return {
         content: parsedYaml,
         fileName: relativePath,
-        fileFormat: 'JSON' as FileFormat, // Translate as a JSON file
+        fileFormat,
         dataFormat,
         locale: options.defaultLocale,
       };
