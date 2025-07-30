@@ -8,10 +8,10 @@ export default function parseYaml(
   content: string,
   filePath: string,
   options: AdditionalOptions
-): string {
+): { content: string; fileFormat: 'JSON' | 'YAML' } {
   const yamlSchema = validateYamlSchema(options, filePath);
   if (!yamlSchema) {
-    return content;
+    return { content, fileFormat: 'YAML' };
   }
 
   let yaml: any;
@@ -24,8 +24,8 @@ export default function parseYaml(
 
   if (yamlSchema.include) {
     const flattenedYaml = flattenJsonWithStringFilter(yaml, yamlSchema.include);
-    return JSON.stringify(flattenedYaml);
+    return { content: JSON.stringify(flattenedYaml), fileFormat: 'JSON' };
   }
 
-  return content;
+  return { content, fileFormat: 'YAML' };
 }

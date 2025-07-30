@@ -86,6 +86,7 @@ We currently support the following file types:
 
 - `gt`: General Translation files.
 - `json`: JSON files.
+- `yaml`: YAML files.
 - `mdx`: Markdown component (MDX) files.
 - `md`: Markdown (MD) files.
 - `js`: JavaScript files.
@@ -135,7 +136,9 @@ If you want to exclude files from translation for all locales, you can use the `
 
 ### `transform`
 
-If used, the value of the `transform` key should be a string defining a remapping of the file name. It should contain a wildcard `*` that will be replaced with the original file name (anything before the first `.`).
+`transform` can either be a string or an object.
+
+If `transform` is a string, it defines a remapping of the file name. It should contain a wildcard `*` that will be replaced with the original file name (anything before the first `.`).
 
 For example, if you want the extension of all of your translated files to have `.[locale].json` instead of `.json`, you can use the following configuration:
 
@@ -144,6 +147,39 @@ For example, if you want the extension of all of your translated files to have `
   "transform": "*.[locale].json"
 }
 ```
+
+Alternatively, if `transform` is an object, it should contain the following properties:
+
+- `match` (optional): A regex pattern to match strings, supports capture groups
+- `replace` (required): String or regex pattern to replace the match with
+
+Both values support regex capture groups and are mapped to the full relative file name of the output file.
+
+```json
+{
+  "transform": {
+    "match": "^(.*)$",
+    "replace": "{locale}/$1"
+  }
+}
+```
+
+For example, the above configuration will cause translated files to be saved under a target locale subdirectory.
+
+#### Special Placeholders
+
+The transform option supports several special placeholders that can be used in both `match` and `replace` strings:
+
+- `{locale}`: The locale code placeholder that behaves differently depending on context:
+  - **In `match` strings**: Replaced with the default locale code (e.g., `"en"`) to help identify source files
+  - **In `replace` strings**: Replaced with the target locale code (e.g., `"fr"`, `"es"`) for the translated output files
+  
+For example, if your default locale is `"en"` and you're translating to `"fr"`:
+- A `match` pattern of `"content/{locale}/file.md"` becomes `"content/en/file.md"` 
+- A `replace` pattern of `"content/{locale}/file.md"` becomes `"content/fr/file.md"`
+
+Additionally, any other property from `getLocaleProperties()` can be used as a placeholder with the same context-dependent behavior.
+
 
 <Callout type="info">
 
@@ -230,6 +266,37 @@ Let's say your project's default locale is `en`, and you want to translate your 
 With this configuration, the CLI will search for all JSON files under the subdirectory `json_files/en/` and save the translated files to `json_files/fr/` and `json_files/es/`.
 
 It will ignore any files in the subdirectory `json_files/en/exclude/`.
+
+---
+
+### File Type: `yaml` [#yaml]
+
+**Supported Keys**
+
+- `include` (Required)
+- `exclude` (Optional)
+- `transform` (Optional)
+
+**Example**
+
+```json title="gt.config.json"
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "es"],
+  "files": {
+    "yaml": {
+      "include": ["yaml_files/[locale]/**/*.yaml"],
+      "exclude": ["yaml_files/[locale]/exclude/**/*.yaml"]
+    }
+  }
+}
+```
+
+Let's say your project's default locale is `en`, and you want to translate your project into `fr` and `es`.
+
+With this configuration, the CLI will search for all YAML files under the subdirectory `yaml_files/en/` and save the translated files to `yaml_files/fr/` and `yaml_files/es/`.
+
+It will ignore any files in the subdirectory `yaml_files/en/exclude/`.
 
 ---
 
