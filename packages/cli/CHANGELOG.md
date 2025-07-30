@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.20
+
+### Patch Changes
+
+- [#521](https://github.com/generaltranslation/gt/pull/521) [`6b137bc`](https://github.com/generaltranslation/gt/commit/6b137bcf0b2aaf50adacd5fb03ed64525fb12473) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - refactor: add support for experimental flags in config file
+
 ## 2.0.19
 
 ### Patch Changes
