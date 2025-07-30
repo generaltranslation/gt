@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.21
+
+### Patch Changes
+
+- [#524](https://github.com/generaltranslation/gt/pull/524) [`39b36e5`](https://github.com/generaltranslation/gt/commit/39b36e56f50fff663826c66022d798147a622898) Thanks [@brian-lou](https://github.com/brian-lou)! - Add support for translating YAML files via the General Translation API
+
 ## 2.0.20
 
 ### Patch Changes
