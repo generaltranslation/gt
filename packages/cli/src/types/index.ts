@@ -156,6 +156,10 @@ export type AdditionalOptions = {
   docsImportPattern?: string; // eg /docs/[locale]/foo.md or /[locale]/foo.md for localizing static imports in markdown files
   docsHideDefaultLocaleImport?: boolean; // if true, hide the default locale in the import path
   copyFiles?: string[]; // array of files to copy to the target locale
+  experimentalLocalizeStaticImports?: boolean; // Inserts locale in static import paths in md/mdx files
+  experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files
+  experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
+  experimentalFlattenJsonFiles?: boolean; // Flattens JSON files into a single file
 };
 
 export type JsonSchema = {
