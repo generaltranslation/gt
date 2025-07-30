@@ -1,5 +1,11 @@
 # gt-react
 
+## 10.0.8
+
+### Patch Changes
+
+- [#529](https://github.com/generaltranslation/gt/pull/529) [`c77c83d`](https://github.com/generaltranslation/gt/commit/c77c83d33237c72ef13c6b6762b99ba150773de1) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: use gt client side
+
 ## 10.0.7
 
 ### Patch Changes
