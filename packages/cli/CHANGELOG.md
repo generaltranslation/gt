@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.22
+
+### Patch Changes
+
+- [#527](https://github.com/generaltranslation/gt/pull/527) [`d209aa9`](https://github.com/generaltranslation/gt/commit/d209aa99dbae8627ea85b240b60d4bbb5a53dbd6) Thanks [@brian-lou](https://github.com/brian-lou)! - Bump form-data version to address CVE-2025-7783
+
 ## 2.0.21
 
 ### Patch Changes
