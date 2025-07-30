@@ -1,5 +1,11 @@
 # gt-react
 
+## 10.0.7
+
+### Patch Changes
+
+- [#518](https://github.com/generaltranslation/gt/pull/518) [`65b8f27`](https://github.com/generaltranslation/gt/commit/65b8f271746204dfa431367adad25f4cc0c0b4fd) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: clientside nested use translation
+
 ## 10.0.6
 
 ### Patch Changes
