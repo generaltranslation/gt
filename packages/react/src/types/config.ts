@@ -1,7 +1,12 @@
 // Type definition for the params extracted from gt.config.json
 
 import { RenderMethod } from '../internal';
-import { Dictionary, Translations, CustomLoader } from './types';
+import {
+  Dictionary,
+  Translations,
+  CustomLoader,
+  TranslationsStatus,
+} from './types';
 import { CustomMapping } from 'generaltranslation/types';
 
 export type GTConfig = {
@@ -52,6 +57,7 @@ export type ClientProviderProps = {
   children: any;
   dictionary: Dictionary;
   initialTranslations: Translations;
+  initialTranslationsStatus: TranslationsStatus;
   locale: string;
   locales: string[];
   _versionId?: string;

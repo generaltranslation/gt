@@ -1,4 +1,8 @@
-import { DictionaryEntry, mergeDictionaries } from 'gt-react/internal';
+import {
+  DictionaryEntry,
+  mergeDictionaries,
+  TranslationsStatus,
+} from 'gt-react/internal';
 import { isValidElement } from 'react';
 import getI18NConfig from '../config-dir/getI18NConfig';
 import { getLocale } from '../request/getLocale';
@@ -62,11 +66,15 @@ export default async function GTProvider({
 
   // Block until cache check resolves
   const translations = await cachedTranslationsPromise;
+  const translationsStatus: TranslationsStatus = translationRequired
+    ? I18NConfig.getCachedTranslationsStatus(locale)
+    : ({} as any);
 
   return (
     <ClientProvider
       dictionary={dictionary}
       initialTranslations={translations}
+      initialTranslationsStatus={translationsStatus}
       locale={locale}
       locales={I18NConfig.getLocales()}
       defaultLocale={defaultLocale}
