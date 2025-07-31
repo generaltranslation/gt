@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 7.1.5
+
+### Patch Changes
+
+- [#531](https://github.com/generaltranslation/gt/pull/531) [`46fb40d`](https://github.com/generaltranslation/gt/commit/46fb40d5e76898c7cbf7dc02d7b62de5ad64a95f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - fix: deprecate \_translate for translate in core
+
 ## 7.1.4
 
 ### Patch Changes
