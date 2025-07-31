@@ -533,29 +533,7 @@ export class GT {
 
   /**
    * Translates the source content to the target locale.
-   *
-   * @param {Content} source - {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage} The source content to translate.
-   * @param {string} targetLocale - string The target locale to translate to.
-   * @param {EntryMetadata} metadata - {@link EntryMetadata} The metadata for the translation.
-   * @returns {Promise<TranslationResult | TranslationError>} The translated content.
-   *
-   * @example
-   * const gt = new GT({
-   *   sourceLocale: 'en-US',
-   *   targetLocale: 'es-ES',
-   *   locales: ['en-US', 'es-ES', 'fr-FR']
-   * });
-   *
-   * const result = await gt.translate('Hello, world!', 'es-ES');
-   *
-   * @example
-   * const gt = new GT({
-   *   sourceLocale: 'en-US',
-   *   targetLocale: 'es-ES',
-   *   locales: ['en-US', 'es-ES', 'fr-FR']
-   * });
-   *
-   * const result = await gt.translate('Hello, world!', 'es-ES', { context: 'A formal greeting'});
+   * @deprecated Use the {@link translate} method instead.
    */
   // Overload for JSX content
   async _translate(
@@ -586,6 +564,84 @@ export class GT {
 
   // Implementation
   async _translate(
+    source: Content,
+    targetLocale: string | undefined = this.targetLocale,
+    metadata?: EntryMetadata
+  ): Promise<TranslationResult | TranslationError> {
+    // Validation
+    this._validateAuth('translate');
+
+    // Require target locale
+    if (!targetLocale) {
+      const error = noTargetLocaleProvidedError('translate');
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+
+    // Request the translation
+    return await _translate(
+      source,
+      targetLocale,
+      metadata,
+      this._getTranslationConfig()
+    );
+  }
+
+  /**
+   * Translates the source content to the target locale.
+   *
+   * @param {Content} source - {@link JsxChildren} | {@link IcuMessage} | {@link I18nextMessage} The source content to translate.
+   * @param {string} targetLocale - string The target locale to translate to.
+   * @param {EntryMetadata} metadata - {@link EntryMetadata} The metadata for the translation.
+   * @returns {Promise<TranslationResult | TranslationError>} The translated content.
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.translate('Hello, world!', 'es-ES');
+   *
+   * @example
+   * const gt = new GT({
+   *   sourceLocale: 'en-US',
+   *   targetLocale: 'es-ES',
+   *   locales: ['en-US', 'es-ES', 'fr-FR']
+   * });
+   *
+   * const result = await gt.translate('Hello, world!', 'es-ES', { context: 'A formal greeting'});
+   */
+  // Overload for JSX content
+  async translate(
+    source: JsxChildren,
+    targetLocale: string,
+    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
+      dataFormat?: 'JSX';
+    }
+  ): Promise<TranslationResult | TranslationError>;
+
+  // Overload for ICU content
+  async translate(
+    source: IcuMessage,
+    targetLocale: string,
+    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
+      dataFormat?: 'ICU';
+    }
+  ): Promise<TranslationResult | TranslationError>;
+
+  // Overload for I18next content
+  async translate(
+    source: I18nextMessage,
+    targetLocale: string,
+    metadata?: Omit<EntryMetadata, 'dataFormat'> & {
+      dataFormat?: 'I18NEXT';
+    }
+  ): Promise<TranslationResult | TranslationError>;
+
+  // Implementation
+  async translate(
     source: Content,
     targetLocale: string | undefined = this.targetLocale,
     metadata?: EntryMetadata
