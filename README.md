@@ -4,11 +4,8 @@
   </a>
 </div>
 
-<div align="center">
-
 # General Translation
 
-</div>
 
 General Translation (GT) is fully integrated suite of internationalization (i18n) tools for developers.
 
