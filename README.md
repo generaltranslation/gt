@@ -14,11 +14,11 @@ General Translation (GT) is fully integrated suite of internationalization (i18n
 
 This open-source repo contains internationalization libraries for React frameworks like Next.js and React Router.
 
-📖&nbsp;&nbsp;For guides, examples, and API references, read the [docs](https://generaltranslation.com/docs).
+📖 For guides, examples, and API references, read the [docs](https://generaltranslation.com/docs).
 
-🔑&nbsp;&nbsp;Create a free API key for the translation service [generaltranslation.com](https://generaltranslation.com)!
+🔑 Create a free API key for the translation service [generaltranslation.com](https://generaltranslation.com)!
 
-💬&nbsp;&nbsp;Join the [Discord community](https://discord.gg/W99K6fchSu) to get help and stay updated!
+💬 Join the [Discord community](https://discord.gg/W99K6fchSu) to get help and stay updated!
 
 ## Projects
 
@@ -37,7 +37,7 @@ This open-source repo contains internationalization libraries for React framewor
 
 ## Features
 
-### ⚛️&nbsp;&nbsp;Translate entire React components, not just strings
+### ⚛️ Translate entire React components, not just strings
 
 - Just wrap your content in a `<T>` component!
 - No need for complex refactoring or managing JSON files.
@@ -62,12 +62,12 @@ export default function Page() {
 }
 ```
 
-### 🔎&nbsp;&nbsp;Feature parity with existing libraries
+### 🔎 Feature parity with existing libraries
 
 - GT libraries also support the same features as existing libraries like `next-intl` and `react-i18next`.
 - Features such as dictionaries, plurals, currencies, and automatic routing are all supported.
 
-### 🔧&nbsp;&nbsp;Developer-friendly
+### 🔧 Developer-friendly
 
 - Setup is simple and can be done in minutes.
 - All GT libraries are open-source and work standalone.
@@ -75,7 +75,7 @@ export default function Page() {
 - No more managing translation keys like `t('menu.header.title')`.
   - Just write everything in-line!
 
-### 🧠&nbsp;&nbsp;Free, context-aware AI translation service
+### 🧠 Free, context-aware AI translation service
 
 - Translation hot reload in development
 - Libraries integrate natively with the translation platform.
