@@ -399,6 +399,14 @@ export function withGTConfig(
       _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED:
         customLocaleEnabled.toString(),
     },
+    // TODO: make sure experimental config doesn't get overwritten
+    experimental: {
+      ...nextConfig.experimental,
+      swcPlugins: [
+        ...(nextConfig.experimental?.swcPlugins || []),
+        [path.resolve(__dirname, './dist/swc_plugin.wasm'), {}], // you can pass plugin options here
+      ],
+    },
     ...turboConfig,
     webpack: function webpack(
       ...[webpackConfig, options]: Parameters<

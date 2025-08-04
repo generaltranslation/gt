@@ -86,6 +86,14 @@
     },
     "./_load-dictionary": {
       "default": "./dist/_load-dictionary.js"
+    },
+    "./compiler": {
+      "types": "./dist/compiler/index.d.ts",
+      "default": "./dist/compiler/index.js"
+    },
+    "./eslint-plugin": {
+      "types": "./dist/eslint-plugin/index.d.ts",
+      "default": "./dist/eslint-plugin/index.js"
     }
   },
   "typesVersions": {
@@ -116,6 +124,12 @@
       ],
       "_load-dictionary": [
         "./dist/_load-dictionary.d.ts"
+      ],
+      "compiler": [
+        "./dist/compiler/index.d.ts"
+      ],
+      "eslint-plugin": [
+        "./dist/eslint-plugin/index.d.ts"
       ]
     }
   },
@@ -148,6 +162,12 @@
       ],
       "gt-next/_load-dictionary": [
         "/dist/_load-dictionary"
+      ],
+      "gt-next/compiler": [
+        "/dist/compiler"
+      ],
+      "gt-next/eslint-plugin": [
+        "/dist/eslint-plugin"
       ]
     }
   },

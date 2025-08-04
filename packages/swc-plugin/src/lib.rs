@@ -21,6 +21,7 @@ static CALL_COUNTER: AtomicUsize = AtomicUsize::new(0);
 /// component but not wrapped in a variable component, it logs a warning with location info.
 /// 
 /// Supports imports from: 'gt-next', 'gt-next/client', 'gt-next/server'
+/// Supports both named imports and namespace imports (import * as GT from 'gt-next')
 pub struct TransformVisitor {
     /// True when currently visiting inside a translation component
     in_translation_component: bool,
@@ -30,6 +31,8 @@ pub struct TransformVisitor {
     /// Using Atom (interned strings) for better performance
     gt_next_translation_imports: HashSet<Atom>,
     gt_next_variable_imports: HashSet<Atom>,
+    /// Maps namespace import names to GT-Next modules (e.g., "GT" from import * as GT)
+    gt_next_namespace_imports: HashSet<Atom>,
     /// Debug counter to track JSX elements processed
     jsx_element_count: usize,
 }
@@ -41,6 +44,7 @@ impl Default for TransformVisitor {
             in_variable_component: false,
             gt_next_translation_imports: HashSet::new(),
             gt_next_variable_imports: HashSet::new(),
+            gt_next_namespace_imports: HashSet::new(),
             jsx_element_count: 0,
         }
     }
@@ -50,21 +54,30 @@ impl Fold for TransformVisitor {
     /// Processes import declarations to track GT-Next component imports
     fn fold_import_decl(&mut self, import: ImportDecl) -> ImportDecl {
         if self.is_gt_next_module(&import.src.value) {
-            // Process named imports from GT-Next modules
+            // Process both named imports and namespace imports from GT-Next modules
             for specifier in &import.specifiers {
-                if let ImportSpecifier::Named(named_import) = specifier {
-                    let imported_name = match &named_import.imported {
-                        Some(ModuleExportName::Ident(ident)) => &ident.sym,
-                        Some(ModuleExportName::Str(str_lit)) => &str_lit.value,
-                        None => &named_import.local.sym,
-                    };
-                    let local_name = &named_import.local.sym;
-                    
-                    // Map to component type based on original imported name - no allocations
-                    if self.is_translation_component_name(imported_name) {
-                        self.gt_next_translation_imports.insert(local_name.clone());
-                    } else if self.is_variable_component_name(imported_name) {
-                        self.gt_next_variable_imports.insert(local_name.clone());
+                match specifier {
+                    ImportSpecifier::Named(named_import) => {
+                        let imported_name = match &named_import.imported {
+                            Some(ModuleExportName::Ident(ident)) => &ident.sym,
+                            Some(ModuleExportName::Str(str_lit)) => &str_lit.value,
+                            None => &named_import.local.sym,
+                        };
+                        let local_name = &named_import.local.sym;
+                        
+                        // Map to component type based on original imported name - no allocations
+                        if self.is_translation_component_name(imported_name) {
+                            self.gt_next_translation_imports.insert(local_name.clone());
+                        } else if self.is_variable_component_name(imported_name) {
+                            self.gt_next_variable_imports.insert(local_name.clone());
+                        }
+                    }
+                    ImportSpecifier::Namespace(namespace_import) => {
+                        // Track namespace imports like: import * as GT from 'gt-next'
+                        self.gt_next_namespace_imports.insert(namespace_import.local.sym.clone());
+                    }
+                    ImportSpecifier::Default(_) => {
+                        // GT-Next doesn't have default exports, so we ignore these
                     }
                 }
             }
@@ -83,11 +96,31 @@ impl Fold for TransformVisitor {
         let was_in_variable = self.in_variable_component;
         
         // Check if this component is a tracked GT-Next import - no allocations
-        if let JSXElementName::Ident(ident) = &element.opening.name {
-            if self.gt_next_translation_imports.contains(&ident.sym) {
-                self.in_translation_component = true;
-            } else if self.gt_next_variable_imports.contains(&ident.sym) {
-                self.in_variable_component = true;
+        match &element.opening.name {
+            JSXElementName::Ident(ident) => {
+                // Handle direct named imports: <T>, <Var>, etc.
+                if self.gt_next_translation_imports.contains(&ident.sym) {
+                    self.in_translation_component = true;
+                } else if self.gt_next_variable_imports.contains(&ident.sym) {
+                    self.in_variable_component = true;
+                }
+            }
+            JSXElementName::JSXMemberExpr(member_expr) => {
+                // Handle namespace imports: <GT.T>, <GT.Var>, etc.
+                if let JSXObject::Ident(obj_ident) = &member_expr.obj {
+                    if self.gt_next_namespace_imports.contains(&obj_ident.sym) {
+                        // Check the property name (T, Var, etc.)
+                        // member_expr.prop is an Ident, so we can access it directly
+                        if self.is_translation_component_name(&member_expr.prop.sym) {
+                            self.in_translation_component = true;
+                        } else if self.is_variable_component_name(&member_expr.prop.sym) {
+                            self.in_variable_component = true;
+                        }
+                    }
+                }
+            }
+            JSXElementName::JSXNamespacedName(_) => {
+                // Handle XML namespaced names (not relevant for GT-Next)
             }
         }
         
@@ -203,6 +236,29 @@ mod tests {
         let div_atom = Atom::from("div");
         assert!(!visitor.is_translation_component_name(&unknown_atom));
         assert!(!visitor.is_variable_component_name(&div_atom));
+    }
+
+    #[test]
+    fn test_namespace_import_tracking() {
+        let mut visitor = TransformVisitor::default();
+        
+        // Initially, no namespace imports should be tracked
+        assert!(visitor.gt_next_namespace_imports.is_empty());
+        
+        // Simulate namespace import processing (this would normally happen in fold_import_decl)
+        let gt_atom = Atom::from("GT");
+        let gt_client_atom = Atom::from("GTClient");
+        
+        visitor.gt_next_namespace_imports.insert(gt_atom.clone());
+        visitor.gt_next_namespace_imports.insert(gt_client_atom.clone());
+        
+        // Verify namespace imports are tracked
+        assert!(visitor.gt_next_namespace_imports.contains(&gt_atom));
+        assert!(visitor.gt_next_namespace_imports.contains(&gt_client_atom));
+        
+        // Should not contain untracked namespaces
+        let react_atom = Atom::from("React");
+        assert!(!visitor.gt_next_namespace_imports.contains(&react_atom));
     }
 
 }
