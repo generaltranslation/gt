@@ -1,26 +1,37 @@
 use swc_core::ecma::{
     ast::*,
+    atoms::Atom,
     visit::{Fold, FoldWith},
 };
 use swc_core::plugin::{plugin_transform, proxies::TransformPluginProgramMetadata};
+use std::collections::HashSet;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+// Global counter to detect infinite loops
+static CALL_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 /// GT-Next SWC plugin that detects dynamic content in translation components 
 /// that isn't wrapped in variable components.
 /// 
-/// The plugin tracks when the visitor is inside:
-/// - Translation components (identified by _gtt='translate-server'|'translate'|'translate-client')
-/// - Variable components (identified by _gtt='variable-datetime'|'variable-number'|'variable-variable'|'variable-currency')
+/// The plugin tracks imports from GT-Next modules and maps component names to their types:
+/// - Translation components: T
+/// - Variable components: Var, DateTime, Num, Currency
 /// 
 /// When dynamic content (JSX expressions with {}) is found inside a translation 
 /// component but not wrapped in a variable component, it logs a warning.
 /// 
-/// Note: This plugin requires that GT-Next has processed the components and added
-/// the _gtt attributes to the JSX elements during the build process.
+/// Supports imports from: 'gt-next', 'gt-next/client', 'gt-next/server'
 pub struct TransformVisitor {
     /// True when currently visiting inside a translation component
     in_translation_component: bool,
     /// True when currently visiting inside a variable component
     in_variable_component: bool,
+    /// Maps imported component names to their GT-Next component types
+    /// Using Atom (interned strings) for better performance
+    gt_next_translation_imports: HashSet<Atom>,
+    gt_next_variable_imports: HashSet<Atom>,
+    /// Debug counter to track JSX elements processed
+    jsx_element_count: usize,
 }
 
 impl Default for TransformVisitor {
@@ -28,95 +39,98 @@ impl Default for TransformVisitor {
         Self {
             in_translation_component: false,
             in_variable_component: false,
+            gt_next_translation_imports: HashSet::new(),
+            gt_next_variable_imports: HashSet::new(),
+            jsx_element_count: 0,
         }
     }
 }
 
 impl Fold for TransformVisitor {
-    /// Visits JSX elements and tracks translation and variable component context
-    /// using the internal _gtt attribute for reliable identification
-    fn fold_jsx_element(&mut self, mut element: JSXElement) -> JSXElement {
-        let gtt_value = self.get_gtt_attribute(&element.opening);
+    /// Processes import declarations to track GT-Next component imports
+    fn fold_import_decl(&mut self, import: ImportDecl) -> ImportDecl {
+        if self.is_gt_next_module(&import.src.value) {
+            // Process named imports from GT-Next modules
+            for specifier in &import.specifiers {
+                if let ImportSpecifier::Named(named_import) = specifier {
+                    let imported_name = match &named_import.imported {
+                        Some(ModuleExportName::Ident(ident)) => &ident.sym,
+                        Some(ModuleExportName::Str(str_lit)) => &str_lit.value,
+                        None => &named_import.local.sym,
+                    };
+                    let local_name = &named_import.local.sym;
+                    
+                    // Map to component type based on original imported name - no allocations
+                    if self.is_translation_component_name(imported_name) {
+                        self.gt_next_translation_imports.insert(local_name.clone());
+                    } else if self.is_variable_component_name(imported_name) {
+                        self.gt_next_variable_imports.insert(local_name.clone());
+                    }
+                }
+            }
+        }
+        
+        // Return the import unchanged
+        import
+    }
+    
+    // Step 2: Add JSX element detection back
+    fn fold_jsx_element(&mut self, element: JSXElement) -> JSXElement {
+        self.jsx_element_count += 1;
         
         // Save current state to restore after processing children
         let was_in_translation = self.in_translation_component;
         let was_in_variable = self.in_variable_component;
         
-        // Update state based on the _gtt attribute value
-        if let Some(gtt) = gtt_value {
-            if self.is_translation_component(&gtt) {
+        // Check if this component is a tracked GT-Next import - no allocations
+        if let JSXElementName::Ident(ident) = &element.opening.name {
+            if self.gt_next_translation_imports.contains(&ident.sym) {
                 self.in_translation_component = true;
-            } else if self.is_variable_component(&gtt) {
+            } else if self.gt_next_variable_imports.contains(&ident.sym) {
                 self.in_variable_component = true;
             }
         }
         
-        // Process children with updated context
-        element.children = element.children.fold_with(self);
+        // Fold children with updated context
+        let element = element.fold_children_with(self);
         
         // Restore previous state
         self.in_translation_component = was_in_translation;
         self.in_variable_component = was_in_variable;
         
-        // Process element attributes and closing tag
-        element.opening = element.opening.fold_with(self);
-        if let Some(closing) = element.closing {
-            element.closing = Some(closing.fold_with(self));
-        }
-        
         element
     }
     
-    /// Detects JSX expression containers (dynamic content in {}) and logs warnings
-    /// when found inside translation components without variable component wrappers
-    fn fold_jsx_expr_container(&mut self, mut container: JSXExprContainer) -> JSXExprContainer {
-        // Check if we have unwrapped dynamic content in a translation component
+    // Step 3: Add JSX expression container detection for unwrapped dynamic content
+    fn fold_jsx_expr_container(&mut self, expr: JSXExprContainer) -> JSXExprContainer {
+        // Only warn if we're inside a translation component but NOT inside a variable component
         if self.in_translation_component && !self.in_variable_component {
-            let span = container.span;
-            eprintln!(
-                "WARNING: Dynamic content found in translation component without variable wrapper at line {}, column {}", 
-                span.lo.0, span.hi.0
-            );
+            eprintln!("⚠️  GT-Next plugin: Found unwrapped dynamic content in translation component");
+            eprintln!("    Tip: Wrap dynamic content in <Var>, <DateTime>, <Num>, or <Currency> components");
         }
         
-        // Continue processing the expression
-        container.expr = container.expr.fold_with(self);
-        container
+        // Continue processing children
+        expr.fold_children_with(self)
     }
 }
 
 
 impl TransformVisitor {
-    /// Extracts the _gtt attribute value from a JSX element
-    /// The _gtt attribute is used internally to identify GT-Next components
-    fn get_gtt_attribute(&self, opening: &JSXOpeningElement) -> Option<String> {
-        for attr in &opening.attrs {
-            if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
-                if let JSXAttrName::Ident(ident_name) = &jsx_attr.name {
-                    if ident_name.sym == "_gtt" {
-                        if let Some(JSXAttrValue::Lit(Lit::Str(str_lit))) = &jsx_attr.value {
-                            return Some(str_lit.value.to_string());
-                        }
-                    }
-                }
-            }
-        }
-        None
+    /// Checks if a module path is a GT-Next module
+    /// Supports: 'gt-next', 'gt-next/client', 'gt-next/server'
+    fn is_gt_next_module(&self, module_path: &str) -> bool {
+        matches!(module_path, "gt-next" | "gt-next/client" | "gt-next/server")
     }
     
-    /// Checks if the _gtt value indicates a translation component
-    /// Translation components: 'translate-server', 'translate', 'translate-client'
-    /// (excludes 'translate-runtime')
-    fn is_translation_component(&self, gtt_value: &str) -> bool {
-        matches!(gtt_value, "translate-server" | "translate" | "translate-client")
+    /// Checks if a component name is a translation component (no allocations)
+    fn is_translation_component_name(&self, name: &Atom) -> bool {
+        name == "T"
     }
     
-    /// Checks if the _gtt value indicates a variable component
-    /// Variable components: 'variable-datetime', 'variable-number', 'variable-variable', 'variable-currency'
-    fn is_variable_component(&self, gtt_value: &str) -> bool {
-        matches!(gtt_value, "variable-datetime" | "variable-number" | "variable-variable" | "variable-currency")
+    /// Checks if a component name is a variable component (no allocations)
+    fn is_variable_component_name(&self, name: &Atom) -> bool {
+        matches!(name.as_str(), "Var" | "DateTime" | "Num" | "Currency")
     }
-    
 }
 
 /// Main entry point for the SWC plugin
@@ -125,7 +139,30 @@ impl TransformVisitor {
 /// It applies the TransformVisitor to detect unwrapped dynamic content in <T> components.
 #[plugin_transform]
 pub fn process_transform(program: Program, _metadata: TransformPluginProgramMetadata) -> Program {
-    program.fold_with(&mut TransformVisitor::default())
+    let call_count = CALL_COUNTER.fetch_add(1, Ordering::SeqCst);
+    
+    // Emergency brake: if we've been called too many times, just return the program unchanged
+    if call_count > 100 {
+        eprintln!("🛑 GT-Next plugin: Too many recursive calls ({}), aborting to prevent infinite loop!", call_count);
+        return program;
+    }
+    
+    // Only log on first few calls to reduce noise
+    if call_count <= 2 {
+        eprintln!("🚀 GT-Next plugin: Analyzing AST for GT-Next translation violations...");
+    }
+    
+    let mut visitor = TransformVisitor::default();
+    let program = program.fold_with(&mut visitor);
+    
+    // Only show summary if we found GT-Next components
+    if visitor.gt_next_translation_imports.len() > 0 || visitor.gt_next_variable_imports.len() > 0 {
+        eprintln!("✅ GT-Next plugin: Found {} translation components, {} variable components", 
+            visitor.gt_next_translation_imports.len(), 
+            visitor.gt_next_variable_imports.len());
+    }
+    
+    program
 }
 
 #[cfg(test)]
@@ -137,65 +174,48 @@ mod tests {
         let visitor = TransformVisitor::default();
         assert_eq!(visitor.in_translation_component, false);
         assert_eq!(visitor.in_variable_component, false);
+        assert!(visitor.gt_next_translation_imports.is_empty());
+        assert!(visitor.gt_next_variable_imports.is_empty());
     }
 
-    #[test] 
-    fn test_translation_component_detection() {
+    #[test]
+    fn test_gt_next_module_detection() {
+        let visitor = TransformVisitor::default();
+        
+        // Test GT-Next module detection
+        assert!(visitor.is_gt_next_module("gt-next"));
+        assert!(visitor.is_gt_next_module("gt-next/client"));
+        assert!(visitor.is_gt_next_module("gt-next/server"));
+        
+        // Should not match other modules
+        assert!(!visitor.is_gt_next_module("react"));
+        assert!(!visitor.is_gt_next_module("next"));
+        assert!(!visitor.is_gt_next_module("gt-other"));
+    }
+
+    #[test]
+    fn test_component_name_detection() {
         let visitor = TransformVisitor::default();
         
         // Test translation component detection
-        assert!(visitor.is_translation_component("translate-server"));
-        assert!(visitor.is_translation_component("translate"));
-        assert!(visitor.is_translation_component("translate-client"));
-        
-        // Should exclude translate-runtime
-        assert!(!visitor.is_translation_component("translate-runtime"));
-        
-        // Should not match variable components
-        assert!(!visitor.is_translation_component("variable-datetime"));
-    }
-
-    #[test] 
-    fn test_variable_component_detection() {
-        let visitor = TransformVisitor::default();
+        let t_atom = Atom::from("T");
+        assert!(visitor.is_translation_component_name(&t_atom));
         
         // Test variable component detection
-        assert!(visitor.is_variable_component("variable-datetime"));
-        assert!(visitor.is_variable_component("variable-number"));
-        assert!(visitor.is_variable_component("variable-variable"));
-        assert!(visitor.is_variable_component("variable-currency"));
+        let var_atom = Atom::from("Var");
+        let datetime_atom = Atom::from("DateTime");
+        let num_atom = Atom::from("Num");
+        let currency_atom = Atom::from("Currency");
+        assert!(visitor.is_variable_component_name(&var_atom));
+        assert!(visitor.is_variable_component_name(&datetime_atom));
+        assert!(visitor.is_variable_component_name(&num_atom));
+        assert!(visitor.is_variable_component_name(&currency_atom));
         
-        // Should not match translation components
-        assert!(!visitor.is_variable_component("translate-server"));
-        assert!(!visitor.is_variable_component("translate"));
-    }
-
-
-    #[test]
-    fn test_gtt_attribute_extraction() {
-        let visitor = TransformVisitor::default();
-        
-        // Create a JSX element with _gtt attribute (keeping this test for the _gtt methods)
-        let gtt_attr = JSXAttr {
-            span: Default::default(),
-            name: JSXAttrName::Ident(IdentName::new("_gtt".into(), Default::default())),
-            value: Some(JSXAttrValue::Lit(Lit::Str(Str {
-                span: Default::default(),
-                value: "translate-server".into(),
-                raw: None,
-            }))),
-        };
-
-        let jsx_opening = JSXOpeningElement {
-            name: JSXElementName::Ident(Ident::new("Component".into(), Default::default(), Default::default())),
-            span: Default::default(),
-            type_args: None,
-            attrs: vec![JSXAttrOrSpread::JSXAttr(gtt_attr)],
-            self_closing: false,
-        };
-        
-        let gtt_value = visitor.get_gtt_attribute(&jsx_opening);
-        assert_eq!(gtt_value, Some("translate-server".to_string()));
+        // Should not match unknown components
+        let unknown_atom = Atom::from("UnknownComponent");
+        let div_atom = Atom::from("div");
+        assert!(!visitor.is_translation_component_name(&unknown_atom));
+        assert!(!visitor.is_variable_component_name(&div_atom));
     }
 
 }
