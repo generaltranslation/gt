@@ -18,7 +18,7 @@ static CALL_COUNTER: AtomicUsize = AtomicUsize::new(0);
 /// - Variable components: Var, DateTime, Num, Currency
 /// 
 /// When dynamic content (JSX expressions with {}) is found inside a translation 
-/// component but not wrapped in a variable component, it logs a warning.
+/// component but not wrapped in a variable component, it logs a warning with location info.
 /// 
 /// Supports imports from: 'gt-next', 'gt-next/client', 'gt-next/server'
 pub struct TransformVisitor {
