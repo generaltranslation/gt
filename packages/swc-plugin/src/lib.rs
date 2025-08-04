@@ -105,7 +105,7 @@ impl Fold for TransformVisitor {
     fn fold_jsx_expr_container(&mut self, expr: JSXExprContainer) -> JSXExprContainer {
         // Only warn if we're inside a translation component but NOT inside a variable component
         if self.in_translation_component && !self.in_variable_component {
-            eprintln!("⚠️  GT-Next plugin: Found unwrapped dynamic content in translation component");
+            eprintln!("GT-Next plugin: Found unwrapped dynamic content in translation component");
             eprintln!("    Tip: Wrap dynamic content in <Var>, <DateTime>, <Num>, or <Currency> components");
         }
         
@@ -143,24 +143,11 @@ pub fn process_transform(program: Program, _metadata: TransformPluginProgramMeta
     
     // Emergency brake: if we've been called too many times, just return the program unchanged
     if call_count > 100 {
-        eprintln!("🛑 GT-Next plugin: Too many recursive calls ({}), aborting to prevent infinite loop!", call_count);
         return program;
-    }
-    
-    // Only log on first few calls to reduce noise
-    if call_count <= 2 {
-        eprintln!("🚀 GT-Next plugin: Analyzing AST for GT-Next translation violations...");
     }
     
     let mut visitor = TransformVisitor::default();
     let program = program.fold_with(&mut visitor);
-    
-    // Only show summary if we found GT-Next components
-    if visitor.gt_next_translation_imports.len() > 0 || visitor.gt_next_variable_imports.len() > 0 {
-        eprintln!("✅ GT-Next plugin: Found {} translation components, {} variable components", 
-            visitor.gt_next_translation_imports.len(), 
-            visitor.gt_next_variable_imports.len());
-    }
     
     program
 }
