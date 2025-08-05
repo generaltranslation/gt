@@ -160,6 +160,8 @@ export type AdditionalOptions = {
   experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files
   experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
   experimentalFlattenJsonFiles?: boolean; // Flattens JSON files into a single file
+  experimentalExcludeStaticUrls?: string[]; // A list of file globs to include for static url localization
+  experimentalExcludeStaticImports?: string[]; // A list of file globs to include for static import localization
 };
 
 export type JsonSchema = {

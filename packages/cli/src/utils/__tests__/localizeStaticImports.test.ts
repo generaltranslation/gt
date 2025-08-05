@@ -731,5 +731,392 @@ import { Table as DataTable } from '/ui/ja/table.mdx'
         await localizeStaticImports(settings as any);
       });
     });
+
+    describe('exclude parameter functionality', () => {
+      describe('with docsHideDefaultLocaleImport = false', () => {
+        it('should exclude import statements matching exact paths', async () => {
+          const fileContent = `
+import Guide from '/components/en/guide.mdx'  
+import Images from '/components/en/images.mdx'
+import API from '/components/en/api.mdx'
+`;
+          const expected = `
+import Guide from '/components/ja/guide.mdx'  
+import Images from '/components/en/images.mdx'
+import API from '/components/ja/api.mdx'
+`;
+
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+          vi.mocked(fs.promises.writeFile).mockImplementation(
+            (path, content) => {
+              expect(content).toBe(expected);
+              return Promise.resolve();
+            }
+          );
+
+          const mockFileMapping = {
+            ja: { 'test.mdx': '/path/test.mdx' },
+          };
+          vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+          const settings = {
+            files: {
+              placeholderPaths: { docs: '/docs' },
+              resolvedPaths: ['test'],
+              transformPaths: {},
+            },
+            defaultLocale: 'en',
+            locales: ['en', 'ja'],
+            options: {
+              docsHideDefaultLocaleImport: false,
+              docsImportPattern: '/components/[locale]',
+              experimentalExcludeStaticImports: ['/components/en/images.mdx'],
+            },
+          };
+
+          await localizeStaticImports(settings as any);
+        });
+
+        it('should exclude paths matching glob patterns', async () => {
+          const fileContent = `
+import Guide from '/components/en/guide.mdx'
+import Image1 from '/components/en/images/photo.mdx'  
+import Snippet from '/components/en/snippets/code.mdx'
+`;
+          const expected = `
+import Guide from '/components/ja/guide.mdx'
+import Image1 from '/components/en/images/photo.mdx'  
+import Snippet from '/components/en/snippets/code.mdx'
+`;
+
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+          vi.mocked(fs.promises.writeFile).mockImplementation(
+            (path, content) => {
+              expect(content).toBe(expected);
+              return Promise.resolve();
+            }
+          );
+
+          const mockFileMapping = {
+            ja: { 'test.mdx': '/path/test.mdx' },
+          };
+          vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+          const settings = {
+            files: {
+              placeholderPaths: { docs: '/docs' },
+              resolvedPaths: ['test'],
+              transformPaths: {},
+            },
+            defaultLocale: 'en',
+            locales: ['en', 'ja'],
+            options: {
+              docsHideDefaultLocaleImport: false,
+              docsImportPattern: '/components/[locale]',
+              experimentalExcludeStaticImports: [
+                '/components/en/images/**',
+                '/components/en/snippets/**',
+              ],
+            },
+          };
+
+          await localizeStaticImports(settings as any);
+        });
+
+        it('should handle [locale] placeholder in exclude patterns', async () => {
+          const fileContent = `
+import Guide from '/components/en/guide.mdx'
+import Images from '/components/en/images/logo.mdx'
+`;
+          const expected = `
+import Guide from '/components/ja/guide.mdx'
+import Images from '/components/en/images/logo.mdx'
+`;
+
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+          vi.mocked(fs.promises.writeFile).mockImplementation(
+            (path, content) => {
+              expect(content).toBe(expected);
+              return Promise.resolve();
+            }
+          );
+
+          const mockFileMapping = {
+            ja: { 'test.mdx': '/path/test.mdx' },
+          };
+          vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+          const settings = {
+            files: {
+              placeholderPaths: { docs: '/docs' },
+              resolvedPaths: ['test'],
+              transformPaths: {},
+            },
+            defaultLocale: 'en',
+            locales: ['en', 'ja'],
+            options: {
+              docsHideDefaultLocaleImport: false,
+              docsImportPattern: '/components/[locale]',
+              experimentalExcludeStaticImports: [
+                '/components/[locale]/images/**',
+              ],
+            },
+          };
+
+          await localizeStaticImports(settings as any);
+        });
+      });
+
+      describe('with docsHideDefaultLocaleImport = true', () => {
+        it('should exclude import statements matching exact paths', async () => {
+          const fileContent = `
+import Guide from '/components/guide.mdx'
+import Images from '/components/images.mdx'
+import API from '/components/api.mdx'
+`;
+          const expected = `
+import Guide from '/components/ja/guide.mdx'
+import Images from '/components/images.mdx'
+import API from '/components/ja/api.mdx'
+`;
+
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+          vi.mocked(fs.promises.writeFile).mockImplementation(
+            (path, content) => {
+              expect(content).toBe(expected);
+              return Promise.resolve();
+            }
+          );
+
+          const mockFileMapping = {
+            ja: { 'test.mdx': '/path/test.mdx' },
+          };
+          vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+          const settings = {
+            files: {
+              placeholderPaths: { docs: '/docs' },
+              resolvedPaths: ['test'],
+              transformPaths: {},
+            },
+            defaultLocale: 'en',
+            locales: ['en', 'ja'],
+            options: {
+              docsHideDefaultLocaleImport: true,
+              docsImportPattern: '/components/[locale]',
+              experimentalExcludeStaticImports: ['/components/images.mdx'],
+            },
+          };
+
+          await localizeStaticImports(settings as any);
+        });
+
+        it('should exclude paths matching glob patterns', async () => {
+          const fileContent = `
+import Guide from '/components/guide.mdx'
+import Image1 from '/components/images/photo.mdx'
+import Snippet from '/components/snippets/code.mdx'
+`;
+          const expected = `
+import Guide from '/components/ja/guide.mdx'
+import Image1 from '/components/images/photo.mdx'
+import Snippet from '/components/snippets/code.mdx'
+`;
+
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+          vi.mocked(fs.promises.writeFile).mockImplementation(
+            (path, content) => {
+              expect(content).toBe(expected);
+              return Promise.resolve();
+            }
+          );
+
+          const mockFileMapping = {
+            ja: { 'test.mdx': '/path/test.mdx' },
+          };
+          vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+          const settings = {
+            files: {
+              placeholderPaths: { docs: '/docs' },
+              resolvedPaths: ['test'],
+              transformPaths: {},
+            },
+            defaultLocale: 'en',
+            locales: ['en', 'ja'],
+            options: {
+              docsHideDefaultLocaleImport: true,
+              docsImportPattern: '/components/[locale]',
+              experimentalExcludeStaticImports: [
+                '/components/images/**',
+                '/components/snippets/**',
+              ],
+            },
+          };
+
+          await localizeStaticImports(settings as any);
+        });
+
+        it('should handle [locale] placeholder in exclude patterns with hideDefaultLocale', async () => {
+          const fileContent = `
+import Guide from '/components/guide.mdx'
+import Images from '/components/images/logo.mdx'
+`;
+          const expected = `
+import Guide from '/components/ja/guide.mdx'
+import Images from '/components/images/logo.mdx'
+`;
+
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+          vi.mocked(fs.promises.writeFile).mockImplementation(
+            (path, content) => {
+              expect(content).toBe(expected);
+              return Promise.resolve();
+            }
+          );
+
+          const mockFileMapping = {
+            ja: { 'test.mdx': '/path/test.mdx' },
+          };
+          vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+          const settings = {
+            files: {
+              placeholderPaths: { docs: '/docs' },
+              resolvedPaths: ['test'],
+              transformPaths: {},
+            },
+            defaultLocale: 'en',
+            locales: ['en', 'ja'],
+            options: {
+              docsHideDefaultLocaleImport: true,
+              docsImportPattern: '/components/[locale]',
+              experimentalExcludeStaticImports: ['/components/images/**'],
+            },
+          };
+
+          await localizeStaticImports(settings as any);
+        });
+      });
+
+      describe('edge cases for excludes', () => {
+        it('should work when exclude array is empty', async () => {
+          const fileContent = `import Guide from '/components/en/guide.mdx'`;
+          const expected = `import Guide from '/components/ja/guide.mdx'`;
+
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+          vi.mocked(fs.promises.writeFile).mockImplementation(
+            (path, content) => {
+              expect(content).toBe(expected);
+              return Promise.resolve();
+            }
+          );
+
+          const mockFileMapping = {
+            ja: { 'test.mdx': '/path/test.mdx' },
+          };
+          vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+          const settings = {
+            files: {
+              placeholderPaths: { docs: '/docs' },
+              resolvedPaths: ['test'],
+              transformPaths: {},
+            },
+            defaultLocale: 'en',
+            locales: ['en', 'ja'],
+            options: {
+              docsHideDefaultLocaleImport: false,
+              docsImportPattern: '/components/[locale]',
+              experimentalExcludeStaticImports: [],
+            },
+          };
+
+          await localizeStaticImports(settings as any);
+        });
+
+        it('should work when exclude parameter is undefined', async () => {
+          const fileContent = `import Guide from '/components/en/guide.mdx'`;
+          const expected = `import Guide from '/components/ja/guide.mdx'`;
+
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+          vi.mocked(fs.promises.writeFile).mockImplementation(
+            (path, content) => {
+              expect(content).toBe(expected);
+              return Promise.resolve();
+            }
+          );
+
+          const mockFileMapping = {
+            ja: { 'test.mdx': '/path/test.mdx' },
+          };
+          vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+          const settings = {
+            files: {
+              placeholderPaths: { docs: '/docs' },
+              resolvedPaths: ['test'],
+              transformPaths: {},
+            },
+            defaultLocale: 'en',
+            locales: ['en', 'ja'],
+            options: {
+              docsHideDefaultLocaleImport: false,
+              docsImportPattern: '/components/[locale]',
+              // experimentalExcludeStaticImports not provided
+            },
+          };
+
+          await localizeStaticImports(settings as any);
+        });
+
+        it('should handle complex glob patterns', async () => {
+          const fileContent = `
+import Image1 from '/components/en/images/photos/photo1.mdx'
+import Image2 from '/components/en/images/icons/icon.mdx'
+import Asset from '/components/en/assets/logo.mdx'
+import Guide from '/components/en/guide.mdx'
+`;
+          const expected = `
+import Image1 from '/components/en/images/photos/photo1.mdx'
+import Image2 from '/components/en/images/icons/icon.mdx'
+import Asset from '/components/en/assets/logo.mdx'
+import Guide from '/components/ja/guide.mdx'
+`;
+
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+          vi.mocked(fs.promises.writeFile).mockImplementation(
+            (path, content) => {
+              expect(content).toBe(expected);
+              return Promise.resolve();
+            }
+          );
+
+          const mockFileMapping = {
+            ja: { 'test.mdx': '/path/test.mdx' },
+          };
+          vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+          const settings = {
+            files: {
+              placeholderPaths: { docs: '/docs' },
+              resolvedPaths: ['test'],
+              transformPaths: {},
+            },
+            defaultLocale: 'en',
+            locales: ['en', 'ja'],
+            options: {
+              docsHideDefaultLocaleImport: false,
+              docsImportPattern: '/components/[locale]',
+              experimentalExcludeStaticImports: [
+                '/components/[locale]/{images,assets}/**',
+              ],
+            },
+          };
+
+          await localizeStaticImports(settings as any);
+        });
+      });
+    });
   });
 });

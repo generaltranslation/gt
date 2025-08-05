@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import { Options, Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
+import micromatch from 'micromatch';
+const { isMatch } = micromatch;
 
 /**
  * Localizes static urls in content files.
@@ -57,14 +59,16 @@ export default async function localizeStaticUrls(
             settings.defaultLocale,
             locale,
             settings.experimentalHideDefaultLocale || false,
-            settings.options?.docsUrlPattern
+            settings.options?.docsUrlPattern,
+            settings.options?.experimentalExcludeStaticUrls
           );
           const localizedFileHrefs = localizeStaticHrefsForFile(
             localizedFile,
             settings.defaultLocale,
             locale,
             settings.experimentalHideDefaultLocale || false,
-            settings.options?.docsUrlPattern
+            settings.options?.docsUrlPattern,
+            settings.options?.experimentalExcludeStaticUrls
           );
           // Write the localized file to the target path
           await fs.promises.writeFile(filePath, localizedFileHrefs);
@@ -80,7 +84,8 @@ function localizeStaticUrlsForFile(
   defaultLocale: string,
   targetLocale: string,
   hideDefaultLocale: boolean,
-  pattern: string = '/[locale]' // eg /docs/[locale] or /[locale]
+  pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
+  exclude: string[] = []
 ): string {
   if (!pattern.startsWith('/')) {
     pattern = '/' + pattern;
@@ -109,8 +114,24 @@ function localizeStaticUrlsForFile(
   if (!matches) {
     return file;
   }
+  exclude = exclude.map((pattern) =>
+    pattern.replace(/\[locale\]/g, defaultLocale)
+  );
   // 2. Replace the default locale with the target locale in all matched instances
   const localizedFile = file.replace(regex, (match, pathContent) => {
+    // Check if this path should be excluded from localization
+    if (exclude.length > 0) {
+      let matchPath = patternHead;
+      if (pathContent) {
+        matchPath = hideDefaultLocale
+          ? `${patternHead}${pathContent}`
+          : `${patternHead}${defaultLocale}/${pathContent}`;
+      }
+      if (exclude.some((pattern) => isMatch(matchPath, pattern))) {
+        return match; // Don't localize excluded paths
+      }
+    }
+
     if (hideDefaultLocale) {
       // For hideDefaultLocale, check if path already has target locale
       if (pathContent) {
@@ -140,7 +161,8 @@ function localizeStaticHrefsForFile(
   defaultLocale: string,
   targetLocale: string,
   hideDefaultLocale: boolean,
-  pattern: string = '/[locale]' // eg /docs/[locale] or /[locale]
+  pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
+  exclude: string[] = []
 ): string {
   if (!pattern.startsWith('/')) {
     pattern = '/' + pattern;
@@ -169,8 +191,24 @@ function localizeStaticHrefsForFile(
   if (!matches) {
     return file;
   }
+  exclude = exclude.map((pattern) =>
+    pattern.replace(/\[locale\]/g, defaultLocale)
+  );
   // 2. Replace the default locale with the target locale in all matched instances
   const localizedFile = file.replace(regex, (match, pathContent) => {
+    // Check if this path should be excluded from localization
+    if (exclude.length > 0) {
+      let matchPath = patternHead;
+      if (pathContent) {
+        matchPath = hideDefaultLocale
+          ? `${patternHead}${pathContent}`
+          : `${patternHead}${defaultLocale}/${pathContent}`;
+      }
+      if (exclude.some((pattern) => isMatch(matchPath, pattern))) {
+        return match; // Don't localize excluded paths
+      }
+    }
+
     if (hideDefaultLocale) {
       // For hideDefaultLocale, check if path already has target locale
       if (pathContent) {

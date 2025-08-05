@@ -60,6 +60,7 @@ export type TranslateOptions = {
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
+  experimentalExcludeStaticUrls?: string[];
 };
 
 export type LoginOptions = {
