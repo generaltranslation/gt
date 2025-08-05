@@ -344,36 +344,10 @@ export function withGTConfig(
   // experimental.turbo is deprecated in next@15.3.0.
   // Check for experimental.turbo. If we write to turbopack field, experimental fields will be ignored.
   // Yet, if there are other resolveAlias fields, we don't want to be ignored either.
-  let turboConfig = {};
-  if (turboPackEnabled) {
-    if (
-      turboConfigStable &&
-      (!nextConfig.experimental?.turbo || nextConfig.turbopack?.resolveAlias)
-    ) {
-      turboConfig = {
-        turbopack: {
-          ...nextConfig.turbopack,
-          resolveAlias: {
-            ...nextConfig.turbopack?.resolveAlias,
-            ...turboAliases,
-          },
-        },
-      };
-    } else {
-      turboConfig = {
-        experimental: {
-          ...nextConfig.experimental,
-          turbo: {
-            ...nextConfig.experimental?.turbo,
-            resolveAlias: {
-              ...nextConfig.experimental?.turbo?.resolveAlias,
-              ...turboAliases,
-            },
-          },
-        },
-      };
-    }
-  }
+  const experimentalTurbopack = !(
+    turboConfigStable &&
+    (!nextConfig.experimental?.turbo || nextConfig.turbopack?.resolveAlias)
+  );
 
   return {
     ...nextConfig,
@@ -399,15 +373,39 @@ export function withGTConfig(
       _GENERALTRANSLATION_CUSTOM_GET_LOCALE_ENABLED:
         customLocaleEnabled.toString(),
     },
-    // TODO: make sure experimental config doesn't get overwritten
+    ...(turboPackEnabled &&
+      !experimentalTurbopack && {
+        turbopack: {
+          ...nextConfig.turbopack,
+          resolveAlias: {
+            ...nextConfig.turbopack?.resolveAlias,
+            ...turboAliases,
+          },
+        },
+      }),
     experimental: {
       ...nextConfig.experimental,
+      // SWC Plugin
       swcPlugins: [
         ...(nextConfig.experimental?.swcPlugins || []),
-        [path.resolve(__dirname, './dist/swc_plugin.wasm'), {}], // you can pass plugin options here
+        [
+          path.resolve(__dirname, './gt_swc_plugin.wasm'),
+          {
+            ...mergedConfig.swcPluginOptions,
+          },
+        ], // you can pass plugin options here
       ],
+      ...(turboPackEnabled &&
+        experimentalTurbopack && {
+          turbo: {
+            ...nextConfig.experimental?.turbo,
+            resolveAlias: {
+              ...nextConfig.experimental?.turbo?.resolveAlias,
+              ...turboAliases,
+            },
+          },
+        }),
     },
-    ...turboConfig,
     webpack: function webpack(
       ...[webpackConfig, options]: Parameters<
         NonNullable<NextConfig['webpack']>

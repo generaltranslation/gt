@@ -20,7 +20,8 @@
   "scripts": {
     "patch": "npm version patch",
     "transpile": "tsc",
-    "build": "npm run transpile",
+    "build:swc-plugin": "cargo build --release --target wasm32-wasip1 --manifest-path ../swc-plugin/Cargo.toml && cp ../swc-plugin/target/wasm32-wasip1/release/gt_swc_plugin.wasm ./dist/gt_swc_plugin.wasm",
+    "build": "npm run build:swc-plugin && npm run transpile",
     "build:clean": "rm -rf dist; npm run build",
     "build:release": "npm run build:clean",
     "release": "npm run build:clean && npm publish",

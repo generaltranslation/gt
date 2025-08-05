@@ -35,6 +35,9 @@ const defaultWithGTConfigProps = {
     localeRoutingEnabledCookieName: defaultLocaleRoutingEnabledCookieName,
     resetLocaleCookieName: defaultResetLocaleCookieName,
   },
+  swcPluginOptions: {
+    disableDynamicContentCheck: false,
+  },
 } as const;
 
 export default defaultWithGTConfigProps;

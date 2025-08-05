@@ -9,6 +9,10 @@ export type HeadersAndCookies = {
   resetLocaleCookieName?: string;
 };
 
+export type SwcPluginOptions = {
+  disableDynamicContentCheck?: boolean;
+};
+
 type withGTConfigProps = {
   // Request scoped filepath
   dictionary?: string;
@@ -40,6 +44,7 @@ type withGTConfigProps = {
   // Translation assistance
   description?: string;
   // Other
+  swcPluginOptions?: SwcPluginOptions;
   headersAndCookies?: HeadersAndCookies;
   _usingPlugin?: boolean;
   [key: string]: any;

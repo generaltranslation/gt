@@ -6,9 +6,20 @@ use swc_core::ecma::{
 use swc_core::plugin::{plugin_transform, proxies::TransformPluginProgramMetadata};
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use swc_core::plugin::metadata::TransformPluginMetadataContextKind;
+use serde::Deserialize;
 
 // Global counter to detect infinite loops
 static CALL_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+/// Plugin configuration options
+#[derive(Deserialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+struct PluginConfig {
+    /// When true, disables dynamic content checking entirely
+    #[serde(default)]
+    disable_dynamic_content_check: bool,
+}
 
 /// GT-Next SWC plugin that detects dynamic content in translation components 
 /// that isn't wrapped in variable components.
@@ -33,19 +44,35 @@ pub struct TransformVisitor {
     gt_next_variable_imports: HashSet<Atom>,
     /// Maps namespace import names to GT-Next modules (e.g., "GT" from import * as GT)
     gt_next_namespace_imports: HashSet<Atom>,
+    /// Maps variable names assigned from GT-Next translation components (e.g., "MyT" from const MyT = T)
+    gt_assigned_translation_components: HashSet<Atom>,
+    /// Maps variable names assigned from GT-Next variable components (e.g., "MyVar" from const MyVar = Var)
+    gt_assigned_variable_components: HashSet<Atom>,
     /// Debug counter to track JSX elements processed
     jsx_element_count: usize,
+    /// When true, disables all dynamic content checking
+    disable_dynamic_content_check: bool,
 }
 
 impl Default for TransformVisitor {
     fn default() -> Self {
+        Self::new(false)
+    }
+}
+
+impl TransformVisitor {
+    /// Create a new TransformVisitor with the specified configuration
+    fn new(disable_dynamic_content_check: bool) -> Self {
         Self {
             in_translation_component: false,
             in_variable_component: false,
             gt_next_translation_imports: HashSet::new(),
             gt_next_variable_imports: HashSet::new(),
             gt_next_namespace_imports: HashSet::new(),
+            gt_assigned_translation_components: HashSet::new(),
+            gt_assigned_variable_components: HashSet::new(),
             jsx_element_count: 0,
+            disable_dynamic_content_check,
         }
     }
 }
@@ -104,6 +131,12 @@ impl Fold for TransformVisitor {
                 } else if self.gt_next_variable_imports.contains(&ident.sym) {
                     self.in_variable_component = true;
                 }
+                // Handle assigned variables: <MyT>, <MyVar>, etc.
+                else if self.gt_assigned_translation_components.contains(&ident.sym) {
+                    self.in_translation_component = true;
+                } else if self.gt_assigned_variable_components.contains(&ident.sym) {
+                    self.in_variable_component = true;
+                }
             }
             JSXElementName::JSXMemberExpr(member_expr) => {
                 // Handle namespace imports: <GT.T>, <GT.Var>, etc.
@@ -136,14 +169,39 @@ impl Fold for TransformVisitor {
     
     // Step 3: Add JSX expression container detection for unwrapped dynamic content
     fn fold_jsx_expr_container(&mut self, expr: JSXExprContainer) -> JSXExprContainer {
-        // Only warn if we're inside a translation component but NOT inside a variable component
-        if self.in_translation_component && !self.in_variable_component {
+        // Only warn if dynamic content checking is enabled and we're inside a translation component but NOT inside a variable component
+        if !self.disable_dynamic_content_check && self.in_translation_component && !self.in_variable_component {
             eprintln!("GT-Next plugin: Found unwrapped dynamic content in translation component");
             eprintln!("    Tip: Wrap dynamic content in <Var>, <DateTime>, <Num>, or <Currency> components");
         }
         
         // Continue processing children
         expr.fold_children_with(self)
+    }
+    
+    /// Processes variable declarations to track assignments from GT-Next components
+    /// Handles patterns like: const MyT = T; const MyVar = Var;
+    fn fold_var_declarator(&mut self, declarator: VarDeclarator) -> VarDeclarator {
+        // Check if this is a simple assignment from a GT-Next component
+        if let Some(init) = &declarator.init {
+            if let Expr::Ident(ident) = init.as_ref() {
+                // Get the variable name being declared
+                if let Pat::Ident(binding_ident) = &declarator.name {
+                    let var_name = &binding_ident.id.sym;
+                    let assigned_from = &ident.sym;
+                    
+                    // Check if it's assigned from a tracked GT-Next import
+                    if self.gt_next_translation_imports.contains(assigned_from) {
+                        self.gt_assigned_translation_components.insert(var_name.clone());
+                    } else if self.gt_next_variable_imports.contains(assigned_from) {
+                        self.gt_assigned_variable_components.insert(var_name.clone());
+                    }
+                }
+            }
+        }
+        
+        // Continue processing (unchanged)
+        declarator
     }
 }
 
@@ -170,8 +228,9 @@ impl TransformVisitor {
 /// 
 /// This function is called by the SWC compiler with the parsed AST.
 /// It applies the TransformVisitor to detect unwrapped dynamic content in <T> components.
+/// Accepts plugin configuration to enable/disable dynamic content checking.
 #[plugin_transform]
-pub fn process_transform(program: Program, _metadata: TransformPluginProgramMetadata) -> Program {
+pub fn process_transform(program: Program, metadata: TransformPluginProgramMetadata) -> Program {
     let call_count = CALL_COUNTER.fetch_add(1, Ordering::SeqCst);
     
     // Emergency brake: if we've been called too many times, just return the program unchanged
@@ -179,7 +238,14 @@ pub fn process_transform(program: Program, _metadata: TransformPluginProgramMeta
         return program;
     }
     
-    let mut visitor = TransformVisitor::default();
+    // Parse plugin configuration
+    let config = metadata
+        .get_context(&TransformPluginMetadataContextKind::Filename)
+        .and_then(|_| metadata.get_transform_plugin_config())
+        .and_then(|config_str| serde_json::from_str::<PluginConfig>(&config_str).ok())
+        .unwrap_or_default();
+    
+    let mut visitor = TransformVisitor::new(config.disable_dynamic_content_check);
     let program = program.fold_with(&mut visitor);
     
     program
@@ -259,6 +325,37 @@ mod tests {
         // Should not contain untracked namespaces
         let react_atom = Atom::from("React");
         assert!(!visitor.gt_next_namespace_imports.contains(&react_atom));
+    }
+
+    #[test]
+    fn test_variable_assignment_tracking() {
+        let mut visitor = TransformVisitor::default();
+        
+        // Initially, no assigned variables should be tracked
+        assert!(visitor.gt_assigned_translation_components.is_empty());
+        assert!(visitor.gt_assigned_variable_components.is_empty());
+        
+        // Set up some imported components first (simulating imports)
+        let t_atom = Atom::from("T");
+        let var_atom = Atom::from("Var");
+        visitor.gt_next_translation_imports.insert(t_atom.clone());
+        visitor.gt_next_variable_imports.insert(var_atom.clone());
+        
+        // Simulate variable assignment processing (this would normally happen in fold_var_declarator)
+        let my_t_atom = Atom::from("MyT");
+        let my_var_atom = Atom::from("MyVar");
+        
+        visitor.gt_assigned_translation_components.insert(my_t_atom.clone());
+        visitor.gt_assigned_variable_components.insert(my_var_atom.clone());
+        
+        // Verify assigned variables are tracked
+        assert!(visitor.gt_assigned_translation_components.contains(&my_t_atom));
+        assert!(visitor.gt_assigned_variable_components.contains(&my_var_atom));
+        
+        // Should not contain untracked assignments
+        let unrelated_atom = Atom::from("SomeOtherComponent");
+        assert!(!visitor.gt_assigned_translation_components.contains(&unrelated_atom));
+        assert!(!visitor.gt_assigned_variable_components.contains(&unrelated_atom));
     }
 
 }
