@@ -11,7 +11,7 @@ import { recommended } from './configs/recommended';
 
 const plugin = {
   meta: {
-    name: 'eslint-plugin-gt-next',
+    name: '@generaltranslation/gt-next-lint',
     version: '1.0.0',
   },
   rules: {

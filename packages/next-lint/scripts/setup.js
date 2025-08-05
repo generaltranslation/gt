@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Post-install setup script for eslint-plugin-gt-next
+ * Post-install setup script for @generaltranslation/gt-next-lint
  * Helps users set up the plugin automatically
  */
 
@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 function setupESLintPlugin() {
-  console.log('🔧 Setting up eslint-plugin-gt-next...');
+  console.log('🔧 Setting up @generaltranslation/gt-next-lint...');
   
   const packageJsonPath = path.resolve(process.cwd(), 'package.json');
   const eslintConfigPath = path.resolve(process.cwd(), 'eslint.config.mjs');
@@ -17,12 +17,12 @@ function setupESLintPlugin() {
   let needsDevDep = false;
   let needsESLintConfig = false;
   
-  // Check if eslint-plugin-gt-next is in devDependencies
+  // Check if @generaltranslation/gt-next-lint is in devDependencies
   if (fs.existsSync(packageJsonPath)) {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
     const devDeps = packageJson.devDependencies || {};
     
-    if (!devDeps['eslint-plugin-gt-next']) {
+    if (!devDeps['@generaltranslation/gt-next-lint']) {
       needsDevDep = true;
     }
   }
@@ -37,16 +37,16 @@ function setupESLintPlugin() {
     
     if (needsDevDep) {
       console.log('1. Add the plugin to your devDependencies:');
-      console.log('   npm install --save-dev eslint-plugin-gt-next');
+      console.log('   npm install --save-dev @generaltranslation/gt-next-lint');
       console.log('   # or');
-      console.log('   yarn add --dev eslint-plugin-gt-next');
+      console.log('   yarn add --dev @generaltranslation/gt-next-lint');
     }
     
     if (needsESLintConfig) {
       console.log('2. The ESLint plugin will be automatically configured when you use withGTConfig()');
       console.log('   Or manually create eslint.config.mjs:');
       console.log(`
-import gtNext from 'eslint-plugin-gt-next';
+import gtNext from '@generaltranslation/gt-next-lint';
 
 export default [
   {
@@ -72,7 +72,7 @@ export default [
     
     console.log('\n✅ Setup complete! The plugin will automatically detect unwrapped dynamic content in <T> components.');
   } else {
-    console.log('✅ eslint-plugin-gt-next is already set up!');
+    console.log('✅ @generaltranslation/gt-next-lint is already set up!');
   }
 }
 

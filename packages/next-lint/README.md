@@ -1,4 +1,4 @@
-# eslint-plugin-gt-next
+# @generaltranslation/gt-next-lint
 
 ESLint plugin for General Translation Next.js integration. Provides automatic linting for GT-Next translation components to catch common mistakes and ensure proper usage.
 
@@ -12,30 +12,63 @@ ESLint plugin for General Translation Next.js integration. Provides automatic li
 
 ## Installation
 
+### Automatic Setup (Recommended)
+
+If you're already using `gt-next`, the ESLint plugin will be automatically configured when you install it:
+
 ```bash
-npm install --save-dev eslint-plugin-gt-next
+npm install --save-dev @generaltranslation/gt-next-lint
+# or  
+yarn add --dev @generaltranslation/gt-next-lint
 ```
 
-## Usage
+The plugin works automatically with your existing `withGTConfig` setup. No additional configuration needed!
 
-### Quick Start
+### Manual Setup
 
-Add the plugin to your ESLint configuration:
+If you want to configure it manually, add the plugin to your ESLint configuration:
 
 ```javascript
 // eslint.config.mjs
-import gtNext from 'eslint-plugin-gt-next';
+import gtNext from '@generaltranslation/gt-next-lint';
 
 export default [
   {
+    files: ['**/*.{js,jsx,ts,tsx}'],
     plugins: {
       'gt-next': gtNext,
     },
     rules: {
       'gt-next/no-unwrapped-dynamic-content': 'warn',
     },
+    languageOptions: {
+      ecmaVersion: 2020,
+      sourceType: 'module',
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+    },
   },
 ];
+```
+
+### withGTConfig Integration
+
+You can customize the ESLint integration in your Next.js config:
+
+```javascript
+// next.config.mjs
+import { withGTConfig } from 'gt-next/config';
+
+export default withGTConfig(nextConfig, {
+  projectId: 'your-project-id',
+  // ESLint options
+  eslint: true, // Enable ESLint integration (default: true)
+  eslintSeverity: 'error', // 'error' or 'warn' (default: 'warn')
+  overwriteESLintConfig: false, // Overwrite existing eslint.config.mjs (default: false)
+});
 ```
 
 ### Using Recommended Configuration
@@ -44,7 +77,7 @@ For the easiest setup, use the recommended configuration:
 
 ```javascript
 // eslint.config.mjs
-import gtNext from 'eslint-plugin-gt-next';
+import gtNext from '@generaltranslation/gt-next-lint';
 
 export default [
   gtNext.configs.recommended,
@@ -157,7 +190,7 @@ This ESLint plugin works perfectly alongside the GT-Next package:
 3. **Add ESLint Plugin**:
    ```javascript
    // eslint.config.mjs
-   import gtNext from 'eslint-plugin-gt-next';
+   import gtNext from '@generaltranslation/gt-next-lint';
    
    export default [gtNext.configs.recommended];
    ```
@@ -185,7 +218,7 @@ The plugin works seamlessly in monorepo setups:
 
 ```javascript
 // packages/app/eslint.config.mjs
-import gtNext from 'eslint-plugin-gt-next';
+import gtNext from '@generaltranslation/gt-next-lint';
 
 export default [
   {

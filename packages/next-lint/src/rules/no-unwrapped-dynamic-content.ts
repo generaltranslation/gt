@@ -34,7 +34,7 @@ export const noUnwrappedDynamicContent: Rule.RuleModule = {
         'Detect unwrapped dynamic content in GT-Next translation components',
       category: 'Best Practices',
       recommended: true,
-      url: 'https://github.com/generaltranslation/gt/tree/main/packages/eslint-plugin#no-unwrapped-dynamic-content',
+      url: 'https://github.com/generaltranslation/gt/tree/main/packages/next-lint#no-unwrapped-dynamic-content',
     },
     fixable: undefined,
     schema: [

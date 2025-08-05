@@ -1,11 +1,12 @@
 {
-  "name": "eslint-plugin-gt-next",
+  "name": "@generaltranslation/gt-next-lint",
   "version": "1.0.0",
   "description": "ESLint plugin for General Translation Next.js integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "scripts"
   ],
   "keywords": [
     "eslint",
@@ -24,7 +25,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/generaltranslation/gt.git",
-    "directory": "packages/eslint-plugin"
+    "directory": "packages/next-lint"
   },
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
@@ -41,7 +42,8 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "test": "jest",
     "test:watch": "jest --watch",
-    "prepublishOnly": "npm run build:clean"
+    "prepublishOnly": "npm run build:clean",
+    "postinstall": "node scripts/setup.js"
   },
   "peerDependencies": {
     "eslint": "^8.0.0 || ^9.0.0"
