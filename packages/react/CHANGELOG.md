@@ -1,5 +1,11 @@
 # gt-react
 
+## 10.0.9
+
+### Patch Changes
+
+- [#537](https://github.com/generaltranslation/gt/pull/537) [`2c690df`](https://github.com/generaltranslation/gt/commit/2c690dfcd47498133c8be2235da342ae684f7663) Thanks [@SamEggert](https://github.com/SamEggert)! - Update branch prop type to accept strings, numbers, and booleans
+
 ## 10.0.8
 
 ### Patch Changes
