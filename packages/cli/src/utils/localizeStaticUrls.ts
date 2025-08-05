@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import { Options, Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
+import { logWarning } from '../console/logging.js';
 const { isMatch } = micromatch;
 
 /**
@@ -119,8 +120,8 @@ function localizeStaticUrlsForFile(
   );
   // 2. Replace the default locale with the target locale in all matched instances
   const localizedFile = file.replace(regex, (match, pathContent) => {
-    // Check if this path should be excluded from localization
     if (exclude.length > 0) {
+      // Check if this path should be excluded from localization
       let matchPath = patternHead;
       if (pathContent) {
         matchPath = hideDefaultLocale

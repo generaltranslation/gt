@@ -13,6 +13,7 @@ import {
   startCommand,
   createSpinner,
   logMessage,
+  logWarning,
 } from '../console/logging.js';
 import path from 'node:path';
 import fs from 'node:fs';
