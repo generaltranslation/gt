@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-test",
-  "version": "1.0.0",
+  "version": "0.0.0-alpha.0",
   "private": true,
   "scripts": {
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
