@@ -150,7 +150,8 @@ function localizeStaticUrlsForFile(
     } else {
       // For non-hideDefaultLocale, replace defaultLocale with targetLocale
       // pathContent contains everything after the default locale (no leading slash if present)
-      return `](${patternHead}${targetLocale}${pathContent ? '/' + pathContent : ''})`;
+      const result = `](${patternHead}${targetLocale}${pathContent ? '/' + pathContent : ''})`;
+      return result;
     }
   });
   return localizedFile;

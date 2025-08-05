@@ -164,13 +164,17 @@ export async function generateSettings(
   mergedOptions = {
     ...mergedOptions,
     experimentalLocalizeStaticImports:
-      gtConfig.options?.experimentalLocalizeStaticImports,
+      gtConfig.options?.experimentalLocalizeStaticImports ||
+      gtConfig.experimentalLocalizeStaticImports,
     experimentalLocalizeStaticUrls:
-      gtConfig.options?.experimentalLocalizeStaticUrls,
+      gtConfig.options?.experimentalLocalizeStaticUrls ||
+      gtConfig.experimentalLocalizeStaticUrls,
     experimentalHideDefaultLocale:
-      gtConfig.options?.experimentalHideDefaultLocale,
+      gtConfig.options?.experimentalHideDefaultLocale ||
+      gtConfig.experimentalHideDefaultLocale,
     experimentalFlattenJsonFiles:
-      gtConfig.options?.experimentalFlattenJsonFiles,
+      gtConfig.options?.experimentalFlattenJsonFiles ||
+      gtConfig.experimentalFlattenJsonFiles,
   };
 
   // Add additional options if provided
