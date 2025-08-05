@@ -58,8 +58,8 @@ export const noUnwrappedDynamicContent: Rule.RuleModule = {
 
   create(context) {
     const state = {
-      inTranslationComponent: false,
-      inVariableComponent: false,
+      translationStack: 0,
+      variableStack: 0,
       imports: {
         translationComponents: new Set<string>(),
         variableComponents: new Set<string>(),
@@ -158,58 +158,42 @@ export const noUnwrappedDynamicContent: Rule.RuleModule = {
         }
       },
 
-      // Track when entering JSX elements
-      'JSXElement:enter'(node: any) {
-        const elementName = getElementName(node);
-
-        if (elementName) {
-          // Check direct imports
-          if (
-            state.imports.translationComponents.has(elementName) ||
-            state.imports.assignedTranslationComponents.has(elementName)
-          ) {
-            state.inTranslationComponent = true;
-          } else if (
-            state.imports.variableComponents.has(elementName) ||
-            state.imports.assignedVariableComponents.has(elementName)
-          ) {
-            state.inVariableComponent = true;
-          }
-          // Check namespace imports
-          else if (isNamespaceTranslationComponent(elementName)) {
-            state.inTranslationComponent = true;
-          } else if (isNamespaceVariableComponent(elementName)) {
-            state.inVariableComponent = true;
-          }
-        }
-      },
-
-      // Track when exiting JSX elements
-      'JSXElement:exit'(node: any) {
-        const elementName = getElementName(node);
-
-        if (elementName) {
-          // Reset flags when exiting components
-          if (
-            state.imports.translationComponents.has(elementName) ||
-            state.imports.assignedTranslationComponents.has(elementName) ||
-            isNamespaceTranslationComponent(elementName)
-          ) {
-            state.inTranslationComponent = false;
-          } else if (
-            state.imports.variableComponents.has(elementName) ||
-            state.imports.assignedVariableComponents.has(elementName) ||
-            isNamespaceVariableComponent(elementName)
-          ) {
-            state.inVariableComponent = false;
-          }
-        }
-      },
-
       // Detect unwrapped dynamic content
       JSXExpressionContainer(node: any) {
-        // Only report if we're inside a translation component but NOT inside a variable component
-        if (state.inTranslationComponent && !state.inVariableComponent) {
+        // Check if this expression is inside a translation component but not inside a variable component
+        let inTranslationComponent = false;
+        let inVariableComponent = false;
+
+        // Walk up the AST to find parent JSX elements
+        let currentNode = node.parent;
+        while (currentNode) {
+          if (currentNode.type === 'JSXElement') {
+            const elementName = getElementName(currentNode);
+            if (elementName) {
+              // Check if this is a variable component
+              if (
+                state.imports.variableComponents.has(elementName) ||
+                state.imports.assignedVariableComponents.has(elementName) ||
+                isNamespaceVariableComponent(elementName)
+              ) {
+                inVariableComponent = true;
+                break; // If we find a variable component, we don't need to check further
+              }
+              // Check if this is a translation component
+              else if (
+                state.imports.translationComponents.has(elementName) ||
+                state.imports.assignedTranslationComponents.has(elementName) ||
+                isNamespaceTranslationComponent(elementName)
+              ) {
+                inTranslationComponent = true;
+              }
+            }
+          }
+          currentNode = currentNode.parent;
+        }
+
+        // Report if we're inside a translation component but not inside a variable component
+        if (inTranslationComponent && !inVariableComponent) {
           context.report({
             node,
             messageId: 'unwrappedDynamicContent',

@@ -10,7 +10,7 @@ export type HeadersAndCookies = {
 };
 
 export type SwcPluginOptions = {
-  dynamicContentCheckLogLevel?: 'warn';
+  dynamicContentCheckLogLevel?: 'error' | 'warn' | 'off';
 };
 
 type withGTConfigProps = {
@@ -43,6 +43,10 @@ type withGTConfigProps = {
   batchInterval?: number; // ms
   // Translation assistance
   description?: string;
+  // ESLint integration
+  eslint?: boolean; // Enable/disable ESLint config generation (default: true)
+  eslintSeverity?: 'error' | 'warn'; // Severity level for ESLint rules (default: 'warn')
+  overwriteESLintConfig?: boolean; // Allow overwriting existing eslint.config.mjs (default: false)
   // Other
   swcPluginOptions?: SwcPluginOptions;
   headersAndCookies?: HeadersAndCookies;

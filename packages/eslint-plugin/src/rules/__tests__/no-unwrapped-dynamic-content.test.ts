@@ -3,7 +3,7 @@
  */
 
 import { RuleTester } from 'eslint';
-import { noUnwrappedDynamicContent } from '../rules/no-unwrapped-dynamic-content';
+import { noUnwrappedDynamicContent } from '../no-unwrapped-dynamic-content';
 
 // Configure RuleTester with JSX support
 const ruleTester = new RuleTester({

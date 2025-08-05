@@ -68,7 +68,7 @@ pub struct TransformVisitor {
     /// Log level for dynamic content checking
     log_level: LogLevel,
     /// Counter to track if any warnings were issued
-    warnings_issued: usize,
+    dynamic_content_violations: usize,
     /// Current file name for warning context (relative to project root)
     current_filename: Option<String>,
 }
@@ -95,7 +95,7 @@ impl TransformVisitor {
             gt_assigned_variable_components: HashSet::new(),
             jsx_element_count: 0,
             log_level,
-            warnings_issued: 0,
+            dynamic_content_violations: 0,
             current_filename: relative_filename,
         }
     }
@@ -227,7 +227,7 @@ impl Fold for TransformVisitor {
     fn fold_jsx_expr_container(&mut self, expr: JSXExprContainer) -> JSXExprContainer {
         // Only process if log level is not 'off' and we're inside a translation component but NOT inside a variable component
         if self.log_level != LogLevel::Off && self.in_translation_component && !self.in_variable_component {
-            self.warnings_issued += 1;
+            self.dynamic_content_violations += 1;
             
             // Get location information
             let byte_pos = expr.span.lo.0 as usize;
@@ -330,8 +330,13 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     let program = program.fold_with(&mut visitor);
     
     // If warnings were issued, show deprecation notice (only for warn level)
-    if visitor.warnings_issued > 0 && visitor.log_level == LogLevel::Warn {
+    if visitor.dynamic_content_violations > 0 && visitor.log_level == LogLevel::Warn {
         eprintln!("gt-next: Warning: unwrapped dynamic content warnings will default to triggering a build error in the next major version.");
+    }
+    // Fail the build if errors were encountered at error log level
+    if visitor.dynamic_content_violations > 0 && visitor.log_level == LogLevel::Error {
+        eprintln!("gt-next: Build failed! Found {} unwrapped dynamic content error(s).", visitor.dynamic_content_violations);
+        panic!("gt-next: Build failed due to unwrapped dynamic content errors. Fix the errors above to continue.");
     }
     
     program
