@@ -10,7 +10,7 @@ export type HeadersAndCookies = {
 };
 
 export type SwcPluginOptions = {
-  disableDynamicContentCheck?: boolean;
+  dynamicContentCheckLogLevel?: 'warn';
 };
 
 type withGTConfigProps = {

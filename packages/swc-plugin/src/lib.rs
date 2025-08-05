@@ -12,13 +12,28 @@ use serde::Deserialize;
 // Global counter to detect infinite loops
 static CALL_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
+/// Log level for dynamic content checking
+#[derive(Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+enum LogLevel {
+    Warn,
+    Error,
+    Off,
+}
+
+impl Default for LogLevel {
+    fn default() -> Self {
+        LogLevel::Warn
+    }
+}
+
 /// Plugin configuration options
 #[derive(Deserialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 struct PluginConfig {
-    /// When true, disables dynamic content checking entirely
+    /// Log level for dynamic content checking: 'warn' | 'error' | 'off'
     #[serde(default)]
-    disable_dynamic_content_check: bool,
+    dynamic_content_check_log_level: LogLevel,
 }
 
 /// GT-Next SWC plugin that detects dynamic content in translation components 
@@ -50,19 +65,26 @@ pub struct TransformVisitor {
     gt_assigned_variable_components: HashSet<Atom>,
     /// Debug counter to track JSX elements processed
     jsx_element_count: usize,
-    /// When true, disables all dynamic content checking
-    disable_dynamic_content_check: bool,
+    /// Log level for dynamic content checking
+    log_level: LogLevel,
+    /// Counter to track if any warnings were issued
+    warnings_issued: usize,
+    /// Current file name for warning context (relative to project root)
+    current_filename: Option<String>,
 }
 
 impl Default for TransformVisitor {
     fn default() -> Self {
-        Self::new(false)
+        Self::new(LogLevel::Warn, None)
     }
 }
 
 impl TransformVisitor {
     /// Create a new TransformVisitor with the specified configuration
-    fn new(disable_dynamic_content_check: bool) -> Self {
+    fn new(log_level: LogLevel, filename: Option<String>) -> Self {
+        // Convert absolute path to relative path for cleaner output
+        let relative_filename = filename.map(|path| Self::make_relative_path(&path));
+        
         Self {
             in_translation_component: false,
             in_variable_component: false,
@@ -72,8 +94,42 @@ impl TransformVisitor {
             gt_assigned_translation_components: HashSet::new(),
             gt_assigned_variable_components: HashSet::new(),
             jsx_element_count: 0,
-            disable_dynamic_content_check,
+            log_level,
+            warnings_issued: 0,
+            current_filename: relative_filename,
         }
+    }
+    
+    /// Convert absolute path to relative path for cleaner error messages
+    /// Removes common prefixes like /Users/username/project/ to show just src/app/page.tsx
+    fn make_relative_path(absolute_path: &str) -> String {
+        // Look for common project structure markers to determine relative path
+        let markers = [
+            "/src/",
+            "/app/", 
+            "/pages/",
+            "/components/",
+            "/lib/",
+        ];
+        
+        // Try to find a marker and return everything from that point
+        for marker in &markers {
+            if let Some(pos) = absolute_path.find(marker) {
+                return absolute_path[pos + 1..].to_string(); // +1 to remove leading slash
+            }
+        }
+        
+        // If no markers found, try to extract just the filename and immediate parent
+        if let Some(last_slash) = absolute_path.rfind('/') {
+            if let Some(second_last_slash) = absolute_path[..last_slash].rfind('/') {
+                return absolute_path[second_last_slash + 1..].to_string();
+            }
+            // Just return filename if only one directory level
+            return absolute_path[last_slash + 1..].to_string();
+        }
+        
+        // Fallback to original path if we can't parse it
+        absolute_path.to_string()
     }
 }
 
@@ -169,10 +225,30 @@ impl Fold for TransformVisitor {
     
     // Step 3: Add JSX expression container detection for unwrapped dynamic content
     fn fold_jsx_expr_container(&mut self, expr: JSXExprContainer) -> JSXExprContainer {
-        // Only warn if dynamic content checking is enabled and we're inside a translation component but NOT inside a variable component
-        if !self.disable_dynamic_content_check && self.in_translation_component && !self.in_variable_component {
-            eprintln!("GT-Next plugin: Found unwrapped dynamic content in translation component");
-            eprintln!("    Tip: Wrap dynamic content in <Var>, <DateTime>, <Num>, or <Currency> components");
+        // Only process if log level is not 'off' and we're inside a translation component but NOT inside a variable component
+        if self.log_level != LogLevel::Off && self.in_translation_component && !self.in_variable_component {
+            self.warnings_issued += 1;
+            
+            // Get location information
+            let byte_pos = expr.span.lo.0 as usize;
+            let location_info = if let Some(filename) = &self.current_filename {
+                format!("{}:byte-{}", filename, byte_pos)
+            } else {
+                format!("byte offset {}", byte_pos)
+            };
+            
+            // Output message based on log level
+            match self.log_level {
+                LogLevel::Warn => {
+                    eprintln!("gt-next: Warning: found unwrapped dynamic content in translation component at {}. Wrap dynamic content in <Var>, <DateTime>, <Num>, or <Currency> components.", location_info);
+                }
+                LogLevel::Error => {
+                    eprintln!("gt-next: Error: found unwrapped dynamic content in translation component at {}. Wrap dynamic content in <Var>, <DateTime>, <Num>, or <Currency> components.", location_info);
+                }
+                LogLevel::Off => {
+                    // This case shouldn't be reached due to the check above, but handle it for completeness
+                }
+            }
         }
         
         // Continue processing children
@@ -245,8 +321,18 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
         .and_then(|config_str| serde_json::from_str::<PluginConfig>(&config_str).ok())
         .unwrap_or_default();
     
-    let mut visitor = TransformVisitor::new(config.disable_dynamic_content_check);
+    // Get filename for better error reporting
+    let filename = metadata
+        .get_context(&TransformPluginMetadataContextKind::Filename)
+        .map(|f| f.to_string());
+    
+    let mut visitor = TransformVisitor::new(config.dynamic_content_check_log_level.clone(), filename);
     let program = program.fold_with(&mut visitor);
+    
+    // If warnings were issued, show deprecation notice (only for warn level)
+    if visitor.warnings_issued > 0 && visitor.log_level == LogLevel::Warn {
+        eprintln!("gt-next: Warning: unwrapped dynamic content warnings will default to triggering a build error in the next major version.");
+    }
     
     program
 }
