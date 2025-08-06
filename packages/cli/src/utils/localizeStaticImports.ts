@@ -122,6 +122,8 @@ function localizeStaticImportsForFile(
       // Check if this path should be excluded from localization
       if (exclude.length > 0) {
         let matchPath = '';
+        // let matchPath = patternHead;
+
         if (pathContent) {
           matchPath = hideDefaultLocale
             ? `${patternHead}${pathContent}`

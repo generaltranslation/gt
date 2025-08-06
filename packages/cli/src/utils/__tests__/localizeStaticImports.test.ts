@@ -1040,11 +1040,11 @@ import Images from '/components/images/logo.mdx'
         it('should handle [locale] placeholder without pathContent with a default locale import', async () => {
           const fileContent = `
 import Guide from '/components'
-import Images from '/components/images/logo.mdx'
+import Images from '/components/en/images/logo.mdx'
 `;
           const expected = `
 import Guide from '/components/ja'
-import Images from '/components/images/logo.mdx'
+import Images from '/components/en/images/logo.mdx'
 `;
 
           vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
@@ -1071,7 +1071,7 @@ import Images from '/components/images/logo.mdx'
             options: {
               docsHideDefaultLocaleImport: true,
               docsImportPattern: '/components/[locale]',
-              excludeStaticImports: ['/components/images/**'],
+              excludeStaticImports: ['/components/[locale]/images/**'],
             },
           };
 
