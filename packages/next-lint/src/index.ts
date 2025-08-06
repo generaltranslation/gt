@@ -6,8 +6,8 @@
  * and provides better error reporting with file locations and line numbers.
  */
 
-import { noUnwrappedDynamicContent } from './rules/no-unwrapped-dynamic-content';
-import { noDynamicTranslationStrings } from './rules/no-dynamic-translation-strings';
+import { noDynamicJsx } from './rules/no-dynamic-jsx';
+import { noDynamicString } from './rules/no-dynamic-string';
 import { recommended } from './configs/recommended';
 
 const plugin = {
@@ -16,8 +16,8 @@ const plugin = {
     version: '1.0.0',
   },
   rules: {
-    'no-unwrapped-dynamic-content': noUnwrappedDynamicContent,
-    'no-dynamic-translation-strings': noDynamicTranslationStrings,
+    'no-dynamic-jsx': noDynamicJsx,
+    'no-dynamic-string': noDynamicString,
   },
   configs: {
     recommended,

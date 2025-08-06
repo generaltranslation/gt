@@ -1,5 +1,5 @@
 /**
- * ESLint rule: no-unwrapped-dynamic-content
+ * ESLint rule: no-dynamic-jsx
  *
  * Detects unwrapped dynamic content in GT-Next translation components.
  * Equivalent to the SWC plugin functionality but with proper ESLint error reporting.
@@ -26,7 +26,7 @@ function isVariableComponent(name: string): boolean {
   return VARIABLE_COMPONENTS.includes(name);
 }
 
-export const noUnwrappedDynamicContent: Rule.RuleModule = {
+export const noDynamicJsx: Rule.RuleModule = {
   meta: {
     type: 'problem',
     docs: {
@@ -34,7 +34,7 @@ export const noUnwrappedDynamicContent: Rule.RuleModule = {
         'Detect unwrapped dynamic content in GT-Next translation components',
       category: 'Best Practices',
       recommended: true,
-      url: 'https://github.com/generaltranslation/gt/tree/main/packages/next-lint#no-unwrapped-dynamic-content',
+      url: 'https://github.com/generaltranslation/gt/tree/main/packages/next-lint#no-dynamic-jsx',
     },
     fixable: undefined,
     schema: [
@@ -51,7 +51,7 @@ export const noUnwrappedDynamicContent: Rule.RuleModule = {
       },
     ],
     messages: {
-      unwrappedDynamicContent:
+      dynamicJsx:
         'Dynamic content in <T> component should be wrapped in a variable component (<Var>, <DateTime>, <Num>, or <Currency>)',
     },
   },
@@ -196,7 +196,7 @@ export const noUnwrappedDynamicContent: Rule.RuleModule = {
         if (inTranslationComponent && !inVariableComponent) {
           context.report({
             node,
-            messageId: 'unwrappedDynamicContent',
+            messageId: 'dynamicJsx',
           });
         }
       },

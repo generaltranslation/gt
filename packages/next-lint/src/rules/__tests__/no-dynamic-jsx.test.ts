@@ -1,9 +1,9 @@
 /**
- * Tests for no-unwrapped-dynamic-content rule
+ * Tests for no-dynamic-jsx rule
  */
 
 import { RuleTester } from 'eslint';
-import { noUnwrappedDynamicContent } from '../no-unwrapped-dynamic-content';
+import { noDynamicJsx } from '../no-dynamic-jsx';
 
 // Configure RuleTester with JSX support
 const ruleTester = new RuleTester({
@@ -18,7 +18,7 @@ const ruleTester = new RuleTester({
   },
 } as any); // Type assertion to work around ESLint type issues
 
-ruleTester.run('no-unwrapped-dynamic-content', noUnwrappedDynamicContent, {
+ruleTester.run('no-dynamic-jsx', noDynamicJsx, {
   valid: [
     // No GT-Next imports
     {
@@ -99,7 +99,7 @@ ruleTester.run('no-unwrapped-dynamic-content', noUnwrappedDynamicContent, {
       `,
       errors: [
         {
-          messageId: 'unwrappedDynamicContent',
+          messageId: 'dynamicJsx',
           type: 'JSXExpressionContainer',
         },
       ],
@@ -113,11 +113,11 @@ ruleTester.run('no-unwrapped-dynamic-content', noUnwrappedDynamicContent, {
       `,
       errors: [
         {
-          messageId: 'unwrappedDynamicContent',
+          messageId: 'dynamicJsx',
           type: 'JSXExpressionContainer',
         },
         {
-          messageId: 'unwrappedDynamicContent',
+          messageId: 'dynamicJsx',
           type: 'JSXExpressionContainer',
         },
       ],
@@ -131,7 +131,7 @@ ruleTester.run('no-unwrapped-dynamic-content', noUnwrappedDynamicContent, {
       `,
       errors: [
         {
-          messageId: 'unwrappedDynamicContent',
+          messageId: 'dynamicJsx',
           type: 'JSXExpressionContainer',
         },
       ],
@@ -146,7 +146,7 @@ ruleTester.run('no-unwrapped-dynamic-content', noUnwrappedDynamicContent, {
       `,
       errors: [
         {
-          messageId: 'unwrappedDynamicContent',
+          messageId: 'dynamicJsx',
           type: 'JSXExpressionContainer',
         },
       ],
@@ -160,7 +160,7 @@ ruleTester.run('no-unwrapped-dynamic-content', noUnwrappedDynamicContent, {
       `,
       errors: [
         {
-          messageId: 'unwrappedDynamicContent',
+          messageId: 'dynamicJsx',
           type: 'JSXExpressionContainer',
         },
       ],
@@ -174,7 +174,7 @@ ruleTester.run('no-unwrapped-dynamic-content', noUnwrappedDynamicContent, {
       `,
       errors: [
         {
-          messageId: 'unwrappedDynamicContent',
+          messageId: 'dynamicJsx',
           type: 'JSXExpressionContainer',
         },
       ],
@@ -187,7 +187,7 @@ ruleTester.run('no-unwrapped-dynamic-content', noUnwrappedDynamicContent, {
       `,
       errors: [
         {
-          messageId: 'unwrappedDynamicContent',
+          messageId: 'dynamicJsx',
           type: 'JSXExpressionContainer',
         },
       ],

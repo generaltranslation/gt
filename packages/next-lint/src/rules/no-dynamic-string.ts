@@ -1,5 +1,5 @@
 /**
- * ESLint rule: no-dynamic-translation-strings
+ * ESLint rule: no-dynamic-string
  *
  * Ensures translation functions (t, tx, useGT, getGT) only accept string literals
  * as their first argument. Dynamic content like template literals or string
@@ -24,19 +24,19 @@ function isTranslationFunction(name: string): boolean {
   return TRANSLATION_FUNCTIONS.includes(name);
 }
 
-export const noDynamicTranslationStrings: Rule.RuleModule = {
+export const noDynamicString: Rule.RuleModule = {
   meta: {
     type: 'problem',
     docs: {
       description: 'Translation functions must use string literals as the first argument',
       category: 'Best Practices',
       recommended: true,
-      url: 'https://github.com/generaltranslation/gt/tree/main/packages/next-lint#no-dynamic-translation-strings',
+      url: 'https://github.com/generaltranslation/gt/tree/main/packages/next-lint#no-dynamic-string',
     },
     fixable: undefined,
     schema: [],
     messages: {
-      dynamicTranslationString: "Translation function must use a constant string literal as the first argument. Use t('Hello, {name}!', { name: value }) instead of template literals or string concatenation.",
+      dynamicString: "Translation function must use a constant string literal as the first argument. Use t('Hello, {name}!', { name: value }) instead of template literals or string concatenation.",
     },
   },
 
@@ -75,7 +75,7 @@ export const noDynamicTranslationStrings: Rule.RuleModule = {
       if (!isStringLiteral(firstArg)) {
         context.report({
           node: firstArg,
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
         });
       }
     }
@@ -110,19 +110,41 @@ export const noDynamicTranslationStrings: Rule.RuleModule = {
       if (
         node.type === 'VariableDeclarator' &&
         node.id.type === 'Identifier' &&
-        node.init &&
-        node.init.type === 'CallExpression'
+        node.init
       ) {
-        const callExpression = node.init;
-        
-        if (callExpression.callee.type === 'Identifier') {
-          const functionName = callExpression.callee.name;
-          if (trackedFunctions.has(functionName)) {
-            const tracked = trackedFunctions.get(functionName)!;
-            if (tracked.isTranslationFunction) {
-              // This variable now holds a translation function
-              translationVariables.add(node.id.name);
+        if (node.init.type === 'CallExpression') {
+          const callExpression = node.init;
+          
+          if (callExpression.callee.type === 'Identifier') {
+            const functionName = callExpression.callee.name;
+            if (trackedFunctions.has(functionName)) {
+              const tracked = trackedFunctions.get(functionName)!;
+              if (tracked.isTranslationFunction) {
+                // This variable now holds a translation function
+                translationVariables.add(node.id.name);
+              }
             }
+          }
+        } else if (node.init.type === 'AwaitExpression' && 
+                   node.init.argument.type === 'CallExpression') {
+          // Handle await getGT() case
+          const callExpression = node.init.argument;
+          
+          if (callExpression.callee.type === 'Identifier') {
+            const functionName = callExpression.callee.name;
+            if (trackedFunctions.has(functionName)) {
+              const tracked = trackedFunctions.get(functionName)!;
+              if (tracked.isTranslationFunction) {
+                // This variable now holds a translation function (from awaited promise)
+                translationVariables.add(node.id.name);
+              }
+            }
+          }
+        } else if (node.init.type === 'Identifier') {
+          // Handle reassignment: const t = getTranslation;
+          const assignedFrom = node.init.name;
+          if (translationVariables.has(assignedFrom)) {
+            translationVariables.add(node.id.name);
           }
         }
       }

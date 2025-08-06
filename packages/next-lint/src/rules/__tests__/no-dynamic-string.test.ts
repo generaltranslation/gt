@@ -1,9 +1,9 @@
 /**
- * Tests for no-dynamic-translation-strings rule
+ * Tests for no-dynamic-string rule
  */
 
 import { RuleTester } from 'eslint';
-import { noDynamicTranslationStrings } from '../no-dynamic-translation-strings';
+import { noDynamicString } from '../no-dynamic-string';
 
 // Configure RuleTester with JSX support
 const ruleTester = new RuleTester({
@@ -18,7 +18,7 @@ const ruleTester = new RuleTester({
   },
 } as any);
 
-ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
+ruleTester.run('no-dynamic-string', noDynamicString, {
   valid: [
     // No GT imports - should not trigger
     {
@@ -50,8 +50,10 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
     {
       code: `
         import { getGT } from 'gt-next/server';
-        const t = await getGT();
-        t('There are {count, plural, =0 {no items} =1 {one item} other {{count} items}}', { count: 5 });
+        async function test() {
+          const t = await getGT();
+          t('There are {count, plural, =0 {no items} =1 {one item} other {{count} items}}', { count: 5 });
+        }
       `,
     },
 
@@ -59,7 +61,9 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
     {
       code: `
         import { tx } from 'gt-next/server';
-        await tx('Hello, world!');
+        async function test() {
+          await tx('Hello, world!');
+        }
       `,
     },
 
@@ -67,9 +71,11 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
     {
       code: `
         import { useGT as myUseGT, tx as serverTx } from 'gt-next';
-        const t = myUseGT();
-        t('Hello, world!');
-        await serverTx('Another message');
+        async function test() {
+          const t = myUseGT();
+          t('Hello, world!');
+          await serverTx('Another message');
+        }
       `,
     },
 
@@ -96,10 +102,12 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
       code: `
         import { useGT } from 'gt-next/client';
         import { getGT } from 'gt-next/server';
-        const t1 = useGT();
-        const t2 = await getGT();
-        t1('Client message');
-        t2('Server message');
+        async function test() {
+          const t1 = useGT();
+          const t2 = await getGT();
+          t1('Client message');
+          t2('Server message');
+        }
       `,
     },
   ],
@@ -115,7 +123,7 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
       `,
       errors: [
         {
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
           type: 'TemplateLiteral',
         },
       ],
@@ -131,7 +139,7 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
       `,
       errors: [
         {
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
           type: 'BinaryExpression',
         },
       ],
@@ -142,11 +150,13 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
       code: `
         import { tx } from 'gt-next/server';
         function getMessage() { return 'Hello'; }
-        await tx(getMessage());
+        async function test() {
+          await tx(getMessage());
+        }
       `,
       errors: [
         {
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
           type: 'CallExpression',
         },
       ],
@@ -162,7 +172,7 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
       `,
       errors: [
         {
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
           type: 'ConditionalExpression',
         },
       ],
@@ -178,7 +188,7 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
       `,
       errors: [
         {
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
           type: 'Identifier',
         },
       ],
@@ -189,11 +199,13 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
       code: `
         import { tx as serverTx } from 'gt-next/server';
         const name = 'Alice';
-        await serverTx(\`Hello, \${name}!\`);
+        async function test() {
+          await serverTx(\`Hello, \${name}!\`);
+        }
       `,
       errors: [
         {
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
           type: 'TemplateLiteral',
         },
       ],
@@ -204,11 +216,13 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
       code: `
         import * as GT from 'gt-next';
         const name = 'Alice';
-        await GT.tx('Hello, ' + name);
+        async function test() {
+          await GT.tx('Hello, ' + name);
+        }
       `,
       errors: [
         {
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
           type: 'BinaryExpression',
         },
       ],
@@ -225,7 +239,7 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
       `,
       errors: [
         {
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
           type: 'TemplateLiteral',
         },
       ],
@@ -235,18 +249,20 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
     {
       code: `
         import { useGT, tx } from 'gt-next';
-        const t = useGT();
-        const name = 'Alice';
-        t(\`Hello, \${name}!\`);
-        await tx('Hello, ' + name);
+        async function test() {
+          const t = useGT();
+          const name = 'Alice';
+          t(\`Hello, \${name}!\`);
+          await tx('Hello, ' + name);
+        }
       `,
       errors: [
         {
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
           type: 'TemplateLiteral',
         },
         {
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
           type: 'BinaryExpression',
         },
       ],
@@ -256,13 +272,15 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
     {
       code: `
         import { getGT } from 'gt-next/server';
-        const t = await getGT();
-        const message = 'Dynamic message';
-        t(message);
+        async function test() {
+          const t = await getGT();
+          const message = 'Dynamic message';
+          t(message);
+        }
       `,
       errors: [
         {
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
           type: 'Identifier',
         },
       ],
@@ -278,7 +296,7 @@ ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
       `,
       errors: [
         {
-          messageId: 'dynamicTranslationString',
+          messageId: 'dynamicString',
           type: 'TemplateLiteral',
         },
       ],
