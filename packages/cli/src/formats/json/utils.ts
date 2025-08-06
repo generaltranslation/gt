@@ -8,8 +8,8 @@ import {
   SourceObjectOptions,
 } from '../../types/index.js';
 import { flattenJson } from './flattenJson.js';
-import micromatch from 'micromatch';
 import path from 'node:path';
+import micromatch from 'micromatch';
 const { isMatch } = micromatch;
 
 // Find the matching source item in an array

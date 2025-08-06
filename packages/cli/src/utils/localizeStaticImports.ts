@@ -2,6 +2,8 @@ import * as fs from 'fs';
 import { Options, Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { logError } from '../console/logging.js';
+import micromatch from 'micromatch';
+const { isMatch } = micromatch;
 
 /**
  * Localizes static imports in content files.
@@ -58,7 +60,8 @@ export default async function localizeStaticImports(
             settings.defaultLocale,
             locale,
             settings.options?.docsHideDefaultLocaleImport || false,
-            settings.options?.docsImportPattern
+            settings.options?.docsImportPattern,
+            settings.options?.excludeStaticImports
           );
           // Write the localized file to the target path
           await fs.promises.writeFile(filePath, localizedFile);
@@ -74,7 +77,8 @@ function localizeStaticImportsForFile(
   defaultLocale: string,
   targetLocale: string,
   hideDefaultLocale: boolean,
-  pattern: string = '/[locale]' // eg /docs/[locale] or /[locale]
+  pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
+  exclude: string[] = []
 ): string {
   if (!pattern.startsWith('/')) {
     pattern = '/' + pattern;
@@ -82,20 +86,22 @@ function localizeStaticImportsForFile(
 
   // 1. Search for all instances of:
   const patternHead = pattern.split('[locale]')[0];
+  // Escape special regex characters and remove trailing slash if present
+  const escapedPatternHead = patternHead
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\/$/, '');
+
   let regex;
   if (hideDefaultLocale) {
-    const trimmedPatternHead = patternHead.endsWith('/')
-      ? patternHead.slice(0, -1)
-      : patternHead;
-    // Match complete markdown links: `import { Foo } from '@/docs/[locale]/foo.md'`
+    // Match complete import statements: `import { Foo } from '/docs/foo.md'`
     regex = new RegExp(
-      `import\\s+(.*?)\\s+from\\s+(["'])${trimmedPatternHead}(.*?)\\2`,
+      `import\\s+(.*?)\\s+from\\s+(["'])${escapedPatternHead}(?:/([^"']*?))?\\2`,
       'g'
     );
   } else {
-    // Match complete markdown links with default locale: `import { Foo } from '@/docs/${defaultLocale}/foo.md'`
+    // Match complete import statements with default locale: `import { Foo } from '/docs/${defaultLocale}/foo.md'`
     regex = new RegExp(
-      `import\\s+(.*?)\\s+from\\s+(["'])${patternHead}${defaultLocale}(.*?)\\2`,
+      `import\\s+(.*?)\\s+from\\s+(["'])${escapedPatternHead}/${defaultLocale}(?:/([^"']*?))?\\2`,
       'g'
     );
   }
@@ -105,10 +111,33 @@ function localizeStaticImportsForFile(
     return file;
   }
 
+  exclude = exclude.map((pattern) =>
+    pattern.replace(/\[locale\]/g, defaultLocale)
+  );
+
   // 2. Replace the default locale with the target locale in all matched instances
   const localizedFile = file.replace(
     regex,
     (match, bindings, quoteType, pathContent) => {
+      // Check if this path should be excluded from localization
+      if (exclude.length > 0) {
+        let matchPath = '';
+        // let matchPath = patternHead;
+
+        if (pathContent) {
+          matchPath = hideDefaultLocale
+            ? `${patternHead}${pathContent}`
+            : `${patternHead}${defaultLocale}/${pathContent}`;
+        } else {
+          matchPath = hideDefaultLocale
+            ? `${patternHead}`
+            : `${patternHead}${defaultLocale}`;
+        }
+        if (exclude.some((pattern) => isMatch(matchPath, pattern))) {
+          return match; // Don't localize excluded paths
+        }
+      }
+
       // get the quote type
       quoteType = match.match(/["']/)?.[0] || '"';
       if (!quoteType) {
@@ -131,11 +160,11 @@ function localizeStaticImportsForFile(
         if (!pathContent || pathContent === '') {
           return `import ${bindings} from ${quoteType}${patternHead}${targetLocale}${quoteType}`;
         }
-        return `import ${bindings} from ${quoteType}${patternHead}${targetLocale}${pathContent}${quoteType}`;
+        return `import ${bindings} from ${quoteType}${patternHead}${targetLocale}/${pathContent}${quoteType}`;
       } else {
         // For non-hideDefaultLocale, replace defaultLocale with targetLocale
         // pathContent contains everything after the default locale (no leading slash if present)
-        return `import ${bindings} from ${quoteType}${patternHead}${targetLocale}${pathContent}${quoteType}`;
+        return `import ${bindings} from ${quoteType}${patternHead}${targetLocale}${pathContent ? '/' + pathContent : ''}${quoteType}`;
       }
     }
   );

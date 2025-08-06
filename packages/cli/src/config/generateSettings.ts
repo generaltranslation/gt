@@ -1,7 +1,6 @@
 import {
   displayProjectId,
   logErrorAndExit,
-  logInfo,
   warnApiKeyInConfig,
 } from '../console/logging.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
@@ -164,13 +163,17 @@ export async function generateSettings(
   mergedOptions = {
     ...mergedOptions,
     experimentalLocalizeStaticImports:
-      gtConfig.options?.experimentalLocalizeStaticImports,
+      gtConfig.options?.experimentalLocalizeStaticImports ||
+      options.experimentalLocalizeStaticImports,
     experimentalLocalizeStaticUrls:
-      gtConfig.options?.experimentalLocalizeStaticUrls,
+      gtConfig.options?.experimentalLocalizeStaticUrls ||
+      options.experimentalLocalizeStaticUrls,
     experimentalHideDefaultLocale:
-      gtConfig.options?.experimentalHideDefaultLocale,
+      gtConfig.options?.experimentalHideDefaultLocale ||
+      options.experimentalHideDefaultLocale,
     experimentalFlattenJsonFiles:
-      gtConfig.options?.experimentalFlattenJsonFiles,
+      gtConfig.options?.experimentalFlattenJsonFiles ||
+      options.experimentalFlattenJsonFiles,
   };
 
   // Add additional options if provided

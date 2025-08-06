@@ -27,7 +27,7 @@ function Branch({
   ...branches
 }: {
   children?: any;
-  branch?: any;
+  branch?: string | number | boolean;
   [key: string]: any;
 }): React.JSX.Element {
   // const { 'data-_gt': generaltranslation, ...branches } = props;
