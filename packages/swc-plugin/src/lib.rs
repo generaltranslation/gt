@@ -332,10 +332,10 @@ impl Fold for TransformVisitor {
                                 // Output message based on log level
                                 match self.log_level {
                                     LogLevel::Warn => {
-                                        eprintln!("gt-next: Warning: t() function must use a constant string literal as the first argument at {}. Use t('Hello, {name}!', { name: value }) instead of template literals or string concatenation.", location_info);
+                                        eprintln!("gt-next: Warning: t() function must use a constant string literal as the first argument at {}. Use t('Hello, {{name}}!', {{ name: value }}) instead of template literals or string concatenation.", location_info);
                                     }
                                     LogLevel::Error => {
-                                        eprintln!("gt-next: Error: t() function must use a constant string literal as the first argument at {}. Use t('Hello, {name}!', { name: value }) instead of template literals or string concatenation.", location_info);
+                                        eprintln!("gt-next: Error: t() function must use a constant string literal as the first argument at {}. Use t('Hello, {{name}}!', {{ name: value }}) instead of template literals or string concatenation.", location_info);
                                     }
                                     LogLevel::Off => {
                                         // This case shouldn't be reached due to the check above
