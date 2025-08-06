@@ -121,11 +121,15 @@ function localizeStaticImportsForFile(
     (match, bindings, quoteType, pathContent) => {
       // Check if this path should be excluded from localization
       if (exclude.length > 0) {
-        let matchPath = patternHead;
+        let matchPath = '';
         if (pathContent) {
           matchPath = hideDefaultLocale
             ? `${patternHead}${pathContent}`
             : `${patternHead}${defaultLocale}/${pathContent}`;
+        } else {
+          matchPath = hideDefaultLocale
+            ? `${patternHead}`
+            : `${patternHead}${defaultLocale}`;
         }
         if (exclude.some((pattern) => isMatch(matchPath, pattern))) {
           return match; // Don't localize excluded paths

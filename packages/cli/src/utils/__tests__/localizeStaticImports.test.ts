@@ -770,7 +770,7 @@ import API from '/components/ja/api.mdx'
             options: {
               docsHideDefaultLocaleImport: false,
               docsImportPattern: '/components/[locale]',
-              experimentalExcludeStaticImports: ['/components/en/images.mdx'],
+              excludeStaticImports: ['/components/en/images.mdx'],
             },
           };
 
@@ -813,7 +813,7 @@ import Snippet from '/components/en/snippets/code.mdx'
             options: {
               docsHideDefaultLocaleImport: false,
               docsImportPattern: '/components/[locale]',
-              experimentalExcludeStaticImports: [
+              excludeStaticImports: [
                 '/components/en/images/**',
                 '/components/en/snippets/**',
               ],
@@ -857,9 +857,7 @@ import Images from '/components/en/images/logo.mdx'
             options: {
               docsHideDefaultLocaleImport: false,
               docsImportPattern: '/components/[locale]',
-              experimentalExcludeStaticImports: [
-                '/components/[locale]/images/**',
-              ],
+              excludeStaticImports: ['/components/[locale]/images/**'],
             },
           };
 
@@ -904,7 +902,7 @@ import API from '/components/ja/api.mdx'
             options: {
               docsHideDefaultLocaleImport: true,
               docsImportPattern: '/components/[locale]',
-              experimentalExcludeStaticImports: ['/components/images.mdx'],
+              excludeStaticImports: ['/components/images.mdx'],
             },
           };
 
@@ -947,7 +945,7 @@ import Snippet from '/components/snippets/code.mdx'
             options: {
               docsHideDefaultLocaleImport: true,
               docsImportPattern: '/components/[locale]',
-              experimentalExcludeStaticImports: [
+              excludeStaticImports: [
                 '/components/images/**',
                 '/components/snippets/**',
               ],
@@ -991,7 +989,89 @@ import Images from '/components/images/logo.mdx'
             options: {
               docsHideDefaultLocaleImport: true,
               docsImportPattern: '/components/[locale]',
-              experimentalExcludeStaticImports: ['/components/images/**'],
+              excludeStaticImports: ['/components/images/**'],
+            },
+          };
+
+          await localizeStaticImports(settings as any);
+        });
+
+        it('should handle [locale] placeholder without pathContent', async () => {
+          const fileContent = `
+import Guide from '/components'
+import Images from '/components/images/logo.mdx'
+`;
+          const expected = `
+import Guide from '/components/ja'
+import Images from '/components/images/logo.mdx'
+`;
+
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+          vi.mocked(fs.promises.writeFile).mockImplementation(
+            (path, content) => {
+              expect(content).toBe(expected);
+              return Promise.resolve();
+            }
+          );
+
+          const mockFileMapping = {
+            ja: { 'test.mdx': '/path/test.mdx' },
+          };
+          vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+          const settings = {
+            files: {
+              placeholderPaths: { docs: '/docs' },
+              resolvedPaths: ['test'],
+              transformPaths: {},
+            },
+            defaultLocale: 'en',
+            locales: ['en', 'ja'],
+            options: {
+              docsHideDefaultLocaleImport: true,
+              docsImportPattern: '/components/[locale]',
+              excludeStaticImports: ['/components/images/**'],
+            },
+          };
+
+          await localizeStaticImports(settings as any);
+        });
+
+        it('should handle [locale] placeholder without pathContent with a default locale import', async () => {
+          const fileContent = `
+import Guide from '/components'
+import Images from '/components/images/logo.mdx'
+`;
+          const expected = `
+import Guide from '/components/ja'
+import Images from '/components/images/logo.mdx'
+`;
+
+          vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+          vi.mocked(fs.promises.writeFile).mockImplementation(
+            (path, content) => {
+              expect(content).toBe(expected);
+              return Promise.resolve();
+            }
+          );
+
+          const mockFileMapping = {
+            ja: { 'test.mdx': '/path/test.mdx' },
+          };
+          vi.mocked(createFileMapping).mockReturnValue(mockFileMapping);
+
+          const settings = {
+            files: {
+              placeholderPaths: { docs: '/docs' },
+              resolvedPaths: ['test'],
+              transformPaths: {},
+            },
+            defaultLocale: 'en',
+            locales: ['en', 'ja'],
+            options: {
+              docsHideDefaultLocaleImport: true,
+              docsImportPattern: '/components/[locale]',
+              excludeStaticImports: ['/components/images/**'],
             },
           };
 
@@ -1028,7 +1108,7 @@ import Images from '/components/images/logo.mdx'
             options: {
               docsHideDefaultLocaleImport: false,
               docsImportPattern: '/components/[locale]',
-              experimentalExcludeStaticImports: [],
+              excludeStaticImports: [],
             },
           };
 
@@ -1063,7 +1143,7 @@ import Images from '/components/images/logo.mdx'
             options: {
               docsHideDefaultLocaleImport: false,
               docsImportPattern: '/components/[locale]',
-              // experimentalExcludeStaticImports not provided
+              // excludeStaticImports not provided
             },
           };
 
@@ -1108,9 +1188,7 @@ import Guide from '/components/ja/guide.mdx'
             options: {
               docsHideDefaultLocaleImport: false,
               docsImportPattern: '/components/[locale]',
-              experimentalExcludeStaticImports: [
-                '/components/[locale]/{images,assets}/**',
-              ],
+              excludeStaticImports: ['/components/[locale]/{images,assets}/**'],
             },
           };
 

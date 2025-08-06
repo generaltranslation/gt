@@ -1,8 +1,6 @@
 import {
   displayProjectId,
   logErrorAndExit,
-  logInfo,
-  logWarning,
   warnApiKeyInConfig,
 } from '../console/logging.js';
 import { loadConfig } from '../fs/config/loadConfig.js';

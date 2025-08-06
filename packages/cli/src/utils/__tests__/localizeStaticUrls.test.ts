@@ -503,7 +503,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
-            experimentalExcludeStaticUrls: ['/docs/en/images'],
+            excludeStaticUrls: ['/docs/en/images'],
           },
         };
 
@@ -536,7 +536,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
-            experimentalExcludeStaticUrls: ['/docs/en/images'],
+            excludeStaticUrls: ['/docs/en/images'],
           },
         };
 
@@ -569,10 +569,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
-            experimentalExcludeStaticUrls: [
-              '/docs/en/images/**',
-              '/docs/en/snippets/**',
-            ],
+            excludeStaticUrls: ['/docs/en/images/**', '/docs/en/snippets/**'],
           },
         };
 
@@ -605,7 +602,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
-            experimentalExcludeStaticUrls: ['/docs/[locale]/images/**'],
+            excludeStaticUrls: ['/docs/[locale]/images/**'],
           },
         };
 
@@ -640,7 +637,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: true,
           options: {
             docsUrlPattern: '/docs/[locale]',
-            experimentalExcludeStaticUrls: ['/docs/images/**'],
+            excludeStaticUrls: ['/docs/images/**'],
           },
         };
 
@@ -673,7 +670,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: true,
           options: {
             docsUrlPattern: '/docs/[locale]',
-            experimentalExcludeStaticUrls: ['/docs/images/**'],
+            excludeStaticUrls: ['/docs/images/**'],
           },
         };
 
@@ -706,10 +703,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: true,
           options: {
             docsUrlPattern: '/docs/[locale]',
-            experimentalExcludeStaticUrls: [
-              '/docs/images/**',
-              '/docs/snippets/**',
-            ],
+            excludeStaticUrls: ['/docs/images/**', '/docs/snippets/**'],
           },
         };
 
@@ -742,7 +736,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: true,
           options: {
             docsUrlPattern: '/docs/[locale]',
-            experimentalExcludeStaticUrls: ['/docs/images/**'],
+            excludeStaticUrls: ['/docs/images/**'],
           },
         };
 
@@ -787,10 +781,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
-            experimentalExcludeStaticUrls: [
-              '/docs/en/images/**',
-              '/docs/en/snippets/**',
-            ],
+            excludeStaticUrls: ['/docs/en/images/**', '/docs/en/snippets/**'],
           },
         };
 
@@ -825,7 +816,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
-            experimentalExcludeStaticUrls: [],
+            excludeStaticUrls: [],
           },
         };
 
@@ -858,7 +849,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
-            // experimentalExcludeStaticUrls not provided
+            // excludeStaticUrls not provided
           },
         };
 
@@ -901,9 +892,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/docs/[locale]',
-            experimentalExcludeStaticUrls: [
-              '/docs/[locale]/{images,assets}/**',
-            ],
+            excludeStaticUrls: ['/docs/[locale]/{images,assets}/**'],
           },
         };
 
@@ -1072,7 +1061,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: false,
           options: {
             docsUrlPattern: '/[locale]',
-            experimentalExcludeStaticUrls: ['/[locale]/images/**'],
+            excludeStaticUrls: ['/[locale]/images/**'],
           },
         };
 
@@ -1105,7 +1094,7 @@ More content with [another link](/docs/ja/tutorial) and <a href="/docs/ja/refere
           experimentalHideDefaultLocale: true,
           options: {
             docsUrlPattern: '/[locale]',
-            experimentalExcludeStaticUrls: ['/[locale]/images/**'],
+            excludeStaticUrls: ['/[locale]/images/**'],
           },
         };
 
