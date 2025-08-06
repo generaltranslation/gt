@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.0.23
+
+### Patch Changes
+
+- [#539](https://github.com/generaltranslation/gt/pull/539) [`b88e468`](https://github.com/generaltranslation/gt/commit/b88e4684be9cd82a7d23e38fc893c2a8b7f0165f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - feat: add ability to exclude import paths and url paths from localization
+
 ## 2.0.22
 
 ### Patch Changes
