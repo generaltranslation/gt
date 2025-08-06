@@ -331,12 +331,12 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     
     // If warnings were issued, show deprecation notice (only for warn level)
     if visitor.dynamic_content_violations > 0 && visitor.log_level == LogLevel::Warn {
-        eprintln!("gt-next: Warning: unwrapped dynamic content warnings will default to triggering a build error in the next major version.");
+        eprintln!("gt-next: Warning: unwrapped dynamic content warnings will default to triggering a build error in the next major version. See https://generaltranslation.com/docs/next-lint to add GT Next Lint to your project.");
     }
     // Fail the build if errors were encountered at error log level
     if visitor.dynamic_content_violations > 0 && visitor.log_level == LogLevel::Error {
         eprintln!("gt-next: Build failed! Found {} unwrapped dynamic content error(s).", visitor.dynamic_content_violations);
-        panic!("gt-next: Build failed due to unwrapped dynamic content errors. Fix the errors above to continue.");
+        panic!("gt-next: Build failed due to unwrapped dynamic content errors. Fix the errors above to continue. See https://generaltranslation.com/docs/next-lint to add GT Next Lint to your project.");
     }
     
     program
@@ -345,6 +345,51 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
 #[cfg(test)]
 mod tests {
     use super::*;
+    /// Helper function to create a test JSX element
+    fn create_jsx_element(element_name: &str, has_dynamic_content: bool) -> JSXElement {
+        use swc_core::common::{DUMMY_SP, SyntaxContext};
+        
+        let opening = JSXOpeningElement {
+            span: DUMMY_SP,
+            name: JSXElementName::Ident(Ident::new(element_name.into(), DUMMY_SP, SyntaxContext::empty())),
+            attrs: vec![],
+            self_closing: false,
+            type_args: None,
+        };
+        
+        let closing = Some(JSXClosingElement {
+            span: DUMMY_SP,
+            name: JSXElementName::Ident(Ident::new(element_name.into(), DUMMY_SP, SyntaxContext::empty())),
+        });
+        
+        let mut children = vec![
+            JSXElementChild::JSXText(JSXText {
+                span: DUMMY_SP,
+                value: "Hello ".into(),
+                raw: "Hello ".into(),
+            })
+        ];
+        
+        if has_dynamic_content {
+            children.push(JSXElementChild::JSXExprContainer(JSXExprContainer {
+                span: DUMMY_SP,
+                expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident::new("name".into(), DUMMY_SP, SyntaxContext::empty())))),
+            }));
+        }
+        
+        children.push(JSXElementChild::JSXText(JSXText {
+            span: DUMMY_SP,
+            value: "!".into(), 
+            raw: "!".into(),
+        }));
+        
+        JSXElement {
+            span: DUMMY_SP,
+            opening,
+            children,
+            closing,
+        }
+    }
 
     #[test]
     fn test_visitor_initial_state() {
@@ -447,6 +492,258 @@ mod tests {
         let unrelated_atom = Atom::from("SomeOtherComponent");
         assert!(!visitor.gt_assigned_translation_components.contains(&unrelated_atom));
         assert!(!visitor.gt_assigned_variable_components.contains(&unrelated_atom));
+    }
+
+    // Integration tests for JSX processing
+    #[test]
+    fn test_basic_t_component_with_dynamic_content() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        
+        // Simulate import of T component 
+        visitor.gt_next_translation_imports.insert(Atom::from("T"));
+        
+        // Create JSX element: <T>Hello {name}!</T>
+        let jsx_element = create_jsx_element("T", true);
+        
+        // Process the element
+        let _transformed = jsx_element.fold_with(&mut visitor);
+        
+        // Should detect one unwrapped dynamic content violation
+        assert_eq!(visitor.dynamic_content_violations, 1, "Should detect one unwrapped dynamic content violation");
+    }
+
+    /// Helper function to create a JSX element with wrapped dynamic content: <T>Hello <Var>{name}</Var>!</T>
+    fn create_jsx_element_with_wrapped_content() -> JSXElement {
+        use swc_core::common::{DUMMY_SP, SyntaxContext};
+        
+        // Create the inner Var element: <Var>{name}</Var>
+        let var_element = JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident::new("Var".into(), DUMMY_SP, SyntaxContext::empty())),
+                attrs: vec![],
+                self_closing: false,
+                type_args: None,
+            },
+            children: vec![
+                JSXElementChild::JSXExprContainer(JSXExprContainer {
+                    span: DUMMY_SP,
+                    expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident::new("name".into(), DUMMY_SP, SyntaxContext::empty())))),
+                })
+            ],
+            closing: Some(JSXClosingElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident::new("Var".into(), DUMMY_SP, SyntaxContext::empty())),
+            }),
+        };
+        
+        // Create the outer T element: <T>Hello <Var>{name}</Var>!</T>
+        JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty())),
+                attrs: vec![],
+                self_closing: false,
+                type_args: None,
+            },
+            children: vec![
+                JSXElementChild::JSXText(JSXText {
+                    span: DUMMY_SP,
+                    value: "Hello ".into(),
+                    raw: "Hello ".into(),
+                }),
+                JSXElementChild::JSXElement(Box::new(var_element)),
+                JSXElementChild::JSXText(JSXText {
+                    span: DUMMY_SP,
+                    value: "!".into(),
+                    raw: "!".into(),
+                }),
+            ],
+            closing: Some(JSXClosingElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty())),
+            }),
+        }
+    }
+
+    #[test]
+    fn test_t_component_with_wrapped_dynamic_content() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        
+        // Simulate imports of T and Var components 
+        visitor.gt_next_translation_imports.insert(Atom::from("T"));
+        visitor.gt_next_variable_imports.insert(Atom::from("Var"));
+        
+        // Create JSX element: <T>Hello <Var>{name}</Var>!</T>
+        let jsx_element = create_jsx_element_with_wrapped_content();
+        
+        // Process the element
+        let _transformed = jsx_element.fold_with(&mut visitor);
+        
+        // Should NOT detect any violations since dynamic content is wrapped
+        assert_eq!(visitor.dynamic_content_violations, 0, "Should not detect violations when dynamic content is wrapped in Var");
+    }
+
+    /// Helper function to create a namespace JSX element: <GT.T>Hello {name}!</GT.T>
+    fn create_namespace_jsx_element() -> JSXElement {
+        use swc_core::common::{DUMMY_SP, SyntaxContext};
+        
+        // Create member expression for GT.T
+        let member_expr = JSXMemberExpr {
+            span: DUMMY_SP,
+            obj: JSXObject::Ident(Ident::new("GT".into(), DUMMY_SP, SyntaxContext::empty())),
+            prop: Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+        };
+        
+        JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                span: DUMMY_SP,
+                name: JSXElementName::JSXMemberExpr(member_expr.clone()),
+                attrs: vec![],
+                self_closing: false,
+                type_args: None,
+            },
+            children: vec![
+                JSXElementChild::JSXText(JSXText {
+                    span: DUMMY_SP,
+                    value: "Hello ".into(),
+                    raw: "Hello ".into(),
+                }),
+                JSXElementChild::JSXExprContainer(JSXExprContainer {
+                    span: DUMMY_SP,
+                    expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident::new("name".into(), DUMMY_SP, SyntaxContext::empty())))),
+                }),
+                JSXElementChild::JSXText(JSXText {
+                    span: DUMMY_SP,
+                    value: "!".into(),
+                    raw: "!".into(),
+                }),
+            ],
+            closing: Some(JSXClosingElement {
+                span: DUMMY_SP,
+                name: JSXElementName::JSXMemberExpr(member_expr),
+            }),
+        }
+    }
+
+    #[test]
+    fn test_namespace_import_t_component() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        
+        // Simulate namespace import: import * as GT from 'gt-next'
+        visitor.gt_next_namespace_imports.insert(Atom::from("GT"));
+        
+        // Create JSX element: <GT.T>Hello {name}!</GT.T>
+        let jsx_element = create_namespace_jsx_element();
+        
+        // Process the element
+        let _transformed = jsx_element.fold_with(&mut visitor);
+        
+        // Should detect one unwrapped dynamic content violation
+        assert_eq!(visitor.dynamic_content_violations, 1, "Should detect unwrapped dynamic content in namespace GT.T component");
+    }
+
+    #[test] 
+    fn test_assigned_t_component() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        
+        // Simulate import and assignment: import { T } from 'gt-next'; const MyT = T;
+        visitor.gt_next_translation_imports.insert(Atom::from("T"));
+        visitor.gt_assigned_translation_components.insert(Atom::from("MyT"));
+        
+        // Create JSX element: <MyT>Hello {name}!</MyT>
+        let jsx_element = create_jsx_element("MyT", true);
+        
+        // Process the element
+        let _transformed = jsx_element.fold_with(&mut visitor);
+        
+        // Should detect one unwrapped dynamic content violation
+        assert_eq!(visitor.dynamic_content_violations, 1, "Should detect unwrapped dynamic content in assigned component MyT");
+    }
+
+    /// Helper function to create nested T components: <T>Outer {value} <T>Inner {name}</T></T>
+    fn create_nested_t_elements() -> JSXElement {
+        use swc_core::common::{DUMMY_SP, SyntaxContext};
+        
+        // Create inner T element: <T>Inner {name}</T>
+        let inner_t = JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty())),
+                attrs: vec![],
+                self_closing: false,
+                type_args: None,
+            },
+            children: vec![
+                JSXElementChild::JSXText(JSXText {
+                    span: DUMMY_SP,
+                    value: "Inner ".into(),
+                    raw: "Inner ".into(),
+                }),
+                JSXElementChild::JSXExprContainer(JSXExprContainer {
+                    span: DUMMY_SP,
+                    expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident::new("name".into(), DUMMY_SP, SyntaxContext::empty())))),
+                }),
+            ],
+            closing: Some(JSXClosingElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty())),
+            }),
+        };
+        
+        // Create outer T element: <T>Outer {value} <inner_t></T>
+        JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty())),
+                attrs: vec![],
+                self_closing: false,
+                type_args: None,
+            },
+            children: vec![
+                JSXElementChild::JSXText(JSXText {
+                    span: DUMMY_SP,
+                    value: "Outer ".into(),
+                    raw: "Outer ".into(),
+                }),
+                JSXElementChild::JSXExprContainer(JSXExprContainer {
+                    span: DUMMY_SP,
+                    expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident::new("value".into(), DUMMY_SP, SyntaxContext::empty())))),
+                }),
+                JSXElementChild::JSXText(JSXText {
+                    span: DUMMY_SP,
+                    value: " ".into(),
+                    raw: " ".into(),
+                }),
+                JSXElementChild::JSXElement(Box::new(inner_t)),
+            ],
+            closing: Some(JSXClosingElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty())),
+            }),
+        }
+    }
+
+    #[test]
+    fn test_nested_t_components() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        
+        // Simulate import of T component 
+        visitor.gt_next_translation_imports.insert(Atom::from("T"));
+        
+        // Create nested JSX elements: <T>Outer {value} <T>Inner {name}</T></T>
+        let jsx_element = create_nested_t_elements();
+        
+        // Process the element
+        let _transformed = jsx_element.fold_with(&mut visitor);
+        
+        // Should detect TWO unwrapped dynamic content violations (one in outer T, one in inner T)
+        assert_eq!(visitor.dynamic_content_violations, 2, "Should detect two unwrapped dynamic content violations in nested T components");
     }
 
 }
