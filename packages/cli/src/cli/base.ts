@@ -13,6 +13,7 @@ import {
   startCommand,
   createSpinner,
   logMessage,
+  logWarning,
 } from '../console/logging.js';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -60,6 +61,8 @@ export type TranslateOptions = {
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
+  excludeStaticUrls?: string[];
+  excludeStaticImports?: string[];
 };
 
 export type LoginOptions = {
