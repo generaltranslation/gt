@@ -154,14 +154,14 @@ export type AdditionalOptions = {
   };
   docsUrlPattern?: string; // eg /docs/[locale] or /[locale] for localizing static urls in markdown files
   docsImportPattern?: string; // eg /docs/[locale]/foo.md or /[locale]/foo.md for localizing static imports in markdown files
+  excludeStaticUrls?: string[]; // A list of file globs to include for static url localization
+  excludeStaticImports?: string[]; // A list of file globs to include for static import localization
   docsHideDefaultLocaleImport?: boolean; // if true, hide the default locale in the import path
   copyFiles?: string[]; // array of files to copy to the target locale
   experimentalLocalizeStaticImports?: boolean; // Inserts locale in static import paths in md/mdx files
   experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files
   experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
   experimentalFlattenJsonFiles?: boolean; // Flattens JSON files into a single file
-  experimentalExcludeStaticUrls?: string[]; // A list of file globs to include for static url localization
-  experimentalExcludeStaticImports?: string[]; // A list of file globs to include for static import localization
 };
 
 export type JsonSchema = {

@@ -61,7 +61,7 @@ export default async function localizeStaticImports(
             locale,
             settings.options?.docsHideDefaultLocaleImport || false,
             settings.options?.docsImportPattern,
-            settings.options?.experimentalExcludeStaticImports
+            settings.options?.excludeStaticImports
           );
           // Write the localized file to the target path
           await fs.promises.writeFile(filePath, localizedFile);

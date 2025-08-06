@@ -61,7 +61,7 @@ export default async function localizeStaticUrls(
             locale,
             settings.experimentalHideDefaultLocale || false,
             settings.options?.docsUrlPattern,
-            settings.options?.experimentalExcludeStaticUrls
+            settings.options?.excludeStaticUrls
           );
           const localizedFileHrefs = localizeStaticHrefsForFile(
             localizedFile,
@@ -69,7 +69,7 @@ export default async function localizeStaticUrls(
             locale,
             settings.experimentalHideDefaultLocale || false,
             settings.options?.docsUrlPattern,
-            settings.options?.experimentalExcludeStaticUrls
+            settings.options?.excludeStaticUrls
           );
           // Write the localized file to the target path
           await fs.promises.writeFile(filePath, localizedFileHrefs);

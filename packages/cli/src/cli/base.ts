@@ -61,7 +61,8 @@ export type TranslateOptions = {
   experimentalHideDefaultLocale?: boolean;
   experimentalFlattenJsonFiles?: boolean;
   experimentalLocalizeStaticImports?: boolean;
-  experimentalExcludeStaticUrls?: string[];
+  excludeStaticUrls?: string[];
+  excludeStaticImports?: string[];
 };
 
 export type LoginOptions = {
