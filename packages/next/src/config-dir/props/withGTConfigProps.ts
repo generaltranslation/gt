@@ -10,7 +10,8 @@ export type HeadersAndCookies = {
 };
 
 export type SwcPluginOptions = {
-  dynamicContentCheckLogLevel?: 'error' | 'warn' | 'off';
+  dynamicJsxCheckLogLevel?: 'error' | 'warn' | 'off';
+  dynamicStringCheckLogLevel?: 'error' | 'warn' | 'off';
 };
 
 type withGTConfigProps = {

@@ -124,6 +124,25 @@ export default function TranslateGreeting() {
   For more information, see the [ICU message format documentation](https://unicode-org.github.io/icu/userguide/format_parse/messages/).
 </Callout>
 
+### Importing from `gt-next/client`
+
+If operating under the `"use client"` directive, you should import from `gt-next/client` instead of `gt-next`.
+
+```jsx copy
+"use client";
+import { useGT } from 'gt-next/client';
+
+export default function TranslateGreeting() {
+  const t = useGT();
+
+  return (
+    <p>
+      {t('Hello, Alice!')}
+    </p>
+  );
+}
+```
+
 ---
 
 ## Notes

@@ -32,9 +32,12 @@ impl Default for LogLevel {
 #[derive(Deserialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 struct PluginConfig {
-    /// Log level for dynamic content checking: 'warn' | 'error' | 'off'
+    /// Log level for dynamic JSX content checking: 'warn' | 'error' | 'off'
     #[serde(default)]
-    dynamic_content_check_log_level: LogLevel,
+    dynamic_jsx_check_log_level: LogLevel,
+    /// Log level for dynamic string checking: 'warn' | 'error' | 'off'
+    #[serde(default)]
+    dynamic_string_check_log_level: LogLevel,
 }
 
 /// GT-Next SWC plugin that detects dynamic content in translation components 
@@ -68,8 +71,10 @@ pub struct TransformVisitor {
     gt_translation_functions: HashSet<Atom>,
     /// Debug counter to track JSX elements processed
     jsx_element_count: usize,
-    /// Log level for dynamic content checking
-    log_level: LogLevel,
+    /// Log level for dynamic JSX content checking
+    jsx_log_level: LogLevel,
+    /// Log level for dynamic translation string checking
+    translation_string_log_level: LogLevel,
     /// Counter to track if any warnings were issued
     dynamic_content_violations: usize,
     /// Current file name for warning context (relative to project root)
@@ -78,13 +83,13 @@ pub struct TransformVisitor {
 
 impl Default for TransformVisitor {
     fn default() -> Self {
-        Self::new(LogLevel::Warn, None)
+        Self::new(LogLevel::Warn, LogLevel::Warn, None)
     }
 }
 
 impl TransformVisitor {
     /// Create a new TransformVisitor with the specified configuration
-    fn new(log_level: LogLevel, filename: Option<String>) -> Self {
+    fn new(jsx_log_level: LogLevel, translation_string_log_level: LogLevel, filename: Option<String>) -> Self {
         // Convert absolute path to relative path for cleaner output
         let relative_filename = filename.map(|path| Self::make_relative_path(&path));
         
@@ -98,7 +103,8 @@ impl TransformVisitor {
             gt_assigned_variable_components: HashSet::new(),
             gt_translation_functions: HashSet::new(),
             jsx_element_count: 0,
-            log_level,
+            jsx_log_level,
+            translation_string_log_level,
             dynamic_content_violations: 0,
             current_filename: relative_filename,
         }
@@ -235,8 +241,8 @@ impl Fold for TransformVisitor {
     /// Detects unwrapped dynamic content in JSX expressions 
     /// Examples: <T>Hello {name}</T> (warns), <T>Hello <Var>{name}</Var></T> (ok)
     fn fold_jsx_expr_container(&mut self, expr: JSXExprContainer) -> JSXExprContainer {
-        // Only process if log level is not 'off' and we're inside a translation component but NOT inside a variable component
-        if self.log_level != LogLevel::Off && self.in_translation_component && !self.in_variable_component {
+        // Only process if jsx log level is not 'off' and we're inside a translation component but NOT inside a variable component
+        if self.jsx_log_level != LogLevel::Off && self.in_translation_component && !self.in_variable_component {
             self.dynamic_content_violations += 1;
             
             // Get location information
@@ -247,8 +253,8 @@ impl Fold for TransformVisitor {
                 format!("byte offset {}", byte_pos)
             };
             
-            // Output message based on log level
-            match self.log_level {
+            // Output message based on jsx log level
+            match self.jsx_log_level {
                 LogLevel::Warn => {
                     eprintln!("gt-next: Warning: found unwrapped dynamic content in translation component at {}. Wrap dynamic content in <Var>, <DateTime>, <Num>, or <Currency> components.", location_info);
                 }
@@ -310,8 +316,8 @@ impl Fold for TransformVisitor {
     /// Processes function calls to detect invalid t() calls with non-literal arguments
     /// Valid: t("Hello"); Invalid: t(`Hello ${name}`), t("Hello " + name)
     fn fold_call_expr(&mut self, call: CallExpr) -> CallExpr {
-        // Only process if log level is not 'off'
-        if self.log_level != LogLevel::Off {
+        // Only process if translation string log level is not 'off'
+        if self.translation_string_log_level != LogLevel::Off {
             // Check if this is a call to a tracked translation function
             if let Callee::Expr(expr) = &call.callee {
                 if let Expr::Ident(ident) = expr.as_ref() {
@@ -329,8 +335,8 @@ impl Fold for TransformVisitor {
                                     format!("byte offset {}", byte_pos)
                                 };
                                 
-                                // Output message based on log level
-                                match self.log_level {
+                                // Output message based on translation string log level
+                                match self.translation_string_log_level {
                                     LogLevel::Warn => {
                                         eprintln!("gt-next: Warning: t() function must use a constant string literal as the first argument at {}. Use t('Hello, {{name}}!', {{ name: value }}) instead of template literals or string concatenation.", location_info);
                                     }
@@ -408,15 +414,19 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
         .get_context(&TransformPluginMetadataContextKind::Filename)
         .map(|f| f.to_string());
     
-    let mut visitor = TransformVisitor::new(config.dynamic_content_check_log_level.clone(), filename);
+    let mut visitor = TransformVisitor::new(
+        config.dynamic_jsx_check_log_level.clone(),
+        config.dynamic_string_check_log_level.clone(), 
+        filename
+    );
     let program = program.fold_with(&mut visitor);
     
     // If warnings were issued, show deprecation notice (only for warn level)
-    if visitor.dynamic_content_violations > 0 && visitor.log_level == LogLevel::Warn {
+    if visitor.dynamic_content_violations > 0 && (visitor.jsx_log_level == LogLevel::Warn || visitor.translation_string_log_level == LogLevel::Warn) {
         eprintln!("gt-next: Warning: unwrapped dynamic content warnings will default to triggering a build error in the next major version. See https://generaltranslation.com/docs/next-lint to add GT Next Lint to your project.");
     }
     // Fail the build if errors were encountered at error log level
-    if visitor.dynamic_content_violations > 0 && visitor.log_level == LogLevel::Error {
+    if visitor.dynamic_content_violations > 0 && (visitor.jsx_log_level == LogLevel::Error || visitor.translation_string_log_level == LogLevel::Error) {
         eprintln!("gt-next: Build failed! Found {} unwrapped dynamic content error(s).", visitor.dynamic_content_violations);
         panic!("gt-next: Build failed due to unwrapped dynamic content errors. Fix the errors above to continue. See https://generaltranslation.com/docs/next-lint to add GT Next Lint to your project.");
     }
@@ -579,7 +589,7 @@ mod tests {
     // Integration tests for JSX processing
     #[test]
     fn test_basic_t_component_with_dynamic_content() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
         
         // Simulate import of T component 
         visitor.gt_next_translation_imports.insert(Atom::from("T"));
@@ -652,7 +662,7 @@ mod tests {
 
     #[test]
     fn test_t_component_with_wrapped_dynamic_content() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
         
         // Simulate imports of T and Var components 
         visitor.gt_next_translation_imports.insert(Atom::from("T"));
@@ -713,7 +723,7 @@ mod tests {
 
     #[test]
     fn test_namespace_import_t_component() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
         
         // Simulate namespace import: import * as GT from 'gt-next'
         visitor.gt_next_namespace_imports.insert(Atom::from("GT"));
@@ -730,7 +740,7 @@ mod tests {
 
     #[test] 
     fn test_assigned_t_component() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
         
         // Simulate import and assignment: import { T } from 'gt-next'; const MyT = T;
         visitor.gt_next_translation_imports.insert(Atom::from("T"));
@@ -813,7 +823,7 @@ mod tests {
 
     #[test]
     fn test_nested_t_components() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
         
         // Simulate import of T component 
         visitor.gt_next_translation_imports.insert(Atom::from("T"));
@@ -881,7 +891,7 @@ mod tests {
 
     #[test]
     fn test_valid_t_function_call() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
         
         // Simulate t function from useGT: const t = useGT();
         visitor.gt_translation_functions.insert(Atom::from("t"));
@@ -898,7 +908,7 @@ mod tests {
 
     #[test]
     fn test_invalid_t_function_call_template_literal() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
         
         // Simulate t function from useGT: const t = useGT();
         visitor.gt_translation_functions.insert(Atom::from("t"));
@@ -931,7 +941,7 @@ mod tests {
 
     #[test]
     fn test_invalid_t_function_call_string_concatenation() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
         
         // Simulate t function from useGT: const t = useGT();
         visitor.gt_translation_functions.insert(Atom::from("t"));
@@ -948,7 +958,7 @@ mod tests {
 
     #[test]
     fn test_direct_tx_function_call() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
         
         // Simulate direct tx import: import { tx } from 'gt-next/server';
         visitor.gt_translation_functions.insert(Atom::from("tx"));
@@ -986,7 +996,7 @@ mod tests {
 
     #[test]
     fn test_t_function_assignment_from_use_gt() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
         
         // Simulate useGT import: import { useGT } from 'gt-next';
         visitor.gt_translation_functions.insert(Atom::from("useGT"));

@@ -36,7 +36,8 @@ const defaultWithGTConfigProps = {
     resetLocaleCookieName: defaultResetLocaleCookieName,
   },
   swcPluginOptions: {
-    dynamicContentCheckLogLevel: 'warn',
+    dynamicJsxCheckLogLevel: 'warn',
+    dynamicStringCheckLogLevel: 'warn',
   },
 } as const;
 

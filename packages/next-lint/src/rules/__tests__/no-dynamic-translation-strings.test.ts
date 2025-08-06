@@ -1,0 +1,287 @@
+/**
+ * Tests for no-dynamic-translation-strings rule
+ */
+
+import { RuleTester } from 'eslint';
+import { noDynamicTranslationStrings } from '../no-dynamic-translation-strings';
+
+// Configure RuleTester with JSX support
+const ruleTester = new RuleTester({
+  languageOptions: {
+    ecmaVersion: 2020,
+    sourceType: 'module',
+    parserOptions: {
+      ecmaFeatures: {
+        jsx: true,
+      },
+    },
+  },
+} as any);
+
+ruleTester.run('no-dynamic-translation-strings', noDynamicTranslationStrings, {
+  valid: [
+    // No GT imports - should not trigger
+    {
+      code: `
+        const message = \`Hello \${name}\`;
+        t(message);
+      `,
+    },
+
+    // String literals are allowed
+    {
+      code: `
+        import { useGT } from 'gt-next';
+        const t = useGT();
+        t('Hello, world!');
+      `,
+    },
+
+    // String literals with variables in second parameter
+    {
+      code: `
+        import { useGT } from 'gt-next';
+        const t = useGT();
+        t('Hello, {name}!', { name: 'Alice' });
+      `,
+    },
+
+    // ICU format strings
+    {
+      code: `
+        import { getGT } from 'gt-next/server';
+        const t = await getGT();
+        t('There are {count, plural, =0 {no items} =1 {one item} other {{count} items}}', { count: 5 });
+      `,
+    },
+
+    // Direct tx calls
+    {
+      code: `
+        import { tx } from 'gt-next/server';
+        await tx('Hello, world!');
+      `,
+    },
+
+    // Aliased imports
+    {
+      code: `
+        import { useGT as myUseGT, tx as serverTx } from 'gt-next';
+        const t = myUseGT();
+        t('Hello, world!');
+        await serverTx('Another message');
+      `,
+    },
+
+    // Namespace imports with string literals
+    {
+      code: `
+        import * as GT from 'gt-next';
+        GT.tx('Hello, world!');
+      `,
+    },
+
+    // Multiple assignment levels with string literal
+    {
+      code: `
+        import { useGT } from 'gt-next';
+        const getTranslation = useGT();
+        const t = getTranslation;
+        t('Hello, world!');
+      `,
+    },
+
+    // Mixed imports from different modules
+    {
+      code: `
+        import { useGT } from 'gt-next/client';
+        import { getGT } from 'gt-next/server';
+        const t1 = useGT();
+        const t2 = await getGT();
+        t1('Client message');
+        t2('Server message');
+      `,
+    },
+  ],
+
+  invalid: [
+    // Template literals
+    {
+      code: `
+        import { useGT } from 'gt-next';
+        const t = useGT();
+        const name = 'Alice';
+        t(\`Hello, \${name}!\`);
+      `,
+      errors: [
+        {
+          messageId: 'dynamicTranslationString',
+          type: 'TemplateLiteral',
+        },
+      ],
+    },
+
+    // String concatenation
+    {
+      code: `
+        import { useGT } from 'gt-next';
+        const t = useGT();
+        const name = 'Alice';
+        t('Hello, ' + name + '!');
+      `,
+      errors: [
+        {
+          messageId: 'dynamicTranslationString',
+          type: 'BinaryExpression',
+        },
+      ],
+    },
+
+    // Function calls as arguments
+    {
+      code: `
+        import { tx } from 'gt-next/server';
+        function getMessage() { return 'Hello'; }
+        await tx(getMessage());
+      `,
+      errors: [
+        {
+          messageId: 'dynamicTranslationString',
+          type: 'CallExpression',
+        },
+      ],
+    },
+
+    // Conditional expressions
+    {
+      code: `
+        import { useGT } from 'gt-next';
+        const t = useGT();
+        const name = 'Alice';
+        t(name ? \`Hello, \${name}\` : 'Hello');
+      `,
+      errors: [
+        {
+          messageId: 'dynamicTranslationString',
+          type: 'ConditionalExpression',
+        },
+      ],
+    },
+
+    // Variable references
+    {
+      code: `
+        import { useGT } from 'gt-next';
+        const t = useGT();
+        const message = 'Hello, world!';
+        t(message);
+      `,
+      errors: [
+        {
+          messageId: 'dynamicTranslationString',
+          type: 'Identifier',
+        },
+      ],
+    },
+
+    // Aliased function with dynamic content
+    {
+      code: `
+        import { tx as serverTx } from 'gt-next/server';
+        const name = 'Alice';
+        await serverTx(\`Hello, \${name}!\`);
+      `,
+      errors: [
+        {
+          messageId: 'dynamicTranslationString',
+          type: 'TemplateLiteral',
+        },
+      ],
+    },
+
+    // Namespace import with dynamic content
+    {
+      code: `
+        import * as GT from 'gt-next';
+        const name = 'Alice';
+        await GT.tx('Hello, ' + name);
+      `,
+      errors: [
+        {
+          messageId: 'dynamicTranslationString',
+          type: 'BinaryExpression',
+        },
+      ],
+    },
+
+    // Assignment chain with dynamic content
+    {
+      code: `
+        import { useGT } from 'gt-next';
+        const getTranslation = useGT();
+        const t = getTranslation;
+        const name = 'Alice';
+        t(\`Hello, \${name}!\`);
+      `,
+      errors: [
+        {
+          messageId: 'dynamicTranslationString',
+          type: 'TemplateLiteral',
+        },
+      ],
+    },
+
+    // Multiple violations
+    {
+      code: `
+        import { useGT, tx } from 'gt-next';
+        const t = useGT();
+        const name = 'Alice';
+        t(\`Hello, \${name}!\`);
+        await tx('Hello, ' + name);
+      `,
+      errors: [
+        {
+          messageId: 'dynamicTranslationString',
+          type: 'TemplateLiteral',
+        },
+        {
+          messageId: 'dynamicTranslationString',
+          type: 'BinaryExpression',
+        },
+      ],
+    },
+
+    // Different GT modules
+    {
+      code: `
+        import { getGT } from 'gt-next/server';
+        const t = await getGT();
+        const message = 'Dynamic message';
+        t(message);
+      `,
+      errors: [
+        {
+          messageId: 'dynamicTranslationString',
+          type: 'Identifier',
+        },
+      ],
+    },
+
+    // Client module with template literal
+    {
+      code: `
+        import { useGT } from 'gt-next/client';
+        const t = useGT();
+        const greeting = 'Hello';
+        t(\`\${greeting}, world!\`);
+      `,
+      errors: [
+        {
+          messageId: 'dynamicTranslationString',
+          type: 'TemplateLiteral',
+        },
+      ],
+    },
+  ],
+});

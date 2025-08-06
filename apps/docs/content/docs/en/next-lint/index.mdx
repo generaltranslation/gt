@@ -49,6 +49,7 @@ export default [
     },
     rules: {
       'gt-next/no-unwrapped-dynamic-content': 'warn',
+      'gt-next/no-dynamic-translation-strings': 'warn',
     },
   },
 ];
@@ -90,6 +91,7 @@ const eslintConfig = [
     },
     rules: {
       'gt-next/no-unwrapped-dynamic-content': 'warn',
+      'gt-next/no-dynamic-translation-strings': 'warn',
     },
   },
 ];
@@ -125,3 +127,46 @@ import { T } from 'gt-next';
 - `<Currency>` - Currency amounts
 
 Works with imports from `gt-next`, `gt-next/client`, `gt-next/server`, and namespace imports (`import * as GT from 'gt-next'`).
+
+## Rule: `no-dynamic-translation-strings`
+
+Ensures translation functions (`useGT`, `getGT`, `tx`) only accept string literals as their first argument. Dynamic content like template literals or string concatenation is prohibited.
+
+### ✅ Correct
+
+```jsx
+import { useGT, tx } from 'gt-next';
+
+const t = useGT();
+t('Hello, world!');                           // ✓ String literal
+t('Hello, {name}!', { name: userName });     // ✓ Variables in second parameter
+await tx('Static message');                   // ✓ Direct function call
+```
+
+### ❌ Incorrect
+
+```jsx
+import { useGT, tx } from 'gt-next';
+
+const t = useGT();
+t(`Hello, ${userName}!`);                    // ✗ Template literal
+t('Hello, ' + userName);                     // ✗ String concatenation
+await tx(getMessage());                       // ✗ Function call as argument
+
+const message = 'Hello, world!';
+t(message);                                  // ✗ Variable reference
+```
+
+### Tracked Functions
+
+- `useGT()` - Client-side translation hook
+- `getGT()` - Server-side translation function  
+- `tx()` - Runtime translation function
+
+### Import Support
+
+Works with all import patterns:
+- Named imports: `import { useGT, tx } from 'gt-next'`
+- Aliased imports: `import { useGT as myGT } from 'gt-next'` 
+- Namespace imports: `import * as GT from 'gt-next'; GT.tx(...)`
+- Assignment tracking: `const t = useGT(); t(...)`

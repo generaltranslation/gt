@@ -7,6 +7,7 @@
  */
 
 import { noUnwrappedDynamicContent } from './rules/no-unwrapped-dynamic-content';
+import { noDynamicTranslationStrings } from './rules/no-dynamic-translation-strings';
 import { recommended } from './configs/recommended';
 
 const plugin = {
@@ -16,6 +17,7 @@ const plugin = {
   },
   rules: {
     'no-unwrapped-dynamic-content': noUnwrappedDynamicContent,
+    'no-dynamic-translation-strings': noDynamicTranslationStrings,
   },
   configs: {
     recommended,
