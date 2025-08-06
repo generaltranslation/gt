@@ -11,5 +11,19 @@
   "editOnGithub": "Modifier sur GitHub",
   "dashboard": "Tableau de bord",
   "blog": "Blog",
-  "docs": "Documentation"
+  "docs": "Documentation",
+  "starOnGithub": "Donnez-nous une étoile sur GitHub !",
+  "features": "Fonctionnalités",
+  "platform": "Plateforme",
+  "reference": "Référence",
+  "gettingStarted": "Commencer",
+  "advanced": "Avancé",
+  "guides": "Guides",
+  "technicalConcepts": "Concepts techniques",
+  "api": "API",
+  "tutorials": "Tutoriels",
+  "client": "Client",
+  "server": "Serveur",
+  "commands": "Commandes",
+  "supportedFormats": "Formats supportés"
 }
