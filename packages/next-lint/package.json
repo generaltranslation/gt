@@ -1,12 +1,11 @@
 {
   "name": "@generaltranslation/gt-next-lint",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "ESLint plugin for General Translation Next.js integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist",
-    "scripts"
+    "dist"
   ],
   "keywords": [
     "eslint",
@@ -35,35 +34,35 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "tsc",
+    "patch": "npm version patch",
+    "transpile": "tsc",
+    "build": "npm run transpile",
     "build:clean": "rm -rf dist && npm run build",
+    "build:release": "npm run build:clean",
     "dev": "tsc --watch",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "prepublishOnly": "npm run build:clean",
-    "postinstall": "node scripts/setup.js"
+    "release": "npm run build:clean && npm publish",
+    "release:alpha": "npm run build:clean && npm publish --tag alpha",
+    "release:beta": "npm run build:clean && npm publish --tag beta",
+    "release:latest": "npm run build:clean && npm publish --tag latest",
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\" \"**/__tests__/**/*.{js,ts,tsx}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts,tsx}\" \"**/__tests__/**/*.{js,ts,tsx}\" --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build:clean"
   },
   "peerDependencies": {
-    "eslint": "^8.0.0 || ^9.0.0"
+    "eslint": "^8.0.0 || ^9.0.0",
+    "gt-next": "^6",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0"
   },
   "devDependencies": {
     "@types/eslint": "^8.56.0",
-    "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.0",
-    "typescript": "^5.0.0"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node",
-    "testMatch": [
-      "**/__tests__/**/*.test.ts"
-    ]
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0"
   }
 }
