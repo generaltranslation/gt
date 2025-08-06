@@ -54,6 +54,7 @@ function T({
   // Compatibility with different options
   id = id ?? options?.$id;
   context = context ?? options?.$context;
+  const { hash: hashFromOptions } = options;
 
   const {
     translations,
@@ -92,6 +93,11 @@ function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
+    if (hashFromOptions && hashFromOptions !== hash) {
+      console.warn(
+        `gt-react: The hash from the options (${hashFromOptions}) does not match the hash generated from the children (${hash}).`
+      );
+    }
     return [childrenAsObjects, hash];
   }, [
     taggedChildren,

@@ -38,6 +38,7 @@ const defaultWithGTConfigProps = {
   swcPluginOptions: {
     dynamicJsxCheckLogLevel: 'warn',
     dynamicStringCheckLogLevel: 'warn',
+    experimentalCompileTimeHashCheck: false,
   },
 } as const;
 

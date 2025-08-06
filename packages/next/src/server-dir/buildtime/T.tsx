@@ -50,10 +50,12 @@ async function T({
   children,
   id,
   context,
+  ...options
 }: {
   children: any;
   id?: string;
   context?: string;
+  [key: string]: any;
 }): Promise<any> {
   // ----- SET UP ----- //
 
@@ -62,6 +64,14 @@ async function T({
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired, dialectTranslationRequired] =
     I18NConfig.requiresTranslation(locale);
+
+  // Compatibility with different options
+  id = id ?? options?.$id;
+  context = context ?? options?.$context;
+  const { hash: hashFromOptions } = options;
+  if (hashFromOptions) {
+    console.log(`gt-next: Hash from options: ${hashFromOptions}`);
+  }
 
   // ----- TAG CHILDREN ----- //
 
@@ -113,6 +123,11 @@ async function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
+    if (hashFromOptions && hashFromOptions !== hash) {
+      console.warn(
+        `gt-next: The hash from the options (${hashFromOptions}) does not match the hash generated from the children (${hash}).`
+      );
+    }
     translationEntry = translations?.[hash];
     translationsStatusEntry = translationsStatus?.[hash];
   }
@@ -159,6 +174,11 @@ async function T({
         ...(id && { id }),
         dataFormat: 'JSX',
       });
+      if (hashFromOptions && hashFromOptions !== hash) {
+        console.warn(
+          `gt-next: The hash from the options (${hashFromOptions}) does not match the hash generated from the children (${hash}).`
+        );
+      }
       const target = await I18NConfig.translateJsx({
         // do on demand translation
         source: childrenAsObjects,

@@ -3,7 +3,7 @@ use swc_core::ecma::{
     atoms::Atom,
     visit::{Fold, FoldWith},
 };
-use swc_core::common::Spanned;
+use swc_core::common::{Spanned, SyntaxContext};
 use swc_core::plugin::{plugin_transform, proxies::TransformPluginProgramMetadata};
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -38,6 +38,9 @@ struct PluginConfig {
     /// Log level for dynamic string checking: 'warn' | 'error' | 'off'
     #[serde(default)]
     dynamic_string_check_log_level: LogLevel,
+    /// Experimental: Add hash parameter to translation components at compile time
+    #[serde(default)]
+    experimental_compile_time_hash_check: bool,
 }
 
 /// GT-Next SWC plugin that detects dynamic content in translation components 
@@ -79,17 +82,19 @@ pub struct TransformVisitor {
     dynamic_content_violations: usize,
     /// Current file name for warning context (relative to project root)
     current_filename: Option<String>,
+    /// Experimental: Add hash parameter to translation components at compile time
+    experimental_compile_time_hash_check: bool,
 }
 
 impl Default for TransformVisitor {
     fn default() -> Self {
-        Self::new(LogLevel::Warn, LogLevel::Warn, None)
+        Self::new(LogLevel::Warn, LogLevel::Warn, false, None)
     }
 }
 
 impl TransformVisitor {
     /// Create a new TransformVisitor with the specified configuration
-    fn new(jsx_log_level: LogLevel, translation_string_log_level: LogLevel, filename: Option<String>) -> Self {
+    fn new(jsx_log_level: LogLevel, translation_string_log_level: LogLevel, experimental_compile_time_hash_check: bool, filename: Option<String>) -> Self {
         // Convert absolute path to relative path for cleaner output
         let relative_filename = filename.map(|path| Self::make_relative_path(&path));
         
@@ -107,6 +112,7 @@ impl TransformVisitor {
             translation_string_log_level,
             dynamic_content_violations: 0,
             current_filename: relative_filename,
+            experimental_compile_time_hash_check,
         }
     }
     
@@ -229,7 +235,51 @@ impl Fold for TransformVisitor {
         }
         
         // Fold children with updated context
-        let element = element.fold_children_with(self);
+        let mut element = element.fold_children_with(self);
+        
+        // Add hash attribute to translation components if experimental flag is enabled
+        if self.experimental_compile_time_hash_check && self.in_translation_component && !was_in_translation {
+            
+            // Only add hash to translation components (T, Tr, etc.) at the top level
+            // Check if hash attribute already exists
+            let has_hash_attr = element.opening.attrs.iter().any(|attr| {
+                if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+                    if let JSXAttrName::Ident(ident) = &jsx_attr.name {
+                        return ident.sym.as_ref() == "hash";
+                    }
+                }
+                false
+            });
+            
+            if !has_hash_attr {
+                // Create hash="test" attribute
+                let hash_attr = JSXAttrOrSpread::JSXAttr(JSXAttr {
+                    span: element.opening.span,
+                    name: JSXAttrName::Ident(Ident::new("hash".into(), element.opening.span, SyntaxContext::empty()).into()),
+                    value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                        span: element.opening.span,
+                        value: "test".into(),
+                        raw: None,
+                    }))),
+                });
+                
+                // Add the hash attribute to the element
+                element.opening.attrs.push(hash_attr);
+                
+                // Debug log to verify hash injection is working
+                let component_name = match &element.opening.name {
+                    JSXElementName::Ident(ident) => ident.sym.as_ref(),
+                    JSXElementName::JSXMemberExpr(_) => "<namespace component>",
+                    JSXElementName::JSXNamespacedName(_) => "<namespaced component>",
+                };
+                let location_info = if let Some(filename) = &self.current_filename {
+                    format!("{}:byte-{}", filename, element.opening.span.lo.0 as usize)
+                } else {
+                    format!("byte offset {}", element.opening.span.lo.0 as usize)
+                };
+                eprintln!("gt-next: Added hash='test' attribute to <{}> component at {}", component_name, location_info);
+            }
+        }
         
         // Restore previous state
         self.in_translation_component = was_in_translation;
@@ -413,10 +463,11 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     let filename = metadata
         .get_context(&TransformPluginMetadataContextKind::Filename)
         .map(|f| f.to_string());
-    
+
     let mut visitor = TransformVisitor::new(
         config.dynamic_jsx_check_log_level.clone(),
-        config.dynamic_string_check_log_level.clone(), 
+        config.dynamic_string_check_log_level.clone(),
+        config.experimental_compile_time_hash_check,
         filename
     );
     let program = program.fold_with(&mut visitor);
@@ -589,7 +640,7 @@ mod tests {
     // Integration tests for JSX processing
     #[test]
     fn test_basic_t_component_with_dynamic_content() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
         
         // Simulate import of T component 
         visitor.gt_next_translation_imports.insert(Atom::from("T"));
@@ -662,7 +713,7 @@ mod tests {
 
     #[test]
     fn test_t_component_with_wrapped_dynamic_content() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
         
         // Simulate imports of T and Var components 
         visitor.gt_next_translation_imports.insert(Atom::from("T"));
@@ -723,7 +774,7 @@ mod tests {
 
     #[test]
     fn test_namespace_import_t_component() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
         
         // Simulate namespace import: import * as GT from 'gt-next'
         visitor.gt_next_namespace_imports.insert(Atom::from("GT"));
@@ -740,7 +791,7 @@ mod tests {
 
     #[test] 
     fn test_assigned_t_component() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
         
         // Simulate import and assignment: import { T } from 'gt-next'; const MyT = T;
         visitor.gt_next_translation_imports.insert(Atom::from("T"));
@@ -823,7 +874,7 @@ mod tests {
 
     #[test]
     fn test_nested_t_components() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
         
         // Simulate import of T component 
         visitor.gt_next_translation_imports.insert(Atom::from("T"));
@@ -891,7 +942,7 @@ mod tests {
 
     #[test]
     fn test_valid_t_function_call() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
         
         // Simulate t function from useGT: const t = useGT();
         visitor.gt_translation_functions.insert(Atom::from("t"));
@@ -908,7 +959,7 @@ mod tests {
 
     #[test]
     fn test_invalid_t_function_call_template_literal() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
         
         // Simulate t function from useGT: const t = useGT();
         visitor.gt_translation_functions.insert(Atom::from("t"));
@@ -941,7 +992,7 @@ mod tests {
 
     #[test]
     fn test_invalid_t_function_call_string_concatenation() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
         
         // Simulate t function from useGT: const t = useGT();
         visitor.gt_translation_functions.insert(Atom::from("t"));
@@ -958,7 +1009,7 @@ mod tests {
 
     #[test]
     fn test_direct_tx_function_call() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
         
         // Simulate direct tx import: import { tx } from 'gt-next/server';
         visitor.gt_translation_functions.insert(Atom::from("tx"));
@@ -995,8 +1046,65 @@ mod tests {
     }
 
     #[test]
+    fn test_experimental_hash_injection() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, true, Some("test.tsx".to_string()));
+        
+        // Simulate import of T component 
+        visitor.gt_next_translation_imports.insert(Atom::from("T"));
+        
+        // Create JSX element: <T>Hello world</T>
+        let jsx_element = create_jsx_element("T", false);
+        
+        // Process the element
+        let transformed = jsx_element.fold_with(&mut visitor);
+        
+        // Check that hash attribute was added
+        let has_hash_attr = transformed.opening.attrs.iter().any(|attr| {
+            if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+                if let JSXAttrName::Ident(ident) = &jsx_attr.name {
+                    if ident.sym.as_ref() == "hash" {
+                        // Verify the value is "test"
+                        if let Some(JSXAttrValue::Lit(Lit::Str(str_lit))) = &jsx_attr.value {
+                            return str_lit.value.as_ref() == "test";
+                        }
+                    }
+                }
+            }
+            false
+        });
+        
+        assert!(has_hash_attr, "Should add hash='test' attribute to T component when experimental flag is enabled");
+    }
+
+    #[test]
+    fn test_experimental_hash_injection_disabled() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
+        
+        // Simulate import of T component 
+        visitor.gt_next_translation_imports.insert(Atom::from("T"));
+        
+        // Create JSX element: <T>Hello world</T>
+        let jsx_element = create_jsx_element("T", false);
+        
+        // Process the element
+        let transformed = jsx_element.fold_with(&mut visitor);
+        
+        // Check that NO hash attribute was added
+        let has_hash_attr = transformed.opening.attrs.iter().any(|attr| {
+            if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+                if let JSXAttrName::Ident(ident) = &jsx_attr.name {
+                    return ident.sym.as_ref() == "hash";
+                }
+            }
+            false
+        });
+        
+        assert!(!has_hash_attr, "Should NOT add hash attribute when experimental flag is disabled");
+    }
+
+    #[test]
     fn test_t_function_assignment_from_use_gt() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, Some("test.tsx".to_string()));
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
         
         // Simulate useGT import: import { useGT } from 'gt-next';
         visitor.gt_translation_functions.insert(Atom::from("useGT"));
