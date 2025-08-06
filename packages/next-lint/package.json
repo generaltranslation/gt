@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/gt-next-lint",
-  "version": "0.0.0",
+  "version": "0.0.0-alpha.0",
   "description": "ESLint plugin for General Translation Next.js integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -52,7 +52,7 @@
   },
   "peerDependencies": {
     "eslint": "^8.0.0 || ^9.0.0",
-    "gt-next": "^6",
+    "gt-next": "^6.0.12-alpha.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0"
   },

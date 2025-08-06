@@ -3,6 +3,7 @@ use swc_core::ecma::{
     atoms::Atom,
     visit::{Fold, FoldWith},
 };
+use swc_core::common::Spanned;
 use swc_core::plugin::{plugin_transform, proxies::TransformPluginProgramMetadata};
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -63,6 +64,8 @@ pub struct TransformVisitor {
     gt_assigned_translation_components: HashSet<Atom>,
     /// Maps variable names assigned from GT-Next variable components (e.g., "MyVar" from const MyVar = Var)
     gt_assigned_variable_components: HashSet<Atom>,
+    /// Maps imported translation function names (e.g., "t" from useGT, "tx" from direct import)
+    gt_translation_functions: HashSet<Atom>,
     /// Debug counter to track JSX elements processed
     jsx_element_count: usize,
     /// Log level for dynamic content checking
@@ -93,6 +96,7 @@ impl TransformVisitor {
             gt_next_namespace_imports: HashSet::new(),
             gt_assigned_translation_components: HashSet::new(),
             gt_assigned_variable_components: HashSet::new(),
+            gt_translation_functions: HashSet::new(),
             jsx_element_count: 0,
             log_level,
             dynamic_content_violations: 0,
@@ -135,12 +139,14 @@ impl TransformVisitor {
 
 impl Fold for TransformVisitor {
     /// Processes import declarations to track GT-Next component imports
+    /// Examples: import { T, Var, useGT, tx } from 'gt-next'; import * as GT from 'gt-next';
     fn fold_import_decl(&mut self, import: ImportDecl) -> ImportDecl {
         if self.is_gt_next_module(&import.src.value) {
             // Process both named imports and namespace imports from GT-Next modules
             for specifier in &import.specifiers {
                 match specifier {
                     ImportSpecifier::Named(named_import) => {
+                        // Handle named imports like: import { T, Var, useGT, tx } from 'gt-next';
                         let imported_name = match &named_import.imported {
                             Some(ModuleExportName::Ident(ident)) => &ident.sym,
                             Some(ModuleExportName::Str(str_lit)) => &str_lit.value,
@@ -153,6 +159,8 @@ impl Fold for TransformVisitor {
                             self.gt_next_translation_imports.insert(local_name.clone());
                         } else if self.is_variable_component_name(imported_name) {
                             self.gt_next_variable_imports.insert(local_name.clone());
+                        } else if self.is_translation_function_name(imported_name) {
+                            self.gt_translation_functions.insert(local_name.clone());
                         }
                     }
                     ImportSpecifier::Namespace(namespace_import) => {
@@ -170,7 +178,8 @@ impl Fold for TransformVisitor {
         import
     }
     
-    // Step 2: Add JSX element detection back
+    /// Detects JSX elements to track <T> and <Var> component context
+    /// Examples: <T>Hello {name}</T>, <GT.T>Content</GT.T>, <MyT>Text</MyT>
     fn fold_jsx_element(&mut self, element: JSXElement) -> JSXElement {
         self.jsx_element_count += 1;
         
@@ -195,7 +204,7 @@ impl Fold for TransformVisitor {
                 }
             }
             JSXElementName::JSXMemberExpr(member_expr) => {
-                // Handle namespace imports: <GT.T>, <GT.Var>, etc.
+                // Handle namespace imports like: <GT.T>, <GT.Var>, etc.
                 if let JSXObject::Ident(obj_ident) = &member_expr.obj {
                     if self.gt_next_namespace_imports.contains(&obj_ident.sym) {
                         // Check the property name (T, Var, etc.)
@@ -223,7 +232,8 @@ impl Fold for TransformVisitor {
         element
     }
     
-    // Step 3: Add JSX expression container detection for unwrapped dynamic content
+    /// Detects unwrapped dynamic content in JSX expressions 
+    /// Examples: <T>Hello {name}</T> (warns), <T>Hello <Var>{name}</Var></T> (ok)
     fn fold_jsx_expr_container(&mut self, expr: JSXExprContainer) -> JSXExprContainer {
         // Only process if log level is not 'off' and we're inside a translation component but NOT inside a variable component
         if self.log_level != LogLevel::Off && self.in_translation_component && !self.in_variable_component {
@@ -256,7 +266,7 @@ impl Fold for TransformVisitor {
     }
     
     /// Processes variable declarations to track assignments from GT-Next components
-    /// Handles patterns like: const MyT = T; const MyVar = Var;
+    /// Examples: const MyT = T; const MyVar = Var; const t = useGT();
     fn fold_var_declarator(&mut self, declarator: VarDeclarator) -> VarDeclarator {
         // Check if this is a simple assignment from a GT-Next component
         if let Some(init) = &declarator.init {
@@ -276,8 +286,70 @@ impl Fold for TransformVisitor {
             }
         }
         
+        // Handle function call assignments like: const t = useGT(); const t2 = getGT();
+        if let Some(init) = &declarator.init {
+            if let Expr::Call(call_expr) = init.as_ref() {
+                if let Callee::Expr(expr) = &call_expr.callee {
+                    if let Expr::Ident(ident) = expr.as_ref() {
+                        if self.gt_translation_functions.contains(&ident.sym) {
+                            // Get the variable name being declared
+                            if let Pat::Ident(binding_ident) = &declarator.name {
+                                let var_name = &binding_ident.id.sym;
+                                self.gt_translation_functions.insert(var_name.clone());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         // Continue processing (unchanged)
         declarator
+    }
+    
+    /// Processes function calls to detect invalid t() calls with non-literal arguments
+    /// Valid: t("Hello"); Invalid: t(`Hello ${name}`), t("Hello " + name)
+    fn fold_call_expr(&mut self, call: CallExpr) -> CallExpr {
+        // Only process if log level is not 'off'
+        if self.log_level != LogLevel::Off {
+            // Check if this is a call to a tracked translation function
+            if let Callee::Expr(expr) = &call.callee {
+                if let Expr::Ident(ident) = expr.as_ref() {
+                    if self.gt_translation_functions.contains(&ident.sym) {
+                        // Check if the first argument is NOT a string literal
+                        if let Some(first_arg) = call.args.first() {
+                            if !self.is_string_literal(&first_arg.expr) {
+                                self.dynamic_content_violations += 1;
+                                
+                                // Get location information  
+                                let byte_pos = first_arg.expr.span().lo.0 as usize;
+                                let location_info = if let Some(filename) = &self.current_filename {
+                                    format!("{}:byte-{}", filename, byte_pos)
+                                } else {
+                                    format!("byte offset {}", byte_pos)
+                                };
+                                
+                                // Output message based on log level
+                                match self.log_level {
+                                    LogLevel::Warn => {
+                                        eprintln!("gt-next: Warning: t() function must use a constant string literal as the first argument at {}. Use t('Hello, {name}!', { name: value }) instead of template literals or string concatenation.", location_info);
+                                    }
+                                    LogLevel::Error => {
+                                        eprintln!("gt-next: Error: t() function must use a constant string literal as the first argument at {}. Use t('Hello, {name}!', { name: value }) instead of template literals or string concatenation.", location_info);
+                                    }
+                                    LogLevel::Off => {
+                                        // This case shouldn't be reached due to the check above
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Continue processing children
+        call.fold_children_with(self)
     }
 }
 
@@ -297,6 +369,16 @@ impl TransformVisitor {
     /// Checks if a component name is a variable component (no allocations)
     fn is_variable_component_name(&self, name: &Atom) -> bool {
         matches!(name.as_str(), "Var" | "DateTime" | "Num" | "Currency")
+    }
+    
+    /// Checks if a function name is a translation function (no allocations)
+    fn is_translation_function_name(&self, name: &Atom) -> bool {
+        matches!(name.as_str(), "tx" | "useGT" | "getGT")
+    }
+    
+    /// Checks if an expression is a string literal (constant string)
+    fn is_string_literal(&self, expr: &Expr) -> bool {
+        matches!(expr, Expr::Lit(Lit::Str(_)))
     }
 }
 
@@ -744,6 +826,184 @@ mod tests {
         
         // Should detect TWO unwrapped dynamic content violations (one in outer T, one in inner T)
         assert_eq!(visitor.dynamic_content_violations, 2, "Should detect two unwrapped dynamic content violations in nested T components");
+    }
+
+    /// Helper function to create a function call expression
+    fn create_call_expr(function_name: &str, arg: Expr) -> CallExpr {
+        use swc_core::common::{DUMMY_SP, SyntaxContext};
+        
+        CallExpr {
+            span: DUMMY_SP,
+            ctxt: SyntaxContext::empty(),
+            callee: Callee::Expr(Box::new(Expr::Ident(Ident::new(function_name.into(), DUMMY_SP, SyntaxContext::empty())))),
+            args: vec![ExprOrSpread {
+                spread: None,
+                expr: Box::new(arg),
+            }],
+            type_args: None,
+        }
+    }
+
+    /// Helper function to create a string literal expression
+    fn create_string_literal(value: &str) -> Expr {
+        use swc_core::common::DUMMY_SP;
+        
+        Expr::Lit(Lit::Str(Str {
+            span: DUMMY_SP,
+            value: value.into(),
+            raw: None,
+        }))
+    }
+
+    /// Helper function to create a template literal expression: `Hello ${name}`
+    fn create_template_literal() -> Expr {
+        use swc_core::common::{DUMMY_SP, SyntaxContext};
+        
+        Expr::Tpl(Tpl {
+            span: DUMMY_SP,
+            exprs: vec![Box::new(Expr::Ident(Ident::new("name".into(), DUMMY_SP, SyntaxContext::empty())))],
+            quasis: vec![
+                TplElement {
+                    span: DUMMY_SP,
+                    tail: false,
+                    cooked: Some("Hello ".into()),
+                    raw: "Hello ".into(),
+                },
+                TplElement {
+                    span: DUMMY_SP,
+                    tail: true,
+                    cooked: Some("!".into()),
+                    raw: "!".into(),
+                },
+            ],
+        })
+    }
+
+    #[test]
+    fn test_valid_t_function_call() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        
+        // Simulate t function from useGT: const t = useGT();
+        visitor.gt_translation_functions.insert(Atom::from("t"));
+        
+        // Create valid t() call: t("Hello, world!")
+        let call_expr = create_call_expr("t", create_string_literal("Hello, world!"));
+        
+        // Process the call
+        let _transformed = call_expr.fold_with(&mut visitor);
+        
+        // Should NOT detect any violations for valid string literal
+        assert_eq!(visitor.dynamic_content_violations, 0, "Should not detect violations for valid t() call with string literal");
+    }
+
+    #[test]
+    fn test_invalid_t_function_call_template_literal() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        
+        // Simulate t function from useGT: const t = useGT();
+        visitor.gt_translation_functions.insert(Atom::from("t"));
+        
+        // Create invalid t() call: t(`Hello ${name}!`)
+        let call_expr = create_call_expr("t", create_template_literal());
+        
+        // Process the call
+        let _transformed = call_expr.fold_with(&mut visitor);
+        
+        // Should detect one violation for template literal
+        assert_eq!(visitor.dynamic_content_violations, 1, "Should detect violation for t() call with template literal");
+    }
+
+    /// Helper function to create binary expression for string concatenation: "Hello " + name
+    fn create_string_concatenation() -> Expr {
+        use swc_core::common::{DUMMY_SP, SyntaxContext};
+        
+        Expr::Bin(BinExpr {
+            span: DUMMY_SP,
+            op: BinaryOp::Add,
+            left: Box::new(Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: "Hello ".into(),
+                raw: None,
+            }))),
+            right: Box::new(Expr::Ident(Ident::new("name".into(), DUMMY_SP, SyntaxContext::empty()))),
+        })
+    }
+
+    #[test]
+    fn test_invalid_t_function_call_string_concatenation() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        
+        // Simulate t function from useGT: const t = useGT();
+        visitor.gt_translation_functions.insert(Atom::from("t"));
+        
+        // Create invalid t() call: t("Hello " + name)
+        let call_expr = create_call_expr("t", create_string_concatenation());
+        
+        // Process the call
+        let _transformed = call_expr.fold_with(&mut visitor);
+        
+        // Should detect one violation for string concatenation
+        assert_eq!(visitor.dynamic_content_violations, 1, "Should detect violation for t() call with string concatenation");
+    }
+
+    #[test]
+    fn test_direct_tx_function_call() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        
+        // Simulate direct tx import: import { tx } from 'gt-next/server';
+        visitor.gt_translation_functions.insert(Atom::from("tx"));
+        
+        // Create invalid tx() call: tx(`Hello ${name}!`)
+        let call_expr = create_call_expr("tx", create_template_literal());
+        
+        // Process the call
+        let _transformed = call_expr.fold_with(&mut visitor);
+        
+        // Should detect one violation for template literal in tx
+        assert_eq!(visitor.dynamic_content_violations, 1, "Should detect violation for tx() call with template literal");
+    }
+
+    /// Helper function to create a variable declarator: const t = useGT();
+    fn create_var_declarator_with_call() -> VarDeclarator {
+        use swc_core::common::{DUMMY_SP, SyntaxContext};
+        
+        VarDeclarator {
+            span: DUMMY_SP,
+            name: Pat::Ident(BindingIdent {
+                id: Ident::new("t".into(), DUMMY_SP, SyntaxContext::empty()),
+                type_ann: None,
+            }),
+            init: Some(Box::new(Expr::Call(CallExpr {
+                span: DUMMY_SP,
+                ctxt: SyntaxContext::empty(),
+                callee: Callee::Expr(Box::new(Expr::Ident(Ident::new("useGT".into(), DUMMY_SP, SyntaxContext::empty())))),
+                args: vec![],
+                type_args: None,
+            }))),
+            definite: false,
+        }
+    }
+
+    #[test]
+    fn test_t_function_assignment_from_use_gt() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, Some("test.tsx".to_string()));
+        
+        // Simulate useGT import: import { useGT } from 'gt-next';
+        visitor.gt_translation_functions.insert(Atom::from("useGT"));
+        
+        // Process assignment: const t = useGT();
+        let var_declarator = create_var_declarator_with_call();
+        let _transformed = var_declarator.fold_with(&mut visitor);
+        
+        // Verify that 't' is now tracked as a translation function
+        assert!(visitor.gt_translation_functions.contains(&Atom::from("t")), "Should track 't' as translation function after useGT() assignment");
+        
+        // Now test invalid usage of the assigned 't' function
+        let call_expr = create_call_expr("t", create_template_literal());
+        let _transformed_call = call_expr.fold_with(&mut visitor);
+        
+        // Should detect one violation for the assigned t() function
+        assert_eq!(visitor.dynamic_content_violations, 1, "Should detect violation for assigned t() function with template literal");
     }
 
 }
