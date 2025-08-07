@@ -182,9 +182,9 @@ impl<'a> JsxTraversal<'a> {
     /// Build a Branch component as a SanitizedVariable with branch structure
     fn build_branch_as_variable(&self, element: &JSXElement) -> Option<SanitizedVariable> {
         let tag_name = self.get_tag_name(&element.opening.name)?;
-        
+
         // Only handle Branch components here
-        if tag_name == "Branch" || (tag_name.ends_with(".Branch") && self.visitor.gt_next_namespace_imports.iter().any(|ns| tag_name.starts_with(&format!("{}.", ns)))) {
+        if self.is_branch_component(&tag_name) {
             // Extract branch props from attributes  
             let branches = self.extract_branch_props(&element.opening.attrs)?;
             
@@ -204,7 +204,7 @@ impl<'a> JsxTraversal<'a> {
         let tag_name = self.get_tag_name(&element.opening.name)?;
         
         // Only handle Plural components here
-        if tag_name == "Plural" || (tag_name.ends_with(".Plural") && self.visitor.gt_next_namespace_imports.iter().any(|ns| tag_name.starts_with(&format!("{}.", ns)))) {
+        if self.is_plural_component(&tag_name) {
             // Extract plural props from attributes  
             let branches = self.extract_plural_props(&element.opening.attrs)?;
             
@@ -232,6 +232,46 @@ impl<'a> JsxTraversal<'a> {
             }
             _ => None,
         }
+    }
+
+    /// Check if this is a Branch component
+    fn is_branch_component(&self, tag_name: &str) -> bool {
+
+        // Named import
+        if let Some(original_name) = self.visitor.gt_next_branch_import_aliases.get(&Atom::from(tag_name)) {
+            if original_name == "Branch" {
+                return true;
+            }
+        }
+
+        // Namespace import
+        if tag_name.ends_with(".Branch") {
+            let namespace = tag_name.split('.').next().unwrap_or("");
+            if self.visitor.gt_next_namespace_imports.contains(&Atom::from(namespace)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    fn is_plural_component(&self, tag_name: &str) -> bool {
+        // Named import
+        if let Some(original_name) = self.visitor.gt_next_branch_import_aliases.get(&Atom::from(tag_name)) {
+            if original_name == "Plural" {
+                return true;
+            }
+        }
+
+        // Namespace import
+        if tag_name.ends_with(".Plural"){
+            let namespace = tag_name.split('.').next().unwrap_or("");
+            if self.visitor.gt_next_namespace_imports.contains(&Atom::from(namespace)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// Analyze if this is a GT component and extract relevant info
@@ -536,5 +576,187 @@ mod tests {
             },
             _ => panic!("Expected SanitizedChild::Text, got {:?}", result),
         }
+    }
+
+    #[test]
+    fn test_is_branch_component_direct_import() {
+        use swc_core::ecma::atoms::Atom;
+        use std::collections::{HashMap, HashSet};
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Simulate direct import: import { Branch } from 'gt-next'
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("Branch"), Atom::from("Branch"));
+        
+        let traversal = JsxTraversal::new(&visitor);
+        
+        // Should recognize direct Branch component
+        assert!(traversal.is_branch_component("Branch"));
+        
+        // Should not recognize other components
+        assert!(!traversal.is_branch_component("Plural"));
+        assert!(!traversal.is_branch_component("T"));
+        assert!(!traversal.is_branch_component("SomeOtherComponent"));
+    }
+
+    #[test]
+    fn test_is_branch_component_aliased_import() {
+        use swc_core::ecma::atoms::Atom;
+        use std::collections::{HashMap, HashSet};
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Simulate aliased import: import { Branch as B } from 'gt-next'
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("B"), Atom::from("Branch"));
+        
+        let traversal = JsxTraversal::new(&visitor);
+        
+        // Should recognize aliased Branch component
+        assert!(traversal.is_branch_component("B"));
+        
+        // Should not recognize the original name since it wasn't directly imported
+        assert!(!traversal.is_branch_component("Branch"));
+        assert!(!traversal.is_branch_component("Plural"));
+    }
+
+    #[test]
+    fn test_is_branch_component_namespace_import() {
+        use swc_core::ecma::atoms::Atom;
+        use std::collections::{HashMap, HashSet};
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Simulate namespace import: import * as GT from 'gt-next'
+        visitor.gt_next_namespace_imports.insert(Atom::from("GT"));
+        
+        let traversal = JsxTraversal::new(&visitor);
+        
+        // Should recognize namespace Branch component
+        assert!(traversal.is_branch_component("GT.Branch"));
+        
+        // Should not recognize other namespace components
+        assert!(!traversal.is_branch_component("GT.Plural"));
+        assert!(!traversal.is_branch_component("GT.T"));
+        
+        // Should not recognize components from unknown namespaces
+        assert!(!traversal.is_branch_component("Unknown.Branch"));
+        
+        // Should not recognize direct names
+        assert!(!traversal.is_branch_component("Branch"));
+    }
+
+    #[test]
+    fn test_is_plural_component_direct_import() {
+        use swc_core::ecma::atoms::Atom;
+        use std::collections::{HashMap, HashSet};
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Simulate direct import: import { Plural } from 'gt-next'
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("Plural"), Atom::from("Plural"));
+        
+        let traversal = JsxTraversal::new(&visitor);
+        
+        // Should recognize direct Plural component
+        assert!(traversal.is_plural_component("Plural"));
+        
+        // Should not recognize other components
+        assert!(!traversal.is_plural_component("Branch"));
+        assert!(!traversal.is_plural_component("T"));
+        assert!(!traversal.is_plural_component("SomeOtherComponent"));
+    }
+
+    #[test]
+    fn test_is_plural_component_aliased_import() {
+        use swc_core::ecma::atoms::Atom;
+        use std::collections::{HashMap, HashSet};
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Simulate aliased import: import { Plural as P } from 'gt-next'
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("P"), Atom::from("Plural"));
+        
+        let traversal = JsxTraversal::new(&visitor);
+        
+        // Should recognize aliased Plural component
+        assert!(traversal.is_plural_component("P"));
+        
+        // Should not recognize the original name since it wasn't directly imported
+        assert!(!traversal.is_plural_component("Plural"));
+        assert!(!traversal.is_plural_component("Branch"));
+    }
+
+    #[test]
+    fn test_is_plural_component_namespace_import() {
+        use swc_core::ecma::atoms::Atom;
+        use std::collections::{HashMap, HashSet};
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Simulate namespace import: import * as GT from 'gt-next'
+        visitor.gt_next_namespace_imports.insert(Atom::from("GT"));
+        
+        let traversal = JsxTraversal::new(&visitor);
+        
+        // Should recognize namespace Plural component
+        assert!(traversal.is_plural_component("GT.Plural"));
+        
+        // Should not recognize other namespace components
+        assert!(!traversal.is_plural_component("GT.Branch"));
+        assert!(!traversal.is_plural_component("GT.T"));
+        
+        // Should not recognize components from unknown namespaces
+        assert!(!traversal.is_plural_component("Unknown.Plural"));
+        
+        // Should not recognize direct names
+        assert!(!traversal.is_plural_component("Plural"));
+    }
+
+    #[test]
+    fn test_component_detection_mixed_imports() {
+        use swc_core::ecma::atoms::Atom;
+        use std::collections::{HashMap, HashSet};
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Mixed scenario: direct Branch, aliased Plural, namespace import
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("Branch"), Atom::from("Branch"));
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("P"), Atom::from("Plural"));
+        visitor.gt_next_namespace_imports.insert(Atom::from("GT"));
+        
+        let traversal = JsxTraversal::new(&visitor);
+        
+        // Should recognize all correctly
+        assert!(traversal.is_branch_component("Branch")); // direct
+        assert!(traversal.is_plural_component("P")); // aliased
+        assert!(traversal.is_branch_component("GT.Branch")); // namespace
+        assert!(traversal.is_plural_component("GT.Plural")); // namespace
+        
+        // Should not cross-recognize
+        assert!(!traversal.is_plural_component("Branch"));
+        assert!(!traversal.is_branch_component("P"));
+        assert!(!traversal.is_plural_component("Plural")); // not directly imported
+    }
+
+    #[test]
+    fn test_component_detection_edge_cases() {
+        use swc_core::ecma::atoms::Atom;
+        use std::collections::{HashMap, HashSet};
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Edge case: import { Branch as Plural, Plural as Branch }
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("Plural"), Atom::from("Branch"));
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("Branch"), Atom::from("Plural"));
+        
+        let traversal = JsxTraversal::new(&visitor);
+        
+        // Should follow the alias mappings correctly
+        assert!(traversal.is_branch_component("Plural")); // "Plural" maps to original "Branch"
+        assert!(traversal.is_plural_component("Branch")); // "Branch" maps to original "Plural"
+        
+        // Verify no false positives
+        assert!(!traversal.is_plural_component("Plural"));
+        assert!(!traversal.is_branch_component("Branch"));
     }
 }

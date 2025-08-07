@@ -326,15 +326,7 @@ mod tests {
         
         // Should match known translation components
         let t_atom = Atom::from("T");
-        let plural_atom = Atom::from("Plural");
         assert!(visitor.is_translation_component_name(&t_atom));
-        assert!(visitor.is_translation_component_name(&plural_atom));
-        
-        // Should not match variable components
-        let var_atom = Atom::from("Var");
-        let num_atom = Atom::from("Num");
-        assert!(!visitor.is_translation_component_name(&var_atom));
-        assert!(!visitor.is_translation_component_name(&num_atom));
         
         // Should not match unknown components
         let unknown_atom = Atom::from("UnknownComponent");
@@ -948,8 +940,11 @@ mod tests {
         // Test that Branch components are serialized as variables with correct structure
         use crate::hash::{SanitizedChildren, SanitizedChild};
         use crate::traversal::JsxTraversal;
+        use swc_core::ecma::atoms::Atom;
         
-        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        // Set up import tracking for Branch component
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("Branch"), Atom::from("Branch"));
         let traversal = JsxTraversal::new(&visitor);
         
         // Create a Branch element with attributes
@@ -1018,8 +1013,11 @@ mod tests {
         // Test case based on the actual user-provided complex JSX structure
         use crate::hash::{JsxHasher, SanitizedData, SanitizedChildren, SanitizedChild, SanitizedVariable};
         use crate::traversal::JsxTraversal;
+        use swc_core::ecma::atoms::Atom;
         
-        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        // Set up import tracking for Branch component
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("Branch"), Atom::from("Branch"));
         let traversal = JsxTraversal::new(&visitor);
         
         // Create structure similar to: "Welcome to Our Platform change"
@@ -1232,8 +1230,11 @@ mod tests {
         // Test that Plural components are serialized as variables with correct structure
         use crate::hash::{SanitizedChildren, SanitizedChild};
         use crate::traversal::JsxTraversal;
+        use swc_core::ecma::atoms::Atom;
         
-        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        // Set up import tracking for Plural component
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("Plural"), Atom::from("Plural"));
         let traversal = JsxTraversal::new(&visitor);
         
         // Create a Plural element with attributes
@@ -1304,8 +1305,11 @@ mod tests {
         // Test Branch/Plural components with JSX content in attributes
         use crate::hash::{SanitizedChildren, SanitizedChild, JsxHasher, SanitizedData};
         use crate::traversal::JsxTraversal;
+        use swc_core::ecma::atoms::Atom;
         
-        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        // Set up import tracking for Branch component
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("Branch"), Atom::from("Branch"));
         let traversal = JsxTraversal::new(&visitor);
         
         // Create a Branch component with JSX fragment in file attribute: file={<>Here is some translatable static content</>}
@@ -1890,5 +1894,257 @@ mod tests {
         let custom_name = Atom::from("CustomT");
         assert!(!visitor.should_track_component_as_translation(&custom_name), 
                "CustomT should not be tracked even with other imports");
+    }
+
+    #[test]
+    fn test_direct_import_tracking() {
+        // Test direct imports without aliases: import { T, Branch, Var, useGT } from 'gt-next'
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Simulate direct imports processing
+        visitor.gt_next_translation_imports.insert(Atom::from("T"));
+        visitor.gt_next_translation_import_aliases.insert(Atom::from("T"), Atom::from("T"));
+        
+        visitor.gt_next_translation_imports.insert(Atom::from("Branch"));
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("Branch"), Atom::from("Branch"));
+        
+        visitor.gt_next_variable_imports.insert(Atom::from("Var"));
+        visitor.gt_next_variable_import_aliases.insert(Atom::from("Var"), Atom::from("Var"));
+        
+        visitor.gt_translation_functions.insert(Atom::from("useGT"));
+        visitor.gt_next_translation_function_import_aliases.insert(Atom::from("useGT"), Atom::from("useGT"));
+        
+        // Test that all direct imports are tracked
+        assert!(visitor.should_track_component_as_translation(&Atom::from("T")), 
+               "T should be tracked as direct import");
+        assert!(visitor.should_track_component_as_translation(&Atom::from("Branch")), 
+               "Branch should be tracked as direct import");
+        assert!(visitor.should_track_component_as_variable(&Atom::from("Var")), 
+               "Var should be tracked as direct import");
+        assert!(visitor.gt_translation_functions.contains(&Atom::from("useGT")), 
+               "useGT should be tracked as direct import");
+               
+        // Verify aliases map to themselves
+        assert_eq!(visitor.gt_next_translation_import_aliases.get(&Atom::from("T")), 
+                  Some(&Atom::from("T")), "T should map to itself");
+        assert_eq!(visitor.gt_next_branch_import_aliases.get(&Atom::from("Branch")), 
+                  Some(&Atom::from("Branch")), "Branch should map to itself");
+    }
+
+    #[test]
+    fn test_aliased_import_tracking() {
+        // Test aliased imports: import { T as MyT, Branch as B, Var as Variable, useGT as useTranslation } from 'gt-next'
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Simulate aliased imports processing
+        visitor.gt_next_translation_imports.insert(Atom::from("MyT"));
+        visitor.gt_next_translation_import_aliases.insert(Atom::from("MyT"), Atom::from("T"));
+        
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("B"), Atom::from("Branch"));
+        
+        visitor.gt_next_variable_imports.insert(Atom::from("Variable"));
+        visitor.gt_next_variable_import_aliases.insert(Atom::from("Variable"), Atom::from("Var"));
+        
+        visitor.gt_translation_functions.insert(Atom::from("useTranslation"));
+        visitor.gt_next_translation_function_import_aliases.insert(Atom::from("useTranslation"), Atom::from("useGT"));
+        
+        // Test that aliased names are tracked
+        assert!(visitor.should_track_component_as_translation(&Atom::from("MyT")), 
+               "MyT should be tracked as aliased T");
+        assert!(visitor.should_track_component_as_variable(&Atom::from("Variable")), 
+               "Variable should be tracked as aliased Var");
+        assert!(visitor.gt_translation_functions.contains(&Atom::from("useTranslation")), 
+               "useTranslation should be tracked as aliased useGT");
+               
+        // Test that original names are NOT tracked (since they weren't directly imported)
+        assert!(!visitor.should_track_component_as_translation(&Atom::from("T")), 
+               "T should not be tracked when imported as MyT");
+        assert!(!visitor.should_track_component_as_variable(&Atom::from("Var")), 
+               "Var should not be tracked when imported as Variable");
+        assert!(!visitor.gt_translation_functions.contains(&Atom::from("useGT")), 
+               "useGT should not be tracked when imported as useTranslation");
+               
+        // Verify alias mappings
+        assert_eq!(visitor.gt_next_translation_import_aliases.get(&Atom::from("MyT")), 
+                  Some(&Atom::from("T")), "MyT should map to T");
+        assert_eq!(visitor.gt_next_branch_import_aliases.get(&Atom::from("B")), 
+                  Some(&Atom::from("Branch")), "B should map to Branch");
+        assert_eq!(visitor.gt_next_variable_import_aliases.get(&Atom::from("Variable")), 
+                  Some(&Atom::from("Var")), "Variable should map to Var");
+        assert_eq!(visitor.gt_next_translation_function_import_aliases.get(&Atom::from("useTranslation")), 
+                  Some(&Atom::from("useGT")), "useTranslation should map to useGT");
+    }
+
+    #[test]
+    fn test_all_component_types_direct_imports() {
+        // Test all supported component types: T, Branch, Plural, Var, Num, Currency, DateTime, useGT, getGT
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Translation components
+        visitor.gt_next_translation_imports.insert(Atom::from("T"));
+        visitor.gt_next_translation_import_aliases.insert(Atom::from("T"), Atom::from("T"));
+        
+        // Branch components  
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("Branch"), Atom::from("Branch"));
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("Plural"), Atom::from("Plural"));
+        
+        // Variable components
+        visitor.gt_next_variable_imports.insert(Atom::from("Var"));
+        visitor.gt_next_variable_import_aliases.insert(Atom::from("Var"), Atom::from("Var"));
+        visitor.gt_next_variable_imports.insert(Atom::from("Num"));
+        visitor.gt_next_variable_import_aliases.insert(Atom::from("Num"), Atom::from("Num"));
+        visitor.gt_next_variable_imports.insert(Atom::from("Currency"));
+        visitor.gt_next_variable_import_aliases.insert(Atom::from("Currency"), Atom::from("Currency"));
+        visitor.gt_next_variable_imports.insert(Atom::from("DateTime"));
+        visitor.gt_next_variable_import_aliases.insert(Atom::from("DateTime"), Atom::from("DateTime"));
+        
+        // Translation functions
+        visitor.gt_translation_functions.insert(Atom::from("useGT"));
+        visitor.gt_next_translation_function_import_aliases.insert(Atom::from("useGT"), Atom::from("useGT"));
+        visitor.gt_translation_functions.insert(Atom::from("getGT"));
+        visitor.gt_next_translation_function_import_aliases.insert(Atom::from("getGT"), Atom::from("getGT"));
+        
+        // Test translation components
+        assert!(visitor.should_track_component_as_translation(&Atom::from("T")), 
+               "T should be tracked as translation component");
+               
+        // Test variable components
+        assert!(visitor.should_track_component_as_variable(&Atom::from("Var")), 
+               "Var should be tracked as variable component");
+        assert!(visitor.should_track_component_as_variable(&Atom::from("Num")), 
+               "Num should be tracked as variable component");
+        assert!(visitor.should_track_component_as_variable(&Atom::from("Currency")), 
+               "Currency should be tracked as variable component");
+        assert!(visitor.should_track_component_as_variable(&Atom::from("DateTime")), 
+               "DateTime should be tracked as variable component");
+               
+        // Test translation functions
+        assert!(visitor.gt_translation_functions.contains(&Atom::from("useGT")), 
+               "useGT should be tracked as translation function");
+        assert!(visitor.gt_translation_functions.contains(&Atom::from("getGT")), 
+               "getGT should be tracked as translation function");
+               
+        // Test that branch components have aliases (even though they don't use the main tracking)
+        assert!(visitor.gt_next_branch_import_aliases.contains_key(&Atom::from("Branch")), 
+               "Branch should have alias mapping");
+        assert!(visitor.gt_next_branch_import_aliases.contains_key(&Atom::from("Plural")), 
+               "Plural should have alias mapping");
+    }
+
+    #[test]
+    fn test_all_component_types_aliased_imports() {
+        // Test all component types with aliases
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Aliased translation components
+        visitor.gt_next_translation_imports.insert(Atom::from("MyT"));
+        visitor.gt_next_translation_import_aliases.insert(Atom::from("MyT"), Atom::from("T"));
+        
+        // Aliased branch components
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("MyBranch"), Atom::from("Branch"));
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("MyPlural"), Atom::from("Plural"));
+        
+        // Aliased variable components  
+        visitor.gt_next_variable_imports.insert(Atom::from("MyVar"));
+        visitor.gt_next_variable_import_aliases.insert(Atom::from("MyVar"), Atom::from("Var"));
+        visitor.gt_next_variable_imports.insert(Atom::from("MyNum"));
+        visitor.gt_next_variable_import_aliases.insert(Atom::from("MyNum"), Atom::from("Num"));
+        visitor.gt_next_variable_imports.insert(Atom::from("MyCurrency"));
+        visitor.gt_next_variable_import_aliases.insert(Atom::from("MyCurrency"), Atom::from("Currency"));
+        visitor.gt_next_variable_imports.insert(Atom::from("MyDateTime"));
+        visitor.gt_next_variable_import_aliases.insert(Atom::from("MyDateTime"), Atom::from("DateTime"));
+        
+        // Aliased translation functions
+        visitor.gt_translation_functions.insert(Atom::from("useTranslation"));
+        visitor.gt_next_translation_function_import_aliases.insert(Atom::from("useTranslation"), Atom::from("useGT"));
+        visitor.gt_translation_functions.insert(Atom::from("getTranslation"));
+        visitor.gt_next_translation_function_import_aliases.insert(Atom::from("getTranslation"), Atom::from("getGT"));
+        
+        // Test that aliased names work
+        assert!(visitor.should_track_component_as_translation(&Atom::from("MyT")), 
+               "MyT should be tracked as aliased T");
+        assert!(visitor.should_track_component_as_variable(&Atom::from("MyVar")), 
+               "MyVar should be tracked as aliased Var");
+        assert!(visitor.should_track_component_as_variable(&Atom::from("MyNum")), 
+               "MyNum should be tracked as aliased Num");
+        assert!(visitor.should_track_component_as_variable(&Atom::from("MyCurrency")), 
+               "MyCurrency should be tracked as aliased Currency");
+        assert!(visitor.should_track_component_as_variable(&Atom::from("MyDateTime")), 
+               "MyDateTime should be tracked as aliased DateTime");
+        assert!(visitor.gt_translation_functions.contains(&Atom::from("useTranslation")), 
+               "useTranslation should be tracked as aliased useGT");
+        assert!(visitor.gt_translation_functions.contains(&Atom::from("getTranslation")), 
+               "getTranslation should be tracked as aliased getGT");
+               
+        // Test that original names are NOT tracked
+        assert!(!visitor.should_track_component_as_translation(&Atom::from("T")), 
+               "T should not be tracked when imported as MyT");
+        assert!(!visitor.should_track_component_as_variable(&Atom::from("Var")), 
+               "Var should not be tracked when imported as MyVar");
+        assert!(!visitor.gt_translation_functions.contains(&Atom::from("useGT")), 
+               "useGT should not be tracked when imported as useTranslation");
+               
+        // Verify all alias mappings
+        assert_eq!(visitor.gt_next_translation_import_aliases.get(&Atom::from("MyT")), 
+                  Some(&Atom::from("T")), "MyT should map to T");
+        assert_eq!(visitor.gt_next_branch_import_aliases.get(&Atom::from("MyBranch")), 
+                  Some(&Atom::from("Branch")), "MyBranch should map to Branch");
+        assert_eq!(visitor.gt_next_variable_import_aliases.get(&Atom::from("MyVar")), 
+                  Some(&Atom::from("Var")), "MyVar should map to Var");
+        assert_eq!(visitor.gt_next_translation_function_import_aliases.get(&Atom::from("useTranslation")), 
+                  Some(&Atom::from("useGT")), "useTranslation should map to useGT");
+    }
+
+    #[test]
+    fn test_mixed_direct_and_aliased_imports() {
+        // Test mixing direct and aliased imports in same file
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Direct imports
+        visitor.gt_next_translation_imports.insert(Atom::from("T"));
+        visitor.gt_next_translation_import_aliases.insert(Atom::from("T"), Atom::from("T"));
+        visitor.gt_next_variable_imports.insert(Atom::from("Var"));
+        visitor.gt_next_variable_import_aliases.insert(Atom::from("Var"), Atom::from("Var"));
+        
+        // Aliased imports
+        visitor.gt_next_branch_import_aliases.insert(Atom::from("B"), Atom::from("Branch"));
+        visitor.gt_translation_functions.insert(Atom::from("useTranslation"));
+        visitor.gt_next_translation_function_import_aliases.insert(Atom::from("useTranslation"), Atom::from("useGT"));
+        
+        // Test direct imports work
+        assert!(visitor.should_track_component_as_translation(&Atom::from("T")), 
+               "T should work as direct import");
+        assert!(visitor.should_track_component_as_variable(&Atom::from("Var")), 
+               "Var should work as direct import");
+               
+        // Test aliased imports work
+        assert!(visitor.gt_translation_functions.contains(&Atom::from("useTranslation")), 
+               "useTranslation should work as aliased useGT");
+               
+        // Test non-imported names don't work
+        assert!(!visitor.should_track_component_as_variable(&Atom::from("Currency")), 
+               "Currency should not work when not imported");
+        assert!(!visitor.gt_translation_functions.contains(&Atom::from("getGT")), 
+               "getGT should not work when not imported");
+    }
+
+    #[test]
+    fn test_import_alias_collision_handling() {
+        // Test edge case: import { T as Var } - alias collision with different component types
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Import T as Var (translation component aliased as variable name)
+        visitor.gt_next_translation_imports.insert(Atom::from("Var")); // Note: local name is "Var" but it's a translation component
+        visitor.gt_next_translation_import_aliases.insert(Atom::from("Var"), Atom::from("T"));
+        
+        // The aliased "Var" should be tracked as translation (because original was T)
+        assert!(visitor.should_track_component_as_translation(&Atom::from("Var")), 
+               "Var (aliased T) should be tracked as translation component");
+        assert!(!visitor.should_track_component_as_variable(&Atom::from("Var")), 
+               "Var (aliased T) should NOT be tracked as variable component");
+               
+        // Verify the mapping
+        assert_eq!(visitor.gt_next_translation_import_aliases.get(&Atom::from("Var")), 
+                  Some(&Atom::from("T")), "Var should map back to T");
     }
 }
