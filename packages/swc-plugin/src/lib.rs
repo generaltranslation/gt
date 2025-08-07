@@ -82,6 +82,9 @@ pub struct TransformVisitor {
     gt_next_variable_import_aliases: std::collections::HashMap<Atom, Atom>, // Var, Num, Currency, DateTime
     gt_next_branch_import_aliases: std::collections::HashMap<Atom, Atom>, // Branch, Plural
     gt_next_translation_function_import_aliases: std::collections::HashMap<Atom, Atom>, // tx, getGT, useGT
+    /// Aliases for assigned components
+    gt_assigned_translation_components_map: std::collections::HashMap<Atom, Atom>, // const MyT = T
+    gt_assigned_variable_components_map: std::collections::HashMap<Atom, Atom>, // const MyVar = Var
 }
 
 impl Default for TransformVisitor {
@@ -106,12 +109,16 @@ impl TransformVisitor {
             gt_next_variable_import_aliases: std::collections::HashMap::new(), // Var, Num, Currency, DateTime
             gt_next_branch_import_aliases: std::collections::HashMap::new(), // Branch, Plural
             gt_next_translation_function_import_aliases: std::collections::HashMap::new(), // tx, getGT, useGT
+            gt_assigned_translation_components_map: std::collections::HashMap::new(), // const MyT = T
+            gt_assigned_variable_components_map: std::collections::HashMap::new(), // const MyVar = Var
             // deprecated
             gt_next_translation_imports: std::collections::HashSet::new(),
             // deprecated
             gt_next_variable_imports: std::collections::HashSet::new(),
             gt_next_namespace_imports: std::collections::HashSet::new(),
+            // deprecated
             gt_assigned_translation_components: std::collections::HashSet::new(),
+            // deprecated
             gt_assigned_variable_components: std::collections::HashSet::new(),
             gt_translation_functions: std::collections::HashSet::new(),
             dynamic_jsx_check_log_level,
@@ -212,6 +219,49 @@ impl TransformVisitor {
         )
     }
 
+    /// Process GT-Next import declarations to track imports and aliases
+    fn process_gt_import_declaration(&mut self, import_decl: &ImportDecl) {
+        let src_value = import_decl.src.value.as_ref();
+        match src_value {
+            "gt-next" | "gt-next/client" | "gt-next/server" => {
+                // Process named imports: import { T, Var, useGT } from 'gt-next'
+                for specifier in &import_decl.specifiers {
+                    match specifier {
+                        ImportSpecifier::Named(ImportNamedSpecifier { local, imported, .. }) => {
+                            let local_name = local.sym.clone();
+                            let original_name = match imported {
+                                Some(ModuleExportName::Ident(ident)) => ident.sym.clone(),
+                                Some(ModuleExportName::Str(str_lit)) => str_lit.value.clone(),
+                                None => local_name.clone(),
+                            };
+
+                            if self.is_translation_component_name(&original_name) {
+                                // Store the mapping: local_name -> original_name
+                                self.gt_next_translation_imports.insert(local_name.clone());
+                                self.gt_next_translation_import_aliases.insert(local_name, original_name);
+                            } else if self.is_variable_component_name(&original_name) {
+                                self.gt_next_variable_imports.insert(local_name.clone());
+                                self.gt_next_variable_import_aliases.insert(local_name, original_name);
+                            } else if self.is_branch_name(&original_name) {
+                                // no existing tracking for branches
+                                self.gt_next_branch_import_aliases.insert(local_name, original_name);
+                            } else if self.is_translation_function_name(&original_name) {
+                                self.gt_translation_functions.insert(local_name.clone());
+                                self.gt_next_translation_function_import_aliases.insert(local_name, original_name);
+                            }
+                        }
+                        ImportSpecifier::Namespace(ImportStarAsSpecifier { local, .. }) => {
+                            // Handle namespace imports: import * as GT from 'gt-next'
+                            self.gt_next_namespace_imports.insert(local.sym.clone());
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
     /// Calculate hash for JSX element using AST traversal
     fn calculate_element_hash(&self, element: &JSXElement) -> String {
         use crate::traversal::JsxTraversal;
@@ -265,47 +315,7 @@ impl TransformVisitor {
 impl VisitMut for TransformVisitor {
     /// Process import declarations to track GT-Next imports
     fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
-        let src_value = import_decl.src.value.as_ref();
-        match src_value {
-            "gt-next" | "gt-next/client" | "gt-next/server" => {
-                // Process named imports: import { T, Var, useGT } from 'gt-next'
-                for specifier in &import_decl.specifiers {
-                    match specifier {
-                        ImportSpecifier::Named(ImportNamedSpecifier { local, imported, .. }) => {
-                            let local_name = local.sym.clone();
-                            let original_name = match imported {
-                                Some(ModuleExportName::Ident(ident)) => ident.sym.clone(),
-                                Some(ModuleExportName::Str(str_lit)) => str_lit.value.clone(),
-                                None => local_name.clone(),
-                            };
-
-                            if self.is_translation_component_name(&original_name) {
-                                // Store the mapping: local_name -> original_name
-                                self.gt_next_translation_imports.insert(local_name.clone());
-                                self.gt_next_translation_import_aliases.insert(local_name, original_name);
-                            } else if self.is_variable_component_name(&original_name) {
-                                self.gt_next_variable_imports.insert(local_name.clone());
-                                self.gt_next_variable_import_aliases.insert(local_name, original_name);
-                            } else if self.is_branch_name(&original_name) {
-                                // no existing tracking for branches
-                                self.gt_next_branch_import_aliases.insert(local_name, original_name);
-                            } else if self.is_translation_function_name(&original_name) {
-                                self.gt_translation_functions.insert(local_name.clone());
-                                self.gt_next_translation_function_import_aliases.insert(local_name, original_name);
-                            }
-
-                        }
-                        ImportSpecifier::Namespace(ImportStarAsSpecifier { local, .. }) => {
-                            // Handle namespace imports: import * as GT from 'gt-next'
-                            self.gt_next_namespace_imports.insert(local.sym.clone());
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            _ => {}
-        }
-        
+        self.process_gt_import_declaration(import_decl);
         import_decl.visit_mut_children_with(self);
     }
 
@@ -401,45 +411,7 @@ impl VisitMut for TransformVisitor {
 impl Fold for TransformVisitor {
     /// Process import declarations to track GT-Next imports
     fn fold_import_decl(&mut self, import_decl: ImportDecl) -> ImportDecl {
-        let src_value = import_decl.src.value.as_ref();
-        match src_value {
-            "gt-next" | "gt-next/client" => {
-                // Process named imports: import { T, Var, useGT } from 'gt-next'
-                for specifier in &import_decl.specifiers {
-                    match specifier {
-                        ImportSpecifier::Named(ImportNamedSpecifier { local, .. }) => {
-                            let name = local.sym.clone();
-                            
-                            if self.is_translation_component_name(&name) {
-                                self.gt_next_translation_imports.insert(name);
-                            } else if self.is_variable_component_name(&name) {
-                                self.gt_next_variable_imports.insert(name);
-                            } else if matches!(name.as_ref(), "useGT" | "getGT") {
-                                self.gt_translation_functions.insert(name);
-                            }
-                        }
-                        ImportSpecifier::Namespace(ImportStarAsSpecifier { local, .. }) => {
-                            // Handle namespace imports: import * as GT from 'gt-next'
-                            self.gt_next_namespace_imports.insert(local.sym.clone());
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            "gt-next/server" => {
-                // Process server-side imports: import { getGT } from 'gt-next/server'
-                for specifier in &import_decl.specifiers {
-                    if let ImportSpecifier::Named(ImportNamedSpecifier { local, .. }) = specifier {
-                        let name = local.sym.clone();
-                        if matches!(name.as_ref(), "getGT") {
-                            self.gt_translation_functions.insert(name);
-                        }
-                    }
-                }
-            }
-            _ => {}
-        }
-        
+        self.process_gt_import_declaration(&import_decl);
         import_decl
     }
 

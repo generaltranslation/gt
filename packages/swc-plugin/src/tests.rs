@@ -2147,4 +2147,337 @@ mod tests {
         assert_eq!(visitor.gt_next_translation_import_aliases.get(&Atom::from("Var")), 
                   Some(&Atom::from("T")), "Var should map back to T");
     }
+
+    #[test]
+    fn test_visit_mut_import_decl_named_imports() {
+        use swc_core::ecma::ast::*;
+        use swc_core::common::{Span, DUMMY_SP, SyntaxContext};
+        use swc_core::ecma::atoms::Atom;
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Create import declaration: import { T, Var, Branch, Plural, useGT, getGT } from 'gt-next'
+        let mut import_decl = ImportDecl {
+            span: DUMMY_SP,
+            specifiers: vec![
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: None,
+                    is_type_only: false,
+                }),
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("Var".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: None,
+                    is_type_only: false,
+                }),
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("Branch".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: None,
+                    is_type_only: false,
+                }),
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("Plural".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: None,
+                    is_type_only: false,
+                }),
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("useGT".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: None,
+                    is_type_only: false,
+                }),
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("getGT".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: None,
+                    is_type_only: false,
+                }),
+            ],
+            src: Box::new(Str {
+                span: DUMMY_SP,
+                value: "gt-next".into(),
+                raw: None,
+            }),
+            type_only: false,
+            with: None,
+            phase: Default::default(),
+        };
+        
+        visitor.visit_mut_import_decl(&mut import_decl);
+        
+        // Verify translation components
+        assert!(visitor.gt_next_translation_imports.contains(&Atom::from("T")));
+        assert_eq!(visitor.gt_next_translation_import_aliases.get(&Atom::from("T")), Some(&Atom::from("T")));
+        
+        // Verify variable components
+        assert!(visitor.gt_next_variable_imports.contains(&Atom::from("Var")));
+        assert_eq!(visitor.gt_next_variable_import_aliases.get(&Atom::from("Var")), Some(&Atom::from("Var")));
+        
+        // Verify branch components
+        assert_eq!(visitor.gt_next_branch_import_aliases.get(&Atom::from("Branch")), Some(&Atom::from("Branch")));
+        assert_eq!(visitor.gt_next_branch_import_aliases.get(&Atom::from("Plural")), Some(&Atom::from("Plural")));
+        
+        // Verify translation functions
+        assert!(visitor.gt_translation_functions.contains(&Atom::from("useGT")));
+        assert!(visitor.gt_translation_functions.contains(&Atom::from("getGT")));
+        assert_eq!(visitor.gt_next_translation_function_import_aliases.get(&Atom::from("useGT")), Some(&Atom::from("useGT")));
+        assert_eq!(visitor.gt_next_translation_function_import_aliases.get(&Atom::from("getGT")), Some(&Atom::from("getGT")));
+    }
+
+    #[test]
+    fn test_visit_mut_import_decl_aliased_imports() {
+        use swc_core::ecma::ast::*;
+        use swc_core::common::{Span, DUMMY_SP, SyntaxContext};
+        use swc_core::ecma::atoms::Atom;
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Create import declaration: import { T as T1, Var as V, Branch as B, Plural as P, useGT as useGT1, getGT as getGT1 } from 'gt-next'
+        let mut import_decl = ImportDecl {
+            span: DUMMY_SP,
+            specifiers: vec![
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("T1".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: Some(ModuleExportName::Ident(Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty()).into())),
+                    is_type_only: false,
+                }),
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("V".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: Some(ModuleExportName::Ident(Ident::new("Var".into(), DUMMY_SP, SyntaxContext::empty()).into())),
+                    is_type_only: false,
+                }),
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("B".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: Some(ModuleExportName::Ident(Ident::new("Branch".into(), DUMMY_SP, SyntaxContext::empty()).into())),
+                    is_type_only: false,
+                }),
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("P".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: Some(ModuleExportName::Ident(Ident::new("Plural".into(), DUMMY_SP, SyntaxContext::empty()).into())),
+                    is_type_only: false,
+                }),
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("useGT1".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: Some(ModuleExportName::Ident(Ident::new("useGT".into(), DUMMY_SP, SyntaxContext::empty()).into())),
+                    is_type_only: false,
+                }),
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("getGT1".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: Some(ModuleExportName::Ident(Ident::new("getGT".into(), DUMMY_SP, SyntaxContext::empty()).into())),
+                    is_type_only: false,
+                }),
+            ],
+            src: Box::new(Str {
+                span: DUMMY_SP,
+                value: "gt-next".into(),
+                raw: None,
+            }),
+            type_only: false,
+            with: None,
+            phase: Default::default(),
+        };
+        
+        visitor.visit_mut_import_decl(&mut import_decl);
+        
+        // Verify translation components (local -> original mapping)
+        assert!(visitor.gt_next_translation_imports.contains(&Atom::from("T1")));
+        assert_eq!(visitor.gt_next_translation_import_aliases.get(&Atom::from("T1")), Some(&Atom::from("T")));
+        
+        // Verify variable components
+        assert!(visitor.gt_next_variable_imports.contains(&Atom::from("V")));
+        assert_eq!(visitor.gt_next_variable_import_aliases.get(&Atom::from("V")), Some(&Atom::from("Var")));
+        
+        // Verify branch components
+        assert_eq!(visitor.gt_next_branch_import_aliases.get(&Atom::from("B")), Some(&Atom::from("Branch")));
+        assert_eq!(visitor.gt_next_branch_import_aliases.get(&Atom::from("P")), Some(&Atom::from("Plural")));
+        
+        // Verify translation functions
+        assert!(visitor.gt_translation_functions.contains(&Atom::from("useGT1")));
+        assert!(visitor.gt_translation_functions.contains(&Atom::from("getGT1")));
+        assert_eq!(visitor.gt_next_translation_function_import_aliases.get(&Atom::from("useGT1")), Some(&Atom::from("useGT")));
+        assert_eq!(visitor.gt_next_translation_function_import_aliases.get(&Atom::from("getGT1")), Some(&Atom::from("getGT")));
+        
+        // Verify original names are NOT tracked as direct imports
+        assert!(!visitor.gt_next_translation_imports.contains(&Atom::from("T")));
+        assert!(!visitor.gt_next_variable_imports.contains(&Atom::from("Var")));
+        assert!(!visitor.gt_translation_functions.contains(&Atom::from("useGT")));
+        assert!(!visitor.gt_translation_functions.contains(&Atom::from("getGT")));
+    }
+
+    #[test]
+    fn test_visit_mut_import_decl_namespace_imports() {
+        use swc_core::ecma::ast::*;
+        use swc_core::common::{Span, DUMMY_SP, SyntaxContext};
+        use swc_core::ecma::atoms::Atom;
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Create import declaration: import * as GT from 'gt-next'
+        let mut import_decl = ImportDecl {
+            span: DUMMY_SP,
+            specifiers: vec![
+                ImportSpecifier::Namespace(ImportStarAsSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("GT".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                }),
+            ],
+            src: Box::new(Str {
+                span: DUMMY_SP,
+                value: "gt-next".into(),
+                raw: None,
+            }),
+            type_only: false,
+            with: None,
+            phase: Default::default(),
+        };
+        
+        visitor.visit_mut_import_decl(&mut import_decl);
+        
+        // Verify namespace import tracking
+        assert!(visitor.gt_next_namespace_imports.contains(&Atom::from("GT")));
+    }
+
+    #[test]
+    fn test_visit_mut_import_decl_mixed_packages() {
+        use swc_core::ecma::ast::*;
+        use swc_core::common::{Span, DUMMY_SP, SyntaxContext};
+        use swc_core::ecma::atoms::Atom;
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Test different package sources
+        let packages = ["gt-next", "gt-next/client", "gt-next/server"];
+        
+        for (i, package) in packages.iter().enumerate() {
+            let mut import_decl = ImportDecl {
+                span: DUMMY_SP,
+                specifiers: vec![
+                    ImportSpecifier::Named(ImportNamedSpecifier {
+                        span: DUMMY_SP,
+                        local: Ident::new(format!("T{}", i).into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                        imported: Some(ModuleExportName::Ident(Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty()).into())),
+                        is_type_only: false,
+                    }),
+                    ImportSpecifier::Named(ImportNamedSpecifier {
+                        span: DUMMY_SP,
+                        local: Ident::new(format!("getGT{}", i).into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                        imported: Some(ModuleExportName::Ident(Ident::new("getGT".into(), DUMMY_SP, SyntaxContext::empty()).into())),
+                        is_type_only: false,
+                    }),
+                ],
+                src: Box::new(Str {
+                    span: DUMMY_SP,
+                    value: (*package).into(),
+                    raw: None,
+                }),
+                type_only: false,
+                with: None,
+                phase: Default::default(),
+            };
+            
+            visitor.visit_mut_import_decl(&mut import_decl);
+        }
+        
+        // Should track T and getGT from all supported packages
+        for i in 0..packages.len() {
+            assert!(visitor.gt_next_translation_imports.contains(&Atom::from(format!("T{}", i))));
+            assert!(visitor.gt_translation_functions.contains(&Atom::from(format!("getGT{}", i))));
+        }
+    }
+
+    #[test]
+    fn test_visit_mut_import_decl_non_gt_imports_ignored() {
+        use swc_core::ecma::ast::*;
+        use swc_core::common::{Span, DUMMY_SP, SyntaxContext};
+        use swc_core::ecma::atoms::Atom;
+        
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Create import from non-GT package: import { T, Branch } from 'react'
+        let mut import_decl = ImportDecl {
+            span: DUMMY_SP,
+            specifiers: vec![
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: None,
+                    is_type_only: false,
+                }),
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                    span: DUMMY_SP,
+                    local: Ident::new("Branch".into(), DUMMY_SP, SyntaxContext::empty()).into(),
+                    imported: None,
+                    is_type_only: false,
+                }),
+            ],
+            src: Box::new(Str {
+                span: DUMMY_SP,
+                value: "react".into(),
+                raw: None,
+            }),
+            type_only: false,
+            with: None,
+            phase: Default::default(),
+        };
+        
+        visitor.visit_mut_import_decl(&mut import_decl);
+        
+        // Should not track any imports from non-GT packages
+        assert!(!visitor.gt_next_translation_imports.contains(&Atom::from("T")));
+        assert!(!visitor.gt_next_branch_import_aliases.contains_key(&Atom::from("Branch")));
+        assert!(visitor.gt_next_translation_import_aliases.is_empty());
+        assert!(visitor.gt_next_branch_import_aliases.is_empty());
+    }
+
+    #[test]
+    fn test_is_branch_name_helper() {
+        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        assert!(visitor.is_branch_name(&Atom::from("Branch")));
+        assert!(visitor.is_branch_name(&Atom::from("Plural")));
+        assert!(!visitor.is_branch_name(&Atom::from("T")));
+        assert!(!visitor.is_branch_name(&Atom::from("Var")));
+        assert!(!visitor.is_branch_name(&Atom::from("useGT")));
+    }
+
+    #[test]
+    fn test_is_translation_function_name_helper() {
+        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        assert!(visitor.is_translation_function_name(&Atom::from("useGT")));
+        assert!(visitor.is_translation_function_name(&Atom::from("getGT")));
+        assert!(!visitor.is_translation_function_name(&Atom::from("T")));
+        assert!(!visitor.is_translation_function_name(&Atom::from("Branch")));
+        assert!(!visitor.is_translation_function_name(&Atom::from("Var")));
+    }
+
+    #[test]
+    fn test_visitor_initial_state_extended() {
+        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        assert_eq!(visitor.dynamic_content_violations, 0);
+        assert!(visitor.gt_next_translation_imports.is_empty());
+        assert!(visitor.gt_next_variable_imports.is_empty());
+        assert!(visitor.gt_next_namespace_imports.is_empty());
+        assert!(visitor.gt_translation_functions.is_empty());
+        assert!(visitor.gt_assigned_translation_components.is_empty());
+        assert!(visitor.gt_assigned_variable_components.is_empty());
+        assert!(visitor.gt_next_translation_import_aliases.is_empty());
+        assert!(visitor.gt_next_variable_import_aliases.is_empty());
+        assert!(visitor.gt_next_branch_import_aliases.is_empty());
+        assert!(visitor.gt_next_translation_function_import_aliases.is_empty());
+        assert!(visitor.gt_assigned_translation_components_map.is_empty());
+        assert!(visitor.gt_assigned_variable_components_map.is_empty());
+    }
+
 }

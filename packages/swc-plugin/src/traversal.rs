@@ -95,12 +95,12 @@ impl<'a> JsxTraversal<'a> {
         }
         
         // Branch components should be handled as SanitizedVariable, not SanitizedElement
-        if tag_name == "Branch" || (tag_name.ends_with(".Branch") && self.visitor.gt_next_namespace_imports.iter().any(|ns| tag_name.starts_with(&format!("{}.", ns)))) {
+        if self.is_branch_component(&tag_name) {
             return None; // This will be handled by build_branch_as_variable
         }
         
         // Plural components should be handled as SanitizedVariable, not SanitizedElement  
-        if tag_name == "Plural" || (tag_name.ends_with(".Plural") && self.visitor.gt_next_namespace_imports.iter().any(|ns| tag_name.starts_with(&format!("{}.", ns)))) {
+        if self.is_plural_component(&tag_name) {
             return None; // This will be handled by build_plural_as_variable
         }
 
@@ -283,18 +283,12 @@ impl<'a> JsxTraversal<'a> {
             info.is_gt_component = true;
 
             // Determine transformation type
-            match tag_name {
-                "Branch" => {
-                    info.transformation = Some("b".to_string());
-                    info.branches = self.extract_branch_props(attrs);
-                }
-                "Plural" => {
-                    info.transformation = Some("p".to_string());
-                    info.branches = self.extract_plural_props(attrs);
-                }
-                _ => {
-                    info.transformation = Some("fragment".to_string());
-                }
+            if self.is_branch_component(tag_name) {
+                info.transformation = Some(String::from("b"));
+                info.branches = self.extract_branch_props(attrs);
+            } else if self.is_plural_component(tag_name) {
+                info.transformation = Some(String::from("p"));
+                info.branches = self.extract_plural_props(attrs);
             }
         } else if self.visitor.should_track_component_as_variable(&Atom::from(tag_name)) {
             info.is_gt_component = true;
