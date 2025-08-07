@@ -539,5 +539,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     program.fold_with(&mut visitor)
 }
 
+mod hash;
+
 #[cfg(test)]
 mod tests;
