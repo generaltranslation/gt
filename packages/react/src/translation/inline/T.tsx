@@ -93,9 +93,19 @@ function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
-    if (hashFromOptions && hashFromOptions !== hash) {
-      console.warn(
-        `gt-react: The hash from the options (${hashFromOptions}) does not match the hash generated from the children (${hash}).`
+    if (hashFromOptions) {
+      if (hashFromOptions !== hash) {
+        console.warn(
+          `gt-react: The hash from the options (${hashFromOptions}) does not match the hash generated from the children (${hash}).`
+        );
+      } else {
+        console.log(
+          `gt-react: Hash from options matches hash from children: ${hash}`
+        );
+      }
+    } else {
+      console.log(
+        `gt-react: No hash from options, using hash from children: ${hash}`
       );
     }
     return [childrenAsObjects, hash];

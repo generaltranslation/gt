@@ -583,14 +583,15 @@ mod tests {
         // Process the element
         let transformed = jsx_element.fold_with(&mut visitor);
         
-        // Check that hash attribute was added
+        // Check that hash attribute was added with a calculated value
         let has_hash_attr = transformed.opening.attrs.iter().any(|attr| {
             if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
                 if let JSXAttrName::Ident(ident) = &jsx_attr.name {
                     if ident.sym.as_ref() == "hash" {
-                        // Verify the value is "test"
+                        // Verify the value is a hex hash (16 characters)
                         if let Some(JSXAttrValue::Lit(Lit::Str(str_lit))) = &jsx_attr.value {
-                            return str_lit.value.as_ref() == "test";
+                            let hash_value = str_lit.value.as_ref();
+                            return hash_value.len() == 16 && hash_value.chars().all(|c| c.is_ascii_hexdigit());
                         }
                     }
                 }
@@ -598,7 +599,7 @@ mod tests {
             false
         });
         
-        assert!(has_hash_attr, "Should add hash='test' attribute to T component when experimental flag is enabled");
+        assert!(has_hash_attr, "Should add calculated hash attribute to T component when experimental flag is enabled");
     }
 
     #[test]
@@ -721,5 +722,1173 @@ mod tests {
         
         // Should detect one violation for the assigned t() function
         assert_eq!(visitor.dynamic_content_violations, 1, "Should detect violation for assigned t() function with template literal");
+    }
+
+    // Configuration parsing tests
+    
+    #[test]
+    fn test_plugin_config_default() {
+        let config = PluginConfig::default();
+        
+        assert_eq!(config.experimental_compile_time_hash, false);
+        assert!(matches!(config.dynamic_jsx_check_log_level, LogLevel::Warn));
+        assert!(matches!(config.dynamic_string_check_log_level, LogLevel::Warn));
+    }
+
+    #[test]
+    fn test_plugin_config_parse_experimental_hash_true() {
+        let json = r#"{"experimentalCompileTimeHash": true}"#;
+        let config: PluginConfig = serde_json::from_str(json).unwrap();
+        
+        assert_eq!(config.experimental_compile_time_hash, true);
+        // Other fields should use defaults
+        assert!(matches!(config.dynamic_jsx_check_log_level, LogLevel::Warn));
+        assert!(matches!(config.dynamic_string_check_log_level, LogLevel::Warn));
+    }
+
+    #[test]
+    fn test_plugin_config_parse_experimental_hash_false() {
+        let json = r#"{"experimentalCompileTimeHash": false}"#;
+        let config: PluginConfig = serde_json::from_str(json).unwrap();
+        
+        assert_eq!(config.experimental_compile_time_hash, false);
+    }
+
+    #[test]
+    fn test_plugin_config_parse_full_config() {
+        let json = r#"{
+            "dynamicJsxCheckLogLevel": "error",
+            "dynamicStringCheckLogLevel": "info",
+            "experimentalCompileTimeHash": true
+        }"#;
+        let config: PluginConfig = serde_json::from_str(json).unwrap();
+        
+        assert_eq!(config.experimental_compile_time_hash, true);
+        assert!(matches!(config.dynamic_jsx_check_log_level, LogLevel::Error));
+        assert!(matches!(config.dynamic_string_check_log_level, LogLevel::Info));
+    }
+
+    #[test]
+    fn test_plugin_config_parse_empty_json() {
+        let json = r#"{}"#;
+        let config: PluginConfig = serde_json::from_str(json).unwrap();
+        
+        // All fields should use their defaults
+        assert_eq!(config.experimental_compile_time_hash, false);
+        assert!(matches!(config.dynamic_jsx_check_log_level, LogLevel::Warn));
+        assert!(matches!(config.dynamic_string_check_log_level, LogLevel::Warn));
+    }
+
+    #[test]
+    fn test_plugin_config_parse_partial_config() {
+        let json = r#"{"dynamicJsxCheckLogLevel": "silent"}"#;
+        let config: PluginConfig = serde_json::from_str(json).unwrap();
+        
+        // Specified field should be set
+        assert!(matches!(config.dynamic_jsx_check_log_level, LogLevel::Silent));
+        // Others should use defaults
+        assert_eq!(config.experimental_compile_time_hash, false);
+        assert!(matches!(config.dynamic_string_check_log_level, LogLevel::Warn));
+    }
+
+    #[test]
+    fn test_plugin_config_camel_case_conversion() {
+        // Test that camelCase JSON keys are properly converted to snake_case Rust fields
+        let json = r#"{
+            "dynamicJsxCheckLogLevel": "error",
+            "dynamicStringCheckLogLevel": "info", 
+            "experimentalCompileTimeHash": true
+        }"#;
+        let config: PluginConfig = serde_json::from_str(json).unwrap();
+        
+        // All fields should be parsed correctly
+        assert!(matches!(config.dynamic_jsx_check_log_level, LogLevel::Error));
+        assert!(matches!(config.dynamic_string_check_log_level, LogLevel::Info));
+        assert_eq!(config.experimental_compile_time_hash, true);
+    }
+
+    #[test]
+    fn test_plugin_config_invalid_json_fallback() {
+        let invalid_json = r#"{"invalid": syntax}"#;
+        let config: PluginConfig = serde_json::from_str(invalid_json).unwrap_or_default();
+        
+        // Should fallback to defaults when JSON is invalid
+        assert_eq!(config.experimental_compile_time_hash, false);
+        assert!(matches!(config.dynamic_jsx_check_log_level, LogLevel::Warn));
+        assert!(matches!(config.dynamic_string_check_log_level, LogLevel::Warn));
+    }
+
+    #[test]
+    fn test_complex_jsx_structure_whitespace_normalization() {
+        use swc_core::ecma::ast::*;
+        use swc_core::common::{Span, BytePos};
+        use crate::hash::{JsxHasher, SanitizedData, SanitizedChildren, SanitizedChild};
+        use crate::traversal::JsxTraversal;
+        
+        // Test case similar to the complex JSX structure provided by user
+        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        
+        // Create a JSX text element with multiline content and extra whitespace
+        let jsx_text_with_whitespace = JSXText {
+            span: Span::new(BytePos(0), BytePos(1)),
+            value: "This is a comprehensive guide to help you get started with our\n                amazing platform. We provide everything you need to succeed in\n                your journey.".into(),
+            raw: "This is a comprehensive guide to help you get started with our\n                amazing platform. We provide everything you need to succeed in\n                your journey.".into(),
+        };
+        
+        let jsx_child = JSXElementChild::JSXText(jsx_text_with_whitespace);
+        
+        // Build sanitized child and verify whitespace normalization
+        let traversal = JsxTraversal::new(&visitor);
+        let result = traversal.build_sanitized_child(&jsx_child);
+        
+        match result {
+            Some(SanitizedChild::Text(text)) => {
+                // Should be normalized to single spaces
+                let expected = "This is a comprehensive guide to help you get started with our amazing platform. We provide everything you need to succeed in your journey.";
+                assert_eq!(text, expected);
+                
+                // Verify no extra whitespace remains
+                assert!(!text.contains("\n"), "Should not contain newlines");
+                assert!(!text.contains("  "), "Should not contain double spaces");
+                
+                // Test that the normalized text produces consistent hashes
+                let children = SanitizedChildren::Single(Box::new(SanitizedChild::Text(text.clone())));
+                let data = SanitizedData {
+                    source: Some(Box::new(children)),
+                    id: None,
+                    context: None,
+                    data_format: Some("JSX".to_string()),
+                };
+                
+                let hash1 = JsxHasher::hash_string(&JsxHasher::stable_stringify(&data).unwrap());
+                let hash2 = JsxHasher::hash_string(&JsxHasher::stable_stringify(&data).unwrap());
+                
+                assert_eq!(hash1, hash2, "Normalized text should produce consistent hashes");
+                assert_eq!(hash1.len(), 16, "Hash should be 16 characters");
+            },
+            _ => panic!("Expected SanitizedChild::Text, got {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_branch_component_hash_injection() {
+        // Test Branch component with experimental hash feature
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        
+        // Simulate import of Branch component 
+        visitor.gt_next_translation_imports.insert(Atom::from("Branch"));
+        
+        // Create a Branch component: <Branch n="file" file="file.svg" directory="public" />
+        let branch_element = JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                name: JSXElementName::Ident(Ident::new("Branch".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                span: DUMMY_SP,
+                attrs: vec![
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("n".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: "file".into(),
+                            raw: None,
+                        }))),
+                    }),
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("file".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: "file.svg".into(),
+                            raw: None,
+                        }))),
+                    }),
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("directory".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: "public".into(),
+                            raw: None,
+                        }))),
+                    }),
+                ],
+                self_closing: true,
+                type_args: None,
+            },
+            closing: None,
+            children: vec![],
+        };
+        
+        // Process the element
+        let transformed = branch_element.fold_with(&mut visitor);
+        
+        // Check that hash attribute was added with a calculated value
+        let hash_attr = transformed.opening.attrs.iter().find_map(|attr| {
+            if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+                if let JSXAttrName::Ident(ident) = &jsx_attr.name {
+                    if ident.sym.as_ref() == "hash" {
+                        if let Some(JSXAttrValue::Lit(Lit::Str(str_lit))) = &jsx_attr.value {
+                            return Some(str_lit.value.as_ref());
+                        }
+                    }
+                }
+            }
+            None
+        });
+        
+        assert!(hash_attr.is_some(), "Should add hash attribute to Branch component");
+        let hash_value = hash_attr.unwrap();
+        assert_eq!(hash_value.len(), 16, "Hash should be 16 characters long");
+        assert!(hash_value.chars().all(|c| c.is_ascii_hexdigit()), "Hash should be hexadecimal");
+    }
+
+    #[test]
+    fn test_branch_component_structure_serialization() {
+        // Test that Branch components are serialized as variables with correct structure
+        use crate::hash::{SanitizedChildren, SanitizedChild};
+        use crate::traversal::JsxTraversal;
+        
+        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        let traversal = JsxTraversal::new(&visitor);
+        
+        // Create a Branch element with attributes
+        let branch_element = JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                name: JSXElementName::Ident(Ident::new("Branch".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                span: DUMMY_SP,
+                attrs: vec![
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("n".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: "file".into(),
+                            raw: None,
+                        }))),
+                    }),
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("file".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: "file.svg".into(),
+                            raw: None,
+                        }))),
+                    }),
+                ],
+                self_closing: true,
+                type_args: None,
+            },
+            closing: None,
+            children: vec![],
+        };
+        
+        let jsx_child = JSXElementChild::JSXElement(Box::new(branch_element));
+        let result = traversal.build_sanitized_child(&jsx_child);
+        
+        match result {
+            Some(SanitizedChild::Variable(var)) => {
+                // Should be serialized as a variable with branch structure
+                assert!(var.k.is_none(), "Branch should not have a key");
+                assert!(var.v.is_none(), "Branch should not have a variable type");
+                assert!(var.b.is_some(), "Branch should have branch data");
+                assert_eq!(var.t, Some("b".to_string()), "Branch should have transformation type 'b'");
+                
+                // Check branch data contains expected attributes
+                let branches = var.b.as_ref().unwrap();
+                assert!(branches.contains_key("n"), "Should contain 'n' branch");
+                assert!(branches.contains_key("file"), "Should contain 'file' branch");
+                // Hash is no longer injected into Branch/Plural components
+                
+                // Verify serialization structure matches expected runtime format
+                let json = serde_json::to_string(&var).unwrap();
+                assert!(json.contains(r#""b":"#), "Should serialize with 'b' field");
+                assert!(json.contains(r#""t":"b""#), "Should serialize with transformation type 'b'");
+                assert!(!json.contains(r#""k":"#), "Should not serialize with 'k' field");
+                assert!(!json.contains(r#""v":"#), "Should not serialize with 'v' field");
+            },
+            _ => panic!("Branch component should be serialized as SanitizedChild::Variable, got {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_complex_real_world_jsx_with_branch() {
+        // Test case based on the actual user-provided complex JSX structure
+        use crate::hash::{JsxHasher, SanitizedData, SanitizedChildren, SanitizedChild, SanitizedVariable};
+        use crate::traversal::JsxTraversal;
+        
+        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        let traversal = JsxTraversal::new(&visitor);
+        
+        // Create structure similar to: "Welcome to Our Platform change"
+        let _welcome_text = JSXText {
+            span: DUMMY_SP,
+            value: "Welcome to Our Platform change".into(),
+            raw: "Welcome to Our Platform change".into(),
+        };
+        
+        // Create structure with whitespace normalization: multiline text
+        let guide_text = JSXText {
+            span: DUMMY_SP,
+            value: "This is a comprehensive guide to help you get started with our\n                amazing platform. We provide everything you need to succeed in\n                your journey.".into(),
+            raw: "This is a comprehensive guide to help you get started with our\n                amazing platform. We provide everything you need to succeed in\n                your journey.".into(),
+        };
+        
+        // Test whitespace normalization
+        let guide_child = JSXElementChild::JSXText(guide_text);
+        let normalized_result = traversal.build_sanitized_child(&guide_child);
+        
+        match normalized_result {
+            Some(SanitizedChild::Text(text)) => {
+                let expected = "This is a comprehensive guide to help you get started with our amazing platform. We provide everything you need to succeed in your journey.";
+                assert_eq!(text, expected, "Should normalize whitespace in multiline text");
+            },
+            _ => panic!("Expected normalized text"),
+        }
+        
+        // Create a Branch component within the complex structure
+        let branch_element = JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                name: JSXElementName::Ident(Ident::new("Branch".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                span: DUMMY_SP,
+                attrs: vec![
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("n".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: "file".into(),
+                            raw: None,
+                        }))),
+                    }),
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("file".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: "file.svg".into(),
+                            raw: None,
+                        }))),
+                    }),
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("directory".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: "public".into(),
+                            raw: None,
+                        }))),
+                    }),
+                ],
+                self_closing: true,
+                type_args: None,
+            },
+            closing: None,
+            children: vec![],
+        };
+        
+        let branch_child = JSXElementChild::JSXElement(Box::new(branch_element));
+        let branch_result = traversal.build_sanitized_child(&branch_child);
+        
+        // Verify Branch serializes correctly with hash
+        match branch_result {
+            Some(SanitizedChild::Variable(branch_var)) => {
+                assert_eq!(branch_var.t, Some("b".to_string()));
+                assert!(branch_var.b.is_some());
+                
+                let branches = branch_var.b.unwrap();
+                // Hash is no longer injected into Branch/Plural components
+                
+                // Create a complex structure with the Branch component
+                let complex_children = SanitizedChildren::Multiple(vec![
+                    SanitizedChild::Text("Welcome to Our Platform change".to_string()),
+                    SanitizedChild::Text("Key Features".to_string()),
+                    SanitizedChild::Variable(SanitizedVariable {
+                        k: None,
+                        v: None,
+                        b: Some(branches),
+                        t: Some("b".to_string()),
+                    }),
+                    SanitizedChild::Text("Advanced file management".to_string()),
+                ]);
+                
+                let data = SanitizedData {
+                    source: Some(Box::new(complex_children)),
+                    id: None,
+                    context: None,
+                    data_format: Some("JSX".to_string()),
+                };
+                
+                // Verify stable stringify produces consistent results
+                let json1 = JsxHasher::stable_stringify(&data).unwrap();
+                let json2 = JsxHasher::stable_stringify(&data).unwrap();
+                assert_eq!(json1, json2, "Stable stringify should be consistent");
+                
+                let hash1 = JsxHasher::hash_string(&json1);
+                let hash2 = JsxHasher::hash_string(&json2);
+                assert_eq!(hash1, hash2, "Complex structure with Branch should produce consistent hashes");
+                
+                // Verify the JSON structure contains the Branch in the expected format
+                assert!(json1.contains(r#""b":{"#), "JSON should contain branch structure");
+                assert!(json1.contains(r#""t":"b""#), "JSON should contain transformation type");
+                // Hash is no longer injected into Branch/Plural components
+            },
+            _ => panic!("Branch should be serialized as Variable"),
+        }
+    }
+
+    #[test]
+    fn test_end_to_end_hash_consistency() {
+        // Test that simulates the full end-to-end hash calculation flow
+        // This should match the exact scenario from the user's real-world case
+        use crate::hash::{JsxHasher, SanitizedData, SanitizedChildren, SanitizedChild, SanitizedVariable};
+        
+        // Create the exact structure that caused the hash mismatch
+        let branch_with_hash = {
+            let mut branches = std::collections::BTreeMap::new();
+            branches.insert("directory".to_string(), Box::new(
+                SanitizedChildren::Single(Box::new(SanitizedChild::Text("public".to_string())))
+            ));
+            branches.insert("file".to_string(), Box::new(
+                SanitizedChildren::Single(Box::new(SanitizedChild::Text("file.svg".to_string())))
+            ));
+            branches.insert("n".to_string(), Box::new(
+                SanitizedChildren::Single(Box::new(SanitizedChild::Text("file".to_string())))
+            ));
+            // Add the expected runtime hash
+            branches.insert("hash".to_string(), Box::new(
+                SanitizedChildren::Single(Box::new(SanitizedChild::Text("bdb7cc7686d0e468".to_string())))
+            ));
+            
+            SanitizedVariable {
+                k: None,
+                v: None,
+                b: Some(branches),
+                t: Some("b".to_string()),
+            }
+        };
+        
+        // Create complex nested structure similar to user's real case
+        let complex_structure = SanitizedChildren::Multiple(vec![
+            SanitizedChild::Text("Welcome to Our Platform change".to_string()),
+            // Nested structure with Branch component
+            SanitizedChild::Text("Key Features".to_string()),
+            SanitizedChild::Variable(branch_with_hash.clone()),
+            SanitizedChild::Text("Advanced file management".to_string()),
+        ]);
+        
+        let data = SanitizedData {
+            source: Some(Box::new(complex_structure)),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        
+        // Calculate hash using our stable stringify
+        let json_string = JsxHasher::stable_stringify(&data).unwrap();
+        let build_time_hash = JsxHasher::hash_string(&json_string);
+        
+        println!("End-to-end test - Build-time hash: {}", build_time_hash);
+        println!("End-to-end test - JSON structure: {}", json_string);
+        
+        // Verify the JSON contains expected structures
+        assert!(json_string.contains(r#"dataFormat":"JSX""#), "Should contain dataFormat");
+        assert!(json_string.contains(r#""b":{"directory":"public""#), "Should contain branch directory");
+        assert!(json_string.contains(r#""file":"file.svg""#), "Should contain branch file");
+        assert!(json_string.contains(r#""hash":"bdb7cc7686d0e468""#), "Should contain branch hash");
+        assert!(json_string.contains(r#""n":"file""#), "Should contain branch n property");
+        assert!(json_string.contains(r#""t":"b""#), "Should contain branch transformation type");
+        
+        // Verify alphabetical key ordering in Branch structure
+        let branch_start = json_string.find(r#""b":{"#).unwrap();
+        let branch_section = &json_string[branch_start..];
+        
+        // Keys should appear in alphabetical order: directory, file, hash, n
+        let dir_pos = branch_section.find("directory").unwrap();
+        let file_pos = branch_section.find("file").unwrap(); 
+        let hash_pos = branch_section.find("hash").unwrap();
+        let n_pos = branch_section.find("\"n\":").unwrap(); // Use exact match to avoid matching "n" in other words
+        
+        assert!(dir_pos < file_pos, "directory should come before file");
+        assert!(file_pos < hash_pos, "file should come before hash"); 
+        assert!(hash_pos < n_pos, "hash should come before n");
+        
+        // Hash should be consistent and valid
+        assert_eq!(build_time_hash.len(), 16, "Hash should be 16 characters");
+        assert!(build_time_hash.chars().all(|c| c.is_ascii_hexdigit()), "Hash should be hexadecimal");
+        
+        // Test that the same structure produces the same hash (consistency check)
+        let json_string2 = JsxHasher::stable_stringify(&data).unwrap();
+        let build_time_hash2 = JsxHasher::hash_string(&json_string2);
+        assert_eq!(build_time_hash, build_time_hash2, "Hash calculation should be deterministic");
+        assert_eq!(json_string, json_string2, "JSON serialization should be deterministic");
+    }
+
+    #[test]
+    fn test_plural_component_structure_serialization() {
+        // Test that Plural components are serialized as variables with correct structure
+        use crate::hash::{SanitizedChildren, SanitizedChild};
+        use crate::traversal::JsxTraversal;
+        
+        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        let traversal = JsxTraversal::new(&visitor);
+        
+        // Create a Plural element with attributes
+        let plural_element = JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                name: JSXElementName::Ident(Ident::new("Plural".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                span: DUMMY_SP,
+                attrs: vec![
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("singular".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: "File".into(),
+                            raw: None,
+                        }))),
+                    }),
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("plural".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: "Files".into(),
+                            raw: None,
+                        }))),
+                    }),
+                ],
+                self_closing: true,
+                type_args: None,
+            },
+            closing: None,
+            children: vec![],
+        };
+        
+        let jsx_child = JSXElementChild::JSXElement(Box::new(plural_element));
+        let result = traversal.build_sanitized_child(&jsx_child);
+        
+        match result {
+            Some(SanitizedChild::Variable(var)) => {
+                // Should be serialized as a variable with plural structure
+                assert!(var.k.is_none(), "Plural should not have a key");
+                assert!(var.v.is_none(), "Plural should not have a variable type");
+                assert!(var.b.is_some(), "Plural should have branch data");
+                assert_eq!(var.t, Some("p".to_string()), "Plural should have transformation type 'p'");
+                
+                // Check plural data contains expected attributes
+                let branches = var.b.as_ref().unwrap();
+                assert!(branches.contains_key("singular"), "Should contain 'singular' branch");
+                assert!(branches.contains_key("plural"), "Should contain 'plural' branch");
+                // Hash is no longer injected into Branch/Plural components
+                
+                // Verify serialization structure matches expected runtime format (should be like Branch)
+                let json = serde_json::to_string(&var).unwrap();
+                assert!(json.contains(r#""b":"#), "Should serialize with 'b' field");
+                assert!(json.contains(r#""t":"p""#), "Should serialize with transformation type 'p'");
+                assert!(!json.contains(r#""k":"#), "Should not serialize with 'k' field");
+                assert!(!json.contains(r#""v":"#), "Should not serialize with 'v' field");
+                
+                println!("Plural component serialized as: {}", json);
+            },
+            _ => panic!("Plural component should be serialized as SanitizedChild::Variable, got {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_jsx_content_in_attributes() {
+        // Test Branch/Plural components with JSX content in attributes
+        use crate::hash::{SanitizedChildren, SanitizedChild, JsxHasher, SanitizedData};
+        use crate::traversal::JsxTraversal;
+        
+        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, true, None);
+        let traversal = JsxTraversal::new(&visitor);
+        
+        // Create a Branch component with JSX fragment in file attribute: file={<>Here is some translatable static content</>}
+        let jsx_fragment = JSXFragment {
+            span: DUMMY_SP,
+            opening: JSXOpeningFragment { span: DUMMY_SP },
+            children: vec![
+                JSXElementChild::JSXText(JSXText {
+                    span: DUMMY_SP,
+                    value: "Here is some translatable static content".into(),
+                    raw: "Here is some translatable static content".into(),
+                }),
+            ],
+            closing: JSXClosingFragment { span: DUMMY_SP },
+        };
+        
+        let branch_element = JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                name: JSXElementName::Ident(Ident::new("Branch".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                span: DUMMY_SP,
+                attrs: vec![
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("branch".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: "file".into(),
+                            raw: None,
+                        }))),
+                    }),
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("file".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::JSXExprContainer(JSXExprContainer {
+                            span: DUMMY_SP,
+                            expr: JSXExpr::Expr(Box::new(Expr::JSXFragment(jsx_fragment))),
+                        })),
+                    }),
+                    JSXAttrOrSpread::JSXAttr(JSXAttr {
+                        span: DUMMY_SP,
+                        name: JSXAttrName::Ident(Ident::new("directory".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                            span: DUMMY_SP,
+                            value: "public".into(),
+                            raw: None,
+                        }))),
+                    }),
+                ],
+                self_closing: true,
+                type_args: None,
+            },
+            closing: None,
+            children: vec![],
+        };
+        
+        let jsx_child = JSXElementChild::JSXElement(Box::new(branch_element));
+        let result = traversal.build_sanitized_child(&jsx_child);
+        
+        match result {
+            Some(SanitizedChild::Variable(var)) => {
+                assert_eq!(var.t, Some("b".to_string()), "Should be Branch component");
+                assert!(var.b.is_some(), "Should have branch data");
+                
+                let branches = var.b.as_ref().unwrap();
+                
+                // Should contain the JSX fragment content
+                assert!(branches.contains_key("file"), "Should contain 'file' branch");
+                
+                if let Some(file_children) = branches.get("file") {
+                    // The JSX fragment should be wrapped in a container structure
+                    match file_children.as_ref() {
+                        SanitizedChildren::Wrapped { c } => {
+                            // Check the wrapped content (for JSX content)
+                            match c.as_ref() {
+                                SanitizedChildren::Single(child) => {
+                                    if let SanitizedChild::Text(text) = child.as_ref() {
+                                        assert_eq!(text, "Here is some translatable static content", "Should contain the JSX fragment text");
+                                    } else {
+                                        panic!("Expected text child in wrapped file attribute, got {:?}", child);
+                                    }
+                                },
+                                _ => {
+                                    panic!("Expected single wrapped child for simple text fragment, got {:?}", c);
+                                }
+                            }
+                        },
+                        SanitizedChildren::Single(child) => {
+                            if let SanitizedChild::Text(text) = child.as_ref() {
+                                assert_eq!(text, "Here is some translatable static content", "Should contain the JSX fragment text");
+                            } else {
+                                panic!("Expected text child in file attribute, got {:?}", child);
+                            }
+                        },
+                        SanitizedChildren::Multiple(_) => {
+                            panic!("Expected single child for simple text fragment");
+                        }
+                    }
+                }
+                
+                // Verify the full serialization includes the JSX content correctly
+                let json = serde_json::to_string(&var).unwrap();
+                println!("Branch with JSX attribute serialized as: {}", json);
+                
+                // Should contain the nested structure for file attribute with wrapped format
+                assert!(json.contains(r#""file":{"c":"Here is some translatable static content"}"#), 
+                       "Should serialize JSX fragment content with wrapped format like runtime");
+                
+                // Test full structure with this component
+                let complex_children = SanitizedChildren::Single(Box::new(SanitizedChild::Variable(var.clone())));
+                let data = SanitizedData {
+                    source: Some(Box::new(complex_children)),
+                    id: None,
+                    context: None,
+                    data_format: Some("JSX".to_string()),
+                };
+                
+                let json_string = JsxHasher::stable_stringify(&data).unwrap();
+                println!("Full structure with JSX attribute: {}", json_string);
+                
+                // Should contain the expected JSX content structure that matches runtime  
+                assert!(json_string.contains(r#""file":{"c":"Here is some translatable static content"}"#), 
+                       "Full structure should include JSX attribute content with wrapped format");
+            },
+            _ => panic!("Branch with JSX attribute should be serialized as Variable, got {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_comprehensive_hash_cases_simple_text() {
+        // Test case: Normal text
+        use crate::hash::{JsxHasher, SanitizedData, SanitizedChildren, SanitizedChild};
+        
+        let children = SanitizedChildren::Single(Box::new(SanitizedChild::Text("Normal text".to_string())));
+        let data = SanitizedData {
+            source: Some(Box::new(children)),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        
+        let json_string = JsxHasher::stable_stringify(&data).unwrap();
+        let hash = JsxHasher::hash_string(&json_string);
+        
+        // Expected: a9e7bf1adac1e8ec
+        assert_eq!(hash, "a9e7bf1adac1e8ec", "Simple text hash should match expected value");
+        assert_eq!(json_string, r#"{"dataFormat":"JSX","source":"Normal text"}"#, "JSON should match expected stringification");
+    }
+
+    #[test] 
+    fn test_comprehensive_hash_cases_nested_elements() {
+        // Test case: Normal text with nested div element
+        use crate::hash::{JsxHasher, SanitizedData, SanitizedChildren, SanitizedChild, SanitizedElement};
+        
+        let nested_element = SanitizedElement {
+            t: None, // Non-GT elements have no tag name to match runtime behavior
+            d: None,
+            c: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("and some nesting".to_string())))))
+        };
+        
+        let children = SanitizedChildren::Multiple(vec![
+            SanitizedChild::Text("Normal text ".to_string()),
+            SanitizedChild::Element(Box::new(nested_element))
+        ]);
+        
+        let data = SanitizedData {
+            source: Some(Box::new(children)),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        
+        let json_string = JsxHasher::stable_stringify(&data).unwrap();
+        let hash = JsxHasher::hash_string(&json_string);
+        
+        // Expected: 272f94a21847be08
+        assert_eq!(hash, "272f94a21847be08", "Nested elements hash should match expected value");
+        assert_eq!(json_string, r#"{"dataFormat":"JSX","source":["Normal text ",{"c":"and some nesting"}]}"#, "JSON should match expected stringification for nested elements");
+    }
+
+    #[test]
+    fn test_comprehensive_hash_cases_fragment_nesting() {
+        // Test case: Normal text with fragment nesting (C1 component)
+        use crate::hash::{JsxHasher, SanitizedData, SanitizedChildren, SanitizedChild, SanitizedElement};
+        
+        let fragment_element = SanitizedElement {
+            t: None, // Fragment components (C1, C2, etc.) have no tag name 
+            d: None,
+            c: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("and some nesting in a fragment".to_string())))))
+        };
+        
+        let children = SanitizedChildren::Multiple(vec![
+            SanitizedChild::Text("Normal text ".to_string()),
+            SanitizedChild::Element(Box::new(fragment_element))
+        ]);
+        
+        let data = SanitizedData {
+            source: Some(Box::new(children)),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        
+        let json_string = JsxHasher::stable_stringify(&data).unwrap();
+        let hash = JsxHasher::hash_string(&json_string);
+        
+        // Expected: a5644d2bc5b8d763
+        assert_eq!(hash, "a5644d2bc5b8d763", "Fragment nesting hash should match expected value");
+        assert_eq!(json_string, r#"{"dataFormat":"JSX","source":["Normal text ",{"c":"and some nesting in a fragment"}]}"#, "JSON should match expected stringification for fragment");
+    }
+
+    #[test]
+    fn test_comprehensive_hash_cases_deep_nesting() {
+        // Test case: Deep nested structure
+        use crate::hash::{JsxHasher, SanitizedData, SanitizedChildren, SanitizedChild, SanitizedElement};
+        
+        // Build the deeply nested structure: deep <div>nesting</div>
+        let deepest_element = SanitizedElement {
+            t: None,
+            d: None,
+            c: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("nesting".to_string())))))
+        };
+        
+        let deep_element = SanitizedElement {
+            t: None,
+            d: None,
+            c: Some(Box::new(SanitizedChildren::Multiple(vec![
+                SanitizedChild::Text("deep ".to_string()),
+                SanitizedChild::Element(Box::new(deepest_element))
+            ])))
+        };
+        
+        let some_element = SanitizedElement {
+            t: None,
+            d: None,
+            c: Some(Box::new(SanitizedChildren::Multiple(vec![
+                SanitizedChild::Text("some".to_string()),
+                SanitizedChild::Text(" ".to_string()),
+                SanitizedChild::Element(Box::new(deep_element))
+            ])))
+        };
+        
+        let and_element = SanitizedElement {
+            t: None,
+            d: None,
+            c: Some(Box::new(SanitizedChildren::Multiple(vec![
+                SanitizedChild::Text("and".to_string()),
+                SanitizedChild::Text(" ".to_string()),
+                SanitizedChild::Element(Box::new(some_element))
+            ])))
+        };
+        
+        let children = SanitizedChildren::Multiple(vec![
+            SanitizedChild::Text("Normal text".to_string()),
+            SanitizedChild::Text(" ".to_string()),
+            SanitizedChild::Element(Box::new(and_element))
+        ]);
+        
+        let data = SanitizedData {
+            source: Some(Box::new(children)),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        
+        let json_string = JsxHasher::stable_stringify(&data).unwrap();
+        let hash = JsxHasher::hash_string(&json_string);
+        
+        // Expected: 5a4f590b6a4f90ae
+        assert_eq!(hash, "5a4f590b6a4f90ae", "Deep nesting hash should match expected value");
+        assert_eq!(json_string, r#"{"dataFormat":"JSX","source":["Normal text"," ",{"c":["and"," ",{"c":["some"," ",{"c":["deep ",{"c":"nesting"}]}]}]}]}"#, "JSON should match expected stringification for deep nesting");
+    }
+
+    #[test]
+    fn test_comprehensive_hash_cases_variables() {
+        // Test variable components: Currency, Var, DateTime, Num
+        use crate::hash::{JsxHasher, SanitizedData, SanitizedChildren, SanitizedChild, SanitizedVariable, VariableType};
+        
+        // Currency variable
+        let currency_var = SanitizedVariable {
+            k: Some("_gt_cost_1".to_string()),
+            v: Some(VariableType::Currency),
+            b: None,
+            t: None,
+        };
+        let currency_data = SanitizedData {
+            source: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(currency_var))))),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        let currency_json = JsxHasher::stable_stringify(&currency_data).unwrap();
+        let currency_hash = JsxHasher::hash_string(&currency_json);
+        assert_eq!(currency_hash, "ca1ff7d6802b1d46", "Currency variable hash should match expected value");
+        assert_eq!(currency_json, r#"{"dataFormat":"JSX","source":{"k":"_gt_cost_1","v":"c"}}"#, "Currency JSON should match expected format");
+
+        // Regular Var variable
+        let var_variable = SanitizedVariable {
+            k: Some("_gt_value_1".to_string()),
+            v: Some(VariableType::Variable),
+            b: None,
+            t: None,
+        };
+        let var_data = SanitizedData {
+            source: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(var_variable))))),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        let var_json = JsxHasher::stable_stringify(&var_data).unwrap();
+        let var_hash = JsxHasher::hash_string(&var_json);
+        assert_eq!(var_hash, "933fa7740fe8c681", "Var variable hash should match expected value");
+        assert_eq!(var_json, r#"{"dataFormat":"JSX","source":{"k":"_gt_value_1","v":"v"}}"#, "Var JSON should match expected format");
+
+        // DateTime variable
+        let date_var = SanitizedVariable {
+            k: Some("_gt_date_1".to_string()),
+            v: Some(VariableType::Date),
+            b: None,
+            t: None,
+        };
+        let date_data = SanitizedData {
+            source: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(date_var))))),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        let date_json = JsxHasher::stable_stringify(&date_data).unwrap();
+        let date_hash = JsxHasher::hash_string(&date_json);
+        assert_eq!(date_hash, "1b218e0af4bb7cf8", "DateTime variable hash should match expected value");
+        assert_eq!(date_json, r#"{"dataFormat":"JSX","source":{"k":"_gt_date_1","v":"d"}}"#, "DateTime JSON should match expected format");
+
+        // Num variable
+        let num_var = SanitizedVariable {
+            k: Some("_gt_n_1".to_string()),
+            v: Some(VariableType::Number),
+            b: None,
+            t: None,
+        };
+        let num_data = SanitizedData {
+            source: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(num_var))))),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        let num_json = JsxHasher::stable_stringify(&num_data).unwrap();
+        let num_hash = JsxHasher::hash_string(&num_json);
+        assert_eq!(num_hash, "2280bcd71389dedf", "Num variable hash should match expected value");
+        assert_eq!(num_json, r#"{"dataFormat":"JSX","source":{"k":"_gt_n_1","v":"n"}}"#, "Num JSON should match expected format");
+    }
+
+    #[test]
+    fn test_comprehensive_hash_cases_branch_and_plural() {
+        // Test Branch and Plural components
+        use crate::hash::{JsxHasher, SanitizedData, SanitizedChildren, SanitizedChild, SanitizedVariable};
+        use std::collections::BTreeMap;
+        
+        // Simple Branch component
+        let mut branch_branches = BTreeMap::new();
+        branch_branches.insert("file".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("file.svg".to_string())))));
+        branch_branches.insert("directory".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("public".to_string())))));
+        
+        let branch_var = SanitizedVariable {
+            k: None,
+            v: None,
+            b: Some(branch_branches),
+            t: Some("b".to_string()),
+        };
+        let branch_data = SanitizedData {
+            source: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(branch_var))))),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        let branch_json = JsxHasher::stable_stringify(&branch_data).unwrap();
+        let branch_hash = JsxHasher::hash_string(&branch_json);
+        assert_eq!(branch_hash, "2beb0a01f9518392", "Branch component hash should match expected value");
+        assert_eq!(branch_json, r#"{"dataFormat":"JSX","source":{"b":{"directory":"public","file":"file.svg"},"t":"b"}}"#, "Branch JSON should match expected format");
+
+        // Simple Plural component
+        let mut plural_branches = BTreeMap::new();
+        plural_branches.insert("singular".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("File".to_string())))));
+        plural_branches.insert("plural".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("Files".to_string())))));
+        
+        let plural_var = SanitizedVariable {
+            k: None,
+            v: None,
+            b: Some(plural_branches),
+            t: Some("p".to_string()),
+        };
+        let plural_data = SanitizedData {
+            source: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(plural_var))))),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        let plural_json = JsxHasher::stable_stringify(&plural_data).unwrap();
+        let plural_hash = JsxHasher::hash_string(&plural_json);
+        assert_eq!(plural_hash, "a5a6e0e02a6ec321", "Plural component hash should match expected value");
+        assert_eq!(plural_json, r#"{"dataFormat":"JSX","source":{"b":{"plural":"Files","singular":"File"},"t":"p"}}"#, "Plural JSON should match expected format");
+    }
+
+    #[test]
+    fn test_comprehensive_hash_cases_jsx_content_in_attributes() {
+        // Test Branch with JSX content in attributes
+        use crate::hash::{JsxHasher, SanitizedData, SanitizedChildren, SanitizedChild, SanitizedVariable};
+        use std::collections::BTreeMap;
+        
+        // Branch with JSX content in file attribute
+        let mut branch_branches = BTreeMap::new();
+        branch_branches.insert("directory".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("public".to_string())))));
+        // JSX content gets wrapped in {"c": "content"}
+        branch_branches.insert("file".to_string(), Box::new(SanitizedChildren::Wrapped {
+            c: Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("Here is some translatable static content".to_string()))))
+        }));
+        
+        let branch_var = SanitizedVariable {
+            k: None,
+            v: None,
+            b: Some(branch_branches),
+            t: Some("b".to_string()),
+        };
+        let branch_data = SanitizedData {
+            source: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(branch_var))))),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        let branch_json = JsxHasher::stable_stringify(&branch_data).unwrap();
+        let branch_hash = JsxHasher::hash_string(&branch_json);
+        assert_eq!(branch_hash, "cc6c212a3f21856f", "Branch with JSX content hash should match expected value");
+        assert_eq!(branch_json, r#"{"dataFormat":"JSX","source":{"b":{"directory":"public","file":{"c":"Here is some translatable static content"}},"t":"b"}}"#, "Branch with JSX content JSON should match expected format");
+
+        // Plural with JSX content in singular attribute
+        let mut plural_branches = BTreeMap::new();
+        plural_branches.insert("plural".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("Files".to_string())))));
+        // JSX content gets wrapped in {"c": "content"}
+        plural_branches.insert("singular".to_string(), Box::new(SanitizedChildren::Wrapped {
+            c: Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("Here is some translatable static content".to_string()))))
+        }));
+        
+        let plural_var = SanitizedVariable {
+            k: None,
+            v: None,
+            b: Some(plural_branches),
+            t: Some("p".to_string()),
+        };
+        let plural_data = SanitizedData {
+            source: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(plural_var))))),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        let plural_json = JsxHasher::stable_stringify(&plural_data).unwrap();
+        let plural_hash = JsxHasher::hash_string(&plural_json);
+        assert_eq!(plural_hash, "68724f741aa727ef", "Plural with JSX content hash should match expected value");
+        assert_eq!(plural_json, r#"{"dataFormat":"JSX","source":{"b":{"plural":"Files","singular":{"c":"Here is some translatable static content"}},"t":"p"}}"#, "Plural with JSX content JSON should match expected format");
+    }
+
+    #[test]
+    fn test_comprehensive_hash_cases_nested_components() {
+        // Test nested Branch and Plural components
+        use crate::hash::{JsxHasher, SanitizedData, SanitizedChildren, SanitizedChild, SanitizedVariable};
+        use std::collections::BTreeMap;
+        
+        // Nested Branch component: Branch with another Branch in file attribute
+        let mut inner_branch_branches = BTreeMap::new();
+        inner_branch_branches.insert("file".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("file.svg".to_string())))));
+        inner_branch_branches.insert("directory".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("public".to_string())))));
+        
+        let inner_branch_var = SanitizedVariable {
+            k: None,
+            v: None,
+            b: Some(inner_branch_branches),
+            t: Some("b".to_string()),
+        };
+        
+        let mut outer_branch_branches = BTreeMap::new();
+        outer_branch_branches.insert("directory".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("public".to_string())))));
+        outer_branch_branches.insert("file".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(inner_branch_var)))));
+        
+        let outer_branch_var = SanitizedVariable {
+            k: None,
+            v: None,
+            b: Some(outer_branch_branches),
+            t: Some("b".to_string()),
+        };
+        
+        let branch_data = SanitizedData {
+            source: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(outer_branch_var))))),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        let branch_json = JsxHasher::stable_stringify(&branch_data).unwrap();
+        let branch_hash = JsxHasher::hash_string(&branch_json);
+        assert_eq!(branch_hash, "fd6a98279e2dadd3", "Nested Branch component hash should match expected value");
+        assert_eq!(branch_json, r#"{"dataFormat":"JSX","source":{"b":{"directory":"public","file":{"b":{"directory":"public","file":"file.svg"},"t":"b"}},"t":"b"}}"#, "Nested Branch JSON should match expected format");
+
+        // Nested Plural component: Plural with another Plural in singular attribute
+        let mut inner_plural_branches = BTreeMap::new();
+        inner_plural_branches.insert("singular".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("File".to_string())))));
+        inner_plural_branches.insert("plural".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("Files".to_string())))));
+        
+        let inner_plural_var = SanitizedVariable {
+            k: None,
+            v: None,
+            b: Some(inner_plural_branches),
+            t: Some("p".to_string()),
+        };
+        
+        let mut outer_plural_branches = BTreeMap::new();
+        outer_plural_branches.insert("plural".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("Files".to_string())))));
+        outer_plural_branches.insert("singular".to_string(), Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(inner_plural_var)))));
+        
+        let outer_plural_var = SanitizedVariable {
+            k: None,
+            v: None,
+            b: Some(outer_plural_branches),
+            t: Some("p".to_string()),
+        };
+        
+        let plural_data = SanitizedData {
+            source: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(outer_plural_var))))),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        let plural_json = JsxHasher::stable_stringify(&plural_data).unwrap();
+        let plural_hash = JsxHasher::hash_string(&plural_json);
+        assert_eq!(plural_hash, "38cbabceed5bba24", "Nested Plural component hash should match expected value");
+        assert_eq!(plural_json, r#"{"dataFormat":"JSX","source":{"b":{"plural":"Files","singular":{"b":{"plural":"Files","singular":"File"},"t":"p"}},"t":"p"}}"#, "Nested Plural JSON should match expected format");
+    }
+
+    #[test]
+    fn test_no_aliasing_issues() {
+        // Test that we don't treat non-GT components as GT components
+        let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Without any imports from gt-next, these should NOT be treated as GT components
+        let t_name = Atom::from("T");
+        let plural_name = Atom::from("Plural");
+        let var_name = Atom::from("Var");
+        
+        assert!(!visitor.should_track_component_as_translation(&t_name), 
+               "T should not be tracked without gt-next import");
+        assert!(!visitor.should_track_component_as_translation(&plural_name), 
+               "Plural should not be tracked without gt-next import");
+        assert!(!visitor.should_track_component_as_variable(&var_name), 
+               "Var should not be tracked without gt-next import");
+               
+        // Namespace components should also not be tracked without proper imports
+        let gt_name = Atom::from("GT");
+        let (is_translation, is_variable) = visitor.should_track_namespace_component(&gt_name, &t_name);
+        assert!(!is_translation && !is_variable, 
+               "GT.T should not be tracked without namespace import");
+    }
+
+    #[test] 
+    fn test_aliasing_prevention_with_imports() {
+        // Test that we properly track only when imported from gt-next
+        let mut visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
+        
+        // Add some imports to the visitor as if we processed: import { T, Plural } from 'gt-next'
+        visitor.gt_next_translation_imports.insert(Atom::from("T"));
+        visitor.gt_next_translation_imports.insert(Atom::from("Plural"));
+        visitor.gt_next_variable_imports.insert(Atom::from("Var"));
+        
+        // Now these should be tracked
+        let t_name = Atom::from("T");
+        let plural_name = Atom::from("Plural");
+        let var_name = Atom::from("Var");
+        
+        assert!(visitor.should_track_component_as_translation(&t_name), 
+               "T should be tracked when imported from gt-next");
+        assert!(visitor.should_track_component_as_translation(&plural_name), 
+               "Plural should be tracked when imported from gt-next");
+        assert!(visitor.should_track_component_as_variable(&var_name), 
+               "Var should be tracked when imported from gt-next");
+               
+        // But other component names should still not be tracked
+        let custom_name = Atom::from("CustomT");
+        assert!(!visitor.should_track_component_as_translation(&custom_name), 
+               "CustomT should not be tracked even with other imports");
     }
 }

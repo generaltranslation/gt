@@ -26,12 +26,25 @@ impl Default for LogLevel {
 }
 
 /// Plugin configuration options
-#[derive(Deserialize, Debug, Default)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct PluginConfig {
+    #[serde(default)]
     dynamic_jsx_check_log_level: LogLevel,
+    #[serde(default)]
     dynamic_string_check_log_level: LogLevel,
+    #[serde(default)]
     experimental_compile_time_hash: bool,
+}
+
+impl Default for PluginConfig {
+    fn default() -> Self {
+        Self {
+            dynamic_jsx_check_log_level: LogLevel::Warn,
+            dynamic_string_check_log_level: LogLevel::Warn,
+            experimental_compile_time_hash: false,
+        }
+    }
 }
 
 /// Main transformation visitor for the SWC plugin
@@ -105,7 +118,7 @@ impl TransformVisitor {
 
     /// Check if a component name matches known GT-Next variable components
     fn is_variable_component_name(&self, name: &Atom) -> bool {
-        matches!(name.as_ref(), "Var" | "Num" | "Currency")
+        matches!(name.as_ref(), "Var" | "Num" | "Currency" | "DateTime")
     }
 
     /// Check if we should track this component based on imports or known components
@@ -113,9 +126,8 @@ impl TransformVisitor {
         // Direct imports from gt-next
         self.gt_next_translation_imports.contains(name) ||
         // Assigned variables (const MyT = T)
-        self.gt_assigned_translation_components.contains(name) ||
-        // Known built-in components
-        self.is_translation_component_name(name)
+        self.gt_assigned_translation_components.contains(name)
+        // Removed fallback to avoid aliasing issues - only track actually imported components
     }
 
     /// Check if we should track this component as a variable component
@@ -123,9 +135,8 @@ impl TransformVisitor {
         // Direct imports from gt-next
         self.gt_next_variable_imports.contains(name) ||
         // Assigned variables (const MyVar = Var)
-        self.gt_assigned_variable_components.contains(name) ||
-        // Known built-in components
-        self.is_variable_component_name(name)
+        self.gt_assigned_variable_components.contains(name)
+        // Removed fallback to avoid aliasing issues - only track actually imported components
     }
 
     /// Check if we should track a namespace component (GT.T, GT.Var, etc.)
@@ -175,6 +186,55 @@ impl TransformVisitor {
             "GT-Next SWC Plugin{}: {}() function call uses {} which prevents proper translation key generation. Use string literals instead.",
             file_info, function_name, violation_type
         )
+    }
+
+    /// Calculate hash for JSX element using AST traversal
+    fn calculate_element_hash(&self, element: &JSXElement) -> String {
+        use crate::traversal::JsxTraversal;
+        use crate::hash::JsxHasher;
+        
+        let traversal = JsxTraversal::new(self);
+        
+        // Build sanitized children directly from JSX children
+        if let Some(sanitized_children) = traversal.build_sanitized_children(&element.children) {
+            // Create the full SanitizedData structure to match TypeScript implementation
+            use crate::hash::SanitizedData;
+            let sanitized_data = SanitizedData {
+                source: Some(Box::new(sanitized_children)),
+                id: None,
+                context: None,
+                data_format: Some("JSX".to_string()),
+            };
+            
+            // Debug: Show the full structure that will be hashed (matching TypeScript)
+            let json_structure = serde_json::to_string_pretty(&sanitized_data)
+                .unwrap_or_else(|_| "Failed to serialize".to_string());
+            eprintln!("GT-Next SWC Plugin: Full data structure being hashed:\n{}", json_structure);
+            
+            // Calculate hash using stable stringify (like TypeScript fast-json-stable-stringify)
+            let json_string = JsxHasher::stable_stringify(&sanitized_data)
+                .expect("Failed to serialize sanitized data");
+            eprintln!("GT-Next SWC Plugin: Stable JSON string for hashing: {}", json_string);
+            
+            let hash = JsxHasher::hash_string(&json_string);
+            eprintln!("GT-Next SWC Plugin: Generated hash: {}", hash);
+            hash
+        } else {
+            // Fallback to empty content hash with proper wrapper structure
+            use crate::hash::{SanitizedChildren, SanitizedData};
+            let empty_children = SanitizedChildren::Multiple(vec![]);
+            let sanitized_data = SanitizedData {
+                source: Some(Box::new(empty_children)),
+                id: None,
+                context: None,
+                data_format: Some("JSX".to_string()),
+            };
+            
+            eprintln!("GT-Next SWC Plugin: No children found, using empty structure");
+            let json_string = JsxHasher::stable_stringify(&sanitized_data)
+                .expect("Failed to serialize empty data");
+            JsxHasher::hash_string(&json_string)
+        }
     }
 }
 
@@ -491,19 +551,22 @@ impl Fold for TransformVisitor {
             });
             
             if !has_hash_attr {
-                // Create and add hash="test" attribute
+                // Calculate real hash using AST traversal
+                let hash_value = self.calculate_element_hash(&element);
+                
+                // Create and add hash attribute with calculated value
                 let hash_attr = JSXAttrOrSpread::JSXAttr(JSXAttr {
                     span: element.opening.span,
                     name: JSXAttrName::Ident(Ident::new("hash".into(), element.opening.span, SyntaxContext::empty()).into()),
                     value: Some(JSXAttrValue::Lit(Lit::Str(Str {
                         span: element.opening.span,
-                        value: "test".into(),
+                        value: hash_value.clone().into(),
                         raw: None,
                     }))),
                 });
                 element.opening.attrs.push(hash_attr);
                 
-                eprintln!("GT-Next SWC Plugin: Added hash=\"test\" to translation component");
+                eprintln!("GT-Next SWC Plugin: Added hash={} to translation component", hash_value);
             }
         }
         
@@ -520,12 +583,12 @@ impl Fold for TransformVisitor {
 
 #[plugin_transform]
 pub fn process_transform(program: Program, metadata: TransformPluginProgramMetadata) -> Program {
-    let config: PluginConfig = serde_json::from_str(
-        &metadata
-            .get_transform_plugin_config()
-            .unwrap_or_else(|| "{}".to_string()),
-    )
-    .unwrap_or_default();
+    let config_str = metadata
+        .get_transform_plugin_config()
+        .unwrap_or_else(|| "{}".to_string());
+    
+    let config: PluginConfig = serde_json::from_str(&config_str)
+        .unwrap_or_default();
     
     let filename = None; // TODO: Get filename from metadata if needed
     
@@ -540,6 +603,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
 }
 
 mod hash;
+mod traversal;
 
 #[cfg(test)]
 mod tests;

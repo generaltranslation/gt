@@ -18,7 +18,7 @@ pub enum VariableType {
 
 
 /// Map of data-_gt properties to their corresponding React props
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct HtmlContentProps {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pl: Option<String>, // placeholder
@@ -36,7 +36,7 @@ pub struct HtmlContentProps {
 
 
 /// Sanitized JSX Element representation (no IDs for stable hashing)
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SanitizedElement {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub t: Option<String>, // tag name
@@ -47,7 +47,7 @@ pub struct SanitizedElement {
 }
 
 /// Sanitized GT properties (no volatile data)
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SanitizedGtProp {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub b: Option<BTreeMap<String, Box<SanitizedChildren>>>, // Branches
@@ -58,15 +58,20 @@ pub struct SanitizedGtProp {
 }
 
 /// Sanitized Variable (no ID for stable hashing)
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SanitizedVariable {
-    pub k: String, // key
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub v: Option<VariableType>, // variable type
+    pub k: Option<String>, // key (for regular variables)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub v: Option<VariableType>, // variable type (for regular variables)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub b: Option<BTreeMap<String, Box<SanitizedChildren>>>, // branches (for Branch components)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub t: Option<String>, // transformation type ('b' for branches, 'p' for plurals, 'v' for variables)
 }
 
 /// Sanitized JSX Child can be text, element, or variable
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum SanitizedChild {
     Text(String),
@@ -74,16 +79,19 @@ pub enum SanitizedChild {
     Variable(SanitizedVariable),
 }
 
-/// Sanitized JSX Children can be a single child or array of children
-#[derive(Serialize, Debug, Clone, PartialEq)]
+/// Sanitized JSX Children can be a single child, array of children, or wrapped in element structure
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum SanitizedChildren {
     Single(Box<SanitizedChild>),
     Multiple(Vec<SanitizedChild>),
+    // For attribute content that gets wrapped like {"c": "content"} or {"c": [...]}
+    Wrapped { c: Box<SanitizedChildren> },
 }
 
-/// Sanitized data structure for hashing
-#[derive(Serialize, Debug, Clone)]
+/// Sanitized data structure for hashing (matches TypeScript hashSource.ts)
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct SanitizedData {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source: Option<Box<SanitizedChildren>>,
@@ -99,31 +107,49 @@ pub struct SanitizedData {
 pub struct JsxHasher;
 
 impl JsxHasher {
-    /// Calculate hash for sanitized JSX content
-    pub fn hash_source(
-        source: &SanitizedChildren,
-        context: Option<&str>,
-        id: Option<&str>,
-        data_format: &str,
-    ) -> String {
-        let sanitized_data = SanitizedData {
-            source: Some(Box::new(source.clone())),
-            id: id.map(String::from),
-            context: context.map(String::from),
-            data_format: Some(data_format.to_string()),
-        };
-
-        let json_string = serde_json::to_string(&sanitized_data)
-            .expect("Failed to serialize sanitized data");
-        Self::hash_string(&json_string)
-    }
-
     /// Hash a string using SHA256 and return first 16 hex characters
     pub fn hash_string(input: &str) -> String {
         let mut hasher = Sha256::new();
         hasher.update(input.as_bytes());
         let result = hasher.finalize();
         format!("{:x}", result)[..16].to_string()
+    }
+
+    /// Stable stringify like fast-json-stable-stringify (sorts keys alphabetically)
+    pub fn stable_stringify<T: Serialize>(value: &T) -> Result<String, serde_json::Error> {
+        // Convert to Value first, then sort keys recursively
+        let mut json_value = serde_json::to_value(value)?;
+        Self::sort_object_keys(&mut json_value);
+        serde_json::to_string(&json_value)
+    }
+
+    /// Recursively sort object keys alphabetically  
+    fn sort_object_keys(value: &mut serde_json::Value) {
+        match value {
+            serde_json::Value::Object(map) => {
+                // Clone the map, clear it, then rebuild in sorted order
+                let original_map = map.clone();
+                map.clear();
+                
+                // Get keys, sort them, then insert in order
+                let mut keys: Vec<String> = original_map.keys().cloned().collect();
+                keys.sort();
+                
+                for key in keys {
+                    if let Some(mut val) = original_map.get(&key).cloned() {
+                        Self::sort_object_keys(&mut val);
+                        map.insert(key, val);
+                    }
+                }
+            }
+            serde_json::Value::Array(arr) => {
+                // Recursively sort array elements
+                for item in arr {
+                    Self::sort_object_keys(item);
+                }
+            }
+            _ => {} // Primitive values don't need sorting
+        }
     }
 }
 
@@ -155,8 +181,10 @@ mod tests {
     #[test]
     fn test_sanitized_variable_serialization() {
         let variable = SanitizedVariable {
-            k: "name".to_string(),
+            k: Some("name".to_string()),
             v: Some(VariableType::Variable),
+            b: None,
+            t: None,
         };
 
         let json = serde_json::to_string(&variable).unwrap();
@@ -189,8 +217,10 @@ mod tests {
         let children = SanitizedChildren::Multiple(vec![
             SanitizedChild::Text("Hello ".to_string()),
             SanitizedChild::Variable(SanitizedVariable {
-                k: "name".to_string(),
+                k: Some("name".to_string()),
                 v: Some(VariableType::Variable),
+                b: None,
+                t: None,
             }),
             SanitizedChild::Text("!".to_string()),
         ]);
@@ -228,8 +258,10 @@ mod tests {
             t: Some("div".to_string()),
             d: None,
             c: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(SanitizedVariable {
-                k: "name".to_string(),
+                k: Some("name".to_string()),
                 v: Some(VariableType::Variable),
+                b: None,
+                t: None,
             }))))),
         };
 
@@ -244,12 +276,21 @@ mod tests {
     #[test]
     fn test_hash_source_with_simple_text() {
         let children = SanitizedChildren::Single(Box::new(SanitizedChild::Text("Hello world".to_string())));
-        let hash = JsxHasher::hash_source(&children, None, None, "JSX");
+        let sanitized_data = SanitizedData {
+            source: Some(Box::new(children.clone())),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        
+        let json_string = JsxHasher::stable_stringify(&sanitized_data).unwrap();
+        let hash = JsxHasher::hash_string(&json_string);
         
         assert_eq!(hash.len(), 16, "Hash should be 16 characters");
         
         // Same input should produce same hash
-        let hash2 = JsxHasher::hash_source(&children, None, None, "JSX");
+        let json_string2 = JsxHasher::stable_stringify(&sanitized_data).unwrap();
+        let hash2 = JsxHasher::hash_string(&json_string2);
         assert_eq!(hash, hash2, "Same input should produce same hash");
     }
 
@@ -257,9 +298,28 @@ mod tests {
     fn test_hash_source_with_context_and_id() {
         let children = SanitizedChildren::Single(Box::new(SanitizedChild::Text("Hello".to_string())));
         
-        let hash1 = JsxHasher::hash_source(&children, None, None, "JSX");
-        let hash2 = JsxHasher::hash_source(&children, Some("context"), None, "JSX");
-        let hash3 = JsxHasher::hash_source(&children, None, Some("id"), "JSX");
+        let data1 = SanitizedData {
+            source: Some(Box::new(children.clone())),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        let data2 = SanitizedData {
+            source: Some(Box::new(children.clone())),
+            id: None,
+            context: Some("context".to_string()),
+            data_format: Some("JSX".to_string()),
+        };
+        let data3 = SanitizedData {
+            source: Some(Box::new(children)),
+            id: Some("id".to_string()),
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+        
+        let hash1 = JsxHasher::hash_string(&JsxHasher::stable_stringify(&data1).unwrap());
+        let hash2 = JsxHasher::hash_string(&JsxHasher::stable_stringify(&data2).unwrap());
+        let hash3 = JsxHasher::hash_string(&JsxHasher::stable_stringify(&data3).unwrap());
         
         // All should be different
         assert_ne!(hash1, hash2, "Context should change hash");
@@ -268,30 +328,103 @@ mod tests {
     }
 
     #[test]
+    fn test_stable_stringify_key_ordering() {
+        let children = SanitizedChildren::Single(Box::new(SanitizedChild::Text("test text".to_string())));
+        let data = SanitizedData {
+            source: Some(Box::new(children)),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+
+        let stable_json = JsxHasher::stable_stringify(&data).unwrap();
+        
+        // With stable stringify, keys should be in alphabetical order
+        // Expected order: dataFormat, source
+        assert!(stable_json.contains(r#"{"dataFormat":"JSX","source":"#), 
+               "Keys should be in alphabetical order: dataFormat before source");
+               
+        // Compare with regular serde_json to ensure they're different when keys are out of order
+        let regular_json = serde_json::to_string(&data).unwrap();
+        
+        // Both should produce valid JSON that deserializes to the same data
+        let stable_data: SanitizedData = serde_json::from_str(&stable_json).unwrap();
+        let regular_data: SanitizedData = serde_json::from_str(&regular_json).unwrap();
+        
+        // Data should be equivalent regardless of key order
+        assert_eq!(stable_data.data_format, regular_data.data_format);
+        assert_eq!(stable_data.source.is_some(), regular_data.source.is_some());
+    }
+
+    #[test]
+    fn test_branch_component_empty_hash() {
+        // Test that empty Branch component produces the expected hash to match runtime
+        let empty_children = SanitizedChildren::Multiple(vec![]);
+        let data = SanitizedData {
+            source: Some(Box::new(empty_children)),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+
+        let json_string = JsxHasher::stable_stringify(&data).unwrap();
+        let hash = JsxHasher::hash_string(&json_string);
+        
+        println!("Empty Branch hash: {}", hash);
+        println!("Empty Branch JSON: {}", json_string);
+        
+        // This should match the runtime hash for empty Branch components
+        assert_eq!(hash.len(), 16, "Hash should be 16 characters");
+        
+        // The expected hash for empty JSX structure should be consistent
+        let expected_json = r#"{"dataFormat":"JSX","source":[]}"#;
+        let expected_hash = JsxHasher::hash_string(expected_json);
+        assert_eq!(hash, expected_hash, "Stable stringify should produce same hash as direct JSON");
+    }
+
+    #[test]
     fn test_hash_source_complex_structure() {
         let children = SanitizedChildren::Multiple(vec![
             SanitizedChild::Text("Hello ".to_string()),
             SanitizedChild::Variable(SanitizedVariable {
-                k: "name".to_string(),
+                k: Some("name".to_string()),
                 v: Some(VariableType::Variable),
+                b: None,
+                t: None,
             }),
             SanitizedChild::Text("!".to_string()),
         ]);
 
-        let hash = JsxHasher::hash_source(&children, None, None, "JSX");
+        let data = SanitizedData {
+            source: Some(Box::new(children.clone())),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+
+        let hash = JsxHasher::hash_string(&JsxHasher::stable_stringify(&data).unwrap());
         assert_eq!(hash.len(), 16);
         
         // Create same structure - should hash the same
         let children2 = SanitizedChildren::Multiple(vec![
             SanitizedChild::Text("Hello ".to_string()),
             SanitizedChild::Variable(SanitizedVariable {
-                k: "name".to_string(),
+                k: Some("name".to_string()),
                 v: Some(VariableType::Variable),
+                b: None,
+                t: None,
             }),
             SanitizedChild::Text("!".to_string()),
         ]);
 
-        let hash2 = JsxHasher::hash_source(&children2, None, None, "JSX");
+        let data2 = SanitizedData {
+            source: Some(Box::new(children2)),
+            id: None,
+            context: None,
+            data_format: Some("JSX".to_string()),
+        };
+
+        let hash2 = JsxHasher::hash_string(&JsxHasher::stable_stringify(&data2).unwrap());
         assert_eq!(hash, hash2, "Same sanitized content should produce same hash");
     }
 }

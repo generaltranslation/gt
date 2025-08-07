@@ -123,9 +123,19 @@ async function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
-    if (hashFromOptions && hashFromOptions !== hash) {
-      console.warn(
-        `gt-next: The hash from the options (${hashFromOptions}) does not match the hash generated from the children (${hash}).`
+    if (hashFromOptions) {
+      if (hashFromOptions !== hash) {
+        console.warn(
+          `gt-next: The hash from the options (${hashFromOptions}) does not match the hash generated from the children (${hash}).`
+        );
+      } else {
+        console.log(
+          `gt-next: Hash from options matches hash from children: ${hash}`
+        );
+      }
+    } else {
+      console.log(
+        `gt-next: No hash from options, using hash from children: ${hash}`
       );
     }
     translationEntry = translations?.[hash];
@@ -174,9 +184,19 @@ async function T({
         ...(id && { id }),
         dataFormat: 'JSX',
       });
-      if (hashFromOptions && hashFromOptions !== hash) {
-        console.warn(
-          `gt-next: The hash from the options (${hashFromOptions}) does not match the hash generated from the children (${hash}).`
+      if (hashFromOptions) {
+        if (hashFromOptions !== hash) {
+          console.warn(
+            `gt-next: The hash from the options (${hashFromOptions}) does not match the hash generated from the children (${hash}).`
+          );
+        } else {
+          console.log(
+            `gt-next: Hash from options matches hash from children: ${hash}`
+          );
+        }
+      } else {
+        console.log(
+          `gt-next: No hash from options, using hash from children: ${hash}`
         );
       }
       const target = await I18NConfig.translateJsx({
