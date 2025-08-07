@@ -12,7 +12,7 @@ export type HeadersAndCookies = {
 export type SwcPluginOptions = {
   dynamicJsxCheckLogLevel?: 'error' | 'warn' | 'off';
   dynamicStringCheckLogLevel?: 'error' | 'warn' | 'off';
-  experimentalCompileTimeHashCheck?: boolean;
+  experimentalCompileTimeHash?: boolean;
 };
 
 type withGTConfigProps = {

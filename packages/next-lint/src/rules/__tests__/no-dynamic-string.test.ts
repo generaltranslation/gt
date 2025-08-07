@@ -301,5 +301,20 @@ ruleTester.run('no-dynamic-string', noDynamicString, {
         },
       ],
     },
+    // Inside Jsx
+    {
+      code: `
+        import { useGT } from 'gt-next/client';
+        const t = useGT();
+        const greeting = 'Hello';
+        <div>{ t(\`\${greeting}, world!\`) }</div>
+      `,
+      errors: [
+        {
+          messageId: 'dynamicString',
+          type: 'TemplateLiteral',
+        },
+      ],
+    },
   ],
 });

@@ -90,7 +90,7 @@ const eslintConfig = [
       },
     },
     rules: {
-      'gt-next/no-dynamic-content': 'warn',
+      'gt-next/no-dynamic-jsx': 'warn',
       'gt-next/no-dynamic-string': 'warn',
     },
   },
@@ -99,9 +99,9 @@ const eslintConfig = [
 export default eslintConfig;
 ```
 
-## Rule: `no-unwrapped-dynamic-content`
+## Rule: `no-dynamic-jsx`
 
-Ensures dynamic content within `<T>` components is wrapped in variable components like `<Var>`, `<DateTime>`, `<Num>`, or `<Currency>`.
+Ensures dynamic content within `<T>` components is wrapped in variable components like `<Var>`, `<DateTime>`, `<Num>`, or `<Currency>`. JSX expressions inside component attributes are ignored and will not trigger this rule.
 
 ### ✅ Correct
 
@@ -109,6 +109,12 @@ Ensures dynamic content within `<T>` components is wrapped in variable component
 import { T, Var } from 'gt-next';
 
 <T>Hello <Var>{userName}</Var>!</T>
+
+// JSX expressions in attributes are allowed
+<T>
+  <Image width={16} height={20} src="/logo.png" />
+  Static text content
+</T>
 ```
 
 ### ❌ Incorrect  
@@ -117,6 +123,12 @@ import { T, Var } from 'gt-next';
 import { T } from 'gt-next';
 
 <T>Hello {userName}!</T>  // Warning: wrap {userName} in <Var>
+
+// Mixed case: attributes are fine, but direct content expressions are flagged
+<T>
+  <Image width={16} height={20} />
+  Hello {userName}!  // Warning: wrap {userName} in <Var>
+</T>
 ```
 
 ### Supported Variable Components
@@ -128,7 +140,7 @@ import { T } from 'gt-next';
 
 Works with imports from `gt-next`, `gt-next/client`, `gt-next/server`, and namespace imports (`import * as GT from 'gt-next'`).
 
-## Rule: `no-dynamic-translation-strings`
+## Rule: `no-dynamic-string`
 
 Ensures translation functions (`useGT`, `getGT`, `tx`) only accept string literals as their first argument. Dynamic content like template literals or string concatenation is prohibited.
 

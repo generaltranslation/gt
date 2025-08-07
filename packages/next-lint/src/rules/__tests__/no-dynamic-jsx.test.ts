@@ -88,6 +88,66 @@ ruleTester.run('no-dynamic-jsx', noDynamicJsx, {
         }
       `,
     },
+
+    // JSX attributes with expressions should be ignored
+    {
+      code: `
+        import { T } from 'gt-next';
+        function Component() {
+          const width = 16;
+          const height = 20;
+          return (
+            <T>
+              <Image width={width} height={height} src="/logo.png" />
+              Static text content
+            </T>
+          );
+        }
+      `,
+    },
+
+    // Complex JSX with attributes and static content
+    {
+      code: `
+        import { T } from 'gt-next';
+        function Component() {
+          const size = 24;
+          const name = 'logo';
+          return (
+            <T>
+              <div className="container">
+                <Image 
+                  width={size} 
+                  height={size * 2}
+                  alt={name + '.png'}
+                  data-testid={\`image-\${name}\`}
+                />
+                Welcome to our site
+              </div>
+            </T>
+          );
+        }
+      `,
+    },
+
+    // Nested JSX with attributes
+    {
+      code: `
+        import { T } from 'gt-next';
+        function Component() {
+          return (
+            <T>
+              <div className={dynamicClass}>
+                <span style={{ color: dynamicColor }}>
+                  <Icon size={iconSize} />
+                  Static content
+                </span>
+              </div>
+            </T>
+          );
+        }
+      `,
+    },
   ],
 
   invalid: [
@@ -159,6 +219,55 @@ ruleTester.run('no-dynamic-jsx', noDynamicJsx, {
         <T>Hello <Var>{userName}</Var>, you have {count} messages!</T>
       `,
       errors: [
+        {
+          messageId: 'dynamicJsx',
+          type: 'JSXExpressionContainer',
+        },
+      ],
+    },
+
+    // JSX with attributes (ignored) but also direct content expressions (flagged)
+    {
+      code: `
+        import { T } from 'gt-next';
+        function Component() {
+          return (
+            <T>
+              <Image width={16} height={20} />
+              Hello {userName}!
+            </T>
+          );
+        }
+      `,
+      errors: [
+        {
+          messageId: 'dynamicJsx',
+          type: 'JSXExpressionContainer',
+        },
+      ],
+    },
+
+    // Complex case: attributes ignored, but direct expressions flagged
+    {
+      code: `
+        import { T } from 'gt-next';
+        function Component() {
+          return (
+            <T>
+              <div className={dynamicClass} style={{ color: 'red' }}>
+                You have {count} items
+                <Icon size={iconSize} />
+                Welcome {userName}
+              </div>
+            </T>
+          );
+        }
+      `,
+      errors: [
+        {
+          messageId: 'dynamicJsx',
+          type: 'JSXExpressionContainer',
+        },
         {
           messageId: 'dynamicJsx',
           type: 'JSXExpressionContainer',
