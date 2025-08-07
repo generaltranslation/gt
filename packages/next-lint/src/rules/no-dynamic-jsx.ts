@@ -112,6 +112,22 @@ export const noDynamicJsx: Rule.RuleModule = {
       return false;
     }
 
+    function isInsideJSXAttribute(node: any): boolean {
+      // Walk up the AST to check if this expression is inside a JSX attribute
+      let currentNode = node.parent;
+      while (currentNode) {
+        if (currentNode.type === 'JSXAttribute') {
+          return true;
+        }
+        // If we reach a JSX element, we're in element content, not attributes
+        if (currentNode.type === 'JSXElement') {
+          return false;
+        }
+        currentNode = currentNode.parent;
+      }
+      return false;
+    }
+
     return {
       // Track imports from GT-Next modules
       ImportDeclaration(node: any) {
@@ -160,6 +176,11 @@ export const noDynamicJsx: Rule.RuleModule = {
 
       // Detect unwrapped dynamic content
       JSXExpressionContainer(node: any) {
+        // Skip expressions inside JSX attributes (e.g., <Image width={16} />)
+        if (isInsideJSXAttribute(node)) {
+          return;
+        }
+
         // Check if this expression is inside a translation component but not inside a variable component
         let inTranslationComponent = false;
         let inVariableComponent = false;

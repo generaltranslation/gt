@@ -3,7 +3,7 @@ use swc_core::ecma::{
     atoms::Atom,
     visit::{Fold, FoldWith},
 };
-use swc_core::common::{Spanned, SyntaxContext};
+use swc_core::common::{Spanned, SyntaxContext, DUMMY_SP};
 use swc_core::plugin::{plugin_transform, proxies::TransformPluginProgramMetadata};
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -60,6 +60,8 @@ pub struct TransformVisitor {
     in_translation_component: bool,
     /// True when currently visiting inside a variable component
     in_variable_component: bool,
+    /// True when currently visiting JSX attribute expressions (should be ignored)
+    in_jsx_attribute: bool,
     /// Maps imported component names to their GT-Next component types
     /// Using Atom (interned strings) for better performance
     gt_next_translation_imports: HashSet<Atom>,
@@ -101,6 +103,7 @@ impl TransformVisitor {
         Self {
             in_translation_component: false,
             in_variable_component: false,
+            in_jsx_attribute: false,
             gt_next_translation_imports: HashSet::new(),
             gt_next_variable_imports: HashSet::new(),
             gt_next_namespace_imports: HashSet::new(),
@@ -287,12 +290,33 @@ impl Fold for TransformVisitor {
         
         element
     }
+
+    /// Processes JSX attributes to track when we're in attribute context
+    /// This prevents flagging attribute expressions like <Image width={16} /> as dynamic content
+    fn fold_jsx_attr(&mut self, attr: JSXAttr) -> JSXAttr {
+        // Save current state
+        let was_in_jsx_attribute = self.in_jsx_attribute;
+        
+        // Mark that we're processing JSX attribute expressions
+        self.in_jsx_attribute = true;
+        
+        
+        // Process the attribute (including any JSXExprContainer in the value)
+        let attr = attr.fold_children_with(self);
+        
+        // Restore previous state
+        self.in_jsx_attribute = was_in_jsx_attribute;
+        
+        attr
+    }
     
     /// Detects unwrapped dynamic content in JSX expressions 
     /// Examples: <T>Hello {name}</T> (warns), <T>Hello <Var>{name}</Var></T> (ok)
+    /// Ignores: <T><Image width={name} /></T> (attribute expressions are not content)
     fn fold_jsx_expr_container(&mut self, expr: JSXExprContainer) -> JSXExprContainer {
-        // Only process if jsx log level is not 'off' and we're inside a translation component but NOT inside a variable component
-        if self.jsx_log_level != LogLevel::Off && self.in_translation_component && !self.in_variable_component {
+        
+        // Only process if jsx log level is not 'off' and we're inside a translation component but NOT inside a variable component AND NOT in a JSX attribute
+        if self.jsx_log_level != LogLevel::Off && self.in_translation_component && !self.in_variable_component && !self.in_jsx_attribute {
             self.dynamic_content_violations += 1;
             
             // Get location information
@@ -1100,6 +1124,80 @@ mod tests {
         });
         
         assert!(!has_hash_attr, "Should NOT add hash attribute when experimental flag is disabled");
+    }
+
+    #[test]
+    fn test_jsx_attributes_ignored() {
+        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
+        
+        // Simulate import of T component 
+        visitor.gt_next_translation_imports.insert(Atom::from("T"));
+        
+        // Create JSX element with attributes: <T><Image width={16} height={name} />Text</T>
+        let jsx_element = JSXElement {
+            span: DUMMY_SP,
+            opening: JSXOpeningElement {
+                name: JSXElementName::Ident(Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                span: DUMMY_SP,
+                attrs: vec![],
+                self_closing: false,
+                type_args: None,
+            },
+            closing: Some(JSXClosingElement {
+                span: DUMMY_SP,
+                name: JSXElementName::Ident(Ident::new("T".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+            }),
+            children: vec![
+                // <Image width={16} height={name} />
+                JSXElementChild::JSXElement(Box::new(JSXElement {
+                    span: DUMMY_SP,
+                    opening: JSXOpeningElement {
+                        name: JSXElementName::Ident(Ident::new("Image".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                        span: DUMMY_SP,
+                        attrs: vec![
+                            // width={16}
+                            JSXAttrOrSpread::JSXAttr(JSXAttr {
+                                span: DUMMY_SP,
+                                name: JSXAttrName::Ident(Ident::new("width".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                                value: Some(JSXAttrValue::JSXExprContainer(JSXExprContainer {
+                                    span: DUMMY_SP,
+                                    expr: JSXExpr::Expr(Box::new(Expr::Lit(Lit::Num(Number {
+                                        span: DUMMY_SP,
+                                        value: 16.0,
+                                        raw: None,
+                                    }))))
+                                })),
+                            }),
+                            // height={name}
+                            JSXAttrOrSpread::JSXAttr(JSXAttr {
+                                span: DUMMY_SP,
+                                name: JSXAttrName::Ident(Ident::new("height".into(), DUMMY_SP, SyntaxContext::empty()).into()),
+                                value: Some(JSXAttrValue::JSXExprContainer(JSXExprContainer {
+                                    span: DUMMY_SP,
+                                    expr: JSXExpr::Expr(Box::new(Expr::Ident(Ident::new("name".into(), DUMMY_SP, SyntaxContext::empty()))))
+                                })),
+                            }),
+                        ],
+                        self_closing: true,
+                        type_args: None,
+                    },
+                    closing: None,
+                    children: vec![],
+                })),
+                // Text content
+                JSXElementChild::JSXText(JSXText {
+                    span: DUMMY_SP,
+                    value: "Text".into(),
+                    raw: "Text".into(),
+                }),
+            ],
+        };
+        
+        // Process the element
+        let _transformed = jsx_element.fold_with(&mut visitor);
+        
+        // Should NOT detect any violations since the expressions are in attributes, not content
+        assert_eq!(visitor.dynamic_content_violations, 0, "Should not detect violations for JSX attribute expressions like width={{16}} and height={{name}}");
     }
 
     #[test]
