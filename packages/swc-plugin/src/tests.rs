@@ -313,8 +313,6 @@ mod tests {
         assert!(visitor.gt_next_translation_imports.is_empty());
         assert!(visitor.gt_next_variable_imports.is_empty());
         assert!(visitor.gt_next_namespace_imports.is_empty());
-        assert!(visitor.gt_assigned_translation_components.is_empty());
-        assert!(visitor.gt_assigned_variable_components.is_empty());
         assert!(visitor.gt_translation_functions.is_empty());
         assert_eq!(visitor.jsx_element_count, 0);
         assert_eq!(visitor.dynamic_content_violations, 0);
@@ -375,36 +373,6 @@ mod tests {
         assert!(!visitor.gt_next_namespace_imports.contains(&react_atom));
     }
 
-    #[test]
-    fn test_variable_assignment_tracking() {
-        let mut visitor = TransformVisitor::default();
-        
-        // Initially, no assigned variables should be tracked
-        assert!(visitor.gt_assigned_translation_components.is_empty());
-        assert!(visitor.gt_assigned_variable_components.is_empty());
-        
-        // Set up some imported components first (simulating imports)
-        let t_atom = Atom::from("T");
-        let var_atom = Atom::from("Var");
-        visitor.gt_next_translation_imports.insert(t_atom.clone());
-        visitor.gt_next_variable_imports.insert(var_atom.clone());
-        
-        // Simulate variable assignment processing (this would normally happen in fold_var_declarator)
-        let my_t_atom = Atom::from("MyT");
-        let my_var_atom = Atom::from("MyVar");
-        
-        visitor.gt_assigned_translation_components.insert(my_t_atom.clone());
-        visitor.gt_assigned_variable_components.insert(my_var_atom.clone());
-        
-        // Verify assigned variables are tracked
-        assert!(visitor.gt_assigned_translation_components.contains(&my_t_atom));
-        assert!(visitor.gt_assigned_variable_components.contains(&my_var_atom));
-        
-        // Should not contain untracked assignments
-        let unrelated_atom = Atom::from("SomeOtherComponent");
-        assert!(!visitor.gt_assigned_translation_components.contains(&unrelated_atom));
-        assert!(!visitor.gt_assigned_variable_components.contains(&unrelated_atom));
-    }
 
     #[test]
     fn test_basic_t_component_with_dynamic_content() {
@@ -456,24 +424,6 @@ mod tests {
         
         // Should detect one unwrapped dynamic content violation
         assert_eq!(visitor.dynamic_content_violations, 1, "Should detect unwrapped dynamic content in namespace GT.T component");
-    }
-
-    #[test] 
-    fn test_assigned_t_component() {
-        let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
-        
-        // Simulate import and assignment: import { T } from 'gt-next'; const MyT = T;
-        visitor.gt_next_translation_imports.insert(Atom::from("T"));
-        visitor.gt_assigned_translation_components.insert(Atom::from("MyT"));
-        
-        // Create JSX element: <MyT>Hello {name}!</MyT>
-        let jsx_element = create_jsx_element("MyT", true);
-        
-        // Process the element
-        let _transformed = jsx_element.fold_with(&mut visitor);
-        
-        // Should detect one unwrapped dynamic content violation
-        assert_eq!(visitor.dynamic_content_violations, 1, "Should detect unwrapped dynamic content in assigned component MyT");
     }
 
     #[test]
@@ -2470,14 +2420,10 @@ mod tests {
         assert!(visitor.gt_next_variable_imports.is_empty());
         assert!(visitor.gt_next_namespace_imports.is_empty());
         assert!(visitor.gt_translation_functions.is_empty());
-        assert!(visitor.gt_assigned_translation_components.is_empty());
-        assert!(visitor.gt_assigned_variable_components.is_empty());
         assert!(visitor.gt_next_translation_import_aliases.is_empty());
         assert!(visitor.gt_next_variable_import_aliases.is_empty());
         assert!(visitor.gt_next_branch_import_aliases.is_empty());
         assert!(visitor.gt_next_translation_function_import_aliases.is_empty());
-        assert!(visitor.gt_assigned_translation_components_map.is_empty());
-        assert!(visitor.gt_assigned_variable_components_map.is_empty());
     }
 
 }

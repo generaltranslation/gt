@@ -61,10 +61,6 @@ pub struct TransformVisitor {
     gt_next_variable_imports: std::collections::HashSet<Atom>,
     /// Track imported GT-Next namespace imports (import * as GT from 'gt-next')
     gt_next_namespace_imports: std::collections::HashSet<Atom>,
-    /// Track assigned GT-Next translation components (const MyT = T)
-    gt_assigned_translation_components: std::collections::HashSet<Atom>,
-    /// Track assigned GT-Next variable components (const MyVar = Var)
-    gt_assigned_variable_components: std::collections::HashSet<Atom>,
     /// Track translation functions from useGT/getGT
     gt_translation_functions: std::collections::HashSet<Atom>,
     /// Log levels for different warning types
@@ -82,9 +78,6 @@ pub struct TransformVisitor {
     gt_next_variable_import_aliases: std::collections::HashMap<Atom, Atom>, // Var, Num, Currency, DateTime
     gt_next_branch_import_aliases: std::collections::HashMap<Atom, Atom>, // Branch, Plural
     gt_next_translation_function_import_aliases: std::collections::HashMap<Atom, Atom>, // tx, getGT, useGT
-    /// Aliases for assigned components
-    gt_assigned_translation_components_map: std::collections::HashMap<Atom, Atom>, // const MyT = T
-    gt_assigned_variable_components_map: std::collections::HashMap<Atom, Atom>, // const MyVar = Var
 }
 
 impl Default for TransformVisitor {
@@ -109,17 +102,11 @@ impl TransformVisitor {
             gt_next_variable_import_aliases: std::collections::HashMap::new(), // Var, Num, Currency, DateTime
             gt_next_branch_import_aliases: std::collections::HashMap::new(), // Branch, Plural
             gt_next_translation_function_import_aliases: std::collections::HashMap::new(), // tx, getGT, useGT
-            gt_assigned_translation_components_map: std::collections::HashMap::new(), // const MyT = T
-            gt_assigned_variable_components_map: std::collections::HashMap::new(), // const MyVar = Var
             // deprecated
             gt_next_translation_imports: std::collections::HashSet::new(),
             // deprecated
             gt_next_variable_imports: std::collections::HashSet::new(),
             gt_next_namespace_imports: std::collections::HashSet::new(),
-            // deprecated
-            gt_assigned_translation_components: std::collections::HashSet::new(),
-            // deprecated
-            gt_assigned_variable_components: std::collections::HashSet::new(),
             gt_translation_functions: std::collections::HashSet::new(),
             dynamic_jsx_check_log_level,
             dynamic_string_check_log_level,
@@ -155,19 +142,13 @@ impl TransformVisitor {
     /// Check if we should track this component based on imports or known components
     fn should_track_component_as_translation(&self, name: &Atom) -> bool {
         // Direct imports from gt-next
-        self.gt_next_translation_imports.contains(name) ||
-        // Assigned variables (const MyT = T)
-        self.gt_assigned_translation_components.contains(name)
-        // Removed fallback to avoid aliasing issues - only track actually imported components
+        self.gt_next_translation_imports.contains(name)
     }
 
     /// Check if we should track this component as a variable component
     fn should_track_component_as_variable(&self, name: &Atom) -> bool {
         // Direct imports from gt-next
-        self.gt_next_variable_imports.contains(name) ||
-        // Assigned variables (const MyVar = Var)
-        self.gt_assigned_variable_components.contains(name)
-        // Removed fallback to avoid aliasing issues - only track actually imported components
+        self.gt_next_variable_imports.contains(name)
     }
 
     /// Check if we should track a namespace component (GT.T, GT.Var, etc.)
@@ -333,14 +314,6 @@ impl VisitMut for TransformVisitor {
                         }
                     }
                 }
-                // Handle direct assignments: const MyT = T
-                Expr::Ident(Ident { sym: source_name, .. }) => {
-                    if self.gt_next_translation_imports.contains(source_name) || self.is_translation_component_name(source_name) {
-                        self.gt_assigned_translation_components.insert(id.sym.clone());
-                    } else if self.gt_next_variable_imports.contains(source_name) || self.is_variable_component_name(source_name) {
-                        self.gt_assigned_variable_components.insert(id.sym.clone());
-                    }
-                }
                 _ => {}
             }
         }
@@ -427,14 +400,6 @@ impl Fold for TransformVisitor {
                             // Track the assigned variable as a translation function
                             self.gt_translation_functions.insert(id.sym.clone());
                         }
-                    }
-                }
-                // Handle direct assignments: const MyT = T
-                Expr::Ident(Ident { sym: source_name, .. }) => {
-                    if self.gt_next_translation_imports.contains(source_name) || self.is_translation_component_name(source_name) {
-                        self.gt_assigned_translation_components.insert(id.sym.clone());
-                    } else if self.gt_next_variable_imports.contains(source_name) || self.is_variable_component_name(source_name) {
-                        self.gt_assigned_variable_components.insert(id.sym.clone());
                     }
                 }
                 _ => {}
