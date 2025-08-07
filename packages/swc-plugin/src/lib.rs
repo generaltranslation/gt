@@ -52,7 +52,7 @@ pub struct TransformVisitor {
     gt_assigned_translation_components: std::collections::HashSet<Atom>,
     /// Track assigned GT-Next variable components (const MyVar = Var)
     gt_assigned_variable_components: std::collections::HashSet<Atom>,
-    /// Track translation functions from useGT/getGT/tx
+    /// Track translation functions from useGT/getGT
     gt_translation_functions: std::collections::HashSet<Atom>,
     /// Log levels for different warning types
     dynamic_jsx_check_log_level: LogLevel,
@@ -194,7 +194,7 @@ impl VisitMut for TransformVisitor {
                                 self.gt_next_translation_imports.insert(name);
                             } else if self.is_variable_component_name(&name) {
                                 self.gt_next_variable_imports.insert(name);
-                            } else if matches!(name.as_ref(), "useGT" | "getGT" | "tx") {
+                            } else if matches!(name.as_ref(), "useGT" | "getGT") {
                                 self.gt_translation_functions.insert(name);
                             }
                         }
@@ -207,11 +207,11 @@ impl VisitMut for TransformVisitor {
                 }
             }
             "gt-next/server" => {
-                // Process server-side imports: import { tx } from 'gt-next/server'
+                // Process server-side imports: import { getGT } from 'gt-next/server'
                 for specifier in &import_decl.specifiers {
                     if let ImportSpecifier::Named(ImportNamedSpecifier { local, .. }) = specifier {
                         let name = local.sym.clone();
-                        if matches!(name.as_ref(), "tx" | "getGT") {
+                        if matches!(name.as_ref(), "getGT") {
                             self.gt_translation_functions.insert(name);
                         }
                     }
@@ -256,7 +256,8 @@ impl VisitMut for TransformVisitor {
     fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
         if let Callee::Expr(callee_expr) = &call_expr.callee {
             if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
-                if self.gt_translation_functions.contains(function_name) {
+                // Exclude tx() functions from dynamic content checks
+                if self.gt_translation_functions.contains(function_name) && function_name.as_ref() != "tx" {
                     // Check the first argument for dynamic content
                     if let Some(arg) = call_expr.args.first() {
                         match arg.expr.as_ref() {
@@ -327,7 +328,7 @@ impl Fold for TransformVisitor {
                                 self.gt_next_translation_imports.insert(name);
                             } else if self.is_variable_component_name(&name) {
                                 self.gt_next_variable_imports.insert(name);
-                            } else if matches!(name.as_ref(), "useGT" | "getGT" | "tx") {
+                            } else if matches!(name.as_ref(), "useGT" | "getGT") {
                                 self.gt_translation_functions.insert(name);
                             }
                         }
@@ -340,11 +341,11 @@ impl Fold for TransformVisitor {
                 }
             }
             "gt-next/server" => {
-                // Process server-side imports: import { tx } from 'gt-next/server'
+                // Process server-side imports: import { getGT } from 'gt-next/server'
                 for specifier in &import_decl.specifiers {
                     if let ImportSpecifier::Named(ImportNamedSpecifier { local, .. }) = specifier {
                         let name = local.sym.clone();
-                        if matches!(name.as_ref(), "tx" | "getGT") {
+                        if matches!(name.as_ref(), "getGT") {
                             self.gt_translation_functions.insert(name);
                         }
                     }
@@ -389,7 +390,8 @@ impl Fold for TransformVisitor {
     fn fold_call_expr(&mut self, call_expr: CallExpr) -> CallExpr {
         if let Callee::Expr(callee_expr) = &call_expr.callee {
             if let Expr::Ident(Ident { sym: function_name, .. }) = callee_expr.as_ref() {
-                if self.gt_translation_functions.contains(function_name) {
+                // Exclude tx() functions from dynamic content checks
+                if self.gt_translation_functions.contains(function_name) && function_name.as_ref() != "tx" {
                     // Check the first argument for dynamic content
                     if let Some(arg) = call_expr.args.first() {
                         match arg.expr.as_ref() {

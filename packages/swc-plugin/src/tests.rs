@@ -553,20 +553,21 @@ mod tests {
     }
 
     #[test]
-    fn test_direct_tx_function_call() {
+    fn test_tx_function_call_ignored() {
         let mut visitor = TransformVisitor::new(LogLevel::Warn, LogLevel::Warn, false, Some("test.tsx".to_string()));
         
-        // Simulate direct tx import: import { tx } from 'gt-next/server';
+        // tx() functions should NOT be tracked for dynamic content violations
+        // Even if manually added to translation functions, they should not trigger violations
         visitor.gt_translation_functions.insert(Atom::from("tx"));
         
-        // Create invalid tx() call: tx(`Hello ${name}!`)
+        // Create tx() call with template literal: tx(`Hello ${name}!`)
         let call_expr = create_call_expr("tx", create_template_literal());
         
         // Process the call
         let _transformed = call_expr.fold_with(&mut visitor);
         
-        // Should detect one violation for template literal in tx
-        assert_eq!(visitor.dynamic_content_violations, 1, "Should detect violation for tx() call with template literal");
+        // Should NOT detect any violations for tx() calls (excluded from dynamic content checks)
+        assert_eq!(visitor.dynamic_content_violations, 0, "Should NOT detect violations for tx() calls - they are excluded");
     }
 
     #[test]

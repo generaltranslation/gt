@@ -57,24 +57,13 @@ ruleTester.run('no-dynamic-string', noDynamicString, {
       `,
     },
 
-    // Direct tx calls
-    {
-      code: `
-        import { tx } from 'gt-next/server';
-        async function test() {
-          await tx('Hello, world!');
-        }
-      `,
-    },
-
     // Aliased imports
     {
       code: `
-        import { useGT as myUseGT, tx as serverTx } from 'gt-next';
+        import { useGT as myUseGT } from 'gt-next';
         async function test() {
           const t = myUseGT();
           t('Hello, world!');
-          await serverTx('Another message');
         }
       `,
     },
@@ -83,7 +72,8 @@ ruleTester.run('no-dynamic-string', noDynamicString, {
     {
       code: `
         import * as GT from 'gt-next';
-        GT.tx('Hello, world!');
+        const t = GT.useGT();
+        t('Hello, world!');
       `,
     },
 
@@ -148,10 +138,11 @@ ruleTester.run('no-dynamic-string', noDynamicString, {
     // Function calls as arguments
     {
       code: `
-        import { tx } from 'gt-next/server';
+        import { useGT } from 'gt-next';
         function getMessage() { return 'Hello'; }
-        async function test() {
-          await tx(getMessage());
+        function test() {
+          const t = useGT();
+          t(getMessage());
         }
       `,
       errors: [
@@ -197,10 +188,11 @@ ruleTester.run('no-dynamic-string', noDynamicString, {
     // Aliased function with dynamic content
     {
       code: `
-        import { tx as serverTx } from 'gt-next/server';
+        import { useGT as myUseGT } from 'gt-next';
         const name = 'Alice';
-        async function test() {
-          await serverTx(\`Hello, \${name}!\`);
+        function test() {
+          const t = myUseGT();
+          t(\`Hello, \${name}!\`);
         }
       `,
       errors: [
@@ -216,8 +208,9 @@ ruleTester.run('no-dynamic-string', noDynamicString, {
       code: `
         import * as GT from 'gt-next';
         const name = 'Alice';
-        async function test() {
-          await GT.tx('Hello, ' + name);
+        function test() {
+          const t = GT.useGT();
+          t('Hello, ' + name);
         }
       `,
       errors: [
@@ -248,12 +241,13 @@ ruleTester.run('no-dynamic-string', noDynamicString, {
     // Multiple violations
     {
       code: `
-        import { useGT, tx } from 'gt-next';
+        import { useGT, getGT } from 'gt-next';
         async function test() {
-          const t = useGT();
+          const t1 = useGT();
+          const t2 = await getGT();
           const name = 'Alice';
-          t(\`Hello, \${name}!\`);
-          await tx('Hello, ' + name);
+          t1(\`Hello, \${name}!\`);
+          t2('Hello, ' + name);
         }
       `,
       errors: [

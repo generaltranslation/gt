@@ -147,23 +147,22 @@ Ensures translation functions (`useGT`, `getGT`, `tx`) only accept string litera
 ### ✅ Correct
 
 ```jsx
-import { useGT, tx } from 'gt-next';
+import { useGT } from 'gt-next';
 
 const t = useGT();
 t('Hello, world!');                           // ✓ String literal
 t('Hello, {name}!', { name: userName });     // ✓ Variables in second parameter
-await tx('Static message');                   // ✓ Direct function call
 ```
 
 ### ❌ Incorrect
 
 ```jsx
-import { useGT, tx } from 'gt-next';
+import { useGT } from 'gt-next';
 
 const t = useGT();
 t(`Hello, ${userName}!`);                    // ✗ Template literal
 t('Hello, ' + userName);                     // ✗ String concatenation
-await tx(getMessage());                       // ✗ Function call as argument
+t(getMessage());                             // ✗ Function call as argument
 
 const message = 'Hello, world!';
 t(message);                                  // ✗ Variable reference
@@ -172,8 +171,7 @@ t(message);                                  // ✗ Variable reference
 ### Tracked Functions
 
 - `useGT()` - Client-side translation hook
-- `getGT()` - Server-side translation function  
-- `tx()` - Runtime translation function
+- `getGT()` - Server-side translation function
 
 ### Import Support
 

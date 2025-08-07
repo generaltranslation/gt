@@ -1,7 +1,7 @@
 /**
  * ESLint rule: no-dynamic-string
  *
- * Ensures translation functions (t, tx, useGT, getGT) only accept string literals
+ * Ensures translation functions (t, useGT, getGT) only accept string literals
  * as their first argument. Dynamic content like template literals or string
  * concatenation is prohibited to ensure consistent translation keys.
  */
@@ -9,7 +9,7 @@
 import type { Rule } from 'eslint';
 
 const GT_MODULES = ['gt-next', 'gt-next/client', 'gt-next/server'];
-const TRANSLATION_FUNCTIONS = ['useGT', 'getGT', 'tx'];
+const TRANSLATION_FUNCTIONS = ['useGT', 'getGT'];
 
 interface TrackedFunction {
   name: string;
@@ -124,6 +124,14 @@ export const noDynamicString: Rule.RuleModule = {
                 translationVariables.add(node.id.name);
               }
             }
+          } else if (callExpression.callee.type === 'MemberExpression') {
+            // Handle namespace calls like: const t = GT.useGT();
+            const objectName = callExpression.callee.object.name;
+            const propertyName = callExpression.callee.property.name;
+            if (trackedFunctions.has(objectName) && isTranslationFunction(propertyName)) {
+              // This variable now holds a translation function
+              translationVariables.add(node.id.name);
+            }
           }
         } else if (node.init.type === 'AwaitExpression' && 
                    node.init.argument.type === 'CallExpression') {
@@ -138,6 +146,14 @@ export const noDynamicString: Rule.RuleModule = {
                 // This variable now holds a translation function (from awaited promise)
                 translationVariables.add(node.id.name);
               }
+            }
+          } else if (callExpression.callee.type === 'MemberExpression') {
+            // Handle namespace calls like: const t = await GT.getGT();
+            const objectName = callExpression.callee.object.name;
+            const propertyName = callExpression.callee.property.name;
+            if (trackedFunctions.has(objectName) && isTranslationFunction(propertyName)) {
+              // This variable now holds a translation function (from awaited promise)
+              translationVariables.add(node.id.name);
             }
           }
         } else if (node.init.type === 'Identifier') {
