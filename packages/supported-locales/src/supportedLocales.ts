@@ -141,9 +141,10 @@ const supportedLocales = {
     'zh-SG', // Singapore
     'zh-TW', // Taiwan
   ],
-
-  //Custom locales (all start with q)
-  qbr: ['qbr'], // Brainrot
+  // Experimental custom locales
+  // (possible custom locales, qaa-qtz)
+  // Do not use unless you are prepared for strange results
+  qbr: ['qbr'],
 } as {
   [language: string]: string[];
 };
