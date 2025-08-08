@@ -39,11 +39,13 @@ pub struct HtmlContentProps {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SanitizedElement {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub t: Option<String>, // tag name
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub d: Option<SanitizedGtProp>, // GT data
+    pub b: Option<BTreeMap<String, Box<SanitizedChildren>>>, // branches (for Branch/Plural components)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub c: Option<Box<SanitizedChildren>>, // children
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub t: Option<String>, // transformation type or tag name
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub d: Option<SanitizedGtProp>, // GT data (for other GT components)
 }
 
 /// Sanitized GT properties (no volatile data)
@@ -70,13 +72,15 @@ pub struct SanitizedVariable {
     pub t: Option<String>, // transformation type ('b' for branches, 'p' for plurals, 'v' for variables)
 }
 
-/// Sanitized JSX Child can be text, element, or variable
+/// Sanitized JSX Child can be text, element, variable, boolean, or null
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum SanitizedChild {
-    Text(String),
+    Text(String), // TODO: make this string, boolean, number, or null
     Element(Box<SanitizedElement>),
     Variable(SanitizedVariable),
+    Boolean(bool),
+    Null(Option<()>), // Will serialize as null when None
 }
 
 /// Sanitized JSX Children can be a single child, array of children, or wrapped in element structure
@@ -238,9 +242,10 @@ mod tests {
     #[test]
     fn test_sanitized_element_serialization() {
         let element = SanitizedElement {
+            b: None,
+            c: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("content".to_string()))))),
             t: Some("div".to_string()),
             d: None,
-            c: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Text("content".to_string()))))),
         };
 
         let json = serde_json::to_string(&element).unwrap();
@@ -255,14 +260,15 @@ mod tests {
     fn test_sanitized_structures_have_no_ids() {
         // Test that sanitized structures don't have ID fields
         let element = SanitizedElement {
-            t: Some("div".to_string()),
-            d: None,
+            b: None,
             c: Some(Box::new(SanitizedChildren::Single(Box::new(SanitizedChild::Variable(SanitizedVariable {
                 k: Some("name".to_string()),
                 v: Some(VariableType::Variable),
                 b: None,
                 t: None,
             }))))),
+            t: Some("div".to_string()),
+            d: None,
         };
 
         let json = serde_json::to_string(&element).unwrap();

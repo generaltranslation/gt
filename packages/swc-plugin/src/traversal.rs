@@ -12,22 +12,33 @@ use crate::TransformVisitor;
 /// AST traversal for converting JSX to sanitized GT objects
 pub struct JsxTraversal<'a> {
     visitor: &'a TransformVisitor,
+    id_counter: u32,
 }
 
 impl<'a> JsxTraversal<'a> {
     pub fn new(visitor: &'a TransformVisitor) -> Self {
-        Self { visitor }
+        Self { visitor, id_counter: 0 }
+    }
+
+    /// Build sanitized children with a specific counter context (for branches)
+    fn build_sanitized_children_with_counter(&mut self, children: &[JSXElementChild], counter: u32) -> Option<SanitizedChildren> {
+        let saved_counter = self.id_counter;
+        self.id_counter = counter;
+        let result = self.build_sanitized_children(children);
+        self.id_counter = saved_counter;
+        result
     }
 
     /// Build sanitized children objects directly from JSX children
-    pub fn build_sanitized_children(&self, children: &[JSXElementChild]) -> Option<SanitizedChildren> {
+    pub fn build_sanitized_children(&mut self, children: &[JSXElementChild]) -> Option<SanitizedChildren> {
         if children.is_empty() {
             return None;
         }
 
         let sanitized_children: Vec<SanitizedChild> = children
             .iter()
-            .filter_map(|child| self.build_sanitized_child(child))
+            .enumerate()
+            .filter_map(|(index, child)| self.build_sanitized_child(child, index == 0, index == children.len() - 1))
             .collect();
 
         if sanitized_children.is_empty() {
@@ -41,16 +52,36 @@ impl<'a> JsxTraversal<'a> {
         }
     }
 
+    /// Build a sanitized child with a specific counter context (for branches)
+    fn build_sanitized_child_with_counter(&mut self, child: &JSXElementChild, counter: u32, isFirstSibling: bool, isLastSibling: bool) -> Option<SanitizedChild> {
+        let saved_counter = self.id_counter;
+        self.id_counter = counter;
+        let result = self.build_sanitized_child(child, isFirstSibling, isLastSibling);
+        self.id_counter = saved_counter;
+        result
+    }
+
     /// Build a sanitized child directly from JSX child
-    pub fn build_sanitized_child(&self, child: &JSXElementChild) -> Option<SanitizedChild> {
+    pub fn build_sanitized_child(&mut self, child: &JSXElementChild, isFirstSibling: bool, isLastSibling: bool) -> Option<SanitizedChild> {
         match child {
             JSXElementChild::JSXText(text) => {
                 // Normalize whitespace like browsers do: collapse multiple whitespace chars into single spaces
                 let content = text.value.to_string();
-                let normalized = content
-                    .split_whitespace()
-                    .collect::<Vec<&str>>()
-                    .join(" ");
+
+                // Only normalize internal whitespace, preserve leading/trailing spaces
+                // This matches how browsers handle JSX text content
+                let normalized = if content.trim().is_empty() {
+                    // If it's all whitespace, collapse to empty
+                    String::new()
+                } else {
+                    // Preserve leading/trailing spaces, normalize internal sequences
+                    let leading_space = content.starts_with(char::is_whitespace) && !isFirstSibling;
+                    let trailing_space = content.ends_with(char::is_whitespace) && !isLastSibling;
+
+                    let core_normalized = content.split_whitespace().collect::<Vec<&str>>().join(" ");
+
+                    format!("{}{}{}", if leading_space { " " } else { "" }, core_normalized, if trailing_space { " " } else { "" })
+                };
                 
                 if normalized.is_empty() {
                     None
@@ -59,17 +90,14 @@ impl<'a> JsxTraversal<'a> {
                 }
             }
             JSXElementChild::JSXElement(element) => {
-                // Check if this is a variable component first
+                // Increment counter for each JSX element we encounter
+                self.id_counter += 1;
+                
+                // Check if this is a variable component first (Var, Num, Currency, DateTime)
                 if let Some(variable) = self.build_sanitized_variable(element) {
                     Some(SanitizedChild::Variable(variable))
-                } else if let Some(branch_variable) = self.build_branch_as_variable(element) {
-                    // Handle Branch components as variables with branch structure
-                    Some(SanitizedChild::Variable(branch_variable))
-                } else if let Some(plural_variable) = self.build_plural_as_variable(element) {
-                    // Handle Plural components as variables with plural structure
-                    Some(SanitizedChild::Variable(plural_variable))
                 } else {
-                    // Build as regular element
+                    // Build as element (includes Branch/Plural components with branches)
                     self.build_sanitized_element(element).map(|el| SanitizedChild::Element(Box::new(el)))
                 }
             }
@@ -83,7 +111,7 @@ impl<'a> JsxTraversal<'a> {
     }
 
     /// Build a sanitized element directly from JSX element
-    pub fn build_sanitized_element(&self, element: &JSXElement) -> Option<SanitizedElement> {
+    pub fn build_sanitized_element(&mut self, element: &JSXElement) -> Option<SanitizedElement> {
         let tag_name = self.get_tag_name(&element.opening.name)?;
         
         // Check if this is a GT component
@@ -94,20 +122,13 @@ impl<'a> JsxTraversal<'a> {
             return None; // This will be handled by build_sanitized_variable
         }
         
-        // Branch components should be handled as SanitizedVariable, not SanitizedElement
-        if self.is_branch_component(&tag_name) {
-            return None; // This will be handled by build_branch_as_variable
-        }
-        
-        // Plural components should be handled as SanitizedVariable, not SanitizedElement  
-        if self.is_plural_component(&tag_name) {
-            return None; // This will be handled by build_plural_as_variable
-        }
+        // Branch and Plural components are handled as SanitizedElements with branches
 
         let mut sanitized_element = SanitizedElement {
-            t: Some(tag_name.clone()),
-            d: None,
+            b: None, // Will be set for Branch/Plural components
             c: None,
+            t: None, // Will be set based on component type
+            d: None,
         };
 
         // Build children directly as sanitized
@@ -115,37 +136,40 @@ impl<'a> JsxTraversal<'a> {
             sanitized_element.c = self.build_sanitized_children(&element.children).map(Box::new);
         }
 
-        // Create GT prop if this is a GT component
+        // Handle different component types
         if component_info.is_gt_component {
-            let mut gt_prop = SanitizedGtProp {
-                b: None,
-                t: component_info.transformation,
-                html_props: self.extract_html_content_props(&element.opening.attrs),
-            };
-
-            // Handle Branch and Plural components
-            if let Some(branches) = component_info.branches {
-                gt_prop.b = Some(branches);
+            // Handle Branch/Plural components directly as elements with branches
+            if self.is_branch_component(&tag_name) || self.is_plural_component(&tag_name) {
+                if let Some(branches) = component_info.branches {
+                    sanitized_element.b = Some(branches);
+                }
+                sanitized_element.t = component_info.transformation;
+            } else {
+                // Handle other GT components (T, etc.) with GT data
+                let gt_prop = SanitizedGtProp {
+                    b: component_info.branches,
+                    t: component_info.transformation,
+                    html_props: self.extract_html_content_props(&element.opening.attrs),
+                };
+                sanitized_element.d = Some(gt_prop);
+                sanitized_element.t = Some(tag_name.clone());
             }
-
-            sanitized_element.d = Some(gt_prop);
         } else {
-            // For non-GT elements, check if we should include them or create empty placeholder
-            // Based on runtime behavior showing {}, it seems non-GT elements become empty objects
-            sanitized_element.t = None; // Remove tag name for non-GT elements to match runtime {}
+            // For non-GT elements, create empty placeholder to match runtime {}
+            sanitized_element.t = None;
         }
 
         Some(sanitized_element)
     }
 
     /// Build a sanitized variable directly from JSX element
-    fn build_sanitized_variable(&self, element: &JSXElement) -> Option<SanitizedVariable> {
+    fn build_sanitized_variable(&mut self, element: &JSXElement) -> Option<SanitizedVariable> {
         let tag_name = self.get_tag_name(&element.opening.name)?;
         let component_info = self.analyze_gt_component(&tag_name, &element.opening.attrs);
         
         if let Some(var_type) = component_info.variable_type {
-            // Extract variable name from children or attributes
-            let variable_key = self.extract_variable_key(element);
+            // Extract variable name from children or attributes with proper prefix
+            let variable_key = self.extract_variable_key(element, &var_type);
             
             Some(SanitizedVariable {
                 k: Some(variable_key),
@@ -159,7 +183,7 @@ impl<'a> JsxTraversal<'a> {
     }
 
     /// Extract variable key from JSX element (from children or name attribute)
-    fn extract_variable_key(&self, element: &JSXElement) -> String {
+    fn extract_variable_key(&mut self, element: &JSXElement, var_type: &VariableType) -> String {
         // First, check for a 'name' attribute
         for attr in &element.opening.attrs {
             if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
@@ -173,54 +197,17 @@ impl<'a> JsxTraversal<'a> {
             }
         }
 
-        // Fallback: generate a key based on content or use placeholder
-        // In runtime, this would extract from children content
-        // For compile-time, we use a stable placeholder
-        "variable".to_string()
-    }
-
-    /// Build a Branch component as a SanitizedVariable with branch structure
-    fn build_branch_as_variable(&self, element: &JSXElement) -> Option<SanitizedVariable> {
-        let tag_name = self.get_tag_name(&element.opening.name)?;
-
-        // Only handle Branch components here
-        if self.is_branch_component(&tag_name) {
-            // Extract branch props from attributes  
-            let branches = self.extract_branch_props(&element.opening.attrs)?;
-            
-            Some(SanitizedVariable {
-                k: None,
-                v: None,
-                b: Some(branches),
-                t: Some("b".to_string()),
-            })
-        } else {
-            None
-        }
-    }
-
-    /// Build a Plural component as a SanitizedVariable with plural structure  
-    fn build_plural_as_variable(&self, element: &JSXElement) -> Option<SanitizedVariable> {
-        let tag_name = self.get_tag_name(&element.opening.name)?;
-        
-        // Only handle Plural components here
-        if self.is_plural_component(&tag_name) {
-            // Extract plural props from attributes  
-            let branches = self.extract_plural_props(&element.opening.attrs)?;
-            
-            Some(SanitizedVariable {
-                k: None,
-                v: None,
-                b: Some(branches),
-                t: Some("p".to_string()),
-            })
-        } else {
-            None
+        // Fallback: generate proper key based on variable type with current counter
+        match var_type {
+            VariableType::Number => format!("_gt_n_{}", self.id_counter),
+            VariableType::Currency => format!("_gt_cost_{}", self.id_counter),
+            VariableType::Date => format!("_gt_date_{}", self.id_counter),
+            VariableType::Variable => format!("_gt_value_{}", self.id_counter),
         }
     }
 
     /// Get tag name from JSX element name
-    fn get_tag_name(&self, name: &JSXElementName) -> Option<String> {
+    pub fn get_tag_name(&self, name: &JSXElementName) -> Option<String> {
         match name {
             JSXElementName::Ident(ident) => Some(ident.sym.to_string()),
             JSXElementName::JSXMemberExpr(member_expr) => {
@@ -235,7 +222,7 @@ impl<'a> JsxTraversal<'a> {
     }
 
     /// Check if this is a Branch component
-    fn is_branch_component(&self, tag_name: &str) -> bool {
+    pub fn is_branch_component(&self, tag_name: &str) -> bool {
 
         // Named import
         if let Some(original_name) = self.visitor.gt_next_branch_import_aliases.get(&Atom::from(tag_name)) {
@@ -255,7 +242,7 @@ impl<'a> JsxTraversal<'a> {
         return false;
     }
 
-    fn is_plural_component(&self, tag_name: &str) -> bool {
+    pub fn is_plural_component(&self, tag_name: &str) -> bool {
         // Named import
         if let Some(original_name) = self.visitor.gt_next_branch_import_aliases.get(&Atom::from(tag_name)) {
             if original_name == "Plural" {
@@ -275,11 +262,14 @@ impl<'a> JsxTraversal<'a> {
     }
 
     /// Analyze if this is a GT component and extract relevant info
-    fn analyze_gt_component(&self, tag_name: &str, attrs: &[JSXAttrOrSpread]) -> ComponentInfo {
+    fn analyze_gt_component(&mut self, tag_name: &str, attrs: &[JSXAttrOrSpread]) -> ComponentInfo {
         let mut info = ComponentInfo::default();
 
         // Check if it's a known GT component
         if self.visitor.should_track_component_as_translation(&Atom::from(tag_name)) {
+            info.is_gt_component = true;
+        } else if self.visitor.should_track_component_as_branch(&Atom::from(tag_name)) {
+            // Branch and Plural components
             info.is_gt_component = true;
 
             // Determine transformation type
@@ -297,6 +287,7 @@ impl<'a> JsxTraversal<'a> {
         }
 
         // Handle namespace components (GT.T, GT.Var, etc.)
+        // TODO: use a better way of checking
         if tag_name.contains('.') {
             let parts: Vec<&str> = tag_name.split('.').collect();
             if parts.len() == 2 {
@@ -333,7 +324,7 @@ impl<'a> JsxTraversal<'a> {
     }
 
     /// Extract branch props from Branch component attributes
-    fn extract_branch_props(&self, attrs: &[JSXAttrOrSpread]) -> Option<BTreeMap<String, Box<SanitizedChildren>>> {
+    fn extract_branch_props(&mut self, attrs: &[JSXAttrOrSpread]) -> Option<BTreeMap<String, Box<SanitizedChildren>>> {
         let mut branches = BTreeMap::new();
 
         for attr in attrs {
@@ -342,7 +333,7 @@ impl<'a> JsxTraversal<'a> {
                     let prop_name = name_ident.sym.as_ref();
                     
                     // Skip special props
-                    if matches!(prop_name, "branch" | "children") {
+                    if matches!(prop_name, "branch") {
                         continue;
                     }
 
@@ -364,9 +355,9 @@ impl<'a> JsxTraversal<'a> {
     }
 
     /// Extract plural props from Plural component attributes
-    fn extract_plural_props(&self, attrs: &[JSXAttrOrSpread]) -> Option<BTreeMap<String, Box<SanitizedChildren>>> {
+    fn extract_plural_props(&mut self, attrs: &[JSXAttrOrSpread]) -> Option<BTreeMap<String, Box<SanitizedChildren>>> {
         let mut branches = BTreeMap::new();
-        let plural_forms = ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other"];
+        let plural_forms: std::collections::HashSet<&str> = ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other"].into_iter().collect();
 
         for attr in attrs {
             if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
@@ -374,7 +365,7 @@ impl<'a> JsxTraversal<'a> {
                     let prop_name = name_ident.sym.as_ref();
                     
                     // Only include valid plural forms
-                    if plural_forms.contains(&prop_name) {
+                    if plural_forms.contains(prop_name) {
                         if let Some(value) = &jsx_attr.value {
                             if let Some(sanitized_children) = self.build_sanitized_children_from_attr_value(value) {
                                 branches.insert(prop_name.to_string(), Box::new(sanitized_children));
@@ -393,23 +384,11 @@ impl<'a> JsxTraversal<'a> {
     }
 
     /// Build sanitized children directly from JSX attribute value
-    fn build_sanitized_children_from_attr_value(&self, value: &JSXAttrValue) -> Option<SanitizedChildren> {
+    fn build_sanitized_children_from_attr_value(&mut self, value: &JSXAttrValue) -> Option<SanitizedChildren> {
         match value {
             JSXAttrValue::Lit(Lit::Str(str_lit)) => {
-                // Normalize whitespace in attribute values too
                 let content = str_lit.value.to_string();
-                let normalized = content
-                    .split_whitespace()
-                    .collect::<Vec<&str>>()
-                    .join(" ");
-                    
-                if normalized.is_empty() {
-                    None
-                } else {
-                    // For string literals in attributes, don't wrap - just return as single child
-                    // Only JSX content gets wrapped with {"c": ...}
-                    Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(normalized))))
-                }
+                Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
             }
             JSXAttrValue::JSXExprContainer(expr_container) => {
                 // Handle JSX expressions in attributes - these can contain JSX fragments/elements
@@ -426,12 +405,15 @@ impl<'a> JsxTraversal<'a> {
     }
 
     /// Build sanitized children from expressions (for attribute JSX content)
-    fn build_sanitized_children_from_expr(&self, expr: &Expr) -> Option<SanitizedChildren> {
+    fn build_sanitized_children_from_expr(&mut self, expr: &Expr) -> Option<SanitizedChildren> {
+        // Save current counter for branch processing - all variables in parallel branches should share the same index
+        let branch_counter = self.id_counter;
+        
         match expr {
             // Handle JSX fragments: <>content</>
             Expr::JSXFragment(fragment) => {
-                // Wrap fragment content like runtime does: {"c": [children]} or {"c": "child"}
-                if let Some(children) = self.build_sanitized_children(&fragment.children) {
+                // Use branch counter for consistent variable key generation in branches
+                if let Some(children) = self.build_sanitized_children_with_counter(&fragment.children, branch_counter) {
                     Some(SanitizedChildren::Wrapped { c: Box::new(children) })
                 } else {
                     None
@@ -439,12 +421,77 @@ impl<'a> JsxTraversal<'a> {
             }
             // Handle JSX elements: <SomeComponent>content</SomeComponent>
             Expr::JSXElement(element) => {
-                if let Some(child) = self.build_sanitized_child(&JSXElementChild::JSXElement(element.clone())) {
-                    // Wrap single element like runtime does: {"c": element}
+                // Use branch counter for consistent variable key generation in branches
+                if let Some(child) = self.build_sanitized_child_with_counter(&JSXElementChild::JSXElement(element.clone()), branch_counter, true, true) {
+                    // Check if this is a Branch/Plural component - if so, return it directly
+                    if let Some(tag_name) = self.get_tag_name(&element.opening.name) {
+                        if self.is_branch_component(&tag_name) || self.is_plural_component(&tag_name) {
+                            // Return Branch/Plural components directly without wrapping
+                            return Some(SanitizedChildren::Single(Box::new(child)));
+                        }
+                        
+                        // Check if this is a variable component (Var, Num, Currency, DateTime) - return directly too
+                        if self.visitor.should_track_component_as_variable(&Atom::from(tag_name.as_str())) {
+                            // Return variable components directly without wrapping
+                            return Some(SanitizedChildren::Single(Box::new(child)));
+                        }
+                    }
+                    
+                    // Wrap other elements like runtime does: {"c": element}
                     let single_child = SanitizedChildren::Single(Box::new(child));
                     Some(SanitizedChildren::Wrapped { c: Box::new(single_child) })
                 } else {
                     None
+                }
+            }
+            // Handle string literals inside expressions: {"Files"}
+            Expr::Lit(Lit::Str(str_lit)) => {
+                let content = str_lit.value.to_string();
+                Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
+            }
+            // Handle other literal types: {42}, {true}, {null}
+            Expr::Lit(Lit::Num(num_lit)) => {
+                Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(num_lit.value.to_string()))))
+            }
+            Expr::Lit(Lit::Bool(bool_lit)) => {
+                Some(SanitizedChildren::Single(Box::new(SanitizedChild::Boolean(bool_lit.value))))
+            }
+            Expr::Lit(Lit::Null(_)) => {
+                Some(SanitizedChildren::Single(Box::new(SanitizedChild::Null(None))))
+            }
+            
+            // Handle simple template literals: {`files`}
+            Expr::Tpl(tpl) => {
+                // Only handle template literals with no expressions (simple string templates)
+                if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
+                    if let Some(quasi) = tpl.quasis.first() {
+                        let content = quasi.raw.to_string();
+                        Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
+                    } else {
+                        None
+                    }
+                } else {
+                    // Complex template literals with interpolation can't be evaluated at build-time
+                    // Skip these to avoid hash mismatches
+                    None
+                }
+            }
+            // Handle conditional expressions: {condition ? "files" : "file"}
+            Expr::Cond(cond_expr) => {
+                // For stable hashing, we need both branches to be deterministic
+                // Try to extract both consequent and alternate if they're simple expressions
+                let cons_result = self.build_sanitized_children_from_expr(&cond_expr.cons);
+                let alt_result = self.build_sanitized_children_from_expr(&cond_expr.alt);
+                
+                // If both branches produce the same result, use it
+                // Otherwise, skip for build-time stability
+                match (cons_result, alt_result) {
+                    (Some(cons), Some(alt)) => {
+                        // For now, skip conditional expressions to avoid complexity
+                        // In the future, we could try to serialize the condition structure
+                        None
+                    }
+                    _ => None,
                 }
             }
             _ => None,
@@ -521,7 +568,7 @@ mod tests {
     #[test]
     fn test_get_variable_type() {
         let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
-        let traversal = JsxTraversal::new(&visitor);
+        let mut traversal = JsxTraversal::new(&visitor);
         
         assert_eq!(traversal.get_variable_type("Var"), VariableType::Variable);
         assert_eq!(traversal.get_variable_type("Num"), VariableType::Number);
@@ -547,7 +594,7 @@ mod tests {
         use swc_core::ecma::atoms::Atom;
         
         let visitor = TransformVisitor::new(LogLevel::Silent, LogLevel::Silent, false, None);
-        let traversal = JsxTraversal::new(&visitor);
+        let mut traversal = JsxTraversal::new(&visitor);
         
         // Create JSX text with extra whitespace and newlines
         let jsx_text = JSXText {
@@ -582,7 +629,7 @@ mod tests {
         // Simulate direct import: import { Branch } from 'gt-next'
         visitor.gt_next_branch_import_aliases.insert(Atom::from("Branch"), Atom::from("Branch"));
         
-        let traversal = JsxTraversal::new(&visitor);
+        let mut traversal = JsxTraversal::new(&visitor);
         
         // Should recognize direct Branch component
         assert!(traversal.is_branch_component("Branch"));
@@ -603,7 +650,7 @@ mod tests {
         // Simulate aliased import: import { Branch as B } from 'gt-next'
         visitor.gt_next_branch_import_aliases.insert(Atom::from("B"), Atom::from("Branch"));
         
-        let traversal = JsxTraversal::new(&visitor);
+        let mut traversal = JsxTraversal::new(&visitor);
         
         // Should recognize aliased Branch component
         assert!(traversal.is_branch_component("B"));
@@ -623,7 +670,7 @@ mod tests {
         // Simulate namespace import: import * as GT from 'gt-next'
         visitor.gt_next_namespace_imports.insert(Atom::from("GT"));
         
-        let traversal = JsxTraversal::new(&visitor);
+        let mut traversal = JsxTraversal::new(&visitor);
         
         // Should recognize namespace Branch component
         assert!(traversal.is_branch_component("GT.Branch"));
@@ -649,7 +696,7 @@ mod tests {
         // Simulate direct import: import { Plural } from 'gt-next'
         visitor.gt_next_branch_import_aliases.insert(Atom::from("Plural"), Atom::from("Plural"));
         
-        let traversal = JsxTraversal::new(&visitor);
+        let mut traversal = JsxTraversal::new(&visitor);
         
         // Should recognize direct Plural component
         assert!(traversal.is_plural_component("Plural"));
@@ -670,7 +717,7 @@ mod tests {
         // Simulate aliased import: import { Plural as P } from 'gt-next'
         visitor.gt_next_branch_import_aliases.insert(Atom::from("P"), Atom::from("Plural"));
         
-        let traversal = JsxTraversal::new(&visitor);
+        let mut traversal = JsxTraversal::new(&visitor);
         
         // Should recognize aliased Plural component
         assert!(traversal.is_plural_component("P"));
@@ -690,7 +737,7 @@ mod tests {
         // Simulate namespace import: import * as GT from 'gt-next'
         visitor.gt_next_namespace_imports.insert(Atom::from("GT"));
         
-        let traversal = JsxTraversal::new(&visitor);
+        let mut traversal = JsxTraversal::new(&visitor);
         
         // Should recognize namespace Plural component
         assert!(traversal.is_plural_component("GT.Plural"));
@@ -718,7 +765,7 @@ mod tests {
         visitor.gt_next_branch_import_aliases.insert(Atom::from("P"), Atom::from("Plural"));
         visitor.gt_next_namespace_imports.insert(Atom::from("GT"));
         
-        let traversal = JsxTraversal::new(&visitor);
+        let mut traversal = JsxTraversal::new(&visitor);
         
         // Should recognize all correctly
         assert!(traversal.is_branch_component("Branch")); // direct
@@ -743,7 +790,7 @@ mod tests {
         visitor.gt_next_branch_import_aliases.insert(Atom::from("Plural"), Atom::from("Branch"));
         visitor.gt_next_branch_import_aliases.insert(Atom::from("Branch"), Atom::from("Plural"));
         
-        let traversal = JsxTraversal::new(&visitor);
+        let mut traversal = JsxTraversal::new(&visitor);
         
         // Should follow the alias mappings correctly
         assert!(traversal.is_branch_component("Plural")); // "Plural" maps to original "Branch"

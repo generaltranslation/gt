@@ -68,10 +68,7 @@ async function T({
   // Compatibility with different options
   id = id ?? options?.$id;
   context = context ?? options?.$context;
-  const { hash: hashFromOptions } = options;
-  if (hashFromOptions) {
-    console.log(`gt-next: Hash from options: ${hashFromOptions}`);
-  }
+  const { hash: hashFromOptions, json } = options;
 
   // ----- TAG CHILDREN ----- //
 
@@ -125,13 +122,14 @@ async function T({
     });
     if (hashFromOptions) {
       if (hashFromOptions !== hash) {
+        console.log(`buildtime Json: ${json}`);
         console.warn(
-          `gt-next: The hash from the options (${hashFromOptions}) does not match the hash generated from the children (${hash}).`
+          `Mismatch: Buildtime: ${hashFromOptions} Runtime: ${hash}`
         );
       } else {
-        console.log(
-          `gt-next: Hash from options matches hash from children: ${hash}`
-        );
+        // console.log(
+        //   `gt-next: Hash from options matches hash from children: ${hash}`
+        // );
       }
     } else {
       console.log(
@@ -184,21 +182,6 @@ async function T({
         ...(id && { id }),
         dataFormat: 'JSX',
       });
-      if (hashFromOptions) {
-        if (hashFromOptions !== hash) {
-          console.warn(
-            `gt-next: The hash from the options (${hashFromOptions}) does not match the hash generated from the children (${hash}).`
-          );
-        } else {
-          console.log(
-            `gt-next: Hash from options matches hash from children: ${hash}`
-          );
-        }
-      } else {
-        console.log(
-          `gt-next: No hash from options, using hash from children: ${hash}`
-        );
-      }
       const target = await I18NConfig.translateJsx({
         // do on demand translation
         source: childrenAsObjects,

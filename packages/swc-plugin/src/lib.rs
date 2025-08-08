@@ -19,6 +19,11 @@ pub enum LogLevel {
     Info,
 }
 
+// to test:
+// <T>
+// <Plural n={1} singular="File" plural={count > 1 ? "files" : "file"} />
+// </T>
+
 impl Default for LogLevel {
     fn default() -> Self {
         LogLevel::Warn
@@ -141,14 +146,20 @@ impl TransformVisitor {
 
     /// Check if we should track this component based on imports or known components
     fn should_track_component_as_translation(&self, name: &Atom) -> bool {
-        // Direct imports from gt-next
-        self.gt_next_translation_imports.contains(name)
+        // Direct imports from gt-next - includes T components
+        self.gt_next_translation_import_aliases.contains_key(name)
     }
 
     /// Check if we should track this component as a variable component
     fn should_track_component_as_variable(&self, name: &Atom) -> bool {
         // Direct imports from gt-next
-        self.gt_next_variable_imports.contains(name)
+        self.gt_next_variable_import_aliases.contains_key(name)
+    }
+
+    /// Check if we should track this component as a branch component
+    fn should_track_component_as_branch(&self, name: &Atom) -> bool {
+        // Branch and Plural components components
+        self.gt_next_branch_import_aliases.contains_key(name)
     }
 
     /// Check if we should track a namespace component (GT.T, GT.Var, etc.)
@@ -181,7 +192,7 @@ impl TransformVisitor {
         };
         
         format!(
-            "GT-Next SWC Plugin{}: <{}> component contains unwrapped dynamic content. Consider wrapping expressions in <Var>{{expression}}</Var> components for proper translation handling.",
+            "gt-next {}: <{}> component contains unwrapped dynamic content. Consider wrapping expressions in <Var>{{expression}}</Var> components for proper translation handling.",
             file_info, component_name
         )
     }
@@ -195,7 +206,7 @@ impl TransformVisitor {
         };
         
         format!(
-            "GT-Next SWC Plugin{}: {}() function call uses {} which prevents proper translation key generation. Use string literals instead.",
+            "gt-next {}: {}() function call uses {} which prevents proper translation key generation. Use string literals instead.",
             file_info, function_name, violation_type
         )
     }
@@ -244,11 +255,39 @@ impl TransformVisitor {
     }
 
     /// Calculate hash for JSX element using AST traversal
-    fn calculate_element_hash(&self, element: &JSXElement) -> String {
+    fn calculate_element_hash(&self, element: &JSXElement) -> (String, String) {
         use crate::traversal::JsxTraversal;
         use crate::hash::JsxHasher;
         
-        let traversal = JsxTraversal::new(self);
+        let mut traversal = JsxTraversal::new(self);
+        
+        // For GT components (like Plural, Branch), treat the element itself as the content
+        let tag_name = traversal.get_tag_name(&element.opening.name).unwrap_or_default();
+        
+        // if traversal.is_plural_component(&tag_name) || traversal.is_branch_component(&tag_name) {
+        //     // Build the element as a single child (variable)
+        //     let jsx_child = swc_core::ecma::ast::JSXElementChild::JSXElement(Box::new(element.clone()));
+        //     if let Some(sanitized_child) = traversal.build_sanitized_child(&jsx_child) {
+        //         let sanitized_children = crate::hash::SanitizedChildren::Single(Box::new(sanitized_child));
+        //         let sanitized_data = crate::hash::SanitizedData {
+        //             source: Some(Box::new(sanitized_children)),
+        //             id: None,
+        //             context: None,
+        //             data_format: Some("JSX".to_string()),
+        //         };
+                
+        //         let json_string = JsxHasher::stable_stringify(&sanitized_data)
+        //             .expect("Failed to serialize GT component data");
+                
+        //         // Debug: Print GT component JSON
+        //         if json_string.contains("plural")  || json_string.contains("branch") {
+        //             eprintln!("🔍 GT-SWC DEBUG: GT Component JSON: {}", json_string);
+        //         }
+                
+        //         let hash = JsxHasher::hash_string(&json_string);
+        //         return (hash, json_string);
+        //     }
+        // }
         
         // Build sanitized children directly from JSX children
         if let Some(sanitized_children) = traversal.build_sanitized_children(&element.children) {
@@ -261,19 +300,17 @@ impl TransformVisitor {
                 data_format: Some("JSX".to_string()),
             };
             
-            // Debug: Show the full structure that will be hashed (matching TypeScript)
-            let json_structure = serde_json::to_string_pretty(&sanitized_data)
-                .unwrap_or_else(|_| "Failed to serialize".to_string());
-            eprintln!("GT-Next SWC Plugin: Full data structure being hashed:\n{}", json_structure);
-            
             // Calculate hash using stable stringify (like TypeScript fast-json-stable-stringify)
             let json_string = JsxHasher::stable_stringify(&sanitized_data)
                 .expect("Failed to serialize sanitized data");
-            eprintln!("GT-Next SWC Plugin: Stable JSON string for hashing: {}", json_string);
+            
+            // Debug: Print sanitized JSON before passing to T component
+            if json_string.contains("plural")  || json_string.contains("branch") {
+                eprintln!("🔍 GT-SWC DEBUG: Sanitized JSON before T component: {}", json_string);
+            }
             
             let hash = JsxHasher::hash_string(&json_string);
-            eprintln!("GT-Next SWC Plugin: Generated hash: {}", hash);
-            hash
+            (hash, json_string)
         } else {
             // Fallback to empty content hash with proper wrapper structure
             use crate::hash::{SanitizedChildren, SanitizedData};
@@ -285,10 +322,11 @@ impl TransformVisitor {
                 data_format: Some("JSX".to_string()),
             };
             
-            eprintln!("GT-Next SWC Plugin: No children found, using empty structure");
             let json_string = JsxHasher::stable_stringify(&sanitized_data)
                 .expect("Failed to serialize empty data");
-            JsxHasher::hash_string(&json_string)
+            
+            let hash = JsxHasher::hash_string(&json_string);
+            (hash, json_string)
         }
     }
 }
@@ -515,7 +553,7 @@ impl Fold for TransformVisitor {
             
             if !has_hash_attr {
                 // Calculate real hash using AST traversal
-                let hash_value = self.calculate_element_hash(&element);
+                let (hash_value, json_string) = self.calculate_element_hash(&element);
                 
                 // Create and add hash attribute with calculated value
                 let hash_attr = JSXAttrOrSpread::JSXAttr(JSXAttr {
@@ -529,7 +567,17 @@ impl Fold for TransformVisitor {
                 });
                 element.opening.attrs.push(hash_attr);
                 
-                eprintln!("GT-Next SWC Plugin: Added hash={} to translation component", hash_value);
+                // Create and add json attribute with the stringified data
+                let json_attr = JSXAttrOrSpread::JSXAttr(JSXAttr {
+                    span: element.opening.span,
+                    name: JSXAttrName::Ident(Ident::new("json".into(), element.opening.span, SyntaxContext::empty()).into()),
+                    value: Some(JSXAttrValue::Lit(Lit::Str(Str {
+                        span: element.opening.span,
+                        value: json_string.into(),
+                        raw: None,
+                    }))),
+                });
+                element.opening.attrs.push(json_attr);
             }
         }
         
