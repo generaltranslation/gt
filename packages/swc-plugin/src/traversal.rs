@@ -70,23 +70,63 @@ impl<'a> JsxTraversal<'a> {
 
                 // Only normalize internal whitespace, preserve leading/trailing spaces
                 // This matches how browsers handle JSX text content
+                // eprintln!("DEBUG: ------------------------------");
+                // eprintln!("DEBUG: Processing text: '{}'", content);
                 let normalized = if content.trim().is_empty() {
-                    // If it's all whitespace, collapse to empty
-                    String::new()
-                } else {
-                    // Preserve leading/trailing spaces, normalize internal sequences
-                    let leading_space = content.starts_with(char::is_whitespace) && !isFirstSibling;
-                    let trailing_space = content.ends_with(char::is_whitespace) && !isLastSibling;
+                        if !isFirstSibling && !isLastSibling {
+                            if content.contains('\n') {
+                                None
+                            } else {
+                                Some(content)
+                            }
+                        } else {
+                            // Whitespace at beginning or end, collapse to empty
+                            None
+                        }
+                    } else {
+                        // First get the actual text content without leading/trailing whitespace
+                        let trimmed_content = content.trim();
 
-                    let core_normalized = content.split_whitespace().collect::<Vec<&str>>().join(" ");
+                        let (has_leading_space, has_trailing_space) = if trimmed_content.len() > 0 {
+                            let parts: Vec<&str> = content.split(trimmed_content).collect();
+                            if parts.len() > 1 {
+                                let first_part = parts.first().unwrap();
+                                let last_part = parts.last().unwrap();
+                                (
+                                    // Check if there are leading/trailing spaces (not other whitespace)
+                                    first_part.ends_with(' ') && !first_part.contains('\n') && (!isFirstSibling || isLastSibling),
+                                    // Check if there's a space after the last word (before any newlines/indentation)
+                                    last_part.starts_with(' ') && !last_part.contains('\n') && (!isLastSibling || isFirstSibling),
+                                )
+                            } else {
+                                (false, false)
+                            }
+                        } else {
+                            (false, false)
+                        };
 
-                    format!("{}{}{}", if leading_space { " " } else { "" }, core_normalized, if trailing_space { " " } else { "" })
+                        // Remove all whitespace and normalize internal spaces
+                        let core_normalized = content.split_whitespace().collect::<Vec<&str>>().join(" ");
+
+                        // Reconstruct with preserved leading/trailing spaces
+                        let final_content = format!("{}{}{}",
+                            if has_leading_space { " " } else { "" }, 
+                            core_normalized, 
+                            if has_trailing_space { " " } else { "" }
+                        );
+                        
+                        // Newlines are treated like spaces in text nodes between JSX elements.
+                        Some(final_content)
                 };
-                
-                if normalized.is_empty() {
-                    None
+                // eprintln!("DEBUG: Normalized text: '{:?}'", normalized);
+                if let Some(text) = normalized {
+                    if !text.is_empty() {
+                        Some(SanitizedChild::Text(text))
+                    } else {
+                        None
+                    }
                 } else {
-                    Some(SanitizedChild::Text(normalized))
+                    None
                 }
             }
             JSXElementChild::JSXElement(element) => {
@@ -101,10 +141,33 @@ impl<'a> JsxTraversal<'a> {
                     self.build_sanitized_element(element).map(|el| SanitizedChild::Element(Box::new(el)))
                 }
             }
-            JSXElementChild::JSXExprContainer(_expr) => {
-                // JSX expressions represent dynamic content that should be wrapped in variable components
-                // For stable hashing, we skip these as they represent runtime values
-                None
+            JSXElementChild::JSXExprContainer(expr_container) => {
+                match &expr_container.expr {
+                    JSXExpr::Expr(expr) => {
+                        match expr.as_ref() {
+                            Expr::Lit(Lit::Str(str_lit)) => {
+                                let content = str_lit.value.to_string();
+                                Some(SanitizedChild::Text(content))
+                            }
+                            Expr::Tpl(tpl) => {
+                                // Only handle simple template literals with no expressions
+                                if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
+                                    if let Some(quasi) = tpl.quasis.first() {
+                                        let content = quasi.raw.to_string();
+                                        Some(SanitizedChild::Text(content))
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    None
+                                }
+                            }
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                }
+                
             }
             _ => None, // Skip fragments and other types for now
         }
@@ -437,9 +500,10 @@ impl<'a> JsxTraversal<'a> {
                         }
                     }
                     
-                    // Wrap other elements like runtime does: {"c": element}
-                    let single_child = SanitizedChildren::Single(Box::new(child));
-                    Some(SanitizedChildren::Wrapped { c: Box::new(single_child) })
+                    // // DO NOT wrap other elements like runtime does: {"c": element}
+                    // let single_child = SanitizedChildren::Single(Box::new(child));
+                    // Some(SanitizedChildren::Wrapped { c: Box::new(single_child) })
+                    Some(SanitizedChildren::Single(Box::new(child)))
                 } else {
                     None
                 }
@@ -604,7 +668,7 @@ mod tests {
         };
         let jsx_child = JSXElementChild::JSXText(jsx_text);
         
-        let result = traversal.build_sanitized_child(&jsx_child);
+        let result = traversal.build_sanitized_child(&jsx_child, true, true);
         
         match result {
             Some(SanitizedChild::Text(text)) => {

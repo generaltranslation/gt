@@ -853,7 +853,7 @@ mod tests {
         
         // Build sanitized child and verify whitespace normalization
         let mut traversal = JsxTraversal::new(&visitor);
-        let result = traversal.build_sanitized_child(&jsx_child);
+        let result = traversal.build_sanitized_child(&jsx_child, true, true);
         
         match result {
             Some(SanitizedChild::Text(text)) => {
@@ -1006,7 +1006,7 @@ mod tests {
         };
         
         let jsx_child = JSXElementChild::JSXElement(Box::new(branch_element));
-        let result = traversal.build_sanitized_child(&jsx_child);
+        let result = traversal.build_sanitized_child(&jsx_child, true, true);
         
         match result {
             Some(SanitizedChild::Variable(var)) => {
@@ -1078,7 +1078,7 @@ mod tests {
         
         // Test whitespace normalization
         let guide_child = JSXElementChild::JSXText(guide_text);
-        let normalized_result = traversal.build_sanitized_child(&guide_child);
+        let normalized_result = traversal.build_sanitized_child(&guide_child, true, true);
         
         match normalized_result {
             Some(SanitizedChild::Text(text)) => {
@@ -1131,7 +1131,7 @@ mod tests {
         };
         
         let branch_child = JSXElementChild::JSXElement(Box::new(branch_element));
-        let branch_result = traversal.build_sanitized_child(&branch_child);
+        let branch_result = traversal.build_sanitized_child(&branch_child, true, true);
         
         // Verify Branch serializes correctly with hash
         match branch_result {
@@ -1317,7 +1317,7 @@ mod tests {
         };
         
         let jsx_child = JSXElementChild::JSXElement(Box::new(plural_element));
-        let result = traversal.build_sanitized_child(&jsx_child);
+        let result = traversal.build_sanitized_child(&jsx_child, true, true);
         
         match result {
             Some(SanitizedChild::Variable(var)) => {
@@ -1430,7 +1430,7 @@ mod tests {
         };
         
         let jsx_child = JSXElementChild::JSXElement(Box::new(branch_element));
-        let result = traversal.build_sanitized_child(&jsx_child);
+        let result = traversal.build_sanitized_child(&jsx_child, true, true);
         
         match result {
             Some(SanitizedChild::Variable(var)) => {

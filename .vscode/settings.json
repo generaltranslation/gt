@@ -1,0 +1,3 @@
+{
+  "rust-analyzer.linkedProjects": ["packages/swc-plugin/Cargo.toml"]
+}

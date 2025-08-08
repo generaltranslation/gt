@@ -19,9 +19,12 @@ pub enum LogLevel {
     Info,
 }
 
-// to test:
+// Complain about this:
 // <T>
 // <Plural n={1} singular="File" plural={count > 1 ? "files" : "file"} />
+// </T>
+// <T>
+// <Plural n={5} singular="  1 item  " plural={` ${5} items  `} />
 // </T>
 
 impl Default for LogLevel {
