@@ -50,10 +50,12 @@ async function T({
   children,
   id,
   context,
+  ...options
 }: {
   children: any;
   id?: string;
   context?: string;
+  [key: string]: any;
 }): Promise<any> {
   // ----- SET UP ----- //
 
@@ -62,6 +64,11 @@ async function T({
   const defaultLocale = I18NConfig.getDefaultLocale();
   const [translationRequired, dialectTranslationRequired] =
     I18NConfig.requiresTranslation(locale);
+
+  // Compatibility with different options
+  id = id ?? options?.$id;
+  context = context ?? options?.$context;
+  const { hash: hashFromOptions, json } = options;
 
   // ----- TAG CHILDREN ----- //
 
@@ -113,6 +120,22 @@ async function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
+    if (hashFromOptions) {
+      if (hashFromOptions !== hash) {
+        console.log(`buildtime Json: ${json}`);
+        console.warn(
+          `Mismatch: Buildtime: ${hashFromOptions} Runtime: ${hash}`
+        );
+      } else {
+        // console.log(
+        //   `gt-next: Hash from options matches hash from children: ${hash}`
+        // );
+      }
+    } else {
+      console.log(
+        `gt-next: No hash from options, using hash from children: ${hash}`
+      );
+    }
     translationEntry = translations?.[hash];
     translationsStatusEntry = translationsStatus?.[hash];
   }

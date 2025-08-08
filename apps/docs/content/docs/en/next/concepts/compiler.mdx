@@ -1,0 +1,61 @@
+# Compiler
+
+GT-Next includes an SWC plugin that performs build-time validation to catch common translation errors before they reach production.
+
+## What it Checks
+
+The SWC plugin validates two types of dynamic content violations:
+
+### Dynamic JSX Violations
+Detects unwrapped dynamic content in translation components:
+
+```jsx
+// L Invalid - dynamic content not wrapped
+<T>Hello {userName}</T>
+
+//  Valid - dynamic content wrapped in variable component  
+<T>Hello <Var>{userName}</Var></T>
+```
+
+### Dynamic String Violations
+Detects non-literal arguments passed to translation functions:
+
+```jsx
+const t = useGT();
+
+// L Invalid - template literals and concatenation
+t(`Hello ${name}`)
+t("Hello " + name)
+
+//  Valid - string literals with variable substitution
+t("Hello, {name}!", { name })
+```
+
+## Configuration
+
+Both validation types can be configured independently through the `withGTConfig` options:
+
+```typescript
+export type SwcPluginOptions = {
+  dynamicJsxCheckLogLevel?: 'error' | 'warn' | 'off';
+  dynamicStringCheckLogLevel?: 'error' | 'warn' | 'off';
+};
+```
+
+- `'warn'` - Shows warnings during build (default)
+- `'error'` - Fails the build with errors  
+- `'off'` - Disables checking
+
+For more information on configuring these options, see the [withGTConfig](/docs/en/next/api/config/withGTConfig) documentation.
+
+## Limitations
+
+The SWC plugin processes files individually and cannot detect violations in re-exported components:
+
+```jsx
+// File A: export { T as Translate } from 'gt-next'
+// File B: import { Translate } from './A'
+<Translate>Hello {name}</Translate> // Won't be detected
+```
+
+For comprehensive coverage including re-exports, consider using the [GT-Next ESLint plugin](/docs/en/next/tools/eslint).

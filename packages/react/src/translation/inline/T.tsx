@@ -54,6 +54,7 @@ function T({
   // Compatibility with different options
   id = id ?? options?.$id;
   context = context ?? options?.$context;
+  const { hash: hashFromOptions, json } = options;
 
   const {
     translations,
@@ -92,6 +93,22 @@ function T({
       ...(id && { id }),
       dataFormat: 'JSX',
     });
+    if (hashFromOptions) {
+      if (hashFromOptions !== hash) {
+        console.log(`buildtime Json: ${json}`);
+        console.warn(
+          `Mismatch: Buildtime: ${hashFromOptions} Runtime: ${hash}`
+        );
+      } else {
+        // console.log(
+        //   `gt-react: Hash from options matches hash from children: ${hash}`
+        // );
+      }
+    } else {
+      console.log(
+        `gt-react: No hash from options, using hash from children: ${hash}`
+      );
+    }
     return [childrenAsObjects, hash];
   }, [
     taggedChildren,

@@ -1,6 +1,6 @@
 {
   "name": "gt-next",
-  "version": "6.0.11",
+  "version": "6.0.12-alpha.1",
   "description": "A Next.js library for automatic internationalization.",
   "main": "dist/index.server.js",
   "peerDependencies": {
@@ -15,13 +15,14 @@
   "dependencies": {
     "@generaltranslation/supported-locales": "^2.0.13",
     "generaltranslation": "^7.1.1",
-    "gt-react": "^10.0.9"
+    "gt-react": "^10.0.10-alpha.1"
   },
   "scripts": {
     "patch": "npm version patch",
     "transpile": "tsc",
-    "build": "npm run transpile",
-    "build:clean": "rm -rf dist; npm run build",
+    "build:swc-plugin": "cargo build --release --target wasm32-wasip1 --manifest-path ../swc-plugin/Cargo.toml && cp -p ../swc-plugin/target/wasm32-wasip1/release/gt_swc_plugin.wasm ./dist/gt_swc_plugin.wasm",
+    "build": "npm run build:swc-plugin && npm run transpile",
+    "build:clean": "rm -rf ../swc-plugin/target && rm -rf dist; npm run build",
     "build:release": "npm run build:clean",
     "release": "npm run build:clean && npm publish",
     "release:alpha": "npm run build:clean && npm publish --tag alpha",
@@ -86,6 +87,14 @@
     },
     "./_load-dictionary": {
       "default": "./dist/_load-dictionary.js"
+    },
+    "./compiler": {
+      "types": "./dist/compiler/index.d.ts",
+      "default": "./dist/compiler/index.js"
+    },
+    "./eslint-plugin": {
+      "types": "./dist/eslint-plugin/index.d.ts",
+      "default": "./dist/eslint-plugin/index.js"
     }
   },
   "typesVersions": {
@@ -116,6 +125,12 @@
       ],
       "_load-dictionary": [
         "./dist/_load-dictionary.d.ts"
+      ],
+      "compiler": [
+        "./dist/compiler/index.d.ts"
+      ],
+      "eslint-plugin": [
+        "./dist/eslint-plugin/index.d.ts"
       ]
     }
   },
@@ -148,6 +163,12 @@
       ],
       "gt-next/_load-dictionary": [
         "/dist/_load-dictionary"
+      ],
+      "gt-next/compiler": [
+        "/dist/compiler"
+      ],
+      "gt-next/eslint-plugin": [
+        "/dist/eslint-plugin"
       ]
     }
   },

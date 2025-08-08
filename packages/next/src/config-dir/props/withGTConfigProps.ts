@@ -9,6 +9,12 @@ export type HeadersAndCookies = {
   resetLocaleCookieName?: string;
 };
 
+export type SwcPluginOptions = {
+  dynamicJsxCheckLogLevel?: 'error' | 'warn' | 'off';
+  dynamicStringCheckLogLevel?: 'error' | 'warn' | 'off';
+  experimentalCompileTimeHash?: boolean;
+};
+
 type withGTConfigProps = {
   // Request scoped filepath
   dictionary?: string;
@@ -39,7 +45,12 @@ type withGTConfigProps = {
   batchInterval?: number; // ms
   // Translation assistance
   description?: string;
+  // ESLint integration
+  eslint?: boolean; // Enable/disable ESLint config generation (default: true)
+  eslintSeverity?: 'error' | 'warn'; // Severity level for ESLint rules (default: 'warn')
+  overwriteESLintConfig?: boolean; // Allow overwriting existing eslint.config.mjs (default: false)
   // Other
+  swcPluginOptions?: SwcPluginOptions;
   headersAndCookies?: HeadersAndCookies;
   _usingPlugin?: boolean;
   [key: string]: any;

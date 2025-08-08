@@ -21,6 +21,7 @@
     "---Technical Concepts---",
     "concepts/environments",
     "concepts/stand-alone",
+    "concepts/compiler",
     "---API---",
     "api/config",
     "api/components",

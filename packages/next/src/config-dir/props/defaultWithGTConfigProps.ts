@@ -35,6 +35,11 @@ const defaultWithGTConfigProps = {
     localeRoutingEnabledCookieName: defaultLocaleRoutingEnabledCookieName,
     resetLocaleCookieName: defaultResetLocaleCookieName,
   },
+  swcPluginOptions: {
+    dynamicJsxCheckLogLevel: 'warn',
+    dynamicStringCheckLogLevel: 'warn',
+    experimentalCompileTimeHash: false,
+  },
 } as const;
 
 export default defaultWithGTConfigProps;
