@@ -32,6 +32,10 @@ pub enum LogLevel {
 // <T>
 // <Plural n={1} singular="File" plural={40 + 2} />
 // </T>
+// Core: cannot handle big ints (eg 123n)
+
+// Checklist
+// - [ ] switch from BTreeMap to HashMap (make sure that this will not break stable json)
 
 impl Default for LogLevel {
     fn default() -> Self {

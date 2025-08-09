@@ -39,7 +39,7 @@ pub struct HtmlContentProps {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SanitizedElement {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub b: Option<BTreeMap<String, Box<SanitizedChildren>>>, // branches (for Branch/Plural components)
+    pub b: Option<BTreeMap<String, Box<SanitizedChild>>>, // branches (for Branch/Plural components)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub c: Option<Box<SanitizedChildren>>, // children
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -52,7 +52,7 @@ pub struct SanitizedElement {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SanitizedGtProp {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub b: Option<BTreeMap<String, Box<SanitizedChildren>>>, // Branches
+    pub b: Option<BTreeMap<String, Box<SanitizedChild>>>, // Branches
     #[serde(skip_serializing_if = "Option::is_none")]
     pub t: Option<String>, // Branch Transformation ('p' for plural, 'b' for branch)
     #[serde(flatten)]
@@ -67,7 +67,8 @@ pub struct SanitizedVariable {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub v: Option<VariableType>, // variable type (for regular variables)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub b: Option<BTreeMap<String, Box<SanitizedChildren>>>, // branches (for Branch components)
+    // TODO: remove this field
+    pub b: Option<BTreeMap<String, Box<SanitizedChild>>>, // branches (for Branch components)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub t: Option<String>, // transformation type ('b' for branches, 'p' for plurals, 'v' for variables)
 }

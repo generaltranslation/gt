@@ -157,56 +157,7 @@ impl<'a> JsxTraversal<'a> {
                     self.build_sanitized_element(element).map(|el| SanitizedChild::Element(Box::new(el)))
                 }
             }
-            JSXElementChild::JSXExprContainer(expr_container) => {
-                eprintln!("DEBUG: Processing JSXExprContainer");
-                match &expr_container.expr {
-                    JSXExpr::Expr(expr) => {
-                        // eprintln!("DEBUG: JSXExpr::Expr - {:?}", expr);
-                        match expr.as_ref() {
-                            Expr::Lit(Lit::Str(str_lit)) => {
-                                eprintln!("DEBUG: Found string literal: {}", str_lit.value);
-                                let content = str_lit.value.to_string();
-                                Some(SanitizedChild::Text(content))
-                            }
-                            Expr::Lit(Lit::Num(num_lit)) => {
-                                eprintln!("DEBUG: Found number literal: {}", num_lit.value);
-                                let content = num_lit.value.to_string();
-                                Some(SanitizedChild::Text(content))
-                            }
-                            Expr::Lit(Lit::Bool(bool_lit)) => {
-                                eprintln!("DEBUG: Found boolean literal: {}", bool_lit.value);
-                                let content = bool_lit.value.to_string();
-                                Some(SanitizedChild::Text(content))
-                            }
-                            Expr::Tpl(tpl) => {
-                                eprintln!("DEBUG: Found template literal: {:?}", tpl);
-                                // Only handle simple template literals with no expressions
-                                if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
-                                    if let Some(quasi) = tpl.quasis.first() {
-                                        // let content = quasi.raw.to_string();
-                                        // Some(SanitizedChild::Text(content))
-                                        if let Some(cooked) = &quasi.cooked {
-                                            let content = cooked.to_string();
-                                            Some(SanitizedChild::Text(content))
-                                        } else {
-                                            // Fall back to raw if cooked is None (unusual case)
-                                            let content = quasi.raw.to_string();
-                                            Some(SanitizedChild::Text(content))
-                                        }
-                                    } else {
-                                        None
-                                    }
-                                } else {
-                                    None
-                                }
-                            }
-                            _ => None,
-                        }
-                    }
-                    _ => None,
-                }
-                
-            }
+            JSXElementChild::JSXExprContainer(expr_container) => self.build_sanitized_jsx_child_from_jsx_expr_container(&expr_container.expr),
             _ => None, // Skip fragments and other types for now
         }
     }
@@ -490,7 +441,7 @@ impl<'a> JsxTraversal<'a> {
     }
 
     /// Extract branch props from Branch component attributes
-    fn extract_branch_props(&mut self, attrs: &[JSXAttrOrSpread]) -> Option<BTreeMap<String, Box<SanitizedChildren>>> {
+    fn extract_branch_props(&mut self, attrs: &[JSXAttrOrSpread]) -> Option<BTreeMap<String, Box<SanitizedChild>>> {
         let mut branches = BTreeMap::new();
 
         for attr in attrs {
@@ -505,7 +456,7 @@ impl<'a> JsxTraversal<'a> {
 
                     // Build sanitized branch content directly
                     if let Some(value) = &jsx_attr.value {
-                        if let Some(sanitized_children) = self.build_sanitized_children_from_attr_value(value) {
+                        if let Some(sanitized_children) = self.build_sanitized_child_from_attr_value(value) {
                             branches.insert(prop_name.to_string(), Box::new(sanitized_children));
                         }
                     }
@@ -521,7 +472,7 @@ impl<'a> JsxTraversal<'a> {
     }
 
     /// Extract plural props from Plural component attributes
-    fn extract_plural_props(&mut self, attrs: &[JSXAttrOrSpread]) -> Option<BTreeMap<String, Box<SanitizedChildren>>> {
+    fn extract_plural_props(&mut self, attrs: &[JSXAttrOrSpread]) -> Option<BTreeMap<String, Box<SanitizedChild>>> {
         let mut branches = BTreeMap::new();
         let plural_forms: std::collections::HashSet<&str> = ["singular", "plural", "dual", "zero", "one", "two", "few", "many", "other"].into_iter().collect();
 
@@ -533,7 +484,7 @@ impl<'a> JsxTraversal<'a> {
                     // Only include valid plural forms
                     if plural_forms.contains(prop_name) {
                         if let Some(value) = &jsx_attr.value {
-                            if let Some(sanitized_children) = self.build_sanitized_children_from_attr_value(value) {
+                            if let Some(sanitized_children) = self.build_sanitized_child_from_attr_value(value) {
                                 branches.insert(prop_name.to_string(), Box::new(sanitized_children));
                             }
                         }
@@ -550,70 +501,77 @@ impl<'a> JsxTraversal<'a> {
     }
 
     /// Build sanitized children directly from JSX attribute value
-    fn build_sanitized_children_from_attr_value(&mut self, value: &JSXAttrValue) -> Option<SanitizedChildren> {
+    fn build_sanitized_child_from_attr_value(&mut self, value: &JSXAttrValue) -> Option<SanitizedChild> {
         match value {
             JSXAttrValue::Lit(Lit::Str(str_lit)) => {
                 let content = str_lit.value.to_string();
-                Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
+                Some(SanitizedChild::Text(content))
             }
-            JSXAttrValue::JSXExprContainer(expr_container) => {
-                // // Handle JSX expressions in attributes - these can contain JSX fragments/elements
-                // match &expr_container.expr {
-                //     JSXExpr::Expr(expr) => {
-                //         // Look for JSX fragments/elements within the expression
-                //         self.build_sanitized_children_from_expr(expr)
-                //     }
-                //     _ => None,
-                // }
-                eprintln!("DEBUG: Processing JSXExprContainer");
-                match &expr_container.expr {
-                    JSXExpr::Expr(expr) => {
-                        match expr.as_ref() {
-                            Expr::Lit(Lit::Str(str_lit)) => {
-                                eprintln!("DEBUG: Found string literal: {}", str_lit.value);
-                                let content = str_lit.value.to_string();
-                                Some(SanitizedChild::Text(content))
-                            }
-                            Expr::Lit(Lit::Num(num_lit)) => {
-                                eprintln!("DEBUG: Found number literal: {}", num_lit.value);
-                                let content = num_lit.value.to_string();
-                                Some(SanitizedChild::Text(content))
-                            }
-                            Expr::Lit(Lit::Bool(bool_lit)) => {
-                                eprintln!("DEBUG: Found boolean literal: {}", bool_lit.value);
-                                let content = bool_lit.value.to_string();
-                                Some(SanitizedChild::Text(content))
-                            }
-                            Expr::Tpl(tpl) => {
-                                eprintln!("DEBUG: Found template literal: {:?}", tpl);
-                                // Only handle simple template literals with no expressions
-                                if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
-                                    if let Some(quasi) = tpl.quasis.first() {
-                                        // let content = quasi.raw.to_string();
-                                        // Some(SanitizedChild::Text(content))
-                                        if let Some(cooked) = &quasi.cooked {
-                                            let content = cooked.to_string();
-                                            Some(SanitizedChild::Text(content))
-                                        } else {
-                                            // Fall back to raw if cooked is None (unusual case)
-                                            let content = quasi.raw.to_string();
-                                            Some(SanitizedChild::Text(content))
-                                        }
-                                    } else {
-                                        None
-                                    }
+            JSXAttrValue::JSXExprContainer(expr_container) => self.build_sanitized_jsx_child_from_jsx_expr_container(&expr_container.expr),
+            _ => None, // Skip fragments and other types for now
+        }
+    }
+
+
+    /// Build sanitized JSXchild from JSX container
+    fn build_sanitized_jsx_child_from_jsx_expr_container(&mut self, jsx_expr: &JSXExpr) -> Option<SanitizedChild> {
+        match jsx_expr {
+            JSXExpr::Expr(expr) => {
+                match expr.as_ref() {
+                    Expr::Lit(Lit::Str(str_lit)) => Some(SanitizedChild::Text(str_lit.value.to_string())),
+                    Expr::Lit(Lit::Num(num_lit)) => Some(SanitizedChild::Text(num_lit.value.to_string())),
+                    Expr::Lit(Lit::Bool(_)) => Some(SanitizedChild::Null(None)),
+                    Expr::Lit(Lit::Null(_)) => Some(SanitizedChild::Null(None)),
+                    Expr::JSXFragment(fragment) => {
+                        // Fragment becomes one SanitizedChild::Fragment containing its children
+                        if let Some(children) = self.build_sanitized_children(&fragment.children) {
+                            Some(SanitizedChild::Fragment(Box::new(SanitizedChildren::Wrapped { c: Box::new(children) })))
+                        } else {
+                            // Empty fragment should return empty object structure, not None
+                            let empty_element = SanitizedElement {
+                                b: None,
+                                c: None,
+                                t: None,
+                                d: None,
+                            };
+                            Some(SanitizedChild::Element(Box::new(empty_element)))
+                        }
+                    }
+                    Expr::JSXElement(element) => {
+                        self.build_sanitized_child(&JSXElementChild::JSXElement(element.clone()), true, true)
+                    }
+                    Expr::Unary(UnaryExpr { op: UnaryOp::Minus, arg, .. }) => {
+                        if let Expr::Lit(Lit::Num(num_lit)) = arg.as_ref() {
+                            let negative_num = -num_lit.value;
+                            Some(SanitizedChild::Text(negative_num.to_string()))
+                        } else {
+                            None
+                        }
+                    }
+                    Expr::Tpl(tpl) => {
+                        if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
+                            if let Some(quasi) = tpl.quasis.first() {
+                                if let Some(cooked) = &quasi.cooked {
+                                    let content = cooked.to_string();
+                                    Some(SanitizedChild::Text(content))
                                 } else {
-                                    None
+                                    let content = quasi.raw.to_string();
+                                    Some(SanitizedChild::Text(content))
                                 }
+                            } else {
+                                None
                             }
-                            _ => None,
+                        } else {
+                            None
                         }
                     }
                     _ => None,
                 }
-                
             }
-            _ => None, // Skip fragments and other types for now
+            JSXExpr::JSXEmptyExpr(_) => {
+                // Handle {} empty expressions
+                None
+            }
         }
     }
 
@@ -803,7 +761,7 @@ struct ComponentInfo {
     is_gt_component: bool,
     transformation: Option<String>,
     variable_type: Option<VariableType>,
-    branches: Option<BTreeMap<String, Box<SanitizedChildren>>>,
+    branches: Option<BTreeMap<String, Box<SanitizedChild>>>,
 }
 
 #[cfg(test)]
