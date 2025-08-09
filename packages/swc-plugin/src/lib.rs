@@ -32,6 +32,10 @@ pub enum LogLevel {
 // <T>
 // <Plural n={1} singular="File" plural={40 + 2} />
 // </T>
+// <T> (missing n={})
+// <Plural singular="file" plural="files" />
+// <T>
+// TODO: handle alt={} on specific components
 // Core: cannot handle big ints (eg 123n)
 
 // Checklist
