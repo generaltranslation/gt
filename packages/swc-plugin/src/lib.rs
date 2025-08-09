@@ -19,12 +19,18 @@ pub enum LogLevel {
     Info,
 }
 
-// Complain about this:
+// Complain about these:
 // <T>
 // <Plural n={1} singular="File" plural={count > 1 ? "files" : "file"} />
 // </T>
 // <T>
 // <Plural n={5} singular="  1 item  " plural={` ${5} items  `} />
+// </T>
+// <T>
+// <Plural n={1} singular="File" plural={"File" + "s"} />
+// </T>
+// <T>
+// <Plural n={1} singular="File" plural={40 + 2} />
 // </T>
 
 impl Default for LogLevel {
@@ -307,17 +313,24 @@ impl TransformVisitor {
             let json_string = JsxHasher::stable_stringify(&sanitized_data)
                 .expect("Failed to serialize sanitized data");
             
-            // Debug: Print sanitized JSON before passing to T component
-            if json_string.contains("plural")  || json_string.contains("branch") {
-                eprintln!("🔍 GT-SWC DEBUG: Sanitized JSON before T component: {}", json_string);
-            }
+            // // Debug: Print sanitized JSON before passing to T component
+            // if json_string.contains("plural")  || json_string.contains("branch") {
+            //     eprintln!("🔍 GT-SWC DEBUG: Sanitized JSON before T component: {}", json_string);
+            // }
             
             let hash = JsxHasher::hash_string(&json_string);
             (hash, json_string)
         } else {
             // Fallback to empty content hash with proper wrapper structure
-            use crate::hash::{SanitizedChildren, SanitizedData};
-            let empty_children = SanitizedChildren::Multiple(vec![]);
+            use crate::hash::{SanitizedData, SanitizedElement, SanitizedChild, SanitizedChildren};
+            let empty_element = SanitizedElement {
+                b: None,
+                c: None,
+                t: None,
+                d: None,
+            };
+          
+            let empty_children = SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(empty_element))));
             let sanitized_data = SanitizedData {
                 source: Some(Box::new(empty_children)),
                 id: None,

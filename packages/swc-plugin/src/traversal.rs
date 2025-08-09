@@ -38,7 +38,10 @@ impl<'a> JsxTraversal<'a> {
         let sanitized_children: Vec<SanitizedChild> = children
             .iter()
             .enumerate()
-            .filter_map(|(index, child)| self.build_sanitized_child(child, index == 0, index == children.len() - 1))
+            .filter_map(|(index, child)| {
+                let result = self.build_sanitized_child(child, index == 0, index == children.len() - 1);
+                result
+            })
             .collect();
 
         if sanitized_children.is_empty() {
@@ -57,12 +60,13 @@ impl<'a> JsxTraversal<'a> {
         let saved_counter = self.id_counter;
         self.id_counter = counter;
         let result = self.build_sanitized_child(child, isFirstSibling, isLastSibling);
+        // eprintln!("DEBUG: build_sanitized_child_with_counter() counter: {} -> {}", self.id_counter, saved_counter);
         self.id_counter = saved_counter;
         result
     }
 
     /// Build a sanitized child directly from JSX child
-    pub fn build_sanitized_child(&mut self, child: &JSXElementChild, isFirstSibling: bool, isLastSibling: bool) -> Option<SanitizedChild> {
+    pub fn build_sanitized_child(&mut self, child: &JSXElementChild, is_first_sibling: bool, is_last_sibling: bool) -> Option<SanitizedChild> {
         match child {
             JSXElementChild::JSXText(text) => {
                 // Normalize whitespace like browsers do: collapse multiple whitespace chars into single spaces
@@ -73,7 +77,7 @@ impl<'a> JsxTraversal<'a> {
                 // eprintln!("DEBUG: ------------------------------");
                 // eprintln!("DEBUG: Processing text: '{}'", content);
                 let normalized = if content.trim().is_empty() {
-                        if !isFirstSibling && !isLastSibling {
+                        if (!is_first_sibling && !is_last_sibling) || (is_first_sibling && is_last_sibling) {
                             if content.contains('\n') {
                                 None
                             } else {
@@ -94,9 +98,9 @@ impl<'a> JsxTraversal<'a> {
                                 let last_part = parts.last().unwrap();
                                 (
                                     // Check if there are leading/trailing spaces (not other whitespace)
-                                    first_part.ends_with(' ') && !first_part.contains('\n') && (!isFirstSibling || isLastSibling),
+                                    first_part.ends_with(' ') && !first_part.contains('\n') && (!is_first_sibling || is_last_sibling),
                                     // Check if there's a space after the last word (before any newlines/indentation)
-                                    last_part.starts_with(' ') && !last_part.contains('\n') && (!isLastSibling || isFirstSibling),
+                                    last_part.starts_with(' ') && !last_part.contains('\n') && (!is_last_sibling || is_first_sibling),
                                 )
                             } else {
                                 (false, false)
@@ -129,6 +133,18 @@ impl<'a> JsxTraversal<'a> {
                     None
                 }
             }
+            JSXElementChild::JSXFragment(fragment) => {
+                // Increment counter for each JSX element we encounter
+                self.id_counter += 1;
+                
+                // Check if children are present
+                if let Some(children) = self.build_sanitized_children(&fragment.children) {
+                    let wrapped_children = SanitizedChildren::Wrapped { c: Box::new(children) };
+                    Some(SanitizedChild::Fragment(Box::new(wrapped_children)))
+                } else {
+                    None
+                }
+            }
             JSXElementChild::JSXElement(element) => {
                 // Increment counter for each JSX element we encounter
                 self.id_counter += 1;
@@ -142,19 +158,41 @@ impl<'a> JsxTraversal<'a> {
                 }
             }
             JSXElementChild::JSXExprContainer(expr_container) => {
+                eprintln!("DEBUG: Processing JSXExprContainer");
                 match &expr_container.expr {
                     JSXExpr::Expr(expr) => {
+                        // eprintln!("DEBUG: JSXExpr::Expr - {:?}", expr);
                         match expr.as_ref() {
                             Expr::Lit(Lit::Str(str_lit)) => {
+                                eprintln!("DEBUG: Found string literal: {}", str_lit.value);
                                 let content = str_lit.value.to_string();
                                 Some(SanitizedChild::Text(content))
                             }
+                            Expr::Lit(Lit::Num(num_lit)) => {
+                                eprintln!("DEBUG: Found number literal: {}", num_lit.value);
+                                let content = num_lit.value.to_string();
+                                Some(SanitizedChild::Text(content))
+                            }
+                            Expr::Lit(Lit::Bool(bool_lit)) => {
+                                eprintln!("DEBUG: Found boolean literal: {}", bool_lit.value);
+                                let content = bool_lit.value.to_string();
+                                Some(SanitizedChild::Text(content))
+                            }
                             Expr::Tpl(tpl) => {
+                                eprintln!("DEBUG: Found template literal: {:?}", tpl);
                                 // Only handle simple template literals with no expressions
                                 if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
                                     if let Some(quasi) = tpl.quasis.first() {
-                                        let content = quasi.raw.to_string();
-                                        Some(SanitizedChild::Text(content))
+                                        // let content = quasi.raw.to_string();
+                                        // Some(SanitizedChild::Text(content))
+                                        if let Some(cooked) = &quasi.cooked {
+                                            let content = cooked.to_string();
+                                            Some(SanitizedChild::Text(content))
+                                        } else {
+                                            // Fall back to raw if cooked is None (unusual case)
+                                            let content = quasi.raw.to_string();
+                                            Some(SanitizedChild::Text(content))
+                                        }
                                     } else {
                                         None
                                     }
@@ -171,6 +209,59 @@ impl<'a> JsxTraversal<'a> {
             }
             _ => None, // Skip fragments and other types for now
         }
+    }
+
+
+    /// Check if a Plural component is valid
+    fn is_valid_plural_component(&self, element: &JSXElement, component_info: &ComponentInfo) -> bool {
+    // Check if component has required 'n' attribute
+      let has_n_attr = element.opening.attrs.iter().any(|attr| {
+        if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+            if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
+                return name_ident.sym.as_ref() == "n";
+            }
+        }
+        false
+    });
+
+    if !has_n_attr {
+        // eprintln!("DEBUG: Excluding Plural component - missing 'n' attribute");
+        return false;
+    }
+
+    // Check if has valid branches OR children
+    if component_info.branches.is_none() && element.children.is_empty() {
+        // eprintln!("DEBUG: Excluding Plural component - no valid plural forms and no children");
+        return false;
+    }
+
+    return true;
+    }
+
+    /// Check if a Branch component is valid
+    fn is_valid_branch_component(&self, element: &JSXElement, component_info: &ComponentInfo) -> bool {
+        // Check if component has required 'branch' attribute
+      let has_branch_attr = element.opening.attrs.iter().any(|attr| {
+        if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
+            if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
+                return name_ident.sym.as_ref() == "branch";
+            }
+        }
+        false
+    });
+
+    if !has_branch_attr {
+        // eprintln!("DEBUG: Excluding Branch component - missing 'branch' attribute");
+        return false;
+    }
+
+    // Check if has valid branches OR children  
+    if component_info.branches.is_none() && element.children.is_empty() {
+        // eprintln!("DEBUG: Excluding Branch component - no valid branch options and no children");
+        return false;
+    }
+
+    return true;
     }
 
     /// Build a sanitized element directly from JSX element
@@ -201,13 +292,25 @@ impl<'a> JsxTraversal<'a> {
 
         // Handle different component types
         if component_info.is_gt_component {
-            // Handle Branch/Plural components directly as elements with branches
-            if self.is_branch_component(&tag_name) || self.is_plural_component(&tag_name) {
+
+            if self.is_plural_component(&tag_name) {
+                if !self.is_valid_plural_component(&element, &component_info) {
+                    return None;
+                }
                 if let Some(branches) = component_info.branches {
                     sanitized_element.b = Some(branches);
                 }
                 sanitized_element.t = component_info.transformation;
-            } else {
+            } else if self.is_branch_component(&tag_name) {
+                if !self.is_valid_branch_component(&element, &component_info) {
+                    return None;
+                }
+                if let Some(branches) = component_info.branches {
+                    sanitized_element.b = Some(branches);
+                }
+                sanitized_element.t = component_info.transformation;
+            }
+             else {
                 // Handle other GT components (T, etc.) with GT data
                 let gt_prop = SanitizedGtProp {
                     b: component_info.branches,
@@ -454,16 +557,63 @@ impl<'a> JsxTraversal<'a> {
                 Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
             }
             JSXAttrValue::JSXExprContainer(expr_container) => {
-                // Handle JSX expressions in attributes - these can contain JSX fragments/elements
+                // // Handle JSX expressions in attributes - these can contain JSX fragments/elements
+                // match &expr_container.expr {
+                //     JSXExpr::Expr(expr) => {
+                //         // Look for JSX fragments/elements within the expression
+                //         self.build_sanitized_children_from_expr(expr)
+                //     }
+                //     _ => None,
+                // }
+                eprintln!("DEBUG: Processing JSXExprContainer");
                 match &expr_container.expr {
                     JSXExpr::Expr(expr) => {
-                        // Look for JSX fragments/elements within the expression
-                        self.build_sanitized_children_from_expr(expr)
+                        match expr.as_ref() {
+                            Expr::Lit(Lit::Str(str_lit)) => {
+                                eprintln!("DEBUG: Found string literal: {}", str_lit.value);
+                                let content = str_lit.value.to_string();
+                                Some(SanitizedChild::Text(content))
+                            }
+                            Expr::Lit(Lit::Num(num_lit)) => {
+                                eprintln!("DEBUG: Found number literal: {}", num_lit.value);
+                                let content = num_lit.value.to_string();
+                                Some(SanitizedChild::Text(content))
+                            }
+                            Expr::Lit(Lit::Bool(bool_lit)) => {
+                                eprintln!("DEBUG: Found boolean literal: {}", bool_lit.value);
+                                let content = bool_lit.value.to_string();
+                                Some(SanitizedChild::Text(content))
+                            }
+                            Expr::Tpl(tpl) => {
+                                eprintln!("DEBUG: Found template literal: {:?}", tpl);
+                                // Only handle simple template literals with no expressions
+                                if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
+                                    if let Some(quasi) = tpl.quasis.first() {
+                                        // let content = quasi.raw.to_string();
+                                        // Some(SanitizedChild::Text(content))
+                                        if let Some(cooked) = &quasi.cooked {
+                                            let content = cooked.to_string();
+                                            Some(SanitizedChild::Text(content))
+                                        } else {
+                                            // Fall back to raw if cooked is None (unusual case)
+                                            let content = quasi.raw.to_string();
+                                            Some(SanitizedChild::Text(content))
+                                        }
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    None
+                                }
+                            }
+                            _ => None,
+                        }
                     }
                     _ => None,
                 }
+                
             }
-            _ => None,
+            _ => None, // Skip fragments and other types for now
         }
     }
 
@@ -475,15 +625,27 @@ impl<'a> JsxTraversal<'a> {
         match expr {
             // Handle JSX fragments: <>content</>
             Expr::JSXFragment(fragment) => {
+                // Increment counter for fragments just like elements
+                // self.id_counter += 1; // TODO: increment branch_counter?
+
+                // eprintln!("DEBUG: build_sanitized_children_from_expr() fragment counter: <> {}", branch_counter);
+          
                 // Use branch counter for consistent variable key generation in branches
-                if let Some(children) = self.build_sanitized_children_with_counter(&fragment.children, branch_counter) {
-                    Some(SanitizedChildren::Wrapped { c: Box::new(children) })
-                } else {
-                    None
+                if let Some(child) = self.build_sanitized_child_with_counter(&JSXElementChild::JSXFragment(fragment.clone()), branch_counter, true, true) {
+                    Some(SanitizedChildren::Single(Box::new(child)))
+                } else {// Empty fragment should return empty object structure, not None
+                    let empty_element = SanitizedElement {
+                        b: None,
+                        c: None,
+                        t: None,
+                        d: None,
+                    };
+                    Some(SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(empty_element)))))
                 }
             }
             // Handle JSX elements: <SomeComponent>content</SomeComponent>
             Expr::JSXElement(element) => {
+                // eprintln!("DEBUG: build_sanitized_children_from_expr() element counter: <{:?}> {}", self.get_tag_name(&element.opening.name).unwrap_or_default(), branch_counter);
                 // Use branch counter for consistent variable key generation in branches
                 if let Some(child) = self.build_sanitized_child_with_counter(&JSXElementChild::JSXElement(element.clone()), branch_counter, true, true) {
                     // Check if this is a Branch/Plural component - if so, return it directly
@@ -515,6 +677,7 @@ impl<'a> JsxTraversal<'a> {
             }
             // Handle other literal types: {42}, {true}, {null}
             Expr::Lit(Lit::Num(num_lit)) => {
+                // eprintln!("DEBUG: Processing number: {:?} -> {}", num_lit.value, num_lit.value.to_string());
                 Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(num_lit.value.to_string()))))
             }
             Expr::Lit(Lit::Bool(bool_lit)) => {
@@ -523,14 +686,33 @@ impl<'a> JsxTraversal<'a> {
             Expr::Lit(Lit::Null(_)) => {
                 Some(SanitizedChildren::Single(Box::new(SanitizedChild::Null(None))))
             }
+            Expr::Unary(UnaryExpr { op: UnaryOp::Minus, arg, .. }) => {
+                // Handle negative numbers
+                if let Expr::Lit(Lit::Num(num_lit)) = arg.as_ref() {
+                    let negative_num = -num_lit.value;
+                    // eprintln!("DEBUG: Processing negative number: -{} -> {}", num_lit.value, negative_num);
+                    Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(negative_num.to_string()))))
+                } else {
+                    None
+                }
+            }
             
             // Handle simple template literals: {`files`}
             Expr::Tpl(tpl) => {
                 // Only handle template literals with no expressions (simple string templates)
                 if tpl.exprs.is_empty() && tpl.quasis.len() == 1 {
                     if let Some(quasi) = tpl.quasis.first() {
-                        let content = quasi.raw.to_string();
-                        Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
+                        // Use cooked instead of raw to match runtime behavior
+                        // let content = quasi.raw.to_string();
+                        // Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
+                        if let Some(cooked) = &quasi.cooked {
+                            let content = cooked.to_string();
+                            Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
+                        } else {
+                            // Fall back to raw if cooked is None (unusual case)
+                            let content = quasi.raw.to_string();
+                            Some(SanitizedChildren::Single(Box::new(SanitizedChild::Text(content))))
+                        }
                     } else {
                         None
                     }

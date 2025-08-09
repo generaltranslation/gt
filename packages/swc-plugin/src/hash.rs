@@ -81,6 +81,7 @@ pub enum SanitizedChild {
     Variable(SanitizedVariable),
     Boolean(bool),
     Null(Option<()>), // Will serialize as null when None
+    Fragment(Box<SanitizedChildren>),
 }
 
 /// Sanitized JSX Children can be a single child, array of children, or wrapped in element structure
