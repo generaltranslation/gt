@@ -38,15 +38,6 @@ impl<'a> JsxTraversal<'a> {
         Self { visitor, id_counter: 0 }
     }
 
-    /// Build sanitized children with a specific counter context (for branches)
-    fn build_sanitized_children_with_counter(&mut self, children: &[JSXElementChild], counter: u32) -> Option<SanitizedChildren> {
-        let saved_counter = self.id_counter;
-        self.id_counter = counter;
-        let result = self.build_sanitized_children(children);
-        self.id_counter = saved_counter;
-        result
-    }
-
     /// Build sanitized children objects directly from JSX children
     pub fn build_sanitized_children(&mut self, children: &[JSXElementChild]) -> Option<SanitizedChildren> {
         if children.is_empty() {
@@ -74,11 +65,20 @@ impl<'a> JsxTraversal<'a> {
     }
 
     /// Build a sanitized child with a specific counter context (for branches)
-    fn build_sanitized_child_with_counter(&mut self, child: &JSXElementChild, counter: u32, isFirstSibling: bool, isLastSibling: bool) -> Option<SanitizedChild> {
+    fn build_sanitized_child_with_counter(&mut self, child: &JSXElementChild, counter: u32, is_first_sibling: bool, is_last_sibling: bool) -> Option<SanitizedChild> {
         let saved_counter = self.id_counter;
         self.id_counter = counter;
-        let result = self.build_sanitized_child(child, isFirstSibling, isLastSibling);
+        let result = self.build_sanitized_child(child, is_first_sibling, is_last_sibling);
         // eprintln!("DEBUG: build_sanitized_child_with_counter() counter: {} -> {}", self.id_counter, saved_counter);
+        self.id_counter = saved_counter;
+        result
+    }
+
+    /// Build sanitized children with a specific counter context (for branches)
+    fn build_sanitized_children_with_counter(&mut self, children: &[JSXElementChild], counter: u32) -> Option<SanitizedChildren> {
+        let saved_counter = self.id_counter;
+        self.id_counter = counter;
+        let result = self.build_sanitized_children(children);
         self.id_counter = saved_counter;
         result
     }
@@ -543,7 +543,8 @@ impl<'a> JsxTraversal<'a> {
                     Expr::Lit(Lit::Null(_)) => Some(SanitizedChild::Null(None)),
                     Expr::JSXFragment(fragment) => {
                         // Fragment becomes one SanitizedChild::Fragment containing its children
-                        if let Some(children) = self.build_sanitized_children_with_counter(&fragment.children, self.id_counter) {
+                        // Increment counter here because we are hopping over one level of nesting
+                        if let Some(children) = self.build_sanitized_children_with_counter(&fragment.children, self.id_counter + 1) {
                             Some(SanitizedChild::Fragment(Box::new(SanitizedChildren::Wrapped { c: Box::new(children) })))
                         } else {
                             // Empty fragment should return empty object structure, not None
